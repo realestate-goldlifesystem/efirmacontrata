@@ -12,12 +12,17 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
         .success-card {
             max-width: 600px;
             width: 100%;
             text-align: center;
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
         
         .success-icon {
@@ -171,24 +176,91 @@
             color: #666;
             font-size: 14px;
         }
+        
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            text-align: left;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .warning-box h3 {
+            margin: 0 0 10px 0;
+            color: #f57c00;
+            font-size: 18px;
+        }
+        
+        .warning-box p {
+            margin: 5px 0;
+            color: #555;
+        }
+        
+        .code-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #495057;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f0f;
+            position: absolute;
+            animation: confetti-fall 3s linear;
+        }
+        
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+        
+        .btn-home {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.3);
+        }
     </style>
 </head>
 <body>
     <div class="success-container">
-        <div class="card success-card">
-            <div class="card-body">
-                <!-- Ícono dinámico según el estado -->
-                <div class="success-icon success" id="statusIcon">✅</div>
-                
-                <!-- Título dinámico -->
-                <h1 class="success-title" id="statusTitle">¡Documentos Recibidos Exitosamente!</h1>
-                
-                <!-- Mensaje principal -->
-                <div class="success-message" id="statusMessage">
-                    <p>Hemos recibido tus documentos correctamente y están siendo procesados por nuestro equipo de validación.</p>
-                </div>
-                
-                <!-- Información del proceso -->
+        <div class="success-card">
+            <!-- Ícono dinámico según el estado -->
+            <div class="success-icon success" id="statusIcon">✅</div>
+            
+            <!-- Título dinámico -->
+            <h1 class="success-title" id="statusTitle">¡Documentos Recibidos Exitosamente!</h1>
+            
+            <!-- Mensaje principal -->
+            <div class="success-message" id="statusMessage">
+                <p>Hemos recibido tus documentos correctamente y están siendo procesados por nuestro equipo de validación.</p>
+            </div>
+            
+            <!-- Código de registro -->
+            <div class="code-display" id="codeDisplay" style="display: none;">
+                <strong>Código de Registro:</strong> <span id="cdrCode"></span>
+            </div>
+            
+            <!-- Información del proceso para envío exitoso -->
+            <div id="successInfo">
                 <div class="info-box">
                     <h3>📧 Confirmación por Email</h3>
                     <p>En los próximos minutos recibirás un correo de confirmación con los detalles de tu solicitud.</p>
@@ -219,78 +291,143 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Información de contacto -->
-                <div class="contact-info">
-                    <h3>¿Necesitas ayuda?</h3>
-                    <p>Estamos aquí para asistirte en todo el proceso</p>
-                    
-                    <div class="contact-buttons">
-                        <a href="https://wa.me/573177623878?text=Hola,%20acabo%20de%20enviar%20mis%20documentos%20para%20el%20contrato%20de%20arrendamiento" 
-                           class="contact-btn whatsapp-btn" 
-                           target="_blank">
-                            <span>💬</span> WhatsApp
-                        </a>
-                        <a href="mailto:info@realestate-goldlife.com?subject=Consulta%20sobre%20documentos%20enviados" 
-                           class="contact-btn email-btn">
-                            <span>📧</span> Email
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Mensaje adicional para links usados -->
-                <div id="linkUsadoInfo" style="display: none;">
-                    <div class="info-box" style="border-color: #ff9800; background: #fff3e0;">
-                        <h3 style="color: #f57c00;">🔒 Este enlace ya fue utilizado</h3>
-                        <p>Los documentos asociados a este código ya fueron enviados anteriormente.</p>
-                        <p>Si necesitas hacer correcciones o enviar documentos adicionales, por favor contáctanos.</p>
-                    </div>
+            </div>
+            
+            <!-- Información para link usado -->
+            <div id="linkUsadoInfo" style="display: none;">
+                <div class="warning-box">
+                    <h3>🔒 Este enlace ya fue utilizado</h3>
+                    <p>Los documentos asociados a este código ya fueron enviados anteriormente.</p>
+                    <p>Si necesitas hacer correcciones o enviar documentos adicionales, por favor contáctanos.</p>
                 </div>
             </div>
+            
+            <!-- Información de contacto -->
+            <div class="contact-info">
+                <h3>¿Necesitas ayuda?</h3>
+                <p>Estamos aquí para asistirte en todo el proceso</p>
+                
+                <div class="contact-buttons">
+                    <a href="https://wa.me/573177623878?text=Hola,%20acabo%20de%20enviar%20mis%20documentos%20para%20el%20contrato%20de%20arrendamiento" 
+                       class="contact-btn whatsapp-btn" 
+                       target="_blank">
+                        <span>💬</span> WhatsApp
+                    </a>
+                    <a href="mailto:info@realestate-goldlife.com?subject=Consulta%20sobre%20documentos%20enviados" 
+                       class="contact-btn email-btn">
+                        <span>📧</span> Email
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Botón para volver al inicio -->
+            <a href="https://realestate-goldlifesystem.github.io/efirmacontrata/" class="btn-home">
+                🏠 Volver al Inicio
+            </a>
         </div>
     </div>
     
     <script>
-        // Detectar si venimos de un link ya usado
+        // Función para crear confetti
+        function createConfetti() {
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.position = 'fixed';
+                    confetti.style.width = '10px';
+                    confetti.style.height = '10px';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = '-10px';
+                    confetti.style.opacity = Math.random() + 0.5;
+                    confetti.style.transform = 'rotate(' + Math.random() * 360 + 'deg)';
+                    confetti.style.animation = 'confetti-fall 3s linear forwards';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+        
+        // Procesar parámetros y configurar página
         window.onload = function() {
+            console.log('🎉 Página de éxito cargada');
+            
             const urlParams = new URLSearchParams(window.location.search);
             const estado = urlParams.get('estado');
             const cdr = urlParams.get('cdr');
+            const tipo = urlParams.get('tipo');
             
-            // Si el link ya fue usado
+            console.log('📋 Parámetros:', { estado, cdr, tipo });
+            
+            // Mostrar código de registro si existe
+            if (cdr) {
+                document.getElementById('codeDisplay').style.display = 'block';
+                document.getElementById('cdrCode').textContent = cdr;
+            }
+            
+            // Configurar según el estado
             if (estado === 'usado') {
+                console.log('🔒 Mostrando estado: Link usado');
+                
+                // Cambiar ícono y título
                 document.getElementById('statusIcon').innerHTML = '🔒';
                 document.getElementById('statusIcon').className = 'success-icon locked';
                 document.getElementById('statusTitle').textContent = 'Este enlace ya fue utilizado';
                 document.getElementById('statusMessage').innerHTML = '<p>Los documentos para este registro ya fueron enviados anteriormente.</p>';
+                
+                // Ocultar timeline y mostrar info de link usado
+                document.getElementById('successInfo').style.display = 'none';
                 document.getElementById('linkUsadoInfo').style.display = 'block';
                 
-                // Ocultar timeline
-                document.querySelector('.timeline').style.display = 'none';
-            }
-            
-            // Si venimos del formulario exitoso
-            if (estado === 'exitoso') {
-                // Animación adicional de éxito
+            } else if (estado === 'exitoso') {
+                console.log('✅ Mostrando estado: Éxito');
+                
+                // Personalizar mensaje según el tipo
+                if (tipo === 'propietario') {
+                    document.getElementById('statusTitle').textContent = '¡Documentos del Propietario Recibidos!';
+                    document.getElementById('statusMessage').innerHTML = '<p>Hemos recibido toda tu documentación como propietario. Procederemos a validarla y generar el borrador del contrato.</p>';
+                } else {
+                    // Por defecto es inquilino
+                    document.getElementById('statusTitle').textContent = '¡Documentos del Inquilino Recibidos!';
+                    document.getElementById('statusMessage').innerHTML = '<p>Hemos recibido tu documentación correctamente. La validaremos en las próximas 24 horas.</p>';
+                }
+                
+                // Animación de confetti para celebrar
                 setTimeout(() => {
-                    confetti();
+                    createConfetti();
                 }, 500);
+                
+            } else {
+                console.log('ℹ️ Estado genérico o no especificado');
+                // Mantener valores por defecto
             }
             
-            // Mostrar código de registro si existe
-            if (cdr) {
-                const infoBox = document.querySelector('.info-box');
-                const codigoInfo = document.createElement('p');
-                codigoInfo.innerHTML = `<strong>Código de registro:</strong> ${cdr}`;
-                infoBox.appendChild(codigoInfo);
-            }
+            // Log de verificación
+            console.log('✅ Página configurada correctamente');
+            console.log('📊 Estado final:', {
+                titulo: document.getElementById('statusTitle').textContent,
+                estado: estado || 'default',
+                cdr: cdr || 'no especificado'
+            });
         };
         
-        // Función simple de confetti (opcional)
-        function confetti() {
-            // Aquí podrías agregar una librería de confetti si quieres
-            console.log('🎉 ¡Éxito!');
-        }
+        // Agregar efecto de hover a los botones de contacto
+        document.querySelectorAll('.contact-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px) scale(1.05)';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+        
+        // Log de verificación
+        console.log('✅ Script de página de éxito cargado');
+        console.log('📋 Versión: 2.0 CORREGIDA');
     </script>
 </body>
 </html>
