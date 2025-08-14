@@ -5,6 +5,173 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulario Inquilino - E-firmaContrata</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos adicionales para el modal de pago */
+        .main-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .btn-payment {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn-payment:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .btn-documents {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            padding: 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn-documents:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close-modal {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: #000;
+        }
+
+        .payment-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .payment-method {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #e0e0e0;
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: #5a6fd8;
+            transform: scale(1.05);
+        }
+
+        .copy-btn.copied {
+            background: #4CAF50;
+        }
+
+        .wompi-link {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .wompi-link a {
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .wompi-link a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        #formSections {
+            display: none;
+        }
+
+        #formSections.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .main-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -22,155 +189,212 @@
                     <ul id="correctionDocsList"></ul>
                 </div>
 
-                <!-- Progress bar -->
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressBar"></div>
-                    </div>
-                    <div class="progress-text" id="progressText">Paso 1 de 4</div>
-                </div>
-
                 <!-- Mensaje de error/éxito -->
                 <div id="alertMessage" class="alert" style="display: none;"></div>
 
-                <!-- SECCIÓN 1: Archivos iniciales -->
-                <div class="form-section active" id="section1">
-                    <h2>📎 Documentos Iniciales</h2>
+                <!-- Botones principales INICIO -->
+                <div id="mainButtons" class="main-buttons">
+                    <button class="btn-payment" onclick="mostrarModalPago()">
+                        <div style="font-size: 48px;">💰</div>
+                        <div>PAGAR DERECHOS</div>
+                        <small style="display: block; margin-top: 5px; opacity: 0.9;">$60.000 COP</small>
+                    </button>
                     
-                    <div class="form-group" id="estudioAprobadoGroup">
-                        <label>Estudio Aprobado <span class="required">*</span></label>
-                        <div class="file-upload" onclick="document.getElementById('estudioAprobado').click()">
-                            <input type="file" id="estudioAprobado" accept="*/*" style="display: none;" onchange="handleFileSelect(this, 'estudioList', 'estudioAprobado')">
-                            <div class="upload-icon">📄</div>
-                            <div class="upload-text">Haga clic para seleccionar el archivo</div>
-                            <small>Cualquier formato (máx. 10MB)</small>
-                        </div>
-                        <div id="estudioList" class="file-list"></div>
-                    </div>
-
-                    <div class="form-group" id="comprobantePagoGroup">
-                        <label>Comprobante de Pago <span class="required">*</span></label>
-                        <div class="file-upload" onclick="document.getElementById('comprobantePago').click()">
-                            <input type="file" id="comprobantePago" accept="*/*" style="display: none;" onchange="handleFileSelect(this, 'pagoList', 'comprobantePago')">
-                            <div class="upload-icon">💳</div>
-                            <div class="upload-text">Haga clic para seleccionar el archivo</div>
-                            <small>Comprobante de los $60.000</small>
-                        </div>
-                        <div id="pagoList" class="file-list"></div>
-                    </div>
+                    <button class="btn-documents" onclick="mostrarFormulario()">
+                        <div style="font-size: 48px;">📎</div>
+                        <div>CARGAR DOCUMENTOS</div>
+                        <small style="display: block; margin-top: 5px; opacity: 0.9;">Iniciar proceso</small>
+                    </button>
                 </div>
 
-                <!-- SECCIÓN 2: Datos del inquilino -->
-                <div class="form-section" id="section2">
-                    <h2>👤 Datos del Inquilino</h2>
-                    
-                    <div class="form-grid">
-                        <div class="form-group full-width">
-                            <label>Nombre Completo <span class="required">*</span></label>
-                            <input type="text" id="nombreInquilino" placeholder="Nombres y apellidos completos">
+                <!-- Secciones del formulario (ocultas inicialmente) -->
+                <div id="formSections">
+                    <!-- Progress bar -->
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressBar"></div>
                         </div>
+                        <div class="progress-text" id="progressText">Paso 1 de 4</div>
+                    </div>
+
+                    <!-- SECCIÓN 1: Archivos iniciales -->
+                    <div class="form-section active" id="section1">
+                        <h2>📎 Documentos Iniciales</h2>
                         
-                        <div class="form-group">
-                            <label>Tipo de Documento <span class="required">*</span></label>
-                            <select id="tipoDocInquilino">
-                                <option value="">Seleccione...</option>
-                                <option value="CC">Cédula de Ciudadanía</option>
-                                <option value="CE">Cédula de Extranjería</option>
-                                <option value="PAS">Pasaporte</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Número de Documento <span class="required">*</span></label>
-                            <div class="validation-group">
-                                <input type="text" id="docInquilino1" placeholder="Ingrese el número">
-                                <input type="text" id="docInquilino2" placeholder="Confirme el número" disabled>
-                                <span class="validation-status" id="docStatus"></span>
+                        <div class="form-group" id="estudioAprobadoGroup">
+                            <label>Estudio Aprobado <span class="required">*</span></label>
+                            <div class="file-upload" onclick="document.getElementById('estudioAprobado').click()">
+                                <input type="file" id="estudioAprobado" accept="*/*" style="display: none;" onchange="handleFileSelect(this, 'estudioList', 'estudioAprobado')">
+                                <div class="upload-icon">📄</div>
+                                <div class="upload-text">Haga clic para seleccionar el archivo</div>
+                                <small>Cualquier formato (máx. 10MB)</small>
                             </div>
+                            <div id="estudioList" class="file-list"></div>
                         </div>
-                        
-                        <div class="form-group">
-                            <label>Correo Electrónico <span class="required">*</span></label>
-                            <div class="validation-group">
-                                <input type="email" id="emailInquilino1" placeholder="correo@ejemplo.com">
-                                <input type="email" id="emailInquilino2" placeholder="Confirme el correo" disabled>
-                                <span class="validation-status" id="emailStatus"></span>
+
+                        <div class="form-group" id="comprobantePagoGroup">
+                            <label>Comprobante de Pago <span class="required">*</span></label>
+                            <div class="file-upload" onclick="document.getElementById('comprobantePago').click()">
+                                <input type="file" id="comprobantePago" accept="*/*" style="display: none;" onchange="handleFileSelect(this, 'pagoList', 'comprobantePago')">
+                                <div class="upload-icon">💳</div>
+                                <div class="upload-text">Haga clic para seleccionar el archivo</div>
+                                <small>Comprobante de los $60.000</small>
                             </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Número de Celular <span class="required">*</span></label>
-                            <div class="validation-group">
-                                <input type="tel" id="celInquilino1" placeholder="3001234567">
-                                <input type="tel" id="celInquilino2" placeholder="Confirme el número" disabled>
-                                <span class="validation-status" id="celStatus"></span>
-                            </div>
+                            <div id="pagoList" class="file-list"></div>
                         </div>
                     </div>
 
-                    <div class="form-group" id="cedulaInquilinoGroup">
-                        <label>Fotografías del Documento <span class="required">*</span></label>
+                    <!-- SECCIÓN 2: Datos del inquilino -->
+                    <div class="form-section" id="section2">
+                        <h2>👤 Datos del Inquilino</h2>
+                        
                         <div class="form-grid">
-                            <div>
-                                <label class="sub-label">Frontal</label>
-                                <div class="file-upload" onclick="document.getElementById('docFrontalInquilino').click()">
-                                    <input type="file" id="docFrontalInquilino" accept="image/*,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'frontalInquilinoList', 'docFrontalInquilino')">
-                                    <div class="upload-icon">📷</div>
-                                    <div class="upload-text">Frontal del documento</div>
-                                </div>
-                                <div id="frontalInquilinoList" class="file-list"></div>
+                            <div class="form-group full-width">
+                                <label>Nombre Completo <span class="required">*</span></label>
+                                <input type="text" id="nombreInquilino" placeholder="Nombres y apellidos completos">
                             </div>
-                            <div>
-                                <label class="sub-label">Trasero</label>
-                                <div class="file-upload" onclick="document.getElementById('docTraseroInquilino').click()">
-                                    <input type="file" id="docTraseroInquilino" accept="image/*,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'traseroInquilinoList', 'docTraseroInquilino')">
-                                    <div class="upload-icon">📷</div>
-                                    <div class="upload-text">Trasero del documento</div>
+                            
+                            <div class="form-group">
+                                <label>Tipo de Documento <span class="required">*</span></label>
+                                <select id="tipoDocInquilino">
+                                    <option value="">Seleccione...</option>
+                                    <option value="CC">Cédula de Ciudadanía</option>
+                                    <option value="CE">Cédula de Extranjería</option>
+                                    <option value="PAS">Pasaporte</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Número de Documento <span class="required">*</span></label>
+                                <div class="validation-group">
+                                    <input type="text" id="docInquilino1" placeholder="Ingrese el número">
+                                    <input type="text" id="docInquilino2" placeholder="Confirme el número" disabled>
+                                    <span class="validation-status" id="docStatus"></span>
                                 </div>
-                                <div id="traseroInquilinoList" class="file-list"></div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Correo Electrónico <span class="required">*</span></label>
+                                <div class="validation-group">
+                                    <input type="email" id="emailInquilino1" placeholder="correo@ejemplo.com">
+                                    <input type="email" id="emailInquilino2" placeholder="Confirme el correo" disabled>
+                                    <span class="validation-status" id="emailStatus"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Número de Celular <span class="required">*</span></label>
+                                <div class="validation-group">
+                                    <input type="tel" id="celInquilino1" placeholder="3001234567">
+                                    <input type="tel" id="celInquilino2" placeholder="Confirme el número" disabled>
+                                    <span class="validation-status" id="celStatus"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="cedulaInquilinoGroup">
+                            <label>Fotografías del Documento <span class="required">*</span></label>
+                            <div class="form-grid">
+                                <div>
+                                    <label class="sub-label">Frontal</label>
+                                    <div class="file-upload" onclick="document.getElementById('docFrontalInquilino').click()">
+                                        <input type="file" id="docFrontalInquilino" accept="image/*,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'frontalInquilinoList', 'docFrontalInquilino')">
+                                        <div class="upload-icon">📷</div>
+                                        <div class="upload-text">Frontal del documento</div>
+                                    </div>
+                                    <div id="frontalInquilinoList" class="file-list"></div>
+                                </div>
+                                <div>
+                                    <label class="sub-label">Trasero</label>
+                                    <div class="file-upload" onclick="document.getElementById('docTraseroInquilino').click()">
+                                        <input type="file" id="docTraseroInquilino" accept="image/*,application/pdf" style="display: none;" onchange="handleFileSelect(this, 'traseroInquilinoList', 'docTraseroInquilino')">
+                                        <div class="upload-icon">📷</div>
+                                        <div class="upload-text">Trasero del documento</div>
+                                    </div>
+                                    <div id="traseroInquilinoList" class="file-list"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- SECCIÓN 3: Pregunta sobre codeudores -->
-                <div class="form-section" id="section3">
-                    <div class="codeudor-question">
-                        <h2>👥 ¿En el estudio aparecen codeudores?</h2>
-                        <div class="question-buttons">
-                            <button type="button" class="btn btn-option" onclick="responderCodeudor(true)">Sí</button>
-                            <button type="button" class="btn btn-option" onclick="responderCodeudor(false)">No</button>
+                    <!-- SECCIÓN 3: Pregunta sobre codeudores -->
+                    <div class="form-section" id="section3">
+                        <div class="codeudor-question">
+                            <h2>👥 ¿En el estudio aparecen codeudores?</h2>
+                            <div class="question-buttons">
+                                <button type="button" class="btn btn-option" onclick="responderCodeudor(true)">Sí</button>
+                                <button type="button" class="btn btn-option" onclick="responderCodeudor(false)">No</button>
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- SECCIÓN 4: Datos de codeudores (dinámica) -->
+                    <div id="codeudorSections"></div>
+
+                    <!-- SECCIÓN FINAL: Confirmación -->
+                    <div class="form-section" id="finalSection">
+                        <div class="success-message">
+                            <div class="success-icon">✅</div>
+                            <h2>¡Todo listo para enviar!</h2>
+                            <p>Revise que todos los documentos estén cargados correctamente antes de continuar.</p>
+                            
+                            <div class="summary" id="summaryContent">
+                                <!-- Se llena dinámicamente -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navegación -->
+                    <div class="form-navigation">
+                        <button class="btn btn-secondary" id="btnPrev" onclick="navegarSeccion(-1)" style="display: none;">
+                            ← Anterior
+                        </button>
+                        <button class="btn btn-primary" id="btnNext" onclick="navegarSeccion(1)">
+                            Siguiente →
+                        </button>
+                        <button class="btn btn-success" id="btnSubmit" onclick="enviarFormulario()" style="display: none;">
+                            🚀 Enviar Documentos
+                        </button>
                     </div>
                 </div>
 
-                <!-- SECCIÓN 4: Datos de codeudores (dinámica) -->
-                <div id="codeudorSections"></div>
-
-                <!-- SECCIÓN FINAL: Confirmación -->
-                <div class="form-section" id="finalSection">
-                    <div class="success-message">
-                        <div class="success-icon">✅</div>
-                        <h2>¡Todo listo para enviar!</h2>
-                        <p>Revise que todos los documentos estén cargados correctamente antes de continuar.</p>
+                <!-- Modal de Pago -->
+                <div id="paymentModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close-modal" onclick="cerrarModalPago()">&times;</span>
+                        <h2 style="text-align: center; color: #333; margin-bottom: 20px;">💰 Pago de Derechos de Contrato</h2>
                         
-                        <div class="summary" id="summaryContent">
-                            <!-- Se llena dinámicamente -->
+                        <div class="payment-info">
+                            <h3 style="text-align: center; margin-bottom: 25px; color: #667eea; font-size: 28px;">
+                                Valor: $60.000 COP
+                            </h3>
+                            
+                            <div class="payment-method">
+                                <div>
+                                    <strong style="color: #333;">Nequi / Daviplata / Bancolombia</strong><br>
+                                    <span id="numeroTelefono" style="font-size: 24px; color: #667eea; font-weight: bold;">3177623878</span>
+                                </div>
+                                <button class="copy-btn" onclick="copiarNumero()" id="btnCopiar">
+                                    📋 Copiar
+                                </button>
+                            </div>
+                            
+                            <div class="wompi-link">
+                                <a href="https://checkout.wompi.co/l/uuZ80F" target="_blank">
+                                    💳 Pagar con Tarjeta de Crédito
+                                    <small style="display: block; margin-top: 5px; opacity: 0.9; font-size: 12px;">
+                                        (incluye comisión bancaria)
+                                    </small>
+                                </a>
+                            </div>
+                            
+                            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                                <p style="text-align: center; color: #1976d2; font-size: 14px; margin: 0;">
+                                    📌 Una vez realice el pago, cargue el comprobante en el formulario
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Navegación -->
-                <div class="form-navigation">
-                    <button class="btn btn-secondary" id="btnPrev" onclick="navegarSeccion(-1)" style="display: none;">
-                        ← Anterior
-                    </button>
-                    <button class="btn btn-primary" id="btnNext" onclick="navegarSeccion(1)">
-                        Siguiente →
-                    </button>
-                    <button class="btn btn-success" id="btnSubmit" onclick="enviarFormulario()" style="display: none;">
-                        🚀 Enviar Documentos
-                    </button>
                 </div>
 
                 <!-- Loading -->
@@ -224,10 +448,63 @@
             // Si es modo corrección, configurar
             if (modoFormulario === 'correccion') {
                 configurarModoCorreccion();
+                // En modo corrección, mostrar directamente el formulario
+                document.getElementById('mainButtons').style.display = 'none';
+                document.getElementById('formSections').classList.add('active');
             }
 
             actualizarProgreso();
         };
+
+        // ==========================================
+        // FUNCIONES DE PAGO
+        // ==========================================
+        function mostrarModalPago() {
+            document.getElementById('paymentModal').style.display = 'block';
+        }
+
+        function cerrarModalPago() {
+            document.getElementById('paymentModal').style.display = 'none';
+        }
+
+        function copiarNumero() {
+            const numero = document.getElementById('numeroTelefono').textContent;
+            const btnCopiar = document.getElementById('btnCopiar');
+            
+            navigator.clipboard.writeText(numero).then(function() {
+                // Cambiar el texto y estilo del botón temporalmente
+                const textoOriginal = btnCopiar.innerHTML;
+                btnCopiar.innerHTML = '✅ Copiado';
+                btnCopiar.classList.add('copied');
+                
+                setTimeout(function() {
+                    btnCopiar.innerHTML = textoOriginal;
+                    btnCopiar.classList.remove('copied');
+                }, 2000);
+            }).catch(function(err) {
+                // Fallback para navegadores antiguos
+                const textArea = document.createElement("textarea");
+                textArea.value = numero;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                btnCopiar.innerHTML = '✅ Copiado';
+                btnCopiar.classList.add('copied');
+                
+                setTimeout(function() {
+                    btnCopiar.innerHTML = '📋 Copiar';
+                    btnCopiar.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        function mostrarFormulario() {
+            document.getElementById('mainButtons').style.display = 'none';
+            document.getElementById('formSections').classList.add('active');
+            actualizarProgreso();
+        }
 
         // ==========================================
         // VERIFICACIÓN DE LINK
@@ -897,6 +1174,13 @@
                     <p>${CONFIG.MESSAGES.LINK_INACTIVO}</p>
                 </div>
             `;
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('paymentModal')) {
+                cerrarModalPago();
+            }
         }
 
         // Log de inicialización
