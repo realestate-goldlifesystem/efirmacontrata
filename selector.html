@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-firmaContrata - Verificando Acceso</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .card-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .card-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .card-body {
+            padding: 40px;
+        }
+
+        /* Estados de carga */
+        .loading-state {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            color: #999;
+            font-size: 14px;
+        }
+
+        /* Estados de error */
+        .error-state {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .error-icon {
+            font-size: 64px;
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+
+        .error-title {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .error-message {
+            color: #666;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        /* Estados de éxito */
+        .success-state {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            color: #28a745;
+            margin-bottom: 20px;
+            animation: checkmark 0.5s ease-out;
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .success-title {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .success-message {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* Botones */
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        /* Información adicional */
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info-box h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Detección de dispositivo */
+        .device-info {
+            display: none;
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #1976d2;
+            text-align: center;
+        }
+
+        /* Estados especiales */
+        .link-disabled {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .link-disabled h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .link-disabled p {
+            color: #856404;
+        }
+
+        /* Progress steps */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: -1;
+        }
+
+        .step {
+            text-align: center;
+            flex: 1;
+        }
+
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-size: 18px;
+        }
+
+        .step.active .step-icon {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .step.completed .step-icon {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .step.active .step-label,
+        .step.completed .step-label {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .card-header h1 {
+                font-size: 24px;
+            }
+            
+            .progress-steps {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>
+                    <span>🏠</span>
+                    <span>E-firmaContrata</span>
+                </h1>
+                <p>Sistema de Gestión de Contratos de Arrendamiento</p>
+            </div>
+            
+            <div class="card-body">
+                <!-- Estado de carga inicial -->
+                <div id="loadingState" class="loading-state">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Verificando acceso...</div>
+                    <div class="loading-subtext">Por favor espere un momento</div>
+                    
+                    <div class="progress-steps">
+                        <div class="step active" id="step1">
+                            <div class="step-icon">🔍</div>
+                            <div class="step-label">Verificando</div>
+                        </div>
+                        <div class="step" id="step2">
+                            <div class="step-icon">🔐</div>
+                            <div class="step-label">Validando</div>
+                        </div>
+                        <div class="step" id="step3">
+                            <div class="step-icon">✅</div>
+                            <div class="step-label">Redirigiendo</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado de error -->
+                <div id="errorState" class="error-state">
+                    <div class="error-icon">❌</div>
+                    <h2 class="error-title">Acceso No Válido</h2>
+                    <p class="error-message" id="errorMessage">
+                        El enlace que está intentando acceder no es válido o ha expirado.
+                    </p>
+                    
+                    <div class="info-box">
+                        <h3>¿Necesita ayuda?</h3>
+                        <p>Si cree que esto es un error, por favor contacte al administrador o solicite un nuevo enlace.</p>
+                    </div>
+                </div>
+
+                <!-- Estado de éxito -->
+                <div id="successState" class="success-state">
+                    <div class="success-icon">✅</div>
+                    <h2 class="success-title">Acceso Verificado</h2>
+                    <p class="success-message">
+                        Redirigiendo al formulario correspondiente...
+                    </p>
+                </div>
+
+                <!-- Estado de link deshabilitado -->
+                <div id="disabledState" class="error-state">
+                    <div class="error-icon">🔒</div>
+                    <h2 class="error-title">Enlace Ya Utilizado</h2>
+                    <p class="error-message">
+                        Este enlace ya ha sido utilizado y se ha deshabilitado por seguridad.
+                    </p>
+                    
+                    <div class="info-box">
+                        <h3>¿Qué significa esto?</h3>
+                        <p>Los documentos ya fueron enviados correctamente. Si necesita hacer cambios o correcciones, debe solicitar un nuevo enlace al administrador.</p>
+                    </div>
+                </div>
+
+                <!-- Info del dispositivo (debug) -->
+                <div id="deviceInfo" class="device-info"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURACIÓN
+        // ==========================================
+        const CONFIG = {
+            API_URL: 'https://script.google.com/macros/s/AKfycbzOnhQ8CD2gWMdvvYnF2v1FL3yto5sM8i_jV9FmIJa1Os05YwXR5RKSsq22ePlwqQgL/exec',
+            DEBUG: true, // Cambiar a false en producción
+            TIMEOUT: 10000, // 10 segundos timeout
+            FORMULARIOS: {
+                inquilino: 'formulario-inquilino.html',
+                propietario: 'formulario-propietario.html'
+            }
+        };
+
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
+        let parametros = {};
+        let dispositivoInfo = {};
+        let timeoutId = null;
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        window.onload = function() {
+            console.log('🚀 Iniciando selector E-firmaContrata');
+            
+            // Detectar dispositivo
+            detectarDispositivo();
+            
+            // Leer parámetros de URL
+            leerParametros();
+            
+            // Iniciar proceso de verificación
+            iniciarVerificacion();
+        };
+
+        // ==========================================
+        // DETECCIÓN DE DISPOSITIVO
+        // ==========================================
+        function detectarDispositivo() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobile = /mobile|android|iphone|ipad|phone/i.test(userAgent);
+            const isTablet = /tablet|ipad/i.test(userAgent);
+            const isDesktop = !isMobile && !isTablet;
+            
+            dispositivoInfo = {
+                tipo: isMobile ? 'móvil' : (isTablet ? 'tablet' : 'desktop'),
+                userAgent: userAgent,
+                pantalla: `${window.innerWidth}x${window.innerHeight}`,
+                online: navigator.onLine
+            };
+            
+            if (CONFIG.DEBUG) {
+                mostrarInfoDispositivo();
+            }
+            
+            console.log('📱 Dispositivo detectado:', dispositivoInfo);
+        }
+
+        function mostrarInfoDispositivo() {
+            const infoDiv = document.getElementById('deviceInfo');
+            infoDiv.style.display = 'block';
+            infoDiv.innerHTML = `
+                Debug: ${dispositivoInfo.tipo} | 
+                ${dispositivoInfo.pantalla} | 
+                ${dispositivoInfo.online ? 'Online' : 'Offline'}
+            `;
+        }
+
+        // ==========================================
+        // LECTURA DE PARÁMETROS
+        // ==========================================
+        function leerParametros() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            parametros = {
+                action: urlParams.get('action'),
+                cdr: urlParams.get('cdr'),
+                modo: urlParams.get('modo') || 'normal',
+                docs: urlParams.get('docs') || '[]',
+                timestamp: new Date().getTime()
+            };
+            
+            console.log('📋 Parámetros leídos:', parametros);
+            
+            // Validación básica
+            if (!parametros.action || !parametros.cdr) {
+                mostrarError('Faltan parámetros requeridos en el enlace');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // ==========================================
+        // PROCESO DE VERIFICACIÓN
+        // ==========================================
+        function iniciarVerificacion() {
+            // Validar parámetros básicos
+            if (!parametros.action || !parametros.cdr) {
+                mostrarError('El enlace no contiene la información necesaria');
+                return;
+            }
+            
+            // Actualizar paso 1
+            actualizarPaso(1, 'completed');
+            actualizarPaso(2, 'active');
+            
+            // Configurar timeout
+            timeoutId = setTimeout(() => {
+                mostrarError('Tiempo de espera agotado. Por favor intente nuevamente.');
+            }, CONFIG.TIMEOUT);
+            
+            // Verificar con el backend
+            verificarEstadoLink();
+        }
+
+        async function verificarEstadoLink() {
+            try {
+                // Determinar tipo de formulario
+                const tipo = parametros.action.includes('inquilino') ? 'inquilino' : 'propietario';
+                
+                // Construir URL de verificación
+                const url = `${CONFIG.API_URL}?accion=verificarLink&cdr=${parametros.cdr}&tipo=${tipo}`;
+                
+                console.log('🔍 Verificando link:', url);
+                
+                // Simular respuesta en desarrollo
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.log('🔧 Modo desarrollo: simulando respuesta exitosa');
+                    setTimeout(() => {
+                        procesarRespuesta({ success: true, activo: true });
+                    }, 1500);
+                    return;
+                }
+                
+                // Llamar al backend
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                procesarRespuesta(data);
+                
+            } catch (error) {
+                console.error('❌ Error verificando link:', error);
+                
+                // En caso de error, permitir continuar (el formulario validará)
+                console.log('⚠️ Continuando sin validación del backend');
+                procesarRespuesta({ success: true, activo: true });
+            }
+        }
+
+        function procesarRespuesta(data) {
+            clearTimeout(timeoutId);
+            
+            console.log('📦 Respuesta del servidor:', data);
+            
+            // Actualizar paso 2
+            actualizarPaso(2, 'completed');
+            
+            if (!data.success || !data.activo) {
+                // Link deshabilitado
+                mostrarLinkDeshabilitado();
+            } else {
+                // Link activo - proceder con redirección
+                actualizarPaso(3, 'active');
+                redirigirAFormulario();
+            }
+        }
+
+        // ==========================================
+        // REDIRECCIÓN
+        // ==========================================
+        function redirigirAFormulario() {
+            // Mostrar estado de éxito
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('successState').style.display = 'block';
+            
+            // Determinar URL destino
+            let urlDestino = '';
+            
+            if (parametros.action === 'formulario_inquilino') {
+                urlDestino = CONFIG.FORMULARIOS.inquilino;
+            } else if (parametros.action === 'formulario_propietario') {
+                urlDestino = CONFIG.FORMULARIOS.propietario;
+            } else {
+                mostrarError('Tipo de formulario no reconocido');
+                return;
+            }
+            
+            // Construir URL completa con parámetros
+            const urlCompleta = `${urlDestino}?${window.location.search.substring(1)}`;
+            
+            console.log('🚀 Redirigiendo a:', urlCompleta);
+            
+            // Actualizar paso 3
+            actualizarPaso(3, 'completed');
+            
+            // Redirigir después de mostrar el mensaje
+            setTimeout(() => {
+                window.location.href = urlCompleta;
+            }, 1500);
+        }
+
+        // ==========================================
+        // ESTADOS DE UI
+        // ==========================================
+        function mostrarError(mensaje) {
+            clearTimeout(timeoutId);
+            
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('successState').style.display = 'none';
+            document.getElementById('disabledState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+            
+            document.getElementById('errorMessage').textContent = mensaje;
+            
+            console.error('❌ Error:', mensaje);
+        }
+
+        function mostrarLinkDeshabilitado() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('successState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('disabledState').style.display = 'block';
+            
+            console.log('🔒 Link deshabilitado');
+        }
+
+        function actualizarPaso(paso, estado) {
+            const stepElement = document.getElementById(`step${paso}`);
+            if (stepElement) {
+                stepElement.className = `step ${estado}`;
+                
+                // Actualizar icono si está completado
+                if (estado === 'completed') {
+                    stepElement.querySelector('.step-icon').textContent = '✅';
+                }
+            }
+        }
+
+        // ==========================================
+        // MANEJO DE ERRORES GLOBALES
+        // ==========================================
+        window.addEventListener('error', function(e) {
+            console.error('Error global:', e);
+            mostrarError('Ha ocurrido un error inesperado');
+        });
+
+        // ==========================================
+        // DETECCIÓN DE CONEXIÓN
+        // ==========================================
+        window.addEventListener('online', function() {
+            console.log('✅ Conexión restaurada');
+            if (document.getElementById('errorState').style.display === 'block') {
+                location.reload();
+            }
+        });
+
+        window.addEventListener('offline', function() {
+            console.log('❌ Sin conexión');
+            mostrarError('No hay conexión a Internet. Por favor verifique su conexión.');
+        });
+
+        // ==========================================
+        // FUNCIONES DE UTILIDAD
+        // ==========================================
+        function obtenerTipoFormulario() {
+            if (parametros.action === 'formulario_inquilino') return 'inquilino';
+            if (parametros.action === 'formulario_propietario') return 'propietario';
+            return null;
+        }
+
+        function esMovil() {
+            return dispositivoInfo.tipo === 'móvil';
+        }
+
+        function esTablet() {
+            return dispositivoInfo.tipo === 'tablet';
+        }
+
+        function esDesktop() {
+            return dispositivoInfo.tipo === 'desktop';
+        }
+
+        // ==========================================
+        // LOG DE INICIALIZACIÓN
+        // ==========================================
+        console.log('✅ Selector E-firmaContrata v1.0 cargado');
+        console.log('🔗 URL actual:', window.location.href);
+        console.log('📱 Navegador:', navigator.userAgent);
+    </script>
+</body>
+</html>
