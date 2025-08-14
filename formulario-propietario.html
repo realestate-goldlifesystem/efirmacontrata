@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario Propietario - E-firmaContrata</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>🏠 Documentos del Propietario</h1>
+                <p>Complete el proceso para la elaboración del contrato de arrendamiento</p>
+            </div>
+
+            <div class="card-body">
+                <!-- Progress bar -->
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Paso 1 de 5</div>
+                </div>
+
+                <!-- Mensaje de error/éxito -->
+                <div id="alertMessage" class="alert" style="display: none;"></div>
+
+                <!-- SECCIÓN 1: Documentos de identificación -->
+                <div class="form-section active" id="section1">
+                    <h2>🆔 Documentos de Identificación</h2>
+                    
+                    <div class="form-group">
+                        <label>Cédula - Lado Frontal <span class="required">*</span></label>
+                        <div class="file-upload" onclick="document.getElementById('cedulaFrente').click()">
+                            <input type="file" id="cedulaFrente" accept="image/*,application/pdf" style="display: none;" 
+                                   onchange="handleFileSelect(this, 'cedulaFrenteList', 'cedulaFrente')">
+                            <div class="upload-icon">📷</div>
+                            <div class="upload-text">Haga clic para seleccionar el archivo</div>
+                            <small>JPG, PNG, PDF (máx. 10MB)</small>
+                        </div>
+                        <div id="cedulaFrenteList" class="file-list"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cédula - Lado Reverso <span class="required">*</span></label>
+                        <div class="file-upload" onclick="document.getElementById('cedulaReverso').click()">
+                            <input type="file" id="cedulaReverso" accept="image/*,application/pdf" style="display: none;" 
+                                   onchange="handleFileSelect(this, 'cedulaReversoList', 'cedulaReverso')">
+                            <div class="upload-icon">📷</div>
+                            <div class="upload-text">Haga clic para seleccionar el archivo</div>
+                            <small>JPG, PNG, PDF (máx. 10MB)</small>
+                        </div>
+                        <div id="cedulaReversoList" class="file-list"></div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: SARLAFT y Documentos Bancarios -->
+                <div class="form-section" id="section2">
+                    <h2>📋 SARLAFT y Documentos Bancarios</h2>
+                    
+                    <div class="form-group">
+                        <label>Tipo de Persona <span class="required">*</span></label>
+                        <select id="tipoPersona" onchange="actualizarLinkSarlaft()">
+                            <option value="">Seleccione...</option>
+                            <option value="natural">Persona Natural</option>
+                            <option value="juridica">Persona Jurídica</option>
+                        </select>
+                    </div>
+
+                    <div id="sarlaftInfo" class="alert alert-info" style="display: none;">
+                        <p><strong>📥 Descargue y diligencie el formato SARLAFT:</strong></p>
+                        <a id="sarlaftLink" href="#" target="_blank" class="btn btn-primary">
+                            Descargar Formato SARLAFT
+                        </a>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Documento SARLAFT Diligenciado <span class="required">*</span></label>
+                        <div class="file-upload" onclick="document.getElementById('sarlaftDoc').click()">
+                            <input type="file" id="sarlaftDoc" accept="application/pdf,image/*" style="display: none;" 
+                                   onchange="handleFileSelect(this, 'sarlaftDocList', 'sarlaftDoc')">
+                            <div class="upload-icon">📄</div>
+                            <div class="upload-text">Cargar SARLAFT completado</div>
+                            <small>PDF o imagen del documento diligenciado</small>
+                        </div>
+                        <div id="sarlaftDocList" class="file-list"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Certificado Bancario <span class="required">*</span></label>
+                        <div class="file-upload" onclick="document.getElementById('certificadoBancario').click()">
+                            <input type="file" id="certificadoBancario" accept="application/pdf,image/*" style="display: none;" 
+                                   onchange="handleFileSelect(this, 'certificadoBancarioList', 'certificadoBancario')">
+                            <div class="upload-icon">🏦</div>
+                            <div class="upload-text">Certificado bancario para el contrato</div>
+                            <small>Debe incluir: Banco, Titular, Tipo y Número de cuenta</small>
+                        </div>
+                        <div id="certificadoBancarioList" class="file-list"></div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: Certificado de Tradición -->
+                <div class="form-section" id="section3">
+                    <h2>📜 Certificado de Tradición y Libertad</h2>
+                    
+                    <div class="form-group">
+                        <label>Certificado de Tradición y Libertad <span class="required">*</span></label>
+                        <div class="file-upload" onclick="document.getElementById('certificadoTradicion').click()">
+                            <input type="file" id="certificadoTradicion" accept="application/pdf,image/*" style="display: none;" 
+                                   onchange="handleCertificadoTradicion(this)">
+                            <div class="upload-icon">📃</div>
+                            <div class="upload-text">Certificado no mayor a 30 días</div>
+                            <small>Se aplicará OCR para extraer datos automáticamente</small>
+                        </div>
+                        <div id="certificadoTradicionList" class="file-list"></div>
+                    </div>
+
+                    <!-- Preview de datos extraídos por OCR -->
+                    <div id="ocrPreview" class="ocr-preview" style="display: none;">
+                        <h3>🔍 Datos extraídos automáticamente:</h3>
+                        <div class="ocr-loading" id="ocrLoading">
+                            <div class="spinner"></div>
+                            <p>Procesando documento con OCR...</p>
+                        </div>
+                        <div class="ocr-results" id="ocrResults" style="display: none;">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Matrícula:</label>
+                                    <input type="text" id="ocrMatricula" placeholder="Procesando...">
+                                </div>
+                                <div class="form-group">
+                                    <label>Dirección:</label>
+                                    <input type="text" id="ocrDireccion" placeholder="Procesando...">
+                                </div>
+                                <div class="form-group">
+                                    <label>Área:</label>
+                                    <input type="text" id="ocrArea" placeholder="Procesando...">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Propietario(s):</label>
+                                    <input type="text" id="ocrPropietarios" placeholder="Procesando...">
+                                </div>
+                            </div>
+                            <small class="text-muted">✏️ Puede editar estos campos si es necesario</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="tieneLeasing" onchange="toggleLeasingUpload()">
+                            El inmueble tiene Leasing con permiso de subarriendo
+                        </label>
+                    </div>
+
+                    <div id="leasingUpload" style="display: none;">
+                        <div class="form-group">
+                            <label>Permiso de Subarriendo <span class="required">*</span></label>
+                            <div class="file-upload" onclick="document.getElementById('permisoLeasing').click()">
+                                <input type="file" id="permisoLeasing" accept="application/pdf,image/*" style="display: none;" 
+                                       onchange="handleFileSelect(this, 'permisoLeasingList', 'permisoLeasing')">
+                                <div class="upload-icon">📄</div>
+                                <div class="upload-text">Cargar permiso de subarriendo</div>
+                            </div>
+                            <div id="permisoLeasingList" class="file-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 4: Servicios Públicos -->
+                <div class="form-section" id="section4">
+                    <h2>💡 Servicios Públicos del Inmueble</h2>
+                    
+                    <div class="services-container">
+                        <p>Seleccione los servicios que tiene el inmueble y cargue los recibos con sus comprobantes de pago:</p>
+                        
+                        <!-- Luz -->
+                        <div class="service-item" data-service="luz">
+                            <div class="service-header">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="serviceLuz" onchange="toggleService('luz')">
+                                    💡 Luz
+                                </label>
+                            </div>
+                            <div class="service-uploads" id="uploadsLuz" style="display: none;">
+                                <div class="form-grid">
+                                    <div>
+                                        <label>Último Recibo</label>
+                                        <div class="file-upload small" onclick="document.getElementById('reciboLuz').click()">
+                                            <input type="file" id="reciboLuz" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'reciboLuzList', 'reciboLuz')">
+                                            <div class="upload-icon">📄</div>
+                                            <div class="upload-text">Recibo</div>
+                                        </div>
+                                        <div id="reciboLuzList" class="file-list"></div>
+                                    </div>
+                                    <div>
+                                        <label>Comprobante de Pago</label>
+                                        <div class="file-upload small" onclick="document.getElementById('pagoLuz').click()">
+                                            <input type="file" id="pagoLuz" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'pagoLuzList', 'pagoLuz')">
+                                            <div class="upload-icon">✅</div>
+                                            <div class="upload-text">Pago</div>
+                                        </div>
+                                        <div id="pagoLuzList" class="file-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agua -->
+                        <div class="service-item" data-service="agua">
+                            <div class="service-header">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="serviceAgua" onchange="toggleService('agua')">
+                                    💧 Agua
+                                </label>
+                            </div>
+                            <div class="service-uploads" id="uploadsAgua" style="display: none;">
+                                <div class="form-grid">
+                                    <div>
+                                        <label>Último Recibo</label>
+                                        <div class="file-upload small" onclick="document.getElementById('reciboAgua').click()">
+                                            <input type="file" id="reciboAgua" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'reciboAguaList', 'reciboAgua')">
+                                            <div class="upload-icon">📄</div>
+                                            <div class="upload-text">Recibo</div>
+                                        </div>
+                                        <div id="reciboAguaList" class="file-list"></div>
+                                    </div>
+                                    <div>
+                                        <label>Comprobante de Pago</label>
+                                        <div class="file-upload small" onclick="document.getElementById('pagoAgua').click()">
+                                            <input type="file" id="pagoAgua" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'pagoAguaList', 'pagoAgua')">
+                                            <div class="upload-icon">✅</div>
+                                            <div class="upload-text">Pago</div>
+                                        </div>
+                                        <div id="pagoAguaList" class="file-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gas -->
+                        <div class="service-item" data-service="gas">
+                            <div class="service-header">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="serviceGas" onchange="toggleService('gas')">
+                                    🔥 Gas
+                                </label>
+                            </div>
+                            <div class="service-uploads" id="uploadsGas" style="display: none;">
+                                <div class="form-grid">
+                                    <div>
+                                        <label>Último Recibo</label>
+                                        <div class="file-upload small" onclick="document.getElementById('reciboGas').click()">
+                                            <input type="file" id="reciboGas" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'reciboGasList', 'reciboGas')">
+                                            <div class="upload-icon">📄</div>
+                                            <div class="upload-text">Recibo</div>
+                                        </div>
+                                        <div id="reciboGasList" class="file-list"></div>
+                                    </div>
+                                    <div>
+                                        <label>Comprobante de Pago</label>
+                                        <div class="file-upload small" onclick="document.getElementById('pagoGas').click()">
+                                            <input type="file" id="pagoGas" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'pagoGasList', 'pagoGas')">
+                                            <div class="upload-icon">✅</div>
+                                            <div class="upload-text">Pago</div>
+                                        </div>
+                                        <div id="pagoGasList" class="file-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Teléfono -->
+                        <div class="service-item" data-service="telefono">
+                            <div class="service-header">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="serviceTelefono" onchange="toggleService('telefono')">
+                                    📞 Teléfono/Internet
+                                </label>
+                            </div>
+                            <div class="service-uploads" id="uploadsTelefono" style="display: none;">
+                                <div class="form-grid">
+                                    <div>
+                                        <label>Último Recibo</label>
+                                        <div class="file-upload small" onclick="document.getElementById('reciboTelefono').click()">
+                                            <input type="file" id="reciboTelefono" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'reciboTelefonoList', 'reciboTelefono')">
+                                            <div class="upload-icon">📄</div>
+                                            <div class="upload-text">Recibo</div>
+                                        </div>
+                                        <div id="reciboTelefonoList" class="file-list"></div>
+                                    </div>
+                                    <div>
+                                        <label>Comprobante de Pago</label>
+                                        <div class="file-upload small" onclick="document.getElementById('pagoTelefono').click()">
+                                            <input type="file" id="pagoTelefono" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'pagoTelefonoList', 'pagoTelefono')">
+                                            <div class="upload-icon">✅</div>
+                                            <div class="upload-text">Pago</div>
+                                        </div>
+                                        <div id="pagoTelefonoList" class="file-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Caldera -->
+                        <div class="service-item" data-service="caldera">
+                            <div class="service-header">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="serviceCaldera" onchange="toggleService('caldera')">
+                                    🔥 Caldera
+                                </label>
+                            </div>
+                            <div class="service-uploads" id="uploadsCaldera" style="display: none;">
+                                <div class="form-grid">
+                                    <div>
+                                        <label>Último Recibo</label>
+                                        <div class="file-upload small" onclick="document.getElementById('reciboCaldera').click()">
+                                            <input type="file" id="reciboCaldera" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'reciboCalderaList', 'reciboCaldera')">
+                                            <div class="upload-icon">📄</div>
+                                            <div class="upload-text">Recibo</div>
+                                        </div>
+                                        <div id="reciboCalderaList" class="file-list"></div>
+                                    </div>
+                                    <div>
+                                        <label>Comprobante de Pago</label>
+                                        <div class="file-upload small" onclick="document.getElementById('pagoCaldera').click()">
+                                            <input type="file" id="pagoCaldera" style="display: none;" 
+                                                   onchange="handleFileSelect(this, 'pagoCalderaList', 'pagoCaldera')">
+                                            <div class="upload-icon">✅</div>
+                                            <div class="upload-text">Pago</div>
+                                        </div>
+                                        <div id="pagoCalderaList" class="file-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 5: Documentos Opcionales -->
+                <div class="form-section" id="section5">
+                    <h2>📚 Documentos Opcionales</h2>
+                    
+                    <div class="form-group">
+                        <label>Último Recibo de Administración (si aplica)</label>
+                        <div class="file-upload" onclick="document.getElementById('reciboAdmin').click()">
+                            <input type="file" id="reciboAdmin" accept="application/pdf,image/*" style="display: none;" 
+                                   onchange="handleFileSelect(this, 'reciboAdminList', 'reciboAdmin')">
+                            <div class="upload-icon">🏢</div>
+                            <div class="upload-text">Cuenta de cobro de administración</div>
+                            <small>Solo si el inmueble tiene administración</small>
+                        </div>
+                        <div id="reciboAdminList" class="file-list"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Manual de Convivencia (si aplica)</label>
+                        <div class="file-upload" onclick="document.getElementById('manualConvivencia').click()">
+                            <input type="file" id="manualConvivencia" accept="application/pdf" style="display: none;" 
+                                   onchange="handleFileSelect(this, 'manualConvivenciaList', 'manualConvivencia')">
+                            <div class="upload-icon">📖</div>
+                            <div class="upload-text">Manual de convivencia del edificio</div>
+                            <small>Solo si el inmueble es apartamento</small>
+                        </div>
+                        <div id="manualConvivenciaList" class="file-list"></div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN FINAL: Confirmación -->
+                <div class="form-section" id="finalSection">
+                    <div class="success-message">
+                        <div class="success-icon">✅</div>
+                        <h2>¡Documentos listos para enviar!</h2>
+                        <p>Por favor revise el resumen antes de enviar:</p>
+                        
+                        <div class="summary" id="summaryContent">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navegación -->
+                <div class="form-navigation">
+                    <button class="btn btn-secondary" id="btnPrev" onclick="navegarSeccion(-1)" style="display: none;">
+                        ← Anterior
+                    </button>
+                    <button class="btn btn-primary" id="btnNext" onclick="navegarSeccion(1)">
+                        Siguiente →
+                    </button>
+                    <button class="btn btn-success" id="btnSubmit" onclick="enviarFormulario()" style="display: none;">
+                        🚀 Enviar Documentos
+                    </button>
+                </div>
+
+                <!-- Loading -->
+                <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Procesando documentos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
+        let currentSection = 1;
+        const totalSections = 6; // 5 secciones + final
+        let archivosBase64 = {};
+        let datosOCR = {};
+        let serviciosSeleccionados = [];
+        let codigoRegistro = '';
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        window.onload = async function() {
+            console.log('🚀 Iniciando formulario propietario');
+            
+            // Obtener parámetros de URL
+            const urlParams = new URLSearchParams(window.location.search);
+            codigoRegistro = urlParams.get('cdr');
+            
+            if (!codigoRegistro) {
+                mostrarError('Código de registro no válido');
+                deshabilitarFormulario();
+                return;
+            }
+
+            // Verificar estado del link
+            const linkActivo = await verificarEstadoLink();
+            if (!linkActivo) {
+                deshabilitarFormulario();
+                return;
+            }
+
+            actualizarProgreso();
+        };
+
+        // ==========================================
+        // VERIFICACIÓN DE LINK
+        // ==========================================
+        async function verificarEstadoLink() {
+            try {
+                mostrarLoading(true);
+                const response = await fetch(`${CONFIG.API_URL}?accion=verificarLink&cdr=${codigoRegistro}&tipo=propietario`);
+                const data = await response.json();
+                
+                if (!data.success || !data.activo) {
+                    mostrarError(CONFIG.MESSAGES.LINK_INACTIVO);
+                    return false;
+                }
+                
+                return true;
+            } catch(error) {
+                console.error('Error verificando link:', error);
+                mostrarError('Error de conexión. Intente nuevamente.');
+                return false;
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+
+        // ==========================================
+        // NAVEGACIÓN
+        // ==========================================
+        function navegarSeccion(direccion) {
+            // Validar sección actual antes de avanzar
+            if (direccion === 1 && !validarSeccionActual()) {
+                return;
+            }
+
+            currentSection += direccion;
+            
+            if (currentSection < 1) currentSection = 1;
+            if (currentSection > totalSections) currentSection = totalSections;
+
+            mostrarSeccion();
+            actualizarProgreso();
+            actualizarBotones();
+        }
+
+        function mostrarSeccion() {
+            // Ocultar todas las secciones
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Mostrar sección actual
+            if (currentSection <= 5) {
+                document.getElementById(`section${currentSection}`).classList.add('active');
+            } else {
+                document.getElementById('finalSection').classList.add('active');
+                generarResumen();
+            }
+        }
+
+        function actualizarProgreso() {
+            const progress = (currentSection / totalSections) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `Paso ${currentSection} de ${totalSections}`;
+        }
+
+        function actualizarBotones() {
+            const prevBtn = document.getElementById('btnPrev');
+            const nextBtn = document.getElementById('btnNext');
+            const submitBtn = document.getElementById('btnSubmit');
+
+            // Botón anterior
+            prevBtn.style.display = currentSection === 1 ? 'none' : 'inline-block';
+
+            // Botón siguiente vs enviar
+            if (currentSection === totalSections) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'inline-block';
+            } else {
+                nextBtn.style.display = 'inline-block';
+                submitBtn.style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // VALIDACIONES
+        // ==========================================
+        function validarSeccionActual() {
+            let esValido = true;
+            let mensaje = '';
+            
+            switch(currentSection) {
+                case 1: // Documentos de identificación
+                    if (!archivosBase64.cedulaFrente || !archivosBase64.cedulaReverso) {
+                        mensaje = 'Por favor cargue ambos lados de la cédula.';
+                        esValido = false;
+                    }
+                    break;
+                    
+                case 2: // SARLAFT y Bancarios
+                    const tipoPersona = document.getElementById('tipoPersona').value;
+                    if (!tipoPersona) {
+                        mensaje = 'Por favor seleccione el tipo de persona.';
+                        esValido = false;
+                    } else if (!archivosBase64.sarlaftDoc || !archivosBase64.certificadoBancario) {
+                        mensaje = 'Por favor cargue el SARLAFT y el certificado bancario.';
+                        esValido = false;
+                    }
+                    break;
+                    
+                case 3: // Certificado de tradición
+                    if (!archivosBase64.certificadoTradicion) {
+                        mensaje = 'Por favor cargue el certificado de tradición.';
+                        esValido = false;
+                    }
+                    if (document.getElementById('tieneLeasing').checked && !archivosBase64.permisoLeasing) {
+                        mensaje = 'Por favor cargue el permiso de subarriendo.';
+                        esValido = false;
+                    }
+                    break;
+                    
+                case 4: // Servicios públicos
+                    // Validar que cada servicio seleccionado tenga sus documentos
+                    for (let servicio of serviciosSeleccionados) {
+                        const reciboId = `recibo${capitalizar(servicio)}`;
+                        const pagoId = `pago${capitalizar(servicio)}`;
+                        
+                        if (!archivosBase64[reciboId] || !archivosBase64[pagoId]) {
+                            mensaje = `Por favor cargue el recibo y comprobante de pago de ${servicio}.`;
+                            esValido = false;
+                            break;
+                        }
+                    }
+                    break;
+                    
+                case 5: // Documentos opcionales
+                    // No hay validación obligatoria
+                    break;
+            }
+            
+            if (!esValido) {
+                mostrarError(mensaje);
+            }
+            
+            return esValido;
+        }
+
+        // ==========================================
+        // MANEJO DE ARCHIVOS
+        // ==========================================
+        function handleFileSelect(input, listId, key) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Validar tamaño
+            const maxSize = CONFIG.MAX_FILE_SIZE;
+            if (file.size > maxSize) {
+                mostrarError(`El archivo es demasiado grande. Máximo ${maxSize / 1024 / 1024}MB.`);
+                input.value = '';
+                return;
+            }
+
+            // Mostrar archivo seleccionado
+            document.getElementById(listId).innerHTML = `
+                <div class="file-item">
+                    <span>📄 ${file.name}</span>
+                    <button class="remove-file" onclick="removeFile('${key}', '${listId}', '${input.id}')">×</button>
+                </div>
+            `;
+
+            // Marcar como cargado
+            input.closest('.file-upload').classList.add('has-file');
+
+            // Convertir a base64
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                archivosBase64[key] = e.target.result;
+                console.log(`✅ ${key} convertido a base64`);
+            };
+            reader.onerror = function(error) {
+                console.error('Error leyendo archivo:', error);
+                mostrarError('Error al procesar el archivo.');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeFile(key, listId, inputId) {
+            delete archivosBase64[key];
+            document.getElementById(listId).innerHTML = '';
+            document.getElementById(inputId).value = '';
+            document.getElementById(inputId).closest('.file-upload').classList.remove('has-file');
+        }
+
+        // ==========================================
+        // OCR DEL CERTIFICADO DE TRADICIÓN
+        // ==========================================
+        function handleCertificadoTradicion(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            handleFileSelect(input, 'certificadoTradicionList', 'certificadoTradicion');
+            
+            // Mostrar preview de OCR
+            document.getElementById('ocrPreview').style.display = 'block';
+            document.getElementById('ocrLoading').style.display = 'block';
+            document.getElementById('ocrResults').style.display = 'none';
+            
+            // Simular procesamiento OCR (en producción, esto llamaría al backend)
+            setTimeout(() => {
+                procesarOCR(file);
+            }, 1000);
+        }
+
+        function procesarOCR(file) {
+            // Simulación de OCR - En producción esto iría al backend
+            setTimeout(() => {
+                // Simular resultados
+                datosOCR = {
+                    matricula: '050C-123456',
+                    direccion: 'Calle 123 #45-67, Bogotá',
+                    area: '85 m²',
+                    propietarios: 'Juan Pérez García'
+                };
+                
+                // Mostrar resultados
+                document.getElementById('ocrMatricula').value = datosOCR.matricula;
+                document.getElementById('ocrDireccion').value = datosOCR.direccion;
+                document.getElementById('ocrArea').value = datosOCR.area;
+                document.getElementById('ocrPropietarios').value = datosOCR.propietarios;
+                
+                // Ocultar loading y mostrar resultados
+                document.getElementById('ocrLoading').style.display = 'none';
+                document.getElementById('ocrResults').style.display = 'block';
+            }, 2000);
+        }
+
+        // ==========================================
+        // SARLAFT
+        // ==========================================
+        function actualizarLinkSarlaft() {
+            const tipoPersona = document.getElementById('tipoPersona').value;
+            const sarlaftInfo = document.getElementById('sarlaftInfo');
+            const sarlaftLink = document.getElementById('sarlaftLink');
+            
+            if (tipoPersona) {
+                sarlaftInfo.style.display = 'block';
+                
+                if (tipoPersona === 'natural') {
+                    sarlaftLink.href = 'https://bit.ly/B114-Persona-Natural';
+                    sarlaftLink.textContent = 'Descargar SARLAFT - Persona Natural';
+                } else {
+                    sarlaftLink.href = 'https://bit.ly/B115-Persona-Juridica';
+                    sarlaftLink.textContent = 'Descargar SARLAFT - Persona Jurídica';
+                }
+            } else {
+                sarlaftInfo.style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // SERVICIOS PÚBLICOS
+        // ==========================================
+        function toggleService(servicio) {
+            const checkbox = document.getElementById(`service${capitalizar(servicio)}`);
+            const uploads = document.getElementById(`uploads${capitalizar(servicio)}`);
+            const serviceItem = document.querySelector(`[data-service="${servicio}"]`);
+            
+            if (checkbox.checked) {
+                uploads.style.display = 'block';
+                serviceItem.classList.add('active');
+                
+                if (!serviciosSeleccionados.includes(servicio)) {
+                    serviciosSeleccionados.push(servicio);
+                }
+            } else {
+                uploads.style.display = 'none';
+                serviceItem.classList.remove('active');
+                
+                const index = serviciosSeleccionados.indexOf(servicio);
+                if (index > -1) {
+                    serviciosSeleccionados.splice(index, 1);
+                }
+                
+                // Limpiar archivos si se desmarca
+                delete archivosBase64[`recibo${capitalizar(servicio)}`];
+                delete archivosBase64[`pago${capitalizar(servicio)}`];
+            }
+        }
+
+        function toggleLeasingUpload() {
+            const checkbox = document.getElementById('tieneLeasing');
+            const uploadDiv = document.getElementById('leasingUpload');
+            
+            if (checkbox.checked) {
+                uploadDiv.style.display = 'block';
+            } else {
+                uploadDiv.style.display = 'none';
+                delete archivosBase64.permisoLeasing;
+            }
+        }
+
+        // ==========================================
+        // RESUMEN Y ENVÍO
+        // ==========================================
+        function generarResumen() {
+            const summary = document.getElementById('summaryContent');
+            if (!summary) return;
+
+            let html = '<h3>📋 Resumen de documentos:</h3><ul>';
+            
+            // Identificación
+            if (archivosBase64.cedulaFrente) html += '<li>✅ Cédula (frontal)</li>';
+            if (archivosBase64.cedulaReverso) html += '<li>✅ Cédula (reverso)</li>';
+            
+            // SARLAFT y bancarios
+            if (archivosBase64.sarlaftDoc) html += '<li>✅ SARLAFT diligenciado</li>';
+            if (archivosBase64.certificadoBancario) html += '<li>✅ Certificado bancario</li>';
+            
+            // Certificado de tradición
+            if (archivosBase64.certificadoTradicion) html += '<li>✅ Certificado de tradición</li>';
+            if (archivosBase64.permisoLeasing) html += '<li>✅ Permiso de subarriendo</li>';
+            
+            // Servicios públicos
+            serviciosSeleccionados.forEach(servicio => {
+                html += `<li>✅ ${capitalizar(servicio)} (recibo y pago)</li>`;
+            });
+            
+            // Opcionales
+            if (archivosBase64.reciboAdmin) html += '<li>✅ Recibo de administración</li>';
+            if (archivosBase64.manualConvivencia) html += '<li>✅ Manual de convivencia</li>';
+            
+            html += '</ul>';
+            
+            // Datos OCR si existen
+            if (datosOCR.matricula) {
+                html += '<h4>🔍 Datos del inmueble (OCR):</h4><ul>';
+                html += `<li>Matrícula: ${document.getElementById('ocrMatricula').value}</li>`;
+                html += `<li>Dirección: ${document.getElementById('ocrDireccion').value}</li>`;
+                html += `<li>Área: ${document.getElementById('ocrArea').value}</li>`;
+                html += `<li>Propietarios: ${document.getElementById('ocrPropietarios').value}</li>`;
+                html += '</ul>';
+            }
+            
+            summary.innerHTML = html;
+        }
+
+        async function enviarFormulario() {
+            if (!confirm('¿Está seguro de enviar todos los documentos?')) {
+                return;
+            }
+
+            mostrarLoading(true);
+
+            // Recopilar datos
+            const datosFormulario = {
+                codigoRegistro: codigoRegistro,
+                tipoPersona: document.getElementById('tipoPersona').value,
+                tieneLeasing: document.getElementById('tieneLeasing').checked,
+                serviciosPublicos: serviciosSeleccionados,
+                datosOCR: {
+                    matricula: document.getElementById('ocrMatricula')?.value || datosOCR.matricula,
+                    direccion: document.getElementById('ocrDireccion')?.value || datosOCR.direccion,
+                    area: document.getElementById('ocrArea')?.value || datosOCR.area,
+                    propietarios: document.getElementById('ocrPropietarios')?.value || datosOCR.propietarios
+                },
+                fechaEnvio: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        accion: 'procesarFormularioPropietario',
+                        datosFormulario: datosFormulario,
+                        archivosBase64: archivosBase64
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    mostrarExito();
+                } else {
+                    mostrarError(result.message || 'Error al procesar los documentos');
+                }
+            } catch(error) {
+                console.error('Error enviando formulario:', error);
+                mostrarError('Error de conexión. Por favor intente nuevamente.');
+            } finally {
+                mostrarLoading(false);
+            }
+        }
+
+        function mostrarExito() {
+            document.querySelector('.card-body').innerHTML = `
+                <div class="success-page">
+                    <div class="success-icon">✅</div>
+                    <h2>¡Documentos Enviados Exitosamente!</h2>
+                    <p>Su documentación ha sido recibida y será procesada para generar el contrato.</p>
+                    <div class="alert alert-info">
+                        <h3>📋 ¿Qué sigue?</h3>
+                        <ul>
+                            <li>Validaremos su documentación</li>
+                            <li>Generaremos el borrador del contrato</li>
+                            <li>Le enviaremos el contrato para revisión</li>
+                            <li>Una vez aprobado, recibirá el contrato final</li>
+                        </ul>
+                    </div>
+                    <p><strong>Este enlace ha sido deshabilitado por seguridad.</strong></p>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // UTILIDADES UI
+        // ==========================================
+        function mostrarError(mensaje) {
+            const alert = document.getElementById('alertMessage');
+            alert.className = 'alert alert-danger';
+            alert.textContent = mensaje;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        function mostrarLoading(mostrar) {
+            document.getElementById('loadingOverlay').style.display = mostrar ? 'flex' : 'none';
+        }
+
+        function deshabilitarFormulario() {
+            document.querySelector('.card-body').innerHTML = `
+                <div class="alert alert-danger">
+                    <h3>⛔ Formulario No Disponible</h3>
+                    <p>${CONFIG.MESSAGES.LINK_INACTIVO}</p>
+                </div>
+            `;
+        }
+
+        function capitalizar(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Log de inicialización
+        console.log('✅ Formulario propietario inicializado');
+        console.log('🔑 CDR:', codigoRegistro);
+    </script>
+</body>
+</html>
