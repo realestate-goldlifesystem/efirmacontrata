@@ -457,48 +457,59 @@
         };
 
         // ==========================================
-        // FUNCIONES DE PAGO
-        // ==========================================
-        function mostrarModalPago() {
-            document.getElementById('paymentModal').style.display = 'block';
-        }
+// FUNCIONES DE PAGO (VERSIÓN ACTUALIZADA)
+// ==========================================
+function mostrarModalPago() {
+    document.getElementById('paymentModal').style.display = 'block';
+}
 
-        function cerrarModalPago() {
-            document.getElementById('paymentModal').style.display = 'none';
-        }
+function cerrarModalPago() {
+    document.getElementById('paymentModal').style.display = 'none';
+}
 
-        function copiarNumero() {
-            const numero = document.getElementById('numeroTelefono').textContent;
-            const btnCopiar = document.getElementById('btnCopiar');
-            
-            navigator.clipboard.writeText(numero).then(function() {
-                // Cambiar el texto y estilo del botón temporalmente
-                const textoOriginal = btnCopiar.innerHTML;
-                btnCopiar.innerHTML = '✅ Copiado';
-                btnCopiar.classList.add('copied');
-                
-                setTimeout(function() {
-                    btnCopiar.innerHTML = textoOriginal;
-                    btnCopiar.classList.remove('copied');
-                }, 2000);
-            }).catch(function(err) {
-                // Fallback para navegadores antiguos
-                const textArea = document.createElement("textarea");
-                textArea.value = numero;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                btnCopiar.innerHTML = '✅ Copiado';
-                btnCopiar.classList.add('copied');
-                
-                setTimeout(function() {
-                    btnCopiar.innerHTML = '📋 Copiar';
-                    btnCopiar.classList.remove('copied');
-                }, 2000);
-            });
-        }
+function copiarNumero() {
+    const numero = document.getElementById('numeroTelefono').textContent;
+    const btnCopiar = document.getElementById('btnCopiar');
+    
+    navigator.clipboard.writeText(numero).then(function() {
+        // Cambiar el texto y estilo del botón temporalmente
+        const textoOriginal = btnCopiar.innerHTML;
+        btnCopiar.innerHTML = '✅ Copiado';
+        btnCopiar.classList.add('copied');
+        
+        // Cerrar modal después de 1.5 segundos
+        setTimeout(function() {
+            cerrarModalPago();
+            // Restaurar el botón para la próxima vez
+            setTimeout(function() {
+                btnCopiar.innerHTML = textoOriginal;
+                btnCopiar.classList.remove('copied');
+            }, 500);
+        }, 1500);
+        
+    }).catch(function(err) {
+        // Fallback para navegadores antiguos
+        const textArea = document.createElement("textarea");
+        textArea.value = numero;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        btnCopiar.innerHTML = '✅ Copiado';
+        btnCopiar.classList.add('copied');
+        
+        // Cerrar modal después de 1.5 segundos
+        setTimeout(function() {
+            cerrarModalPago();
+            // Restaurar el botón para la próxima vez
+            setTimeout(function() {
+                btnCopiar.innerHTML = '📋 Copiar';
+                btnCopiar.classList.remove('copied');
+            }, 500);
+        }, 1500);
+    });
+}
 
         function mostrarFormulario() {
             document.getElementById('mainButtons').style.display = 'none';
