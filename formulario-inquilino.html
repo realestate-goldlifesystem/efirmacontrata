@@ -452,6 +452,12 @@
         .codeudor-question {
             text-align: center;
             padding: 40px 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .codeudor-question.disabled {
+            opacity: 0.3;
+            pointer-events: none;
         }
 
         .codeudor-buttons {
@@ -473,7 +479,7 @@
             font-weight: 600;
         }
 
-        .codeudor-btn:hover {
+        .codeudor-btn:hover:not(:disabled) {
             border-color: var(--gold-primary);
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
         }
@@ -482,6 +488,11 @@
             background: var(--gold-primary);
             color: var(--black-primary);
             border-color: var(--gold-primary);
+        }
+
+        .codeudor-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         /* Navegación */
@@ -680,8 +691,10 @@
             border: 2px solid var(--gold-primary);
             border-radius: 15px;
             padding: 40px;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
             text-align: center;
         }
 
@@ -694,6 +707,35 @@
         .confirmation-text {
             color: var(--white);
             margin-bottom: 30px;
+        }
+
+        .confirmation-summary {
+            background: var(--black-primary);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .summary-section {
+            margin-bottom: 20px;
+        }
+
+        .summary-section h4 {
+            color: var(--gold-primary);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .summary-item {
+            color: var(--gold-light);
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .summary-item strong {
+            color: var(--white);
         }
 
         /* Slider de confirmación */
@@ -1039,11 +1081,11 @@
                         </div>
                     </div>
                     
-                    <div class="codeudor-question">
+                    <div class="codeudor-question disabled" id="codeudorQuestion">
                         <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Tiene codeudores?</h3>
                         <div class="codeudor-buttons">
-                            <button class="codeudor-btn" onclick="setCodeudor(false)">NO</button>
-                            <button class="codeudor-btn" onclick="setCodeudor(true)">SÍ</button>
+                            <button class="codeudor-btn" id="btnCodeudorNo" onclick="setCodeudor(false)" disabled>NO</button>
+                            <button class="codeudor-btn" id="btnCodeudorSi" onclick="setCodeudor(true)" disabled>SÍ</button>
                         </div>
                     </div>
                 </div>
@@ -1082,19 +1124,20 @@
                     <div id="codeudor3Fields"></div>
                 </div>
 
-                <!-- Último Paso: Confirmación -->
+                <!-- Último Paso: Confirmación (independiente) -->
                 <div class="form-step" data-step="confirmation">
-                    <h2 class="step-title">Confirmación y Envío</h2>
+                    <h2 class="step-title">Revisión Final</h2>
                     
                     <div style="text-align: center; padding: 40px 0;">
-                        <h3 style="color: var(--gold-primary); margin: 20px 0;">Revise su información</h3>
+                        <h3 style="color: var(--gold-primary); margin: 20px 0;">Por favor revise que toda la información esté correcta</h3>
+                        
                         <p style="color: var(--white); margin-bottom: 30px;">
-                            Por favor verifique que todos los datos ingresados sean correctos antes de enviar.
+                            Si necesita hacer cambios, use el botón "Anterior" para volver a cualquier sección.
                         </p>
                         
-                        <div id="resumenFormulario" style="text-align: left; background: var(--black-primary); padding: 20px; border-radius: 10px; margin: 20px 0;">
-                            <!-- Se llenará dinámicamente -->
-                        </div>
+                        <button class="btn btn-submit" onclick="mostrarConfirmacion()" style="margin: 20px auto;">
+                            Revisar y Confirmar Envío
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1109,10 +1152,6 @@
                 
                 <button type="button" class="btn btn-next" id="btnNext" onclick="nextStep()">
                     Siguiente
-                </button>
-                
-                <button type="button" class="btn btn-submit" id="btnConfirm" onclick="mostrarConfirmacion()" style="display: none;">
-                    Confirmar
                 </button>
             </div>
         </div>
@@ -1153,17 +1192,21 @@
         </div>
     </div>
 
-    <!-- Modal de Confirmación con Slider -->
+    <!-- Modal de Confirmación con Slider y Resumen -->
     <div id="confirmationModal" class="confirmation-modal">
         <div class="confirmation-content">
-            <h2 class="confirmation-title">Confirmación Final</h2>
+            <h2 class="confirmation-title">Confirmación y Envío</h2>
             <p class="confirmation-text">
-                Por favor, revise que toda la información esté correcta.<br>
-                Deslice para confirmar y enviar el formulario.
+                Revise su información mientras desliza para confirmar
             </p>
             
+            <!-- Resumen completo -->
+            <div class="confirmation-summary" id="confirmationSummary">
+                <!-- Se llenará dinámicamente -->
+            </div>
+            
             <div class="slide-to-confirm" id="slideToConfirm">
-                <div class="slide-track">Deslice para confirmar →</div>
+                <div class="slide-track">Deslice para confirmar y enviar →</div>
                 <div class="slide-thumb" id="slideThumb">→</div>
             </div>
             
@@ -1193,8 +1236,9 @@
         let codeudoresData = [];
         let hasCodeudores = null;
         let numCodeudores = 0;
-        let dynamicSteps = ['1', '2', '3'];
+        let dynamicSteps = ['1', '2', '3', 'confirmation'];
         let documentoCompletoRequerido = null;
+        let documentosIdentidadCargados = false;
 
         // Inicializar
         window.onload = function() {
@@ -1267,6 +1311,11 @@
 
         // Función para establecer el tipo de carga de documento
         function setDocumentType(isComplete) {
+            // Si cambia de opción, limpiar archivos anteriores
+            if (documentoCompletoRequerido !== null && documentoCompletoRequerido !== isComplete) {
+                limpiarDocumentosIdentidad();
+            }
+            
             documentoCompletoRequerido = isComplete;
             
             // Marcar botón seleccionado
@@ -1274,6 +1323,9 @@
             event.target.parentElement.querySelectorAll('.codeudor-btn').forEach(btn => {
                 if (btn !== event.target) btn.classList.remove('selected');
             });
+            
+            // Bloquear codeudores hasta que cargue documentos
+            deshabilitarCodeudores();
             
             if (isComplete) {
                 // Mostrar opción de un solo archivo
@@ -1294,6 +1346,46 @@
                     document.getElementById('doubleDocUpload').style.opacity = '1';
                 }, 100);
             }
+        }
+
+        // Limpiar documentos de identidad
+        function limpiarDocumentosIdentidad() {
+            // Limpiar archivos base64
+            delete archivosBase64.docIdentidad;
+            delete archivosBase64.docIdentidadFrente;
+            delete archivosBase64.docIdentidadReverso;
+            
+            // Limpiar inputs y labels
+            const inputs = ['docIdentidadCompleto', 'docIdentidadFrente', 'docIdentidadReverso'];
+            inputs.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '';
+                    const label = document.getElementById('label' + id.charAt(0).toUpperCase() + id.slice(1));
+                    if (label) {
+                        label.textContent = label.textContent.includes('frontal') ? 'Seleccionar cara frontal' :
+                                          label.textContent.includes('posterior') ? 'Seleccionar cara posterior' :
+                                          'Seleccionar archivo con ambas caras';
+                        label.classList.remove('file-selected');
+                    }
+                }
+            });
+            
+            documentosIdentidadCargados = false;
+            deshabilitarCodeudores();
+        }
+
+        // Habilitar/Deshabilitar codeudores
+        function habilitarCodeudores() {
+            document.getElementById('codeudorQuestion').classList.remove('disabled');
+            document.getElementById('btnCodeudorNo').disabled = false;
+            document.getElementById('btnCodeudorSi').disabled = false;
+        }
+
+        function deshabilitarCodeudores() {
+            document.getElementById('codeudorQuestion').classList.add('disabled');
+            document.getElementById('btnCodeudorNo').disabled = true;
+            document.getElementById('btnCodeudorSi').disabled = true;
         }
 
         // Función para manejar la carga de documentos
@@ -1320,6 +1412,8 @@
                         contenido: e.target.result,
                         completo: true
                     };
+                    documentosIdentidadCargados = true;
+                    habilitarCodeudores();
                 } else if (tipo === 'frente') {
                     // Cara frontal
                     archivosBase64.docIdentidadFrente = {
@@ -1327,6 +1421,11 @@
                         tipo: file.type,
                         contenido: e.target.result
                     };
+                    // Verificar si ambas caras están cargadas
+                    if (archivosBase64.docIdentidadReverso) {
+                        documentosIdentidadCargados = true;
+                        habilitarCodeudores();
+                    }
                 } else if (tipo === 'reverso') {
                     // Cara posterior
                     archivosBase64.docIdentidadReverso = {
@@ -1334,6 +1433,11 @@
                         tipo: file.type,
                         contenido: e.target.result
                     };
+                    // Verificar si ambas caras están cargadas
+                    if (archivosBase64.docIdentidadFrente) {
+                        documentosIdentidadCargados = true;
+                        habilitarCodeudores();
+                    }
                 }
                 
                 console.log(`Documento ${tipo} cargado correctamente`);
@@ -1363,7 +1467,7 @@
             }
         }
 
-        // Manejo de codeudores
+        // Manejo de codeudores mejorado
         function setCodeudor(hasCod) {
             hasCodeudores = hasCod;
             
@@ -1373,21 +1477,36 @@
                 if (btn !== event.target) btn.classList.remove('selected');
             });
             
-            if (hasCod) {
-                // Agregar paso de codeudor
-                numCodeudores = 1;
-                createCodeudorFields(1);
-                dynamicSteps = ['1', '2', '3', 'codeudor1', 'confirmation'];
+            // Actualizar pasos dinámicos
+            actualizarPasosDinamicos();
+        }
+
+        // Actualizar pasos dinámicos según codeudores
+        function actualizarPasosDinamicos() {
+            if (hasCodeudores) {
+                if (numCodeudores === 0) {
+                    numCodeudores = 1;
+                    createCodeudorFields(1);
+                }
+                
+                // Reconstruir array de pasos
+                dynamicSteps = ['1', '2', '3'];
+                for (let i = 1; i <= numCodeudores; i++) {
+                    dynamicSteps.push(`codeudor${i}`);
+                }
+                dynamicSteps.push('confirmation');
             } else {
-                // Ir directo a confirmación
-                dynamicSteps = ['1', '2', '3', 'confirmation'];
+                // Sin codeudores
                 numCodeudores = 0;
+                dynamicSteps = ['1', '2', '3', 'confirmation'];
             }
         }
 
         // Crear campos de codeudor
         function createCodeudorFields(num) {
             const container = document.getElementById(`codeudor${num}Fields`);
+            if (!container) return;
+            
             container.innerHTML = `
                 <div class="form-field show">
                     <div class="form-row">
@@ -1467,16 +1586,11 @@
             if (hasMore && currentNum < 3) {
                 numCodeudores++;
                 createCodeudorFields(numCodeudores);
-                
-                if (currentNum === 1) {
-                    dynamicSteps = ['1', '2', '3', 'codeudor1', 'codeudor2', 'confirmation'];
-                } else if (currentNum === 2) {
-                    dynamicSteps = ['1', '2', '3', 'codeudor1', 'codeudor2', 'codeudor3', 'confirmation'];
-                }
+                actualizarPasosDinamicos();
             }
         }
 
-        // Navegación entre pasos
+        // Navegación entre pasos mejorada
         function nextStep() {
             if (!validateCurrentStep()) {
                 return;
@@ -1502,13 +1616,8 @@
                 nextElement.style.display = 'block';
             }
             
-            // Actualizar progress bar y botones
+            // Actualizar UI
             updateUIForStep();
-            
-            // Si es el último paso, mostrar resumen
-            if (nextStepId === 'confirmation') {
-                mostrarResumen();
-            }
             
             // Mostrar campos con animación en el paso 2
             if (currentStep === 2) {
@@ -1548,31 +1657,28 @@
         function updateUIForStep() {
             const btnPrev = document.getElementById('btnPrev');
             const btnNext = document.getElementById('btnNext');
-            const btnConfirm = document.getElementById('btnConfirm');
             
             // Mostrar/ocultar botón anterior
             btnPrev.style.display = currentStep === 1 ? 'none' : 'block';
             
-            // Mostrar/ocultar botones siguiente/confirmar
+            // El botón siguiente siempre visible excepto en confirmación
             const currentStepId = dynamicSteps[currentStep - 1];
-            if (currentStepId === 'confirmation') {
-                btnNext.style.display = 'none';
-                btnConfirm.style.display = 'block';
-            } else {
-                btnNext.style.display = 'block';
-                btnConfirm.style.display = 'none';
-            }
+            btnNext.style.display = currentStepId === 'confirmation' ? 'none' : 'block';
             
             updateProgressBar();
         }
 
         function updateProgressBar() {
-            // Calcular progreso basado en pasos principales (sin codeudores)
+            // Calcular progreso basado en pasos principales
             let mainStep = currentStep;
-            if (dynamicSteps[currentStep - 1].includes('codeudor')) {
+            const currentStepId = dynamicSteps[currentStep - 1];
+            
+            if (currentStepId.includes('codeudor')) {
                 mainStep = 3.5; // Posición intermedia para codeudores
-            } else if (dynamicSteps[currentStep - 1] === 'confirmation') {
+            } else if (currentStepId === 'confirmation') {
                 mainStep = 4;
+            } else {
+                mainStep = parseInt(currentStepId);
             }
             
             const progress = ((mainStep - 1) / 3) * 100;
@@ -1584,7 +1690,7 @@
                 if (stepElement) {
                     stepElement.classList.remove('active', 'completed');
                     
-                    if (i < mainStep) {
+                    if (i < Math.ceil(mainStep)) {
                         stepElement.classList.add('completed');
                     } else if (i === Math.ceil(mainStep)) {
                         stepElement.classList.add('active');
@@ -1593,7 +1699,7 @@
             }
         }
 
-        // Validación de pasos
+        // Validación de pasos mejorada
         function validateCurrentStep() {
             const currentStepId = dynamicSteps[currentStep - 1];
             
@@ -1633,26 +1739,26 @@
                     return true;
                     
                 case '3':
-                    // Validar según el tipo de carga seleccionado
+                    // Validar tipo de documento seleccionado
                     if (documentoCompletoRequerido === null) {
                         alert('Por favor indique si el archivo tiene ambas caras');
                         return false;
                     }
                     
+                    // Validar documentos cargados
                     if (documentoCompletoRequerido) {
-                        // Validar un solo archivo
                         if (!archivosBase64.docIdentidad) {
                             alert('Debe cargar el documento de identidad con ambas caras');
                             return false;
                         }
                     } else {
-                        // Validar dos archivos
                         if (!archivosBase64.docIdentidadFrente || !archivosBase64.docIdentidadReverso) {
                             alert('Debe cargar ambas caras del documento de identidad');
                             return false;
                         }
                     }
                     
+                    // Validar decisión sobre codeudores
                     if (hasCodeudores === null) {
                         alert('Por favor indique si tiene codeudores');
                         return false;
@@ -1735,32 +1841,77 @@
             document.body.removeChild(tempInput);
         }
 
-        // Mostrar resumen
-        function mostrarResumen() {
-            const resumen = document.getElementById('resumenFormulario');
+        // Mostrar confirmación con resumen completo
+        function mostrarConfirmacion() {
+            // Generar resumen completo
+            generarResumenCompleto();
+            
+            // Mostrar modal
+            document.getElementById('confirmationModal').classList.add('show');
+        }
+
+        // Generar resumen completo en el modal
+        function generarResumenCompleto() {
+            const resumen = document.getElementById('confirmationSummary');
             
             const nombre = document.getElementById('nombres').value + ' ' + document.getElementById('apellidos').value;
-            const documento = document.getElementById('tipoDocumento').value + ' ' + document.getElementById('numeroDocumento').value;
+            const tipoDoc = document.getElementById('tipoDocumento').options[document.getElementById('tipoDocumento').selectedIndex].text;
+            const numDoc = document.getElementById('numeroDocumento').value;
             const email = document.getElementById('email').value;
             const celular = document.getElementById('celular').value;
+            const ocupacion = document.getElementById('ocupacion').value;
             
             let resumenHTML = `
-                <div style="color: var(--gold-light);">
-                    <p><strong>Nombre:</strong> ${nombre}</p>
-                    <p><strong>Documento:</strong> ${documento}</p>
-                    <p><strong>Email:</strong> ${email}</p>
-                    <p><strong>Celular:</strong> ${celular}</p>
-                    <p><strong>Ocupación:</strong> ${document.getElementById('ocupacion').value}</p>
-                    <p><strong>Codeudores:</strong> ${numCodeudores > 0 ? numCodeudores : 'No'}</p>
+                <div class="summary-section">
+                    <h4>📋 Información Personal</h4>
+                    <div class="summary-item"><strong>Nombre:</strong> ${nombre}</div>
+                    <div class="summary-item"><strong>Documento:</strong> ${tipoDoc} - ${numDoc}</div>
+                    <div class="summary-item"><strong>Email:</strong> ${email}</div>
+                    <div class="summary-item"><strong>Celular:</strong> ${celular}</div>
+                    <div class="summary-item"><strong>Ocupación:</strong> ${ocupacion}</div>
+                </div>
+                
+                <div class="summary-section">
+                    <h4>📄 Documentos Cargados</h4>
+                    <div class="summary-item">✅ Estudio aprobado</div>
+                    <div class="summary-item">✅ Comprobante de pago</div>
+                    <div class="summary-item">✅ Documento de identidad ${documentoCompletoRequerido ? '(archivo único)' : '(2 archivos)'}</div>
                 </div>
             `;
             
+            // Agregar codeudores si existen
+            if (numCodeudores > 0) {
+                resumenHTML += `
+                    <div class="summary-section">
+                        <h4>👥 Codeudores (${numCodeudores})</h4>
+                `;
+                
+                for (let i = 1; i <= numCodeudores; i++) {
+                    const nombreCod = document.getElementById(`nombresCodeudor${i}`)?.value || '';
+                    const apellidoCod = document.getElementById(`apellidosCodeudor${i}`)?.value || '';
+                    const docCod = document.getElementById(`numDocCodeudor${i}`)?.value || '';
+                    
+                    if (nombreCod && apellidoCod) {
+                        resumenHTML += `
+                            <div class="summary-item">
+                                <strong>Codeudor ${i}:</strong> ${nombreCod} ${apellidoCod}
+                                <br>&nbsp;&nbsp;&nbsp;&nbsp;Doc: ${docCod}
+                            </div>
+                        `;
+                    }
+                }
+                
+                resumenHTML += `</div>`;
+            } else {
+                resumenHTML += `
+                    <div class="summary-section">
+                        <h4>👥 Codeudores</h4>
+                        <div class="summary-item">No tiene codeudores</div>
+                    </div>
+                `;
+            }
+            
             resumen.innerHTML = resumenHTML;
-        }
-
-        // Confirmación con slider
-        function mostrarConfirmacion() {
-            document.getElementById('confirmationModal').classList.add('show');
         }
 
         function cerrarConfirmacion() {
@@ -1879,13 +2030,11 @@
             
             // Consolidar archivos de documento de identidad si están separados
             if (!documentoCompletoRequerido && archivosBase64.docIdentidadFrente && archivosBase64.docIdentidadReverso) {
-                // Si hay dos archivos, combinarlos lógicamente (el backend los manejará)
                 archivosBase64.docIdentidad = {
                     frente: archivosBase64.docIdentidadFrente,
                     reverso: archivosBase64.docIdentidadReverso,
                     completo: false
                 };
-                // Limpiar los individuales
                 delete archivosBase64.docIdentidadFrente;
                 delete archivosBase64.docIdentidadReverso;
             }
