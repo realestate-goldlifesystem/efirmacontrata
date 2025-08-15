@@ -675,28 +675,59 @@
         }
         
         function copiarNumero() {
-            const numero = '3177623878';
-            navigator.clipboard.writeText(numero).then(() => {
-                const btn = event.target;
-                btn.textContent = '✅ ¡Copiado!';
-                btn.classList.add('copied');
-                
-                // Cerrar modal después de 1.5 segundos
-                setTimeout(() => {
-                    cerrarModalPago();
-                }, 1500);
-            }).catch(err => {
-                console.error('Error al copiar:', err);
-                mostrarMensaje('Error al copiar el número', 'error');
-            });
-        }
-        
-        function cerrarModalDespuesPago() {
+    const numero = '3177623878';
+    
+    // Intentar el método moderno primero
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(numero).then(() => {
+            const btn = event.target;
+            btn.textContent = '✅ ¡Copiado!';
+            btn.classList.add('copied');
+            
+            // Cerrar modal después de 1.5 segundos
             setTimeout(() => {
                 cerrarModalPago();
-            }, 500);
-        }
+            }, 1500);
+        }).catch(err => {
+            // Si falla, usar método alternativo
+            copiarConMetodoAlternativo(numero);
+        });
+    } else {
+        // Navegador no soporta API moderna, usar método alternativo
+        copiarConMetodoAlternativo(numero);
+    }
+}
+
+function copiarConMetodoAlternativo(texto) {
+    // Crear un elemento temporal
+    const tempInput = document.createElement('input');
+    tempInput.style.position = 'absolute';
+    tempInput.style.left = '-9999px';
+    tempInput.value = texto;
+    document.body.appendChild(tempInput);
+    
+    // Seleccionar y copiar
+    tempInput.select();
+    tempInput.setSelectionRange(0, 99999); // Para móviles
+    
+    try {
+        document.execCommand('copy');
+        const btn = event.target;
+        btn.textContent = '✅ ¡Copiado!';
+        btn.classList.add('copied');
         
+        // Cerrar modal después de 1.5 segundos
+        setTimeout(() => {
+            cerrarModalPago();
+        }, 1500);
+    } catch (err) {
+        // Si todo falla, mostrar el número para copiar manual
+        alert('Número para copiar: ' + texto);
+    }
+    
+    // Limpiar
+    document.body.removeChild(tempInput);
+}
         // Toggle codeudores
         function toggleCodeudores() {
             const tiene = document.getElementById('tieneCodeudores').value;
