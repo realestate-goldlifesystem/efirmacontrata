@@ -544,6 +544,12 @@
             
             // Mostrar el código en la interfaz (opcional)
             mostrarMensaje(`Código de registro: ${codigoRegistro}`, 'success');
+            
+            // CORRECCIÓN: Mostrar todas las secciones del formulario
+            console.log('📋 Mostrando secciones del formulario');
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.style.display = 'block';
+            });
         };
         
         // Configurar validaciones de campos
