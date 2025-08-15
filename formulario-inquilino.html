@@ -1239,6 +1239,7 @@
         let dynamicSteps = ['1', '2', '3', 'confirmation'];
         let documentoCompletoRequerido = null;
         let documentosIdentidadCargados = false;
+        let decisionesCodeudores = {}; // Para trackear decisiones de más codeudores
 
         // Inicializar
         window.onload = function() {
@@ -1386,6 +1387,9 @@
             document.getElementById('codeudorQuestion').classList.add('disabled');
             document.getElementById('btnCodeudorNo').disabled = true;
             document.getElementById('btnCodeudorSi').disabled = true;
+            // Limpiar selección previa si había
+            document.getElementById('btnCodeudorNo').classList.remove('selected');
+            document.getElementById('btnCodeudorSi').classList.remove('selected');
         }
 
         // Función para manejar la carga de documentos
@@ -1467,8 +1471,9 @@
             }
         }
 
-        // Manejo de codeudores mejorado
+        // Manejo de codeudores MEJORADO
         function setCodeudor(hasCod) {
+            const anteriorDecision = hasCodeudores;
             hasCodeudores = hasCod;
             
             // Marcar botón seleccionado
@@ -1477,29 +1482,64 @@
                 if (btn !== event.target) btn.classList.remove('selected');
             });
             
-            // Actualizar pasos dinámicos
-            actualizarPasosDinamicos();
-        }
-
-        // Actualizar pasos dinámicos según codeudores
-        function actualizarPasosDinamicos() {
-            if (hasCodeudores) {
+            if (hasCod) {
+                // Si dice SÍ a codeudores
                 if (numCodeudores === 0) {
                     numCodeudores = 1;
                     createCodeudorFields(1);
                 }
+                actualizarPasosDinamicos();
+            } else {
+                // Si dice NO a codeudores
+                if (anteriorDecision === true) {
+                    // Si antes había dicho SÍ, limpiar todo
+                    limpiarTodosCodeudores();
+                }
+                numCodeudores = 0;
+                decisionesCodeudores = {};
+                actualizarPasosDinamicos();
+            }
+        }
+
+        // Limpiar todos los codeudores
+        function limpiarTodosCodeudores() {
+            // Limpiar datos y archivos de todos los codeudores
+            for (let i = 1; i <= 3; i++) {
+                // Limpiar archivos
+                delete archivosBase64[`docCodeudor${i}`];
                 
-                // Reconstruir array de pasos
-                dynamicSteps = ['1', '2', '3'];
+                // Limpiar campos si existen
+                const container = document.getElementById(`codeudor${i}Fields`);
+                if (container) {
+                    container.innerHTML = '';
+                }
+                
+                // Ocultar paso si está visible
+                const stepElement = document.getElementById(`stepCodeudor${i}`);
+                if (stepElement) {
+                    stepElement.classList.remove('active');
+                    stepElement.style.display = 'none';
+                }
+            }
+            
+            // Resetear decisiones
+            decisionesCodeudores = {};
+        }
+
+        // Actualizar pasos dinámicos según codeudores
+        function actualizarPasosDinamicos() {
+            // Reconstruir array de pasos
+            dynamicSteps = ['1', '2', '3'];
+            
+            if (hasCodeudores) {
                 for (let i = 1; i <= numCodeudores; i++) {
                     dynamicSteps.push(`codeudor${i}`);
                 }
-                dynamicSteps.push('confirmation');
-            } else {
-                // Sin codeudores
-                numCodeudores = 0;
-                dynamicSteps = ['1', '2', '3', 'confirmation'];
             }
+            
+            dynamicSteps.push('confirmation');
+            
+            console.log('Pasos actualizados:', dynamicSteps);
         }
 
         // Crear campos de codeudor
@@ -1507,64 +1547,67 @@
             const container = document.getElementById(`codeudor${num}Fields`);
             if (!container) return;
             
-            container.innerHTML = `
-                <div class="form-field show">
-                    <div class="form-row">
-                        <div>
-                            <label>Tipo de Documento <span class="required">*</span></label>
-                            <select id="tipoDocCodeudor${num}" required>
-                                <option value="">Seleccione...</option>
-                                <option value="CC">Cédula de Ciudadanía</option>
-                                <option value="CE">Cédula de Extranjería</option>
-                                <option value="PA">Pasaporte</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label>Número de Documento <span class="required">*</span></label>
-                            <input type="text" id="numDocCodeudor${num}" placeholder="Número de documento" required>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-field show">
-                    <div class="form-row">
-                        <div>
-                            <label>Nombres <span class="required">*</span></label>
-                            <input type="text" id="nombresCodeudor${num}" placeholder="Nombres completos" required>
-                        </div>
-                        
-                        <div>
-                            <label>Apellidos <span class="required">*</span></label>
-                            <input type="text" id="apellidosCodeudor${num}" placeholder="Apellidos completos" required>
+            // Solo crear si está vacío
+            if (container.innerHTML === '') {
+                container.innerHTML = `
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Tipo de Documento <span class="required">*</span></label>
+                                <select id="tipoDocCodeudor${num}" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="CC">Cédula de Ciudadanía</option>
+                                    <option value="CE">Cédula de Extranjería</option>
+                                    <option value="PA">Pasaporte</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label>Número de Documento <span class="required">*</span></label>
+                                <input type="text" id="numDocCodeudor${num}" placeholder="Número de documento" required>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="form-field show">
-                    <div class="form-row">
-                        <div>
-                            <label>Email <span class="required">*</span></label>
-                            <input type="email" id="emailCodeudor${num}" placeholder="correo@ejemplo.com" required>
-                        </div>
-                        
-                        <div>
-                            <label>Celular <span class="required">*</span></label>
-                            <input type="tel" id="celularCodeudor${num}" placeholder="3001234567" required>
+                    
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Nombres <span class="required">*</span></label>
+                                <input type="text" id="nombresCodeudor${num}" placeholder="Nombres completos" required>
+                            </div>
+                            
+                            <div>
+                                <label>Apellidos <span class="required">*</span></label>
+                                <input type="text" id="apellidosCodeudor${num}" placeholder="Apellidos completos" required>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="form-field show">
-                    <label>Documento de Identidad <span class="required">*</span></label>
-                    <div class="file-upload-wrapper">
-                        <label class="file-upload-label" for="docCodeudor${num}" id="labelDocCodeudor${num}">
-                            Seleccionar archivo - Ambas caras
-                        </label>
-                        <input type="file" id="docCodeudor${num}" class="file-upload-input" accept="image/*,.pdf" required onchange="handleCodeudorFile(this, ${num})">
+                    
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Email <span class="required">*</span></label>
+                                <input type="email" id="emailCodeudor${num}" placeholder="correo@ejemplo.com" required>
+                            </div>
+                            
+                            <div>
+                                <label>Celular <span class="required">*</span></label>
+                                <input type="tel" id="celularCodeudor${num}" placeholder="3001234567" required>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            `;
+                    
+                    <div class="form-field show">
+                        <label>Documento de Identidad <span class="required">*</span></label>
+                        <div class="file-upload-wrapper">
+                            <label class="file-upload-label" for="docCodeudor${num}" id="labelDocCodeudor${num}">
+                                Seleccionar archivo - Ambas caras
+                            </label>
+                            <input type="file" id="docCodeudor${num}" class="file-upload-input" accept="image/*,.pdf" required onchange="handleCodeudorFile(this, ${num})">
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         function handleCodeudorFile(input, index) {
@@ -1576,21 +1619,48 @@
             }
         }
 
-        // Agregar más codeudores
+        // Agregar más codeudores MEJORADO
         function addMoreCodeudor(hasMore, currentNum) {
+            // Guardar decisión
+            decisionesCodeudores[currentNum] = hasMore;
+            
             event.target.classList.add('selected');
             event.target.parentElement.querySelectorAll('.codeudor-btn').forEach(btn => {
                 if (btn !== event.target) btn.classList.remove('selected');
             });
             
             if (hasMore && currentNum < 3) {
-                numCodeudores++;
+                // Agregar siguiente codeudor
+                numCodeudores = currentNum + 1;
                 createCodeudorFields(numCodeudores);
-                actualizarPasosDinamicos();
+            } else {
+                // No más codeudores o límite alcanzado
+                // Eliminar codeudores posteriores si existen
+                for (let i = currentNum + 1; i <= 3; i++) {
+                    // Limpiar datos
+                    delete archivosBase64[`docCodeudor${i}`];
+                    
+                    // Limpiar campos
+                    const container = document.getElementById(`codeudor${i}Fields`);
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+                    
+                    // Ocultar paso
+                    const stepElement = document.getElementById(`stepCodeudor${i}`);
+                    if (stepElement) {
+                        stepElement.classList.remove('active');
+                        stepElement.style.display = 'none';
+                    }
+                }
+                
+                numCodeudores = currentNum;
             }
+            
+            actualizarPasosDinamicos();
         }
 
-        // Navegación entre pasos mejorada
+        // Navegación entre pasos MEJORADA
         function nextStep() {
             if (!validateCurrentStep()) {
                 return;
@@ -1602,7 +1672,7 @@
                                   document.getElementById(`stepCodeudor${currentStepId.replace('codeudor', '')}`);
             if (currentElement) {
                 currentElement.classList.remove('active');
-            }
+                }
             
             // Avanzar al siguiente paso
             currentStep++;
@@ -1692,8 +1762,12 @@
                     
                     if (i < Math.ceil(mainStep)) {
                         stepElement.classList.add('completed');
+                        stepElement.querySelector('.step-circle').innerHTML = '✓';
                     } else if (i === Math.ceil(mainStep)) {
                         stepElement.classList.add('active');
+                        stepElement.querySelector('.step-circle').innerHTML = i;
+                    } else {
+                        stepElement.querySelector('.step-circle').innerHTML = i;
                     }
                 }
             }
