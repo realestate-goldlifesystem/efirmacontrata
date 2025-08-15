@@ -991,17 +991,51 @@
                     </div>
                 </div>
 
-                <!-- Paso 3: Documentos del Inquilino -->
+                <!-- Paso 3: Documentos del Inquilino MEJORADO -->
                 <div class="form-step" data-step="3">
                     <h2 class="step-title">Documentos de Identidad</h2>
                     
                     <div class="form-field show">
-                        <label>Documento de Identidad (Ambas caras) <span class="required">*</span></label>
-                        <div class="file-upload-wrapper">
-                            <label class="file-upload-label" for="docIdentidad" id="labelDocIdentidad">
-                                Seleccionar archivo - Ambas caras del documento
-                            </label>
-                            <input type="file" id="docIdentidad" class="file-upload-input" accept="image/*,.pdf" multiple required>
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿El archivo tiene ambas caras del documento?</h3>
+                            <div class="codeudor-buttons">
+                                <button type="button" class="codeudor-btn" onclick="setDocumentType(true)">SÍ</button>
+                                <button type="button" class="codeudor-btn" onclick="setDocumentType(false)">NO</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Opción 1: Un solo archivo con ambas caras -->
+                        <div id="singleDocUpload" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
+                            <label>Documento de Identidad (Ambas caras en un archivo) <span class="required">*</span></label>
+                            <div class="file-upload-wrapper">
+                                <label class="file-upload-label" for="docIdentidadCompleto" id="labelDocIdentidadCompleto">
+                                    Seleccionar archivo con ambas caras
+                                </label>
+                                <input type="file" id="docIdentidadCompleto" class="file-upload-input" accept="image/*,.pdf" onchange="handleDocumentUpload(this, 'completo')">
+                            </div>
+                        </div>
+                        
+                        <!-- Opción 2: Dos archivos separados -->
+                        <div id="doubleDocUpload" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
+                            <div style="margin-bottom: 20px;">
+                                <label>Cara frontal del documento <span class="required">*</span></label>
+                                <div class="file-upload-wrapper">
+                                    <label class="file-upload-label" for="docIdentidadFrente" id="labelDocIdentidadFrente">
+                                        Seleccionar cara frontal
+                                    </label>
+                                    <input type="file" id="docIdentidadFrente" class="file-upload-input" accept="image/*,.pdf" onchange="handleDocumentUpload(this, 'frente')">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label>Cara posterior del documento <span class="required">*</span></label>
+                                <div class="file-upload-wrapper">
+                                    <label class="file-upload-label" for="docIdentidadReverso" id="labelDocIdentidadReverso">
+                                        Seleccionar cara posterior
+                                    </label>
+                                    <input type="file" id="docIdentidadReverso" class="file-upload-input" accept="image/*,.pdf" onchange="handleDocumentUpload(this, 'reverso')">
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -1157,9 +1191,10 @@
         let codigoRegistro = '';
         let archivosBase64 = {};
         let codeudoresData = [];
-        let hasCodeudores = false;
+        let hasCodeudores = null;
         let numCodeudores = 0;
         let dynamicSteps = ['1', '2', '3'];
+        let documentoCompletoRequerido = null;
 
         // Inicializar
         window.onload = function() {
@@ -1230,6 +1265,82 @@
             }
         }
 
+        // Función para establecer el tipo de carga de documento
+        function setDocumentType(isComplete) {
+            documentoCompletoRequerido = isComplete;
+            
+            // Marcar botón seleccionado
+            event.target.classList.add('selected');
+            event.target.parentElement.querySelectorAll('.codeudor-btn').forEach(btn => {
+                if (btn !== event.target) btn.classList.remove('selected');
+            });
+            
+            if (isComplete) {
+                // Mostrar opción de un solo archivo
+                document.getElementById('singleDocUpload').style.display = 'block';
+                document.getElementById('doubleDocUpload').style.display = 'none';
+                
+                // Animar entrada
+                setTimeout(() => {
+                    document.getElementById('singleDocUpload').style.opacity = '1';
+                }, 100);
+            } else {
+                // Mostrar opción de dos archivos
+                document.getElementById('singleDocUpload').style.display = 'none';
+                document.getElementById('doubleDocUpload').style.display = 'block';
+                
+                // Animar entrada
+                setTimeout(() => {
+                    document.getElementById('doubleDocUpload').style.opacity = '1';
+                }, 100);
+            }
+        }
+
+        // Función para manejar la carga de documentos
+        function handleDocumentUpload(input, tipo) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Actualizar label
+            const labelId = 'labelDocIdentidad' + tipo.charAt(0).toUpperCase() + tipo.slice(1);
+            const label = document.getElementById(labelId);
+            if (label) {
+                label.textContent = file.name;
+                label.classList.add('file-selected');
+            }
+            
+            // Convertir a base64
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (tipo === 'completo') {
+                    // Un solo archivo con ambas caras
+                    archivosBase64.docIdentidad = {
+                        nombre: file.name,
+                        tipo: file.type,
+                        contenido: e.target.result,
+                        completo: true
+                    };
+                } else if (tipo === 'frente') {
+                    // Cara frontal
+                    archivosBase64.docIdentidadFrente = {
+                        nombre: file.name,
+                        tipo: file.type,
+                        contenido: e.target.result
+                    };
+                } else if (tipo === 'reverso') {
+                    // Cara posterior
+                    archivosBase64.docIdentidadReverso = {
+                        nombre: file.name,
+                        tipo: file.type,
+                        contenido: e.target.result
+                    };
+                }
+                
+                console.log(`Documento ${tipo} cargado correctamente`);
+            };
+            reader.readAsDataURL(file);
+        }
+
         // Mostrar siguiente campo
         function showNextField(fieldId) {
             const field = document.getElementById(fieldId);
@@ -1256,6 +1367,12 @@
         function setCodeudor(hasCod) {
             hasCodeudores = hasCod;
             
+            // Marcar botón seleccionado
+            event.target.classList.add('selected');
+            event.target.parentElement.querySelectorAll('.codeudor-btn').forEach(btn => {
+                if (btn !== event.target) btn.classList.remove('selected');
+            });
+            
             if (hasCod) {
                 // Agregar paso de codeudor
                 numCodeudores = 1;
@@ -1264,10 +1381,8 @@
             } else {
                 // Ir directo a confirmación
                 dynamicSteps = ['1', '2', '3', 'confirmation'];
+                numCodeudores = 0;
             }
-            
-            // Actualizar botones para mostrar selección
-            event.target.classList.add('selected');
         }
 
         // Crear campos de codeudor
@@ -1345,6 +1460,9 @@
         // Agregar más codeudores
         function addMoreCodeudor(hasMore, currentNum) {
             event.target.classList.add('selected');
+            event.target.parentElement.querySelectorAll('.codeudor-btn').forEach(btn => {
+                if (btn !== event.target) btn.classList.remove('selected');
+            });
             
             if (hasMore && currentNum < 3) {
                 numCodeudores++;
@@ -1359,11 +1477,6 @@
         }
 
         // Navegación entre pasos
-        function getCurrentStepIndex() {
-            const currentStepId = dynamicSteps[currentStep - 1];
-            return currentStep;
-        }
-
         function nextStep() {
             if (!validateCurrentStep()) {
                 return;
@@ -1520,10 +1633,26 @@
                     return true;
                     
                 case '3':
-                    if (!archivosBase64.docIdentidad) {
-                        alert('Debe cargar el documento de identidad');
+                    // Validar según el tipo de carga seleccionado
+                    if (documentoCompletoRequerido === null) {
+                        alert('Por favor indique si el archivo tiene ambas caras');
                         return false;
                     }
+                    
+                    if (documentoCompletoRequerido) {
+                        // Validar un solo archivo
+                        if (!archivosBase64.docIdentidad) {
+                            alert('Debe cargar el documento de identidad con ambas caras');
+                            return false;
+                        }
+                    } else {
+                        // Validar dos archivos
+                        if (!archivosBase64.docIdentidadFrente || !archivosBase64.docIdentidadReverso) {
+                            alert('Debe cargar ambas caras del documento de identidad');
+                            return false;
+                        }
+                    }
+                    
                     if (hasCodeudores === null) {
                         alert('Por favor indique si tiene codeudores');
                         return false;
@@ -1650,7 +1779,7 @@
             
             let isDragging = false;
             let startX = 0;
-            let currentX = 0;
+            let currentX = 5;
             
             thumb.addEventListener('mousedown', startDrag);
             thumb.addEventListener('touchstart', startDrag);
@@ -1746,6 +1875,19 @@
                     };
                     datosFormulario.codeudores.push(codeudor);
                 }
+            }
+            
+            // Consolidar archivos de documento de identidad si están separados
+            if (!documentoCompletoRequerido && archivosBase64.docIdentidadFrente && archivosBase64.docIdentidadReverso) {
+                // Si hay dos archivos, combinarlos lógicamente (el backend los manejará)
+                archivosBase64.docIdentidad = {
+                    frente: archivosBase64.docIdentidadFrente,
+                    reverso: archivosBase64.docIdentidadReverso,
+                    completo: false
+                };
+                // Limpiar los individuales
+                delete archivosBase64.docIdentidadFrente;
+                delete archivosBase64.docIdentidadReverso;
             }
             
             console.log('Datos a enviar:', datosFormulario);
