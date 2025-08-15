@@ -6,7 +6,7 @@
     <title>Formulario Propietario - E-firmaContrata</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilos para mensajes y loading */
+        /* Estilos específicos del formulario propietario */
         .message {
             padding: 15px;
             margin: 20px 0;
@@ -61,7 +61,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255,255,255,0.95);
+            background: rgba(255,255,255,0.9);
             z-index: 2000;
             justify-content: center;
             align-items: center;
@@ -72,96 +72,7 @@
             display: flex;
         }
         
-        .loading-text {
-            margin-top: 20px;
-            text-align: center;
-        }
-        
-        .loading-text h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        
-        .loading-text p {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        /* Estilos para secciones dinámicas */
-        .servicio-publico-item {
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-            background: #f9f9f9;
-        }
-        
-        .servicio-publico-item h4 {
-            margin-top: 0;
-            color: #333;
-        }
-        
-        .add-button {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin: 10px 0;
-        }
-        
-        .add-button:hover {
-            background: #218838;
-        }
-        
-        .remove-button {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-            float: right;
-        }
-        
-        .remove-button:hover {
-            background: #c82333;
-        }
-        
-        /* Info boxes */
-        .info-box {
-            background: #e8f4fd;
-            border-left: 4px solid #2196F3;
-            padding: 12px;
-            margin: 15px 0;
-            border-radius: 4px;
-        }
-        
-        .info-box p {
-            margin: 5px 0;
-            color: #555;
-            font-size: 14px;
-        }
-        
-        .link-button {
-            display: inline-block;
-            background: #2196F3;
-            color: white;
-            padding: 8px 16px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 5px;
-            font-size: 14px;
-        }
-        
-        .link-button:hover {
-            background: #1976D2;
-        }
-        
-        /* Estilos del formulario */
+        /* Estilos para formularios */
         .form-section {
             margin-bottom: 30px;
             padding: 20px;
@@ -238,6 +149,15 @@
             transition: all 0.3s;
         }
         
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+        
         .btn-success {
             background: #4CAF50;
             color: white;
@@ -247,9 +167,73 @@
             background: #45a049;
         }
         
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        
         .btn-lg {
             padding: 15px 40px;
             font-size: 18px;
+        }
+        
+        .btn-sm {
+            padding: 5px 15px;
+            font-size: 14px;
+        }
+        
+        /* Servicios públicos */
+        .servicio-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .servicio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .servicio-header h4 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .info-box {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box p {
+            margin: 5px 0;
+            color: #555;
+        }
+        
+        .download-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            transition: all 0.3s;
+        }
+        
+        .download-link:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
         }
     </style>
 </head>
@@ -258,7 +242,7 @@
         <div class="card">
             <div class="card-header">
                 <h1>🏠 Formulario del Propietario</h1>
-                <p>Complete la información y documentación requerida para el contrato de arrendamiento</p>
+                <p>Complete todos los documentos requeridos para el contrato de arrendamiento</p>
             </div>
             
             <div class="card-body">
@@ -276,7 +260,7 @@
                                 <option value="CC">Cédula de Ciudadanía</option>
                                 <option value="CE">Cédula de Extranjería</option>
                                 <option value="PA">Pasaporte</option>
-                                <option value="NIT">NIT (Empresa)</option>
+                                <option value="NIT">NIT</option>
                             </select>
                         </div>
                         
@@ -289,12 +273,12 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Nombres Completos <span class="required">*</span></label>
-                            <input type="text" id="nombres" placeholder="Nombres completos" required>
+                            <input type="text" id="nombres" placeholder="Ej: Juan Carlos" required>
                         </div>
                         
                         <div class="form-group">
                             <label>Apellidos Completos <span class="required">*</span></label>
-                            <input type="text" id="apellidos" placeholder="Apellidos completos" required>
+                            <input type="text" id="apellidos" placeholder="Ej: García López" required>
                         </div>
                     </div>
                     
@@ -306,183 +290,91 @@
                         
                         <div class="form-group">
                             <label>Celular <span class="required">*</span></label>
-                            <input type="tel" id="celular" placeholder="3001234567" required>
+                            <input type="tel" id="celular" placeholder="Ej: 3001234567" required>
                         </div>
                     </div>
                     
                     <div class="form-group">
                         <label>Dirección de Residencia <span class="required">*</span></label>
-                        <input type="text" id="direccion" placeholder="Dirección completa" required>
+                        <input type="text" id="direccion" placeholder="Ej: Calle 123 #45-67, Barrio, Ciudad" required>
                     </div>
                 </div>
                 
-                <!-- Sección 2: Documentos de Identificación -->
+                <!-- Sección 2: Documentos Básicos -->
                 <div class="form-section">
-                    <h2>📄 Documentos de Identificación</h2>
+                    <h2>📄 Documentos Básicos</h2>
                     
                     <div class="form-group">
                         <label>Documento de Identidad (Ambas caras) <span class="required">*</span></label>
                         <input type="file" id="docIdentidad" class="file-input" accept="image/*,.pdf" required>
-                        <small class="form-text">Suba ambas caras del documento en un solo archivo</small>
-                    </div>
-                </div>
-                
-                <!-- Sección 3: SARLAFT -->
-                <div class="form-section">
-                    <h2>📋 Formulario SARLAFT</h2>
-                    
-                    <div class="info-box">
-                        <p><strong>Descargue, complete y firme el formulario SARLAFT:</strong></p>
-                        <a href="https://drive.google.com/file/d/1-KTawGPfAs3ddL0IqILbPQcyYBINrhOT/view" 
-                           target="_blank" 
-                           class="link-button">
-                            📥 Descargar Formulario SARLAFT
-                        </a>
+                        <small class="form-text">Suba ambas caras del documento en una imagen o PDF</small>
                     </div>
                     
                     <div class="form-group">
-                        <label>Formulario SARLAFT Firmado <span class="required">*</span></label>
+                        <label>Formulario SARLAFT <span class="required">*</span></label>
+                        <div class="info-box">
+                            <p>📥 Descargue el formulario SARLAFT, diligencie todos los campos y súbalo firmado.</p>
+                            <a href="https://drive.google.com/file/d/1example/view" target="_blank" class="download-link">
+                                📄 Descargar Formulario SARLAFT
+                            </a>
+                        </div>
                         <input type="file" id="sarlaft" class="file-input" accept="image/*,.pdf" required>
-                        <small class="form-text">Suba el formulario completado y firmado</small>
+                        <small class="form-text">Suba el formulario SARLAFT diligenciado y firmado</small>
                     </div>
                 </div>
                 
-                <!-- Sección 4: Certificados -->
+                <!-- Sección 3: Documentos del Inmueble -->
                 <div class="form-section">
-                    <h2>🏦 Certificados y Documentos del Inmueble</h2>
+                    <h2>🏢 Documentos del Inmueble</h2>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Certificado Bancario <span class="required">*</span></label>
-                            <input type="file" id="certBancario" class="file-input" accept="image/*,.pdf" required>
-                            <small class="form-text">No mayor a 30 días</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Certificado de Tradición <span class="required">*</span></label>
-                            <input type="file" id="certTradicion" class="file-input" accept="image/*,.pdf" required>
-                            <small class="form-text">Documento del inmueble</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Sección 5: Servicios Públicos -->
-                <div class="form-section">
-                    <h2>💡 Servicios Públicos del Inmueble</h2>
-                    
-                    <div class="info-box">
-                        <p>Agregue los servicios públicos del inmueble (mínimo 2 servicios)</p>
-                    </div>
-                    
-                    <button type="button" class="add-button" onclick="agregarServicioPublico()">
-                        ➕ Agregar Servicio Público
-                    </button>
-                    
-                    <div id="serviciosPublicosContainer">
-                        <!-- Servicio 1 por defecto -->
-                        <div class="servicio-publico-item" data-index="1">
-                            <button type="button" class="remove-button" onclick="removerServicioPublico(1)" style="display:none;">✖ Eliminar</button>
-                            <h4>Servicio Público 1</h4>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Tipo de Servicio <span class="required">*</span></label>
-                                    <select id="tipoServicio1" required>
-                                        <option value="">Seleccione...</option>
-                                        <option value="energia">Energía</option>
-                                        <option value="agua">Agua</option>
-                                        <option value="gas">Gas</option>
-                                        <option value="internet">Internet</option>
-                                        <option value="telefono">Teléfono</option>
-                                        <option value="administracion">Administración</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Empresa</label>
-                                    <input type="text" id="empresaServicio1" placeholder="Nombre de la empresa">
-                                </div>
-                            </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Recibo del Servicio <span class="required">*</span></label>
-                                    <input type="file" id="reciboServicio1" class="file-input" accept="image/*,.pdf" required>
-                                    <small class="form-text">Último recibo disponible</small>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Comprobante de Pago</label>
-                                    <input type="file" id="pagoServicio1" class="file-input" accept="image/*,.pdf">
-                                    <small class="form-text">Opcional</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Servicio 2 por defecto -->
-                        <div class="servicio-publico-item" data-index="2">
-                            <button type="button" class="remove-button" onclick="removerServicioPublico(2)" style="display:none;">✖ Eliminar</button>
-                            <h4>Servicio Público 2</h4>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Tipo de Servicio <span class="required">*</span></label>
-                                    <select id="tipoServicio2" required>
-                                        <option value="">Seleccione...</option>
-                                        <option value="energia">Energía</option>
-                                        <option value="agua">Agua</option>
-                                        <option value="gas">Gas</option>
-                                        <option value="internet">Internet</option>
-                                        <option value="telefono">Teléfono</option>
-                                        <option value="administracion">Administración</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Empresa</label>
-                                    <input type="text" id="empresaServicio2" placeholder="Nombre de la empresa">
-                                </div>
-                            </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Recibo del Servicio <span class="required">*</span></label>
-                                    <input type="file" id="reciboServicio2" class="file-input" accept="image/*,.pdf" required>
-                                    <small class="form-text">Último recibo disponible</small>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label>Comprobante de Pago</label>
-                                    <input type="file" id="pagoServicio2" class="file-input" accept="image/*,.pdf">
-                                    <small class="form-text">Opcional</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Sección 6: Documentos Opcionales -->
-                <div class="form-section">
-                    <h2>📎 Documentos Adicionales (Opcionales)</h2>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Reglamento de Propiedad Horizontal</label>
-                            <input type="file" id="reglamento" class="file-input" accept="image/*,.pdf">
-                            <small class="form-text">Si aplica para el inmueble</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Manual de Convivencia</label>
-                            <input type="file" id="manual" class="file-input" accept="image/*,.pdf">
-                            <small class="form-text">Si aplica para el inmueble</small>
-                        </div>
+                    <div class="form-group">
+                        <label>Certificado Bancario <span class="required">*</span></label>
+                        <input type="file" id="certBancario" class="file-input" accept="image/*,.pdf" required>
+                        <small class="form-text">Certificado de la cuenta donde se consignarán los arriendos (no mayor a 30 días)</small>
                     </div>
                     
                     <div class="form-group">
-                        <label>Otros Documentos</label>
-                        <input type="file" id="otros" class="file-input" accept="image/*,.pdf" multiple>
-                        <small class="form-text">Cualquier documento adicional relevante</small>
+                        <label>Certificado de Tradición y Libertad <span class="required">*</span></label>
+                        <input type="file" id="certTradicion" class="file-input" accept="image/*,.pdf" required>
+                        <small class="form-text">Certificado no mayor a 30 días</small>
+                    </div>
+                </div>
+                
+                <!-- Sección 4: Servicios Públicos -->
+                <div class="form-section">
+                    <h2>💡 Servicios Públicos</h2>
+                    
+                    <div class="info-box">
+                        <p>📌 Debe cargar mínimo 2 servicios públicos. Cada servicio requiere el recibo y comprobante de pago al día.</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Número de servicios públicos a cargar</label>
+                        <select id="numServicios" onchange="generarCamposServicios()">
+                            <option value="2">2 servicios</option>
+                            <option value="3">3 servicios</option>
+                            <option value="4">4 servicios</option>
+                            <option value="5">5 servicios</option>
+                        </select>
+                    </div>
+                    
+                    <div id="serviciosContainer"></div>
+                </div>
+                
+                <!-- Sección 5: Documentos Opcionales -->
+                <div class="form-section">
+                    <h2>📎 Documentos Opcionales</h2>
+                    
+                    <div class="form-group">
+                        <label>Reglamento de Propiedad Horizontal (si aplica)</label>
+                        <input type="file" id="reglamento" class="file-input" accept="image/*,.pdf">
+                        <small class="form-text">Solo si el inmueble está en propiedad horizontal</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Manual de Convivencia (si aplica)</label>
+                        <input type="file" id="manual" class="file-input" accept="image/*,.pdf">
+                        <small class="form-text">Si existe manual de convivencia del edificio o conjunto</small>
                     </div>
                 </div>
                 
@@ -499,11 +391,8 @@
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
-        <div class="loading-text">
-            <h3>Procesando documentos...</h3>
-            <p>Por favor espere mientras procesamos su información</p>
-            <p><small>Esto puede tomar unos segundos</small></p>
-        </div>
+        <h3>Procesando documentos...</h3>
+        <p>Por favor espere, esto puede tomar unos segundos</p>
     </div>
     
     <script src="config.js"></script>
@@ -511,18 +400,19 @@
         // Variables globales
         let codigoRegistro = '';
         let archivosBase64 = {};
-        let contadorServicios = 2;
-        let serviciosPublicos = [1, 2];
+        let serviciosPublicos = [];
         
-        // Inicializar
+        // Inicializar al cargar la página
         window.onload = function() {
             console.log('🚀 Iniciando formulario de propietario');
             
+            // Obtener código de registro de la URL
             const urlParams = new URLSearchParams(window.location.search);
             codigoRegistro = urlParams.get('cdr') || '';
             
             console.log('📋 Código de registro:', codigoRegistro);
             
+            // Validar código de registro
             if (!codigoRegistro) {
                 console.error('❌ No se encontró código de registro');
                 mostrarMensaje('❌ Código de registro no válido', 'error');
@@ -533,16 +423,33 @@
                 return;
             }
             
-            // Si el código es válido, continuar
-            console.log('✅ Código válido, configurando eventos');
-            configurarEventosArchivos();
+            // Si el código es válido, continuar con la configuración
+            console.log('✅ Código válido, configurando formulario');
+            configurarFormulario();
             
             // Mostrar el código en la interfaz
             mostrarMensaje(`Código de registro: ${codigoRegistro}`, 'success');
+            
+            // CORRECCIÓN: Mostrar todas las secciones del formulario
+            console.log('📋 Mostrando secciones del formulario');
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.style.display = 'block';
+            });
+            
+            // Generar campos de servicios por defecto (2)
+            generarCamposServicios();
         };
         
-        // Configurar eventos para conversión de archivos
-        function configurarEventosArchivos() {
+        // Configurar formulario
+        function configurarFormulario() {
+            console.log('🔧 Configurando formulario');
+            
+            // Configurar conversión de archivos
+            configurarArchivos();
+        }
+        
+        // Configurar manejo de archivos
+        function configurarArchivos() {
             console.log('📁 Configurando manejo de archivos');
             const fileInputs = document.querySelectorAll('input[type="file"]');
             fileInputs.forEach(input => {
@@ -579,92 +486,63 @@
             reader.readAsDataURL(file);
         }
         
-        // Agregar servicio público
-        function agregarServicioPublico() {
-            contadorServicios++;
-            const index = contadorServicios;
-            serviciosPublicos.push(index);
+        // Generar campos de servicios públicos
+        function generarCamposServicios() {
+            const numServicios = parseInt(document.getElementById('numServicios').value);
+            const container = document.getElementById('serviciosContainer');
+            container.innerHTML = '';
+            serviciosPublicos = [];
             
-            console.log(`➕ Agregando servicio público ${index}`);
+            console.log(`💡 Generando campos para ${numServicios} servicios`);
             
-            const container = document.getElementById('serviciosPublicosContainer');
-            const nuevoServicio = document.createElement('div');
-            nuevoServicio.className = 'servicio-publico-item';
-            nuevoServicio.setAttribute('data-index', index);
+            const tiposServicios = ['Energía', 'Agua', 'Gas', 'Internet', 'Administración'];
             
-            nuevoServicio.innerHTML = `
-                <button type="button" class="remove-button" onclick="removerServicioPublico(${index})">✖ Eliminar</button>
-                <h4>Servicio Público ${index}</h4>
+            for (let i = 1; i <= numServicios; i++) {
+                const servicioHtml = `
+                    <div class="servicio-item">
+                        <div class="servicio-header">
+                            <h4>Servicio ${i}</h4>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Tipo de Servicio <span class="required">*</span></label>
+                            <select id="tipoServicio${i}" required>
+                                <option value="">Seleccione...</option>
+                                ${tiposServicios.map(tipo => 
+                                    `<option value="${tipo.toLowerCase()}">${tipo}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Recibo del Servicio <span class="required">*</span></label>
+                                <input type="file" id="reciboServicio${i}" class="file-input" 
+                                       accept="image/*,.pdf" required 
+                                       onchange="convertirArchivoBase64(this)">
+                                <small class="form-text">Último recibo del servicio</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Comprobante de Pago <span class="required">*</span></label>
+                                <input type="file" id="pagoServicio${i}" class="file-input" 
+                                       accept="image/*,.pdf" required 
+                                       onchange="convertirArchivoBase64(this)">
+                                <small class="form-text">Comprobante de pago al día</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Tipo de Servicio <span class="required">*</span></label>
-                        <select id="tipoServicio${index}" required>
-                            <option value="">Seleccione...</option>
-                            <option value="energia">Energía</option>
-                            <option value="agua">Agua</option>
-                            <option value="gas">Gas</option>
-                            <option value="internet">Internet</option>
-                            <option value="telefono">Teléfono</option>
-                            <option value="administracion">Administración</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Empresa</label>
-                        <input type="text" id="empresaServicio${index}" placeholder="Nombre de la empresa">
-                    </div>
-                </div>
+                container.innerHTML += servicioHtml;
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Recibo del Servicio <span class="required">*</span></label>
-                        <input type="file" id="reciboServicio${index}" class="file-input" accept="image/*,.pdf" required onchange="convertirArchivoBase64(this)">
-                        <small class="form-text">Último recibo disponible</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Comprobante de Pago</label>
-                        <input type="file" id="pagoServicio${index}" class="file-input" accept="image/*,.pdf" onchange="convertirArchivoBase64(this)">
-                        <small class="form-text">Opcional</small>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(nuevoServicio);
-            
-            // Mostrar botones de eliminar si hay más de 2
-            if (serviciosPublicos.length > 2) {
-                document.querySelectorAll('.remove-button').forEach(btn => {
-                    btn.style.display = 'block';
+                // Agregar a la lista de servicios
+                serviciosPublicos.push({
+                    index: i,
+                    tipo: '',
+                    recibo: '',
+                    pago: ''
                 });
-            }
-        }
-        
-        // Remover servicio público
-        function removerServicioPublico(index) {
-            if (serviciosPublicos.length <= 2) {
-                mostrarMensaje('⚠️ Debe mantener al menos 2 servicios públicos', 'error');
-                return;
-            }
-            
-            console.log(`➖ Removiendo servicio público ${index}`);
-            
-            const elemento = document.querySelector(`[data-index="${index}"]`);
-            if (elemento) {
-                elemento.remove();
-                serviciosPublicos = serviciosPublicos.filter(i => i !== index);
-                
-                // Ocultar botones de eliminar si quedan solo 2
-                if (serviciosPublicos.length <= 2) {
-                    document.querySelectorAll('.remove-button').forEach(btn => {
-                        btn.style.display = 'none';
-                    });
-                }
-                
-                // Eliminar archivos asociados
-                delete archivosBase64[`reciboServicio${index}`];
-                delete archivosBase64[`pagoServicio${index}`];
             }
         }
         
@@ -673,50 +551,41 @@
             console.log('🔍 Validando formulario...');
             
             // Validar campos básicos
-            const camposRequeridos = [
-                'tipoDocumento', 'numeroDocumento', 'nombres', 
-                'apellidos', 'email', 'celular', 'direccion'
-            ];
-            
-            for (let campo of camposRequeridos) {
-                const elemento = document.getElementById(campo);
-                if (!elemento || !elemento.value) {
+            const campos = ['tipoDocumento', 'numeroDocumento', 'nombres', 'apellidos', 'email', 'celular', 'direccion'];
+            for (const campo of campos) {
+                const valor = document.getElementById(campo).value;
+                if (!valor) {
                     mostrarMensaje(`❌ Por favor complete el campo: ${campo}`, 'error');
                     return false;
                 }
             }
             
             // Validar archivos requeridos
-            const archivosRequeridos = [
-                'docIdentidad', 'sarlaft', 'certBancario', 'certTradicion'
-            ];
-            
-            for (let archivo of archivosRequeridos) {
+            const archivosRequeridos = ['docIdentidad', 'sarlaft', 'certBancario', 'certTradicion'];
+            for (const archivo of archivosRequeridos) {
                 if (!archivosBase64[archivo]) {
-                    const nombreAmigable = {
-                        'docIdentidad': 'Documento de Identidad',
-                        'sarlaft': 'Formulario SARLAFT',
-                        'certBancario': 'Certificado Bancario',
-                        'certTradicion': 'Certificado de Tradición'
-                    };
-                    mostrarMensaje(`❌ Por favor cargue: ${nombreAmigable[archivo] || archivo}`, 'error');
+                    mostrarMensaje(`❌ Debe cargar el archivo: ${archivo}`, 'error');
                     return false;
                 }
             }
             
             // Validar servicios públicos (mínimo 2)
-            let serviciosValidos = 0;
-            for (let index of serviciosPublicos) {
-                const tipo = document.getElementById(`tipoServicio${index}`);
-                const recibo = archivosBase64[`reciboServicio${index}`];
+            const numServicios = parseInt(document.getElementById('numServicios').value);
+            let serviciosCompletos = 0;
+            
+            for (let i = 1; i <= numServicios; i++) {
+                const tipo = document.getElementById(`tipoServicio${i}`).value;
+                const tieneRecibo = archivosBase64[`reciboServicio${i}`];
+                const tienePago = archivosBase64[`pagoServicio${i}`];
                 
-                if (tipo && tipo.value && recibo) {
-                    serviciosValidos++;
+                if (tipo && tieneRecibo && tienePago) {
+                    serviciosCompletos++;
+                    serviciosPublicos[i-1].tipo = tipo;
                 }
             }
             
-            if (serviciosValidos < 2) {
-                mostrarMensaje('❌ Debe cargar al menos 2 servicios públicos con sus recibos', 'error');
+            if (serviciosCompletos < 2) {
+                mostrarMensaje('❌ Debe cargar al menos 2 servicios públicos completos', 'error');
                 return false;
             }
             
@@ -741,29 +610,15 @@
                 propietario: {
                     tipoDocumento: document.getElementById('tipoDocumento').value,
                     numeroDocumento: document.getElementById('numeroDocumento').value,
+                    nombre: document.getElementById('nombres').value + ' ' + document.getElementById('apellidos').value,
                     nombres: document.getElementById('nombres').value,
                     apellidos: document.getElementById('apellidos').value,
-                    nombreCompleto: document.getElementById('nombres').value + ' ' + document.getElementById('apellidos').value,
                     email: document.getElementById('email').value,
                     celular: document.getElementById('celular').value,
                     direccion: document.getElementById('direccion').value
                 },
-                serviciosPublicos: []
+                serviciosPublicos: serviciosPublicos.filter(s => s.tipo !== '')
             };
-            
-            // Agregar servicios públicos
-            for (let index of serviciosPublicos) {
-                const tipo = document.getElementById(`tipoServicio${index}`);
-                const empresa = document.getElementById(`empresaServicio${index}`);
-                
-                if (tipo && tipo.value) {
-                    datosFormulario.serviciosPublicos.push({
-                        tipo: tipo.value,
-                        empresa: empresa ? empresa.value : '',
-                        index: index
-                    });
-                }
-            }
             
             console.log('📊 Datos a enviar:', datosFormulario);
             console.log('📁 Archivos a enviar:', Object.keys(archivosBase64));
@@ -772,7 +627,7 @@
                 // Enviar con modo no-cors para evitar error CORS
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // IMPORTANTE: Esto evita el error CORS
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'text/plain'
                     },
@@ -818,9 +673,6 @@
                     messageDiv.remove();
                 }, 5000);
             }
-            
-            // Scroll to top para ver el mensaje
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
         // Log de verificación
