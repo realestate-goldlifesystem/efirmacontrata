@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gold Life System - Formulario de Arrendamiento</title>
+    <title>EFirmaContrata - Sistema Premium de Gestión Documental</title>
     <style>
         * {
             margin: 0;
@@ -86,7 +86,7 @@
             padding: 20px;
         }
 
-        /* Card principal con efecto de luz */
+        /* Card principal SIN movimiento */
         .form-card {
             width: 100%;
             max-width: 900px;
@@ -98,27 +98,9 @@
                 0 0 100px rgba(255, 215, 0, 0.05),
                 inset 0 0 2px rgba(255, 215, 0, 0.1);
             border: 1px solid rgba(255, 215, 0, 0.2);
-            animation: levitate 3s ease-in-out infinite;
         }
 
-        @keyframes levitate {
-            0%, 100% {
-                transform: translateY(0);
-                box-shadow: 
-                    0 0 50px rgba(255, 215, 0, 0.1),
-                    0 0 100px rgba(255, 215, 0, 0.05),
-                    inset 0 0 2px rgba(255, 215, 0, 0.1);
-            }
-            50% {
-                transform: translateY(-10px);
-                box-shadow: 
-                    0 10px 60px rgba(255, 215, 0, 0.15),
-                    0 20px 120px rgba(255, 215, 0, 0.08),
-                    inset 0 0 2px rgba(255, 215, 0, 0.1);
-            }
-        }
-
-        /* Header del formulario */
+        /* Header del formulario con shimmer */
         .form-header {
             background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-primary) 100%);
             padding: 30px;
@@ -137,7 +119,7 @@
             background: linear-gradient(
                 45deg,
                 transparent,
-                rgba(255, 255, 255, 0.1),
+                rgba(255, 255, 255, 0.3),
                 transparent
             );
             animation: shimmer 3s infinite;
@@ -160,6 +142,7 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             position: relative;
             z-index: 1;
+            letter-spacing: 2px;
         }
 
         .tagline {
@@ -167,6 +150,70 @@
             font-size: 14px;
             position: relative;
             z-index: 1;
+            font-weight: 500;
+        }
+
+        /* Pantalla inicial con dos botones */
+        .initial-screen {
+            padding: 60px 40px;
+            text-align: center;
+            display: block;
+        }
+
+        .initial-screen.hidden {
+            display: none;
+        }
+
+        .initial-title {
+            color: var(--gold-primary);
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .initial-description {
+            color: var(--white);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .initial-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .initial-btn {
+            flex: 1;
+            min-width: 250px;
+            padding: 20px;
+            background: var(--black-primary);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .initial-btn:hover {
+            border-color: var(--gold-primary);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .initial-btn-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .initial-btn-title {
+            color: var(--gold-primary);
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .initial-btn-desc {
+            color: var(--gray-medium);
+            font-size: 14px;
         }
 
         /* Progress bar */
@@ -174,6 +221,11 @@
             padding: 30px;
             background: var(--gray-dark);
             border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+            display: none;
+        }
+
+        .progress-container.show {
+            display: block;
         }
 
         .progress-bar {
@@ -263,6 +315,11 @@
         .form-content {
             padding: 40px;
             min-height: 400px;
+            display: none;
+        }
+
+        .form-content.show {
+            display: block;
         }
 
         .form-step {
@@ -293,9 +350,17 @@
             border-bottom: 2px solid rgba(255, 215, 0, 0.2);
         }
 
-        /* Campos del formulario */
-        .form-group {
+        /* Campos dinámicos */
+        .form-field {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
             margin-bottom: 25px;
+        }
+
+        .form-field.show {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .form-row {
@@ -383,7 +448,43 @@
             border-color: var(--gold-primary);
         }
 
-        /* Botones */
+        /* Botones para codeudores */
+        .codeudor-question {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .codeudor-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .codeudor-btn {
+            padding: 15px 40px;
+            background: var(--black-primary);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 10px;
+            color: var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .codeudor-btn:hover {
+            border-color: var(--gold-primary);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
+        }
+
+        .codeudor-btn.selected {
+            background: var(--gold-primary);
+            color: var(--black-primary);
+            border-color: var(--gold-primary);
+        }
+
+        /* Navegación */
         .form-navigation {
             display: flex;
             justify-content: space-between;
@@ -391,6 +492,11 @@
             padding: 30px 40px;
             background: var(--gray-dark);
             border-top: 1px solid rgba(255, 215, 0, 0.1);
+            display: none;
+        }
+
+        .form-navigation.show {
+            display: flex;
         }
 
         .btn {
@@ -452,7 +558,7 @@
             transform: none !important;
         }
 
-        /* Modal de pago */
+        /* Modal de pago mejorado */
         .modal {
             display: none;
             position: fixed;
@@ -460,7 +566,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -493,11 +599,24 @@
             margin-bottom: 10px;
         }
 
-        .payment-amount {
+        .service-info {
+            background: var(--gray-dark);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .service-price {
             font-size: 36px;
-            color: var(--white);
+            color: var(--gold-primary);
             font-weight: bold;
-            margin: 20px 0;
+            margin: 10px 0;
+        }
+
+        .service-description {
+            color: var(--white);
+            font-size: 14px;
         }
 
         .payment-method {
@@ -538,23 +657,90 @@
             color: var(--gold-primary);
         }
 
-        /* Mensajes de validación */
-        .validation-message {
-            margin-top: 5px;
-            font-size: 12px;
+        /* Modal de confirmación con slider */
+        .confirmation-modal {
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
         }
 
-        .validation-message.show {
-            display: block;
+        .confirmation-modal.show {
+            display: flex;
         }
 
-        .validation-message.success {
-            color: var(--success);
+        .confirmation-content {
+            background: var(--black-secondary);
+            border: 2px solid var(--gold-primary);
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
         }
 
-        .validation-message.error {
-            color: var(--error);
+        .confirmation-title {
+            color: var(--gold-primary);
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .confirmation-text {
+            color: var(--white);
+            margin-bottom: 30px;
+        }
+
+        /* Slider de confirmación */
+        .slide-to-confirm {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            background: var(--gray-dark);
+            border-radius: 30px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .slide-track {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--gray-medium);
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .slide-thumb {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 50px;
+            height: 50px;
+            background: var(--gold-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .slide-thumb:hover {
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .slide-thumb.confirmed {
+            left: calc(100% - 55px);
+            background: var(--success);
         }
 
         /* Loading overlay */
@@ -566,7 +752,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.95);
-            z-index: 2000;
+            z-index: 3000;
             justify-content: center;
             align-items: center;
             flex-direction: column;
@@ -598,6 +784,10 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            .initial-buttons {
+                flex-direction: column;
+            }
+
             .form-card {
                 margin: 10px;
             }
@@ -618,58 +808,9 @@
                 padding: 10px 20px;
                 font-size: 14px;
             }
-        }
 
-        /* Animación de entrada */
-        .animate-in {
-            animation: slideInUp 0.5s ease forwards;
-        }
-
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Codeudor section */
-        .codeudor-section {
-            background: var(--black-primary);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .codeudor-header {
-            color: var(--gold-primary);
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-
-        /* Success checkmark */
-        .success-checkmark {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto;
-            display: none;
-        }
-
-        .success-checkmark.show {
-            display: block;
-            animation: scaleIn 0.5s ease;
-        }
-
-        @keyframes scaleIn {
-            from {
-                transform: scale(0);
-            }
-            to {
-                transform: scale(1);
+            .codeudor-buttons {
+                flex-direction: column;
             }
         }
     </style>
@@ -683,79 +824,83 @@
         <div class="form-card">
             <!-- Header -->
             <div class="form-header">
-                <div class="logo">GOLD LIFE SYSTEM</div>
-                <div class="tagline">Sistema Premium de Gestión Inmobiliaria</div>
+                <div class="logo">EFirmaContrata</div>
+                <div class="tagline">Gestión de Documentación Real Estate - GoldLife System</div>
             </div>
 
-            <!-- Progress Bar -->
-            <div class="progress-container">
+            <!-- Pantalla inicial -->
+            <div class="initial-screen" id="initialScreen">
+                <h2 class="initial-title">Bienvenido al Sistema de Registro</h2>
+                <p class="initial-description">
+                    Para continuar con el proceso de arrendamiento, primero debe realizar el pago de los derechos de contrato y luego proceder con el registro de sus documentos.
+                </p>
+                
+                <div class="initial-buttons">
+                    <div class="initial-btn" onclick="mostrarModalPago()">
+                        <div class="initial-btn-icon">💳</div>
+                        <div class="initial-btn-title">Pagar Derechos</div>
+                        <div class="initial-btn-desc">Realice el pago de $60.000 COP</div>
+                    </div>
+                    
+                    <div class="initial-btn" onclick="iniciarRegistro()">
+                        <div class="initial-btn-icon">📋</div>
+                        <div class="initial-btn-title">Registrarse</div>
+                        <div class="initial-btn-desc">Complete el formulario de registro</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar (oculto inicialmente) -->
+            <div class="progress-container" id="progressContainer">
                 <div class="progress-bar">
                     <div class="progress-line"></div>
                     <div class="progress-line-active" id="progressLineActive" style="width: 0%"></div>
                     
-                    <div class="step active" data-step="1">
+                    <div class="step active" data-step="1" id="step1">
                         <div class="step-circle">1</div>
                         <div class="step-label">Documentos</div>
                     </div>
                     
-                    <div class="step" data-step="2">
+                    <div class="step" data-step="2" id="step2">
                         <div class="step-circle">2</div>
                         <div class="step-label">Información</div>
                     </div>
                     
-                    <div class="step" data-step="3">
+                    <div class="step" data-step="3" id="step3">
                         <div class="step-circle">3</div>
                         <div class="step-label">Identidad</div>
                     </div>
                     
-                    <div class="step" data-step="4">
+                    <div class="step" data-step="4" id="step4">
                         <div class="step-circle">4</div>
-                        <div class="step-label">Codeudores</div>
-                    </div>
-                    
-                    <div class="step" data-step="5">
-                        <div class="step-circle">5</div>
                         <div class="step-label">Confirmación</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Contenido del formulario -->
-            <div class="form-content">
+            <!-- Contenido del formulario (oculto inicialmente) -->
+            <div class="form-content" id="formContent">
                 <!-- Paso 1: Documentos Iniciales -->
                 <div class="form-step active" data-step="1">
                     <h2 class="step-title">Documentos Iniciales</h2>
                     
-                    <div class="form-group">
-                        <button type="button" class="btn btn-next" onclick="mostrarModalPago()" style="width: 100%;">
-                            REALIZAR PAGO DE DERECHOS DE CONTRATO
-                        </button>
-                        <p style="color: var(--gray-medium); text-align: center; margin-top: 10px;">
-                            Valor: $60.000 COP
-                        </p>
+                    <div class="form-field" id="field1">
+                        <label>Documento Estudio Aprobado <span class="required">*</span></label>
+                        <div class="file-upload-wrapper">
+                            <label class="file-upload-label" for="estudioAprobado" id="labelEstudioAprobado">
+                                Seleccionar archivo
+                            </label>
+                            <input type="file" id="estudioAprobado" class="file-upload-input" accept="image/*,.pdf" required onchange="handleFileSelect(this, 'field2')">
+                        </div>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Documento Estudio Aprobado <span class="required">*</span></label>
-                            <div class="file-upload-wrapper">
-                                <label class="file-upload-label" for="estudioAprobado" id="labelEstudioAprobado">
-                                    Seleccionar archivo
-                                </label>
-                                <input type="file" id="estudioAprobado" class="file-upload-input" accept="image/*,.pdf" required>
-                            </div>
-                            <div class="validation-message" id="validEstudioAprobado"></div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Comprobante de Pago <span class="required">*</span></label>
-                            <div class="file-upload-wrapper">
-                                <label class="file-upload-label" for="comprobantePago" id="labelComprobantePago">
-                                    Seleccionar archivo
-                                </label>
-                                <input type="file" id="comprobantePago" class="file-upload-input" accept="image/*,.pdf" required>
-                            </div>
-                            <div class="validation-message" id="validComprobantePago"></div>
+                    <div class="form-field" id="field2">
+                        <label>Comprobante de Pago <span class="required">*</span></label>
+                        <div class="file-upload-wrapper">
+                            <label class="file-upload-label" for="comprobantePago" id="labelComprobantePago">
+                                Seleccionar archivo
+                            </label>
+                            <input type="file" id="comprobantePago" class="file-upload-input" accept="image/*,.pdf" required onchange="handleFileSelect(this, null)">
                         </div>
                     </div>
                 </div>
@@ -764,76 +909,83 @@
                 <div class="form-step" data-step="2">
                     <h2 class="step-title">Información Personal del Inquilino</h2>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Tipo de Documento <span class="required">*</span></label>
-                            <select id="tipoDocumento" required>
-                                <option value="">Seleccione...</option>
-                                <option value="CC">Cédula de Ciudadanía</option>
-                                <option value="CE">Cédula de Extranjería</option>
-                                <option value="PA">Pasaporte</option>
-                                <option value="NIT">NIT</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Número de Documento <span class="required">*</span></label>
-                            <input type="text" id="numeroDocumento" placeholder="Ej: 1234567890" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Confirmar Número de Documento <span class="required">*</span></label>
-                            <input type="text" id="confirmarDocumento" placeholder="Confirme el número" required>
-                            <div class="validation-message" id="documentoMatch"></div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Fecha de Expedición</label>
-                            <input type="date" id="fechaExpedicion">
+                    <div class="form-field" id="field3">
+                        <div class="form-row">
+                            <div>
+                                <label>Tipo de Documento <span class="required">*</span></label>
+                                <select id="tipoDocumento" required onchange="showNextField('field4')">
+                                    <option value="">Seleccione...</option>
+                                    <option value="CC">Cédula de Ciudadanía</option>
+                                    <option value="CE">Cédula de Extranjería</option>
+                                    <option value="PA">Pasaporte</option>
+                                    <option value="NIT">NIT</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label>Número de Documento <span class="required">*</span></label>
+                                <input type="text" id="numeroDocumento" placeholder="Ej: 1234567890" required onblur="showNextField('field4')">
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Nombres Completos <span class="required">*</span></label>
-                            <input type="text" id="nombres" placeholder="Ej: Juan Carlos" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Apellidos Completos <span class="required">*</span></label>
-                            <input type="text" id="apellidos" placeholder="Ej: García López" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Correo Electrónico <span class="required">*</span></label>
-                            <input type="email" id="email" placeholder="correo@ejemplo.com" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Confirmar Correo <span class="required">*</span></label>
-                            <input type="email" id="confirmarEmail" placeholder="Confirme el correo" required>
-                            <div class="validation-message" id="emailMatch"></div>
+                    <div class="form-field" id="field4">
+                        <div class="form-row">
+                            <div>
+                                <label>Confirmar Número de Documento <span class="required">*</span></label>
+                                <input type="text" id="confirmarDocumento" placeholder="Confirme el número" required onblur="validateAndShow('numeroDocumento', 'confirmarDocumento', 'field5')">
+                            </div>
+                            
+                            <div>
+                                <label>Fecha de Expedición</label>
+                                <input type="date" id="fechaExpedicion">
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Celular <span class="required">*</span></label>
-                            <input type="tel" id="celular" placeholder="Ej: 3001234567" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Confirmar Celular <span class="required">*</span></label>
-                            <input type="tel" id="confirmarCelular" placeholder="Confirme el celular" required>
-                            <div class="validation-message" id="celularMatch"></div>
+                    <div class="form-field" id="field5">
+                        <div class="form-row">
+                            <div>
+                                <label>Nombres Completos <span class="required">*</span></label>
+                                <input type="text" id="nombres" placeholder="Ej: Juan Carlos" required onblur="showNextField('field6')">
+                            </div>
+                            
+                            <div>
+                                <label>Apellidos Completos <span class="required">*</span></label>
+                                <input type="text" id="apellidos" placeholder="Ej: García López" required onblur="showNextField('field6')">
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-field" id="field6">
+                        <div class="form-row">
+                            <div>
+                                <label>Correo Electrónico <span class="required">*</span></label>
+                                <input type="email" id="email" placeholder="correo@ejemplo.com" required onblur="showNextField('field7')">
+                            </div>
+                            
+                            <div>
+                                <label>Confirmar Correo <span class="required">*</span></label>
+                                <input type="email" id="confirmarEmail" placeholder="Confirme el correo" required onblur="validateAndShow('email', 'confirmarEmail', 'field7')">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-field" id="field7">
+                        <div class="form-row">
+                            <div>
+                                <label>Celular <span class="required">*</span></label>
+                                <input type="tel" id="celular" placeholder="Ej: 3001234567" required onblur="showNextField('field8')">
+                            </div>
+                            
+                            <div>
+                                <label>Confirmar Celular <span class="required">*</span></label>
+                                <input type="tel" id="confirmarCelular" placeholder="Confirme el celular" required onblur="validateAndShow('celular', 'confirmarCelular', 'field8')">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-field" id="field8">
                         <label>Ocupación/Profesión <span class="required">*</span></label>
                         <input type="text" id="ocupacion" placeholder="Ej: Ingeniero, Comerciante, etc." required>
                     </div>
@@ -843,7 +995,7 @@
                 <div class="form-step" data-step="3">
                     <h2 class="step-title">Documentos de Identidad</h2>
                     
-                    <div class="form-group">
+                    <div class="form-field show">
                         <label>Documento de Identidad (Ambas caras) <span class="required">*</span></label>
                         <div class="file-upload-wrapper">
                             <label class="file-upload-label" for="docIdentidad" id="labelDocIdentidad">
@@ -851,48 +1003,56 @@
                             </label>
                             <input type="file" id="docIdentidad" class="file-upload-input" accept="image/*,.pdf" multiple required>
                         </div>
-                        <div class="validation-message" id="validDocIdentidad"></div>
-                    </div>
-                </div>
-
-                <!-- Paso 4: Codeudores -->
-                <div class="form-step" data-step="4">
-                    <h2 class="step-title">Información de Codeudores</h2>
-                    
-                    <div class="form-group">
-                        <label>¿Tiene codeudores?</label>
-                        <select id="tieneCodeudores" onchange="toggleCodeudores()">
-                            <option value="no">No</option>
-                            <option value="si">Sí</option>
-                        </select>
                     </div>
                     
-                    <div id="codeudoresContainer" style="display: none;">
-                        <div class="form-group">
-                            <label>Número de codeudores</label>
-                            <select id="numeroCodeudores" onchange="generarCamposCodeudores()">
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                            </select>
+                    <div class="codeudor-question">
+                        <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Tiene codeudores?</h3>
+                        <div class="codeudor-buttons">
+                            <button class="codeudor-btn" onclick="setCodeudor(false)">NO</button>
+                            <button class="codeudor-btn" onclick="setCodeudor(true)">SÍ</button>
                         </div>
-                        
-                        <div id="camposCodeudores"></div>
                     </div>
                 </div>
 
-                <!-- Paso 5: Confirmación -->
-                <div class="form-step" data-step="5">
+                <!-- Paso 4: Primer Codeudor (dinámico) -->
+                <div class="form-step" data-step="codeudor1" id="stepCodeudor1" style="display: none;">
+                    <h2 class="step-title">Información del Codeudor 1</h2>
+                    <div id="codeudor1Fields"></div>
+                    
+                    <div class="codeudor-question">
+                        <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Hay más codeudores?</h3>
+                        <div class="codeudor-buttons">
+                            <button class="codeudor-btn" onclick="addMoreCodeudor(false, 1)">NO</button>
+                            <button class="codeudor-btn" onclick="addMoreCodeudor(true, 1)">SÍ</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 5: Segundo Codeudor (dinámico) -->
+                <div class="form-step" data-step="codeudor2" id="stepCodeudor2" style="display: none;">
+                    <h2 class="step-title">Información del Codeudor 2</h2>
+                    <div id="codeudor2Fields"></div>
+                    
+                    <div class="codeudor-question">
+                        <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Hay más codeudores?</h3>
+                        <div class="codeudor-buttons">
+                            <button class="codeudor-btn" onclick="addMoreCodeudor(false, 2)">NO</button>
+                            <button class="codeudor-btn" onclick="addMoreCodeudor(true, 2)">SÍ</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Paso 6: Tercer Codeudor (dinámico) -->
+                <div class="form-step" data-step="codeudor3" id="stepCodeudor3" style="display: none;">
+                    <h2 class="step-title">Información del Codeudor 3</h2>
+                    <div id="codeudor3Fields"></div>
+                </div>
+
+                <!-- Último Paso: Confirmación -->
+                <div class="form-step" data-step="confirmation">
                     <h2 class="step-title">Confirmación y Envío</h2>
                     
                     <div style="text-align: center; padding: 40px 0;">
-                        <div class="success-checkmark" id="successCheckmark">
-                            <svg width="80" height="80" viewBox="0 0 80 80">
-                                <circle cx="40" cy="40" r="35" fill="none" stroke="#FFD700" stroke-width="3"/>
-                                <path d="M25 40 L35 50 L55 30" fill="none" stroke="#FFD700" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                        
                         <h3 style="color: var(--gold-primary); margin: 20px 0;">Revise su información</h3>
                         <p style="color: var(--white); margin-bottom: 30px;">
                             Por favor verifique que todos los datos ingresados sean correctos antes de enviar.
@@ -905,8 +1065,8 @@
                 </div>
             </div>
 
-            <!-- Navegación -->
-            <div class="form-navigation">
+            <!-- Navegación (oculta inicialmente) -->
+            <div class="form-navigation" id="formNavigation">
                 <button type="button" class="btn btn-prev" id="btnPrev" onclick="previousStep()" style="display: none;">
                     Anterior
                 </button>
@@ -917,8 +1077,8 @@
                     Siguiente
                 </button>
                 
-                <button type="button" class="btn btn-submit" id="btnSubmit" onclick="enviarFormulario()" style="display: none;">
-                    Enviar Formulario
+                <button type="button" class="btn btn-submit" id="btnConfirm" onclick="mostrarConfirmacion()" style="display: none;">
+                    Confirmar
                 </button>
             </div>
         </div>
@@ -931,7 +1091,11 @@
             
             <div class="modal-header">
                 <h2 class="modal-title">Pago de Derechos de Contrato</h2>
-                <div class="payment-amount">$60.000 COP</div>
+            </div>
+            
+            <div class="service-info">
+                <p class="service-description">Servicio de gestión documental y contrato digital</p>
+                <div class="service-price">$60.000 COP</div>
             </div>
             
             <div class="payment-method">
@@ -948,10 +1112,34 @@
             
             <div class="payment-method">
                 <h3>Opción 2: Pago con Tarjeta</h3>
-                <a href="https://checkout.wompi.co/l/uuZ80F" target="_blank" class="btn btn-next" style="width: 100%; display: block; text-align: center; text-decoration: none;">
+                <a href="https://checkout.wompi.co/l/uuZ80F" target="_blank" class="btn btn-next" onclick="cerrarModalPago()" style="width: 100%; display: block; text-align: center; text-decoration: none;">
                     Pagar con Wompi
                 </a>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación con Slider -->
+    <div id="confirmationModal" class="confirmation-modal">
+        <div class="confirmation-content">
+            <h2 class="confirmation-title">Confirmación Final</h2>
+            <p class="confirmation-text">
+                Por favor, revise que toda la información esté correcta.<br>
+                Deslice para confirmar y enviar el formulario.
+            </p>
+            
+            <div class="slide-to-confirm" id="slideToConfirm">
+                <div class="slide-track">Deslice para confirmar →</div>
+                <div class="slide-thumb" id="slideThumb">→</div>
+            </div>
+            
+            <button class="btn btn-submit" id="btnFinalSubmit" onclick="enviarFormulario()" style="display: none; width: 100%; margin-top: 20px;">
+                Enviar Formulario
+            </button>
+            
+            <button class="btn btn-prev" onclick="cerrarConfirmacion()" style="width: 100%; margin-top: 10px;">
+                Revisar de nuevo
+            </button>
         </div>
     </div>
 
@@ -965,15 +1153,17 @@
     <script>
         // Variables globales
         let currentStep = 1;
-        const totalSteps = 5;
+        let totalSteps = 4;
         let codigoRegistro = '';
         let archivosBase64 = {};
         let codeudoresData = [];
-        let formData = {};
+        let hasCodeudores = false;
+        let numCodeudores = 0;
+        let dynamicSteps = ['1', '2', '3'];
 
         // Inicializar
         window.onload = function() {
-            console.log('Iniciando Gold Life System - Formulario Premium');
+            console.log('Iniciando EFirmaContrata - Sistema Premium');
             
             // Obtener código de registro
             const urlParams = new URLSearchParams(window.location.search);
@@ -990,14 +1180,8 @@
             // Crear partículas
             createParticles();
             
-            // Configurar validaciones
-            configurarValidaciones();
-            
-            // Configurar archivos
-            configurarArchivos();
-            
-            // Actualizar progress bar
-            updateProgressBar();
+            // Configurar slider de confirmación
+            setupSlider();
         };
 
         // Crear partículas doradas
@@ -1015,105 +1199,306 @@
             }
         }
 
+        // Iniciar registro
+        function iniciarRegistro() {
+            document.getElementById('initialScreen').classList.add('hidden');
+            document.getElementById('progressContainer').classList.add('show');
+            document.getElementById('formContent').classList.add('show');
+            document.getElementById('formNavigation').classList.add('show');
+            
+            // Mostrar primer campo con animación
+            setTimeout(() => {
+                document.getElementById('field1').classList.add('show');
+            }, 100);
+            
+            updateProgressBar();
+        }
+
+        // Manejo de archivos con campos dinámicos
+        function handleFileSelect(input, nextFieldId) {
+            const label = document.getElementById('label' + input.id.charAt(0).toUpperCase() + input.id.slice(1));
+            if (input.files.length > 0) {
+                label.textContent = input.files[0].name;
+                label.classList.add('file-selected');
+                convertirArchivoBase64(input);
+                
+                if (nextFieldId) {
+                    setTimeout(() => {
+                        document.getElementById(nextFieldId).classList.add('show');
+                    }, 300);
+                }
+            }
+        }
+
+        // Mostrar siguiente campo
+        function showNextField(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field && !field.classList.contains('show')) {
+                setTimeout(() => {
+                    field.classList.add('show');
+                }, 300);
+            }
+        }
+
+        // Validar y mostrar
+        function validateAndShow(field1Id, field2Id, nextFieldId) {
+            const val1 = document.getElementById(field1Id).value;
+            const val2 = document.getElementById(field2Id).value;
+            
+            if (val1 === val2 && val1 !== '') {
+                showNextField(nextFieldId);
+            } else if (val1 !== val2 && val2 !== '') {
+                alert('Los valores no coinciden');
+            }
+        }
+
+        // Manejo de codeudores
+        function setCodeudor(hasCod) {
+            hasCodeudores = hasCod;
+            
+            if (hasCod) {
+                // Agregar paso de codeudor
+                numCodeudores = 1;
+                createCodeudorFields(1);
+                dynamicSteps = ['1', '2', '3', 'codeudor1', 'confirmation'];
+            } else {
+                // Ir directo a confirmación
+                dynamicSteps = ['1', '2', '3', 'confirmation'];
+            }
+            
+            // Actualizar botones para mostrar selección
+            event.target.classList.add('selected');
+        }
+
+        // Crear campos de codeudor
+        function createCodeudorFields(num) {
+            const container = document.getElementById(`codeudor${num}Fields`);
+            container.innerHTML = `
+                <div class="form-field show">
+                    <div class="form-row">
+                        <div>
+                            <label>Tipo de Documento <span class="required">*</span></label>
+                            <select id="tipoDocCodeudor${num}" required>
+                                <option value="">Seleccione...</option>
+                                <option value="CC">Cédula de Ciudadanía</option>
+                                <option value="CE">Cédula de Extranjería</option>
+                                <option value="PA">Pasaporte</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label>Número de Documento <span class="required">*</span></label>
+                            <input type="text" id="numDocCodeudor${num}" placeholder="Número de documento" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-field show">
+                    <div class="form-row">
+                        <div>
+                            <label>Nombres <span class="required">*</span></label>
+                            <input type="text" id="nombresCodeudor${num}" placeholder="Nombres completos" required>
+                        </div>
+                        
+                        <div>
+                            <label>Apellidos <span class="required">*</span></label>
+                            <input type="text" id="apellidosCodeudor${num}" placeholder="Apellidos completos" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-field show">
+                    <div class="form-row">
+                        <div>
+                            <label>Email <span class="required">*</span></label>
+                            <input type="email" id="emailCodeudor${num}" placeholder="correo@ejemplo.com" required>
+                        </div>
+                        
+                        <div>
+                            <label>Celular <span class="required">*</span></label>
+                            <input type="tel" id="celularCodeudor${num}" placeholder="3001234567" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-field show">
+                    <label>Documento de Identidad <span class="required">*</span></label>
+                    <div class="file-upload-wrapper">
+                        <label class="file-upload-label" for="docCodeudor${num}" id="labelDocCodeudor${num}">
+                            Seleccionar archivo - Ambas caras
+                        </label>
+                        <input type="file" id="docCodeudor${num}" class="file-upload-input" accept="image/*,.pdf" required onchange="handleCodeudorFile(this, ${num})">
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleCodeudorFile(input, index) {
+            const label = document.getElementById(`labelDocCodeudor${index}`);
+            if (input.files.length > 0) {
+                label.textContent = input.files[0].name;
+                label.classList.add('file-selected');
+                convertirArchivoBase64(input);
+            }
+        }
+
+        // Agregar más codeudores
+        function addMoreCodeudor(hasMore, currentNum) {
+            event.target.classList.add('selected');
+            
+            if (hasMore && currentNum < 3) {
+                numCodeudores++;
+                createCodeudorFields(numCodeudores);
+                
+                if (currentNum === 1) {
+                    dynamicSteps = ['1', '2', '3', 'codeudor1', 'codeudor2', 'confirmation'];
+                } else if (currentNum === 2) {
+                    dynamicSteps = ['1', '2', '3', 'codeudor1', 'codeudor2', 'codeudor3', 'confirmation'];
+                }
+            }
+        }
+
         // Navegación entre pasos
+        function getCurrentStepIndex() {
+            const currentStepId = dynamicSteps[currentStep - 1];
+            return currentStep;
+        }
+
         function nextStep() {
             if (!validateCurrentStep()) {
                 return;
             }
             
-            if (currentStep < totalSteps) {
-                // Marcar paso actual como completado
-                document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('completed');
-                document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
-                
-                // Ocultar paso actual
-                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
-                
-                // Avanzar al siguiente paso
-                currentStep++;
-                
-                // Mostrar nuevo paso
-                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
-                document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
-                
-                // Actualizar botones
-                updateButtons();
-                
-                // Actualizar progress bar
-                updateProgressBar();
-                
-                // Si es el último paso, mostrar resumen
-                if (currentStep === totalSteps) {
-                    mostrarResumen();
-                }
+            // Ocultar paso actual
+            const currentStepId = dynamicSteps[currentStep - 1];
+            const currentElement = document.querySelector(`.form-step[data-step="${currentStepId}"]`) || 
+                                  document.getElementById(`stepCodeudor${currentStepId.replace('codeudor', '')}`);
+            if (currentElement) {
+                currentElement.classList.remove('active');
+            }
+            
+            // Avanzar al siguiente paso
+            currentStep++;
+            
+            // Mostrar nuevo paso
+            const nextStepId = dynamicSteps[currentStep - 1];
+            const nextElement = document.querySelector(`.form-step[data-step="${nextStepId}"]`) || 
+                               document.getElementById(`stepCodeudor${nextStepId.replace('codeudor', '')}`);
+            if (nextElement) {
+                nextElement.classList.add('active');
+                nextElement.style.display = 'block';
+            }
+            
+            // Actualizar progress bar y botones
+            updateUIForStep();
+            
+            // Si es el último paso, mostrar resumen
+            if (nextStepId === 'confirmation') {
+                mostrarResumen();
+            }
+            
+            // Mostrar campos con animación en el paso 2
+            if (currentStep === 2) {
+                setTimeout(() => {
+                    document.getElementById('field3').classList.add('show');
+                }, 100);
             }
         }
 
         function previousStep() {
             if (currentStep > 1) {
-                // Quitar activo del paso actual
-                document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('active');
-                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.remove('active');
+                // Ocultar paso actual
+                const currentStepId = dynamicSteps[currentStep - 1];
+                const currentElement = document.querySelector(`.form-step[data-step="${currentStepId}"]`) || 
+                                      document.getElementById(`stepCodeudor${currentStepId.replace('codeudor', '')}`);
+                if (currentElement) {
+                    currentElement.classList.remove('active');
+                }
                 
                 // Retroceder
                 currentStep--;
                 
-                // Activar paso anterior
-                document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
-                document.querySelector(`.step[data-step="${currentStep}"]`).classList.add('active');
-                document.querySelector(`.step[data-step="${currentStep}"]`).classList.remove('completed');
+                // Mostrar paso anterior
+                const prevStepId = dynamicSteps[currentStep - 1];
+                const prevElement = document.querySelector(`.form-step[data-step="${prevStepId}"]`) || 
+                                   document.getElementById(`stepCodeudor${prevStepId.replace('codeudor', '')}`);
+                if (prevElement) {
+                    prevElement.classList.add('active');
+                    prevElement.style.display = 'block';
+                }
                 
-                // Actualizar botones
-                updateButtons();
-                
-                // Actualizar progress bar
-                updateProgressBar();
+                // Actualizar UI
+                updateUIForStep();
             }
         }
 
-        function updateButtons() {
+        function updateUIForStep() {
             const btnPrev = document.getElementById('btnPrev');
             const btnNext = document.getElementById('btnNext');
-            const btnSubmit = document.getElementById('btnSubmit');
+            const btnConfirm = document.getElementById('btnConfirm');
             
             // Mostrar/ocultar botón anterior
             btnPrev.style.display = currentStep === 1 ? 'none' : 'block';
             
-            // Mostrar/ocultar botones siguiente/enviar
-            if (currentStep === totalSteps) {
+            // Mostrar/ocultar botones siguiente/confirmar
+            const currentStepId = dynamicSteps[currentStep - 1];
+            if (currentStepId === 'confirmation') {
                 btnNext.style.display = 'none';
-                btnSubmit.style.display = 'block';
+                btnConfirm.style.display = 'block';
             } else {
                 btnNext.style.display = 'block';
-                btnSubmit.style.display = 'none';
+                btnConfirm.style.display = 'none';
             }
+            
+            updateProgressBar();
         }
 
         function updateProgressBar() {
-            const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+            // Calcular progreso basado en pasos principales (sin codeudores)
+            let mainStep = currentStep;
+            if (dynamicSteps[currentStep - 1].includes('codeudor')) {
+                mainStep = 3.5; // Posición intermedia para codeudores
+            } else if (dynamicSteps[currentStep - 1] === 'confirmation') {
+                mainStep = 4;
+            }
+            
+            const progress = ((mainStep - 1) / 3) * 100;
             document.getElementById('progressLineActive').style.width = progress + '%';
+            
+            // Actualizar círculos de progreso
+            for (let i = 1; i <= 4; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                if (stepElement) {
+                    stepElement.classList.remove('active', 'completed');
+                    
+                    if (i < mainStep) {
+                        stepElement.classList.add('completed');
+                    } else if (i === Math.ceil(mainStep)) {
+                        stepElement.classList.add('active');
+                    }
+                }
+            }
         }
 
         // Validación de pasos
         function validateCurrentStep() {
-            switch(currentStep) {
-                case 1:
-                    if (!archivosBase64.estudioAprobado) {
-                        showValidationMessage('validEstudioAprobado', 'Debe cargar el documento de estudio aprobado', 'error');
-                        return false;
-                    }
-                    if (!archivosBase64.comprobantePago) {
-                        showValidationMessage('validComprobantePago', 'Debe cargar el comprobante de pago', 'error');
+            const currentStepId = dynamicSteps[currentStep - 1];
+            
+            switch(currentStepId) {
+                case '1':
+                    if (!archivosBase64.estudioAprobado || !archivosBase64.comprobantePago) {
+                        alert('Por favor cargue todos los documentos requeridos');
                         return false;
                     }
                     return true;
                     
-                case 2:
+                case '2':
                     // Validar campos de información personal
                     const campos = ['tipoDocumento', 'numeroDocumento', 'confirmarDocumento', 'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular', 'ocupacion'];
                     for (const campo of campos) {
                         const elemento = document.getElementById(campo);
                         if (!elemento.value) {
+                            alert(`Por favor complete el campo: ${campo}`);
                             elemento.focus();
                             return false;
                         }
@@ -1121,122 +1506,49 @@
                     
                     // Validar coincidencias
                     if (document.getElementById('numeroDocumento').value !== document.getElementById('confirmarDocumento').value) {
-                        showValidationMessage('documentoMatch', 'Los números de documento no coinciden', 'error');
+                        alert('Los números de documento no coinciden');
                         return false;
                     }
                     if (document.getElementById('email').value !== document.getElementById('confirmarEmail').value) {
-                        showValidationMessage('emailMatch', 'Los correos no coinciden', 'error');
+                        alert('Los correos no coinciden');
                         return false;
                     }
                     if (document.getElementById('celular').value !== document.getElementById('confirmarCelular').value) {
-                        showValidationMessage('celularMatch', 'Los números de celular no coinciden', 'error');
+                        alert('Los números de celular no coinciden');
                         return false;
                     }
                     return true;
                     
-                case 3:
+                case '3':
                     if (!archivosBase64.docIdentidad) {
-                        showValidationMessage('validDocIdentidad', 'Debe cargar el documento de identidad', 'error');
+                        alert('Debe cargar el documento de identidad');
                         return false;
                     }
-                    return true;
-                    
-                case 4:
-                    // Validar codeudores si aplica
-                    if (document.getElementById('tieneCodeudores').value === 'si') {
-                        const numCodeudores = parseInt(document.getElementById('numeroCodeudores').value);
-                        for (let i = 1; i <= numCodeudores; i++) {
-                            const campos = [`tipoDocCodeudor${i}`, `numDocCodeudor${i}`, `nombresCodeudor${i}`, `apellidosCodeudor${i}`, `emailCodeudor${i}`, `celularCodeudor${i}`];
-                            for (const campo of campos) {
-                                const elemento = document.getElementById(campo);
-                                if (elemento && !elemento.value) {
-                                    elemento.focus();
-                                    return false;
-                                }
-                            }
-                            if (!archivosBase64[`docCodeudor${i}`]) {
-                                alert(`Debe cargar el documento del codeudor ${i}`);
-                                return false;
-                            }
-                        }
+                    if (hasCodeudores === null) {
+                        alert('Por favor indique si tiene codeudores');
+                        return false;
                     }
                     return true;
                     
                 default:
+                    if (currentStepId.includes('codeudor')) {
+                        const num = currentStepId.replace('codeudor', '');
+                        const campos = [`tipoDocCodeudor${num}`, `numDocCodeudor${num}`, `nombresCodeudor${num}`, `apellidosCodeudor${num}`, `emailCodeudor${num}`, `celularCodeudor${num}`];
+                        for (const campo of campos) {
+                            const elemento = document.getElementById(campo);
+                            if (elemento && !elemento.value) {
+                                alert(`Por favor complete todos los campos del codeudor ${num}`);
+                                elemento.focus();
+                                return false;
+                            }
+                        }
+                        if (!archivosBase64[`docCodeudor${num}`]) {
+                            alert(`Debe cargar el documento del codeudor ${num}`);
+                            return false;
+                        }
+                    }
                     return true;
             }
-        }
-
-        function showValidationMessage(elementId, message, type) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.textContent = message;
-                element.className = `validation-message show ${type}`;
-                setTimeout(() => {
-                    element.classList.remove('show');
-                }, 5000);
-            }
-        }
-
-        // Configurar validaciones
-        function configurarValidaciones() {
-            // Validación de documento
-            document.getElementById('confirmarDocumento').addEventListener('input', function() {
-                const doc1 = document.getElementById('numeroDocumento').value;
-                const doc2 = this.value;
-                const match = document.getElementById('documentoMatch');
-                
-                if (doc2.length > 0) {
-                    if (doc1 === doc2) {
-                        showValidationMessage('documentoMatch', 'Los documentos coinciden', 'success');
-                    } else {
-                        showValidationMessage('documentoMatch', 'Los documentos no coinciden', 'error');
-                    }
-                }
-            });
-            
-            // Validación de email
-            document.getElementById('confirmarEmail').addEventListener('input', function() {
-                const email1 = document.getElementById('email').value;
-                const email2 = this.value;
-                
-                if (email2.length > 0) {
-                    if (email1 === email2) {
-                        showValidationMessage('emailMatch', 'Los correos coinciden', 'success');
-                    } else {
-                        showValidationMessage('emailMatch', 'Los correos no coinciden', 'error');
-                    }
-                }
-            });
-            
-            // Validación de celular
-            document.getElementById('confirmarCelular').addEventListener('input', function() {
-                const cel1 = document.getElementById('celular').value;
-                const cel2 = this.value;
-                
-                if (cel2.length > 0) {
-                    if (cel1 === cel2) {
-                        showValidationMessage('celularMatch', 'Los celulares coinciden', 'success');
-                    } else {
-                        showValidationMessage('celularMatch', 'Los celulares no coinciden', 'error');
-                    }
-                }
-            });
-        }
-
-        // Configurar archivos
-        function configurarArchivos() {
-            const fileInputs = document.querySelectorAll('.file-upload-input');
-            fileInputs.forEach(input => {
-                input.addEventListener('change', function() {
-                    const label = document.getElementById('label' + this.id.charAt(0).toUpperCase() + this.id.slice(1));
-                    if (this.files.length > 0) {
-                        label.textContent = this.files[0].name;
-                        label.classList.add('file-selected');
-                        convertirArchivoBase64(this);
-                    }
-                });
-            });
         }
 
         // Convertir archivo a Base64
@@ -1285,8 +1597,6 @@
                 event.target.style.background = 'var(--success)';
                 
                 setTimeout(() => {
-                    event.target.textContent = 'Copiar Número';
-                    event.target.style.background = '';
                     cerrarModalPago();
                 }, 1500);
             } catch (err) {
@@ -1294,98 +1604,6 @@
             }
             
             document.body.removeChild(tempInput);
-        }
-
-        // Toggle codeudores
-        function toggleCodeudores() {
-            const tiene = document.getElementById('tieneCodeudores').value;
-            const container = document.getElementById('codeudoresContainer');
-            
-            if (tiene === 'si') {
-                container.style.display = 'block';
-                generarCamposCodeudores();
-            } else {
-                container.style.display = 'none';
-                codeudoresData = [];
-            }
-        }
-
-        // Generar campos de codeudores
-        function generarCamposCodeudores() {
-            const numero = parseInt(document.getElementById('numeroCodeudores').value);
-            const container = document.getElementById('camposCodeudores');
-            container.innerHTML = '';
-            codeudoresData = [];
-            
-            for (let i = 1; i <= numero; i++) {
-                const codeudorHtml = `
-                    <div class="codeudor-section">
-                        <h3 class="codeudor-header">Codeudor ${i}</h3>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Tipo de Documento <span class="required">*</span></label>
-                                <select id="tipoDocCodeudor${i}" required>
-                                    <option value="">Seleccione...</option>
-                                    <option value="CC">Cédula de Ciudadanía</option>
-                                    <option value="CE">Cédula de Extranjería</option>
-                                    <option value="PA">Pasaporte</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Número de Documento <span class="required">*</span></label>
-                                <input type="text" id="numDocCodeudor${i}" placeholder="Número de documento" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Nombres <span class="required">*</span></label>
-                                <input type="text" id="nombresCodeudor${i}" placeholder="Nombres completos" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Apellidos <span class="required">*</span></label>
-                                <input type="text" id="apellidosCodeudor${i}" placeholder="Apellidos completos" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Email <span class="required">*</span></label>
-                                <input type="email" id="emailCodeudor${i}" placeholder="correo@ejemplo.com" required>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Celular <span class="required">*</span></label>
-                                <input type="tel" id="celularCodeudor${i}" placeholder="3001234567" required>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Documento de Identidad <span class="required">*</span></label>
-                            <div class="file-upload-wrapper">
-                                <label class="file-upload-label" for="docCodeudor${i}" id="labelDocCodeudor${i}">
-                                    Seleccionar archivo - Ambas caras
-                                </label>
-                                <input type="file" id="docCodeudor${i}" class="file-upload-input" accept="image/*,.pdf" required onchange="handleCodeudorFile(this, ${i})">
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                container.innerHTML += codeudorHtml;
-            }
-        }
-
-        function handleCodeudorFile(input, index) {
-            const label = document.getElementById(`labelDocCodeudor${index}`);
-            if (input.files.length > 0) {
-                label.textContent = input.files[0].name;
-                label.classList.add('file-selected');
-                convertirArchivoBase64(input);
-            }
         }
 
         // Mostrar resumen
@@ -1404,14 +1622,86 @@
                     <p><strong>Email:</strong> ${email}</p>
                     <p><strong>Celular:</strong> ${celular}</p>
                     <p><strong>Ocupación:</strong> ${document.getElementById('ocupacion').value}</p>
-                    <p><strong>Codeudores:</strong> ${document.getElementById('tieneCodeudores').value === 'si' ? document.getElementById('numeroCodeudores').value : 'No'}</p>
+                    <p><strong>Codeudores:</strong> ${numCodeudores > 0 ? numCodeudores : 'No'}</p>
                 </div>
             `;
             
             resumen.innerHTML = resumenHTML;
+        }
+
+        // Confirmación con slider
+        function mostrarConfirmacion() {
+            document.getElementById('confirmationModal').classList.add('show');
+        }
+
+        function cerrarConfirmacion() {
+            document.getElementById('confirmationModal').classList.remove('show');
+            // Reset slider
+            document.getElementById('slideThumb').style.left = '5px';
+            document.getElementById('slideThumb').classList.remove('confirmed');
+            document.getElementById('btnFinalSubmit').style.display = 'none';
+        }
+
+        // Configurar slider
+        function setupSlider() {
+            const slider = document.getElementById('slideToConfirm');
+            const thumb = document.getElementById('slideThumb');
+            const submitBtn = document.getElementById('btnFinalSubmit');
             
-            // Mostrar checkmark
-            document.getElementById('successCheckmark').classList.add('show');
+            let isDragging = false;
+            let startX = 0;
+            let currentX = 0;
+            
+            thumb.addEventListener('mousedown', startDrag);
+            thumb.addEventListener('touchstart', startDrag);
+            
+            function startDrag(e) {
+                isDragging = true;
+                startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                startX -= currentX;
+                
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('touchmove', drag);
+                document.addEventListener('mouseup', endDrag);
+                document.addEventListener('touchend', endDrag);
+            }
+            
+            function drag(e) {
+                if (!isDragging) return;
+                
+                e.preventDefault();
+                const x = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                currentX = x - startX;
+                
+                // Limitar el movimiento
+                const maxX = slider.offsetWidth - thumb.offsetWidth - 10;
+                currentX = Math.max(5, Math.min(currentX, maxX));
+                
+                thumb.style.left = currentX + 'px';
+                
+                // Si llegó al final
+                if (currentX >= maxX - 10) {
+                    thumb.classList.add('confirmed');
+                    submitBtn.style.display = 'block';
+                    isDragging = false;
+                }
+            }
+            
+            function endDrag() {
+                isDragging = false;
+                
+                // Si no llegó al final, regresar
+                const maxX = slider.offsetWidth - thumb.offsetWidth - 10;
+                if (currentX < maxX - 10) {
+                    currentX = 5;
+                    thumb.style.left = '5px';
+                }
+                
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('touchmove', drag);
+                document.removeEventListener('mouseup', endDrag);
+                document.removeEventListener('touchend', endDrag);
+            }
         }
 
         // Enviar formulario
@@ -1420,6 +1710,7 @@
             
             // Mostrar loading
             document.getElementById('loadingOverlay').classList.add('show');
+            document.getElementById('confirmationModal').classList.remove('show');
             
             // Recopilar datos
             const datosFormulario = {
@@ -1435,17 +1726,16 @@
                     celular: document.getElementById('celular').value,
                     ocupacion: document.getElementById('ocupacion').value
                 },
-                tieneCodeudores: document.getElementById('tieneCodeudores').value,
+                tieneCodeudores: numCodeudores > 0 ? 'si' : 'no',
                 codeudores: []
             };
             
             // Agregar codeudores si existen
-            if (datosFormulario.tieneCodeudores === 'si') {
-                const numCodeudores = parseInt(document.getElementById('numeroCodeudores').value);
-                
-                for (let i = 1; i <= numCodeudores; i++) {
+            for (let i = 1; i <= numCodeudores; i++) {
+                const tipoDoc = document.getElementById(`tipoDocCodeudor${i}`);
+                if (tipoDoc && tipoDoc.value) {
                     const codeudor = {
-                        tipoDocumento: document.getElementById(`tipoDocCodeudor${i}`).value,
+                        tipoDocumento: tipoDoc.value,
                         numeroDocumento: document.getElementById(`numDocCodeudor${i}`).value,
                         nombre: document.getElementById(`nombresCodeudor${i}`).value + ' ' + 
                                document.getElementById(`apellidosCodeudor${i}`).value,
@@ -1459,6 +1749,7 @@
             }
             
             console.log('Datos a enviar:', datosFormulario);
+            console.log('Archivos:', Object.keys(archivosBase64));
             
             try {
                 const response = await fetch(CONFIG.API_URL, {
