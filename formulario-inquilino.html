@@ -1662,7 +1662,7 @@
             recalcularPasosDinamicos();
         }
 
-        function limpiarDocumentosIdentidad() {
+      function limpiarDocumentosIdentidad() {
             delete state.archivosBase64.docIdentidad;
             delete state.archivosBase64.docIdentidadFrente;
             delete state.archivosBase64.docIdentidadReverso;
@@ -1676,9 +1676,13 @@
                     if (label) {
                         label.textContent = label.getAttribute('data-original') || 'Seleccionar archivo';
                         label.classList.remove('file-selected');
+                    }
+                }
+            });
+            
+            state.documentosIdentidadCargados = false;
+            deshabilitarCodeudores();
         }
-    }    
-           });
            
            state.documentosIdentidadCargados = false;
            deshabilitarCodeudores();
