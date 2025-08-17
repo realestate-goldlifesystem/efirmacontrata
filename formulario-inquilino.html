@@ -412,7 +412,9 @@
         input::placeholder {
             color: var(--gray-medium);
         }
-
+    </style>
+</head>
+<style>
         /* File upload estilizado */
         .file-upload-wrapper {
             position: relative;
@@ -891,8 +893,7 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Progress Bar (oculto inicialmente) -->
+<!-- Progress Bar (oculto inicialmente) -->
             <div class="progress-container" id="progressContainer">
                 <div class="progress-bar">
                     <div class="progress-line"></div>
@@ -1157,8 +1158,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Modal de Pago -->
+<!-- Modal de Pago -->
     <div id="modalPago" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="cerrarModalPago()">&times;</span>
@@ -1237,10 +1237,11 @@
         let codeudoresData = [];
         let hasCodeudores = null;
         let numCodeudores = 0;
-        let dynamicSteps = ['1', '2', '3', 'revision-final'];
+        let dynamicSteps = ['1', '2', '3'];
         let documentoCompletoRequerido = null;
         let documentosIdentidadCargados = false;
         let decisionesCodeudores = {};
+        let pasoConfirmacionHabilitado = false;
 
         // Inicializar
         window.onload = function() {
@@ -1263,7 +1264,27 @@
             
             // Configurar slider de confirmación
             setupSlider();
+            
+            // Ocultar paso de revisión final inicialmente
+            ocultarPasoRevisionFinal();
         };
+
+        // Función para ocultar el paso de revisión final
+        function ocultarPasoRevisionFinal() {
+            const revisionStep = document.querySelector('.form-step[data-step="revision-final"]');
+            if (revisionStep) {
+                revisionStep.style.display = 'none';
+                revisionStep.classList.remove('active');
+            }
+        }
+
+        // Función para mostrar el paso de revisión final
+        function mostrarPasoRevisionFinal() {
+            const revisionStep = document.querySelector('.form-step[data-step="revision-final"]');
+            if (revisionStep) {
+                revisionStep.style.display = 'none'; // Se mostrará cuando naveguen a él
+            }
+        }
 
         // Crear partículas doradas
         function createParticles() {
@@ -1315,8 +1336,9 @@
         function setDocumentType(isComplete) {
             // Si cambia de opción, resetear todo lo posterior
             if (documentoCompletoRequerido !== null && documentoCompletoRequerido !== isComplete) {
+                console.log('Cambio en tipo de documento, reseteando...');
                 limpiarDocumentosIdentidad();
-                resetearPasosPosteriores('identidad');
+                resetearDesdeIdentidad();
             }
             
             documentoCompletoRequerido = isComplete;
@@ -1329,6 +1351,7 @@
             
             // Bloquear codeudores hasta que cargue documentos
             deshabilitarCodeudores();
+            resetearDecisionCodeudores();
             
             if (isComplete) {
                 // Mostrar opción de un solo archivo
@@ -1351,23 +1374,30 @@
             }
         }
 
-        // Resetear pasos posteriores cuando se cambia una decisión
-        function resetearPasosPosteriores(desdeNivel) {
-            console.log('Reseteando pasos desde:', desdeNivel);
+        // Resetear desde identidad (cuando cambian tipo de documento)
+        function resetearDesdeIdentidad() {
+            console.log('Reseteando desde identidad...');
             
-            if (desdeNivel === 'identidad') {
-                // Resetear decisión de codeudores
-                hasCodeudores = null;
-                document.getElementById('btnCodeudorNo').classList.remove('selected');
-                document.getElementById('btnCodeudorSi').classList.remove('selected');
-                deshabilitarCodeudores();
-                
-                // Limpiar todos los codeudores
-                limpiarTodosCodeudores();
-                
-                // Resetear pasos dinámicos
-                dynamicSteps = ['1', '2', '3', 'revision-final'];
-            }
+            // Resetear decisión de codeudores
+            resetearDecisionCodeudores();
+            
+            // Limpiar todos los codeudores
+            limpiarTodosCodeudores();
+            
+            // Resetear pasos dinámicos
+            dynamicSteps = ['1', '2', '3'];
+            pasoConfirmacionHabilitado = false;
+            
+            // Ocultar paso de revisión final
+            ocultarPasoRevisionFinal();
+        }
+
+        // Resetear decisión de codeudores
+        function resetearDecisionCodeudores() {
+            hasCodeudores = null;
+            document.getElementById('btnCodeudorNo').classList.remove('selected');
+            document.getElementById('btnCodeudorSi').classList.remove('selected');
+            deshabilitarCodeudores();
         }
 
         // Limpiar documentos de identidad
@@ -1408,9 +1438,6 @@
             document.getElementById('codeudorQuestion').classList.add('disabled');
             document.getElementById('btnCodeudorNo').disabled = true;
             document.getElementById('btnCodeudorSi').disabled = true;
-            // Limpiar selección previa si había
-            document.getElementById('btnCodeudorNo').classList.remove('selected');
-            document.getElementById('btnCodeudorSi').classList.remove('selected');
         }
 
         // Función para manejar la carga de documentos
@@ -1510,7 +1537,10 @@
                     createCodeudorFields(1);
                 }
                 // Actualizar pasos dinámicos para incluir codeudor 1
-                dynamicSteps = ['1', '2', '3', 'identidad-codeudor1', 'revision-final'];
+                dynamicSteps = ['1', '2', '3', 'identidad-codeudor1'];
+                pasoConfirmacionHabilitado = false;
+                // Ocultar revisión final porque falta completar codeudores
+                ocultarPasoRevisionFinal();
             } else {
                 // Si dice NO a codeudores
                 if (anteriorDecision === true) {
@@ -1519,8 +1549,9 @@
                 }
                 numCodeudores = 0;
                 decisionesCodeudores = {};
-                // Resetear a pasos base
+                // Habilitar paso de confirmación
                 dynamicSteps = ['1', '2', '3', 'revision-final'];
+                pasoConfirmacionHabilitado = true;
             }
             
             console.log('Pasos actualizados:', dynamicSteps);
@@ -1644,12 +1675,12 @@
                 numCodeudores = currentNum + 1;
                 createCodeudorFields(numCodeudores);
                 
-               // Actualizar pasos dinámicos
+                // Actualizar pasos dinámicos
                 dynamicSteps = ['1', '2', '3'];
                 for (let i = 1; i <= numCodeudores; i++) {
                     dynamicSteps.push(`identidad-codeudor${i}`);
                 }
-                dynamicSteps.push('revision-final');
+                pasoConfirmacionHabilitado = false;
                 
             } else {
                 // No más codeudores o límite alcanzado
@@ -1680,6 +1711,7 @@
                     dynamicSteps.push(`identidad-codeudor${i}`);
                 }
                 dynamicSteps.push('revision-final');
+                pasoConfirmacionHabilitado = true;
             }
             
             console.log('Pasos actualizados:', dynamicSteps);
@@ -1805,8 +1837,8 @@
                 }
             }
         }
-
-        // Validación de pasos mejorada
+    </script>
+// Validación de pasos mejorada
         function validateCurrentStep() {
             const currentStepId = dynamicSteps[currentStep - 1];
             
@@ -2177,6 +2209,126 @@
                 alert('Error al enviar el formulario. Por favor intente nuevamente.');
             }
         }
+
+        // Validación adicional de formato de email
+        function validarEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Validación adicional de formato de teléfono
+        function validarTelefono(telefono) {
+            const re = /^[0-9]{10}$/;
+            return re.test(telefono);
+        }
+
+        // Función de logging para debug
+        function logDebug(mensaje, datos = null) {
+            if (CONFIG && CONFIG.DEBUG) {
+                console.log(`[DEBUG] ${mensaje}`, datos || '');
+            }
+        }
+
+        // Control de tiempo de sesión (opcional)
+        let tiempoInactividad = 0;
+        const MAX_INACTIVIDAD = 30 * 60 * 1000; // 30 minutos
+
+        function resetearTiempoInactividad() {
+            tiempoInactividad = 0;
+        }
+
+        // Resetear tiempo en cada interacción
+        document.addEventListener('click', resetearTiempoInactividad);
+        document.addEventListener('keypress', resetearTiempoInactividad);
+        document.addEventListener('scroll', resetearTiempoInactividad);
+
+        // Verificar inactividad cada minuto
+        setInterval(() => {
+            tiempoInactividad += 60000;
+            if (tiempoInactividad >= MAX_INACTIVIDAD) {
+                alert('Su sesión ha expirado por inactividad. Por favor, recargue la página.');
+                location.reload();
+            }
+        }, 60000);
+
+        // Manejo de errores global
+        window.addEventListener('error', function(e) {
+            console.error('Error global:', e.error);
+            logDebug('Error capturado', {
+                mensaje: e.message,
+                archivo: e.filename,
+                linea: e.lineno,
+                columna: e.colno
+            });
+        });
+
+        // Prevenir envío accidental del formulario con Enter
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Función para validar tamaño de archivos
+        function validarTamanoArchivo(input) {
+            const file = input.files[0];
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            
+            if (file && file.size > maxSize) {
+                alert('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
+                input.value = '';
+                return false;
+            }
+            return true;
+        }
+
+        // Función para limpiar formulario completo (reset)
+        function limpiarFormularioCompleto() {
+            if (confirm('¿Está seguro de que desea limpiar todo el formulario?')) {
+                // Resetear variables
+                currentStep = 1;
+                archivosBase64 = {};
+                codeudoresData = [];
+                hasCodeudores = null;
+                numCodeudores = 0;
+                dynamicSteps = ['1', '2', '3'];
+                documentoCompletoRequerido = null;
+                documentosIdentidadCargados = false;
+                decisionesCodeudores = {};
+                pasoConfirmacionHabilitado = false;
+                
+                // Limpiar campos
+                document.querySelectorAll('input').forEach(input => {
+                    if (input.type !== 'button' && input.type !== 'submit') {
+                        input.value = '';
+                    }
+                });
+                
+                document.querySelectorAll('select').forEach(select => {
+                    select.selectedIndex = 0;
+                });
+                
+                // Resetear labels de archivos
+                document.querySelectorAll('.file-upload-label').forEach(label => {
+                    label.classList.remove('file-selected');
+                    label.textContent = 'Seleccionar archivo';
+                });
+                
+                // Resetear botones seleccionados
+                document.querySelectorAll('.codeudor-btn.selected').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                
+                // Volver al primer paso
+                location.reload();
+            }
+        }
+
+        // Log de versión
+        console.log('✅ EFirmaContrata v2.0 - Sistema cargado correctamente');
+        console.log('📅 Última actualización: Enero 2025');
+        console.log('🔧 Modo:', CONFIG && CONFIG.DEBUG ? 'DESARROLLO' : 'PRODUCCIÓN');
     </script>
 </body>
 </html>
