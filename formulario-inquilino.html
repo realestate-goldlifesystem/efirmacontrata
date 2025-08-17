@@ -972,7 +972,7 @@
 
             <!-- Contenido del formulario (oculto inicialmente) -->
             <div class="form-content" id="formContent">
-                <!-- Paso 1: Documentos Iniciales -->
+            <!-- Paso 1: Documentos Iniciales -->
                 <div class="form-step active" data-step="1">
                     <h2 class="step-title">Documentos Iniciales</h2>
                     
@@ -1152,8 +1152,8 @@
                     </div>
                 </div>
 
-                <!-- Paso: Identidad del Codeudor 1 (dinámico) -->
-                <div class="form-step" data-step="identidad-codeudor1" id="stepIdentidadCodeudor1">
+                <!-- Paso: Identidad del Codeudor 1 (dinámico) - CORREGIDO: display: none -->
+                <div class="form-step" data-step="identidad-codeudor1" id="stepIdentidadCodeudor1" style="display: none;">
                     <h2 class="step-title">Identidad del Codeudor 1</h2>
                     <div id="codeudor1Fields"></div>
                     
@@ -1166,8 +1166,8 @@
                     </div>
                 </div>
 
-                <!-- Paso: Identidad del Codeudor 2 (dinámico) -->
-                <div class="form-step" data-step="identidad-codeudor2" id="stepIdentidadCodeudor2">
+                <!-- Paso: Identidad del Codeudor 2 (dinámico) - CORREGIDO: display: none -->
+                <div class="form-step" data-step="identidad-codeudor2" id="stepIdentidadCodeudor2" style="display: none;">
                     <h2 class="step-title">Identidad del Codeudor 2</h2>
                     <div id="codeudor2Fields"></div>
                     
@@ -1180,8 +1180,8 @@
                     </div>
                 </div>
 
-                <!-- Paso: Identidad del Codeudor 3 (dinámico) -->
-                <div class="form-step" data-step="identidad-codeudor3" id="stepIdentidadCodeudor3">
+                <!-- Paso: Identidad del Codeudor 3 (dinámico) - CORREGIDO: display: none -->
+                <div class="form-step" data-step="identidad-codeudor3" id="stepIdentidadCodeudor3" style="display: none;">
                     <h2 class="step-title">Identidad del Codeudor 3</h2>
                     <div id="codeudor3Fields"></div>
                     
@@ -1190,8 +1190,8 @@
                     </div>
                 </div>
 
-                <!-- Último Paso: Revisión Final (SIEMPRE independiente) -->
-                <div class="form-step" data-step="revision-final" id="stepRevisionFinal">
+                <!-- Último Paso: Revisión Final (SIEMPRE independiente) - CORREGIDO: display: none -->
+                <div class="form-step" data-step="revision-final" id="stepRevisionFinal" style="display: none;">
                     <h2 class="step-title">Revisión Final</h2>
                     
                     <div style="text-align: center; padding: 40px 0;">
@@ -1564,7 +1564,6 @@
             };
             reader.readAsDataURL(file);
         }
-
         function setCodeudor(hasCod) {
             // Limpiar selección anterior
             document.getElementById('btnCodeudorNo').classList.remove('selected');
@@ -1635,7 +1634,7 @@
         }
 
         // ==========================================
-        // FUNCIONES DE LIMPIEZA Y RESET MEJORADAS
+        // FUNCIONES DE LIMPIEZA Y RESET MEJORADAS - CORREGIDO ERROR DE SINTAXIS
         // ==========================================
         
         function resetearTodoDesdeDocumento() {
@@ -1662,7 +1661,7 @@
             recalcularPasosDinamicos();
         }
 
-      function limpiarDocumentosIdentidad() {
+        function limpiarDocumentosIdentidad() {
             delete state.archivosBase64.docIdentidad;
             delete state.archivosBase64.docIdentidadFrente;
             delete state.archivosBase64.docIdentidadReverso;
@@ -1683,408 +1682,402 @@
             state.documentosIdentidadCargados = false;
             deshabilitarCodeudores();
         }
-           
-           state.documentosIdentidadCargados = false;
-           deshabilitarCodeudores();
-       }
 
-       function limpiarTodosCodeudores() {
-           for (let i = 1; i <= 3; i++) {
-               // Limpiar archivos
-               delete state.archivosBase64[`docCodeudor${i}`];
-               
-               // Limpiar campos
-               const container = document.getElementById(`codeudor${i}Fields`);
-               if (container) container.innerHTML = '';
-               
-               // Ocultar paso
-               const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
-               if (stepElement) {
-                   stepElement.classList.remove('active');
-                   stepElement.style.display = 'none';
-               }
-               
-               // Limpiar botones de decisión
-               const btnNo = document.getElementById(`btnMoreCodeudor${i}No`);
-               const btnSi = document.getElementById(`btnMoreCodeudor${i}Si`);
-               if (btnNo) btnNo.classList.remove('selected');
-               if (btnSi) btnSi.classList.remove('selected');
-               
-               // Limpiar tracking de data
-               state.codeudorDataEntered[i] = false;
-           }
-           
-           state.decisionesCodeudores = {};
-           state.numCodeudores = 0;
-       }
+        function limpiarTodosCodeudores() {
+            for (let i = 1; i <= 3; i++) {
+                // Limpiar archivos
+                delete state.archivosBase64[`docCodeudor${i}`];
+                
+                // Limpiar campos
+                const container = document.getElementById(`codeudor${i}Fields`);
+                if (container) container.innerHTML = '';
+                
+                // Ocultar paso
+                const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
+                if (stepElement) {
+                    stepElement.classList.remove('active');
+                    stepElement.style.display = 'none';
+                }
+                
+                // Limpiar botones de decisión
+                const btnNo = document.getElementById(`btnMoreCodeudor${i}No`);
+                const btnSi = document.getElementById(`btnMoreCodeudor${i}Si`);
+                if (btnNo) btnNo.classList.remove('selected');
+                if (btnSi) btnSi.classList.remove('selected');
+                
+                // Limpiar tracking de data
+                state.codeudorDataEntered[i] = false;
+            }
+            
+            state.decisionesCodeudores = {};
+            state.numCodeudores = 0;
+        }
 
-       function limpiarCodeudoresPosteriores(desdeNumero) {
-           for (let i = desdeNumero + 1; i <= 3; i++) {
-               delete state.archivosBase64[`docCodeudor${i}`];
-               
-               const container = document.getElementById(`codeudor${i}Fields`);
-               if (container) container.innerHTML = '';
-               
-               const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
-               if (stepElement) {
-                   stepElement.classList.remove('active');
-                   stepElement.style.display = 'none';
-               }
-               
-               delete state.decisionesCodeudores[i];
-               state.codeudorDataEntered[i] = false;
-           }
-       }
+        function limpiarCodeudoresPosteriores(desdeNumero) {
+            for (let i = desdeNumero + 1; i <= 3; i++) {
+                delete state.archivosBase64[`docCodeudor${i}`];
+                
+                const container = document.getElementById(`codeudor${i}Fields`);
+                if (container) container.innerHTML = '';
+                
+                const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
+                if (stepElement) {
+                    stepElement.classList.remove('active');
+                    stepElement.style.display = 'none';
+                }
+                
+                delete state.decisionesCodeudores[i];
+                state.codeudorDataEntered[i] = false;
+            }
+        }
 
-       function habilitarCodeudores() {
-           document.getElementById('codeudorQuestion').classList.remove('disabled');
-           document.getElementById('btnCodeudorNo').disabled = false;
-           document.getElementById('btnCodeudorSi').disabled = false;
-       }
+        function habilitarCodeudores() {
+            document.getElementById('codeudorQuestion').classList.remove('disabled');
+            document.getElementById('btnCodeudorNo').disabled = false;
+            document.getElementById('btnCodeudorSi').disabled = false;
+        }
 
-       function deshabilitarCodeudores() {
-           document.getElementById('codeudorQuestion').classList.add('disabled');
-           document.getElementById('btnCodeudorNo').disabled = true;
-           document.getElementById('btnCodeudorSi').disabled = true;
-       }
+        function deshabilitarCodeudores() {
+            document.getElementById('codeudorQuestion').classList.add('disabled');
+            document.getElementById('btnCodeudorNo').disabled = true;
+            document.getElementById('btnCodeudorSi').disabled = true;
+        }
 
-       // ==========================================
-       // NAVEGACIÓN MEJORADA v2
-       // ==========================================
-       
-       function recalcularPasosDinamicos() {
-           console.log('📊 Pasos dinámicos actuales:', state.dynamicSteps);
-           
-           // Asegurar que todos los pasos de codeudor estén ocultos inicialmente
-           for (let i = 1; i <= 3; i++) {
-               const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
-               if (stepElement && !state.dynamicSteps.includes(`identidad-codeudor${i}`)) {
-                   stepElement.style.display = 'none';
-                   stepElement.classList.remove('active');
-               }
-           }
-           
-           // Asegurar que revisión final esté oculta hasta que sea necesaria
-           const revisionStep = document.getElementById('stepRevisionFinal');
-           if (revisionStep) {
-               if (!state.dynamicSteps.includes('revision-final')) {
-                   revisionStep.style.display = 'none';
-                   revisionStep.classList.remove('active');
-               }
-           }
-       }
+        // ==========================================
+        // NAVEGACIÓN MEJORADA v2
+        // ==========================================
+        
+        function recalcularPasosDinamicos() {
+            console.log('📊 Pasos dinámicos actuales:', state.dynamicSteps);
+            
+            // Asegurar que todos los pasos de codeudor estén ocultos inicialmente
+            for (let i = 1; i <= 3; i++) {
+                const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
+                if (stepElement && !state.dynamicSteps.includes(`identidad-codeudor${i}`)) {
+                    stepElement.style.display = 'none';
+                    stepElement.classList.remove('active');
+                }
+            }
+            
+            // Asegurar que revisión final esté oculta hasta que sea necesaria
+            const revisionStep = document.getElementById('stepRevisionFinal');
+            if (revisionStep) {
+                if (!state.dynamicSteps.includes('revision-final')) {
+                    revisionStep.style.display = 'none';
+                    revisionStep.classList.remove('active');
+                }
+            }
+        }
 
-       function nextStep() {
-           if (!validateCurrentStep()) {
-               return;
-           }
-           
-           // Marcar si se ingresó data en codeudor actual
-           const currentStepId = state.dynamicSteps[state.currentStep - 1];
-           if (currentStepId && currentStepId.includes('identidad-codeudor')) {
-               const num = currentStepId.replace('identidad-codeudor', '');
-               state.codeudorDataEntered[num] = true;
-           }
-           
-           // Ocultar paso actual
-           const currentElement = getStepElement(currentStepId);
-           if (currentElement) {
-               currentElement.classList.remove('active');
-           }
-           
-           // Avanzar
-           state.currentStep++;
-           
-           // Mostrar nuevo paso
-           const nextStepId = state.dynamicSteps[state.currentStep - 1];
-           const nextElement = getStepElement(nextStepId);
-           if (nextElement) {
-               nextElement.classList.add('active');
-               nextElement.style.display = 'block';
-           }
-           
-           updateUIForStep();
-           
-           // Animaciones especiales
-           if (nextStepId === '2') {
-               setTimeout(() => {
-                   document.getElementById('field3').classList.add('show');
-               }, 100);
-           }
-       }
+        function nextStep() {
+            if (!validateCurrentStep()) {
+                return;
+            }
+            
+            // Marcar si se ingresó data en codeudor actual
+            const currentStepId = state.dynamicSteps[state.currentStep - 1];
+            if (currentStepId && currentStepId.includes('identidad-codeudor')) {
+                const num = currentStepId.replace('identidad-codeudor', '');
+                state.codeudorDataEntered[num] = true;
+            }
+            
+            // Ocultar paso actual
+            const currentElement = getStepElement(currentStepId);
+            if (currentElement) {
+                currentElement.classList.remove('active');
+            }
+            
+            // Avanzar
+            state.currentStep++;
+            
+            // Mostrar nuevo paso
+            const nextStepId = state.dynamicSteps[state.currentStep - 1];
+            const nextElement = getStepElement(nextStepId);
+            if (nextElement) {
+                nextElement.classList.add('active');
+                nextElement.style.display = 'block';
+            }
+            
+            updateUIForStep();
+            
+            // Animaciones especiales
+            if (nextStepId === '2') {
+                setTimeout(() => {
+                    document.getElementById('field3').classList.add('show');
+                }, 100);
+            }
+        }
 
-       function previousStep() {
-           if (state.currentStep > 1) {
-               const currentStepId = state.dynamicSteps[state.currentStep - 1];
-               
-               // Si retrocedemos desde un codeudor sin completarlo, limpiarlo
-               if (currentStepId && currentStepId.includes('identidad-codeudor')) {
-                   const num = parseInt(currentStepId.replace('identidad-codeudor', ''));
-                   
-                   // Si no se ingresó data, limpiar este codeudor y los posteriores
-                   if (!state.codeudorDataEntered[num]) {
-                       console.log(`🧹 Limpiando codeudor ${num} no completado`);
-                       
-                       // Limpiar este codeudor y posteriores
-                       limpiarCodeudoresPosteriores(num - 1);
-                       
-                       // Actualizar número de codeudores
-                       state.numCodeudores = num - 1;
-                       
-                       // Reconstruir pasos dinámicos
-                       if (state.numCodeudores === 0) {
-                           // Si no hay codeudores, volver al paso 3
-                           state.dynamicSteps = ['1', '2', '3'];
-                           state.hasCodeudores = null;
-                           document.getElementById('btnCodeudorNo').classList.remove('selected');
-                           document.getElementById('btnCodeudorSi').classList.remove('selected');
-                       } else {
-                           // Mantener los codeudores existentes
-                           state.dynamicSteps = ['1', '2', '3'];
-                           for (let i = 1; i <= state.numCodeudores; i++) {
-                               state.dynamicSteps.push(`identidad-codeudor${i}`);
-                           }
-                           state.dynamicSteps.push('revision-final');
-                       }
-                       
-                       recalcularPasosDinamicos();
-                   }
-               }
-               
-               // Ocultar paso actual
-               const currentElement = getStepElement(currentStepId);
-               if (currentElement) {
-                   currentElement.classList.remove('active');
-               }
-               
-               // Retroceder
-               state.currentStep--;
-               
-               // Mostrar paso anterior
-               const prevStepId = state.dynamicSteps[state.currentStep - 1];
-               const prevElement = getStepElement(prevStepId);
-               if (prevElement) {
-                   prevElement.classList.add('active');
-                   prevElement.style.display = 'block';
-               }
-               
-               updateUIForStep();
-           }
-       }
+        function previousStep() {
+            if (state.currentStep > 1) {
+                const currentStepId = state.dynamicSteps[state.currentStep - 1];
+                
+                // Si retrocedemos desde un codeudor sin completarlo, limpiarlo
+                if (currentStepId && currentStepId.includes('identidad-codeudor')) {
+                    const num = parseInt(currentStepId.replace('identidad-codeudor', ''));
+                    
+                    // Si no se ingresó data, limpiar este codeudor y los posteriores
+                    if (!state.codeudorDataEntered[num]) {
+                        console.log(`🧹 Limpiando codeudor ${num} no completado`);
+                        
+                        // Limpiar este codeudor y posteriores
+                        limpiarCodeudoresPosteriores(num - 1);
+                        
+                        // Actualizar número de codeudores
+                        state.numCodeudores = num - 1;
+                        
+                        // Reconstruir pasos dinámicos
+                        if (state.numCodeudores === 0) {
+                            // Si no hay codeudores, volver al paso 3
+                            state.dynamicSteps = ['1', '2', '3'];
+                            state.hasCodeudores = null;
+                            document.getElementById('btnCodeudorNo').classList.remove('selected');
+                            document.getElementById('btnCodeudorSi').classList.remove('selected');
+                        } else {
+                            // Mantener los codeudores existentes
+                            state.dynamicSteps = ['1', '2', '3'];
+                            for (let i = 1; i <= state.numCodeudores; i++) {
+                                state.dynamicSteps.push(`identidad-codeudor${i}`);
+                            }
+                            state.dynamicSteps.push('revision-final');
+                        }
+                        
+                        recalcularPasosDinamicos();
+                    }
+                }
+                
+                // Ocultar paso actual
+                const currentElement = getStepElement(currentStepId);
+                if (currentElement) {
+                    currentElement.classList.remove('active');
+                }
+                
+                // Retroceder
+                state.currentStep--;
+                
+                // Mostrar paso anterior
+                const prevStepId = state.dynamicSteps[state.currentStep - 1];
+                const prevElement = getStepElement(prevStepId);
+                if (prevElement) {
+                    prevElement.classList.add('active');
+                    prevElement.style.display = 'block';
+                }
+                
+                updateUIForStep();
+            }
+        }
 
-       function getStepElement(stepId) {
-           if (!stepId) return null;
-           
-           if (stepId.includes('identidad-codeudor')) {
-               const num = stepId.replace('identidad-codeudor', '');
-               return document.getElementById(`stepIdentidadCodeudor${num}`);
-           } else if (stepId === 'revision-final') {
-               return document.getElementById('stepRevisionFinal');
-           } else {
-               return document.querySelector(`.form-step[data-step="${stepId}"]`);
-           }
-       }
+        function getStepElement(stepId) {
+            if (!stepId) return null;
+            
+            if (stepId.includes('identidad-codeudor')) {
+                const num = stepId.replace('identidad-codeudor', '');
+                return document.getElementById(`stepIdentidadCodeudor${num}`);
+            } else if (stepId === 'revision-final') {
+                return document.getElementById('stepRevisionFinal');
+            } else {
+                return document.querySelector(`.form-step[data-step="${stepId}"]`);
+            }
+        }
 
-       function updateUIForStep() {
-           const btnPrev = document.getElementById('btnPrev');
-           const btnNext = document.getElementById('btnNext');
-           
-           btnPrev.style.display = state.currentStep === 1 ? 'none' : 'block';
-           
-           const currentStepId = state.dynamicSteps[state.currentStep - 1];
-           btnNext.style.display = currentStepId === 'revision-final' ? 'none' : 'block';
-           
-           updateProgressBar();
-       }
+        function updateUIForStep() {
+            const btnPrev = document.getElementById('btnPrev');
+            const btnNext = document.getElementById('btnNext');
+            
+            btnPrev.style.display = state.currentStep === 1 ? 'none' : 'block';
+            
+            const currentStepId = state.dynamicSteps[state.currentStep - 1];
+            btnNext.style.display = currentStepId === 'revision-final' ? 'none' : 'block';
+            
+            updateProgressBar();
+        }
 
-       function updateProgressBar() {
-           let mainStep = state.currentStep;
-           const currentStepId = state.dynamicSteps[state.currentStep - 1];
-           
-           // Mapear pasos dinámicos a pasos de la barra de progreso
-           if (currentStepId === '1') mainStep = 1;
-           else if (currentStepId === '2') mainStep = 2;
-           else if (currentStepId === '3') mainStep = 3;
-           else if (currentStepId && currentStepId.includes('identidad-codeudor')) mainStep = 3.5;
-           else if (currentStepId === 'revision-final') mainStep = 4;
-           
-           const progress = ((mainStep - 1) / 3) * 100;
-           document.getElementById('progressLineActive').style.width = progress + '%';
-           
-           for (let i = 1; i <= 4; i++) {
-               const stepElement = document.getElementById(`step${i}`);
-               if (stepElement) {
-                   stepElement.classList.remove('active', 'completed');
-                   
-                   if (i < Math.ceil(mainStep)) {
-                       stepElement.classList.add('completed');
-                       stepElement.querySelector('.step-circle').innerHTML = '✓';
-                   } else if (i === Math.ceil(mainStep)) {
-                       stepElement.classList.add('active');
-                       stepElement.querySelector('.step-circle').innerHTML = i;
-                   } else {
-                       stepElement.querySelector('.step-circle').innerHTML = i;
-                   }
-               }
-           }
-       }
+        function updateProgressBar() {
+            let mainStep = state.currentStep;
+            const currentStepId = state.dynamicSteps[state.currentStep - 1];
+            
+            // Mapear pasos dinámicos a pasos de la barra de progreso
+            if (currentStepId === '1') mainStep = 1;
+            else if (currentStepId === '2') mainStep = 2;
+            else if (currentStepId === '3') mainStep = 3;
+            else if (currentStepId && currentStepId.includes('identidad-codeudor')) mainStep = 3.5;
+            else if (currentStepId === 'revision-final') mainStep = 4;
+            
+            const progress = ((mainStep - 1) / 3) * 100;
+            document.getElementById('progressLineActive').style.width = progress + '%';
+            
+            for (let i = 1; i <= 4; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                if (stepElement) {
+                    stepElement.classList.remove('active', 'completed');
+                    
+                    if (i < Math.ceil(mainStep)) {
+                        stepElement.classList.add('completed');
+                        stepElement.querySelector('.step-circle').innerHTML = '✓';
+                    } else if (i === Math.ceil(mainStep)) {
+                        stepElement.classList.add('active');
+                        stepElement.querySelector('.step-circle').innerHTML = i;
+                    } else {
+                        stepElement.querySelector('.step-circle').innerHTML = i;
+                    }
+                }
+            }
+        }
 
-       // ==========================================
-       // VALIDACIÓN DE PASOS OPTIMIZADA
-       // ==========================================
-       
-       function validateCurrentStep() {
-           const currentStepId = state.dynamicSteps[state.currentStep - 1];
-           
-           switch(currentStepId) {
-               case '1':
-                   return validateStep1();
-               case '2':
-                   return validateStep2();
-               case '3':
-                   return validateStep3();
-               default:
-                   if (currentStepId && currentStepId.includes('identidad-codeudor')) {
-                       return validateCodeudor(currentStepId.replace('identidad-codeudor', ''));
-                   }
-                   return true;
-           }
-       }
+        // ==========================================
+        // VALIDACIÓN DE PASOS OPTIMIZADA
+        // ==========================================
+        
+        function validateCurrentStep() {
+            const currentStepId = state.dynamicSteps[state.currentStep - 1];
+            
+            switch(currentStepId) {
+                case '1':
+                    return validateStep1();
+                case '2':
+                    return validateStep2();
+                case '3':
+                    return validateStep3();
+                default:
+                    if (currentStepId && currentStepId.includes('identidad-codeudor')) {
+                        return validateCodeudor(currentStepId.replace('identidad-codeudor', ''));
+                    }
+                    return true;
+            }
+        }
 
-       function validateStep1() {
-           if (!state.archivosBase64.estudioAprobado) {
-               showError('Por favor cargue el documento de estudio aprobado');
-               return false;
-           }
-           if (!state.archivosBase64.comprobantePago) {
-               showError('Por favor cargue el comprobante de pago');
-               return false;
-           }
-           return true;
-       }
+        function validateStep1() {
+            if (!state.archivosBase64.estudioAprobado) {
+                showError('Por favor cargue el documento de estudio aprobado');
+                return false;
+            }
+            if (!state.archivosBase64.comprobantePago) {
+                showError('Por favor cargue el comprobante de pago');
+                return false;
+            }
+            return true;
+        }
 
-       function validateStep2() {
-           const campos = [
-               { id: 'tipoDocumento', nombre: 'Tipo de documento' },
-               { id: 'numeroDocumento', nombre: 'Número de documento' },
-               { id: 'confirmarDocumento', nombre: 'Confirmación de documento' },
-               { id: 'nombres', nombre: 'Nombres' },
-               { id: 'apellidos', nombre: 'Apellidos' },
-               { id: 'email', nombre: 'Email' },
-               { id: 'confirmarEmail', nombre: 'Confirmación de email' },
-               { id: 'celular', nombre: 'Celular' },
-               { id: 'confirmarCelular', nombre: 'Confirmación de celular' },
-               { id: 'ocupacion', nombre: 'Ocupación' }
-           ];
-           
-           for (const campo of campos) {
-               const elemento = document.getElementById(campo.id);
-               if (!elemento || !elemento.value.trim()) {
-                   showError(`Por favor complete: ${campo.nombre}`);
-                   elemento?.focus();
-                   return false;
-               }
-           }
-           
-           // Validar coincidencias
-           if (document.getElementById('numeroDocumento').value !== document.getElementById('confirmarDocumento').value) {
-               showError('Los números de documento no coinciden');
-               return false;
-           }
-           
-           if (document.getElementById('email').value !== document.getElementById('confirmarEmail').value) {
-               showError('Los correos no coinciden');
-               return false;
-           }
-           
-           if (document.getElementById('celular').value !== document.getElementById('confirmarCelular').value) {
-               showError('Los números de celular no coinciden');
-               return false;
-           }
-           
-           // Validar formatos
-           if (!validarEmail(document.getElementById('email'))) {
-               return false;
-           }
-           
-           if (!validarTelefono(document.getElementById('celular'))) {
-               return false;
-           }
-           
-           return true;
-       }
+        function validateStep2() {
+            const campos = [
+                { id: 'tipoDocumento', nombre: 'Tipo de documento' },
+                { id: 'numeroDocumento', nombre: 'Número de documento' },
+                { id: 'confirmarDocumento', nombre: 'Confirmación de documento' },
+                { id: 'nombres', nombre: 'Nombres' },
+                { id: 'apellidos', nombre: 'Apellidos' },
+                { id: 'email', nombre: 'Email' },
+                { id: 'confirmarEmail', nombre: 'Confirmación de email' },
+                { id: 'celular', nombre: 'Celular' },
+                { id: 'confirmarCelular', nombre: 'Confirmación de celular' },
+                { id: 'ocupacion', nombre: 'Ocupación' }
+            ];
+            
+            for (const campo of campos) {
+                const elemento = document.getElementById(campo.id);
+                if (!elemento || !elemento.value.trim()) {
+                    showError(`Por favor complete: ${campo.nombre}`);
+                    elemento?.focus();
+                    return false;
+                }
+            }
+            
+            // Validar coincidencias
+            if (document.getElementById('numeroDocumento').value !== document.getElementById('confirmarDocumento').value) {
+                showError('Los números de documento no coinciden');
+                return false;
+            }
+            
+            if (document.getElementById('email').value !== document.getElementById('confirmarEmail').value) {
+                showError('Los correos no coinciden');
+                return false;
+            }
+            
+            if (document.getElementById('celular').value !== document.getElementById('confirmarCelular').value) {
+                showError('Los números de celular no coinciden');
+                return false;
+            }
+            
+            // Validar formatos
+            if (!validarEmail(document.getElementById('email'))) {
+                return false;
+            }
+            
+            if (!validarTelefono(document.getElementById('celular'))) {
+                return false;
+            }
+            
+            return true;
+        }
 
-       function validateStep3() {
-           if (state.documentoCompletoRequerido === null) {
-               showError('Por favor indique si el archivo tiene ambas caras');
-               return false;
-           }
-           
-           if (state.documentoCompletoRequerido) {
-               if (!state.archivosBase64.docIdentidad) {
-                   showError('Debe cargar el documento de identidad con ambas caras');
-                   return false;
-               }
-           } else {
-               if (!state.archivosBase64.docIdentidadFrente || !state.archivosBase64.docIdentidadReverso) {
-                   showError('Debe cargar ambas caras del documento de identidad');
-                   return false;
-               }
-           }
-           
-           if (state.hasCodeudores === null) {
-               showError('Por favor indique si tiene codeudores');
-               return false;
-           }
-           
-           return true;
-       }
+        function validateStep3() {
+            if (state.documentoCompletoRequerido === null) {
+                showError('Por favor indique si el archivo tiene ambas caras');
+                return false;
+            }
+            
+            if (state.documentoCompletoRequerido) {
+                if (!state.archivosBase64.docIdentidad) {
+                    showError('Debe cargar el documento de identidad con ambas caras');
+                    return false;
+                }
+            } else {
+                if (!state.archivosBase64.docIdentidadFrente || !state.archivosBase64.docIdentidadReverso) {
+                    showError('Debe cargar ambas caras del documento de identidad');
+                    return false;
+                }
+            }
+            
+            if (state.hasCodeudores === null) {
+                showError('Por favor indique si tiene codeudores');
+                return false;
+            }
+            
+            return true;
+        }
 
-       function validateCodeudor(num) {
-           const campos = [
-               `tipoDocCodeudor${num}`,
-               `numDocCodeudor${num}`,
-               `nombresCodeudor${num}`,
-               `apellidosCodeudor${num}`,
-               `emailCodeudor${num}`,
-               `celularCodeudor${num}`
-           ];
-           
-           for (const campo of campos) {
-               const elemento = document.getElementById(campo);
-               if (!elemento || !elemento.value.trim()) {
-                   showError(`Por favor complete todos los campos del codeudor ${num}`);
-                   elemento?.focus();
-                   return false;
-               }
-           }
-           
-           // Validar email del codeudor
-           const emailCodeudor = document.getElementById(`emailCodeudor${num}`);
-           if (emailCodeudor && !validarEmail(emailCodeudor)) {
-               return false;
-           }
-           
-           // Validar teléfono del codeudor
-           const celularCodeudor = document.getElementById(`celularCodeudor${num}`);
-           if (celularCodeudor && !validarTelefono(celularCodeudor)) {
-               return false;
-           }
-           
-           if (!state.archivosBase64[`docCodeudor${num}`]) {
-               showError(`Debe cargar el documento del codeudor ${num}`);
-               return false;
-           }
-           
-           return true;
-       }
+        function validateCodeudor(num) {
+            const campos = [
+                `tipoDocCodeudor${num}`,
+                `numDocCodeudor${num}`,
+                `nombresCodeudor${num}`,
+                `apellidosCodeudor${num}`,
+                `emailCodeudor${num}`,
+                `celularCodeudor${num}`
+            ];
+            
+            for (const campo of campos) {
+                const elemento = document.getElementById(campo);
+                if (!elemento || !elemento.value.trim()) {
+                    showError(`Por favor complete todos los campos del codeudor ${num}`);
+                    elemento?.focus();
+                    return false;
+                }
+            }
+            
+            // Validar email del codeudor
+            const emailCodeudor = document.getElementById(`emailCodeudor${num}`);
+            if (emailCodeudor && !validarEmail(emailCodeudor)) {
+                return false;
+            }
+            
+            // Validar teléfono del codeudor
+            const celularCodeudor = document.getElementById(`celularCodeudor${num}`);
+            if (celularCodeudor && !validarTelefono(celularCodeudor)) {
+                return false;
+            }
+            
+            if (!state.archivosBase64[`docCodeudor${num}`]) {
+                showError(`Debe cargar el documento del codeudor ${num}`);
+                return false;
+            }
+            
+            return true;
+        }
 
-       function showError(message) {
-           alert(message); // Reemplazar con un modal más elegante si se desea
-       }
+        function showError(message) {
+            alert(message); // Reemplazar con un modal más elegante si se desea
+        }
 
-       // El resto del código continúa igual...
-       // [Las demás funciones se mantienen igual: UI, modal, envío, etc.]
         // ==========================================
         // FUNCIONES DE UI
         // ==========================================
