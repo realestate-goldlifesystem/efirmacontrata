@@ -86,7 +86,7 @@
             padding: 20px;
         }
 
-        /* Card principal SIN movimiento */
+        /* Card principal */
         .form-card {
             width: 100%;
             max-width: 900px;
@@ -413,6 +413,33 @@
             color: var(--gray-medium);
         }
 
+        /* Validación visual */
+        input.valid {
+            border-color: var(--success);
+        }
+
+        input.invalid {
+            border-color: var(--error);
+        }
+
+        .validation-message {
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .validation-message.show {
+            display: block;
+        }
+
+        .validation-message.error {
+            color: var(--error);
+        }
+
+        .validation-message.success {
+            color: var(--success);
+        }
+
         /* File upload estilizado */
         .file-upload-wrapper {
             position: relative;
@@ -448,26 +475,32 @@
             border-color: var(--gold-primary);
         }
 
-        /* Botones para codeudores */
-        .codeudor-question {
+        .file-size-info {
+            font-size: 11px;
+            color: var(--gray-medium);
+            margin-top: 5px;
+        }
+
+        /* Botones para decisiones */
+        .decision-question {
             text-align: center;
             padding: 40px 0;
             transition: opacity 0.3s ease;
         }
 
-        .codeudor-question.disabled {
+        .decision-question.disabled {
             opacity: 0.3;
             pointer-events: none;
         }
 
-        .codeudor-buttons {
+        .decision-buttons {
             display: flex;
             gap: 20px;
             justify-content: center;
             margin-top: 30px;
         }
 
-        .codeudor-btn {
+        .decision-btn {
             padding: 15px 40px;
             background: var(--black-primary);
             border: 2px solid rgba(255, 215, 0, 0.3);
@@ -479,18 +512,18 @@
             font-weight: 600;
         }
 
-        .codeudor-btn:hover:not(:disabled) {
+        .decision-btn:hover:not(:disabled) {
             border-color: var(--gold-primary);
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
         }
 
-        .codeudor-btn.selected {
+        .decision-btn.selected {
             background: var(--gold-primary);
             color: var(--black-primary);
             border-color: var(--gold-primary);
         }
 
-        .codeudor-btn:disabled {
+        .decision-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
@@ -758,6 +791,7 @@
             font-size: 14px;
             pointer-events: none;
             z-index: 1;
+            user-select: none;
         }
 
         .slide-thumb {
@@ -774,6 +808,7 @@
             align-items: center;
             justify-content: center;
             z-index: 2;
+            user-select: none;
         }
 
         .slide-thumb:hover {
@@ -781,7 +816,6 @@
         }
 
         .slide-thumb.confirmed {
-            left: calc(100% - 55px);
             background: var(--success);
         }
 
@@ -824,6 +858,22 @@
             font-size: 18px;
         }
 
+        .loading-progress {
+            width: 200px;
+            height: 4px;
+            background: var(--gray-dark);
+            border-radius: 2px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            background: var(--gold-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .initial-buttons {
@@ -851,7 +901,7 @@
                 font-size: 14px;
             }
 
-            .codeudor-buttons {
+            .decision-buttons {
                 flex-direction: column;
             }
         }
@@ -934,6 +984,7 @@
                             </label>
                             <input type="file" id="estudioAprobado" class="file-upload-input" accept="image/*,.pdf" required onchange="handleFileSelect(this, 'field2')">
                         </div>
+                        <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
                     </div>
                     
                     <div class="form-field" id="field2">
@@ -944,6 +995,7 @@
                             </label>
                             <input type="file" id="comprobantePago" class="file-upload-input" accept="image/*,.pdf" required onchange="handleFileSelect(this, null)">
                         </div>
+                        <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
                     </div>
                 </div>
 
@@ -967,6 +1019,7 @@
                             <div>
                                 <label>Número de Documento <span class="required">*</span></label>
                                 <input type="text" id="numeroDocumento" placeholder="Ej: 1234567890" required onblur="showNextField('field4')">
+                                <div class="validation-message" id="numeroDocumentoError"></div>
                             </div>
                         </div>
                     </div>
@@ -976,6 +1029,7 @@
                             <div>
                                 <label>Confirmar Número de Documento <span class="required">*</span></label>
                                 <input type="text" id="confirmarDocumento" placeholder="Confirme el número" required onblur="validateAndShow('numeroDocumento', 'confirmarDocumento', 'field5')">
+                                <div class="validation-message" id="confirmarDocumentoError"></div>
                             </div>
                             
                             <div>
@@ -990,11 +1044,13 @@
                             <div>
                                 <label>Nombres Completos <span class="required">*</span></label>
                                 <input type="text" id="nombres" placeholder="Ej: Juan Carlos" required onblur="showNextField('field6')">
+                                <div class="validation-message" id="nombresError"></div>
                             </div>
                             
                             <div>
                                 <label>Apellidos Completos <span class="required">*</span></label>
                                 <input type="text" id="apellidos" placeholder="Ej: García López" required onblur="showNextField('field6')">
+                                <div class="validation-message" id="apellidosError"></div>
                             </div>
                         </div>
                     </div>
@@ -1003,12 +1059,14 @@
                         <div class="form-row">
                             <div>
                                 <label>Correo Electrónico <span class="required">*</span></label>
-                                <input type="email" id="email" placeholder="correo@ejemplo.com" required onblur="showNextField('field7')">
+                                <input type="email" id="email" placeholder="correo@ejemplo.com" required onblur="validarEmail(this); showNextField('field7')">
+                                <div class="validation-message" id="emailError"></div>
                             </div>
                             
                             <div>
                                 <label>Confirmar Correo <span class="required">*</span></label>
                                 <input type="email" id="confirmarEmail" placeholder="Confirme el correo" required onblur="validateAndShow('email', 'confirmarEmail', 'field7')">
+                                <div class="validation-message" id="confirmarEmailError"></div>
                             </div>
                         </div>
                     </div>
@@ -1017,12 +1075,14 @@
                         <div class="form-row">
                             <div>
                                 <label>Celular <span class="required">*</span></label>
-                                <input type="tel" id="celular" placeholder="Ej: 3001234567" required onblur="showNextField('field8')">
+                                <input type="tel" id="celular" placeholder="Ej: 3001234567" required onblur="validarTelefono(this); showNextField('field8')">
+                                <div class="validation-message" id="celularError"></div>
                             </div>
                             
                             <div>
                                 <label>Confirmar Celular <span class="required">*</span></label>
                                 <input type="tel" id="confirmarCelular" placeholder="Confirme el celular" required onblur="validateAndShow('celular', 'confirmarCelular', 'field8')">
+                                <div class="validation-message" id="confirmarCelularError"></div>
                             </div>
                         </div>
                     </div>
@@ -1030,6 +1090,7 @@
                     <div class="form-field" id="field8">
                         <label>Ocupación/Profesión <span class="required">*</span></label>
                         <input type="text" id="ocupacion" placeholder="Ej: Ingeniero, Comerciante, etc." required>
+                        <div class="validation-message" id="ocupacionError"></div>
                     </div>
                 </div>
 
@@ -1040,9 +1101,9 @@
                     <div class="form-field show">
                         <div style="text-align: center; margin-bottom: 30px;">
                             <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿El archivo tiene ambas caras del documento?</h3>
-                            <div class="codeudor-buttons">
-                                <button type="button" class="codeudor-btn" onclick="setDocumentType(true)">SÍ</button>
-                                <button type="button" class="codeudor-btn" onclick="setDocumentType(false)">NO</button>
+                            <div class="decision-buttons">
+                                <button type="button" class="decision-btn" onclick="setDocumentType(true)">SÍ</button>
+                                <button type="button" class="decision-btn" onclick="setDocumentType(false)">NO</button>
                             </div>
                         </div>
                         
@@ -1055,6 +1116,7 @@
                                 </label>
                                 <input type="file" id="docIdentidadCompleto" class="file-upload-input" accept="image/*,.pdf" onchange="handleDocumentUpload(this, 'completo')">
                             </div>
+                            <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
                         </div>
                         
                         <!-- Opción 2: Dos archivos separados -->
@@ -1081,11 +1143,11 @@
                         </div>
                     </div>
                     
-                    <div class="codeudor-question disabled" id="codeudorQuestion">
+                    <div class="decision-question disabled" id="codeudorQuestion">
                         <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Tiene codeudores?</h3>
-                        <div class="codeudor-buttons">
-                            <button class="codeudor-btn" id="btnCodeudorNo" onclick="setCodeudor(false)" disabled>NO</button>
-                            <button class="codeudor-btn" id="btnCodeudorSi" onclick="setCodeudor(true)" disabled>SÍ</button>
+                        <div class="decision-buttons">
+                            <button class="decision-btn" id="btnCodeudorNo" onclick="setCodeudor(false)" disabled>NO</button>
+                            <button class="decision-btn" id="btnCodeudorSi" onclick="setCodeudor(true)" disabled>SÍ</button>
                         </div>
                     </div>
                 </div>
@@ -1095,11 +1157,11 @@
                     <h2 class="step-title">Identidad del Codeudor 1</h2>
                     <div id="codeudor1Fields"></div>
                     
-                    <div class="codeudor-question">
+                    <div class="decision-question">
                         <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Hay más codeudores?</h3>
-                        <div class="codeudor-buttons">
-                            <button class="codeudor-btn" onclick="addMoreCodeudor(false, 1)">NO</button>
-                            <button class="codeudor-btn" onclick="addMoreCodeudor(true, 1)">SÍ</button>
+                        <div class="decision-buttons">
+                            <button class="decision-btn" id="btnMoreCodeudor1No" onclick="addMoreCodeudor(false, 1)">NO</button>
+                            <button class="decision-btn" id="btnMoreCodeudor1Si" onclick="addMoreCodeudor(true, 1)">SÍ</button>
                         </div>
                     </div>
                 </div>
@@ -1109,11 +1171,11 @@
                     <h2 class="step-title">Identidad del Codeudor 2</h2>
                     <div id="codeudor2Fields"></div>
                     
-                    <div class="codeudor-question">
+                    <div class="decision-question">
                         <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Hay más codeudores?</h3>
-                        <div class="codeudor-buttons">
-                            <button class="codeudor-btn" onclick="addMoreCodeudor(false, 2)">NO</button>
-                            <button class="codeudor-btn" onclick="addMoreCodeudor(true, 2)">SÍ</button>
+                        <div class="decision-buttons">
+                            <button class="decision-btn" id="btnMoreCodeudor2No" onclick="addMoreCodeudor(false, 2)">NO</button>
+                            <button class="decision-btn" id="btnMoreCodeudor2Si" onclick="addMoreCodeudor(true, 2)">SÍ</button>
                         </div>
                     </div>
                 </div>
@@ -1122,10 +1184,14 @@
                 <div class="form-step" data-step="identidad-codeudor3" id="stepIdentidadCodeudor3" style="display: none;">
                     <h2 class="step-title">Identidad del Codeudor 3</h2>
                     <div id="codeudor3Fields"></div>
+                    
+                    <div class="decision-question">
+                        <h3 style="color: var(--gold-primary); margin-bottom: 20px;">Máximo de codeudores alcanzado</h3>
+                    </div>
                 </div>
 
                 <!-- Último Paso: Revisión Final (independiente) -->
-                <div class="form-step" data-step="revision-final">
+                <div class="form-step" data-step="revision-final" id="stepRevisionFinal" style="display: none;">
                     <h2 class="step-title">Revisión Final</h2>
                     
                     <div style="text-align: center; padding: 40px 0;">
@@ -1225,225 +1291,238 @@
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-spinner"></div>
         <div class="loading-text">Procesando documentos...</div>
+        <div class="loading-progress">
+            <div class="loading-progress-bar" id="loadingProgressBar"></div>
+        </div>
     </div>
 
     <script src="config.js"></script>
     <script>
-        // Variables globales
-        let currentStep = 1;
-        let totalSteps = 4;
-        let codigoRegistro = '';
-        let archivosBase64 = {};
-        let codeudoresData = [];
-        let hasCodeudores = null;
-        let numCodeudores = 0;
-        let dynamicSteps = ['1', '2', '3'];
-        let documentoCompletoRequerido = null;
-        let documentosIdentidadCargados = false;
-        let decisionesCodeudores = {};
-        let pasoConfirmacionHabilitado = false;
+        // ==========================================
+        // VARIABLES GLOBALES OPTIMIZADAS
+        // ==========================================
+        
+        const state = {
+            currentStep: 1,
+            codigoRegistro: '',
+            archivosBase64: {},
+            hasCodeudores: null,
+            numCodeudores: 0,
+            dynamicSteps: ['1', '2', '3'],
+            documentoCompletoRequerido: null,
+            documentosIdentidadCargados: false,
+            decisionesCodeudores: {},
+            wasReset: false,
+            sliderListeners: null,
+            maxFileSize: 10 * 1024 * 1024 // 10MB
+        };
 
-        // Inicializar
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        
         window.onload = function() {
-            console.log('Iniciando EFirmaContrata - Sistema Premium');
-            
+            initializeApp();
+        };
+
+        function initializeApp() {
             // Obtener código de registro
             const urlParams = new URLSearchParams(window.location.search);
-            codigoRegistro = urlParams.get('cdr') || '';
+            state.codigoRegistro = urlParams.get('cdr') || '';
             
-            if (!codigoRegistro) {
+            if (!state.codigoRegistro || !validarCodigoRegistro(state.codigoRegistro)) {
                 alert('Código de registro no válido');
                 window.location.href = 'selector.html';
                 return;
             }
             
-            console.log('Código de registro:', codigoRegistro);
-            
-            // Crear partículas
+            // Inicializar componentes
             createParticles();
-            
-            // Configurar slider de confirmación
             setupSlider();
+            setupValidationListeners();
             
-            // Ocultar paso de revisión final inicialmente
-            ocultarPasoRevisionFinal();
-        };
+            // Log de inicio
+            console.info(`✅ Sistema inicializado - CDR: ${state.codigoRegistro}`);
+        }
 
-        // Función para ocultar el paso de revisión final
-        function ocultarPasoRevisionFinal() {
-            const revisionStep = document.querySelector('.form-step[data-step="revision-final"]');
-            if (revisionStep) {
-                revisionStep.style.display = 'none';
-                revisionStep.classList.remove('active');
+        // ==========================================
+        // VALIDACIONES MEJORADAS
+        // ==========================================
+        
+        function validarCodigoRegistro(codigo) {
+            // Validar formato del código
+            const regex = /^[A-Z0-9]{6,12}$/;
+            return regex.test(codigo);
+        }
+
+        function validarEmail(input) {
+            const email = input.value.trim();
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const errorDiv = document.getElementById(`${input.id}Error`);
+            
+            if (!regex.test(email)) {
+                input.classList.add('invalid');
+                input.classList.remove('valid');
+                errorDiv.textContent = 'Email no válido';
+                errorDiv.classList.add('error', 'show');
+                return false;
+            }
+            
+            input.classList.add('valid');
+            input.classList.remove('invalid');
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('show');
+            return true;
+        }
+
+        function validarTelefono(input) {
+            const telefono = input.value.trim();
+            const regex = /^[0-9]{10}$/;
+            const errorDiv = document.getElementById(`${input.id}Error`);
+            
+            if (!regex.test(telefono)) {
+                input.classList.add('invalid');
+                input.classList.remove('valid');
+                errorDiv.textContent = 'Debe tener 10 dígitos';
+                errorDiv.classList.add('error', 'show');
+                return false;
+            }
+            
+            input.classList.add('valid');
+            input.classList.remove('invalid');
+            errorDiv.textContent = '';
+            errorDiv.classList.remove('show');
+            return true;
+        }
+
+        function setupValidationListeners() {
+            // Agregar validación en tiempo real a campos críticos
+            const emailInput = document.getElementById('email');
+            const celularInput = document.getElementById('celular');
+            
+            if (emailInput) {
+                emailInput.addEventListener('input', function() {
+                    if (this.value.length > 5) validarEmail(this);
+                });
+            }
+            
+            if (celularInput) {
+                celularInput.addEventListener('input', function() {
+                    if (this.value.length >= 10) validarTelefono(this);
+                });
             }
         }
 
-        // Función para mostrar el paso de revisión final
-        function mostrarPasoRevisionFinal() {
-            const revisionStep = document.querySelector('.form-step[data-step="revision-final"]');
-            if (revisionStep) {
-                revisionStep.style.display = 'none'; // Se mostrará cuando naveguen a él
-            }
-        }
-
-        // Crear partículas doradas
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = 50;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 15 + 's';
-                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
-                particlesContainer.appendChild(particle);
-            }
-        }
-
-        // Iniciar registro
-        function iniciarRegistro() {
-            document.getElementById('initialScreen').classList.add('hidden');
-            document.getElementById('progressContainer').classList.add('show');
-            document.getElementById('formContent').classList.add('show');
-            document.getElementById('formNavigation').classList.add('show');
-            
-            // Mostrar primer campo con animación
-            setTimeout(() => {
-                document.getElementById('field1').classList.add('show');
-            }, 100);
-            
-            updateProgressBar();
-        }
-
-        // Manejo de archivos con campos dinámicos
+        // ==========================================
+        // MANEJO DE ARCHIVOS OPTIMIZADO
+        // ==========================================
+        
         function handleFileSelect(input, nextFieldId) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // Validar tamaño
+            if (file.size > state.maxFileSize) {
+                alert(`El archivo es demasiado grande. Máximo ${state.maxFileSize / 1024 / 1024}MB`);
+                input.value = '';
+                return;
+            }
+            
+            // Validar tipo
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+            if (!validTypes.includes(file.type)) {
+                alert('Formato no válido. Use JPG, PNG o PDF');
+                input.value = '';
+                return;
+            }
+            
+            // Actualizar UI
             const label = document.getElementById('label' + input.id.charAt(0).toUpperCase() + input.id.slice(1));
-            if (input.files.length > 0) {
-                label.textContent = input.files[0].name;
-                label.classList.add('file-selected');
-                convertirArchivoBase64(input);
-                
+            label.textContent = file.name;
+            label.classList.add('file-selected');
+            
+            // Convertir a base64
+            convertirArchivoBase64(input, () => {
                 if (nextFieldId) {
                     setTimeout(() => {
                         document.getElementById(nextFieldId).classList.add('show');
                     }, 300);
                 }
-            }
+            });
         }
 
-        // Función para establecer el tipo de carga de documento MEJORADA
+        function convertirArchivoBase64(input, callback) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                state.archivosBase64[input.id] = {
+                    nombre: file.name,
+                    tipo: file.type,
+                    tamaño: file.size,
+                    contenido: e.target.result
+                };
+                
+                if (callback) callback();
+            };
+            
+            reader.onerror = function() {
+                alert('Error al leer el archivo');
+                input.value = '';
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // ==========================================
+        // LÓGICA DE DOCUMENTOS Y CODEUDORES CORREGIDA
+        // ==========================================
+        
         function setDocumentType(isComplete) {
             // Si cambia de opción, resetear todo lo posterior
-            if (documentoCompletoRequerido !== null && documentoCompletoRequerido !== isComplete) {
-                console.log('Cambio en tipo de documento, reseteando...');
+            if (state.documentoCompletoRequerido !== null && state.documentoCompletoRequerido !== isComplete) {
                 limpiarDocumentosIdentidad();
                 resetearDesdeIdentidad();
             }
             
-            documentoCompletoRequerido = isComplete;
+            state.documentoCompletoRequerido = isComplete;
+            state.wasReset = true;
             
             // Marcar botón seleccionado
             event.target.classList.add('selected');
-            event.target.parentElement.querySelectorAll('.codeudor-btn').forEach(btn => {
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
                 if (btn !== event.target) btn.classList.remove('selected');
             });
             
-            // Bloquear codeudores hasta que cargue documentos
-            deshabilitarCodeudores();
+            // Resetear decisión de codeudores
             resetearDecisionCodeudores();
             
             if (isComplete) {
-                // Mostrar opción de un solo archivo
                 document.getElementById('singleDocUpload').style.display = 'block';
                 document.getElementById('doubleDocUpload').style.display = 'none';
-                
-                // Animar entrada
                 setTimeout(() => {
                     document.getElementById('singleDocUpload').style.opacity = '1';
                 }, 100);
             } else {
-                // Mostrar opción de dos archivos
                 document.getElementById('singleDocUpload').style.display = 'none';
                 document.getElementById('doubleDocUpload').style.display = 'block';
-                
-                // Animar entrada
                 setTimeout(() => {
                     document.getElementById('doubleDocUpload').style.opacity = '1';
                 }, 100);
             }
         }
 
-        // Resetear desde identidad (cuando cambian tipo de documento)
-        function resetearDesdeIdentidad() {
-            console.log('Reseteando desde identidad...');
-            
-            // Resetear decisión de codeudores
-            resetearDecisionCodeudores();
-            
-            // Limpiar todos los codeudores
-            limpiarTodosCodeudores();
-            
-            // Resetear pasos dinámicos
-            dynamicSteps = ['1', '2', '3'];
-            pasoConfirmacionHabilitado = false;
-            
-            // Ocultar paso de revisión final
-            ocultarPasoRevisionFinal();
-        }
-
-        // Resetear decisión de codeudores
-        function resetearDecisionCodeudores() {
-            hasCodeudores = null;
-            document.getElementById('btnCodeudorNo').classList.remove('selected');
-            document.getElementById('btnCodeudorSi').classList.remove('selected');
-            deshabilitarCodeudores();
-        }
-
-        // Limpiar documentos de identidad
-        function limpiarDocumentosIdentidad() {
-            // Limpiar archivos base64
-            delete archivosBase64.docIdentidad;
-            delete archivosBase64.docIdentidadFrente;
-            delete archivosBase64.docIdentidadReverso;
-            
-            // Limpiar inputs y labels
-            const inputs = ['docIdentidadCompleto', 'docIdentidadFrente', 'docIdentidadReverso'];
-            inputs.forEach(id => {
-                const input = document.getElementById(id);
-                if (input) {
-                    input.value = '';
-                    const label = document.getElementById('label' + id.charAt(0).toUpperCase() + id.slice(1));
-                    if (label) {
-                        label.textContent = label.textContent.includes('frontal') ? 'Seleccionar cara frontal' :
-                                          label.textContent.includes('posterior') ? 'Seleccionar cara posterior' :
-                                          'Seleccionar archivo con ambas caras';
-                        label.classList.remove('file-selected');
-                    }
-                }
-            });
-            
-            documentosIdentidadCargados = false;
-            deshabilitarCodeudores();
-        }
-
-        // Habilitar/Deshabilitar codeudores
-        function habilitarCodeudores() {
-            document.getElementById('codeudorQuestion').classList.remove('disabled');
-            document.getElementById('btnCodeudorNo').disabled = false;
-            document.getElementById('btnCodeudorSi').disabled = false;
-        }
-
-        function deshabilitarCodeudores() {
-            document.getElementById('codeudorQuestion').classList.add('disabled');
-            document.getElementById('btnCodeudorNo').disabled = true;
-            document.getElementById('btnCodeudorSi').disabled = true;
-        }
-
-        // Función para manejar la carga de documentos
         function handleDocumentUpload(input, tipo) {
             const file = input.files[0];
             if (!file) return;
+            
+            // Validaciones
+            if (file.size > state.maxFileSize) {
+                alert(`Archivo muy grande. Máximo ${state.maxFileSize / 1024 / 1024}MB`);
+                input.value = '';
+                return;
+            }
             
             // Actualizar label
             const labelId = 'labelDocIdentidad' + tipo.charAt(0).toUpperCase() + tipo.slice(1);
@@ -1457,294 +1536,252 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 if (tipo === 'completo') {
-                    // Un solo archivo con ambas caras
-                    archivosBase64.docIdentidad = {
+                    state.archivosBase64.docIdentidad = {
                         nombre: file.name,
                         tipo: file.type,
                         contenido: e.target.result,
                         completo: true
                     };
-                    documentosIdentidadCargados = true;
+                    state.documentosIdentidadCargados = true;
                     habilitarCodeudores();
                 } else if (tipo === 'frente') {
-                    // Cara frontal
-                    archivosBase64.docIdentidadFrente = {
+                    state.archivosBase64.docIdentidadFrente = {
                         nombre: file.name,
                         tipo: file.type,
                         contenido: e.target.result
                     };
-                    // Verificar si ambas caras están cargadas
-                    if (archivosBase64.docIdentidadReverso) {
-                        documentosIdentidadCargados = true;
+                    if (state.archivosBase64.docIdentidadReverso) {
+                        state.documentosIdentidadCargados = true;
                         habilitarCodeudores();
                     }
                 } else if (tipo === 'reverso') {
-                    // Cara posterior
-                    archivosBase64.docIdentidadReverso = {
+                    state.archivosBase64.docIdentidadReverso = {
                         nombre: file.name,
                         tipo: file.type,
                         contenido: e.target.result
                     };
-                    // Verificar si ambas caras están cargadas
-                    if (archivosBase64.docIdentidadFrente) {
-                        documentosIdentidadCargados = true;
+                    if (state.archivosBase64.docIdentidadFrente) {
+                        state.documentosIdentidadCargados = true;
                         habilitarCodeudores();
                     }
                 }
-                
-                console.log(`Documento ${tipo} cargado correctamente`);
             };
             reader.readAsDataURL(file);
         }
 
-        // Mostrar siguiente campo
-        function showNextField(fieldId) {
-            const field = document.getElementById(fieldId);
-            if (field && !field.classList.contains('show')) {
-                setTimeout(() => {
-                    field.classList.add('show');
-                }, 300);
-            }
-        }
-
-        // Validar y mostrar
-        function validateAndShow(field1Id, field2Id, nextFieldId) {
-            const val1 = document.getElementById(field1Id).value;
-            const val2 = document.getElementById(field2Id).value;
-            
-            if (val1 === val2 && val1 !== '') {
-                showNextField(nextFieldId);
-            } else if (val1 !== val2 && val2 !== '') {
-                alert('Los valores no coinciden');
-            }
-        }
-
-        // Manejo de codeudores MEJORADO CON LÓGICA CORRECTA
         function setCodeudor(hasCod) {
-            const anteriorDecision = hasCodeudores;
-            hasCodeudores = hasCod;
+            // Limpiar selección anterior si hay reset
+            if (state.wasReset) {
+                document.getElementById('btnCodeudorNo').classList.remove('selected');
+                document.getElementById('btnCodeudorSi').classList.remove('selected');
+                state.wasReset = false;
+            }
+            
+            const anteriorDecision = state.hasCodeudores;
+            state.hasCodeudores = hasCod;
             
             // Marcar botón seleccionado
             event.target.classList.add('selected');
-            event.target.parentElement.querySelectorAll('.codeudor-btn').forEach(btn => {
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
                 if (btn !== event.target) btn.classList.remove('selected');
             });
             
             if (hasCod) {
                 // Si dice SÍ a codeudores
-                if (numCodeudores === 0) {
-                    numCodeudores = 1;
-                    createCodeudorFields(1);
-                }
-                // Actualizar pasos dinámicos para incluir codeudor 1
-                dynamicSteps = ['1', '2', '3', 'identidad-codeudor1'];
-                pasoConfirmacionHabilitado = false;
-                // Ocultar revisión final porque falta completar codeudores
-                ocultarPasoRevisionFinal();
+                limpiarTodosCodeudores(); // Limpiar primero
+                state.numCodeudores = 1;
+                createCodeudorFields(1);
+                state.dynamicSteps = ['1', '2', '3', 'identidad-codeudor1'];
             } else {
                 // Si dice NO a codeudores
-                if (anteriorDecision === true) {
-                    // Si antes había dicho SÍ, limpiar todo
-                    limpiarTodosCodeudores();
-                }
-                numCodeudores = 0;
-                decisionesCodeudores = {};
-                // Habilitar paso de confirmación
-                dynamicSteps = ['1', '2', '3', 'revision-final'];
-                pasoConfirmacionHabilitado = true;
+                limpiarTodosCodeudores();
+                state.numCodeudores = 0;
+                state.decisionesCodeudores = {};
+                state.dynamicSteps = ['1', '2', '3', 'revision-final'];
             }
             
-            console.log('Pasos actualizados:', dynamicSteps);
+            recalcularPasosDinamicos();
         }
 
-        // Limpiar todos los codeudores
-        function limpiarTodosCodeudores() {
-            // Limpiar datos y archivos de todos los codeudores
-            for (let i = 1; i <= 3; i++) {
-                // Limpiar archivos
-                delete archivosBase64[`docCodeudor${i}`];
+        function addMoreCodeudor(hasMore, currentNum) {
+            // Limpiar selección de botones anteriores
+            document.getElementById(`btnMoreCodeudor${currentNum}No`).classList.remove('selected');
+            document.getElementById(`btnMoreCodeudor${currentNum}Si`).classList.remove('selected');
+            
+            // Guardar decisión
+            state.decisionesCodeudores[currentNum] = hasMore;
+            
+            // Marcar botón actual
+            event.target.classList.add('selected');
+            
+            if (hasMore && currentNum < 3) {
+                // Agregar siguiente codeudor
+                state.numCodeudores = currentNum + 1;
+                createCodeudorFields(state.numCodeudores);
                 
-                // Limpiar campos si existen
-                const container = document.getElementById(`codeudor${i}Fields`);
-                if (container) {
-                    container.innerHTML = '';
+                // Actualizar pasos
+                state.dynamicSteps = ['1', '2', '3'];
+                for (let i = 1; i <= state.numCodeudores; i++) {
+                    state.dynamicSteps.push(`identidad-codeudor${i}`);
                 }
+            } else {
+                // No más codeudores - limpiar los posteriores
+                limpiarCodeudoresPosteriores(currentNum);
+                state.numCodeudores = currentNum;
                 
-                // Ocultar paso si está visible
+                // Actualizar pasos
+                state.dynamicSteps = ['1', '2', '3'];
+                for (let i = 1; i <= state.numCodeudores; i++) {
+                    state.dynamicSteps.push(`identidad-codeudor${i}`);
+                }
+                state.dynamicSteps.push('revision-final');
+            }
+            
+            recalcularPasosDinamicos();
+        }
+
+        // ==========================================
+        // FUNCIONES DE LIMPIEZA Y RESET
+        // ==========================================
+        
+        function resetearDesdeIdentidad() {
+            state.hasCodeudores = null;
+            state.wasReset = true;
+            resetearDecisionCodeudores();
+            limpiarTodosCodeudores();
+            state.dynamicSteps = ['1', '2', '3'];
+            ocultarRevisionFinal();
+        }
+
+        function resetearDecisionCodeudores() {
+            state.hasCodeudores = null;
+            document.getElementById('btnCodeudorNo').classList.remove('selected');
+            document.getElementById('btnCodeudorSi').classList.remove('selected');
+            deshabilitarCodeudores();
+        }
+
+        function limpiarDocumentosIdentidad() {
+            delete state.archivosBase64.docIdentidad;
+            delete state.archivosBase64.docIdentidadFrente;
+            delete state.archivosBase64.docIdentidadReverso;
+            
+            const inputs = ['docIdentidadCompleto', 'docIdentidadFrente', 'docIdentidadReverso'];
+            inputs.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '';
+                    const label = document.getElementById('label' + id.charAt(0).toUpperCase() + id.slice(1));
+                    if (label) {
+                        label.textContent = label.getAttribute('data-original') || 'Seleccionar archivo';
+                        label.classList.remove('file-selected');
+                    }
+                }
+            });
+            
+            state.documentosIdentidadCargados = false;
+            deshabilitarCodeudores();
+        }
+
+        function limpiarTodosCodeudores() {
+            for (let i = 1; i <= 3; i++) {
+                delete state.archivosBase64[`docCodeudor${i}`];
+                
+                const container = document.getElementById(`codeudor${i}Fields`);
+                if (container) container.innerHTML = '';
+                
                 const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
                 if (stepElement) {
                     stepElement.classList.remove('active');
                     stepElement.style.display = 'none';
                 }
-            }
-            
-            // Resetear decisiones
-            decisionesCodeudores = {};
-            numCodeudores = 0;
-        }
-
-        // Crear campos de codeudor
-        function createCodeudorFields(num) {
-            const container = document.getElementById(`codeudor${num}Fields`);
-            if (!container) return;
-            
-            // Solo crear si está vacío
-            if (container.innerHTML === '') {
-                container.innerHTML = `
-                    <div class="form-field show">
-                        <div class="form-row">
-                            <div>
-                                <label>Tipo de Documento <span class="required">*</span></label>
-                                <select id="tipoDocCodeudor${num}" required>
-                                    <option value="">Seleccione...</option>
-                                    <option value="CC">Cédula de Ciudadanía</option>
-                                    <option value="CE">Cédula de Extranjería</option>
-                                    <option value="PA">Pasaporte</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label>Número de Documento <span class="required">*</span></label>
-                                <input type="text" id="numDocCodeudor${num}" placeholder="Número de documento" required>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-field show">
-                        <div class="form-row">
-                            <div>
-                                <label>Nombres <span class="required">*</span></label>
-                                <input type="text" id="nombresCodeudor${num}" placeholder="Nombres completos" required>
-                            </div>
-                            
-                            <div>
-                                <label>Apellidos <span class="required">*</span></label>
-                                <input type="text" id="apellidosCodeudor${num}" placeholder="Apellidos completos" required>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-field show">
-                        <div class="form-row">
-                            <div>
-                                <label>Email <span class="required">*</span></label>
-                                <input type="email" id="emailCodeudor${num}" placeholder="correo@ejemplo.com" required>
-                            </div>
-                            
-                            <div>
-                                <label>Celular <span class="required">*</span></label>
-                                <input type="tel" id="celularCodeudor${num}" placeholder="3001234567" required>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-field show">
-                        <label>Documento de Identidad <span class="required">*</span></label>
-                        <div class="file-upload-wrapper">
-                            <label class="file-upload-label" for="docCodeudor${num}" id="labelDocCodeudor${num}">
-                                Seleccionar archivo - Ambas caras
-                            </label>
-                            <input type="file" id="docCodeudor${num}" class="file-upload-input" accept="image/*,.pdf" required onchange="handleCodeudorFile(this, ${num})">
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        function handleCodeudorFile(input, index) {
-            const label = document.getElementById(`labelDocCodeudor${index}`);
-            if (input.files.length > 0) {
-                label.textContent = input.files[0].name;
-                label.classList.add('file-selected');
-                convertirArchivoBase64(input);
-            }
-        }
-
-        // Agregar más codeudores MEJORADO
-        function addMoreCodeudor(hasMore, currentNum) {
-            // Guardar decisión
-            decisionesCodeudores[currentNum] = hasMore;
-            
-            event.target.classList.add('selected');
-            event.target.parentElement.querySelectorAll('.codeudor-btn').forEach(btn => {
-                if (btn !== event.target) btn.classList.remove('selected');
-            });
-            
-            if (hasMore && currentNum < 3) {
-                // Agregar siguiente codeudor
-                numCodeudores = currentNum + 1;
-                createCodeudorFields(numCodeudores);
                 
-                // Actualizar pasos dinámicos
-                dynamicSteps = ['1', '2', '3'];
-                for (let i = 1; i <= numCodeudores; i++) {
-                    dynamicSteps.push(`identidad-codeudor${i}`);
-                }
-                pasoConfirmacionHabilitado = false;
+                // Limpiar botones de decisión
+                const btnNo = document.getElementById(`btnMoreCodeudor${i}No`);
+                const btnSi = document.getElementById(`btnMoreCodeudor${i}Si`);
+                if (btnNo) btnNo.classList.remove('selected');
+                if (btnSi) btnSi.classList.remove('selected');
+            }
+            
+            state.decisionesCodeudores = {};
+            state.numCodeudores = 0;
+        }
+
+        function limpiarCodeudoresPosteriores(desdeNumero) {
+            for (let i = desdeNumero + 1; i <= 3; i++) {
+                delete state.archivosBase64[`docCodeudor${i}`];
                 
-            } else {
-                // No más codeudores o límite alcanzado
-                // Eliminar codeudores posteriores si existen
-                for (let i = currentNum + 1; i <= 3; i++) {
-                    // Limpiar datos
-                    delete archivosBase64[`docCodeudor${i}`];
-                    
-                    // Limpiar campos
-                    const container = document.getElementById(`codeudor${i}Fields`);
-                    if (container) {
-                        container.innerHTML = '';
-                    }
-                    
-                    // Ocultar paso
-                    const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
-                    if (stepElement) {
-                        stepElement.classList.remove('active');
-                        stepElement.style.display = 'none';
-                    }
+                const container = document.getElementById(`codeudor${i}Fields`);
+                if (container) container.innerHTML = '';
+                
+                const stepElement = document.getElementById(`stepIdentidadCodeudor${i}`);
+                if (stepElement) {
+                    stepElement.classList.remove('active');
+                    stepElement.style.display = 'none';
                 }
                 
-                numCodeudores = currentNum;
-                
-                // Actualizar pasos dinámicos
-                dynamicSteps = ['1', '2', '3'];
-                for (let i = 1; i <= numCodeudores; i++) {
-                    dynamicSteps.push(`identidad-codeudor${i}`);
-                }
-                dynamicSteps.push('revision-final');
-                pasoConfirmacionHabilitado = true;
+                delete state.decisionesCodeudores[i];
             }
-            
-            console.log('Pasos actualizados:', dynamicSteps);
         }
 
-        // Navegación entre pasos MEJORADA
+        function habilitarCodeudores() {
+            document.getElementById('codeudorQuestion').classList.remove('disabled');
+            document.getElementById('btnCodeudorNo').disabled = false;
+            document.getElementById('btnCodeudorSi').disabled = false;
+        }
+
+        function deshabilitarCodeudores() {
+            document.getElementById('codeudorQuestion').classList.add('disabled');
+            document.getElementById('btnCodeudorNo').disabled = true;
+            document.getElementById('btnCodeudorSi').disabled = true;
+        }
+
+        function ocultarRevisionFinal() {
+            const revisionStep = document.getElementById('stepRevisionFinal');
+            if (revisionStep) {
+                revisionStep.style.display = 'none';
+                revisionStep.classList.remove('active');
+            }
+        }
+
+        // ==========================================
+        // NAVEGACIÓN MEJORADA
+        // ==========================================
+        
+        function recalcularPasosDinamicos() {
+            // Asegurar que el paso de revisión final esté oculto hasta que sea necesario
+            const revisionStep = document.getElementById('stepRevisionFinal');
+            if (revisionStep) {
+                revisionStep.style.display = 'none';
+                revisionStep.classList.remove('active');
+            }
+        }
+
         function nextStep() {
             if (!validateCurrentStep()) {
                 return;
             }
             
             // Ocultar paso actual
-            const currentStepId = dynamicSteps[currentStep - 1];
+            const currentStepId = state.dynamicSteps[state.currentStep - 1];
             const currentElement = getStepElement(currentStepId);
             if (currentElement) {
                 currentElement.classList.remove('active');
             }
             
-            // Avanzar al siguiente paso
-            currentStep++;
+            // Avanzar
+            state.currentStep++;
             
             // Mostrar nuevo paso
-            const nextStepId = dynamicSteps[currentStep - 1];
+            const nextStepId = state.dynamicSteps[state.currentStep - 1];
             const nextElement = getStepElement(nextStepId);
             if (nextElement) {
                 nextElement.classList.add('active');
                 nextElement.style.display = 'block';
             }
             
-            // Actualizar UI
             updateUIForStep();
             
-            // Mostrar campos con animación en el paso 2
+            // Animaciones especiales
             if (nextStepId === '2') {
                 setTimeout(() => {
                     document.getElementById('field3').classList.add('show');
@@ -1753,37 +1790,35 @@
         }
 
         function previousStep() {
-            if (currentStep > 1) {
+            if (state.currentStep > 1) {
                 // Ocultar paso actual
-                const currentStepId = dynamicSteps[currentStep - 1];
+                const currentStepId = state.dynamicSteps[state.currentStep - 1];
                 const currentElement = getStepElement(currentStepId);
                 if (currentElement) {
                     currentElement.classList.remove('active');
                 }
                 
                 // Retroceder
-                currentStep--;
+                state.currentStep--;
                 
                 // Mostrar paso anterior
-                const prevStepId = dynamicSteps[currentStep - 1];
+                const prevStepId = state.dynamicSteps[state.currentStep - 1];
                 const prevElement = getStepElement(prevStepId);
                 if (prevElement) {
                     prevElement.classList.add('active');
                     prevElement.style.display = 'block';
                 }
                 
-                // Actualizar UI
                 updateUIForStep();
             }
         }
 
-        // Función auxiliar para obtener elemento del paso
         function getStepElement(stepId) {
             if (stepId.includes('identidad-codeudor')) {
                 const num = stepId.replace('identidad-codeudor', '');
                 return document.getElementById(`stepIdentidadCodeudor${num}`);
             } else if (stepId === 'revision-final') {
-                return document.querySelector(`.form-step[data-step="revision-final"]`);
+                return document.getElementById('stepRevisionFinal');
             } else {
                 return document.querySelector(`.form-step[data-step="${stepId}"]`);
             }
@@ -1793,23 +1828,20 @@
             const btnPrev = document.getElementById('btnPrev');
             const btnNext = document.getElementById('btnNext');
             
-            // Mostrar/ocultar botón anterior
-            btnPrev.style.display = currentStep === 1 ? 'none' : 'block';
+            btnPrev.style.display = state.currentStep === 1 ? 'none' : 'block';
             
-            // El botón siguiente siempre visible excepto en revisión final
-            const currentStepId = dynamicSteps[currentStep - 1];
+            const currentStepId = state.dynamicSteps[state.currentStep - 1];
             btnNext.style.display = currentStepId === 'revision-final' ? 'none' : 'block';
             
             updateProgressBar();
         }
 
         function updateProgressBar() {
-            // Calcular progreso basado en pasos principales
-            let mainStep = currentStep;
-            const currentStepId = dynamicSteps[currentStep - 1];
+            let mainStep = state.currentStep;
+            const currentStepId = state.dynamicSteps[state.currentStep - 1];
             
             if (currentStepId.includes('identidad-codeudor')) {
-                mainStep = 3.5; // Posición intermedia para codeudores
+                mainStep = 3.5;
             } else if (currentStepId === 'revision-final') {
                 mainStep = 4;
             } else {
@@ -1819,7 +1851,6 @@
             const progress = ((mainStep - 1) / 3) * 100;
             document.getElementById('progressLineActive').style.width = progress + '%';
             
-            // Actualizar círculos de progreso
             for (let i = 1; i <= 4; i++) {
                 const stepElement = document.getElementById(`step${i}`);
                 if (stepElement) {
@@ -1838,111 +1869,314 @@
             }
         }
 
-        // Validación de pasos mejorada
+        // ==========================================
+        // VALIDACIÓN DE PASOS OPTIMIZADA
+        // ==========================================
+        
         function validateCurrentStep() {
-            const currentStepId = dynamicSteps[currentStep - 1];
+            const currentStepId = state.dynamicSteps[state.currentStep - 1];
             
             switch(currentStepId) {
                 case '1':
-                    if (!archivosBase64.estudioAprobado || !archivosBase64.comprobantePago) {
-                        alert('Por favor cargue todos los documentos requeridos');
-                        return false;
-                    }
-                    return true;
-                    
+                    return validateStep1();
                 case '2':
-                    // Validar campos de información personal
-                    const campos = ['tipoDocumento', 'numeroDocumento', 'confirmarDocumento', 'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular', 'ocupacion'];
-                    for (const campo of campos) {
-                        const elemento = document.getElementById(campo);
-                        if (!elemento.value) {
-                            alert(`Por favor complete el campo: ${campo}`);
-                            elemento.focus();
-                            return false;
-                        }
-                    }
-                    
-                    // Validar coincidencias
-                    if (document.getElementById('numeroDocumento').value !== document.getElementById('confirmarDocumento').value) {
-                        alert('Los números de documento no coinciden');
-                        return false;
-                    }
-                    if (document.getElementById('email').value !== document.getElementById('confirmarEmail').value) {
-                        alert('Los correos no coinciden');
-                        return false;
-                    }
-                    if (document.getElementById('celular').value !== document.getElementById('confirmarCelular').value) {
-                        alert('Los números de celular no coinciden');
-                        return false;
-                    }
-                    return true;
-                    
+                    return validateStep2();
                 case '3':
-                    // Validar tipo de documento seleccionado
-                    if (documentoCompletoRequerido === null) {
-                        alert('Por favor indique si el archivo tiene ambas caras');
-                        return false;
-                    }
-                    
-                    // Validar documentos cargados
-                    if (documentoCompletoRequerido) {
-                        if (!archivosBase64.docIdentidad) {
-                            alert('Debe cargar el documento de identidad con ambas caras');
-                            return false;
-                        }
-                    } else {
-                        if (!archivosBase64.docIdentidadFrente || !archivosBase64.docIdentidadReverso) {
-                            alert('Debe cargar ambas caras del documento de identidad');
-                            return false;
-                        }
-                    }
-                    
-                    // Validar decisión sobre codeudores
-                    if (hasCodeudores === null) {
-                        alert('Por favor indique si tiene codeudores');
-                        return false;
-                    }
-                    return true;
-                    
+                    return validateStep3();
                 default:
                     if (currentStepId.includes('identidad-codeudor')) {
-                        const num = currentStepId.replace('identidad-codeudor', '');
-                        const campos = [`tipoDocCodeudor${num}`, `numDocCodeudor${num}`, `nombresCodeudor${num}`, `apellidosCodeudor${num}`, `emailCodeudor${num}`, `celularCodeudor${num}`];
-                        for (const campo of campos) {
-                            const elemento = document.getElementById(campo);
-                            if (elemento && !elemento.value) {
-                                alert(`Por favor complete todos los campos del codeudor ${num}`);
-                                elemento.focus();
-                                return false;
-                            }
-                        }
-                        if (!archivosBase64[`docCodeudor${num}`]) {
-                            alert(`Debe cargar el documento del codeudor ${num}`);
-                            return false;
-                        }
+                        return validateCodeudor(currentStepId.replace('identidad-codeudor', ''));
                     }
                     return true;
             }
         }
 
-        // Convertir archivo a Base64
-        function convertirArchivoBase64(input) {
+        function validateStep1() {
+            if (!state.archivosBase64.estudioAprobado) {
+                showError('Por favor cargue el documento de estudio aprobado');
+                return false;
+            }
+            if (!state.archivosBase64.comprobantePago) {
+                showError('Por favor cargue el comprobante de pago');
+                return false;
+            }
+            return true;
+        }
+
+        function validateStep2() {
+            const campos = [
+                { id: 'tipoDocumento', nombre: 'Tipo de documento' },
+                { id: 'numeroDocumento', nombre: 'Número de documento' },
+                { id: 'confirmarDocumento', nombre: 'Confirmación de documento' },
+                { id: 'nombres', nombre: 'Nombres' },
+                { id: 'apellidos', nombre: 'Apellidos' },
+                { id: 'email', nombre: 'Email' },
+                { id: 'confirmarEmail', nombre: 'Confirmación de email' },
+                { id: 'celular', nombre: 'Celular' },
+                { id: 'confirmarCelular', nombre: 'Confirmación de celular' },
+                { id: 'ocupacion', nombre: 'Ocupación' }
+            ];
+            
+            for (const campo of campos) {
+                const elemento = document.getElementById(campo.id);
+                if (!elemento || !elemento.value.trim()) {
+                    showError(`Por favor complete: ${campo.nombre}`);
+                    elemento?.focus();
+                    return false;
+                }
+            }
+            
+            // Validar coincidencias
+            if (document.getElementById('numeroDocumento').value !== document.getElementById('confirmarDocumento').value) {
+                showError('Los números de documento no coinciden');
+                return false;
+            }
+            
+            if (document.getElementById('email').value !== document.getElementById('confirmarEmail').value) {
+                showError('Los correos no coinciden');
+                return false;
+            }
+            
+            if (document.getElementById('celular').value !== document.getElementById('confirmarCelular').value) {
+                showError('Los números de celular no coinciden');
+                return false;
+            }
+            
+            // Validar formatos
+            if (!validarEmail(document.getElementById('email'))) {
+                return false;
+            }
+            
+            if (!validarTelefono(document.getElementById('celular'))) {
+                return false;
+            }
+            
+            return true;
+        }
+
+        function validateStep3() {
+            if (state.documentoCompletoRequerido === null) {
+                showError('Por favor indique si el archivo tiene ambas caras');
+                return false;
+            }
+            
+            if (state.documentoCompletoRequerido) {
+                if (!state.archivosBase64.docIdentidad) {
+                    showError('Debe cargar el documento de identidad con ambas caras');
+                    return false;
+                }
+            } else {
+                if (!state.archivosBase64.docIdentidadFrente || !state.archivosBase64.docIdentidadReverso) {
+                    showError('Debe cargar ambas caras del documento de identidad');
+                    return false;
+                }
+            }
+            
+            if (state.hasCodeudores === null) {
+                showError('Por favor indique si tiene codeudores');
+                return false;
+            }
+            
+            return true;
+        }
+
+        function validateCodeudor(num) {
+            const campos = [
+                `tipoDocCodeudor${num}`,
+                `numDocCodeudor${num}`,
+                `nombresCodeudor${num}`,
+                `apellidosCodeudor${num}`,
+                `emailCodeudor${num}`,
+                `celularCodeudor${num}`
+            ];
+            
+            for (const campo of campos) {
+                const elemento = document.getElementById(campo);
+                if (!elemento || !elemento.value.trim()) {
+                    showError(`Por favor complete todos los campos del codeudor ${num}`);
+                    elemento?.focus();
+                    return false;
+                }
+            }
+            
+            // Validar email del codeudor
+            const emailCodeudor = document.getElementById(`emailCodeudor${num}`);
+            if (emailCodeudor && !validarEmail(emailCodeudor)) {
+                return false;
+            }
+            
+            // Validar teléfono del codeudor
+            const celularCodeudor = document.getElementById(`celularCodeudor${num}`);
+            if (celularCodeudor && !validarTelefono(celularCodeudor)) {
+                return false;
+            }
+            
+            if (!state.archivosBase64[`docCodeudor${num}`]) {
+                showError(`Debe cargar el documento del codeudor ${num}`);
+                return false;
+            }
+            
+            return true;
+        }
+
+        function showError(message) {
+            alert(message); // Reemplazar con un modal más elegante si se desea
+        }
+
+        // ==========================================
+        // FUNCIONES DE UI
+        // ==========================================
+        
+        function iniciarRegistro() {
+            document.getElementById('initialScreen').classList.add('hidden');
+            document.getElementById('progressContainer').classList.add('show');
+            document.getElementById('formContent').classList.add('show');
+            document.getElementById('formNavigation').classList.add('show');
+            
+            setTimeout(() => {
+                document.getElementById('field1').classList.add('show');
+            }, 100);
+            
+            updateProgressBar();
+        }
+
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        function showNextField(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field && !field.classList.contains('show')) {
+                setTimeout(() => {
+                    field.classList.add('show');
+                }, 300);
+            }
+        }
+
+        function validateAndShow(field1Id, field2Id, nextFieldId) {
+            const val1 = document.getElementById(field1Id).value;
+            const val2 = document.getElementById(field2Id).value;
+            
+            const errorDiv = document.getElementById(`${field2Id}Error`);
+            
+            if (val1 === val2 && val1 !== '') {
+                if (errorDiv) {
+                    errorDiv.textContent = '';
+                    errorDiv.classList.remove('show');
+                }
+                showNextField(nextFieldId);
+            } else if (val1 !== val2 && val2 !== '') {
+                if (errorDiv) {
+                    errorDiv.textContent = 'Los valores no coinciden';
+                    errorDiv.classList.add('error', 'show');
+                }
+            }
+        }
+
+        function createCodeudorFields(num) {
+            const container = document.getElementById(`codeudor${num}Fields`);
+            if (!container || container.innerHTML !== '') return;
+            
+            container.innerHTML = `
+                <div class="form-field show">
+                    <div class="form-row">
+                        <div>
+                            <label>Tipo de Documento <span class="required">*</span></label>
+                            <select id="tipoDocCodeudor${num}" required>
+                                <option value="">Seleccione...</option>
+                                <option value="CC">Cédula de Ciudadanía</option>
+                                <option value="CE">Cédula de Extranjería</option>
+                                <option value="PA">Pasaporte</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label>Número de Documento <span class="required">*</span></label>
+                            <input type="text" id="numDocCodeudor${num}" placeholder="Número de documento" required>
+                            <div class="validation-message" id="numDocCodeudor${num}Error"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-field show">
+                    <div class="form-row">
+                        <div>
+                            <label>Nombres <span class="required">*</span></label>
+                            <input type="text" id="nombresCodeudor${num}" placeholder="Nombres completos" required>
+                            <div class="validation-message" id="nombresCodeudor${num}Error"></div>
+                        </div>
+                        
+                        <div>
+                            <label>Apellidos <span class="required">*</span></label>
+                            <input type="text" id="apellidosCodeudor${num}" placeholder="Apellidos completos" required>
+                            <div class="validation-message" id="apellidosCodeudor${num}Error"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-field show">
+                    <div class="form-row">
+                        <div>
+                            <label>Email <span class="required">*</span></label>
+                            <input type="email" id="emailCodeudor${num}" placeholder="correo@ejemplo.com" required onblur="validarEmail(this)">
+                            <div class="validation-message" id="emailCodeudor${num}Error"></div>
+                        </div>
+                        
+                        <div>
+                            <label>Celular <span class="required">*</span></label>
+                            <input type="tel" id="celularCodeudor${num}" placeholder="3001234567" required onblur="validarTelefono(this)">
+                            <div class="validation-message" id="celularCodeudor${num}Error"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-field show">
+                    <label>Documento de Identidad <span class="required">*</span></label>
+                    <div class="file-upload-wrapper">
+                        <label class="file-upload-label" for="docCodeudor${num}" id="labelDocCodeudor${num}">
+                            Seleccionar archivo - Ambas caras
+                        </label>
+                        <input type="file" id="docCodeudor${num}" class="file-upload-input" accept="image/*,.pdf" required onchange="handleCodeudorFile(this, ${num})">
+                    </div>
+                    <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
+                </div>
+            `;
+        }
+
+        function handleCodeudorFile(input, index) {
             const file = input.files[0];
             if (!file) return;
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                archivosBase64[input.id] = {
-                    nombre: file.name,
-                    tipo: file.type,
-                    contenido: e.target.result
-                };
-                console.log(`Archivo ${input.id} convertido a Base64`);
-            };
-            reader.readAsDataURL(file);
+            // Validar tamaño
+            if (file.size > state.maxFileSize) {
+                alert(`Archivo muy grande. Máximo ${state.maxFileSize / 1024 / 1024}MB`);
+                input.value = '';
+                return;
+            }
+            
+            const label = document.getElementById(`labelDocCodeudor${index}`);
+            if (label) {
+                label.textContent = file.name;
+                label.classList.add('file-selected');
+            }
+            
+            convertirArchivoBase64(input);
         }
 
-        // Modal de pago
+        // ==========================================
+        // MODAL DE PAGO
+        // ==========================================
+        
         function mostrarModalPago() {
             document.getElementById('modalPago').classList.add('show');
         }
@@ -1954,14 +2188,27 @@
         function copiarNumero() {
             const numero = '3177623878';
             
-            // Crear elemento temporal
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(numero).then(() => {
+                    event.target.textContent = 'Número Copiado';
+                    event.target.style.background = 'var(--success)';
+                    setTimeout(() => {
+                        cerrarModalPago();
+                    }, 1500);
+                }).catch(() => {
+                    fallbackCopy(numero);
+                });
+            } else {
+                fallbackCopy(numero);
+            }
+        }
+
+        function fallbackCopy(text) {
             const tempInput = document.createElement('input');
             tempInput.style.position = 'absolute';
             tempInput.style.left = '-9999px';
-            tempInput.value = numero;
+            tempInput.value = text;
             document.body.appendChild(tempInput);
-            
-            // Seleccionar y copiar
             tempInput.select();
             tempInput.setSelectionRange(0, 99999);
             
@@ -1969,36 +2216,41 @@
                 document.execCommand('copy');
                 event.target.textContent = 'Número Copiado';
                 event.target.style.background = 'var(--success)';
-                
                 setTimeout(() => {
                     cerrarModalPago();
                 }, 1500);
             } catch (err) {
-                alert('Número: ' + numero);
+                alert('Número: ' + text);
             }
             
             document.body.removeChild(tempInput);
         }
 
-        // Mostrar confirmación con resumen completo
+        // ==========================================
+        // CONFIRMACIÓN Y ENVÍO
+        // ==========================================
+        
         function mostrarConfirmacion() {
-            // Generar resumen completo
             generarResumenCompleto();
-            
-            // Mostrar modal
             document.getElementById('confirmationModal').classList.add('show');
         }
 
-        // Generar resumen completo en el modal
         function generarResumenCompleto() {
             const resumen = document.getElementById('confirmationSummary');
             
-            const nombre = document.getElementById('nombres').value + ' ' + document.getElementById('apellidos').value;
+            // Sanitizar datos para prevenir XSS
+            const sanitize = (text) => {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            };
+            
+            const nombre = sanitize(document.getElementById('nombres').value + ' ' + document.getElementById('apellidos').value);
             const tipoDoc = document.getElementById('tipoDocumento').options[document.getElementById('tipoDocumento').selectedIndex].text;
-            const numDoc = document.getElementById('numeroDocumento').value;
-            const email = document.getElementById('email').value;
-            const celular = document.getElementById('celular').value;
-            const ocupacion = document.getElementById('ocupacion').value;
+            const numDoc = sanitize(document.getElementById('numeroDocumento').value);
+            const email = sanitize(document.getElementById('email').value);
+            const celular = sanitize(document.getElementById('celular').value);
+            const ocupacion = sanitize(document.getElementById('ocupacion').value);
             
             let resumenHTML = `
                 <div class="summary-section">
@@ -2014,18 +2266,17 @@
                     <h4>📄 Documentos Cargados</h4>
                     <div class="summary-item">✅ Estudio aprobado</div>
                     <div class="summary-item">✅ Comprobante de pago</div>
-                    <div class="summary-item">✅ Documento de identidad ${documentoCompletoRequerido ? '(archivo único)' : '(2 archivos)'}</div>
+                    <div class="summary-item">✅ Documento de identidad ${state.documentoCompletoRequerido ? '(archivo único)' : '(2 archivos)'}</div>
                 </div>
             `;
             
-            // Agregar codeudores si existen
-            if (numCodeudores > 0) {
+            if (state.numCodeudores > 0) {
                 resumenHTML += `
                     <div class="summary-section">
-                        <h4>👥 Codeudores (${numCodeudores})</h4>
+                        <h4>👥 Codeudores (${state.numCodeudores})</h4>
                 `;
                 
-                for (let i = 1; i <= numCodeudores; i++) {
+                for (let i = 1; i <= state.numCodeudores; i++) {
                     const nombreCod = document.getElementById(`nombresCodeudor${i}`)?.value || '';
                     const apellidoCod = document.getElementById(`apellidosCodeudor${i}`)?.value || '';
                     const docCod = document.getElementById(`numDocCodeudor${i}`)?.value || '';
@@ -2033,8 +2284,8 @@
                     if (nombreCod && apellidoCod) {
                         resumenHTML += `
                             <div class="summary-item">
-                                <strong>Codeudor ${i}:</strong> ${nombreCod} ${apellidoCod}
-                                <br>&nbsp;&nbsp;&nbsp;&nbsp;Doc: ${docCod}
+                                <strong>Codeudor ${i}:</strong> ${sanitize(nombreCod + ' ' + apellidoCod)}
+                                <br>&nbsp;&nbsp;&nbsp;&nbsp;Doc: ${sanitize(docCod)}
                             </div>
                         `;
                     }
@@ -2061,7 +2312,6 @@
             document.getElementById('btnFinalSubmit').style.display = 'none';
         }
 
-        // Configurar slider
         function setupSlider() {
             const slider = document.getElementById('slideToConfirm');
             const thumb = document.getElementById('slideThumb');
@@ -2071,8 +2321,13 @@
             let startX = 0;
             let currentX = 5;
             
-            thumb.addEventListener('mousedown', startDrag);
-            thumb.addEventListener('touchstart', startDrag);
+            // Limpiar listeners anteriores si existen
+            if (state.sliderListeners) {
+                document.removeEventListener('mousemove', state.sliderListeners.drag);
+                document.removeEventListener('touchmove', state.sliderListeners.drag);
+                document.removeEventListener('mouseup', state.sliderListeners.endDrag);
+                document.removeEventListener('touchend', state.sliderListeners.endDrag);
+            }
             
             function startDrag(e) {
                 isDragging = true;
@@ -2092,24 +2347,22 @@
                 const x = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                 currentX = x - startX;
                 
-                // Limitar el movimiento
                 const maxX = slider.offsetWidth - thumb.offsetWidth - 10;
                 currentX = Math.max(5, Math.min(currentX, maxX));
                 
                 thumb.style.left = currentX + 'px';
                 
-                // Si llegó al final
                 if (currentX >= maxX - 10) {
                     thumb.classList.add('confirmed');
                     submitBtn.style.display = 'block';
                     isDragging = false;
+                    endDrag();
                 }
             }
             
             function endDrag() {
                 isDragging = false;
                 
-                // Si no llegó al final, regresar
                 const maxX = slider.offsetWidth - thumb.offsetWidth - 10;
                 if (currentX < maxX - 10) {
                     currentX = 5;
@@ -2121,19 +2374,33 @@
                 document.removeEventListener('mouseup', endDrag);
                 document.removeEventListener('touchend', endDrag);
             }
+            
+            // Guardar referencias para limpieza posterior
+            state.sliderListeners = { drag, endDrag };
+            
+            thumb.addEventListener('mousedown', startDrag);
+            thumb.addEventListener('touchstart', startDrag, { passive: true });
         }
 
-        // Enviar formulario
         async function enviarFormulario() {
-            console.log('Enviando formulario...');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const progressBar = document.getElementById('loadingProgressBar');
             
-            // Mostrar loading
-            document.getElementById('loadingOverlay').classList.add('show');
+            loadingOverlay.classList.add('show');
             document.getElementById('confirmationModal').classList.remove('show');
+            
+            // Simular progreso
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 10;
+                if (progressBar) {
+                    progressBar.style.width = Math.min(progress, 90) + '%';
+                }
+            }, 200);
             
             // Recopilar datos
             const datosFormulario = {
-                codigoRegistro: codigoRegistro,
+                codigoRegistro: state.codigoRegistro,
                 inquilino: {
                     tipoDocumento: document.getElementById('tipoDocumento').value,
                     numeroDocumento: document.getElementById('numeroDocumento').value,
@@ -2145,12 +2412,12 @@
                     celular: document.getElementById('celular').value,
                     ocupacion: document.getElementById('ocupacion').value
                 },
-                tieneCodeudores: numCodeudores > 0 ? 'si' : 'no',
+                tieneCodeudores: state.numCodeudores > 0 ? 'si' : 'no',
                 codeudores: []
             };
             
-            // Agregar codeudores si existen
-            for (let i = 1; i <= numCodeudores; i++) {
+            // Agregar codeudores
+            for (let i = 1; i <= state.numCodeudores; i++) {
                 const tipoDoc = document.getElementById(`tipoDocCodeudor${i}`);
                 if (tipoDoc && tipoDoc.value) {
                     const codeudor = {
@@ -2167,19 +2434,16 @@
                 }
             }
             
-            // Consolidar archivos de documento de identidad si están separados
-            if (!documentoCompletoRequerido && archivosBase64.docIdentidadFrente && archivosBase64.docIdentidadReverso) {
-                archivosBase64.docIdentidad = {
-                    frente: archivosBase64.docIdentidadFrente,
-                    reverso: archivosBase64.docIdentidadReverso,
+            // Consolidar archivos de identidad
+            if (!state.documentoCompletoRequerido && state.archivosBase64.docIdentidadFrente && state.archivosBase64.docIdentidadReverso) {
+                state.archivosBase64.docIdentidad = {
+                    frente: state.archivosBase64.docIdentidadFrente,
+                    reverso: state.archivosBase64.docIdentidadReverso,
                     completo: false
                 };
-                delete archivosBase64.docIdentidadFrente;
-                delete archivosBase64.docIdentidadReverso;
+                delete state.archivosBase64.docIdentidadFrente;
+                delete state.archivosBase64.docIdentidadReverso;
             }
-            
-            console.log('Datos a enviar:', datosFormulario);
-            console.log('Archivos:', Object.keys(archivosBase64));
             
             try {
                 const response = await fetch(CONFIG.API_URL, {
@@ -2191,29 +2455,30 @@
                     body: JSON.stringify({
                         accion: 'procesarFormularioInquilino',
                         datosFormulario: datosFormulario,
-                        archivosBase64: archivosBase64
+                        archivosBase64: state.archivosBase64
                     })
                 });
                 
-                // Asumir éxito con no-cors
-                console.log('Formulario enviado exitosamente');
+                clearInterval(progressInterval);
+                if (progressBar) {
+                    progressBar.style.width = '100%';
+                }
                 
-                // Redirigir a página de éxito
                 setTimeout(() => {
-                    window.location.href = `pagina-exito.html?estado=exitoso&cdr=${encodeURIComponent(codigoRegistro)}`;
-                }, 2000);
+                    window.location.href = `pagina-exito.html?estado=exitoso&cdr=${encodeURIComponent(state.codigoRegistro)}&tipo=inquilino`;
+                }, 1500);
                 
             } catch (error) {
+                clearInterval(progressInterval);
                 console.error('Error:', error);
-                document.getElementById('loadingOverlay').classList.remove('show');
-                alert('Error al enviar el formulario. Por favor intente nuevamente.');
+                loadingOverlay.classList.remove('show');
+                showError('Error al enviar el formulario. Por favor intente nuevamente.');
             }
         }
 
-        // Log de versión
-        console.log('✅ EFirmaContrata v2.0 - Sistema cargado correctamente');
-        console.log('📅 Última actualización: Enero 2025');
-        console.log('🔧 Modo:', CONFIG && CONFIG.DEBUG ? 'DESARROLLO' : 'PRODUCCIÓN');
+        // Log de sistema
+        console.info('✅ EFirmaContrata v2.0 - Sistema optimizado y validado');
+        console.info('📅 Última actualización: Enero 2025');
     </script>
 </body>
 </html>
