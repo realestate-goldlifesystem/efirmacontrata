@@ -412,9 +412,7 @@
         input::placeholder {
             color: var(--gray-medium);
         }
-    </style>
-</head>
-<style>
+
         /* File upload estilizado */
         .file-upload-wrapper {
             position: relative;
@@ -893,7 +891,8 @@
                     </div>
                 </div>
             </div>
-<!-- Progress Bar (oculto inicialmente) -->
+
+            <!-- Progress Bar (oculto inicialmente) -->
             <div class="progress-container" id="progressContainer">
                 <div class="progress-bar">
                     <div class="progress-line"></div>
@@ -1158,7 +1157,8 @@
             </div>
         </div>
     </div>
-<!-- Modal de Pago -->
+
+    <!-- Modal de Pago -->
     <div id="modalPago" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="cerrarModalPago()">&times;</span>
@@ -1837,8 +1837,8 @@
                 }
             }
         }
-    </script>
-// Validación de pasos mejorada
+
+        // Validación de pasos mejorada
         function validateCurrentStep() {
             const currentStepId = dynamicSteps[currentStep - 1];
             
@@ -2207,121 +2207,6 @@
                 console.error('Error:', error);
                 document.getElementById('loadingOverlay').classList.remove('show');
                 alert('Error al enviar el formulario. Por favor intente nuevamente.');
-            }
-        }
-
-        // Validación adicional de formato de email
-        function validarEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email);
-        }
-
-        // Validación adicional de formato de teléfono
-        function validarTelefono(telefono) {
-            const re = /^[0-9]{10}$/;
-            return re.test(telefono);
-        }
-
-        // Función de logging para debug
-        function logDebug(mensaje, datos = null) {
-            if (CONFIG && CONFIG.DEBUG) {
-                console.log(`[DEBUG] ${mensaje}`, datos || '');
-            }
-        }
-
-        // Control de tiempo de sesión (opcional)
-        let tiempoInactividad = 0;
-        const MAX_INACTIVIDAD = 30 * 60 * 1000; // 30 minutos
-
-        function resetearTiempoInactividad() {
-            tiempoInactividad = 0;
-        }
-
-        // Resetear tiempo en cada interacción
-        document.addEventListener('click', resetearTiempoInactividad);
-        document.addEventListener('keypress', resetearTiempoInactividad);
-        document.addEventListener('scroll', resetearTiempoInactividad);
-
-        // Verificar inactividad cada minuto
-        setInterval(() => {
-            tiempoInactividad += 60000;
-            if (tiempoInactividad >= MAX_INACTIVIDAD) {
-                alert('Su sesión ha expirado por inactividad. Por favor, recargue la página.');
-                location.reload();
-            }
-        }, 60000);
-
-        // Manejo de errores global
-        window.addEventListener('error', function(e) {
-            console.error('Error global:', e.error);
-            logDebug('Error capturado', {
-                mensaje: e.message,
-                archivo: e.filename,
-                linea: e.lineno,
-                columna: e.colno
-            });
-        });
-
-        // Prevenir envío accidental del formulario con Enter
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-                e.preventDefault();
-                return false;
-            }
-        });
-
-        // Función para validar tamaño de archivos
-        function validarTamanoArchivo(input) {
-            const file = input.files[0];
-            const maxSize = 10 * 1024 * 1024; // 10MB
-            
-            if (file && file.size > maxSize) {
-                alert('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
-                input.value = '';
-                return false;
-            }
-            return true;
-        }
-
-        // Función para limpiar formulario completo (reset)
-        function limpiarFormularioCompleto() {
-            if (confirm('¿Está seguro de que desea limpiar todo el formulario?')) {
-                // Resetear variables
-                currentStep = 1;
-                archivosBase64 = {};
-                codeudoresData = [];
-                hasCodeudores = null;
-                numCodeudores = 0;
-                dynamicSteps = ['1', '2', '3'];
-                documentoCompletoRequerido = null;
-                documentosIdentidadCargados = false;
-                decisionesCodeudores = {};
-                pasoConfirmacionHabilitado = false;
-                
-                // Limpiar campos
-                document.querySelectorAll('input').forEach(input => {
-                    if (input.type !== 'button' && input.type !== 'submit') {
-                        input.value = '';
-                    }
-                });
-                
-                document.querySelectorAll('select').forEach(select => {
-                    select.selectedIndex = 0;
-                });
-                
-                // Resetear labels de archivos
-                document.querySelectorAll('.file-upload-label').forEach(label => {
-                    label.classList.remove('file-selected');
-                    label.textContent = 'Seleccionar archivo';
-                });
-                
-                // Resetear botones seleccionados
-                document.querySelectorAll('.codeudor-btn.selected').forEach(btn => {
-                    btn.classList.remove('selected');
-                });
-                
-                // Volver al primer paso
-                location.reload();
             }
         }
 
