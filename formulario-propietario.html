@@ -1,683 +1,276 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulario Propietario - E-firmaContrata</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        /* Estilos específicos del formulario propietario */
-        .message {
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-            text-align: center;
-            animation: slideDown 0.3s;
-        }
-        
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
-        @keyframes slideDown {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        /* Spinner de carga */
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.9);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        
-        .loading-overlay.show {
-            display: flex;
-        }
-        
-        /* Estilos para formularios */
-        .form-section {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        
-        .form-section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 20px;
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
-        }
-        
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #2196F3;
-            box-shadow: 0 0 0 2px rgba(33,150,243,0.1);
-        }
-        
-        .required {
-            color: #dc3545;
-        }
-        
-        .form-text {
-            font-size: 12px;
-            color: #6c757d;
-            margin-top: 3px;
-        }
-        
-        .file-input {
-            padding: 5px;
-        }
-        
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-primary {
-            background: #2196F3;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #1976D2;
-        }
-        
-        .btn-success {
-            background: #4CAF50;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background: #45a049;
-        }
-        
-        .btn-danger {
-            background: #f44336;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #da190b;
-        }
-        
-        .btn-lg {
-            padding: 15px 40px;
-            font-size: 18px;
-        }
-        
-        .btn-sm {
-            padding: 5px 15px;
-            font-size: 14px;
-        }
-        
-        /* Servicios públicos */
-        .servicio-item {
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-            background: white;
-        }
-        
-        .servicio-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .servicio-header h4 {
-            margin: 0;
-            color: #333;
-        }
-        
-        .info-box {
-            background: #e8f4fd;
-            border-left: 4px solid #2196F3;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-        
-        .info-box p {
-            margin: 5px 0;
-            color: #555;
-        }
-        
-        .download-link {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #2196F3;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 10px 0;
-            transition: all 0.3s;
-        }
-        
-        .download-link:hover {
-            background: #1976D2;
-            transform: translateY(-2px);
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Formulario Propietario - E-firmaContrata</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<style>
+/* Ajustes mínimos: acentos corregidos + banner debug reutilizable */
+.message{padding:15px;margin:20px 0;border-radius:5px;text-align:center;animation:slideDown .3s}
+.message.success{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
+.message.error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
+.message.info{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb}
+@keyframes slideDown{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.spinner{border:3px solid #f3f3f3;border-top:3px solid #3498db;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin:20px auto}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.loading-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,.92);z-index:2000;justify-content:center;align-items:center;flex-direction:column}
+.loading-overlay.show{display:flex}
+.debug-banner{position:fixed;bottom:8px;right:8px;background:rgba(33,150,243,0.15);border:1px solid #2196F3;padding:6px 12px;color:#0c5460;font-size:12px;border-radius:6px;z-index:1500;font-weight:600;backdrop-filter:blur(4px)}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <div class="card-header">
-                <h1>🏠 Formulario del Propietario</h1>
-                <p>Complete todos los documentos requeridos para el contrato de arrendamiento</p>
-            </div>
-            
-            <div class="card-body">
-                <div id="messageContainer"></div>
-                
-                <!-- Sección 1: Información Personal -->
-                <div class="form-section">
-                    <h2>👤 Información Personal del Propietario</h2>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Tipo de Documento <span class="required">*</span></label>
-                            <select id="tipoDocumento" required>
-                                <option value="">Seleccione...</option>
-                                <option value="CC">Cédula de Ciudadanía</option>
-                                <option value="CE">Cédula de Extranjería</option>
-                                <option value="PA">Pasaporte</option>
-                                <option value="NIT">NIT</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Número de Documento <span class="required">*</span></label>
-                            <input type="text" id="numeroDocumento" placeholder="Ej: 1234567890" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Nombres Completos <span class="required">*</span></label>
-                            <input type="text" id="nombres" placeholder="Ej: Juan Carlos" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Apellidos Completos <span class="required">*</span></label>
-                            <input type="text" id="apellidos" placeholder="Ej: García López" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Correo Electrónico <span class="required">*</span></label>
-                            <input type="email" id="email" placeholder="correo@ejemplo.com" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Celular <span class="required">*</span></label>
-                            <input type="tel" id="celular" placeholder="Ej: 3001234567" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Dirección de Residencia <span class="required">*</span></label>
-                        <input type="text" id="direccion" placeholder="Ej: Calle 123 #45-67, Barrio, Ciudad" required>
-                    </div>
-                </div>
-                
-                <!-- Sección 2: Documentos Básicos -->
-                <div class="form-section">
-                    <h2>📄 Documentos Básicos</h2>
-                    
-                    <div class="form-group">
-                        <label>Documento de Identidad (Ambas caras) <span class="required">*</span></label>
-                        <input type="file" id="docIdentidad" class="file-input" accept="image/*,.pdf" required>
-                        <small class="form-text">Suba ambas caras del documento en una imagen o PDF</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Formulario SARLAFT <span class="required">*</span></label>
-                        <div class="info-box">
-                            <p>📥 Descargue el formulario SARLAFT, diligencie todos los campos y súbalo firmado.</p>
-                            <a href="https://drive.google.com/file/d/1example/view" target="_blank" class="download-link">
-                                📄 Descargar Formulario SARLAFT
-                            </a>
-                        </div>
-                        <input type="file" id="sarlaft" class="file-input" accept="image/*,.pdf" required>
-                        <small class="form-text">Suba el formulario SARLAFT diligenciado y firmado</small>
-                    </div>
-                </div>
-                
-                <!-- Sección 3: Documentos del Inmueble -->
-                <div class="form-section">
-                    <h2>🏢 Documentos del Inmueble</h2>
-                    
-                    <div class="form-group">
-                        <label>Certificado Bancario <span class="required">*</span></label>
-                        <input type="file" id="certBancario" class="file-input" accept="image/*,.pdf" required>
-                        <small class="form-text">Certificado de la cuenta donde se consignarán los arriendos (no mayor a 30 días)</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Certificado de Tradición y Libertad <span class="required">*</span></label>
-                        <input type="file" id="certTradicion" class="file-input" accept="image/*,.pdf" required>
-                        <small class="form-text">Certificado no mayor a 30 días</small>
-                    </div>
-                </div>
-                
-                <!-- Sección 4: Servicios Públicos -->
-                <div class="form-section">
-                    <h2>💡 Servicios Públicos</h2>
-                    
-                    <div class="info-box">
-                        <p>📌 Debe cargar mínimo 2 servicios públicos. Cada servicio requiere el recibo y comprobante de pago al día.</p>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Número de servicios públicos a cargar</label>
-                        <select id="numServicios" onchange="generarCamposServicios()">
-                            <option value="2">2 servicios</option>
-                            <option value="3">3 servicios</option>
-                            <option value="4">4 servicios</option>
-                            <option value="5">5 servicios</option>
-                        </select>
-                    </div>
-                    
-                    <div id="serviciosContainer"></div>
-                </div>
-                
-                <!-- Sección 5: Documentos Opcionales -->
-                <div class="form-section">
-                    <h2>📎 Documentos Opcionales</h2>
-                    
-                    <div class="form-group">
-                        <label>Reglamento de Propiedad Horizontal (si aplica)</label>
-                        <input type="file" id="reglamento" class="file-input" accept="image/*,.pdf">
-                        <small class="form-text">Solo si el inmueble está en propiedad horizontal</small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Manual de Convivencia (si aplica)</label>
-                        <input type="file" id="manual" class="file-input" accept="image/*,.pdf">
-                        <small class="form-text">Si existe manual de convivencia del edificio o conjunto</small>
-                    </div>
-                </div>
-                
-                <!-- Botón de envío -->
-                <div class="form-section">
-                    <button type="button" class="btn btn-success btn-lg" onclick="enviarFormulario()">
-                        📤 ENVIAR DOCUMENTOS
-                    </button>
-                </div>
-            </div>
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h1>🏠 Formulario del Propietario</h1>
+      <p>Complete todos los documentos requeridos para el contrato de arrendamiento</p>
+    </div>
+    <div class="card-body">
+      <div id="messageContainer"></div>
+      <!-- Sección 1 -->
+      <div class="form-section" style="display:block">
+        <h2>👤 Información Personal del Propietario</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Documento <span class="required">*</span></label>
+            <select id="tipoDocumento">
+              <option value="">Seleccione...</option>
+              <option value="CC">Cédula de Ciudadanía</option>
+              <option value="CE">Cédula de Extranjería</option>
+              <option value="PA">Pasaporte</option>
+              <option value="NIT">NIT</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Número de Documento <span class="required">*</span></label>
+            <input type="text" id="numeroDocumento" placeholder="Ej: 1234567890">
+          </div>
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombres Completos <span class="required">*</span></label>
+            <input type="text" id="nombres" placeholder="Ej: Juan Carlos">
+          </div>
+          <div class="form-group">
+            <label>Apellidos Completos <span class="required">*</span></label>
+            <input type="text" id="apellidos" placeholder="Ej: García López">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Correo Electrónico <span class="required">*</span></label>
+            <input type="email" id="email" placeholder="correo@ejemplo.com">
+          </div>
+          <div class="form-group">
+            <label>Celular <span class="required">*</span></label>
+            <input type="tel" id="celular" placeholder="Ej: 3001234567">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dirección de Residencia <span class="required">*</span></label>
+            <input type="text" id="direccion" placeholder="Ej: Calle 123 #45-67, Barrio, Ciudad">
+        </div>
+      </div>
+      <!-- Sección 2 -->
+      <div class="form-section" style="display:block">
+        <h2>📄 Documentos Básicos</h2>
+        <div class="form-group">
+          <label>Documento de Identidad (Ambas caras) <span class="required">*</span></label>
+          <input type="file" id="docIdentidad" class="file-input" accept="image/*,.pdf">
+          <small class="form-text">Suba ambas caras del documento en una imagen o PDF</small>
+        </div>
+        <div class="form-group">
+          <label>Formulario SARLAFT <span class="required">*</span></label>
+          <div class="info-box">
+            <p>📥 Descargue el formulario SARLAFT, diligencie todos los campos y súbalo firmado.</p>
+            <a href="https://drive.google.com/file/d/1example/view" target="_blank" class="download-link">📄 Descargar Formulario SARLAFT</a>
+          </div>
+          <input type="file" id="sarlaft" class="file-input" accept="image/*,.pdf">
+        </div>
+      </div>
+      <!-- Sección 3 -->
+      <div class="form-section" style="display:block">
+        <h2>🏢 Documentos del Inmueble</h2>
+        <div class="form-group">
+          <label>Certificado Bancario <span class="required">*</span></label>
+          <input type="file" id="certBancario" class="file-input" accept="image/*,.pdf">
+          <small class="form-text">Certificado (no mayor a 30 días)</small>
+        </div>
+        <div class="form-group">
+          <label>Certificado de Tradición y Libertad <span class="required">*</span></label>
+          <input type="file" id="certTradicion" class="file-input" accept="image/*,.pdf">
+          <small class="form-text">No mayor a 30 días</small>
+        </div>
+      </div>
+      <!-- Sección 4 -->
+      <div class="form-section" style="display:block">
+        <h2>💡 Servicios Públicos</h2>
+        <div class="info-box">
+          <p>📌 Debe cargar mínimo 2 servicios públicos (recibo + pago al día).</p>
+        </div>
+        <div class="form-group">
+          <label>Número de servicios públicos a cargar</label>
+          <select id="numServicios" onchange="generarCamposServicios()">
+            <option value="2">2 servicios</option>
+            <option value="3">3 servicios</option>
+            <option value="4">4 servicios</option>
+            <option value="5">5 servicios</option>
+          </select>
+        </div>
+        <div id="serviciosContainer"></div>
+      </div>
+      <!-- Sección 5 -->
+      <div class="form-section" style="display:block">
+        <h2>📎 Documentos Opcionales</h2>
+        <div class="form-group">
+          <label>Reglamento de Propiedad Horizontal (si aplica)</label>
+          <input type="file" id="reglamento" class="file-input" accept="image/*,.pdf">
+        </div>
+        <div class="form-group">
+          <label>Manual de Convivencia (si aplica)</label>
+            <input type="file" id="manual" class="file-input" accept="image/*,.pdf">
+        </div>
+      </div>
+      <div class="form-section" style="display:block">
+        <button type="button" class="btn btn-success btn-lg" onclick="enviarFormulario()">📤 ENVIAR DOCUMENTOS</button>
+      </div>
     </div>
-    
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="spinner"></div>
-        <h3>Procesando documentos...</h3>
-        <p>Por favor espere, esto puede tomar unos segundos</p>
-    </div>
-    
-    <script src="config.js"></script>
-    <script>
-        // Variables globales
-        let codigoRegistro = '';
-        let archivosBase64 = {};
-        let serviciosPublicos = [];
-        
-        // Inicializar al cargar la página
-        window.onload = function() {
-            console.log('🚀 Iniciando formulario de propietario');
-            
-            // Obtener código de registro de la URL
-            const urlParams = new URLSearchParams(window.location.search);
-            codigoRegistro = urlParams.get('cdr') || '';
-            
-            console.log('📋 Código de registro:', codigoRegistro);
-            
-            // Validar código de registro
-            if (!codigoRegistro) {
-                console.error('❌ No se encontró código de registro');
-                mostrarMensaje('❌ Código de registro no válido', 'error');
-                setTimeout(() => {
-                    console.log('Redirigiendo a selector...');
-                    window.location.href = 'selector.html';
-                }, 3000);
-                return;
-            }
-            
-            // Si el código es válido, continuar con la configuración
-            console.log('✅ Código válido, configurando formulario');
-            configurarFormulario();
-            
-            // Mostrar el código en la interfaz
-            mostrarMensaje(`Código de registro: ${codigoRegistro}`, 'success');
-            
-            // CORRECCIÓN: Mostrar todas las secciones del formulario
-            console.log('📋 Mostrando secciones del formulario');
-            document.querySelectorAll('.form-section').forEach(section => {
-                section.style.display = 'block';
-            });
-            
-            // Generar campos de servicios por defecto (2)
-            generarCamposServicios();
-        };
-        
-        // Configurar formulario
-        function configurarFormulario() {
-            console.log('🔧 Configurando formulario');
-            
-            // Configurar conversión de archivos
-            configurarArchivos();
-        }
-        
-        // Configurar manejo de archivos
-        function configurarArchivos() {
-            console.log('📁 Configurando manejo de archivos');
-            const fileInputs = document.querySelectorAll('input[type="file"]');
-            fileInputs.forEach(input => {
-                input.addEventListener('change', function() {
-                    convertirArchivoBase64(this);
-                });
-            });
-        }
-        
-        // Convertir archivo a Base64
-        function convertirArchivoBase64(input) {
-            const file = input.files[0];
-            if (!file) return;
-            
-            console.log(`📄 Convirtiendo archivo: ${file.name}`);
-            
-            // Validar tamaño
-            const maxSize = file.type.startsWith('image/') ? CONFIG.MAX_IMAGE_SIZE : CONFIG.MAX_FILE_SIZE;
-            if (file.size > maxSize) {
-                mostrarMensaje(`❌ El archivo es muy grande. Máximo: ${maxSize / 1024 / 1024}MB`, 'error');
-                input.value = '';
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                archivosBase64[input.id] = {
-                    nombre: file.name,
-                    tipo: file.type,
-                    contenido: e.target.result
-                };
-                console.log(`✅ Archivo ${input.id} convertido a Base64`);
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // Generar campos de servicios públicos
-        function generarCamposServicios() {
-            const numServicios = parseInt(document.getElementById('numServicios').value);
-            const container = document.getElementById('serviciosContainer');
-            container.innerHTML = '';
-            serviciosPublicos = [];
-            
-            console.log(`💡 Generando campos para ${numServicios} servicios`);
-            
-            const tiposServicios = ['Energía', 'Agua', 'Gas', 'Internet', 'Administración'];
-            
-            for (let i = 1; i <= numServicios; i++) {
-                const servicioHtml = `
-                    <div class="servicio-item">
-                        <div class="servicio-header">
-                            <h4>Servicio ${i}</h4>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Tipo de Servicio <span class="required">*</span></label>
-                            <select id="tipoServicio${i}" required>
-                                <option value="">Seleccione...</option>
-                                ${tiposServicios.map(tipo => 
-                                    `<option value="${tipo.toLowerCase()}">${tipo}</option>`
-                                ).join('')}
-                            </select>
-                        </div>
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Recibo del Servicio <span class="required">*</span></label>
-                                <input type="file" id="reciboServicio${i}" class="file-input" 
-                                       accept="image/*,.pdf" required 
-                                       onchange="convertirArchivoBase64(this)">
-                                <small class="form-text">Último recibo del servicio</small>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Comprobante de Pago <span class="required">*</span></label>
-                                <input type="file" id="pagoServicio${i}" class="file-input" 
-                                       accept="image/*,.pdf" required 
-                                       onchange="convertirArchivoBase64(this)">
-                                <small class="form-text">Comprobante de pago al día</small>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                container.innerHTML += servicioHtml;
-                
-                // Agregar a la lista de servicios
-                serviciosPublicos.push({
-                    index: i,
-                    tipo: '',
-                    recibo: '',
-                    pago: ''
-                });
-            }
-        }
-        
-        // Validar formulario
-        function validarFormulario() {
-            console.log('🔍 Validando formulario...');
-            
-            // Validar campos básicos
-            const campos = ['tipoDocumento', 'numeroDocumento', 'nombres', 'apellidos', 'email', 'celular', 'direccion'];
-            for (const campo of campos) {
-                const valor = document.getElementById(campo).value;
-                if (!valor) {
-                    mostrarMensaje(`❌ Por favor complete el campo: ${campo}`, 'error');
-                    return false;
-                }
-            }
-            
-            // Validar archivos requeridos
-            const archivosRequeridos = ['docIdentidad', 'sarlaft', 'certBancario', 'certTradicion'];
-            for (const archivo of archivosRequeridos) {
-                if (!archivosBase64[archivo]) {
-                    mostrarMensaje(`❌ Debe cargar el archivo: ${archivo}`, 'error');
-                    return false;
-                }
-            }
-            
-            // Validar servicios públicos (mínimo 2)
-            const numServicios = parseInt(document.getElementById('numServicios').value);
-            let serviciosCompletos = 0;
-            
-            for (let i = 1; i <= numServicios; i++) {
-                const tipo = document.getElementById(`tipoServicio${i}`).value;
-                const tieneRecibo = archivosBase64[`reciboServicio${i}`];
-                const tienePago = archivosBase64[`pagoServicio${i}`];
-                
-                if (tipo && tieneRecibo && tienePago) {
-                    serviciosCompletos++;
-                    serviciosPublicos[i-1].tipo = tipo;
-                }
-            }
-            
-            if (serviciosCompletos < 2) {
-                mostrarMensaje('❌ Debe cargar al menos 2 servicios públicos completos', 'error');
-                return false;
-            }
-            
-            console.log('✅ Formulario válido');
-            return true;
-        }
-        
-        // Enviar formulario
-        async function enviarFormulario() {
-            console.log('📤 Iniciando envío de formulario');
-            
-            if (!validarFormulario()) {
-                return;
-            }
-            
-            // Mostrar loading
-            document.getElementById('loadingOverlay').classList.add('show');
-            
-            // Recopilar datos del formulario
-            const datosFormulario = {
-                codigoRegistro: codigoRegistro,
-                propietario: {
-                    tipoDocumento: document.getElementById('tipoDocumento').value,
-                    numeroDocumento: document.getElementById('numeroDocumento').value,
-                    nombre: document.getElementById('nombres').value + ' ' + document.getElementById('apellidos').value,
-                    nombres: document.getElementById('nombres').value,
-                    apellidos: document.getElementById('apellidos').value,
-                    email: document.getElementById('email').value,
-                    celular: document.getElementById('celular').value,
-                    direccion: document.getElementById('direccion').value
-                },
-                serviciosPublicos: serviciosPublicos.filter(s => s.tipo !== '')
-            };
-            
-            console.log('📊 Datos a enviar:', datosFormulario);
-            console.log('📁 Archivos a enviar:', Object.keys(archivosBase64));
-            
-            try {
-                // Enviar con modo no-cors para evitar error CORS
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    },
-                    body: JSON.stringify({
-                        accion: 'procesarFormularioPropietario',
-                        datosFormulario: datosFormulario,
-                        archivosBase64: archivosBase64
-                    })
-                });
-                
-                // Como no podemos leer la respuesta con no-cors,
-                // asumimos éxito y mostramos mensaje
-                console.log('✅ Formulario enviado (modo no-cors)');
-                document.getElementById('loadingOverlay').classList.remove('show');
-                mostrarMensaje('✅ Documentos enviados correctamente. Redirigiendo...', 'success');
-                
-                // Esperar 2 segundos y redirigir a página de éxito
-                setTimeout(() => {
-                    window.location.href = `pagina-exito.html?estado=exitoso&cdr=${encodeURIComponent(codigoRegistro)}&tipo=propietario`;
-                }, 2000);
-                
-            } catch (error) {
-                console.error('❌ Error:', error);
-                document.getElementById('loadingOverlay').classList.remove('show');
-                mostrarMensaje('❌ Error de conexión. Por favor intente nuevamente.', 'error');
-            }
-        }
-        
-        // Mostrar mensajes
-        function mostrarMensaje(mensaje, tipo) {
-            const container = document.getElementById('messageContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${tipo}`;
-            messageDiv.textContent = mensaje;
-            
-            // Limpiar mensajes anteriores
-            container.innerHTML = '';
-            container.appendChild(messageDiv);
-            
-            // Auto-ocultar después de 5 segundos (excepto errores)
-            if (tipo !== 'error') {
-                setTimeout(() => {
-                    messageDiv.remove();
-                }, 5000);
-            }
-        }
-        
-        // Log de verificación
-        console.log('✅ Script del formulario propietario cargado');
-        console.log('📋 Versión: 2.0 CORREGIDA');
-    </script>
+  </div>
+</div>
+
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <h3>Procesando documentos...</h3>
+  <p>Por favor espere, esto puede tomar unos segundos</p>
+</div>
+<div id="debugBanner" class="debug-banner" style="display:none;">DEBUG ACTIVO</div>
+
+<script src="config.js"></script>
+<script>
+let codigoRegistro='',archivosBase64={},serviciosPublicos=[];
+window.onload=function(){
+  if(CONFIG.DEBUG)document.getElementById('debugBanner').style.display='block';
+  const urlParams=new URLSearchParams(window.location.search);
+  codigoRegistro=urlParams.get('cdr')||'';
+  if(!codigoRegistro){
+    mostrarMensaje('Código de registro no válido','error');
+    setTimeout(()=>window.location.href='selector.html',2500);
+    return;
+  }
+  mostrarMensaje(`Código de registro: ${codigoRegistro}`,'success');
+  configurarArchivos();
+  generarCamposServicios();
+};
+
+function configurarArchivos(){
+  document.querySelectorAll('input[type="file"]').forEach(inp=>{
+    inp.addEventListener('change',()=>convertirArchivoBase64(inp));
+  });
+}
+function convertirArchivoBase64(input){
+  const file=input.files[0];if(!file)return;
+  const maxSize=file.type.startsWith('image/')?CONFIG.MAX_IMAGE_SIZE:CONFIG.MAX_FILE_SIZE;
+  if(file.size>maxSize){
+    mostrarMensaje(`El archivo ${file.name} excede el límite (${(maxSize/1024/1024)}MB)`, 'error');
+    input.value='';return;
+  }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    archivosBase64[input.id]={nombre:file.name,tipo:file.type,contenido:e.target.result};
+  };
+  reader.readAsDataURL(file);
+}
+function generarCamposServicios(){
+  const num=parseInt(document.getElementById('numServicios').value);
+  const cont=document.getElementById('serviciosContainer');
+  cont.innerHTML='';serviciosPublicos=[];
+  const tipos=['Energía','Agua','Gas','Internet','Administración'];
+  for(let i=1;i<=num;i++){
+    cont.innerHTML+=`
+      <div class="servicio-item">
+        <div class="servicio-header"><h4>Servicio ${i}</h4></div>
+        <div class="form-group">
+          <label>Tipo de Servicio <span class="required">*</span></label>
+          <select id="tipoServicio${i}">
+            <option value="">Seleccione...</option>
+            ${tipos.map(t=>`<option value="${t.toLowerCase()}">${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Recibo del Servicio <span class="required">*</span></label>
+            <input type="file" id="reciboServicio${i}" class="file-input" accept="image/*,.pdf" onchange="convertirArchivoBase64(this)">
+          </div>
+          <div class="form-group">
+            <label>Comprobante de Pago <span class="required">*</span></label>
+            <input type="file" id="pagoServicio${i}" class="file-input" accept="image/*,.pdf" onchange="convertirArchivoBase64(this)">
+          </div>
+        </div>
+      </div>`;
+    serviciosPublicos.push({index:i,tipo:'',recibo:'',pago:''});
+  }
+}
+function validarFormulario(){
+  const campos=['tipoDocumento','numeroDocumento','nombres','apellidos','email','celular','direccion'];
+  for(const c of campos){
+    const v=document.getElementById(c).value;
+    if(!v){mostrarMensaje(`Complete el campo: ${c}`,'error');return false;}
+  }
+  const req=['docIdentidad','sarlaft','certBancario','certTradicion'];
+  for(const r of req){
+    if(!archivosBase64[r]){mostrarMensaje(`Debe cargar el archivo: ${r}`,'error');return false;}
+  }
+  const num=parseInt(document.getElementById('numServicios').value);
+  let completos=0;
+  for(let i=1;i<=num;i++){
+    const tipo=document.getElementById(`tipoServicio${i}`).value;
+    if(tipo && archivosBase64[`reciboServicio${i}`] && archivosBase64[`pagoServicio${i}`]){
+      completos++;serviciosPublicos[i-1].tipo=tipo;
+    }
+  }
+  if(completos<2){mostrarMensaje('Debe cargar al menos 2 servicios completos','error');return false;}
+  return true;
+}
+async function enviarFormulario(){
+  if(!validarFormulario())return;
+  document.getElementById('loadingOverlay').classList.add('show');
+  const datosFormulario={
+    codigoRegistro,
+    propietario:{
+      tipoDocumento:document.getElementById('tipoDocumento').value,
+      numeroDocumento:document.getElementById('numeroDocumento').value,
+      nombre:document.getElementById('nombres').value+' '+document.getElementById('apellidos').value,
+      nombres:document.getElementById('nombres').value,
+      apellidos:document.getElementById('apellidos').value,
+      email:document.getElementById('email').value,
+      celular:document.getElementById('celular').value,
+      direccion:document.getElementById('direccion').value
+    },
+    serviciosPublicos:serviciosPublicos.filter(s=>s.tipo!=='')
+  };
+  try{
+    await fetch(CONFIG.API_URL,{
+      method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({
+        accion:'procesarFormularioPropietario',
+        datosFormulario,
+        archivosBase64
+      })
+    });
+    mostrarMensaje('Documentos enviados. Redirigiendo...','success');
+    setTimeout(()=>window.location.href=`pagina-exito.html?estado=exitoso&cdr=${encodeURIComponent(codigoRegistro)}&tipo=propietario`,1500);
+  }catch(err){
+    console.error('[Propietario] Error envío',err);
+    mostrarMensaje('Error de conexión. Intente nuevamente.','error');
+    document.getElementById('loadingOverlay').classList.remove('show');
+  }
+}
+function mostrarMensaje(msg,tipo){
+  const c=document.getElementById('messageContainer');
+  c.innerHTML=`<div class="message ${tipo}">${msg}</div>`;
+  if(tipo!=='error'){setTimeout(()=>{c.innerHTML='';},5000);}
+}
+</script>
 </body>
 </html>
