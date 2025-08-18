@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EFirmaContrata - Sistema Premium de Gestión Documental</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
             --gold-primary: #FFD700;
@@ -33,657 +29,214 @@
             position: relative;
         }
 
-        /* Partículas doradas de fondo */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: var(--gold-primary);
-            border-radius: 50%;
-            opacity: 0;
-            animation: floatUp 15s infinite;
-            box-shadow: 0 0 6px var(--gold-primary);
-        }
-
+        .particles { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; z-index:1; }
+        .particle { position:absolute; width:4px; height:4px; background:var(--gold-primary); border-radius:50%; opacity:0; animation: floatUp 15s infinite; box-shadow:0 0 6px var(--gold-primary); }
         @keyframes floatUp {
-            0% {
-                opacity: 0;
-                transform: translateY(100vh) scale(0);
-            }
-            10% {
-                opacity: 1;
-                transform: translateY(90vh) scale(1);
-            }
-            90% {
-                opacity: 1;
-                transform: translateY(10vh) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(0) scale(0);
-            }
+            0% { opacity:0; transform:translateY(100vh) scale(0); }
+            10% { opacity:1; transform:translateY(90vh) scale(1); }
+            90% { opacity:1; transform:translateY(10vh) scale(1); }
+            100% { opacity:0; transform:translateY(0) scale(0); }
         }
 
-        /* Contenedor principal */
-        .main-container {
-            position: relative;
-            z-index: 10;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        /* Card principal */
+        .main-container { position:relative; z-index:10; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
         .form-card {
-            width: 100%;
-            max-width: 900px;
+            width:100%; max-width:900px;
             background: linear-gradient(135deg, var(--black-secondary) 0%, var(--gray-dark) 100%);
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 
-                0 0 50px rgba(255, 215, 0, 0.1),
-                0 0 100px rgba(255, 215, 0, 0.05),
-                inset 0 0 2px rgba(255, 215, 0, 0.1);
-            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-radius:20px; overflow:hidden;
+            box-shadow:0 0 50px rgba(255,215,0,0.1),0 0 100px rgba(255,215,0,0.05), inset 0 0 2px rgba(255,215,0,0.1);
+            border:1px solid rgba(255,215,0,0.2);
         }
 
-        /* Header del formulario con shimmer */
-        .form-header {
-            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-primary) 100%);
-            padding: 30px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
+        .form-header { background:linear-gradient(135deg,var(--gold-dark) 0%, var(--gold-primary) 100%); padding:30px; text-align:center; position:relative; overflow:hidden; }
         .form-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                45deg,
-                transparent,
-                rgba(255, 255, 255, 0.3),
-                transparent
-            );
+            content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+            background:linear-gradient(45deg,transparent,rgba(255,255,255,0.3),transparent);
             animation: shimmer 3s infinite;
         }
-
         @keyframes shimmer {
-            0% {
-                transform: translateX(-100%) translateY(-100%) rotate(45deg);
-            }
-            100% {
-                transform: translateX(100%) translateY(100%) rotate(45deg);
-            }
+            0% { transform:translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform:translateX(100%) translateY(100%) rotate(45deg); }
         }
+        .logo { font-size:36px; font-weight:bold; color:var(--black-primary); margin-bottom:10px; letter-spacing:2px; position:relative; z-index:1; }
+        .tagline { color:var(--black-secondary); font-size:14px; position:relative; z-index:1; font-weight:500; }
 
-        .logo {
-            font-size: 36px;
-            font-weight: bold;
-            color: var(--black-primary);
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            position: relative;
-            z-index: 1;
-            letter-spacing: 2px;
-        }
-
-        .tagline {
-            color: var(--black-secondary);
-            font-size: 14px;
-            position: relative;
-            z-index: 1;
-            font-weight: 500;
-        }
-
-        /* Pantalla inicial con dos botones */
-        .initial-screen {
-            padding: 60px 40px;
-            text-align: center;
-            display: block;
-        }
-
-        .initial-screen.hidden {
-            display: none;
-        }
-
-        .initial-title {
-            color: var(--gold-primary);
-            font-size: 28px;
-            margin-bottom: 20px;
-        }
-
-        .initial-description {
-            color: var(--white);
-            margin-bottom: 40px;
-            line-height: 1.6;
-        }
-
-        .initial-buttons {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
+        .initial-screen { padding:60px 40px; text-align:center; display:block; }
+        .initial-screen.hidden { display:none; }
+        .initial-title { color:var(--gold-primary); font-size:28px; margin-bottom:20px; }
+        .initial-description { color:var(--white); margin-bottom:40px; line-height:1.6; }
+        .initial-buttons { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; }
         .initial-btn {
-            flex: 1;
-            min-width: 250px;
-            padding: 20px;
-            background: var(--black-primary);
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            flex:1; min-width:250px; padding:20px;
+            background:var(--black-primary);
+            border:2px solid rgba(255,215,0,0.3);
+            border-radius:15px; cursor:pointer; transition:all .3s ease;
         }
+        .initial-btn:hover { border-color:var(--gold-primary); transform:translateY(-5px); box-shadow:0 10px 30px rgba(255,215,0,0.2); }
+        .initial-btn-icon { font-size:48px; margin-bottom:15px; }
+        .initial-btn-title { color:var(--gold-primary); font-size:20px; margin-bottom:10px; }
+        .initial-btn-desc { color:var(--gray-medium); font-size:14px; }
 
-        .initial-btn:hover {
-            border-color: var(--gold-primary);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
-        }
-
-        .initial-btn-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-
-        .initial-btn-title {
-            color: var(--gold-primary);
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        .initial-btn-desc {
-            color: var(--gray-medium);
-            font-size: 14px;
-        }
-
-        /* Progress bar DINÁMICO */
-        .progress-container {
-            padding: 30px;
-            background: var(--gray-dark);
-            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
-            display: none;
-        }
-
-        .progress-container.show {
-            display: block;
-        }
-
-        .progress-bar {
-            display: flex;
-            justify-content: space-between;
-            position: relative;
-        }
-
-        .progress-line {
-            position: absolute;
-            top: 20px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: var(--gray-medium);
-            z-index: 1;
-        }
-
-        .progress-line-active {
-            position: absolute;
-            top: 20px;
-            left: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--gold-dark), var(--gold-primary));
-            z-index: 2;
-            transition: width 0.5s ease;
-            box-shadow: 0 0 10px var(--gold-primary);
-        }
-
-        .step {
-            position: relative;
-            z-index: 3;
-            text-align: center;
-            flex: 1;
-        }
-
+        .progress-container { padding:30px; background:var(--gray-dark); border-bottom:1px solid rgba(255,215,0,0.1); display:none; }
+        .progress-container.show { display:block; }
+        .progress-bar { display:flex; justify-content:space-between; position:relative; }
+        .progress-line { position:absolute; top:20px; left:0; right:0; height:2px; background:var(--gray-medium); z-index:1; }
+        .progress-line-active { position:absolute; top:20px; left:0; height:2px; background:linear-gradient(90deg,var(--gold-dark),var(--gold-primary)); z-index:2; transition:width .5s ease; box-shadow:0 0 10px var(--gold-primary); }
+        .step { position:relative; z-index:3; text-align:center; flex:1; }
         .step-circle {
-            width: 40px;
-            height: 40px;
-            margin: 0 auto 10px;
-            border-radius: 50%;
-            background: var(--gray-medium);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gray-dark);
-            font-weight: bold;
-            transition: all 0.3s ease;
-            border: 2px solid var(--gray-medium);
-            font-size: 14px;
+            width:40px; height:40px; margin:0 auto 10px; border-radius:50%;
+            background:var(--gray-medium); display:flex; align-items:center; justify-content:center;
+            color:var(--gray-dark); font-weight:bold; transition:all .3s ease; border:2px solid var(--gray-medium); font-size:14px;
         }
+        .step.active .step-circle { background:var(--gold-primary); color:var(--black-primary); border-color:var(--gold-primary); box-shadow:0 0 20px rgba(255,215,0,0.5); animation:pulse 2s infinite; }
+        .step.completed .step-circle { background:var(--success); color:var(--white); border-color:var(--success); }
+        @keyframes pulse { 0%,100% { transform:scale(1); } 50% { transform:scale(1.1); } }
+        .step-label { font-size:12px; color:var(--gray-medium); transition:color .3s ease; }
+        .step.active .step-label, .step.completed .step-label { color:var(--gold-primary); }
 
-        .step.active .step-circle {
-            background: var(--gold-primary);
-            color: var(--black-primary);
-            border-color: var(--gold-primary);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-            animation: pulse 2s infinite;
+        .form-content { padding:40px; min-height:400px; display:none; }
+        .form-content.show { display:block; }
+        .form-step { display:none; animation:fadeIn .5s ease; }
+        .form-step.active { display:block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateX(20px);} to { opacity:1; transform:translateX(0);} }
+        .step-title { color:var(--gold-primary); font-size:24px; margin-bottom:30px; padding-bottom:10px; border-bottom:2px solid rgba(255,215,0,0.2); }
+
+        .form-field { opacity:0; transform:translateY(20px); transition:all .5s ease; margin-bottom:25px; }
+        .form-field.show { opacity:1; transform:translateY(0); }
+        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+        @media (max-width:768px) { .form-row { grid-template-columns:1fr; } }
+
+        label { display:block; color:var(--gold-light); font-size:14px; margin-bottom:8px; font-weight:500; }
+        .required { color:var(--gold-primary); }
+        input[type="text"], input[type="email"], input[type="tel"], input[type="date"], select {
+            width:100%; padding:12px 15px; background:var(--black-primary);
+            border:1px solid rgba(255,215,0,0.2); border-radius:8px; color:var(--white); font-size:14px; transition:all .3s ease;
         }
+        input:focus, select:focus { outline:none; border-color:var(--gold-primary); box-shadow:0 0 0 3px rgba(255,215,0,0.1); }
+        input::placeholder { color:var(--gray-medium); }
+        input.valid { border-color:var(--success); }
+        input.invalid { border-color:var(--error); }
+        .validation-message { font-size:12px; margin-top:5px; display:none; }
+        .validation-message.show { display:block; }
+        .validation-message.error { color:var(--error); }
+        .validation-message.success { color:var(--success); }
 
-        .step.completed .step-circle {
-            background: var(--success);
-            color: var(--white);
-            border-color: var(--success);
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1);
-            }
-        }
-
-        .step-label {
-            font-size: 12px;
-            color: var(--gray-medium);
-            transition: color 0.3s ease;
-        }
-
-        .step.active .step-label,
-        .step.completed .step-label {
-            color: var(--gold-primary);
-        }
-
-        /* Contenido del formulario */
-        .form-content {
-            padding: 40px;
-            min-height: 400px;
-            display: none;
-        }
-
-        .form-content.show {
-            display: block;
-        }
-
-        .form-step {
-            display: none;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .form-step.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateX(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .step-title {
-            color: var(--gold-primary);
-            font-size: 24px;
-            margin-bottom: 30px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(255, 215, 0, 0.2);
-        }
-
-        /* Campos dinámicos */
-        .form-field {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease;
-            margin-bottom: 25px;
-        }
-
-        .form-field.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        label {
-            display: block;
-            color: var(--gold-light);
-            font-size: 14px;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .required {
-            color: var(--gold-primary);
-        }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="tel"],
-        input[type="date"],
-        select {
-            width: 100%;
-            padding: 12px 15px;
-            background: var(--black-primary);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            border-radius: 8px;
-            color: var(--white);
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        input:focus,
-        select:focus {
-            outline: none;
-            border-color: var(--gold-primary);
-            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
-        }
-
-        input::placeholder {
-            color: var(--gray-medium);
-        }
-
-        /* Validación visual */
-        input.valid {
-            border-color: var(--success);
-        }
-
-        input.invalid {
-            border-color: var(--error);
-        }
-
-        .validation-message {
-            font-size: 12px;
-            margin-top: 5px;
-            display: none;
-        }
-
-        .validation-message.show {
-            display: block;
-        }
-
-        .validation-message.error {
-            color: var(--error);
-        }
-
-        .validation-message.success {
-            color: var(--success);
-        }
-
-        /* File upload estilizado */
-        .file-upload-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-            width: 100%;
-        }
-
+        .file-upload-wrapper { position:relative; overflow:hidden; display:inline-block; width:100%; }
         .file-upload-label {
-            display: block;
-            padding: 12px 15px;
-            background: linear-gradient(135deg, var(--gray-dark) 0%, var(--black-primary) 100%);
-            border: 2px dashed rgba(255, 215, 0, 0.3);
-            border-radius: 8px;
-            color: var(--gold-light);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            display:block; padding:12px 15px;
+            background:linear-gradient(135deg,var(--gray-dark) 0%, var(--black-primary) 100%);
+            border:2px dashed rgba(255,215,0,0.3); border-radius:8px; color:var(--gold-light);
+            text-align:center; cursor:pointer; transition:all .3s ease;
         }
+        .file-upload-label:hover { border-color:var(--gold-primary); background:linear-gradient(135deg,var(--black-primary) 0%, var(--gray-dark) 100%); }
+        .file-upload-input { position:absolute; left:-9999px; }
+        .file-selected { background:rgba(255,215,0,0.1); border-color:var(--gold-primary); }
+        .file-size-info { font-size:11px; color:var(--gray-medium); margin-top:5px; }
 
-        .file-upload-label:hover {
-            border-color: var(--gold-primary);
-            background: linear-gradient(135deg, var(--black-primary) 0%, var(--gray-dark) 100%);
-        }
-
-        .file-upload-input {
-            position: absolute;
-            left: -9999px;
-        }
-
-        .file-selected {
-            background: rgba(255, 215, 0, 0.1);
-            border-color: var(--gold-primary);
-        }
-
-        .file-size-info {
-            font-size: 11px;
-            color: var(--gray-medium);
-            margin-top: 5px;
-        }
-
-        /* Botones para decisiones */
-        .decision-question {
-            text-align: center;
-            padding: 40px 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .decision-question.disabled {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        .decision-buttons {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            margin-top: 30px;
-        }
-
+        .decision-question { text-align:center; padding:40px 0; transition:opacity .3s ease; }
+        .decision-question.disabled { opacity:.3; pointer-events:none; }
+        .decision-buttons { display:flex; gap:20px; justify-content:center; margin-top:30px; flex-wrap:wrap; }
         .decision-btn {
-            padding: 15px 40px;
-            background: var(--black-primary);
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            border-radius: 10px;
-            color: var(--white);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 16px;
-            font-weight: 600;
+            padding:15px 40px; background:var(--black-primary);
+            border:2px solid rgba(255,215,0,0.3); border-radius:10px; color:var(--white);
+            cursor:pointer; transition:all .3s ease; font-size:16px; font-weight:600;
         }
+        .decision-btn:hover:not(:disabled) { border-color:var(--gold-primary); box-shadow:0 5px 20px rgba(255,215,0,0.2); }
+        .decision-btn.selected { background:var(--gold-primary); color:var(--black-primary); border-color:var(--gold-primary); }
+        .decision-btn:disabled { opacity:.5; cursor:not-allowed; }
 
-        .decision-btn:hover:not(:disabled) {
-            border-color: var(--gold-primary);
-            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
-        }
-
-        .decision-btn.selected {
-            background: var(--gold-primary);
-            color: var(--black-primary);
-            border-color: var(--gold-primary);
-        }
-
-        .decision-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Navegación */
         .form-navigation {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 30px 40px;
-            background: var(--gray-dark);
-            border-top: 1px solid rgba(255, 215, 0, 0.1);
-            display: none;
+            display:flex; justify-content:space-between; align-items:center;
+            padding:30px 40px; background:var(--gray-dark);
+            border-top:1px solid rgba(255,215,0,0.1); display:none;
         }
-
-        .form-navigation.show {
-            display: flex;
-        }
-
+        .form-navigation.show { display:flex; }
         .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            padding:12px 30px; border:none; border-radius:8px;
+            font-size:16px; font-weight:600; cursor:pointer;
+            transition:all .3s ease; text-transform:uppercase; letter-spacing:1px;
         }
+        .btn-prev { background:var(--gray-medium); color:var(--white); }
+        .btn-prev:hover { background:var(--gray-dark); transform:translateX(-5px); }
+        .btn-next, .btn-submit {
+            background:linear-gradient(135deg,var(--gold-dark) 0%, var(--gold-primary) 100%);
+            color:var(--black-primary); position:relative; overflow:hidden;
+        }
+        .btn-next::before, .btn-submit::before {
+            content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+            background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);
+            transition:left .5s ease;
+        }
+        .btn-next:hover::before, .btn-submit:hover::before { left:100%; }
+        .btn-next:hover, .btn-submit:hover { transform:translateX(5px); box-shadow:0 5px 20px rgba(255,215,0,0.3); }
+        .btn:disabled { opacity:.5; cursor:not-allowed; transform:none !important; }
 
-        .btn-prev {
-            background: var(--gray-medium);
-            color: var(--white);
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+        .modal.show { display:flex; }
+        .modal-content {
+            background:linear-gradient(135deg,var(--black-secondary), var(--gray-dark));
+            max-width:800px; width:100%; padding:30px 35px; border-radius:18px;
+            border:1px solid rgba(255,215,0,0.25); box-shadow:0 0 25px rgba(255,215,0,0.15);
+            max-height:90vh; overflow-y:auto; position:relative;
         }
+        .modal-title { color:var(--gold-primary); font-size:24px; margin-bottom:20px; text-align:center; }
+        .close-btn {
+            position:absolute; top:15px; right:15px; background:none; border:1px solid var(--gold-primary);
+            color:var(--gold-primary); padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600;
+        }
+        .resume-section { margin-bottom:25px; }
+        .resume-section h4 { color:var(--gold-primary); margin-bottom:10px; font-size:16px; }
+        .resume-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; }
+        @media (max-width:600px) { .resume-grid { grid-template-columns:1fr; } }
+        .resume-item { font-size:13px; color:var(--gold-light); background:rgba(255,215,0,0.05); padding:6px 10px; border-radius:6px; }
+        .resume-item b { color:var(--gold-primary); }
 
-        .btn-prev:hover {
-            background: var(--gray-dark);
-            transform: translateX(-5px);
+        .actions-row { display:flex; gap:15px; justify-content:center; margin-top:25px; flex-wrap:wrap; }
+        .btn-secondary {
+            background:var(--gray-medium); color:var(--white); border:none; padding:12px 25px;
+            border-radius:8px; cursor:pointer; font-weight:600; letter-spacing:1px; transition:.3s;
         }
+        .btn-secondary:hover { background:var(--gray-dark); }
 
-        .btn-next,
-        .btn-submit {
-            background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-primary) 100%);
-            color: var(--black-primary);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-next::before,
-        .btn-submit::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.5s ease;
-        }
-
-        .btn-next:hover::before,
-        .btn-submit:hover::before {
-            left: 100%;
-        }
-
-        .btn-next:hover,
-        .btn-submit:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        /* Modales - estilos básicos */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.show {
-            display: flex;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .step-label {
-                display: none;
-            }
-            
-            .decision-buttons {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
-            }
-        }
+        @media (max-width:768px) { .step-label { display:none; } .decision-buttons { flex-direction:column; } .btn { width:100%; } }
     </style>
 </head>
 <body>
-    <!-- Partículas de fondo -->
     <div class="particles" id="particles"></div>
 
-    <!-- Contenedor principal -->
     <div class="main-container">
         <div class="form-card">
-            <!-- Header -->
             <div class="form-header">
                 <div class="logo">EFirmaContrata</div>
                 <div class="tagline">Gestión de Documentación Real Estate - GoldLife System</div>
             </div>
-<!-- Pantalla inicial -->
+
             <div class="initial-screen" id="initialScreen">
                 <h2 class="initial-title">Bienvenido al Sistema de Registro</h2>
                 <p class="initial-description">
                     Para continuar con el proceso de arrendamiento, primero debe realizar el pago de los derechos de contrato y luego proceder con el registro de sus documentos.
                 </p>
-                
                 <div class="initial-buttons">
                     <div class="initial-btn" onclick="mostrarModalPago()">
                         <div class="initial-btn-icon">💳</div>
                         <div class="initial-btn-title">Pagar Derechos</div>
                         <div class="initial-btn-desc">Realice el pago de $60.000 COP</div>
                     </div>
-                    
                     <div class="initial-btn" onclick="iniciarRegistro()">
-                        <div class="initial-btn-icon">📋</div>
+                        <div class="initial-btn-icon">📝</div>
                         <div class="initial-btn-title">Registrarse</div>
                         <div class="initial-btn-desc">Complete el formulario de registro</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Progress Bar DINÁMICO -->
             <div class="progress-container" id="progressContainer">
-                <div class="progress-bar" id="progressBar">
-                    <!-- Los pasos se generarán dinámicamente -->
-                </div>
+                <div class="progress-bar" id="progressBar"></div>
             </div>
 
-            <!-- Contenido del formulario -->
             <div class="form-content" id="formContent">
-                <!-- Paso 1: Documentos Iniciales -->
+                <!-- Paso 1 -->
                 <div class="form-step active" data-step="documentos">
                     <h2 class="step-title">Documentos Iniciales</h2>
-                    
                     <div class="form-field" id="field1">
                         <label>Documento Estudio Aprobado <span class="required">*</span></label>
                         <div class="file-upload-wrapper">
@@ -694,7 +247,6 @@
                         </div>
                         <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
                     </div>
-                    
                     <div class="form-field" id="field2">
                         <label>Comprobante de Pago <span class="required">*</span></label>
                         <div class="file-upload-wrapper">
@@ -707,10 +259,9 @@
                     </div>
                 </div>
 
-                <!-- Paso 2: Información Personal -->
+                <!-- Paso 2 -->
                 <div class="form-step" data-step="informacion">
                     <h2 class="step-title">Información Personal del Inquilino</h2>
-                    
                     <div class="form-field" id="field3">
                         <div class="form-row">
                             <div>
@@ -723,7 +274,6 @@
                                     <option value="NIT">NIT</option>
                                 </select>
                             </div>
-                            
                             <div>
                                 <label>Número de Documento <span class="required">*</span></label>
                                 <input type="text" id="numeroDocumento" placeholder="Ej: 1234567890" required onblur="showNextField('field4')">
@@ -731,7 +281,6 @@
                             </div>
                         </div>
                     </div>
-                    
                     <div class="form-field" id="field4">
                         <div class="form-row">
                             <div>
@@ -739,14 +288,12 @@
                                 <input type="text" id="confirmarDocumento" placeholder="Confirme el número" required onblur="validateAndShow('numeroDocumento', 'confirmarDocumento', 'field5')">
                                 <div class="validation-message" id="confirmarDocumentoError"></div>
                             </div>
-                            
                             <div>
                                 <label>Fecha de Expedición</label>
                                 <input type="date" id="fechaExpedicion">
                             </div>
                         </div>
                     </div>
-                    
                     <div class="form-field" id="field5">
                         <div class="form-row">
                             <div>
@@ -754,7 +301,6 @@
                                 <input type="text" id="nombres" placeholder="Ej: Juan Carlos" required onblur="showNextField('field6')">
                                 <div class="validation-message" id="nombresError"></div>
                             </div>
-                            
                             <div>
                                 <label>Apellidos Completos <span class="required">*</span></label>
                                 <input type="text" id="apellidos" placeholder="Ej: García López" required onblur="showNextField('field6')">
@@ -762,7 +308,6 @@
                             </div>
                         </div>
                     </div>
-                    
                     <div class="form-field" id="field6">
                         <div class="form-row">
                             <div>
@@ -770,7 +315,6 @@
                                 <input type="email" id="email" placeholder="correo@ejemplo.com" required onblur="validarEmail(this); showNextField('field7')">
                                 <div class="validation-message" id="emailError"></div>
                             </div>
-                            
                             <div>
                                 <label>Confirmar Correo <span class="required">*</span></label>
                                 <input type="email" id="confirmarEmail" placeholder="Confirme el correo" required onblur="validateAndShow('email', 'confirmarEmail', 'field7')">
@@ -778,7 +322,6 @@
                             </div>
                         </div>
                     </div>
-                    
                     <div class="form-field" id="field7">
                         <div class="form-row">
                             <div>
@@ -786,7 +329,6 @@
                                 <input type="tel" id="celular" placeholder="Ej: 3001234567" required onblur="validarTelefono(this); showNextField('field8')">
                                 <div class="validation-message" id="celularError"></div>
                             </div>
-                            
                             <div>
                                 <label>Confirmar Celular <span class="required">*</span></label>
                                 <input type="tel" id="confirmarCelular" placeholder="Confirme el celular" required onblur="validateAndShow('celular', 'confirmarCelular', 'field8')">
@@ -794,7 +336,6 @@
                             </div>
                         </div>
                     </div>
-                    
                     <div class="form-field" id="field8">
                         <label>Ocupación/Profesión <span class="required">*</span></label>
                         <input type="text" id="ocupacion" placeholder="Ej: Ingeniero, Comerciante, etc." required>
@@ -802,20 +343,18 @@
                     </div>
                 </div>
 
-                <!-- Paso 3: Identidad del Inquilino -->
+                <!-- Paso 3 -->
                 <div class="form-step" data-step="identidad">
                     <h2 class="step-title">Identidad del Inquilino</h2>
-                    
                     <div class="form-field show">
-                        <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="text-align:center; margin-bottom:30px;">
                             <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿El archivo tiene ambas caras del documento?</h3>
                             <div class="decision-buttons">
-                                <button type="button" class="decision-btn" onclick="setDocumentType(true)">Sí</button>
+                                <button type="button" class="decision-btn" onclick="setDocumentType(true)">SÍ</button>
                                 <button type="button" class="decision-btn" onclick="setDocumentType(false)">NO</button>
                             </div>
                         </div>
-                        
-                        <div id="singleDocUpload" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
+                        <div id="singleDocUpload" style="display:none; opacity:0; transition:opacity .5s ease;">
                             <label>Documento de Identidad (Ambas caras en un archivo) <span class="required">*</span></label>
                             <div class="file-upload-wrapper">
                                 <label class="file-upload-label" for="docIdentidadCompleto" id="labelDocIdentidadCompleto">
@@ -825,9 +364,8 @@
                             </div>
                             <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
                         </div>
-                        
-                        <div id="doubleDocUpload" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
-                            <div style="margin-bottom: 20px;">
+                        <div id="doubleDocUpload" style="display:none; opacity:0; transition:opacity .5s ease;">
+                            <div style="margin-bottom:20px;">
                                 <label>Cara frontal del documento <span class="required">*</span></label>
                                 <div class="file-upload-wrapper">
                                     <label class="file-upload-label" for="docIdentidadFrente" id="labelDocIdentidadFrente">
@@ -836,7 +374,6 @@
                                     <input type="file" id="docIdentidadFrente" class="file-upload-input" accept="image/*,.pdf" onchange="handleDocumentUpload(this, 'frente')">
                                 </div>
                             </div>
-                            
                             <div>
                                 <label>Cara posterior del documento <span class="required">*</span></label>
                                 <div class="file-upload-wrapper">
@@ -848,29 +385,24 @@
                             </div>
                         </div>
                     </div>
-                    
                     <div class="decision-question disabled" id="codeudorQuestion">
                         <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Tiene codeudores?</h3>
                         <div class="decision-buttons">
                             <button class="decision-btn" id="btnCodeudorNo" onclick="setCodeudor(false)" disabled>NO</button>
-                            <button class="decision-btn" id="btnCodeudorSi" onclick="setCodeudor(true)" disabled>Sí</button>
+                            <button class="decision-btn" id="btnCodeudorSi" onclick="setCodeudor(true)" disabled>SÍ</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- CODEUDORES COMO PÁGINAS INDEPENDIENTES -->
                 <!-- Codeudor 1 -->
                 <div class="form-step" data-step="codeudor-1">
                     <h2 class="step-title">Identidad del Codeudor 1</h2>
-                    <div id="codeudor1Fields">
-                        <!-- Los campos se generarán dinámicamente -->
-                    </div>
-                    
+                    <div id="codeudor1Fields"></div>
                     <div class="decision-question">
                         <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Hay más codeudores?</h3>
                         <div class="decision-buttons">
                             <button class="decision-btn" id="btnMoreCodeudor1No" onclick="addMoreCodeudor(false, 1)">NO</button>
-                            <button class="decision-btn" id="btnMoreCodeudor1Si" onclick="addMoreCodeudor(true, 1)">Sí</button>
+                            <button class="decision-btn" id="btnMoreCodeudor1Si" onclick="addMoreCodeudor(true, 1)">SÍ</button>
                         </div>
                     </div>
                 </div>
@@ -878,15 +410,12 @@
                 <!-- Codeudor 2 -->
                 <div class="form-step" data-step="codeudor-2">
                     <h2 class="step-title">Identidad del Codeudor 2</h2>
-                    <div id="codeudor2Fields">
-                        <!-- Los campos se generarán dinámicamente -->
-                    </div>
-                    
+                    <div id="codeudor2Fields"></div>
                     <div class="decision-question">
                         <h3 style="color: var(--gold-primary); margin-bottom: 20px;">¿Hay más codeudores?</h3>
                         <div class="decision-buttons">
                             <button class="decision-btn" id="btnMoreCodeudor2No" onclick="addMoreCodeudor(false, 2)">NO</button>
-                            <button class="decision-btn" id="btnMoreCodeudor2Si" onclick="addMoreCodeudor(true, 2)">Sí</button>
+                            <button class="decision-btn" id="btnMoreCodeudor2Si" onclick="addMoreCodeudor(true, 2)">SÍ</button>
                         </div>
                     </div>
                 </div>
@@ -894,164 +423,115 @@
                 <!-- Codeudor 3 -->
                 <div class="form-step" data-step="codeudor-3">
                     <h2 class="step-title">Identidad del Codeudor 3</h2>
-                    <div id="codeudor3Fields">
-                        <!-- Los campos se generarán dinámicamente -->
-                    </div>
-                    
+                    <div id="codeudor3Fields"></div>
                     <div class="decision-question">
                         <h3 style="color: var(--gold-primary); margin-bottom: 20px;">Máximo de codeudores alcanzado</h3>
                     </div>
                 </div>
 
-                <!-- Último Paso: Confirmación -->
+                <!-- Confirmación -->
                 <div class="form-step" data-step="confirmacion">
                     <h2 class="step-title">Revisión Final</h2>
-                    
-                    <div style="text-align: center; padding: 40px 0;">
-                        <h3 style="color: var(--gold-primary); margin: 20px 0;">✨ Todo listo para enviar</h3>
-                        
+                    <div style="text-align:center; padding:40px 0;">
+                        <h3 style="color: var(--gold-primary); margin: 20px 0;">¿Todo listo para enviar?</h3>
                         <p style="color: var(--white); margin-bottom: 30px;">
                             Revise que toda la información esté correcta antes de continuar.
                             Si necesita hacer cambios, use el botón "Anterior".
                         </p>
-                        
-                        <button class="btn btn-submit" onclick="mostrarConfirmacion()" style="margin: 20px auto;">
-                            📝 Ver Resumen y Confirmar
+                        <button class="btn btn-submit" onclick="mostrarConfirmacion()" style="margin:20px auto;">
+                            📄 Ver Resumen y Confirmar
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Navegación -->
             <div class="form-navigation" id="formNavigation">
-                <button type="button" class="btn btn-prev" id="btnPrev" onclick="previousStep()" style="display: none;">
-                    Anterior
-                </button>
-                
-                <div style="flex: 1;"></div>
-                
-                <button type="button" class="btn btn-next" id="btnNext" onclick="nextStep()">
-                    Siguiente
-                </button>
+                <button type="button" class="btn btn-prev" id="btnPrev" onclick="previousStep()" style="display:none;">Anterior</button>
+                <div style="flex:1;"></div>
+                <button type="button" class="btn btn-next" id="btnNext" onclick="nextStep()">Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Resumen -->
+    <div class="modal" id="resumenModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="cerrarModalResumen()">Cerrar ✕</button>
+            <h3 class="modal-title">Resumen de la Información</h3>
+            <div id="resumenContenido"></div>
+            <div class="actions-row">
+                <button class="btn-secondary" onclick="cerrarModalResumen()">Regresar</button>
+                <button class="btn btn-submit" onclick="confirmarEnvio()">Confirmar Envío ✅</button>
             </div>
         </div>
     </div>
 
     <script src="config.js"></script>
     <script>
-        // ==========================================
-        // ESTADO GLOBAL DEL WIZARD - CORREGIDO v5
-        // ==========================================
-        
         const state = {
             currentStep: 1,
             totalSteps: 4,
             codigoRegistro: '',
             archivosBase64: {},
-            
-            // Control de decisiones
             hasCodeudores: null,
             numCodeudores: 0,
             documentoCompletoRequerido: null,
             documentosIdentidadCargados: false,
-            
-            // Pasos dinámicos del wizard
             steps: [
                 { id: 'documentos', label: 'Documentos', number: 1 },
                 { id: 'informacion', label: 'Información', number: 2 },
                 { id: 'identidad', label: 'Identidad', number: 3 },
                 { id: 'confirmacion', label: 'Confirmación', number: 4 }
             ],
-            
-            // Control de datos
             codeudorDataSaved: {},
-            codeudorFieldsCreated: {}, // Track si los campos ya fueron creados
+            codeudorFieldsCreated: {},
+            codeudorDocTipo: {}, // true = ambas caras en un archivo, false = frente / reverso
             maxFileSize: 10 * 1024 * 1024
         };
-// ==========================================
-        // INICIALIZACIÓN
-        // ==========================================
-        
-        window.onload = function() {
-            initializeApp();
-        };
+
+        window.onload = function() { initializeApp(); };
 
         function initializeApp() {
             const urlParams = new URLSearchParams(window.location.search);
             state.codigoRegistro = urlParams.get('cdr') || '';
-            
             if (!state.codigoRegistro || !validarCodigoRegistro(state.codigoRegistro)) {
                 alert('Código de registro no válido');
                 window.location.href = 'selector.html';
                 return;
             }
-            
             createParticles();
-            console.info(`🚀 Sistema Wizard inicializado - CDR: ${state.codigoRegistro}`);
+            console.info(`🔧 Sistema Wizard inicializado - CDR: ${state.codigoRegistro}`);
         }
 
-        // ==========================================
-        // GESTIÓN DE PASOS DINÁMICOS
-        // ==========================================
-        
         function actualizarPasosDinamicos() {
-            console.log('📊 Actualizando pasos dinámicos');
-            
-            // Resetear pasos base
             state.steps = [
                 { id: 'documentos', label: 'Documentos', number: 1 },
                 { id: 'informacion', label: 'Información', number: 2 },
                 { id: 'identidad', label: 'Identidad', number: 3 }
             ];
-            
             let stepNumber = 4;
-            
-            // Agregar codeudores si existen
             for (let i = 1; i <= state.numCodeudores; i++) {
-                state.steps.push({
-                    id: `codeudor-${i}`,
-                    label: `Codeudor ${i}`,
-                    number: stepNumber++
-                });
+                state.steps.push({ id: `codeudor-${i}`, label: `Codeudor ${i}`, number: stepNumber++ });
             }
-            
-            // Siempre agregar confirmación al final
-            state.steps.push({
-                id: 'confirmacion',
-                label: 'Confirmación',
-                number: stepNumber
-            });
-            
+            state.steps.push({ id: 'confirmacion', label: 'Confirmación', number: stepNumber });
             state.totalSteps = stepNumber;
-            
-            console.log('📊 Pasos actualizados:', state.steps);
             renderProgressBar();
         }
 
         function renderProgressBar() {
             const progressBar = document.getElementById('progressBar');
             if (!progressBar) return;
-            
-            let html = `
-                <div class="progress-line"></div>
-                <div class="progress-line-active" id="progressLineActive" style="width: 0%"></div>
-            `;
-            
+            let html = `<div class="progress-line"></div><div class="progress-line-active" id="progressLineActive" style="width:0%"></div>`;
             state.steps.forEach((step, index) => {
                 const isActive = (index + 1) === state.currentStep;
                 const isCompleted = (index + 1) < state.currentStep;
-                
                 html += `
-                    <div class="step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}" 
-                         id="step-${step.id}">
-                        <div class="step-circle">
-                            ${isCompleted ? '✓' : step.number}
-                        </div>
+                    <div class="step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}" id="step-${step.id}">
+                        <div class="step-circle">${isCompleted ? '✔' : step.number}</div>
                         <div class="step-label">${step.label}</div>
                     </div>
                 `;
             });
-            
             progressBar.innerHTML = html;
             updateProgressBar();
         }
@@ -1059,51 +539,25 @@
         function updateProgressBar() {
             const progress = ((state.currentStep - 1) / (state.totalSteps - 1)) * 100;
             const progressLine = document.getElementById('progressLineActive');
-            if (progressLine) {
-                progressLine.style.width = progress + '%';
-            }
+            if (progressLine) progressLine.style.width = progress + '%';
         }
 
-        // ==========================================
-        // NAVEGACIÓN DEL WIZARD - CORREGIDA
-        // ==========================================
-        
         function nextStep() {
-            if (!validateCurrentStep()) {
-                return;
-            }
-            
-            const currentStepData = state.steps[state.currentStep - 1];
-            console.log(`➡️ Avanzando desde: ${currentStepData.id}`);
-            
-            // Ocultar paso actual
+            if (!validateCurrentStep()) return;
             hideCurrentStep();
-            
-            // Avanzar
             state.currentStep++;
-            
-            // Obtener siguiente paso
             const nextStepData = state.steps[state.currentStep - 1];
-            console.log(`📍 Navegando a: ${nextStepData.id}`);
-            
-            // IMPORTANTE: Crear campos de codeudor ANTES de mostrar el paso
             if (nextStepData.id.includes('codeudor-')) {
                 const codeudorNum = parseInt(nextStepData.id.split('-')[1]);
-                console.log(`🔧 Preparando campos para Codeudor ${codeudorNum}`);
                 createCodeudorFields(codeudorNum);
             }
-            
-            // Mostrar nuevo paso
             showCurrentStep();
-            
-            // Actualizar UI
             updateNavigationButtons();
             updateProgressBar();
         }
 
         function previousStep() {
             if (state.currentStep <= 1) return;
-            
             hideCurrentStep();
             state.currentStep--;
             showCurrentStep();
@@ -1114,71 +568,35 @@
         function hideCurrentStep() {
             const currentStepData = state.steps[state.currentStep - 1];
             const stepElement = getStepElement(currentStepData.id);
-            if (stepElement) {
-                stepElement.classList.remove('active');
-            }
+            if (stepElement) stepElement.classList.remove('active');
         }
 
         function showCurrentStep() {
             const currentStepData = state.steps[state.currentStep - 1];
             const stepElement = getStepElement(currentStepData.id);
-            
             if (stepElement) {
                 stepElement.classList.add('active');
-                
-                // Animaciones especiales
-                if (currentStepData.id === 'informacion') {
-                    setTimeout(() => {
-                        document.getElementById('field3')?.classList.add('show');
-                    }, 100);
-                } else if (currentStepData.id === 'documentos') {
-                    setTimeout(() => {
-                        document.getElementById('field1')?.classList.add('show');
-                    }, 100);
-                }
+                if (currentStepData.id === 'informacion') setTimeout(()=>document.getElementById('field3')?.classList.add('show'),100);
+                else if (currentStepData.id === 'documentos') setTimeout(()=>document.getElementById('field1')?.classList.add('show'),100);
             }
         }
 
-        function getStepElement(stepId) {
-            // Buscar por data-step
-            return document.querySelector(`[data-step="${stepId}"]`);
-        }
+        function getStepElement(stepId) { return document.querySelector(`[data-step="${stepId}"]`); }
 
         function updateNavigationButtons() {
             const btnPrev = document.getElementById('btnPrev');
             const btnNext = document.getElementById('btnNext');
-            
             btnPrev.style.display = state.currentStep === 1 ? 'none' : 'block';
-            
             const currentStepData = state.steps[state.currentStep - 1];
             btnNext.style.display = currentStepData.id === 'confirmacion' ? 'none' : 'block';
         }
 
-        // ==========================================
-        // CREACIÓN DE CAMPOS DE CODEUDOR - CORREGIDA
-        // ==========================================
-        
         function createCodeudorFields(num) {
-            console.log(`🔨 createCodeudorFields(${num}) llamada`);
-            
-            // Verificar si ya se crearon los campos
-            if (state.codeudorFieldsCreated[num]) {
-                console.log(`✅ Campos del Codeudor ${num} ya existen`);
-                return;
-            }
-            
+            if (state.codeudorFieldsCreated[num]) return;
             const container = document.getElementById(`codeudor${num}Fields`);
-            console.log(`📦 Container encontrado:`, container);
-            
-            if (!container) {
-                console.error(`❌ No se encontró container codeudor${num}Fields`);
-                return;
-            }
-            
+            if (!container) return;
             const savedData = state.codeudorDataSaved[num] || {};
-            console.log(`💾 Datos guardados para Codeudor ${num}:`, savedData);
-            
-            // Crear campos del formulario
+            const docTipo = state.codeudorDocTipo[num]; // true/false/undefined
             container.innerHTML = `
                 <div class="form-field show">
                     <div class="form-row">
@@ -1191,466 +609,370 @@
                                 <option value="PA" ${savedData.tipoDocumento === 'PA' ? 'selected' : ''}>Pasaporte</option>
                             </select>
                         </div>
-                        
                         <div>
                             <label>Número de Documento <span class="required">*</span></label>
-                            <input type="text" id="numDocCodeudor${num}" 
-                                   value="${savedData.numeroDocumento || ''}" 
-                                   placeholder="Número de documento" required>
+                            <input type="text" id="numDocCodeudor${num}" value="${savedData.numeroDocumento || ''}" placeholder="Número de documento" required>
+                            <div class="validation-message" id="numDocCodeudor${num}Error"></div>
                         </div>
                     </div>
                 </div>
-                
+                <div class="form-field show">
+                    <div class="form-row">
+                        <div>
+                            <label>Confirmar Número de Documento <span class="required">*</span></label>
+                            <input type="text" id="confirmNumDocCodeudor${num}" value="${savedData.numeroDocumento || ''}" placeholder="Confirmar documento" required onblur="validarCoincidencia('numDocCodeudor${num}','confirmNumDocCodeudor${num}')">
+                            <div class="validation-message" id="confirmNumDocCodeudor${num}Error"></div>
+                        </div>
+                        <div>
+                            <label>Fecha de Expedición</label>
+                            <input type="date" id="fechaExpedicionCodeudor${num}" value="${savedData.fechaExpedicion || ''}">
+                        </div>
+                    </div>
+                </div>
                 <div class="form-field show">
                     <div class="form-row">
                         <div>
                             <label>Nombres <span class="required">*</span></label>
-                            <input type="text" id="nombresCodeudor${num}" 
-                                   value="${savedData.nombres || ''}"
-                                   placeholder="Nombres completos" required>
+                            <input type="text" id="nombresCodeudor${num}" value="${savedData.nombres || ''}" placeholder="Nombres completos" required>
                         </div>
-                        
                         <div>
                             <label>Apellidos <span class="required">*</span></label>
-                            <input type="text" id="apellidosCodeudor${num}" 
-                                   value="${savedData.apellidos || ''}"
-                                   placeholder="Apellidos completos" required>
+                            <input type="text" id="apellidosCodeudor${num}" value="${savedData.apellidos || ''}" placeholder="Apellidos completos" required>
                         </div>
                     </div>
                 </div>
-                
                 <div class="form-field show">
                     <div class="form-row">
                         <div>
                             <label>Email <span class="required">*</span></label>
-                            <input type="email" id="emailCodeudor${num}" 
-                                   value="${savedData.email || ''}"
-                                   placeholder="correo@ejemplo.com" required 
-                                   onblur="validarEmail(this)">
+                            <input type="email" id="emailCodeudor${num}" value="${savedData.email || ''}" placeholder="correo@ejemplo.com" required onblur="validarEmail(this)">
                         </div>
-                        
                         <div>
-                            <label>Celular <span class="required">*</span></label>
-                            <input type="tel" id="celularCodeudor${num}" 
-                                   value="${savedData.celular || ''}"
-                                   placeholder="3001234567" required 
-                                   onblur="validarTelefono(this)">
+                            <label>Confirmar Email <span class="required">*</span></label>
+                            <input type="email" id="confirmEmailCodeudor${num}" value="${savedData.email || ''}" placeholder="Confirmar email" required onblur="validarCoincidencia('emailCodeudor${num}','confirmEmailCodeudor${num}')">
+                            <div class="validation-message" id="confirmEmailCodeudor${num}Error"></div>
                         </div>
                     </div>
                 </div>
-                
                 <div class="form-field show">
-                    <label>Documento de Identidad <span class="required">*</span></label>
+                    <div class="form-row">
+                        <div>
+                            <label>Celular <span class="required">*</span></label>
+                            <input type="tel" id="celularCodeudor${num}" value="${savedData.celular || ''}" placeholder="3001234567" required onblur="validarTelefono(this)">
+                        </div>
+                        <div>
+                            <label>Confirmar Celular <span class="required">*</span></label>
+                            <input type="tel" id="confirmCelularCodeudor${num}" value="${savedData.celular || ''}" placeholder="Confirmar celular" required onblur="validarCoincidencia('celularCodeudor${num}','confirmCelularCodeudor${num}')">
+                            <div class="validation-message" id="confirmCelularCodeudor${num}Error"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-field show" id="docDecisionCodeudor${num}">
+                    <h3 style="color:var(--gold-primary); margin-bottom:15px; text-align:center;">¿El documento del codeudor ${num} está en un solo archivo con ambas caras?</h3>
+                    <div class="decision-buttons">
+                        <button type="button" class="decision-btn ${docTipo === true ? 'selected':''}" onclick="setCodeudorDocumentType(${num}, true)">SÍ</button>
+                        <button type="button" class="decision-btn ${docTipo === false ? 'selected':''}" onclick="setCodeudorDocumentType(${num}, false)">NO</button>
+                    </div>
+                </div>
+                <div class="form-field show" id="singleDocCodeudor${num}" style="display:${docTipo === true ? 'block':'none'};">
+                    <label>Documento Identidad (Ambas caras) <span class="required">*</span></label>
                     <div class="file-upload-wrapper">
                         <label class="file-upload-label" for="docCodeudor${num}" id="labelDocCodeudor${num}">
-                            ${state.archivosBase64[`docCodeudor${num}`] ? 
-                              'Archivo cargado ✓' : 'Seleccionar archivo - Ambas caras'}
+                            ${ state.archivosBase64['docCodeudor'+num] ? 'Archivo cargado ✔' : 'Seleccionar archivo'}
                         </label>
-                        <input type="file" id="docCodeudor${num}" class="file-upload-input" 
-                               accept="image/*,.pdf" required 
-                               onchange="handleCodeudorFile(this, ${num})">
+                        <input type="file" id="docCodeudor${num}" class="file-upload-input" accept="image/*,.pdf" ${docTipo === true ? '' : 'disabled'} onchange="handleCodeudorFile(this, ${num})">
                     </div>
                     <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
                 </div>
+                <div class="form-field show" id="doubleDocCodeudor${num}" style="display:${docTipo === false ? 'block':'none'};">
+                    <div style="margin-bottom:15px;">
+                        <label>Cara frontal <span class="required">*</span></label>
+                        <div class="file-upload-wrapper">
+                            <label class="file-upload-label" for="docCodeudor${num}Frente" id="labelDocCodeudor${num}Frente">
+                                ${ state.archivosBase64['docCodeudor'+num+'Frente'] ? 'Frente cargado ✔' : 'Seleccionar frente'}
+                            </label>
+                            <input type="file" id="docCodeudor${num}Frente" class="file-upload-input" accept="image/*,.pdf" ${docTipo === false ? '' : 'disabled'} onchange="handleCodeudorDocumentUpload(this, ${num}, 'Frente')">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Cara posterior <span class="required">*</span></label>
+                        <div class="file-upload-wrapper">
+                            <label class="file-upload-label" for="docCodeudor${num}Reverso" id="labelDocCodeudor${num}Reverso">
+                                ${ state.archivosBase64['docCodeudor'+num+'Reverso'] ? 'Reverso cargado ✔' : 'Seleccionar reverso'}
+                            </label>
+                            <input type="file" id="docCodeudor${num}Reverso" class="file-upload-input" accept="image/*,.pdf" ${docTipo === false ? '' : 'disabled'} onchange="handleCodeudorDocumentUpload(this, ${num}, 'Reverso')">
+                        </div>
+                    </div>
+                    <div class="file-size-info">Máximo 10MB c/u - Formatos: JPG, PNG, PDF</div>
+                </div>
             `;
-            
-            // Marcar como creado
             state.codeudorFieldsCreated[num] = true;
-            console.log(`✅ Campos del Codeudor ${num} creados exitosamente`);
         }
 
-        // ==========================================
-        // MANEJO DE DECISIONES
-        // ==========================================
-        
         function setDocumentType(isComplete) {
             state.documentoCompletoRequerido = isComplete;
-            
             event.target.classList.add('selected');
-            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
-                if (btn !== event.target) btn.classList.remove('selected');
-            });
-            
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => { if (btn !== event.target) btn.classList.remove('selected'); });
             if (isComplete) {
                 document.getElementById('singleDocUpload').style.display = 'block';
                 document.getElementById('doubleDocUpload').style.display = 'none';
-                setTimeout(() => {
-                    document.getElementById('singleDocUpload').style.opacity = '1';
-                }, 100);
+                setTimeout(()=> document.getElementById('singleDocUpload').style.opacity = '1',100);
             } else {
                 document.getElementById('singleDocUpload').style.display = 'none';
                 document.getElementById('doubleDocUpload').style.display = 'block';
-                setTimeout(() => {
-                    document.getElementById('doubleDocUpload').style.opacity = '1';
-                }, 100);
+                setTimeout(()=> document.getElementById('doubleDocUpload').style.opacity = '1',100);
             }
         }
 
         function setCodeudor(hasCod) {
             const previousDecision = state.hasCodeudores;
-            
-            if (previousDecision === true && hasCod === false) {
-                limpiarTodosCodeudores();
-            }
-            
+            if (previousDecision === true && hasCod === false) limpiarTodosCodeudores();
             state.hasCodeudores = hasCod;
-            
             event.target.classList.add('selected');
-            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
-                if (btn !== event.target) btn.classList.remove('selected');
-            });
-            
-            if (hasCod) {
-                state.numCodeudores = 1;
-                console.log('✅ Activando 1 codeudor');
-            } else {
-                state.numCodeudores = 0;
-                console.log('❌ Sin codeudores');
-            }
-            
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => { if (btn !== event.target) btn.classList.remove('selected'); });
+            if (hasCod) state.numCodeudores = 1; else state.numCodeudores = 0;
             actualizarPasosDinamicos();
+        }
+
+        function setCodeudorDocumentType(num, isComplete) {
+            state.codeudorDocTipo[num] = isComplete;
+            const buttons = document.querySelectorAll(`#docDecisionCodeudor${num} .decision-btn`);
+            buttons.forEach(b => b.classList.remove('selected'));
+            event.target.classList.add('selected');
+            const single = document.getElementById(`singleDocCodeudor${num}`);
+            const doble = document.getElementById(`doubleDocCodeudor${num}`);
+            if (isComplete) {
+                single.style.display = 'block';
+                doble.style.display = 'none';
+                document.getElementById(`docCodeudor${num}`).disabled = false;
+                document.getElementById(`docCodeudor${num}Frente`)?.setAttribute('disabled','disabled');
+                document.getElementById(`docCodeudor${num}Reverso`)?.setAttribute('disabled','disabled');
+            } else {
+                single.style.display = 'none';
+                doble.style.display = 'block';
+                document.getElementById(`docCodeudor${num}`).setAttribute('disabled','disabled');
+                document.getElementById(`docCodeudor${num}Frente`).disabled = false;
+                document.getElementById(`docCodeudor${num}Reverso`).disabled = false;
+            }
         }
 
         function addMoreCodeudor(hasMore, currentNum) {
-            console.log(`🔄 addMoreCodeudor(${hasMore}, ${currentNum})`);
-            
             document.getElementById(`btnMoreCodeudor${currentNum}No`).classList.remove('selected');
             document.getElementById(`btnMoreCodeudor${currentNum}Si`).classList.remove('selected');
-            
             event.target.classList.add('selected');
-            
             if (hasMore && currentNum < 3) {
                 state.numCodeudores = currentNum + 1;
-                console.log(`✅ Agregando Codeudor ${state.numCodeudores}`);
             } else {
                 if (state.numCodeudores > currentNum) {
-                    for (let i = currentNum + 1; i <= state.numCodeudores; i++) {
-                        limpiarCodeudor(i);
-                    }
+                    for (let i = currentNum + 1; i <= state.numCodeudores; i++) limpiarCodeudor(i);
                 }
                 state.numCodeudores = currentNum;
-                console.log(`🔢 Total codeudores: ${state.numCodeudores}`);
             }
-            
             actualizarPasosDinamicos();
         }
 
-        // ==========================================
-        // LIMPIEZA INTELIGENTE
-        // ==========================================
-        
         function limpiarCodeudor(num) {
-            console.log(`🧹 Limpiando Codeudor ${num}`);
-            
             delete state.archivosBase64[`docCodeudor${num}`];
-            
+            delete state.archivosBase64[`docCodeudor${num}Frente`];
+            delete state.archivosBase64[`docCodeudor${num}Reverso`];
             const container = document.getElementById(`codeudor${num}Fields`);
-            if (container) {
-                container.innerHTML = '';
-            }
-            
+            if (container) container.innerHTML = '';
             delete state.codeudorDataSaved[num];
+            delete state.codeudorDocTipo[num];
             state.codeudorFieldsCreated[num] = false;
-            
-            const btnNo = document.getElementById(`btnMoreCodeudor${num}No`);
-            const btnSi = document.getElementById(`btnMoreCodeudor${num}Si`);
-            if (btnNo) btnNo.classList.remove('selected');
-            if (btnSi) btnSi.classList.remove('selected');
         }
 
         function limpiarTodosCodeudores() {
-            console.log('🧹 Limpiando TODOS los codeudores');
-            for (let i = 1; i <= 3; i++) {
-                limpiarCodeudor(i);
-            }
+            for (let i=1;i<=3;i++) limpiarCodeudor(i);
             state.numCodeudores = 0;
             state.codeudorDataSaved = {};
             state.codeudorFieldsCreated = {};
+            state.codeudorDocTipo = {};
         }
 
-        // ==========================================
-        // VALIDACIÓN DE PASOS
-        // ==========================================
-        
         function validateCurrentStep() {
             const currentStepData = state.steps[state.currentStep - 1];
-            
             switch(currentStepData.id) {
-                case 'documentos':
-                    return validateStep1();
-                case 'informacion':
-                    return validateStep2();
-                case 'identidad':
-                    return validateStep3();
+                case 'documentos': return validateStep1();
+                case 'informacion': return validateStep2();
+                case 'identidad': return validateStep3();
                 case 'codeudor-1':
                 case 'codeudor-2':
                 case 'codeudor-3':
                     const num = parseInt(currentStepData.id.split('-')[1]);
                     return validateCodeudor(num);
-                default:
-                    return true;
+                default: return true;
             }
         }
 
         function validateStep1() {
-            if (!state.archivosBase64.estudioAprobado) {
-                showError('Por favor cargue el documento de estudio aprobado');
-                return false;
-            }
-            if (!state.archivosBase64.comprobantePago) {
-                showError('Por favor cargue el comprobante de pago');
-                return false;
-            }
+            if (!state.archivosBase64.estudioAprobado) { showError('Por favor cargue el documento de estudio aprobado'); return false; }
+            if (!state.archivosBase64.comprobantePago) { showError('Por favor cargue el comprobante de pago'); return false; }
             return true;
         }
 
         function validateStep2() {
-            const campos = [
-                'tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
-                'nombres', 'apellidos', 'email', 'confirmarEmail',
-                'celular', 'confirmarCelular', 'ocupacion'
-            ];
-            
+            const campos = ['tipoDocumento','numeroDocumento','confirmarDocumento','nombres','apellidos','email','confirmarEmail','celular','confirmarCelular','ocupacion'];
             for (const campo of campos) {
                 const elemento = document.getElementById(campo);
-                if (!elemento || !elemento.value.trim()) {
-                    showError(`Por favor complete: ${campo}`);
-                    elemento?.focus();
-                    return false;
-                }
+                if (!elemento || !elemento.value.trim()) { showError(`Por favor complete: ${campo}`); elemento?.focus(); return false; }
             }
-            
-            if (document.getElementById('numeroDocumento').value !== 
-                document.getElementById('confirmarDocumento').value) {
-                showError('Los números de documento no coinciden');
-                return false;
-            }
-            
-            if (document.getElementById('email').value !== 
-                document.getElementById('confirmarEmail').value) {
-                showError('Los correos no coinciden');
-                return false;
-            }
-            
-            if (document.getElementById('celular').value !== 
-                document.getElementById('confirmarCelular').value) {
-                showError('Los números de celular no coinciden');
-                return false;
-            }
-            
+            if (numeroDocumento.value !== confirmarDocumento.value) { showError('Los números de documento no coinciden'); return false; }
+            if (email.value !== confirmarEmail.value) { showError('Los correos no coinciden'); return false; }
+            if (celular.value !== confirmarCelular.value) { showError('Los números de celular no coinciden'); return false; }
             return true;
         }
 
         function validateStep3() {
-            if (state.documentoCompletoRequerido === null) {
-                showError('Por favor indique si el archivo tiene ambas caras');
-                return false;
-            }
-            
+            if (state.documentoCompletoRequerido === null) { showError('Indique si el archivo tiene ambas caras'); return false; }
             if (state.documentoCompletoRequerido) {
-                if (!state.archivosBase64.docIdentidad) {
-                    showError('Debe cargar el documento de identidad');
-                    return false;
-                }
+                if (!state.archivosBase64.docIdentidad) { showError('Debe cargar el documento de identidad'); return false; }
             } else {
-                if (!state.archivosBase64.docIdentidadFrente || 
-                    !state.archivosBase64.docIdentidadReverso) {
+                if (!state.archivosBase64.docIdentidadFrente || !state.archivosBase64.docIdentidadReverso) {
                     showError('Debe cargar ambas caras del documento');
                     return false;
                 }
             }
-            
-            if (state.hasCodeudores === null) {
-                showError('Por favor indique si tiene codeudores');
-                return false;
-            }
-            
+            if (state.hasCodeudores === null) { showError('Indique si tiene codeudores'); return false; }
             return true;
         }
 
         function validateCodeudor(num) {
             guardarDatosCodeudor(num);
-            
             const campos = [
                 `tipoDocCodeudor${num}`,
                 `numDocCodeudor${num}`,
+                `confirmNumDocCodeudor${num}`,
                 `nombresCodeudor${num}`,
                 `apellidosCodeudor${num}`,
                 `emailCodeudor${num}`,
-                `celularCodeudor${num}`
+                `confirmEmailCodeudor${num}`,
+                `celularCodeudor${num}`,
+                `confirmCelularCodeudor${num}`
             ];
-            
-            for (const campo of campos) {
-                const elemento = document.getElementById(campo);
-                if (!elemento || !elemento.value.trim()) {
-                    showError(`Por favor complete todos los campos del codeudor ${num}`);
-                    elemento?.focus();
-                    return false;
+            for (const c of campos) {
+                const el = document.getElementById(c);
+                if (!el || !el.value.trim()) { showError(`Complete todos los campos del codeudor ${num}`); el?.focus(); return false; }
+            }
+            if (document.getElementById(`numDocCodeudor${num}`).value !== document.getElementById(`confirmNumDocCodeudor${num}`).value) {
+                showError(`Documento no coincide en Codeudor ${num}`); return false;
+            }
+            if (document.getElementById(`emailCodeudor${num}`).value !== document.getElementById(`confirmEmailCodeudor${num}`).value) {
+                showError(`Email no coincide en Codeudor ${num}`); return false;
+            }
+            if (document.getElementById(`celularCodeudor${num}`).value !== document.getElementById(`confirmCelularCodeudor${num}`).value) {
+                showError(`Celular no coincide en Codeudor ${num}`); return false;
+            }
+            if (state.codeudorDocTipo[num] === undefined) {
+                showError(`Seleccione tipo de archivo (ambas caras o separado) para Codeudor ${num}`); return false;
+            }
+            if (state.codeudorDocTipo[num] === true) {
+                if (!state.archivosBase64[`docCodeudor${num}`]) { showError(`Cargue el documento del Codeudor ${num}`); return false; }
+            } else {
+                if (!state.archivosBase64[`docCodeudor${num}Frente`] || !state.archivosBase64[`docCodeudor${num}Reverso`]) {
+                    showError(`Cargue frente y reverso del documento Codeudor ${num}`); return false;
                 }
             }
-            
-            if (!state.archivosBase64[`docCodeudor${num}`]) {
-                showError(`Debe cargar el documento del codeudor ${num}`);
-                return false;
-            }
-            
             return true;
         }
 
         function guardarDatosCodeudor(num) {
             const tipoDoc = document.getElementById(`tipoDocCodeudor${num}`);
-            if (tipoDoc && tipoDoc.value) {
+            if (tipoDoc) {
                 state.codeudorDataSaved[num] = {
                     tipoDocumento: tipoDoc.value,
-                    numeroDocumento: document.getElementById(`numDocCodeudor${num}`).value,
-                    nombres: document.getElementById(`nombresCodeudor${num}`).value,
-                    apellidos: document.getElementById(`apellidosCodeudor${num}`).value,
-                    email: document.getElementById(`emailCodeudor${num}`).value,
-                    celular: document.getElementById(`celularCodeudor${num}`).value
+                    numeroDocumento: document.getElementById(`numDocCodeudor${num}`)?.value || '',
+                    nombres: document.getElementById(`nombresCodeudor${num}`)?.value || '',
+                    apellidos: document.getElementById(`apellidosCodeudor${num}`)?.value || '',
+                    email: document.getElementById(`emailCodeudor${num}`)?.value || '',
+                    celular: document.getElementById(`celularCodeudor${num}`)?.value || '',
+                    fechaExpedicion: document.getElementById(`fechaExpedicionCodeudor${num}`)?.value || ''
                 };
-                console.log(`💾 Datos guardados del Codeudor ${num}`);
             }
         }
 
-        // ==========================================
-        // FUNCIONES AUXILIARES
-        // ==========================================
-        
         function iniciarRegistro() {
             document.getElementById('initialScreen').classList.add('hidden');
             document.getElementById('progressContainer').classList.add('show');
             document.getElementById('formContent').classList.add('show');
             document.getElementById('formNavigation').classList.add('show');
-            
             actualizarPasosDinamicos();
-            
-            setTimeout(() => {
-                document.getElementById('field1')?.classList.add('show');
-            }, 100);
+            setTimeout(()=> document.getElementById('field1')?.classList.add('show'),100);
         }
 
         function validarCodigoRegistro(codigo) {
-            const regex = /^[A-Z0-9_\-()#\s]+$/;
+            const regex = /^[A-Z0-9_\\-()#\\s]+$/;
             return regex.test(codigo);
         }
 
         function validarEmail(input) {
             const email = input.value.trim();
-            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            if (!regex.test(email)) {
-                input.classList.add('invalid');
-                input.classList.remove('valid');
-                return false;
-            }
-            
-            input.classList.add('valid');
-            input.classList.remove('invalid');
-            return true;
+            const regex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+            if (!regex.test(email)) { input.classList.add('invalid'); input.classList.remove('valid'); return false; }
+            input.classList.add('valid'); input.classList.remove('invalid'); return true;
         }
 
         function validarTelefono(input) {
             const telefono = input.value.trim();
             const regex = /^[0-9]{10}$/;
-            
-            if (!regex.test(telefono)) {
-                input.classList.add('invalid');
-                input.classList.remove('valid');
-                return false;
-            }
-            
-            input.classList.add('valid');
-            input.classList.remove('invalid');
-            return true;
+            if (!regex.test(telefono)) { input.classList.add('invalid'); input.classList.remove('valid'); return false; }
+            input.classList.add('valid'); input.classList.remove('invalid'); return true;
         }
 
-        function showError(message) {
-            alert(message);
+        function validarCoincidencia(idA, idB) {
+            const a = document.getElementById(idA);
+            const b = document.getElementById(idB);
+            if (!a || !b) return;
+            const msg = document.getElementById(idB + 'Error');
+            if (a.value && b.value && a.value === b.value) {
+                b.classList.add('valid'); b.classList.remove('invalid');
+                if (msg) { msg.textContent = 'Coincide'; msg.className='validation-message success show'; }
+            } else if (b.value) {
+                b.classList.add('invalid'); b.classList.remove('valid');
+                if (msg) { msg.textContent = 'No coincide'; msg.className='validation-message error show'; }
+            } else if (msg) {
+                msg.classList.remove('show');
+            }
         }
+
+        function showError(message) { alert(message); }
 
         function handleFileSelect(input, nextFieldId) {
-            const file = input.files[0];
-            if (!file) return;
-            
-            if (file.size > state.maxFileSize) {
-                alert(`El archivo es demasiado grande. Máximo ${state.maxFileSize / 1024 / 1024}MB`);
-                input.value = '';
-                return;
-            }
-            
+            const file = input.files[0]; if (!file) return;
+            if (file.size > state.maxFileSize) { alert(`El archivo es demasiado grande. Máximo ${state.maxFileSize/1024/1024}MB`); input.value=''; return; }
             const label = document.getElementById('label' + input.id.charAt(0).toUpperCase() + input.id.slice(1));
-            if (label) {
-                label.textContent = file.name;
-                label.classList.add('file-selected');
-            }
-            
-            convertirArchivoBase64(input, () => {
-                if (nextFieldId) {
-                    setTimeout(() => {
-                        document.getElementById(nextFieldId)?.classList.add('show');
-                    }, 300);
-                }
-            });
+            if (label) { label.textContent = file.name; label.classList.add('file-selected'); }
+            convertirArchivoBase64(input, () => { if (nextFieldId) setTimeout(()=>document.getElementById(nextFieldId)?.classList.add('show'),300); });
         }
 
         function convertirArchivoBase64(input, callback) {
-            const file = input.files[0];
-            if (!file) return;
-            
+            const file = input.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                state.archivosBase64[input.id] = {
-                    nombre: file.name,
-                    tipo: file.type,
-                    contenido: e.target.result
-                };
-                
+                state.archivosBase64[input.id] = { nombre:file.name, tipo:file.type, contenido:e.target.result };
                 if (callback) callback();
             };
-            
             reader.readAsDataURL(file);
         }
 
         function handleDocumentUpload(input, tipo) {
-            const file = input.files[0];
-            if (!file) return;
-            
+            const file = input.files[0]; if (!file) return;
+            if (file.size > state.maxFileSize) { alert(`Archivo muy grande (max ${state.maxFileSize/1024/1024}MB)`); input.value=''; return; }
             const labelId = 'labelDocIdentidad' + tipo.charAt(0).toUpperCase() + tipo.slice(1);
             const label = document.getElementById(labelId);
-            if (label) {
-                label.textContent = file.name;
-                label.classList.add('file-selected');
-            }
-            
+            if (label) { label.textContent = file.name; label.classList.add('file-selected'); }
             const reader = new FileReader();
             reader.onload = function(e) {
                 if (tipo === 'completo') {
-                    state.archivosBase64.docIdentidad = {
-                        nombre: file.name,
-                        tipo: file.type,
-                        contenido: e.target.result
-                    };
+                    state.archivosBase64.docIdentidad = { nombre:file.name, tipo:file.type, contenido:e.target.result };
                     state.documentosIdentidadCargados = true;
                 } else if (tipo === 'frente') {
-                    state.archivosBase64.docIdentidadFrente = {
-                        nombre: file.name,
-                        tipo: file.type,
-                        contenido: e.target.result
-                    };
-                    if (state.archivosBase64.docIdentidadReverso) {
-                        state.documentosIdentidadCargados = true;
-                    }
+                    state.archivosBase64.docIdentidadFrente = { nombre:file.name, tipo:file.type, contenido:e.target.result };
+                    if (state.archivosBase64.docIdentidadReverso) state.documentosIdentidadCargados = true;
                 } else if (tipo === 'reverso') {
-                    state.archivosBase64.docIdentidadReverso = {
-                        nombre: file.name,
-                        tipo: file.type,
-                        contenido: e.target.result
-                    };
-                    if (state.archivosBase64.docIdentidadFrente) {
-                        state.documentosIdentidadCargados = true;
-                    }
+                    state.archivosBase64.docIdentidadReverso = { nombre:file.name, tipo:file.type, contenido:e.target.result };
+                    if (state.archivosBase64.docIdentidadFrente) state.documentosIdentidadCargados = true;
                 }
-                
                 if (state.documentosIdentidadCargados) {
                     document.getElementById('codeudorQuestion').classList.remove('disabled');
                     document.getElementById('btnCodeudorNo').disabled = false;
@@ -1661,67 +983,161 @@
         }
 
         function handleCodeudorFile(input, index) {
-            const file = input.files[0];
-            if (!file) return;
-            
-            if (file.size > state.maxFileSize) {
-                alert(`Archivo muy grande. Máximo ${state.maxFileSize / 1024 / 1024}MB`);
-                input.value = '';
-                return;
-            }
-            
+            const file = input.files[0]; if (!file) return;
+            if (file.size > state.maxFileSize) { alert(`Archivo muy grande. Máximo ${state.maxFileSize/1024/1024}MB`); input.value=''; return; }
             const label = document.getElementById(`labelDocCodeudor${index}`);
-            if (label) {
-                label.textContent = file.name;
-                label.classList.add('file-selected');
-            }
-            
+            if (label) { label.textContent = file.name; label.classList.add('file-selected'); }
             convertirArchivoBase64(input);
+        }
+
+        function handleCodeudorDocumentUpload(input, index, parte) {
+            const file = input.files[0]; if (!file) return;
+            if (file.size > state.maxFileSize) { alert(`Archivo muy grande. Máx ${state.maxFileSize/1024/1024}MB`); input.value=''; return; }
+            const label = document.getElementById(`labelDocCodeudor${index}${parte}`);
+            if (label) { label.textContent = file.name; label.classList.add('file-selected'); }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                state.archivosBase64[`docCodeudor${index}${parte}`] = { nombre:file.name, tipo:file.type, contenido:e.target.result };
+            };
+            reader.readAsDataURL(file);
         }
 
         function showNextField(fieldId) {
             const field = document.getElementById(fieldId);
-            if (field && !field.classList.contains('show')) {
-                setTimeout(() => {
-                    field.classList.add('show');
-                }, 300);
-            }
+            if (field && !field.classList.contains('show')) setTimeout(()=> field.classList.add('show'),300);
         }
 
         function validateAndShow(field1Id, field2Id, nextFieldId) {
             const val1 = document.getElementById(field1Id).value;
             const val2 = document.getElementById(field2Id).value;
-            
-            if (val1 === val2 && val1 !== '') {
-                showNextField(nextFieldId);
-            } else if (val1 !== val2 && val2 !== '') {
-                alert('Los valores no coinciden');
-            }
+            if (val1 === val2 && val1 !== '') showNextField(nextFieldId);
+            else if (val1 !== val2 && val2 !== '') alert('Los valores no coinciden');
         }
 
         function createParticles() {
             const particlesContainer = document.getElementById('particles');
             const particleCount = 50;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 15 + 's';
-                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
-                particlesContainer.appendChild(particle);
+            for (let i=0;i<particleCount;i++){
+                const p=document.createElement('div');
+                p.className='particle';
+                p.style.left = Math.random()*100+'%';
+                p.style.animationDelay = Math.random()*15+'s';
+                p.style.animationDuration = (15+Math.random()*10)+'s';
+                particlesContainer.appendChild(p);
             }
         }
 
-        // Stubs para funciones de modales (implementar según necesidad)
         function mostrarModalPago() { console.log('Modal de pago'); }
-        function mostrarConfirmacion() { console.log('Modal de confirmación'); }
 
-        // Log de sistema
-        console.info('🚀 EFirmaContrata Wizard v5.0 CORREGIDO');
-        console.info('✅ Campos de codeudor se crean correctamente');
-        console.info('✅ Navegación sin expansiones');
-        console.info('✅ Barra dinámica adaptativa');
+        // NUEVO: Mostrar Resumen
+        function mostrarConfirmacion() {
+            // Validar que no se quedó algo crítico sin completar (opcional)
+            const resumenDiv = document.getElementById('resumenContenido');
+            resumenDiv.innerHTML = generarResumenHTML();
+            document.getElementById('resumenModal').classList.add('show');
+        }
+
+        function generarResumenHTML() {
+            let html = '';
+            html += `<div class="resume-section"><h4>Inquilino</h4><div class="resume-grid">
+                <div class="resume-item"><b>Tipo Doc:</b> ${document.getElementById('tipoDocumento')?.value || '-'}</div>
+                <div class="resume-item"><b>Documento:</b> ${document.getElementById('numeroDocumento')?.value || '-'}</div>
+                <div class="resume-item"><b>Nombres:</b> ${document.getElementById('nombres')?.value || '-'}</div>
+                <div class="resume-item"><b>Apellidos:</b> ${document.getElementById('apellidos')?.value || '-'}</div>
+                <div class="resume-item"><b>Email:</b> ${document.getElementById('email')?.value || '-'}</div>
+                <div class="resume-item"><b>Celular:</b> ${document.getElementById('celular')?.value || '-'}</div>
+                <div class="resume-item"><b>Ocupación:</b> ${document.getElementById('ocupacion')?.value || '-'}</div>
+            </div></div>`;
+            html += `<div class="resume-section"><h4>Documentos Iniciales</h4><div class="resume-grid">
+                <div class="resume-item"><b>Estudio Aprobado:</b> ${state.archivosBase64.estudioAprobado?.nombre || 'No cargado'}</div>
+                <div class="resume-item"><b>Comprobante Pago:</b> ${state.archivosBase64.comprobantePago?.nombre || 'No cargado'}</div>
+            </div></div>`;
+            html += `<div class="resume-section"><h4>Identidad Inquilino</h4><div class="resume-grid">`;
+            if (state.documentoCompletoRequerido) {
+                html += `<div class="resume-item"><b>Doc Identidad:</b> ${state.archivosBase64.docIdentidad?.nombre || 'No'}</div>`;
+            } else {
+                html += `<div class="resume-item"><b>Frente:</b> ${state.archivosBase64.docIdentidadFrente?.nombre || 'No'}</div>`;
+                html += `<div class="resume-item"><b>Reverso:</b> ${state.archivosBase64.docIdentidadReverso?.nombre || 'No'}</div>`;
+            }
+            html += `<div class="resume-item"><b>Codeudores:</b> ${state.numCodeudores}</div></div></div>`;
+            if (state.numCodeudores > 0) {
+                for (let i=1;i<=state.numCodeudores;i++) {
+                    const d = state.codeudorDataSaved[i] || {};
+                    html += `<div class="resume-section"><h4>Codeudor ${i}</h4><div class="resume-grid">
+                        <div class="resume-item"><b>Tipo Doc:</b> ${d.tipoDocumento || '-'}</div>
+                        <div class="resume-item"><b>Documento:</b> ${d.numeroDocumento || '-'}</div>
+                        <div class="resume-item"><b>Nombres:</b> ${d.nombres || '-'}</div>
+                        <div class="resume-item"><b>Apellidos:</b> ${d.apellidos || '-'}</div>
+                        <div class="resume-item"><b>Email:</b> ${d.email || '-'}</div>
+                        <div class="resume-item"><b>Celular:</b> ${d.celular || '-'}</div>
+                        <div class="resume-item"><b>Archivo:</b> ${
+                            state.codeudorDocTipo[i] === true
+                              ? (state.archivosBase64['docCodeudor'+i]?.nombre || 'No')
+                              : ( (state.archivosBase64['docCodeudor'+i+'Frente']?.nombre || 'Frente - No') + ' / ' + (state.archivosBase64['docCodeudor'+i+'Reverso']?.nombre || 'Reverso - No') )
+                        }</div>
+                    </div></div>`;
+                }
+            }
+            return html;
+        }
+
+        function cerrarModalResumen() {
+            document.getElementById('resumenModal').classList.remove('show');
+        }
+
+        function confirmarEnvio() {
+            // Aquí construir payload final
+            const payload = {
+                codigoRegistro: state.codigoRegistro,
+                inquilino: {
+                    tipoDocumento: document.getElementById('tipoDocumento')?.value,
+                    numeroDocumento: document.getElementById('numeroDocumento')?.value,
+                    nombres: document.getElementById('nombres')?.value,
+                    apellidos: document.getElementById('apellidos')?.value,
+                    email: document.getElementById('email')?.value,
+                    celular: document.getElementById('celular')?.value,
+                    ocupacion: document.getElementById('ocupacion')?.value,
+                    fechaExpedicion: document.getElementById('fechaExpedicion')?.value || null
+                },
+                documentos: {
+                    estudioAprobado: state.archivosBase64.estudioAprobado?.nombre || null,
+                    comprobantePago: state.archivosBase64.comprobantePago?.nombre || null,
+                    identidad: state.documentoCompletoRequerido
+                        ? { tipo:'completo', archivo: state.archivosBase64.docIdentidad?.nombre || null }
+                        : {
+                            tipo:'frente_reverso',
+                            frente: state.archivosBase64.docIdentidadFrente?.nombre || null,
+                            reverso: state.archivosBase64.docIdentidadReverso?.nombre || null
+                        }
+                },
+                codeudores: Array.from({length: state.numCodeudores}, (_,i)=> {
+                    const idx = i+1;
+                    const d = state.codeudorDataSaved[idx] || {};
+                    return {
+                        index: idx,
+                        tipoDocumento: d.tipoDocumento,
+                        numeroDocumento: d.numeroDocumento,
+                        nombres: d.nombres,
+                        apellidos: d.apellidos,
+                        email: d.email,
+                        celular: d.celular,
+                        fechaExpedicion: d.fechaExpedicion || null,
+                        documento: state.codeudorDocTipo[idx] === true
+                            ? { tipo:'completo', archivo: state.archivosBase64['docCodeudor'+idx]?.nombre || null }
+                            : {
+                                tipo:'frente_reverso',
+                                frente: state.archivosBase64['docCodeudor'+idx+'Frente']?.nombre || null,
+                                reverso: state.archivosBase64['docCodeudor'+idx+'Reverso']?.nombre || null
+                              }
+                    };
+                })
+            };
+            console.log('📤 Enviar payload (simulado):', payload);
+            alert('Información confirmada. (Implementar envío al servidor)');
+            cerrarModalResumen();
+        }
+
+        console.info('✅ EFirmaContrata Wizard v5.1 Mejoras aplicadas');
     </script>
 </body>
 </html>
