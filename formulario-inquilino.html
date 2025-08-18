@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <title>Formulario Inquilino - E-firmaContrata</title>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<!-- PRODUCCIÓN: Archivo autónomo del wizard de Inquilino con modal de pago y envío -->
 <style>
-/* (Se mantiene el estilo base anterior, acentos corregidos y algunos añadidos) */
 :root {
   --gold-primary:#FFD700;--gold-dark:#B8860B;--gold-light:#FFF8DC;
   --black-primary:#0F0F0F;--black-secondary:#1A1A1A;
@@ -28,7 +28,7 @@ body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--black-primary);mi
 .initial-title{color:var(--gold-primary);font-size:28px;margin-bottom:18px}
 .initial-description{color:var(--white);margin-bottom:40px;line-height:1.5}
 .initial-buttons{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
-.initial-btn{flex:1;min-width:250px;padding:20px;background:var(--black-primary);border:2px solid rgba(255,215,0,0.3);border-radius:15px;cursor:pointer;transition:.3s}
+.initial-btn{flex:1;min-width:250px;padding:20px;background:var(--black-primary);border:2px solid rgba(255,215,0,0.3);border-radius:15px;cursor:pointer;position:relative;transition:.3s}
 .initial-btn:hover{border-color:var(--gold-primary);transform:translateY(-5px);box-shadow:0 10px 30px rgba(255,215,0,0.2)}
 .initial-btn-icon{font-size:48px;margin-bottom:10px}
 .initial-btn-title{color:var(--gold-primary);font-size:20px;margin-bottom:6px}
@@ -106,17 +106,33 @@ input.invalid{border-color:var(--error)}
 .actions-row{display:flex;gap:15px;justify-content:center;margin-top:25px;flex-wrap:wrap}
 .btn-secondary{background:var(--gray-medium);color:#fff;border:none;padding:12px 25px;border-radius:8px;cursor:pointer;font-weight:600;letter-spacing:.5px;transition:.3s}
 .btn-secondary:hover{background:var(--gray-dark)}
-/* Overlay de envío */
 .loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:1300;color:#fff}
 .loading-overlay.show{display:flex}
 .loading-overlay .spinner{border:4px solid #444;border-top:4px solid var(--gold-primary);border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite;margin-bottom:25px}
 @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 .debug-banner{position:fixed;bottom:8px;right:8px;background:rgba(255,215,0,0.12);border:1px solid var(--gold-primary);padding:6px 12px;color:var(--gold-primary);font-size:12px;border-radius:6px;z-index:1500;font-weight:600;backdrop-filter:blur(4px)}
+/* Modal Pago */
+.modal-pago .modal-content{max-width:520px}
+.pago-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.copy-btn{padding:8px 14px;border:none;border-radius:6px;cursor:pointer;background:var(--gold-primary);color:#000;font-weight:600;display:flex;align-items:center;gap:6px}
+.copy-btn.copied{background:var(--success);color:#fff}
+.pago-box{background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);padding:12px 16px;border-radius:10px;font-size:14px;display:flex;justify-content:space-between;gap:12px;flex:1;min-width:240px;color:var(--gold-light)}
+.badge-info{display:inline-block;padding:4px 10px;font-size:11px;border-radius:14px;background:rgba(255,215,0,0.15);color:var(--gold-primary);margin-left:6px}
+.link-wompi{display:inline-block;margin-top:10px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-primary));color:#000;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600}
+.link-wompi:hover{filter:brightness(1.05)}
+.notice{font-size:12px;color:var(--gold-light);opacity:.85;margin-top:6px}
+.confirm-pago-msg{display:none;margin-top:15px;font-size:13px;color:var(--success);font-weight:600;text-align:center}
+.confirm-pago-msg.show{display:block}
+.divider{height:1px;background:rgba(255,215,0,0.25);margin:18px 0}
+.focus-trap{outline:none}
+.banner-pago-ok{background:linear-gradient(90deg,#064e3b,#065f46);padding:10px 14px;border-radius:10px;margin:0 40px 0 40px;color:#d1fae5;font-size:13px;display:none}
+.banner-pago-ok.show{display:block}
 @media (max-width:768px){
   .step-label{display:none}
   .decision-buttons{flex-direction:column}
   .btn{width:100%}
   .form-navigation{flex-direction:column;gap:12px}
+  .banner-pago-ok{margin:0 20px}
 }
 </style>
 </head>
@@ -129,19 +145,22 @@ input.invalid{border-color:var(--error)}
       <div class="tagline">Gestión de Documentación Real Estate - GoldLife System</div>
     </div>
 
+    <div id="bannerPagoOk" class="banner-pago-ok">✅ Pago marcado como realizado. Puede continuar con el registro.</div>
+
     <div class="initial-screen" id="initialScreen">
       <h2 class="initial-title">Bienvenido al Sistema de Registro</h2>
       <p class="initial-description">Para continuar con el proceso de arrendamiento, primero debe realizar el pago de los derechos de contrato y luego proceder con el registro de sus documentos.</p>
       <div class="initial-buttons">
-        <div class="initial-btn" onclick="mostrarModalPago()">
+        <div class="initial-btn" onclick="abrirModalPago()">
           <div class="initial-btn-icon">💳</div>
           <div class="initial-btn-title">Pagar Derechos</div>
-          <div class="initial-btn-desc">Realice el pago de $60.000 COP</div>
+          <div class="initial-btn-desc">Valor: $60.000 COP</div>
         </div>
-        <div class="initial-btn" onclick="iniciarRegistro()">
+        <div class="initial-btn">
           <div class="initial-btn-icon">📝</div>
           <div class="initial-btn-title">Registrarse</div>
-          <div class="initial-btn-desc">Complete el formulario de registro</div>
+          <div class="initial-btn-desc">Complete su documentación</div>
+          <button id="btnIniciarRegistro" onclick="verificarPagoAntesDeIniciar()" style="all:unset;cursor:pointer;position:absolute;top:0;left:0;width:100%;height:100%;"></button>
         </div>
       </div>
     </div>
@@ -164,11 +183,11 @@ input.invalid{border-color:var(--error)}
         </div>
         <div class="form-field" id="field2">
           <label>Comprobante de Pago <span class="required">*</span></label>
-            <div class="file-upload-wrapper">
-              <label class="file-upload-label" for="comprobantePago" id="labelComprobantePago">Seleccionar archivo</label>
-              <input type="file" id="comprobantePago" class="file-upload-input" accept="image/*,.pdf" required onchange="handleFileSelect(this,null)">
-            </div>
-            <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
+          <div class="file-upload-wrapper">
+            <label class="file-upload-label" for="comprobantePago" id="labelComprobantePago">Seleccionar archivo</label>
+            <input type="file" id="comprobantePago" class="file-upload-input" accept="image/*,.pdf" required onchange="handleFileSelect(this,null);notificarComprobanteCargado();">
+          </div>
+          <div class="file-size-info">Máximo 10MB - Formatos: JPG, PNG, PDF</div>
         </div>
       </div>
       <!-- Paso 2 -->
@@ -291,7 +310,7 @@ input.invalid{border-color:var(--error)}
           </div>
         </div>
       </div>
-      <!-- Codeudores dinámicos -->
+      <!-- Codeudores -->
       <div class="form-step" data-step="codeudor-1">
         <h2 class="step-title">Identidad del Codeudor 1</h2>
         <div id="codeudor1Fields"></div>
@@ -353,6 +372,55 @@ input.invalid{border-color:var(--error)}
   </div>
 </div>
 
+<!-- Modal Pago -->
+<div class="modal modal-pago" id="modalPago" aria-modal="true" role="dialog">
+  <div class="modal-content focus-trap" tabindex="-1" id="modalPagoContent">
+    <button class="close-btn" onclick="cerrarModalPago()" aria-label="Cerrar modal de pago">Cerrar ✕</button>
+    <h3 class="modal-title">Pago de Derechos de Contrato</h3>
+
+    <div class="resume-section">
+      <h4>Monto</h4>
+      <div class="resume-item">Valor a pagar: <b>$60.000 COP</b> <span class="badge-info">Obligatorio</span></div>
+    </div>
+
+    <div class="resume-section">
+      <h4>Transferencia (Nequi)</h4>
+      <div class="pago-row">
+        <div class="pago-box" id="boxCuenta">
+          <span><b>Cuenta:</b> <span id="numeroNequi">3177623878</span></span>
+          <button class="copy-btn" id="btnCopyCuenta" onclick="copiarCuenta()">📋 Copiar</button>
+        </div>
+      </div>
+      <div class="notice">Copie el número y realice la transferencia desde su app Nequi / Bancolombia a Nequi.</div>
+    </div>
+
+    <div class="resume-section">
+      <h4>Pago con Tarjeta (Wompi)</h4>
+      <a class="link-wompi" target="_blank" rel="noopener" href="https://checkout.wompi.co/l/mi-link-ejemplo">
+        💳 Ir a Wompi
+      </a>
+      <div class="notice">Al finalizar el pago con tarjeta, regrese aquí y marque “Ya realicé el pago”.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="resume-section">
+      <h4>Adjuntar Comprobante (Opcional anticipado)</h4>
+      <div class="file-upload-wrapper">
+        <label class="file-upload-label" for="comprobantePagoDirecto" id="labelComprobantePagoDirecto">Seleccionar comprobante</label>
+        <input type="file" id="comprobantePagoDirecto" class="file-upload-input" accept="image/*,.pdf" onchange="handleComprobanteDirecto(this)">
+      </div>
+      <div class="file-size-info">Si lo adjunta aquí aparecerá ya cargado en el Paso 1.</div>
+    </div>
+
+    <div class="actions-row" style="margin-top:10px;">
+      <button class="btn btn-submit" onclick="marcarPagoRealizado()">Ya realicé el pago ✅</button>
+      <button class="btn-secondary" onclick="cerrarModalPago()">Cerrar</button>
+    </div>
+    <div id="msgPagoConfirmado" class="confirm-pago-msg">✅ Pago marcado. Ahora puede iniciar el registro.</div>
+  </div>
+</div>
+
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <h3 id="loadingMsg">Procesando...</h3>
@@ -362,42 +430,57 @@ input.invalid{border-color:var(--error)}
 
 <script src="config.js"></script>
 <script>
-/* Estado global */
+/* ==============================
+   ESTADO GLOBAL
+============================== */
 const state = {
   currentStep:1,totalSteps:4,codigoRegistro:'',archivosBase64:{},
   hasCodeudores:null,numCodeudores:0,documentoCompletoRequerido:null,
-  documentosIdentidadCargados:false,steps:[
+  documentosIdentidadCargados:false,pagoRealizado:false,
+  steps:[
     {id:'documentos',label:'Documentos',number:1},
     {id:'informacion',label:'Información',number:2},
     {id:'identidad',label:'Identidad',number:3},
     {id:'confirmacion',label:'Confirmación',number:4}
   ],
-  codeudorDataSaved:{},codeudorFieldsCreated:{},codeudorDocTipo:{},maxFileSize:10*1024*1024
+  codeudorDataSaved:{},codeudorFieldsCreated:{},codeudorDocTipo:{},
+  maxFileSize:10*1024*1024
 };
 
 window.onload=function(){
   initializeApp();
-  if(CONFIG.DEBUG){document.getElementById('debugBanner').style.display='block';}
+  if(typeof CONFIG!=='undefined' && CONFIG.DEBUG){
+    document.getElementById('debugBanner').style.display='block';
+  }
+  prepararFocusTrapPago();
 };
 
-/* Inicialización */
+/* ==============================
+   INICIALIZACIÓN
+============================== */
 function initializeApp(){
   const urlParams=new URLSearchParams(window.location.search);
   state.codigoRegistro=urlParams.get('cdr')||'';
-  console.info('[InquilinoWizard] Inicio con CDR:',state.codigoRegistro);
+  console.info('[InquilinoWizard] CDR:',state.codigoRegistro);
   if(!state.codigoRegistro||!validarCodigoRegistro(state.codigoRegistro)){
-    alert('Código de registro no válido');window.location.href='selector.html';return;
+    alert('Código de registro no válido');
+    window.location.href='selector.html';
+    return;
   }
   createParticles();
 }
 
-/* Validación de CDR */
+/* ==============================
+   VALIDACIÓN CDR
+============================== */
 function validarCodigoRegistro(codigo){
   const regex=/^[A-Z0-9_\-()#\s\.]+$/i;
   return regex.test(codigo);
 }
 
-/* Partículas */
+/* ==============================
+   EFECTO PARTÍCULAS
+============================== */
 function createParticles(){
   const container=document.getElementById('particles');
   for(let i=0;i<50;i++){
@@ -410,7 +493,86 @@ function createParticles(){
   }
 }
 
-/* Iniciar registro */
+/* ==============================
+   MODAL DE PAGO
+============================== */
+function abrirModalPago(){
+  document.getElementById('modalPago').classList.add('show');
+  setTimeout(()=>document.getElementById('modalPagoContent').focus(),50);
+  console.log('[Pago] Modal abierto');
+}
+function cerrarModalPago(){
+  document.getElementById('modalPago').classList.remove('show');
+  document.getElementById('btnIniciarRegistro').focus();
+  console.log('[Pago] Modal cerrado');
+}
+function copiarCuenta(){
+  const numero=document.getElementById('numeroNequi').textContent.trim();
+  navigator.clipboard.writeText(numero).then(()=>{
+    const btn=document.getElementById('btnCopyCuenta');
+    btn.classList.add('copied');
+    btn.textContent='✔ Copiado';
+    setTimeout(()=>{btn.classList.remove('copied');btn.textContent='📋 Copiar';},2000);
+  }).catch(()=>alert('No se pudo copiar, copie manualmente.'));
+}
+function marcarPagoRealizado(){
+  state.pagoRealizado=true;
+  document.getElementById('msgPagoConfirmado').classList.add('show');
+  document.getElementById('bannerPagoOk').classList.add('show');
+  console.log('[Pago] pagoRealizado = true');
+  setTimeout(()=>cerrarModalPago(),1200);
+}
+function verificarPagoAntesDeIniciar(){
+  if(!state.pagoRealizado){
+    abrirModalPago();
+    return;
+  }
+  iniciarRegistro();
+}
+function handleComprobanteDirecto(input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>state.maxFileSize){
+    alert('Archivo excede el límite');input.value='';return;
+  }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    state.archivosBase64.comprobantePago={nombre:file.name,tipo:file.type,contenido:e.target.result};
+    const labelMain=document.getElementById('labelComprobantePago');
+    if(labelMain){labelMain.textContent=file.name;labelMain.classList.add('file-selected');}
+    document.getElementById('labelComprobantePagoDirecto').textContent='Comprobante listo ✔';
+    if(!state.pagoRealizado){
+      state.pagoRealizado=true;
+      document.getElementById('bannerPagoOk').classList.add('show');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function notificarComprobanteCargado(){
+  if(!state.pagoRealizado){
+    state.pagoRealizado=true;
+    document.getElementById('bannerPagoOk').classList.add('show');
+    console.log('[Pago] Comprobante en Paso 1 marca pagoRealizado = true');
+  }
+}
+function prepararFocusTrapPago(){
+  document.addEventListener('keydown',e=>{
+    const modal=document.getElementById('modalPago');
+    if(!modal.classList.contains('show'))return;
+    if(e.key==='Escape'){cerrarModalPago();}
+    if(e.key==='Tab'){
+      const focusables=modal.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+      const list=[...focusables].filter(el=>!el.disabled && el.offsetParent!==null);
+      if(list.length===0)return;
+      const first=list[0],last=list[list.length-1];
+      if(e.shiftKey && document.activeElement===first){last.focus();e.preventDefault();}
+      else if(!e.shiftKey && document.activeElement===last){first.focus();e.preventDefault();}
+    }
+  });
+}
+
+/* ==============================
+   INICIAR REGISTRO
+============================== */
 function iniciarRegistro(){
   document.getElementById('initialScreen').classList.add('hidden');
   document.getElementById('progressContainer').classList.add('show');
@@ -420,7 +582,9 @@ function iniciarRegistro(){
   setTimeout(()=>document.getElementById('field1')?.classList.add('show'),100);
 }
 
-/* Pasos dinámicos */
+/* ==============================
+   PASOS DINÁMICOS / PROGRESS
+============================== */
 function actualizarPasosDinamicos(){
   state.steps=[
     {id:'documentos',label:'Documentos',number:1},
@@ -457,7 +621,9 @@ function updateProgressBar(){
   if(line) line.style.width=progress+'%';
 }
 
-/* Navegación */
+/* ==============================
+   NAVEGACIÓN
+============================== */
 function nextStep(){
   if(!validateCurrentStep()) return;
   hideCurrentStep();
@@ -467,17 +633,13 @@ function nextStep(){
     const n=parseInt(next.id.split('-')[1]);
     createCodeudorFields(n);
   }
-  showCurrentStep();
-  updateNavigationButtons();
-  updateProgressBar();
+  showCurrentStep();updateNavigationButtons();updateProgressBar();
 }
 function previousStep(){
   if(state.currentStep<=1)return;
   hideCurrentStep();
   state.currentStep--;
-  showCurrentStep();
-  updateNavigationButtons();
-  updateProgressBar();
+  showCurrentStep();updateNavigationButtons();updateProgressBar();
 }
 function hideCurrentStep(){
   const st=state.steps[state.currentStep-1];
@@ -502,7 +664,9 @@ function updateNavigationButtons(){
   btnNext.style.display=current.id==='confirmacion'?'none':'block';
 }
 
-/* Codeudores */
+/* ==============================
+   CODEUDORES
+============================== */
 function createCodeudorFields(num){
   if(state.codeudorFieldsCreated[num]) return;
   const container=document.getElementById(`codeudor${num}Fields`);
@@ -523,7 +687,7 @@ function createCodeudorFields(num){
         </div>
         <div>
           <label>Número de Documento <span class="required">*</span></label>
-          <input type="text" id="numDocCodeudor${num}" value="${saved.numeroDocumento||''}" placeholder="Número" onblur=""/>
+          <input type="text" id="numDocCodeudor${num}" value="${saved.numeroDocumento||''}" placeholder="Número">
         </div>
       </div>
     </div>
@@ -619,7 +783,6 @@ function createCodeudorFields(num){
   `;
   state.codeudorFieldsCreated[num]=true;
 }
-
 function setDocumentType(isComplete){
   state.documentoCompletoRequerido=isComplete;
   event.target.classList.add('selected');
@@ -693,7 +856,9 @@ function limpiarTodosCodeudores(){
   state.codeudorDocTipo={};
 }
 
-/* Validaciones */
+/* ==============================
+   VALIDACIONES DE PASOS
+============================== */
 function validateCurrentStep(){
   const st=state.steps[state.currentStep-1];
   switch(st.id){
@@ -778,7 +943,9 @@ function guardarDatosCodeudor(num){
   }
 }
 
-/* Utilidades de validación */
+/* ==============================
+   VALIDACIONES SIMPLES
+============================== */
 function validarEmail(input){
   const v=input.value.trim();
   const r=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -803,7 +970,9 @@ function validarCoincidencia(idA,idB){
   }else if(msg){msg.classList.remove('show');}
 }
 
-/* Archivos */
+/* ==============================
+   MANEJO DE ARCHIVOS
+============================== */
 function handleFileSelect(input,nextFieldId){
   const file=input.files[0];if(!file)return;
   if(file.size>state.maxFileSize){alert('Archivo excede el límite.');input.value='';return;}
@@ -867,7 +1036,9 @@ function handleCodeudorDocumentUpload(input,index,parte){
   reader.readAsDataURL(file);
 }
 
-/* Visual helpers */
+/* ==============================
+   VISUAL HELPERS
+============================== */
 function showNextField(id){
   const el=document.getElementById(id);
   if(el && !el.classList.contains('show')){
@@ -882,14 +1053,14 @@ function validateAndShow(id1,id2,next){
 }
 function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1);}
 
-/* Resumen */
+/* ==============================
+   RESUMEN
+============================== */
 function mostrarConfirmacion(){
-  // Validación rápida final
   if(!validateStep1()||!validateStep2()||!validateStep3()){
     alert('Faltan datos por completar antes de ver el resumen.');
     return;
   }
-  // Guardar codeudores (si no se visitaron)
   for(let i=1;i<=state.numCodeudores;i++){guardarDatosCodeudor(i);}
   document.getElementById('resumenContenido').innerHTML=generarResumenHTML();
   document.getElementById('resumenModal').classList.add('show');
@@ -953,9 +1124,10 @@ function fileName(id){return state.archivosBase64[id]?.nombre||'No cargado';}
 function fileNameObj(id){return state.archivosBase64[id]?.nombre||'No';}
 function cerrarModalResumen(){document.getElementById('resumenModal').classList.remove('show');}
 
-/* Envío */
+/* ==============================
+   ENVÍO
+============================== */
 function confirmarEnvio(){
-  // Re-armar payload
   const nombres=val('nombres').trim(),apellidos=val('apellidos').trim();
   const datosFormulario={
     codigoRegistro:state.codigoRegistro,
@@ -983,7 +1155,6 @@ function confirmarEnvio(){
   }
   enviarFormularioInquilino(datosFormulario);
 }
-
 async function enviarFormularioInquilino(datosFormulario){
   mostrarOverlay(true,'Enviando documentos...');
   try{
@@ -1007,7 +1178,6 @@ async function enviarFormularioInquilino(datosFormulario){
     alert('Error de conexión. Intente nuevamente.');
   }
 }
-
 function mostrarOverlay(show,msg){
   const ov=document.getElementById('loadingOverlay');
   const lm=document.getElementById('loadingMsg');
@@ -1015,10 +1185,11 @@ function mostrarOverlay(show,msg){
   else ov.classList.remove('show');
 }
 
-/* Modal pago (stub) */
-function mostrarModalPago(){alert('Aquí iría el modal de pago (Nequi / Wompi).');}
-
-console.info('✅ [InquilinoWizard] v6.0 Mejorado');
+/* ==============================
+   UTILIDADES
+============================== */
+function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+console.info('✅ [InquilinoWizard] Producción listo v6.0');
 </script>
 </body>
 </html>
