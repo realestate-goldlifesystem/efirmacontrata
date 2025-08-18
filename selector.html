@@ -1,518 +1,183 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificando Acceso - E-firmaContrata</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        /* Estilos específicos del selector */
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        
-        .verificacion-container {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-        }
-        
-        .logo {
-            font-size: 60px;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #764ba2;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .status-message {
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 8px;
-            animation: fadeIn 0.5s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .status-message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .status-message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .status-message.warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
-        }
-        
-        .status-message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
-        .status-icon {
-            font-size: 48px;
-            margin: 20px 0;
-        }
-        
-        .status-icon.success { color: #28a745; }
-        .status-icon.error { color: #dc3545; }
-        .status-icon.warning { color: #ffc107; }
-        
-        h1 {
-            color: #333;
-            font-size: 24px;
-            margin: 20px 0;
-        }
-        
-        p {
-            color: #666;
-            line-height: 1.6;
-            margin: 15px 0;
-        }
-        
-        .code-display {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 14px;
-            color: #495057;
-            margin: 15px 0;
-            word-break: break-all;
-        }
-        
-        .btn-container {
-            margin-top: 30px;
-        }
-        
-        .btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #764ba2;
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            transition: all 0.3s;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        
-        .btn:hover {
-            background: #5a3d7a;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.3);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            margin-left: 10px;
-        }
-        
-        .btn-secondary:hover {
-            background: #545b62;
-        }
-        
-        .progress-steps {
-            display: flex;
-            justify-content: center;
-            margin: 30px 0;
-        }
-        
-        .step {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: #e0e0e0;
-            margin: 0 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: white;
-            transition: all 0.3s;
-        }
-        
-        .step.active {
-            background: #764ba2;
-            transform: scale(1.2);
-        }
-        
-        .step.completed {
-            background: #28a745;
-        }
-        
-        .debug-info {
-            margin-top: 30px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            text-align: left;
-            font-size: 12px;
-            color: #6c757d;
-            display: none;
-        }
-        
-        .debug-info.show {
-            display: block;
-        }
-        
-        .debug-info h4 {
-            margin: 0 0 10px 0;
-            color: #495057;
-        }
-        
-        .debug-info pre {
-            margin: 5px 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Verificando Acceso - E-firmaContrata</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<style>
+/* Estilos específicos del selector (con acentos corregidos) */
+body {
+  display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+.verificacion-container{background:#fff;padding:40px;border-radius:15px;box-shadow:0 20px 40px rgba(0,0,0,.1);text-align:center;max-width:520px;width:92%;}
+.logo{font-size:60px;margin-bottom:20px;animation:pulse 2s infinite}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+.spinner{border:3px solid #f3f3f3;border-top:3px solid #764ba2;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin:20px auto}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.status-message{margin:20px 0;padding:15px;border-radius:8px;animation:fadeIn .5s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.status-message.success{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
+.status-message.error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
+.status-message.warning{background:#fff3cd;color:#856404;border:1px solid #ffeeba}
+.status-message.info{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb}
+.progress-steps{display:flex;justify-content:center;margin:30px 0}
+.step{width:30px;height:30px;border-radius:50%;background:#e0e0e0;margin:0 10px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;transition:.3s}
+.step.active{background:#764ba2;transform:scale(1.2)}
+.step.completed{background:#28a745}
+.code-display{background:#f8f9fa;padding:10px;border-radius:5px;font-family:monospace;font-size:14px;color:#495057;margin:15px 0;word-break:break-all}
+.btn-container{margin-top:30px}
+.btn{display:inline-block;padding:12px 30px;background:#764ba2;color:#fff;text-decoration:none;border-radius:25px;transition:.3s;border:none;cursor:pointer;font-size:16px}
+.btn:hover{background:#5a3d7a;transform:translateY(-2px);box-shadow:0 5px 15px rgba(118,75,162,.3)}
+.debug-info{margin-top:30px;padding:15px;background:#f8f9fa;border-radius:8px;font-size:12px;color:#6c757d;display:none;text-align:left}
+.debug-info.show{display:block}
+</style>
 </head>
 <body>
-    <div class="verificacion-container">
-        <div class="logo">🔐</div>
-        <h1>Verificando Acceso</h1>
-        <div class="spinner" id="spinner"></div>
-        <p id="statusText">Validando su enlace de acceso...</p>
-        
-        <div class="progress-steps" id="progressSteps">
-            <div class="step active" id="step1">1</div>
-            <div class="step" id="step2">2</div>
-            <div class="step" id="step3">3</div>
-        </div>
-        
-        <div id="messageContainer"></div>
-        <div id="codeContainer"></div>
-        <div id="buttonContainer" class="btn-container" style="display: none;"></div>
-        
-        <!-- Debug info (solo visible si CONFIG.DEBUG = true) -->
-        <div id="debugInfo" class="debug-info">
-            <h4>🔧 Información de Debug</h4>
-            <pre id="debugContent"></pre>
-        </div>
-    </div>
-    
-    <script src="config.js"></script>
-    <script>
-        // Variables globales
-        let parametros = {
-            action: '',
-            cdr: '',
-            modo: 'normal',
-            docs: []
-        };
-        
-        // Función principal
-        async function verificarAcceso() {
-            console.log('🚀 Iniciando verificación de acceso');
-            
-            // Paso 1: Obtener parámetros
-            actualizarPaso(1, 'Leyendo parámetros...');
-            obtenerParametros();
-            
-            // Mostrar debug si está habilitado
-            if (CONFIG.DEBUG) {
-                mostrarDebug();
-            }
-            
-            // Validar parámetros básicos
-            if (!parametros.cdr || !parametros.action) {
-                console.error('❌ Parámetros inválidos:', parametros);
-                mostrarError('Enlace no válido', 'No se encontraron los parámetros necesarios');
-                return;
-            }
-            
-            console.log('✅ Parámetros válidos:', parametros);
-            
-            // Paso 2: Verificar con el servidor
-            actualizarPaso(2, 'Verificando con el servidor...');
-            await verificarEstadoLink();
-        }
-        
-        // Obtener parámetros de la URL
-        function obtenerParametros() {
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            parametros.action = urlParams.get('action') || '';
-            parametros.cdr = urlParams.get('cdr') || '';
-            parametros.modo = urlParams.get('modo') || 'normal';
-            
-            // Parsear documentos para corrección si existen
-            const docsParam = urlParams.get('docs');
-            if (docsParam) {
-                try {
-                    parametros.docs = JSON.parse(decodeURIComponent(docsParam));
-                } catch (e) {
-                    console.error('Error parseando documentos:', e);
-                    parametros.docs = [];
-                }
-            }
-            
-            console.log('📋 Parámetros obtenidos:', parametros);
-        }
-        
-        // Verificar estado del link con el servidor
-        async function verificarEstadoLink() {
-            const tipo = parametros.action.includes('inquilino') ? 'inquilino' : 'propietario';
-            
-            console.log(`🔍 Verificando link tipo: ${tipo}`);
-            
-            // Lista de códigos de prueba que siempre funcionan
-            const CODIGOS_PRUEBA = ['TEST001', 'TEST002', 'TEST003', 'DEMO'];
-            
-            // Si es un código de prueba, saltar verificación
-            if (CODIGOS_PRUEBA.includes(parametros.cdr)) {
-                console.log('✅ Código de prueba detectado, acceso automático');
-                linkActivo();
-                return;
-            }
-            
-            try {
-                // Construir URL para verificación
-                const url = `${CONFIG.API_URL}?accion=verificarLink&cdr=${encodeURIComponent(parametros.cdr)}&tipo=${tipo}`;
-                console.log('🌐 Verificando URL:', url);
-                
-                // Intentar verificar con el servidor
-                const response = await fetch(url, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                // Si la respuesta es exitosa, intentar parsear
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('📡 Respuesta del servidor:', data);
-                    
-                    if (data.success && data.activo) {
-                        linkActivo();
-                    } else {
-                        linkInactivo();
-                    }
-                } else {
-                    // Si hay error HTTP, asumir que el link está activo
-                    console.warn('⚠️ Error HTTP, asumiendo link activo');
-                    linkActivo();
-                }
-                
-            } catch (error) {
-                console.error('⚠️ Error verificando link:', error);
-                // En caso de error de red, asumir que el link está activo
-                console.log('✅ Error de conexión, procediendo con el formulario');
-                linkActivo();
-            }
-        }
-        
-        // Manejar link activo
-        function linkActivo() {
-            console.log('✅ Link activo, preparando redirección');
-            actualizarPaso(3, '¡Acceso verificado!');
-            
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('statusText').innerHTML = '✅ Enlace válido y activo';
-            
-            const messageHtml = `
-                <div class="status-message success">
-                    <div class="status-icon success">✅</div>
-                    <h2>Acceso Autorizado</h2>
-                    <p>Su enlace es válido. Será redirigido al formulario en unos segundos...</p>
-                </div>
-            `;
-            
-            document.getElementById('messageContainer').innerHTML = messageHtml;
-            
-            // Mostrar código de registro
-            document.getElementById('codeContainer').innerHTML = `
-                <div class="code-display">
-                    <strong>Código de Registro:</strong> ${parametros.cdr}
-                </div>
-            `;
-            
-            // Redirigir al formulario correspondiente después de 2 segundos
-            setTimeout(() => {
-                redirigirAFormulario();
-            }, 2000);
-        }
-        
-        // Manejar link inactivo
-        function linkInactivo() {
-            console.log('⚠️ Link inactivo o ya utilizado');
-            actualizarPaso(3, 'Enlace ya utilizado');
-            
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('statusText').innerHTML = '🔒 Este enlace ya fue utilizado';
-            
-            const messageHtml = `
-                <div class="status-message warning">
-                    <div class="status-icon warning">🔒</div>
-                    <h2>Enlace Ya Utilizado</h2>
-                    <p>Este enlace ya fue usado anteriormente para enviar documentos.</p>
-                    <p>Será redirigido a la página de confirmación...</p>
-                </div>
-            `;
-            
-            document.getElementById('messageContainer').innerHTML = messageHtml;
-            
-            // Mostrar código de registro
-            document.getElementById('codeContainer').innerHTML = `
-                <div class="code-display">
-                    <strong>Código de Registro:</strong> ${parametros.cdr}
-                </div>
-            `;
-            
-            // Redirigir a página de éxito con estado "usado"
-            setTimeout(() => {
-                window.location.href = `pagina-exito.html?estado=usado&cdr=${encodeURIComponent(parametros.cdr)}`;
-            }, 3000);
-        }
-        
-        // Redirigir al formulario apropiado
-        function redirigirAFormulario() {
-            let url = '';
-            
-            if (parametros.action === 'formulario_inquilino') {
-                url = `formulario-inquilino.html?cdr=${encodeURIComponent(parametros.cdr)}`;
-                
-                if (parametros.modo === 'correccion' && parametros.docs.length > 0) {
-                    url += `&modo=correccion&docs=${encodeURIComponent(JSON.stringify(parametros.docs))}`;
-                }
-                
-            } else if (parametros.action === 'formulario_propietario') {
-                url = `formulario-propietario.html?cdr=${encodeURIComponent(parametros.cdr)}`;
-                
-                if (parametros.modo === 'correccion' && parametros.docs.length > 0) {
-                    url += `&modo=correccion&docs=${encodeURIComponent(JSON.stringify(parametros.docs))}`;
-                }
-            }
-            
-            if (url) {
-                console.log('🚀 Redirigiendo a:', url);
-                window.location.href = url;
-            } else {
-                console.error('❌ No se pudo determinar el formulario destino');
-                mostrarError('Error de configuración', 'No se pudo determinar el formulario destino');
-            }
-        }
-        
-        // Actualizar indicador de paso
-        function actualizarPaso(paso, mensaje) {
-            console.log(`📍 Paso ${paso}: ${mensaje}`);
-            
-            // Actualizar texto
-            document.getElementById('statusText').textContent = mensaje;
-            
-            // Actualizar pasos visuales
-            for (let i = 1; i <= 3; i++) {
-                const stepElement = document.getElementById(`step${i}`);
-                if (i < paso) {
-                    stepElement.classList.remove('active');
-                    stepElement.classList.add('completed');
-                    stepElement.innerHTML = '✓';
-                } else if (i === paso) {
-                    stepElement.classList.add('active');
-                } else {
-                    stepElement.classList.remove('active', 'completed');
-                }
-            }
-        }
-        
-        // Mostrar error
-        function mostrarError(titulo, mensaje) {
-            console.error(`❌ Error: ${titulo} - ${mensaje}`);
-            
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('progressSteps').style.display = 'none';
-            
-            const messageHtml = `
-                <div class="status-message error">
-                    <div class="status-icon error">❌</div>
-                    <h2>${titulo}</h2>
-                    <p>${mensaje}</p>
-                </div>
-            `;
-            
-            document.getElementById('messageContainer').innerHTML = messageHtml;
-            document.getElementById('statusText').innerHTML = '❌ Error en la verificación';
-            
-            // Mostrar botón para volver
-            document.getElementById('buttonContainer').style.display = 'block';
-            document.getElementById('buttonContainer').innerHTML = `
-                <a href="https://realestate-goldlifesystem.github.io/efirmacontrata/" class="btn">
-                    Volver al Inicio
-                </a>
-            `;
-        }
-        
-        // Mostrar información de debug
-        function mostrarDebug() {
-            const debugInfo = document.getElementById('debugInfo');
-            const debugContent = document.getElementById('debugContent');
-            
-            debugInfo.classList.add('show');
-            debugContent.textContent = `
-URL: ${window.location.href}
+<div class="verificacion-container">
+  <div class="logo">🔐</div>
+  <h1>Verificando Acceso</h1>
+  <div class="spinner" id="spinner"></div>
+  <p id="statusText">Validando su enlace de acceso...</p>
+  <div class="progress-steps" id="progressSteps">
+    <div class="step active" id="step1">1</div>
+    <div class="step" id="step2">2</div>
+    <div class="step" id="step3">3</div>
+  </div>
+  <div id="messageContainer"></div>
+  <div id="codeContainer"></div>
+  <div id="buttonContainer" class="btn-container" style="display:none;"></div>
+  <div id="debugInfo" class="debug-info">
+    <h4>🔧 Información de Debug</h4>
+    <pre id="debugContent"></pre>
+  </div>
+</div>
+<script src="config.js"></script>
+<script>
+let parametros={action:'',cdr:'',modo:'normal',docs:[]};
+async function verificarAcceso(){
+  console.log('[Selector] Iniciando verificación');
+  actualizarPaso(1,'Leyendo parámetros...');
+  obtenerParametros();
+  if(CONFIG.DEBUG) mostrarDebug();
+  if(!parametros.cdr||!parametros.action){
+    mostrarError('Enlace no válido','Faltan parámetros requeridos');
+    return;
+  }
+  actualizarPaso(2,'Verificando con el servidor...');
+  await verificarEstadoLink();
+}
+function obtenerParametros(){
+  const urlParams=new URLSearchParams(window.location.search);
+  parametros.action=urlParams.get('action')||'';
+  parametros.cdr=urlParams.get('cdr')||'';
+  parametros.modo=urlParams.get('modo')||'normal';
+  const docsParam=urlParams.get('docs');
+  if(docsParam){try{parametros.docs=JSON.parse(decodeURIComponent(docsParam));}catch(e){parametros.docs=[];}}
+  console.log('[Selector] Parámetros:',parametros);
+}
+async function verificarEstadoLink(){
+  const tipo=parametros.action.includes('inquilino')?'inquilino':'propietario';
+  const CODIGOS_PRUEBA=['TEST001','TEST002','TEST003','DEMO'];
+  if(CODIGOS_PRUEBA.includes(parametros.cdr)){
+    console.log('[Selector] Código de prueba: acceso automático');
+    linkActivo();return;
+  }
+  try{
+    const url=`${CONFIG.API_URL}?accion=verificarLink&cdr=${encodeURIComponent(parametros.cdr)}&tipo=${tipo}`;
+    const response=await fetch(url,{method:'GET',mode:'cors'});
+    if(response.ok){
+      const data=await response.json();
+      if(data.success&&data.activo) linkActivo(); else linkInactivo();
+    }else{
+      console.warn('[Selector] HTTP no OK, asumiendo activo');
+      linkActivo();
+    }
+  }catch(e){
+    console.error('[Selector] Error verificación:',e);
+    linkActivo();
+  }
+}
+function linkActivo(){
+  actualizarPaso(3,'¡Acceso verificado!');
+  document.getElementById('spinner').style.display='none';
+  document.getElementById('statusText').innerHTML='✅ Enlace válido y activo';
+  document.getElementById('messageContainer').innerHTML=`
+    <div class="status-message success">
+      <h2>Acceso Autorizado</h2>
+      <p>Será redirigido al formulario...</p>
+    </div>`;
+  document.getElementById('codeContainer').innerHTML=`
+    <div class="code-display"><strong>Código de Registro:</strong> ${parametros.cdr}</div>`;
+  setTimeout(()=>redirigirAFormulario(),1500);
+}
+function linkInactivo(){
+  actualizarPaso(3,'Enlace ya utilizado');
+  document.getElementById('spinner').style.display='none';
+  document.getElementById('statusText').innerHTML='🔒 Enlace inactivo';
+  document.getElementById('messageContainer').innerHTML=`
+    <div class="status-message warning">
+      <h2>Enlace Ya Utilizado</h2>
+      <p>Este enlace ya fue usado anteriormente.</p>
+    </div>`;
+  document.getElementById('codeContainer').innerHTML=`
+    <div class="code-display"><strong>Código de Registro:</strong> ${parametros.cdr}</div>`;
+  setTimeout(()=>{window.location.href=`pagina-exito.html?estado=usado&cdr=${encodeURIComponent(parametros.cdr)}`;},2500);
+}
+function redirigirAFormulario(){
+  let url='';
+  if(parametros.action==='formulario_inquilino'){
+    url=`formulario-inquilino.html?cdr=${encodeURIComponent(parametros.cdr)}`;
+    if(parametros.modo==='correccion'&&parametros.docs.length>0){
+      url+=`&modo=correccion&docs=${encodeURIComponent(JSON.stringify(parametros.docs))}`;
+    }
+  }else if(parametros.action==='formulario_propietario'){
+    url=`formulario-propietario.html?cdr=${encodeURIComponent(parametros.cdr)}`;
+    if(parametros.modo==='correccion'&&parametros.docs.length>0){
+      url+=`&modo=correccion&docs=${encodeURIComponent(JSON.stringify(parametros.docs))}`;
+    }
+  }
+  if(url){console.log('[Selector] Redirigiendo a:',url);window.location.href=url;}
+  else mostrarError('Error','No se pudo determinar el destino');
+}
+function actualizarPaso(paso,mensaje){
+  document.getElementById('statusText').textContent=mensaje;
+  for(let i=1;i<=3;i++){
+    const el=document.getElementById(`step${i}`);
+    if(i<paso){el.classList.remove('active');el.classList.add('completed');el.textContent='✓';}
+    else if(i===paso){el.classList.add('active');}
+    else el.classList.remove('active','completed');
+  }
+}
+function mostrarError(titulo,mensaje){
+  document.getElementById('spinner').style.display='none';
+  document.getElementById('progressSteps').style.display='none';
+  document.getElementById('messageContainer').innerHTML=`
+    <div class="status-message error">
+      <h2>${titulo}</h2>
+      <p>${mensaje}</p>
+    </div>`;
+  document.getElementById('buttonContainer').style.display='block';
+  document.getElementById('buttonContainer').innerHTML=`
+    <a href="index.html" class="btn">Volver</a>`;
+}
+function mostrarDebug(){
+  if(!CONFIG.DEBUG)return;
+  const debugInfo=document.getElementById('debugInfo');
+  debugInfo.classList.add('show');
+  document.getElementById('debugContent').textContent=
+`URL: ${window.location.href}
 Action: ${parametros.action}
 CDR: ${parametros.cdr}
 Modo: ${parametros.modo}
 Docs: ${JSON.stringify(parametros.docs)}
 API URL: ${CONFIG.API_URL}
 Timestamp: ${new Date().toISOString()}
-User Agent: ${navigator.userAgent}
-            `;
-        }
-        
-        // Iniciar verificación al cargar la página
-        window.onload = function() {
-            console.log('═══════════════════════════════════════');
-            console.log('🔐 E-firmaContrata v2.0 - Selector');
-            console.log('📅 ' + new Date().toLocaleString());
-            console.log('═══════════════════════════════════════');
-            verificarAcceso();
-        };
-        
-        // Log de verificación
-        console.log('✅ Selector.html cargado correctamente');
-        console.log('📋 Versión: 2.0 CORREGIDA');
-    </script>
+UserAgent: ${navigator.userAgent}`;
+}
+window.onload=verificarAcceso;
+</script>
 </body>
 </html>
