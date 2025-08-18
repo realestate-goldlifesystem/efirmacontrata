@@ -1299,7 +1299,7 @@
     <script src="config.js"></script>
     <script>
         // ==========================================
-        // VARIABLES GLOBALES OPTIMIZADAS - CORREGIDAS
+        // VARIABLES GLOBALES OPTIMIZADAS - CORREGIDAS v3
         // ==========================================
         
         const state = {
@@ -1477,7 +1477,7 @@
         }
 
         // ==========================================
-        // LÓGICA DE DOCUMENTOS Y CODEUDORES CORREGIDA v2
+        // LÓGICA DE DOCUMENTOS Y CODEUDORES CORREGIDA v3
         // ==========================================
         
         function setDocumentType(isComplete) {
@@ -1634,7 +1634,7 @@
         }
 
         // ==========================================
-        // FUNCIONES DE LIMPIEZA Y RESET MEJORADAS - CORREGIDO ERROR DE SINTAXIS
+        // FUNCIONES DE LIMPIEZA Y RESET - CORREGIDAS v3
         // ==========================================
         
         function resetearTodoDesdeDocumento() {
@@ -1661,23 +1661,23 @@
             recalcularPasosDinamicos();
         }
 
-function limpiarDocumentosIdentidad() {
-    delete state.archivosBase64.docIdentidad;
-    delete state.archivosBase64.docIdentidadFrente;
-    delete state.archivosBase64.docIdentidadReverso;
-    
-    const inputs = ['docIdentidadCompleto', 'docIdentidadFrente', 'docIdentidadReverso'];
-    inputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.value = '';
-            const label = document.getElementById('label' + id.charAt(0).toUpperCase() + id.slice(1));
-            if (label) {
-                label.textContent = label.getAttribute('data-original') || 'Seleccionar archivo';
-                label.classList.remove('file-selected');
-            }
-        }
-    });
+        function limpiarDocumentosIdentidad() {
+            delete state.archivosBase64.docIdentidad;
+            delete state.archivosBase64.docIdentidadFrente;
+            delete state.archivosBase64.docIdentidadReverso;
+            
+            const inputs = ['docIdentidadCompleto', 'docIdentidadFrente', 'docIdentidadReverso'];
+            inputs.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = '';
+                    const label = document.getElementById('label' + id.charAt(0).toUpperCase() + id.slice(1));
+                    if (label) {
+                        label.textContent = label.getAttribute('data-original') || 'Seleccionar archivo';
+                        label.classList.remove('file-selected');
+                    }
+                }
+            });
             
             state.documentosIdentidadCargados = false;
             deshabilitarCodeudores();
@@ -1744,7 +1744,7 @@ function limpiarDocumentosIdentidad() {
         }
 
         // ==========================================
-        // NAVEGACIÓN MEJORADA v2
+        // NAVEGACIÓN MEJORADA v3
         // ==========================================
         
         function recalcularPasosDinamicos() {
@@ -2532,9 +2532,9 @@ function limpiarDocumentosIdentidad() {
         }
 
         // Log de sistema
-        console.info('🚀 EFirmaContrata v2.0 - Sistema corregido y validado');
+        console.info('🚀 EFirmaContrata v3.0 - Sistema corregido, validado y funcionando');
         console.info('📅 Última actualización: Enero 2025');
-        console.info('✅ Ajustes implementados: Revisión Final independiente, Codeudores como pasos, Reset completo');
+        console.info('✅ Correcciones aplicadas: Sintaxis corregida, Revisión Final independiente, Codeudores como páginas');
     </script>
 </body>
 </html>
