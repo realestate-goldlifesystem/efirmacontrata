@@ -1,183 +1,572 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Verificando Acceso - E-firmaContrata</title>
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<title>Selector de Formulario - Real Estate Gold Life System</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#667eea" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* Estilos específicos del selector (con acentos corregidos) */
-body {
-  display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;
-  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+:root {
+  --grad-start:#667eea;
+  --grad-end:#764ba2;
+  --bg:#0f1115;
+  --bg-alt:#1b1f27;
+  --panel:#1f2530;
+  --panel-alt:#252c38;
+  --border:#2f3947;
+  --text:#e6e9ef;
+  --text-dim:#a7b0c0;
+  --accent:#7f8cff;
+  --accent-hover:#95a3ff;
+  --danger:#ef5a5a;
+  --warn:#ffbe3d;
+  --success:#4cc59f;
+  --radius:18px;
+  --radius-sm:8px;
+  --shadow:0 4px 16px -4px rgba(0,0,0,.5),0 2px 4px -1px rgba(0,0,0,.25);
+  --focus-ring:0 0 0 3px rgba(127,140,255,0.45);
+  font-size:16px;
 }
-.verificacion-container{background:#fff;padding:40px;border-radius:15px;box-shadow:0 20px 40px rgba(0,0,0,.1);text-align:center;max-width:520px;width:92%;}
-.logo{font-size:60px;margin-bottom:20px;animation:pulse 2s infinite}
-@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
-.spinner{border:3px solid #f3f3f3;border-top:3px solid #764ba2;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite;margin:20px auto}
-@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-.status-message{margin:20px 0;padding:15px;border-radius:8px;animation:fadeIn .5s}
-@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-.status-message.success{background:#d4edda;color:#155724;border:1px solid #c3e6cb}
-.status-message.error{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb}
-.status-message.warning{background:#fff3cd;color:#856404;border:1px solid #ffeeba}
-.status-message.info{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb}
-.progress-steps{display:flex;justify-content:center;margin:30px 0}
-.step{width:30px;height:30px;border-radius:50%;background:#e0e0e0;margin:0 10px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;transition:.3s}
-.step.active{background:#764ba2;transform:scale(1.2)}
-.step.completed{background:#28a745}
-.code-display{background:#f8f9fa;padding:10px;border-radius:5px;font-family:monospace;font-size:14px;color:#495057;margin:15px 0;word-break:break-all}
-.btn-container{margin-top:30px}
-.btn{display:inline-block;padding:12px 30px;background:#764ba2;color:#fff;text-decoration:none;border-radius:25px;transition:.3s;border:none;cursor:pointer;font-size:16px}
-.btn:hover{background:#5a3d7a;transform:translateY(-2px);box-shadow:0 5px 15px rgba(118,75,162,.3)}
-.debug-info{margin-top:30px;padding:15px;background:#f8f9fa;border-radius:8px;font-size:12px;color:#6c757d;display:none;text-align:left}
-.debug-info.show{display:block}
+
+* { box-sizing:border-box; }
+
+html,body {
+  margin:0;
+  padding:0;
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;
+  background:radial-gradient(circle at 30% 20%,#222b36 0%, #11161d 55%, #0b0d11 100%);
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+body::before {
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+     radial-gradient(circle at 80% 120%,rgba(118,75,162,.12),transparent 60%),
+     radial-gradient(circle at -10% -20%,rgba(102,126,234,.18),transparent 70%);
+  pointer-events:none;
+  z-index:-1;
+}
+
+header {
+  max-width:980px;
+  margin:0 auto;
+  padding:42px 24px 16px;
+  text-align:center;
+}
+
+.brand-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 18px;
+  background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:50px;
+  font-size:.83rem;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  color:var(--text-dim);
+  backdrop-filter:blur(6px);
+}
+
+.brand-badge span {
+  background:linear-gradient(135deg,var(--grad-start),var(--grad-end));
+  -webkit-background-clip:text;
+  color:transparent;
+  font-weight:600;
+}
+
+h1 {
+  margin:28px 0 12px;
+  font-size:clamp(1.9rem,2.6vw,2.6rem);
+  line-height:1.15;
+  background:linear-gradient(90deg,var(--grad-start),var(--grad-end));
+  -webkit-background-clip:text;
+  color:transparent;
+  font-weight:700;
+  letter-spacing:.5px;
+}
+
+.subtitle {
+  max-width:640px;
+  margin:0 auto 38px;
+  font-size:1rem;
+  line-height:1.55;
+  color:var(--text-dim);
+}
+
+main {
+  max-width:1100px;
+  margin:0 auto;
+  padding:0 24px 80px;
+}
+
+.section-label {
+  font-size:.75rem;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:var(--text-dim);
+  margin:0 0 20px 4px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.grid {
+  display:grid;
+  gap:28px;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+}
+
+.card {
+  position:relative;
+  background:linear-gradient(160deg,var(--panel) 0%, var(--panel-alt) 100%);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:24px 22px 26px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  overflow:hidden;
+  transition:all .35s cubic-bezier(.4,.2,.2,1);
+  cursor:pointer;
+}
+
+.card::before {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.08),transparent 65%),
+    radial-gradient(circle at 120% 120%,rgba(127,140,255,.16),transparent 50%);
+  opacity:0;
+  transition:opacity .45s;
+  pointer-events:none;
+}
+
+.card:hover::before {
+  opacity:.9;
+}
+
+.card:hover {
+  transform:translateY(-6px);
+  box-shadow:0 10px 26px -6px rgba(0,0,0,.55),0 4px 10px -2px rgba(0,0,0,.4);
+  border-color:rgba(127,140,255,.55);
+}
+
+.card-icon {
+  width:54px;
+  height:54px;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(135deg,var(--grad-start),var(--grad-end));
+  border-radius:16px;
+  font-size:26px;
+  color:#fff;
+  box-shadow:0 4px 14px -2px rgba(118,75,162,.6);
+  flex-shrink:0;
+}
+
+.card-title {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.card-title h2 {
+  font-size:1.15rem;
+  margin:0;
+  font-weight:600;
+  letter-spacing:.3px;
+}
+
+.card-title p {
+  margin:0;
+  font-size:.87rem;
+  color:var(--text-dim);
+  line-height:1.4;
+}
+
+.badges {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:auto;
+}
+
+.badge {
+  font-size:.65rem;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  padding:5px 10px 4px;
+  border-radius:40px;
+  background:rgba(127,140,255,.12);
+  color:var(--accent);
+  border:1px solid rgba(127,140,255,.3);
+  font-weight:500;
+}
+
+.badge.warn {
+  background:rgba(255,190,61,.12);
+  color:var(--warn);
+  border-color:rgba(255,190,61,.4);
+}
+
+.badge.new {
+  background:rgba(76,197,159,.13);
+  color:var(--success);
+  border-color:rgba(76,197,159,.45);
+}
+
+.actions {
+  margin-top:42px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+}
+
+.button {
+  --btn-bg:linear-gradient(135deg,var(--grad-start),var(--grad-end));
+  --btn-bg-hover:linear-gradient(135deg,#7688ff,#8d60c7);
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding:14px 28px;
+  font-size:.9rem;
+  font-weight:600;
+  letter-spacing:.5px;
+  border:none;
+  outline:none;
+  cursor:pointer;
+  border-radius:50px;
+  background:var(--btn-bg);
+  color:#fff;
+  box-shadow:0 6px 20px -4px rgba(118,75,162,.55), 0 3px 8px -2px rgba(0,0,0,.5);
+  transition:all .35s cubic-bezier(.4,.2,.2,1);
+  text-decoration:none;
+}
+
+.button:hover {
+  background:var(--btn-bg-hover);
+  transform:translateY(-4px);
+  box-shadow:0 10px 26px -6px rgba(118,75,162,.65),0 4px 10px -2px rgba(0,0,0,.55);
+}
+
+.button:active {
+  transform:translateY(-1px);
+}
+
+.button.secondary {
+  --btn-bg:linear-gradient(145deg,#2a313d,#20262f);
+  --btn-bg-hover:linear-gradient(145deg,#313a47,#262e38);
+  color:var(--text-dim);
+  box-shadow:0 4px 14px -3px rgba(0,0,0,.55);
+  border:1px solid var(--border);
+}
+
+.button.secondary:hover {
+  color:var(--text);
+  border-color:rgba(127,140,255,.4);
+}
+
+.notice {
+  margin-top:54px;
+  padding:18px 22px;
+  background:linear-gradient(145deg,#1f2530,#1b212a);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-size:.8rem;
+  line-height:1.4;
+  color:var(--text-dim);
+  display:flex;
+  gap:14px;
+  align-items:flex-start;
+}
+
+.notice strong {
+  color:var(--accent);
+  font-weight:600;
+}
+
+.inline-icon {
+  font-size:1.15rem;
+  line-height:1;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));
+}
+
+.fade-in {
+  animation:fade .7s ease .05s both;
+}
+
+@keyframes fade {
+  from { opacity:0; transform:translateY(14px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+.focus-outline:focus-visible {
+  outline:none;
+  box-shadow:var(--focus-ring);
+}
+
+footer {
+  max-width:980px;
+  margin:0 auto;
+  padding:30px 24px 60px;
+  font-size:.7rem;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  color:#556074;
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+footer span {
+  opacity:.9;
+}
+
+/* RESPONSIVE */
+@media (max-width:640px) {
+  header { padding-top:32px; }
+  .card { padding:22px 20px 24px; }
+  .card-icon { width:50px;height:50px;font-size:24px; }
+  h1 { font-size:2rem; }
+  .subtitle { font-size:.93rem; }
+  .actions { flex-direction:column; align-items:stretch; }
+  .button { justify-content:center; width:100%; }
+}
+
 </style>
 </head>
 <body>
-<div class="verificacion-container">
-  <div class="logo">🔐</div>
-  <h1>Verificando Acceso</h1>
-  <div class="spinner" id="spinner"></div>
-  <p id="statusText">Validando su enlace de acceso...</p>
-  <div class="progress-steps" id="progressSteps">
-    <div class="step active" id="step1">1</div>
-    <div class="step" id="step2">2</div>
-    <div class="step" id="step3">3</div>
+<header class="fade-in">
+  <div class="brand-badge" aria-label="Identidad del sistema">
+    <span>E‑firmaContrata</span><sup style="font-size:.55rem; opacity:.7;">v8</sup>
   </div>
-  <div id="messageContainer"></div>
-  <div id="codeContainer"></div>
-  <div id="buttonContainer" class="btn-container" style="display:none;"></div>
-  <div id="debugInfo" class="debug-info">
-    <h4>🔧 Información de Debug</h4>
-    <pre id="debugContent"></pre>
-  </div>
-</div>
-<script src="config.js"></script>
+  <h1>Gestión de Documentos</h1>
+  <p class="subtitle">
+    Selecciona el tipo de formulario que deseas diligenciar o continúa el proceso
+    con tu código de registro (CDR). Esta interfaz unifica la experiencia visual
+    de los formularios del sistema.
+  </p>
+</header>
+
+<main id="app" class="fade-in" tabindex="-1">
+  <!-- Contenido dinámico se inserta por JS -->
+</main>
+
+<footer>
+  <span>Real Estate Gold Life System</span>
+  <span>·</span>
+  <span>Automatización &amp; Seguridad</span>
+</footer>
+
 <script>
-let parametros={action:'',cdr:'',modo:'normal',docs:[]};
-async function verificarAcceso(){
-  console.log('[Selector] Iniciando verificación');
-  actualizarPaso(1,'Leyendo parámetros...');
-  obtenerParametros();
-  if(CONFIG.DEBUG) mostrarDebug();
-  if(!parametros.cdr||!parametros.action){
-    mostrarError('Enlace no válido','Faltan parámetros requeridos');
-    return;
-  }
-  actualizarPaso(2,'Verificando con el servidor...');
-  await verificarEstadoLink();
-}
-function obtenerParametros(){
-  const urlParams=new URLSearchParams(window.location.search);
-  parametros.action=urlParams.get('action')||'';
-  parametros.cdr=urlParams.get('cdr')||'';
-  parametros.modo=urlParams.get('modo')||'normal';
-  const docsParam=urlParams.get('docs');
-  if(docsParam){try{parametros.docs=JSON.parse(decodeURIComponent(docsParam));}catch(e){parametros.docs=[];}}
-  console.log('[Selector] Parámetros:',parametros);
-}
-async function verificarEstadoLink(){
-  const tipo=parametros.action.includes('inquilino')?'inquilino':'propietario';
-  const CODIGOS_PRUEBA=['TEST001','TEST002','TEST003','DEMO'];
-  if(CODIGOS_PRUEBA.includes(parametros.cdr)){
-    console.log('[Selector] Código de prueba: acceso automático');
-    linkActivo();return;
-  }
-  try{
-    const url=`${CONFIG.API_URL}?accion=verificarLink&cdr=${encodeURIComponent(parametros.cdr)}&tipo=${tipo}`;
-    const response=await fetch(url,{method:'GET',mode:'cors'});
-    if(response.ok){
-      const data=await response.json();
-      if(data.success&&data.activo) linkActivo(); else linkInactivo();
-    }else{
-      console.warn('[Selector] HTTP no OK, asumiendo activo');
-      linkActivo();
+(function(){
+  const QS = new URLSearchParams(window.location.search);
+  const action = (QS.get('action') || '').trim();
+  const cdr = (QS.get('cdr') || '').trim();
+  const app = document.getElementById('app');
+
+  function createEl(tag, opts={}) {
+    const el = document.createElement(tag);
+    if (opts.class) el.className = opts.class;
+    if (opts.html) el.innerHTML = opts.html;
+    if (opts.text) el.textContent = opts.text;
+    if (opts.attrs) {
+      Object.entries(opts.attrs).forEach(([k,v]) => el.setAttribute(k,v));
     }
-  }catch(e){
-    console.error('[Selector] Error verificación:',e);
-    linkActivo();
+    return el;
   }
-}
-function linkActivo(){
-  actualizarPaso(3,'¡Acceso verificado!');
-  document.getElementById('spinner').style.display='none';
-  document.getElementById('statusText').innerHTML='✅ Enlace válido y activo';
-  document.getElementById('messageContainer').innerHTML=`
-    <div class="status-message success">
-      <h2>Acceso Autorizado</h2>
-      <p>Será redirigido al formulario...</p>
-    </div>`;
-  document.getElementById('codeContainer').innerHTML=`
-    <div class="code-display"><strong>Código de Registro:</strong> ${parametros.cdr}</div>`;
-  setTimeout(()=>redirigirAFormulario(),1500);
-}
-function linkInactivo(){
-  actualizarPaso(3,'Enlace ya utilizado');
-  document.getElementById('spinner').style.display='none';
-  document.getElementById('statusText').innerHTML='🔒 Enlace inactivo';
-  document.getElementById('messageContainer').innerHTML=`
-    <div class="status-message warning">
-      <h2>Enlace Ya Utilizado</h2>
-      <p>Este enlace ya fue usado anteriormente.</p>
-    </div>`;
-  document.getElementById('codeContainer').innerHTML=`
-    <div class="code-display"><strong>Código de Registro:</strong> ${parametros.cdr}</div>`;
-  setTimeout(()=>{window.location.href=`pagina-exito.html?estado=usado&cdr=${encodeURIComponent(parametros.cdr)}`;},2500);
-}
-function redirigirAFormulario(){
-  let url='';
-  if(parametros.action==='formulario_inquilino'){
-    url=`formulario-inquilino.html?cdr=${encodeURIComponent(parametros.cdr)}`;
-    if(parametros.modo==='correccion'&&parametros.docs.length>0){
-      url+=`&modo=correccion&docs=${encodeURIComponent(JSON.stringify(parametros.docs))}`;
+
+  function sanitizeCDR(value){
+    return value.replace(/[^A-Za-z0-9-_]/g,'').slice(0,32);
+  }
+
+  function renderDefault(){
+    app.innerHTML = '';
+
+    const sectionLabel = createEl('div',{ class:'section-label', html:'<span class="inline-icon">📂</span> Tipos de formulario'});
+    app.appendChild(sectionLabel);
+
+    const grid = createEl('div',{ class:'grid', attrs:{ role:'list' }});
+
+    const cards = [
+      {
+        icon:'👤',
+        title:'Formulario Inquilino',
+        desc:'Registro y carga de documentación requerida para el arrendamiento.',
+        badges:['Obligatorio','Nuevo'],
+        url: buildURL('formulario_inquilino')
+      },
+      {
+        icon:'🏠',
+        title:'Formulario Propietario',
+        desc:'Envío de documentos del propietario para validación y elaboración de contrato.',
+        badges:['Obligatorio'],
+        url: buildURL('formulario_propietario')
+      },
+      {
+        icon:'🧾',
+        title:'Validar Código (CDR)',
+        desc:'Ingresa tu código para continuar un proceso ya iniciado.',
+        badges:['Utilidad'],
+        url: '#cdr-anchor',
+        custom: true
+      }
+    ];
+
+    cards.forEach(card => {
+      const cardEl = createEl('article',{ class:'card focus-outline', attrs:{ tabindex:'0', role:'listitem' } });
+      cardEl.addEventListener('click', () => {
+        if (card.custom) {
+          scrollToCDR();
+        } else {
+          window.location.href = card.url;
+        }
+      });
+      cardEl.addEventListener('keydown',(ev)=>{
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          cardEl.click();
+        }
+      });
+
+      const icon = createEl('div',{ class:'card-icon', text:card.icon });
+      const titleWrap = createEl('div',{ class:'card-title' });
+      titleWrap.appendChild(createEl('h2',{ text:card.title }));
+      titleWrap.appendChild(createEl('p',{ text:card.desc }));
+      const badgesWrap = createEl('div',{ class:'badges' });
+      card.badges.forEach(b => {
+        const cls = 'badge ' + (b.toLowerCase()==='nuevo' || b.toLowerCase()==='new' ? 'new' : (b.toLowerCase().includes('oblig') ? '' : (b.toLowerCase().includes('util') ? 'warn' : '')));
+        badgesWrap.appendChild(createEl('span',{ class: cls.trim(), text:b }));
+      });
+
+      cardEl.appendChild(icon);
+      cardEl.appendChild(titleWrap);
+      cardEl.appendChild(badgesWrap);
+      grid.appendChild(cardEl);
+    });
+
+    app.appendChild(grid);
+
+    // Acción rápida
+    const actions = createEl('div',{ class:'actions' });
+    const btnInq = createEl('a',{ class:'button', text:'📋 Iniciar como Inquilino', attrs:{ href:buildURL('formulario_inquilino') } });
+    const btnProp = createEl('a',{ class:'button secondary', text:'🏠 Iniciar como Propietario', attrs:{ href:buildURL('formulario_propietario') } });
+    actions.appendChild(btnInq);
+    actions.appendChild(btnProp);
+    app.appendChild(actions);
+
+    // Bloque CDR
+    const notice = createEl('div',{ class:'notice', attrs:{ id:'cdr-anchor' }});
+    notice.innerHTML = `
+      <div class="inline-icon">🔑</div>
+      <div>
+        <strong>Código de Registro (CDR):</strong><br>
+        Si ya recibiste un enlace o estás retomando el proceso, ingresa tu CDR para continuar:
+        <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:10px;">
+          <input id="cdrInput" type="text" placeholder="Ej: ABC123" maxlength="32"
+                 style="flex:1; min-width:160px; padding:12px 14px; border-radius:12px;
+                        border:1px solid var(--border); background:#161a20; color:var(--text);
+                        font-family:inherit; font-size:.9rem; letter-spacing:.5px;"
+                 aria-label="Código de registro" />
+          <button id="cdrGo" class="button" style="padding:12px 22px; font-size:.78rem; letter-spacing:1px;">Continuar</button>
+        </div>
+        <div id="cdrMsg" style="margin-top:10px; font-size:.7rem; letter-spacing:.5px; color:var(--text-dim);"></div>
+      </div>
+    `;
+    app.appendChild(notice);
+
+    document.getElementById('cdrGo').addEventListener('click', handleCDR);
+    document.getElementById('cdrInput').addEventListener('keydown', e=>{
+      if(e.key==='Enter'){ handleCDR(); }
+    });
+  }
+
+  function buildURL(formAction){
+    if (cdr) {
+      return `selector.html?action=${encodeURIComponent(formAction)}&cdr=${encodeURIComponent(cdr)}`;
     }
-  }else if(parametros.action==='formulario_propietario'){
-    url=`formulario-propietario.html?cdr=${encodeURIComponent(parametros.cdr)}`;
-    if(parametros.modo==='correccion'&&parametros.docs.length>0){
-      url+=`&modo=correccion&docs=${encodeURIComponent(JSON.stringify(parametros.docs))}`;
+    return `selector.html?action=${encodeURIComponent(formAction)}`;
+  }
+
+  function handleCDR(){
+    const input = document.getElementById('cdrInput');
+    const msg = document.getElementById('cdrMsg');
+    const value = sanitizeCDR(input.value);
+    if (!value) {
+      msg.textContent = 'Ingresa un CDR válido.';
+      msg.style.color = 'var(--danger)';
+      return;
+    }
+    msg.textContent = 'Redirigiendo...';
+    msg.style.color = 'var(--accent)';
+    setTimeout(()=>{
+      window.location.href = `selector.html?action=formulario_inquilino&cdr=${encodeURIComponent(value)}`;
+    },250);
+  }
+
+  function scrollToCDR(){
+    const anchor = document.getElementById('cdr-anchor');
+    if (anchor) {
+      anchor.scrollIntoView({ behavior:'smooth', block:'start' });
+      anchor.animate([{ backgroundColor:'rgba(127,140,255,0.15)' }, { backgroundColor:'transparent' }], {
+        duration:1400,
+        easing:'ease'
+      });
+      const input = document.getElementById('cdrInput');
+      if (input) input.focus({ preventScroll:true });
     }
   }
-  if(url){console.log('[Selector] Redirigiendo a:',url);window.location.href=url;}
-  else mostrarError('Error','No se pudo determinar el destino');
-}
-function actualizarPaso(paso,mensaje){
-  document.getElementById('statusText').textContent=mensaje;
-  for(let i=1;i<=3;i++){
-    const el=document.getElementById(`step${i}`);
-    if(i<paso){el.classList.remove('active');el.classList.add('completed');el.textContent='✓';}
-    else if(i===paso){el.classList.add('active');}
-    else el.classList.remove('active','completed');
+
+  function renderInquilinoDirect(cdrVal){
+    app.innerHTML = '';
+    const wrap = createEl('div',{ class:'fade-in' });
+    wrap.innerHTML = `
+      <div class="section-label"><span class="inline-icon">📋</span> Formulario Inquilino</div>
+      <div style="background:linear-gradient(140deg,var(--panel) 0%,var(--panel-alt) 100%);
+                  border:1px solid var(--border); padding:32px 30px; border-radius:var(--radius);
+                  max-width:720px; margin:0 auto; box-shadow:var(--shadow);">
+        <h2 style="margin:0 0 10px; font-size:1.55rem; letter-spacing:.5px;
+                   background:linear-gradient(90deg,var(--grad-start),var(--grad-end));
+                   -webkit-background-clip:text; color:transparent;">
+          Inicio de Formulario del Inquilino
+        </h2>
+        <p style="margin:0 0 24px; color:var(--text-dim); line-height:1.5;">
+          CDR detectado: <strong style="color:var(--accent);">${cdrVal ? cdrVal : '(no provisto)'}</strong><br>
+          Pulsa el botón para continuar al formulario principal y adjuntar tus documentos.
+        </p>
+        <div style="display:flex; gap:14px; flex-wrap:wrap;">
+          <a href="formulario_inquilino.html?cdr=${encodeURIComponent(cdrVal)}"
+             class="button" style="flex:1; min-width:200px; justify-content:center;">📤 Continuar</a>
+          <a href="selector.html" class="button secondary" style="flex:1; min-width:200px; justify-content:center;">◀ Volver</a>
+        </div>
+        <div style="margin-top:26px; font-size:.72rem; line-height:1.4; color:var(--text-dim); letter-spacing:.4px;">
+          Si tu CDR no es correcto regresa y verifica el enlace original que recibiste por correo.
+        </div>
+      </div>
+    `;
+    app.appendChild(wrap);
   }
-}
-function mostrarError(titulo,mensaje){
-  document.getElementById('spinner').style.display='none';
-  document.getElementById('progressSteps').style.display='none';
-  document.getElementById('messageContainer').innerHTML=`
-    <div class="status-message error">
-      <h2>${titulo}</h2>
-      <p>${mensaje}</p>
-    </div>`;
-  document.getElementById('buttonContainer').style.display='block';
-  document.getElementById('buttonContainer').innerHTML=`
-    <a href="index.html" class="btn">Volver</a>`;
-}
-function mostrarDebug(){
-  if(!CONFIG.DEBUG)return;
-  const debugInfo=document.getElementById('debugInfo');
-  debugInfo.classList.add('show');
-  document.getElementById('debugContent').textContent=
-`URL: ${window.location.href}
-Action: ${parametros.action}
-CDR: ${parametros.cdr}
-Modo: ${parametros.modo}
-Docs: ${JSON.stringify(parametros.docs)}
-API URL: ${CONFIG.API_URL}
-Timestamp: ${new Date().toISOString()}
-UserAgent: ${navigator.userAgent}`;
-}
-window.onload=verificarAcceso;
+
+  // Lógica de enrutamiento
+  if (action === 'formulario_inquilino' && cdr) {
+    renderInquilinoDirect(cdr);
+  } else {
+    renderDefault();
+  }
+
+})();
 </script>
 </body>
 </html>
