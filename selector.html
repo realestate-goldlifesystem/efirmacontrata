@@ -10,6 +10,7 @@
   --secondary: #764ba2;
   --success: #28a745;
   --danger: #dc3545;
+  --warning: #ffc107;
   --dark: #1a1a1a;
   --light: #f8f9fa;
   --border: #dee2e6;
@@ -73,6 +74,55 @@ body {
   padding: 40px 30px;
 }
 
+/* Estados de validación */
+.validation-state {
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.validation-state.checking {
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  color: #1565c0;
+}
+
+.validation-state.valid {
+  background: #e8f5e9;
+  border: 1px solid #4caf50;
+  color: #2e7d32;
+}
+
+.validation-state.used {
+  background: #fff3e0;
+  border: 1px solid #ff9800;
+  color: #e65100;
+}
+
+.validation-state.invalid {
+  background: #ffebee;
+  border: 1px solid #f44336;
+  color: #c62828;
+}
+
+.validation-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.validation-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.validation-message {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Loading */
 .loading {
   text-align: center;
   padding: 40px;
@@ -93,38 +143,7 @@ body {
   100% { transform: rotate(360deg); }
 }
 
-.error-container {
-  text-align: center;
-  padding: 20px;
-}
-
-.error-icon {
-  font-size: 60px;
-  margin-bottom: 20px;
-}
-
-.error-title {
-  color: var(--danger);
-  font-size: 24px;
-  margin-bottom: 10px;
-}
-
-.error-message {
-  color: #666;
-  margin-bottom: 30px;
-  line-height: 1.6;
-}
-
-.success-container {
-  text-align: center;
-  padding: 20px;
-}
-
-.success-icon {
-  font-size: 60px;
-  margin-bottom: 20px;
-}
-
+/* Botones */
 .btn {
   display: inline-block;
   padding: 12px 30px;
@@ -134,6 +153,8 @@ body {
   border-radius: 8px;
   font-weight: 600;
   transition: transform 0.3s ease;
+  cursor: pointer;
+  border: none;
 }
 
 .btn:hover {
@@ -147,39 +168,17 @@ body {
   margin-left: 10px;
 }
 
-.validation-info {
-  background: #f0f4ff;
-  border-left: 4px solid var(--primary);
-  padding: 15px;
-  border-radius: 5px;
-  margin-bottom: 20px;
+.btn-warning {
+  background: var(--warning);
+  color: var(--dark);
 }
 
-.validation-info h3 {
-  color: var(--primary);
-  margin-bottom: 8px;
-  font-size: 16px;
-}
-
-.validation-info p {
-  color: #666;
-  font-size: 14px;
-  margin: 0;
-}
-
-.debug-info {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.8);
+.btn-success {
+  background: var(--success);
   color: white;
-  padding: 10px;
-  border-radius: 5px;
-  font-family: monospace;
-  font-size: 12px;
-  max-width: 300px;
 }
 
+/* Opciones de formulario */
 .form-selector {
   display: flex;
   gap: 15px;
@@ -205,6 +204,12 @@ body {
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
+.form-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .form-option-icon {
   font-size: 40px;
   margin-bottom: 10px;
@@ -219,6 +224,85 @@ body {
 .form-option-desc {
   font-size: 12px;
   color: #666;
+}
+
+/* Info box */
+.info-box {
+  background: #f0f4ff;
+  border-left: 4px solid var(--primary);
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.info-box h3 {
+  color: var(--primary);
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.info-box p {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Debug */
+.debug-info {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 12px;
+  max-width: 300px;
+}
+
+/* Detalles del registro */
+.registro-details {
+  background: var(--light);
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.registro-details h4 {
+  color: var(--primary);
+  margin-bottom: 15px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #666;
+  font-size: 14px;
+}
+
+.detail-value {
+  color: #333;
+  font-size: 14px;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
 }
 </style>
 </head>
@@ -259,6 +343,13 @@ let cdr = params.get('cdr');
 let tipo = params.get('tipo');
 let modo = params.get('modo');
 
+// Estado de validación
+let estadoValidacion = {
+  inquilino: null,
+  propietario: null,
+  datosRegistro: null
+};
+
 // Debug
 function debug(msg) {
   if (CONFIG.DEBUG) {
@@ -294,10 +385,15 @@ async function procesarAcceso() {
     return;
   }
   
-  // Si hay CDR pero no action, determinar qué hacer
-  if (cdr && !action) {
-    mostrarOpcionesParaCDR(cdr);
-    return;
+  // Si hay CDR, primero validar su estado
+  if (cdr) {
+    await validarEstadoCDR(cdr);
+    
+    // Si no hay action específica, mostrar opciones basadas en validación
+    if (!action) {
+      mostrarOpcionesSegunEstado();
+      return;
+    }
   }
   
   // Procesar según la acción
@@ -307,7 +403,7 @@ async function procesarAcceso() {
         mostrarError('Código de registro requerido');
         return;
       }
-      redirigirFormularioInquilino(cdr);
+      await procesarAccesoInquilino(cdr);
       break;
       
     case 'formulario_propietario':
@@ -315,7 +411,7 @@ async function procesarAcceso() {
         mostrarError('Código de registro requerido');
         return;
       }
-      redirigirFormularioPropietario(cdr);
+      await procesarAccesoPropietario(cdr);
       break;
       
     case 'correccion':
@@ -331,11 +427,213 @@ async function procesarAcceso() {
   }
 }
 
+// Validar estado del CDR
+async function validarEstadoCDR(cdr) {
+  const contentEl = document.getElementById('content');
+  
+  // Mostrar estado de validación
+  contentEl.innerHTML = `
+    <div class="validation-state checking">
+      <div class="validation-icon">🔍</div>
+      <div class="validation-title">Verificando Estado</div>
+      <div class="validation-message">Consultando el estado del registro ${cdr}...</div>
+    </div>
+  `;
+  
+  try {
+    // Verificar estado del inquilino
+    const responseInq = await fetch(
+      `${CONFIG.API_URL}?accion=verificarLink&cdr=${encodeURIComponent(cdr)}&tipo=inquilino`
+    );
+    
+    if (responseInq.ok) {
+      const resultInq = await responseInq.json();
+      estadoValidacion.inquilino = resultInq;
+      estadoValidacion.datosRegistro = resultInq.datosRegistro;
+    }
+    
+    // Verificar estado del propietario
+    const responseProp = await fetch(
+      `${CONFIG.API_URL}?accion=verificarLink&cdr=${encodeURIComponent(cdr)}&tipo=propietario`
+    );
+    
+    if (responseProp.ok) {
+      const resultProp = await responseProp.json();
+      estadoValidacion.propietario = resultProp;
+    }
+    
+    debug('Estado validación inquilino: ' + JSON.stringify(estadoValidacion.inquilino));
+    debug('Estado validación propietario: ' + JSON.stringify(estadoValidacion.propietario));
+    
+  } catch (error) {
+    console.error('Error validando CDR:', error);
+    
+    // En modo debug, permitir continuar
+    if (CONFIG.DEBUG) {
+      estadoValidacion.inquilino = { activo: true, mensaje: 'Modo debug' };
+      estadoValidacion.propietario = { activo: true, mensaje: 'Modo debug' };
+    } else {
+      mostrarError('Error verificando el estado del registro');
+    }
+  }
+}
+
+// Procesar acceso inquilino
+async function procesarAccesoInquilino(cdr) {
+  // Verificar si ya fue usado
+  if (estadoValidacion.inquilino && !estadoValidacion.inquilino.activo) {
+    mostrarFormularioYaUsado('inquilino', cdr);
+    return;
+  }
+  
+  // Si está activo, redirigir
+  redirigirFormularioInquilino(cdr);
+}
+
+// Procesar acceso propietario
+async function procesarAccesoPropietario(cdr) {
+  // Verificar si ya fue usado
+  if (estadoValidacion.propietario && !estadoValidacion.propietario.activo) {
+    mostrarFormularioYaUsado('propietario', cdr);
+    return;
+  }
+  
+  // Si está activo, redirigir
+  redirigirFormularioPropietario(cdr);
+}
+
+// Mostrar opciones según estado
+function mostrarOpcionesSegunEstado() {
+  const contentEl = document.getElementById('content');
+  
+  const inquilinoUsado = estadoValidacion.inquilino && !estadoValidacion.inquilino.activo;
+  const propietarioUsado = estadoValidacion.propietario && !estadoValidacion.propietario.activo;
+  
+  let html = '';
+  
+  // Si hay datos del registro, mostrarlos
+  if (estadoValidacion.datosRegistro) {
+    html += `
+      <div class="registro-details">
+        <h4>📋 Información del Registro</h4>
+        <div class="detail-item">
+          <span class="detail-label">Código:</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.codigoRegistro || cdr}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Dirección:</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.direccion || 'No disponible'}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Estado:</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.estado || 'No disponible'}</span>
+        </div>
+      </div>
+    `;
+  }
+  
+  html += `
+    <div style="text-align: center;">
+      <h2 style="color: #666; margin-bottom: 20px;">Seleccione su rol:</h2>
+      
+      <div class="form-selector">
+        <div class="form-option ${inquilinoUsado ? 'disabled' : ''}" 
+             ${!inquilinoUsado ? `onclick="procesarAccesoInquilino('${cdr}')"` : ''}>
+          <div class="form-option-icon">👤</div>
+          <div class="form-option-title">Soy Inquilino</div>
+          <div class="form-option-desc">
+            ${inquilinoUsado ? '✅ Formulario completado' : 'Registrar mis documentos'}
+          </div>
+        </div>
+        
+        <div class="form-option ${propietarioUsado ? 'disabled' : ''}"
+             ${!propietarioUsado ? `onclick="procesarAccesoPropietario('${cdr}')"` : ''}>
+          <div class="form-option-icon">🏠</div>
+          <div class="form-option-title">Soy Propietario</div>
+          <div class="form-option-desc">
+            ${propietarioUsado ? '✅ Formulario completado' : 'Registrar documentos del inmueble'}
+          </div>
+        </div>
+      </div>
+      
+      ${(inquilinoUsado && propietarioUsado) ? `
+        <div class="validation-state valid" style="margin-top: 30px;">
+          <div class="validation-icon">✅</div>
+          <div class="validation-title">Proceso Completado</div>
+          <div class="validation-message">
+            Ambos formularios han sido completados exitosamente.<br>
+            El equipo de validación revisará los documentos pronto.
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+  
+  contentEl.innerHTML = html;
+}
+
+// Mostrar formulario ya usado
+function mostrarFormularioYaUsado(tipo, cdr) {
+  const contentEl = document.getElementById('content');
+  
+  const tipoTexto = tipo === 'inquilino' ? 'Inquilino' : 'Propietario';
+  const iconoTipo = tipo === 'inquilino' ? '👤' : '🏠';
+  
+  contentEl.innerHTML = `
+    <div class="validation-state used">
+      <div class="validation-icon">🔒</div>
+      <div class="validation-title">Formulario Ya Completado</div>
+      <div class="validation-message">
+        El formulario de <strong>${tipoTexto}</strong> para el registro<br>
+        <strong>${cdr}</strong><br>
+        ya fue completado anteriormente.
+      </div>
+    </div>
+    
+    ${estadoValidacion.datosRegistro ? `
+      <div class="registro-details">
+        <h4>📋 Detalles del Registro</h4>
+        <div class="detail-item">
+          <span class="detail-label">Dirección:</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.direccion || 'No disponible'}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Estado actual:</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.estado || 'No disponible'}</span>
+        </div>
+        ${estadoValidacion.datosRegistro.detalles ? `
+        <div class="detail-item">
+          <span class="detail-label">Detalles:</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.detalles}</span>
+        </div>
+        ` : ''}
+      </div>
+    ` : ''}
+    
+    <div class="info-box">
+      <h3>ℹ️ ¿Necesita hacer correcciones?</h3>
+      <p>
+        Si recibió un correo solicitando correcciones, use el enlace proporcionado en ese correo.
+        Si tiene dudas, contacte al administrador.
+      </p>
+    </div>
+    
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="window.history.back()">
+        ← Volver
+      </button>
+      <a href="index.html" class="btn">
+        Ir al Inicio
+      </a>
+    </div>
+  `;
+}
+
 // Mostrar selector manual
 function mostrarSelectorManual() {
   const contentEl = document.getElementById('content');
   contentEl.innerHTML = `
-    <div class="validation-info">
+    <div class="info-box">
       <h3>📋 Sistema de Documentación</h3>
       <p>Para acceder a los formularios necesita un código de registro válido.</p>
     </div>
@@ -365,90 +663,60 @@ function mostrarSelectorManual() {
 }
 
 // Solicitar CDR
-function solicitarCDR(tipo) {
+async function solicitarCDR(tipo) {
   const cdr = prompt(`Ingrese su código de registro para ${tipo}:`);
   if (cdr && cdr.trim()) {
+    // Primero validar el estado
+    await validarEstadoCDR(cdr.trim());
+    
     if (tipo === 'inquilino') {
-      redirigirFormularioInquilino(cdr.trim());
+      await procesarAccesoInquilino(cdr.trim());
     } else {
-      redirigirFormularioPropietario(cdr.trim());
+      await procesarAccesoPropietario(cdr.trim());
     }
   }
-}
-
-// Mostrar opciones para CDR
-function mostrarOpcionesParaCDR(cdr) {
-  const contentEl = document.getElementById('content');
-  contentEl.innerHTML = `
-    <div class="validation-info">
-      <h3>📋 Código de Registro</h3>
-      <p><strong>${cdr}</strong></p>
-    </div>
-    
-    <div style="text-align: center; padding: 20px;">
-      <h2 style="color: #666; margin-bottom: 20px;">Seleccione su rol:</h2>
-      
-      <div class="form-selector">
-        <div class="form-option" onclick="redirigirFormularioInquilino('${cdr}')">
-          <div class="form-option-icon">👤</div>
-          <div class="form-option-title">Soy Inquilino</div>
-          <div class="form-option-desc">Registrar mis documentos</div>
-        </div>
-        
-        <div class="form-option" onclick="redirigirFormularioPropietario('${cdr}')">
-          <div class="form-option-icon">🏠</div>
-          <div class="form-option-title">Soy Propietario</div>
-          <div class="form-option-desc">Registrar documentos del inmueble</div>
-        </div>
-      </div>
-    </div>
-  `;
 }
 
 // Redirigir a formulario inquilino
 function redirigirFormularioInquilino(cdr) {
   debug(`Redirigiendo a formulario inquilino con CDR: ${cdr}`);
   
-  // Mostrar mensaje de redirección
   const contentEl = document.getElementById('content');
   contentEl.innerHTML = `
-    <div class="success-container">
-      <div class="success-icon">✅</div>
-      <h2>Acceso Válido</h2>
-      <p>Redirigiendo al formulario del inquilino...</p>
+    <div class="validation-state valid">
+      <div class="validation-icon">✅</div>
+      <div class="validation-title">Acceso Válido</div>
+      <div class="validation-message">Redirigiendo al formulario del inquilino...</div>
       <div class="loading" style="margin-top: 20px;">
         <div class="spinner"></div>
       </div>
     </div>
   `;
   
-  // Redirigir después de 1 segundo
   setTimeout(() => {
     window.location.href = `${CONFIG.FORMULARIOS.inquilino}?cdr=${encodeURIComponent(cdr)}`;
-  }, 1000);
+  }, 1500);
 }
 
 // Redirigir a formulario propietario
 function redirigirFormularioPropietario(cdr) {
   debug(`Redirigiendo a formulario propietario con CDR: ${cdr}`);
   
-  // Mostrar mensaje de redirección
   const contentEl = document.getElementById('content');
   contentEl.innerHTML = `
-    <div class="success-container">
-      <div class="success-icon">✅</div>
-      <h2>Acceso Válido</h2>
-      <p>Redirigiendo al formulario del propietario...</p>
+    <div class="validation-state valid">
+      <div class="validation-icon">✅</div>
+      <div class="validation-title">Acceso Válido</div>
+      <div class="validation-message">Redirigiendo al formulario del propietario...</div>
       <div class="loading" style="margin-top: 20px;">
         <div class="spinner"></div>
       </div>
     </div>
   `;
   
-  // Redirigir después de 1 segundo
   setTimeout(() => {
     window.location.href = `${CONFIG.FORMULARIOS.propietario}?cdr=${encodeURIComponent(cdr)}`;
-  }, 1000);
+  }, 1500);
 }
 
 // Procesar corrección
@@ -467,10 +735,13 @@ function procesarCorreccion(cdr, tipo) {
 function mostrarError(mensaje) {
   const contentEl = document.getElementById('content');
   contentEl.innerHTML = `
-    <div class="error-container">
-      <div class="error-icon">❌</div>
-      <h2 class="error-title">Error de Acceso</h2>
-      <p class="error-message">${mensaje}</p>
+    <div class="validation-state invalid">
+      <div class="validation-icon">❌</div>
+      <div class="validation-title">Error de Acceso</div>
+      <div class="validation-message">${mensaje}</div>
+    </div>
+    
+    <div class="actions">
       <a href="index.html" class="btn">Volver al Inicio</a>
       <a href="javascript:location.reload()" class="btn btn-secondary">Reintentar</a>
     </div>
@@ -478,9 +749,10 @@ function mostrarError(mensaje) {
 }
 
 // Log de inicialización
-console.log('🚀 E-firmaContrata Selector v2.0');
+console.log('🚀 E-firmaContrata Selector v3.0');
 console.log('📋 CDR:', cdr);
 console.log('🎯 Action:', action);
+console.log('✅ Validación de estado implementada');
 </script>
 
 </body>
