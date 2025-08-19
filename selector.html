@@ -1,572 +1,487 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<title>Selector de Formulario - Real Estate Gold Life System</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="theme-color" content="#667eea" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<title>E-firmaContrata - Selector</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
 :root {
-  --grad-start:#667eea;
-  --grad-end:#764ba2;
-  --bg:#0f1115;
-  --bg-alt:#1b1f27;
-  --panel:#1f2530;
-  --panel-alt:#252c38;
-  --border:#2f3947;
-  --text:#e6e9ef;
-  --text-dim:#a7b0c0;
-  --accent:#7f8cff;
-  --accent-hover:#95a3ff;
-  --danger:#ef5a5a;
-  --warn:#ffbe3d;
-  --success:#4cc59f;
-  --radius:18px;
-  --radius-sm:8px;
-  --shadow:0 4px 16px -4px rgba(0,0,0,.5),0 2px 4px -1px rgba(0,0,0,.25);
-  --focus-ring:0 0 0 3px rgba(127,140,255,0.45);
-  font-size:16px;
+  --primary: #667eea;
+  --secondary: #764ba2;
+  --success: #28a745;
+  --danger: #dc3545;
+  --dark: #1a1a1a;
+  --light: #f8f9fa;
+  --border: #dee2e6;
 }
 
-* { box-sizing:border-box; }
-
-html,body {
-  margin:0;
-  padding:0;
-  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,sans-serif;
-  background:radial-gradient(circle at 30% 20%,#222b36 0%, #11161d 55%, #0b0d11 100%);
-  color:var(--text);
-  min-height:100vh;
-  -webkit-font-smoothing:antialiased;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-body::before {
-  content:"";
-  position:fixed;
-  inset:0;
-  background:
-     radial-gradient(circle at 80% 120%,rgba(118,75,162,.12),transparent 60%),
-     radial-gradient(circle at -10% -20%,rgba(102,126,234,.18),transparent 70%);
-  pointer-events:none;
-  z-index:-1;
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
-header {
-  max-width:980px;
-  margin:0 auto;
-  padding:42px 24px 16px;
-  text-align:center;
+.container {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  overflow: hidden;
+  animation: fadeIn 0.5s ease;
 }
 
-.brand-badge {
-  display:inline-flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 18px;
-  background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
-  border:1px solid rgba(255,255,255,.12);
-  border-radius:50px;
-  font-size:.83rem;
-  letter-spacing:.5px;
-  text-transform:uppercase;
-  color:var(--text-dim);
-  backdrop-filter:blur(6px);
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.brand-badge span {
-  background:linear-gradient(135deg,var(--grad-start),var(--grad-end));
-  -webkit-background-clip:text;
-  color:transparent;
-  font-weight:600;
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  padding: 30px;
+  text-align: center;
 }
 
-h1 {
-  margin:28px 0 12px;
-  font-size:clamp(1.9rem,2.6vw,2.6rem);
-  line-height:1.15;
-  background:linear-gradient(90deg,var(--grad-start),var(--grad-end));
-  -webkit-background-clip:text;
-  color:transparent;
-  font-weight:700;
-  letter-spacing:.5px;
+.header h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
 }
 
-.subtitle {
-  max-width:640px;
-  margin:0 auto 38px;
-  font-size:1rem;
-  line-height:1.55;
-  color:var(--text-dim);
+.header p {
+  opacity: 0.9;
+  font-size: 14px;
 }
 
-main {
-  max-width:1100px;
-  margin:0 auto;
-  padding:0 24px 80px;
+.content {
+  padding: 40px 30px;
 }
 
-.section-label {
-  font-size:.75rem;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  color:var(--text-dim);
-  margin:0 0 20px 4px;
-  display:flex;
-  align-items:center;
-  gap:6px;
+.loading {
+  text-align: center;
+  padding: 40px;
 }
 
-.grid {
-  display:grid;
-  gap:28px;
-  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
 }
 
-.card {
-  position:relative;
-  background:linear-gradient(160deg,var(--panel) 0%, var(--panel-alt) 100%);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:24px 22px 26px;
-  display:flex;
-  flex-direction:column;
-  gap:18px;
-  overflow:hidden;
-  transition:all .35s cubic-bezier(.4,.2,.2,1);
-  cursor:pointer;
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-.card::before {
-  content:"";
-  position:absolute;
-  inset:0;
-  background:
-    linear-gradient(145deg,rgba(255,255,255,.08),transparent 65%),
-    radial-gradient(circle at 120% 120%,rgba(127,140,255,.16),transparent 50%);
-  opacity:0;
-  transition:opacity .45s;
-  pointer-events:none;
+.error-container {
+  text-align: center;
+  padding: 20px;
 }
 
-.card:hover::before {
-  opacity:.9;
+.error-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
 }
 
-.card:hover {
-  transform:translateY(-6px);
-  box-shadow:0 10px 26px -6px rgba(0,0,0,.55),0 4px 10px -2px rgba(0,0,0,.4);
-  border-color:rgba(127,140,255,.55);
+.error-title {
+  color: var(--danger);
+  font-size: 24px;
+  margin-bottom: 10px;
 }
 
-.card-icon {
-  width:54px;
-  height:54px;
-  display:grid;
-  place-items:center;
-  background:linear-gradient(135deg,var(--grad-start),var(--grad-end));
-  border-radius:16px;
-  font-size:26px;
-  color:#fff;
-  box-shadow:0 4px 14px -2px rgba(118,75,162,.6);
-  flex-shrink:0;
+.error-message {
+  color: #666;
+  margin-bottom: 30px;
+  line-height: 1.6;
 }
 
-.card-title {
-  display:flex;
-  flex-direction:column;
-  gap:6px;
+.success-container {
+  text-align: center;
+  padding: 20px;
 }
 
-.card-title h2 {
-  font-size:1.15rem;
-  margin:0;
-  font-weight:600;
-  letter-spacing:.3px;
+.success-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
 }
 
-.card-title p {
-  margin:0;
-  font-size:.87rem;
-  color:var(--text-dim);
-  line-height:1.4;
+.btn {
+  display: inline-block;
+  padding: 12px 30px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: transform 0.3s ease;
 }
 
-.badges {
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  margin-top:auto;
+.btn:hover {
+  transform: translateY(-2px);
 }
 
-.badge {
-  font-size:.65rem;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  padding:5px 10px 4px;
-  border-radius:40px;
-  background:rgba(127,140,255,.12);
-  color:var(--accent);
-  border:1px solid rgba(127,140,255,.3);
-  font-weight:500;
+.btn-secondary {
+  background: var(--light);
+  color: var(--dark);
+  border: 2px solid var(--border);
+  margin-left: 10px;
 }
 
-.badge.warn {
-  background:rgba(255,190,61,.12);
-  color:var(--warn);
-  border-color:rgba(255,190,61,.4);
+.validation-info {
+  background: #f0f4ff;
+  border-left: 4px solid var(--primary);
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
 }
 
-.badge.new {
-  background:rgba(76,197,159,.13);
-  color:var(--success);
-  border-color:rgba(76,197,159,.45);
+.validation-info h3 {
+  color: var(--primary);
+  margin-bottom: 8px;
+  font-size: 16px;
 }
 
-.actions {
-  margin-top:42px;
-  display:flex;
-  flex-wrap:wrap;
-  gap:14px;
+.validation-info p {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
 }
 
-.button {
-  --btn-bg:linear-gradient(135deg,var(--grad-start),var(--grad-end));
-  --btn-bg-hover:linear-gradient(135deg,#7688ff,#8d60c7);
-  position:relative;
-  display:inline-flex;
-  align-items:center;
-  gap:10px;
-  padding:14px 28px;
-  font-size:.9rem;
-  font-weight:600;
-  letter-spacing:.5px;
-  border:none;
-  outline:none;
-  cursor:pointer;
-  border-radius:50px;
-  background:var(--btn-bg);
-  color:#fff;
-  box-shadow:0 6px 20px -4px rgba(118,75,162,.55), 0 3px 8px -2px rgba(0,0,0,.5);
-  transition:all .35s cubic-bezier(.4,.2,.2,1);
-  text-decoration:none;
+.debug-info {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  font-family: monospace;
+  font-size: 12px;
+  max-width: 300px;
 }
 
-.button:hover {
-  background:var(--btn-bg-hover);
-  transform:translateY(-4px);
-  box-shadow:0 10px 26px -6px rgba(118,75,162,.65),0 4px 10px -2px rgba(0,0,0,.55);
+.form-selector {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
-.button:active {
-  transform:translateY(-1px);
+.form-option {
+  flex: 1;
+  min-width: 200px;
+  padding: 20px;
+  background: var(--light);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.button.secondary {
-  --btn-bg:linear-gradient(145deg,#2a313d,#20262f);
-  --btn-bg-hover:linear-gradient(145deg,#313a47,#262e38);
-  color:var(--text-dim);
-  box-shadow:0 4px 14px -3px rgba(0,0,0,.55);
-  border:1px solid var(--border);
+.form-option:hover {
+  border-color: var(--primary);
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-.button.secondary:hover {
-  color:var(--text);
-  border-color:rgba(127,140,255,.4);
+.form-option-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
 }
 
-.notice {
-  margin-top:54px;
-  padding:18px 22px;
-  background:linear-gradient(145deg,#1f2530,#1b212a);
-  border:1px solid var(--border);
-  border-radius:var(--radius-sm);
-  font-size:.8rem;
-  line-height:1.4;
-  color:var(--text-dim);
-  display:flex;
-  gap:14px;
-  align-items:flex-start;
+.form-option-title {
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 5px;
 }
 
-.notice strong {
-  color:var(--accent);
-  font-weight:600;
+.form-option-desc {
+  font-size: 12px;
+  color: #666;
 }
-
-.inline-icon {
-  font-size:1.15rem;
-  line-height:1;
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.45));
-}
-
-.fade-in {
-  animation:fade .7s ease .05s both;
-}
-
-@keyframes fade {
-  from { opacity:0; transform:translateY(14px); }
-  to { opacity:1; transform:translateY(0); }
-}
-
-.focus-outline:focus-visible {
-  outline:none;
-  box-shadow:var(--focus-ring);
-}
-
-footer {
-  max-width:980px;
-  margin:0 auto;
-  padding:30px 24px 60px;
-  font-size:.7rem;
-  letter-spacing:.5px;
-  text-transform:uppercase;
-  color:#556074;
-  display:flex;
-  justify-content:center;
-  gap:12px;
-  flex-wrap:wrap;
-}
-
-footer span {
-  opacity:.9;
-}
-
-/* RESPONSIVE */
-@media (max-width:640px) {
-  header { padding-top:32px; }
-  .card { padding:22px 20px 24px; }
-  .card-icon { width:50px;height:50px;font-size:24px; }
-  h1 { font-size:2rem; }
-  .subtitle { font-size:.93rem; }
-  .actions { flex-direction:column; align-items:stretch; }
-  .button { justify-content:center; width:100%; }
-}
-
 </style>
 </head>
 <body>
-<header class="fade-in">
-  <div class="brand-badge" aria-label="Identidad del sistema">
-    <span>E‑firmaContrata</span><sup style="font-size:.55rem; opacity:.7;">v8</sup>
+
+<div class="container">
+  <div class="header">
+    <h1>🏠 E-firmaContrata</h1>
+    <p>Sistema de Gestión de Contratos de Arrendamiento</p>
   </div>
-  <h1>Gestión de Documentos</h1>
-  <p class="subtitle">
-    Selecciona el tipo de formulario que deseas diligenciar o continúa el proceso
-    con tu código de registro (CDR). Esta interfaz unifica la experiencia visual
-    de los formularios del sistema.
-  </p>
-</header>
+  
+  <div class="content" id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Validando acceso...</p>
+    </div>
+  </div>
+</div>
 
-<main id="app" class="fade-in" tabindex="-1">
-  <!-- Contenido dinámico se inserta por JS -->
-</main>
-
-<footer>
-  <span>Real Estate Gold Life System</span>
-  <span>·</span>
-  <span>Automatización &amp; Seguridad</span>
-</footer>
+<!-- Debug info (solo visible en desarrollo) -->
+<div id="debugInfo" class="debug-info" style="display:none;"></div>
 
 <script>
-(function(){
-  const QS = new URLSearchParams(window.location.search);
-  const action = (QS.get('action') || '').trim();
-  const cdr = (QS.get('cdr') || '').trim();
-  const app = document.getElementById('app');
+// Configuración
+const CONFIG = {
+  DEBUG: true, // Cambiar a false en producción
+  API_URL: 'https://script.google.com/macros/s/AKfycbzOnhQ8CD2gWMdvvYnF2v1FL3yto5sM8i_jV9FmIJa1Os05YwXR5RKSsq22ePlwqQgL/exec',
+  FORMULARIOS: {
+    inquilino: 'formulario_inquilino.html',
+    propietario: 'formulario_propietario.html'
+  }
+};
 
-  function createEl(tag, opts={}) {
-    const el = document.createElement(tag);
-    if (opts.class) el.className = opts.class;
-    if (opts.html) el.innerHTML = opts.html;
-    if (opts.text) el.textContent = opts.text;
-    if (opts.attrs) {
-      Object.entries(opts.attrs).forEach(([k,v]) => el.setAttribute(k,v));
+// Variables globales
+let params = new URLSearchParams(window.location.search);
+let action = params.get('action');
+let cdr = params.get('cdr');
+let tipo = params.get('tipo');
+let modo = params.get('modo');
+
+// Debug
+function debug(msg) {
+  if (CONFIG.DEBUG) {
+    console.log('[Selector]', msg);
+    const debugEl = document.getElementById('debugInfo');
+    if (debugEl) {
+      debugEl.style.display = 'block';
+      debugEl.innerHTML = `
+        <strong>Debug Info:</strong><br>
+        Action: ${action}<br>
+        CDR: ${cdr}<br>
+        Tipo: ${tipo}<br>
+        Modo: ${modo}<br>
+        URL: ${window.location.href}
+      `;
     }
-    return el;
   }
+}
 
-  function sanitizeCDR(value){
-    return value.replace(/[^A-Za-z0-9-_]/g,'').slice(0,32);
+// Inicialización
+window.onload = function() {
+  debug('Iniciando selector...');
+  procesarAcceso();
+};
+
+// Procesar acceso
+async function procesarAcceso() {
+  const contentEl = document.getElementById('content');
+  
+  // Si no hay parámetros, mostrar selector manual
+  if (!action && !cdr) {
+    mostrarSelectorManual();
+    return;
   }
-
-  function renderDefault(){
-    app.innerHTML = '';
-
-    const sectionLabel = createEl('div',{ class:'section-label', html:'<span class="inline-icon">📂</span> Tipos de formulario'});
-    app.appendChild(sectionLabel);
-
-    const grid = createEl('div',{ class:'grid', attrs:{ role:'list' }});
-
-    const cards = [
-      {
-        icon:'👤',
-        title:'Formulario Inquilino',
-        desc:'Registro y carga de documentación requerida para el arrendamiento.',
-        badges:['Obligatorio','Nuevo'],
-        url: buildURL('formulario_inquilino')
-      },
-      {
-        icon:'🏠',
-        title:'Formulario Propietario',
-        desc:'Envío de documentos del propietario para validación y elaboración de contrato.',
-        badges:['Obligatorio'],
-        url: buildURL('formulario_propietario')
-      },
-      {
-        icon:'🧾',
-        title:'Validar Código (CDR)',
-        desc:'Ingresa tu código para continuar un proceso ya iniciado.',
-        badges:['Utilidad'],
-        url: '#cdr-anchor',
-        custom: true
+  
+  // Si hay CDR pero no action, determinar qué hacer
+  if (cdr && !action) {
+    mostrarOpcionesParaCDR(cdr);
+    return;
+  }
+  
+  // Procesar según la acción
+  switch(action) {
+    case 'formulario_inquilino':
+      if (!cdr) {
+        mostrarError('Código de registro requerido');
+        return;
       }
-    ];
+      redirigirFormularioInquilino(cdr);
+      break;
+      
+    case 'formulario_propietario':
+      if (!cdr) {
+        mostrarError('Código de registro requerido');
+        return;
+      }
+      redirigirFormularioPropietario(cdr);
+      break;
+      
+    case 'correccion':
+      if (!cdr || !tipo) {
+        mostrarError('Parámetros incompletos para corrección');
+        return;
+      }
+      procesarCorreccion(cdr, tipo);
+      break;
+      
+    default:
+      mostrarError('Acción no reconocida');
+  }
+}
 
-    cards.forEach(card => {
-      const cardEl = createEl('article',{ class:'card focus-outline', attrs:{ tabindex:'0', role:'listitem' } });
-      cardEl.addEventListener('click', () => {
-        if (card.custom) {
-          scrollToCDR();
-        } else {
-          window.location.href = card.url;
-        }
-      });
-      cardEl.addEventListener('keydown',(ev)=>{
-        if (ev.key === 'Enter' || ev.key === ' ') {
-          ev.preventDefault();
-          cardEl.click();
-        }
-      });
-
-      const icon = createEl('div',{ class:'card-icon', text:card.icon });
-      const titleWrap = createEl('div',{ class:'card-title' });
-      titleWrap.appendChild(createEl('h2',{ text:card.title }));
-      titleWrap.appendChild(createEl('p',{ text:card.desc }));
-      const badgesWrap = createEl('div',{ class:'badges' });
-      card.badges.forEach(b => {
-        const cls = 'badge ' + (b.toLowerCase()==='nuevo' || b.toLowerCase()==='new' ? 'new' : (b.toLowerCase().includes('oblig') ? '' : (b.toLowerCase().includes('util') ? 'warn' : '')));
-        badgesWrap.appendChild(createEl('span',{ class: cls.trim(), text:b }));
-      });
-
-      cardEl.appendChild(icon);
-      cardEl.appendChild(titleWrap);
-      cardEl.appendChild(badgesWrap);
-      grid.appendChild(cardEl);
-    });
-
-    app.appendChild(grid);
-
-    // Acción rápida
-    const actions = createEl('div',{ class:'actions' });
-    const btnInq = createEl('a',{ class:'button', text:'📋 Iniciar como Inquilino', attrs:{ href:buildURL('formulario_inquilino') } });
-    const btnProp = createEl('a',{ class:'button secondary', text:'🏠 Iniciar como Propietario', attrs:{ href:buildURL('formulario_propietario') } });
-    actions.appendChild(btnInq);
-    actions.appendChild(btnProp);
-    app.appendChild(actions);
-
-    // Bloque CDR
-    const notice = createEl('div',{ class:'notice', attrs:{ id:'cdr-anchor' }});
-    notice.innerHTML = `
-      <div class="inline-icon">🔑</div>
-      <div>
-        <strong>Código de Registro (CDR):</strong><br>
-        Si ya recibiste un enlace o estás retomando el proceso, ingresa tu CDR para continuar:
-        <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:10px;">
-          <input id="cdrInput" type="text" placeholder="Ej: ABC123" maxlength="32"
-                 style="flex:1; min-width:160px; padding:12px 14px; border-radius:12px;
-                        border:1px solid var(--border); background:#161a20; color:var(--text);
-                        font-family:inherit; font-size:.9rem; letter-spacing:.5px;"
-                 aria-label="Código de registro" />
-          <button id="cdrGo" class="button" style="padding:12px 22px; font-size:.78rem; letter-spacing:1px;">Continuar</button>
+// Mostrar selector manual
+function mostrarSelectorManual() {
+  const contentEl = document.getElementById('content');
+  contentEl.innerHTML = `
+    <div class="validation-info">
+      <h3>📋 Sistema de Documentación</h3>
+      <p>Para acceder a los formularios necesita un código de registro válido.</p>
+    </div>
+    
+    <div style="text-align: center; padding: 20px;">
+      <h2 style="color: #666; margin-bottom: 20px;">¿Cómo desea continuar?</h2>
+      
+      <div class="form-selector">
+        <div class="form-option" onclick="solicitarCDR('inquilino')">
+          <div class="form-option-icon">👤</div>
+          <div class="form-option-title">Soy Inquilino</div>
+          <div class="form-option-desc">Registrar mis documentos</div>
         </div>
-        <div id="cdrMsg" style="margin-top:10px; font-size:.7rem; letter-spacing:.5px; color:var(--text-dim);"></div>
-      </div>
-    `;
-    app.appendChild(notice);
-
-    document.getElementById('cdrGo').addEventListener('click', handleCDR);
-    document.getElementById('cdrInput').addEventListener('keydown', e=>{
-      if(e.key==='Enter'){ handleCDR(); }
-    });
-  }
-
-  function buildURL(formAction){
-    if (cdr) {
-      return `selector.html?action=${encodeURIComponent(formAction)}&cdr=${encodeURIComponent(cdr)}`;
-    }
-    return `selector.html?action=${encodeURIComponent(formAction)}`;
-  }
-
-  function handleCDR(){
-    const input = document.getElementById('cdrInput');
-    const msg = document.getElementById('cdrMsg');
-    const value = sanitizeCDR(input.value);
-    if (!value) {
-      msg.textContent = 'Ingresa un CDR válido.';
-      msg.style.color = 'var(--danger)';
-      return;
-    }
-    msg.textContent = 'Redirigiendo...';
-    msg.style.color = 'var(--accent)';
-    setTimeout(()=>{
-      window.location.href = `selector.html?action=formulario_inquilino&cdr=${encodeURIComponent(value)}`;
-    },250);
-  }
-
-  function scrollToCDR(){
-    const anchor = document.getElementById('cdr-anchor');
-    if (anchor) {
-      anchor.scrollIntoView({ behavior:'smooth', block:'start' });
-      anchor.animate([{ backgroundColor:'rgba(127,140,255,0.15)' }, { backgroundColor:'transparent' }], {
-        duration:1400,
-        easing:'ease'
-      });
-      const input = document.getElementById('cdrInput');
-      if (input) input.focus({ preventScroll:true });
-    }
-  }
-
-  function renderInquilinoDirect(cdrVal){
-    app.innerHTML = '';
-    const wrap = createEl('div',{ class:'fade-in' });
-    wrap.innerHTML = `
-      <div class="section-label"><span class="inline-icon">📋</span> Formulario Inquilino</div>
-      <div style="background:linear-gradient(140deg,var(--panel) 0%,var(--panel-alt) 100%);
-                  border:1px solid var(--border); padding:32px 30px; border-radius:var(--radius);
-                  max-width:720px; margin:0 auto; box-shadow:var(--shadow);">
-        <h2 style="margin:0 0 10px; font-size:1.55rem; letter-spacing:.5px;
-                   background:linear-gradient(90deg,var(--grad-start),var(--grad-end));
-                   -webkit-background-clip:text; color:transparent;">
-          Inicio de Formulario del Inquilino
-        </h2>
-        <p style="margin:0 0 24px; color:var(--text-dim); line-height:1.5;">
-          CDR detectado: <strong style="color:var(--accent);">${cdrVal ? cdrVal : '(no provisto)'}</strong><br>
-          Pulsa el botón para continuar al formulario principal y adjuntar tus documentos.
-        </p>
-        <div style="display:flex; gap:14px; flex-wrap:wrap;">
-          <a href="formulario_inquilino.html?cdr=${encodeURIComponent(cdrVal)}"
-             class="button" style="flex:1; min-width:200px; justify-content:center;">📤 Continuar</a>
-          <a href="selector.html" class="button secondary" style="flex:1; min-width:200px; justify-content:center;">◀ Volver</a>
-        </div>
-        <div style="margin-top:26px; font-size:.72rem; line-height:1.4; color:var(--text-dim); letter-spacing:.4px;">
-          Si tu CDR no es correcto regresa y verifica el enlace original que recibiste por correo.
+        
+        <div class="form-option" onclick="solicitarCDR('propietario')">
+          <div class="form-option-icon">🏠</div>
+          <div class="form-option-title">Soy Propietario</div>
+          <div class="form-option-desc">Registrar documentos del inmueble</div>
         </div>
       </div>
-    `;
-    app.appendChild(wrap);
-  }
+      
+      <p style="margin-top: 30px; color: #666; font-size: 14px;">
+        Si recibió un enlace por correo, úselo para acceder directamente.
+      </p>
+    </div>
+  `;
+}
 
-  // Lógica de enrutamiento
-  if (action === 'formulario_inquilino' && cdr) {
-    renderInquilinoDirect(cdr);
-  } else {
-    renderDefault();
+// Solicitar CDR
+function solicitarCDR(tipo) {
+  const cdr = prompt(`Ingrese su código de registro para ${tipo}:`);
+  if (cdr && cdr.trim()) {
+    if (tipo === 'inquilino') {
+      redirigirFormularioInquilino(cdr.trim());
+    } else {
+      redirigirFormularioPropietario(cdr.trim());
+    }
   }
+}
 
-})();
+// Mostrar opciones para CDR
+function mostrarOpcionesParaCDR(cdr) {
+  const contentEl = document.getElementById('content');
+  contentEl.innerHTML = `
+    <div class="validation-info">
+      <h3>📋 Código de Registro</h3>
+      <p><strong>${cdr}</strong></p>
+    </div>
+    
+    <div style="text-align: center; padding: 20px;">
+      <h2 style="color: #666; margin-bottom: 20px;">Seleccione su rol:</h2>
+      
+      <div class="form-selector">
+        <div class="form-option" onclick="redirigirFormularioInquilino('${cdr}')">
+          <div class="form-option-icon">👤</div>
+          <div class="form-option-title">Soy Inquilino</div>
+          <div class="form-option-desc">Registrar mis documentos</div>
+        </div>
+        
+        <div class="form-option" onclick="redirigirFormularioPropietario('${cdr}')">
+          <div class="form-option-icon">🏠</div>
+          <div class="form-option-title">Soy Propietario</div>
+          <div class="form-option-desc">Registrar documentos del inmueble</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Redirigir a formulario inquilino
+function redirigirFormularioInquilino(cdr) {
+  debug(`Redirigiendo a formulario inquilino con CDR: ${cdr}`);
+  
+  // Mostrar mensaje de redirección
+  const contentEl = document.getElementById('content');
+  contentEl.innerHTML = `
+    <div class="success-container">
+      <div class="success-icon">✅</div>
+      <h2>Acceso Válido</h2>
+      <p>Redirigiendo al formulario del inquilino...</p>
+      <div class="loading" style="margin-top: 20px;">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  `;
+  
+  // Redirigir después de 1 segundo
+  setTimeout(() => {
+    window.location.href = `${CONFIG.FORMULARIOS.inquilino}?cdr=${encodeURIComponent(cdr)}`;
+  }, 1000);
+}
+
+// Redirigir a formulario propietario
+function redirigirFormularioPropietario(cdr) {
+  debug(`Redirigiendo a formulario propietario con CDR: ${cdr}`);
+  
+  // Mostrar mensaje de redirección
+  const contentEl = document.getElementById('content');
+  contentEl.innerHTML = `
+    <div class="success-container">
+      <div class="success-icon">✅</div>
+      <h2>Acceso Válido</h2>
+      <p>Redirigiendo al formulario del propietario...</p>
+      <div class="loading" style="margin-top: 20px;">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  `;
+  
+  // Redirigir después de 1 segundo
+  setTimeout(() => {
+    window.location.href = `${CONFIG.FORMULARIOS.propietario}?cdr=${encodeURIComponent(cdr)}`;
+  }, 1000);
+}
+
+// Procesar corrección
+function procesarCorreccion(cdr, tipo) {
+  debug(`Procesando corrección para ${tipo} con CDR: ${cdr}`);
+  
+  const documentos = params.get('docs');
+  const url = tipo === 'inquilino' 
+    ? `${CONFIG.FORMULARIOS.inquilino}?cdr=${encodeURIComponent(cdr)}&modo=correccion&docs=${encodeURIComponent(documentos || '')}`
+    : `${CONFIG.FORMULARIOS.propietario}?cdr=${encodeURIComponent(cdr)}&modo=correccion&docs=${encodeURIComponent(documentos || '')}`;
+  
+  window.location.href = url;
+}
+
+// Mostrar error
+function mostrarError(mensaje) {
+  const contentEl = document.getElementById('content');
+  contentEl.innerHTML = `
+    <div class="error-container">
+      <div class="error-icon">❌</div>
+      <h2 class="error-title">Error de Acceso</h2>
+      <p class="error-message">${mensaje}</p>
+      <a href="index.html" class="btn">Volver al Inicio</a>
+      <a href="javascript:location.reload()" class="btn btn-secondary">Reintentar</a>
+    </div>
+  `;
+}
+
+// Log de inicialización
+console.log('🚀 E-firmaContrata Selector v2.0');
+console.log('📋 CDR:', cdr);
+console.log('🎯 Action:', action);
 </script>
+
 </body>
 </html>
