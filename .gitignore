@@ -1,0 +1,18 @@
+# Tests y archivos temporales
+test_*.html
+/tmp/
+*.log
+
+# Archivos de configuración local
+config_local.js
+config_desarrollo.js
+
+# Archivos del editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
