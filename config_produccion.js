@@ -645,6 +645,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = { CONFIG_PRODUCCION, CONFIG };
 }
 
-// Hacer disponible globalmente
-window.CONFIG_PRODUCCION = CONFIG_PRODUCCION;
-window.CONFIG = CONFIG;
+// Hacer disponible globalmente (solo en navegador)
+if (typeof window !== 'undefined') {
+  window.CONFIG_PRODUCCION = CONFIG_PRODUCCION;
+  window.CONFIG = CONFIG;
+}
