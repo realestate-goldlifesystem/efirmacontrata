@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SARLAFT Persona Jurídica - E-firmaContrata</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+    <link rel="stylesheet" href="styles/forms.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏢</div>
+            <h1>SARLAFT - Persona Jurídica</h1>
+            <p>Sistema de Administración del Riesgo de Lavado de Activos y Financiación del Terrorismo</p>
+        </div>
+
+        <div class="content">
+            <!-- Alert informativo -->
+            <div class="alert alert-info">
+                <div class="alert-icon">ℹ️</div>
+                <div class="alert-content">
+                    <div class="alert-title">Importante</div>
+                    <div class="alert-message">
+                        Este formulario es requerido por ley para prevenir el lavado de activos y financiación del terrorismo. 
+                        Toda la información será tratada de manera confidencial según la normativa vigente.
+                    </div>
+                </div>
+            </div>
+
+            <form id="sarlaftJuridicoForm" class="form-container">
+                <!-- Sección 1: Información de la Empresa -->
+                <div class="form-section">
+                    <h3>🏢 Información de la Empresa</h3>
+                    
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Tipo de Documento <span class="required">*</span></label>
+                                <select id="tipoDocumentoEmpresa" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="NIT">NIT</option>
+                                    <option value="RUT">RUT</option>
+                                    <option value="Registro Mercantil">Registro Mercantil</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Número de Identificación <span class="required">*</span></label>
+                                <input type="text" id="numeroIdentificacion" placeholder="Número de identificación" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>Razón Social <span class="required">*</span></label>
+                        <input type="text" id="razonSocial" placeholder="Razón social completa" required>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>Nombre Comercial</label>
+                        <input type="text" id="nombreComercial" placeholder="Nombre comercial (si aplica)">
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Tipo de Sociedad <span class="required">*</span></label>
+                                <select id="tipoSociedad" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="SAS">Sociedad por Acciones Simplificada (S.A.S.)</option>
+                                    <option value="SA">Sociedad Anónima (S.A.)</option>
+                                    <option value="LTDA">Sociedad de Responsabilidad Limitada (Ltda.)</option>
+                                    <option value="EU">Empresa Unipersonal (E.U.)</option>
+                                    <option value="SC">Sociedad Colectiva</option>
+                                    <option value="SCA">Sociedad en Comandita por Acciones</option>
+                                    <option value="SCS">Sociedad en Comandita Simple</option>
+                                    <option value="Cooperativa">Cooperativa</option>
+                                    <option value="Fundacion">Fundación</option>
+                                    <option value="Asociacion">Asociación</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Fecha de Constitución <span class="required">*</span></label>
+                                <input type="date" id="fechaConstitucion" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>País de Constitución <span class="required">*</span></label>
+                                <select id="paisConstitucion" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Colombia">Colombia</option>
+                                    <option value="Venezuela">Venezuela</option>
+                                    <option value="Ecuador">Ecuador</option>
+                                    <option value="Peru">Perú</option>
+                                    <option value="Brasil">Brasil</option>
+                                    <option value="Argentina">Argentina</option>
+                                    <option value="Chile">Chile</option>
+                                    <option value="Estados Unidos">Estados Unidos</option>
+                                    <option value="Espana">España</option>
+                                    <option value="Panama">Panamá</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Lugar de Constitución <span class="required">*</span></label>
+                                <input type="text" id="lugarConstitucion" placeholder="Ciudad/Departamento" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>Objeto Social <span class="required">*</span></label>
+                        <textarea id="objetoSocial" placeholder="Describa el objeto social de la empresa" rows="4" required></textarea>
+                    </div>
+                </div>
+
+                <!-- Sección 2: Información de Contacto -->
+                <div class="form-section">
+                    <h3>📍 Información de Contacto</h3>
+                    
+                    <div class="form-field show">
+                        <label>Dirección Principal <span class="required">*</span></label>
+                        <input type="text" id="direccionPrincipal" placeholder="Dirección completa" required>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Ciudad <span class="required">*</span></label>
+                                <input type="text" id="ciudadEmpresa" placeholder="Ciudad" required>
+                            </div>
+                            <div>
+                                <label>Departamento <span class="required">*</span></label>
+                                <input type="text" id="departamentoEmpresa" placeholder="Departamento" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Teléfono Principal <span class="required">*</span></label>
+                                <input type="tel" id="telefonoPrincipal" placeholder="601234567" required>
+                            </div>
+                            <div>
+                                <label>Extensión</label>
+                                <input type="text" id="extension" placeholder="Ext.">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Correo Electrónico <span class="required">*</span></label>
+                                <input type="email" id="correoEmpresa" placeholder="empresa@ejemplo.com" onblur="validarEmail(this)" required>
+                            </div>
+                            <div>
+                                <label>Página Web</label>
+                                <input type="url" id="paginaWeb" placeholder="https://www.empresa.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 3: Información Económica -->
+                <div class="form-section">
+                    <h3>💰 Información Económica</h3>
+                    
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Actividad Económica Principal <span class="required">*</span></label>
+                                <input type="text" id="actividadEconomica" placeholder="Actividad económica principal" required>
+                            </div>
+                            <div>
+                                <label>Código CIIU <span class="required">*</span></label>
+                                <input type="text" id="codigoCIIU" placeholder="Código CIIU" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Ingresos Anuales <span class="required">*</span></label>
+                                <select id="ingresosAnuales" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="0-100">Menos de $100.000.000</option>
+                                    <option value="100-500">Entre $100.000.000 y $500.000.000</option>
+                                    <option value="500-1000">Entre $500.000.000 y $1.000.000.000</option>
+                                    <option value="1000-5000">Entre $1.000.000.000 y $5.000.000.000</option>
+                                    <option value="5000-10000">Entre $5.000.000.000 y $10.000.000.000</option>
+                                    <option value="10000+">Más de $10.000.000.000</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Total Activos <span class="required">*</span></label>
+                                <select id="totalActivos" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="0-100">Menos de $100.000.000</option>
+                                    <option value="100-500">Entre $100.000.000 y $500.000.000</option>
+                                    <option value="500-1000">Entre $500.000.000 y $1.000.000.000</option>
+                                    <option value="1000-5000">Entre $1.000.000.000 y $5.000.000.000</option>
+                                    <option value="5000-10000">Entre $5.000.000.000 y $10.000.000.000</option>
+                                    <option value="10000+">Más de $10.000.000.000</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Número de Empleados <span class="required">*</span></label>
+                                <select id="numeroEmpleados" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="1-10">1 a 10 empleados</option>
+                                    <option value="11-50">11 a 50 empleados</option>
+                                    <option value="51-200">51 a 200 empleados</option>
+                                    <option value="201-500">201 a 500 empleados</option>
+                                    <option value="500+">Más de 500 empleados</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>¿Es una empresa listada en bolsa? <span class="required">*</span></label>
+                                <div class="decision-buttons">
+                                    <button type="button" class="decision-btn" onclick="setListadaBolsa(true)">SÍ</button>
+                                    <button type="button" class="decision-btn" onclick="setListadaBolsa(false)">NO</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 4: Representante Legal -->
+                <div class="form-section">
+                    <h3>👨‍💼 Representante Legal</h3>
+                    
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Tipo de Documento <span class="required">*</span></label>
+                                <select id="tipoDocumentoRL" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="CC">Cédula de Ciudadanía</option>
+                                    <option value="CE">Cédula de Extranjería</option>
+                                    <option value="PA">Pasaporte</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Número de Documento <span class="required">*</span></label>
+                                <input type="text" id="numeroDocumentoRL" placeholder="Número de documento" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Nombres <span class="required">*</span></label>
+                                <input type="text" id="nombresRL" placeholder="Nombres completos" data-type="name" required>
+                            </div>
+                            <div>
+                                <label>Apellidos <span class="required">*</span></label>
+                                <input type="text" id="apellidosRL" placeholder="Apellidos completos" data-type="name" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Teléfono Celular <span class="required">*</span></label>
+                                <input type="tel" id="celularRL" placeholder="3001234567" onblur="validarTelefono(this)" required>
+                            </div>
+                            <div>
+                                <label>Correo Electrónico <span class="required">*</span></label>
+                                <input type="email" id="correoRL" placeholder="representante@ejemplo.com" onblur="validarEmail(this)" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>¿El representante legal es PEP (Persona Políticamente Expuesta)? <span class="required">*</span></label>
+                        <div class="decision-buttons">
+                            <button type="button" class="decision-btn" onclick="setPEPRL(true)">SÍ</button>
+                            <button type="button" class="decision-btn" onclick="setPEPRL(false)">NO</button>
+                        </div>
+                        <div class="form-help">
+                            Personas que ejercen funciones públicas prominentes o han ejercido en el último año
+                        </div>
+                    </div>
+
+                    <div class="form-field" id="pepRLDetails" style="display: none;">
+                        <label>Especifique el cargo o función <span class="required">*</span></label>
+                        <textarea id="cargoFuncionRL" placeholder="Describa el cargo o función pública" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <!-- Sección 5: Accionistas y Beneficiarios Finales -->
+                <div class="form-section">
+                    <h3>👥 Accionistas y Beneficiarios Finales</h3>
+                    
+                    <div class="alert alert-warning">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <div class="alert-title">Beneficiarios Finales</div>
+                            <div class="alert-message">
+                                Debe reportar todas las personas naturales que posean directa o indirectamente 
+                                el 25% o más del capital, votos o utilidades de la empresa.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>¿Cuántos beneficiarios finales tiene la empresa? <span class="required">*</span></label>
+                        <div class="decision-buttons">
+                            <button type="button" class="decision-btn" onclick="setNumBeneficiarios(1)">1</button>
+                            <button type="button" class="decision-btn" onclick="setNumBeneficiarios(2)">2</button>
+                            <button type="button" class="decision-btn" onclick="setNumBeneficiarios(3)">3</button>
+                            <button type="button" class="decision-btn" onclick="setNumBeneficiarios(4)">4 o más</button>
+                        </div>
+                    </div>
+
+                    <div id="beneficiariosContainer">
+                        <!-- Los beneficiarios se generarán dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Sección 6: Información de Riesgo -->
+                <div class="form-section">
+                    <h3>⚠️ Evaluación de Riesgo</h3>
+                    
+                    <div class="form-field show">
+                        <label>¿La empresa realiza operaciones en moneda extranjera? <span class="required">*</span></label>
+                        <div class="decision-buttons">
+                            <button type="button" class="decision-btn" onclick="setMonedaExtranjera(true)">SÍ</button>
+                            <button type="button" class="decision-btn" onclick="setMonedaExtranjera(false)">NO</button>
+                        </div>
+                    </div>
+
+                    <div class="form-field" id="monedaExtranjeraDetails" style="display: none;">
+                        <div class="form-row">
+                            <div>
+                                <label>Principales divisas utilizadas <span class="required">*</span></label>
+                                <input type="text" id="divisasUtilizadas" placeholder="USD, EUR, etc.">
+                            </div>
+                            <div>
+                                <label>Monto mensual aproximado (USD) <span class="required">*</span></label>
+                                <input type="text" id="montoMonedaExtranjera" placeholder="Monto en USD">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>¿La empresa tiene operaciones internacionales? <span class="required">*</span></label>
+                        <div class="decision-buttons">
+                            <button type="button" class="decision-btn" onclick="setOperacionesInternacionales(true)">SÍ</button>
+                            <button type="button" class="decision-btn" onclick="setOperacionesInternacionales(false)">NO</button>
+                        </div>
+                    </div>
+
+                    <div class="form-field" id="operacionesIntDetails" style="display: none;">
+                        <label>Especifique los países y tipo de operaciones <span class="required">*</span></label>
+                        <textarea id="paisesOperaciones" placeholder="Describa los países y tipos de operaciones" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>¿La empresa maneja dinero en efectivo de manera frecuente? <span class="required">*</span></label>
+                        <div class="decision-buttons">
+                            <button type="button" class="decision-btn" onclick="setManejaEfectivo(true)">SÍ</button>
+                            <button type="button" class="decision-btn" onclick="setManejaEfectivo(false)">NO</button>
+                        </div>
+                    </div>
+
+                    <div class="form-field" id="efectivoDetails" style="display: none;">
+                        <label>Monto mensual aproximado en efectivo <span class="required">*</span></label>
+                        <input type="text" id="montoEfectivo" placeholder="Monto mensual aproximado">
+                    </div>
+                </div>
+
+                <!-- Sección 7: Declaración -->
+                <div class="form-section">
+                    <h3>📋 Declaración</h3>
+                    
+                    <div class="form-field show">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="declaracionVeracidad" required>
+                            <label for="declaracionVeracidad">
+                                <strong>Declaro que la información suministrada es veraz y completa.</strong> 
+                                Me comprometo a actualizar esta información cuando se presenten cambios 
+                                y autorizo la verificación de la misma.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="autorizacionDatos" required>
+                            <label for="autorizacionDatos">
+                                <strong>Autorizo el tratamiento de los datos</strong> conforme a la 
+                                Ley 1581 de 2012 y demás normas aplicables, para los fines relacionados 
+                                con la prevención del lavado de activos y financiación del terrorismo.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Lugar <span class="required">*</span></label>
+                                <input type="text" id="lugarDeclaracion" placeholder="Ciudad" required>
+                            </div>
+                            <div>
+                                <label>Fecha <span class="required">*</span></label>
+                                <input type="date" id="fechaDeclaracion" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="form-navigation">
+                    <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                        ← Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ✓ Enviar Formulario SARLAFT
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <h3>Procesando formulario SARLAFT...</h3>
+        <p id="loadingMsg">Por favor espere</p>
+    </div>
+
+    <!-- Debug Banner -->
+    <div id="debugBanner" class="debug-banner" style="display:none;">DEBUG ACTIVO</div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/validations.js"></script>
+    <script src="js/api.js"></script>
+
+    <script>
+        // ==========================================
+        // ESTADO DEL FORMULARIO SARLAFT JURÍDICO
+        // ==========================================
+        const sarlaftJuridicoState = {
+            codigoRegistro: '',
+            listadaBolsa: null,
+            pepRL: null,
+            realizaOperacionesMonedaExtranjera: null,
+            operacionesInternacionales: null,
+            manejaEfectivo: null,
+            numBeneficiarios: 0,
+            beneficiarios: {}
+        };
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        window.onload = function() {
+            initializeSarlaftJuridico();
+            if (CONFIG.DEBUG) {
+                document.getElementById('debugBanner').style.display = 'block';
+                document.body.classList.add('debug');
+            }
+        };
+
+        function initializeSarlaftJuridico() {
+            const urlParams = new URLSearchParams(window.location.search);
+            sarlaftJuridicoState.codigoRegistro = urlParams.get('cdr') || '';
+            
+            if (!sarlaftJuridicoState.codigoRegistro) {
+                mostrarMensaje('Código de registro no válido', 'error');
+                setTimeout(() => window.location.href = 'selector.html', 2500);
+                return;
+            }
+
+            // Establecer fecha actual
+            document.getElementById('fechaDeclaracion').value = new Date().toISOString().split('T')[0];
+            
+            mostrarMensaje(`Código de registro: ${sarlaftJuridicoState.codigoRegistro}`, 'success');
+        }
+
+        // ==========================================
+        // FUNCIONES DE ESTADO
+        // ==========================================
+        function setListadaBolsa(listada) {
+            sarlaftJuridicoState.listadaBolsa = listada;
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function setPEPRL(esPEP) {
+            sarlaftJuridicoState.pepRL = esPEP;
+            
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            const pepDetails = document.getElementById('pepRLDetails');
+            if (esPEP) {
+                pepDetails.style.display = 'block';
+                pepDetails.classList.add('show');
+                document.getElementById('cargoFuncionRL').required = true;
+            } else {
+                pepDetails.style.display = 'none';
+                pepDetails.classList.remove('show');
+                document.getElementById('cargoFuncionRL').required = false;
+                document.getElementById('cargoFuncionRL').value = '';
+            }
+        }
+
+        function setNumBeneficiarios(num) {
+            sarlaftJuridicoState.numBeneficiarios = num;
+            
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            generateBeneficiariosFields(num);
+        }
+
+        function generateBeneficiariosFields(num) {
+            const container = document.getElementById('beneficiariosContainer');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= num; i++) {
+                const beneficiarioHtml = `
+                    <div class="form-field show">
+                        <h4>Beneficiario Final ${i}</h4>
+                        <div class="form-row">
+                            <div>
+                                <label>Nombres Completos <span class="required">*</span></label>
+                                <input type="text" id="nombresBenef${i}" placeholder="Nombres completos" data-type="name" required>
+                            </div>
+                            <div>
+                                <label>Documento <span class="required">*</span></label>
+                                <input type="text" id="documentoBenef${i}" placeholder="Número de documento" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div>
+                                <label>Porcentaje de Participación <span class="required">*</span></label>
+                                <input type="number" id="porcentajeBenef${i}" placeholder="%" min="25" max="100" required>
+                            </div>
+                            <div>
+                                <label>¿Es PEP? <span class="required">*</span></label>
+                                <div class="decision-buttons">
+                                    <button type="button" class="decision-btn" onclick="setPEPBeneficiario(${i}, true)">SÍ</button>
+                                    <button type="button" class="decision-btn" onclick="setPEPBeneficiario(${i}, false)">NO</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', beneficiarioHtml);
+            }
+        }
+
+        function setPEPBeneficiario(num, esPEP) {
+            if (!sarlaftJuridicoState.beneficiarios[num]) {
+                sarlaftJuridicoState.beneficiarios[num] = {};
+            }
+            sarlaftJuridicoState.beneficiarios[num].esPEP = esPEP;
+            
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+        }
+
+        function setMonedaExtranjera(realiza) {
+            sarlaftJuridicoState.realizaOperacionesMonedaExtranjera = realiza;
+            
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            const details = document.getElementById('monedaExtranjeraDetails');
+            if (realiza) {
+                details.style.display = 'block';
+                details.classList.add('show');
+                document.getElementById('divisasUtilizadas').required = true;
+                document.getElementById('montoMonedaExtranjera').required = true;
+            } else {
+                details.style.display = 'none';
+                details.classList.remove('show');
+                document.getElementById('divisasUtilizadas').required = false;
+                document.getElementById('montoMonedaExtranjera').required = false;
+            }
+        }
+
+        function setOperacionesInternacionales(realiza) {
+            sarlaftJuridicoState.operacionesInternacionales = realiza;
+            
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            const details = document.getElementById('operacionesIntDetails');
+            if (realiza) {
+                details.style.display = 'block';
+                details.classList.add('show');
+                document.getElementById('paisesOperaciones').required = true;
+            } else {
+                details.style.display = 'none';
+                details.classList.remove('show');
+                document.getElementById('paisesOperaciones').required = false;
+            }
+        }
+
+        function setManejaEfectivo(maneja) {
+            sarlaftJuridicoState.manejaEfectivo = maneja;
+            
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            const details = document.getElementById('efectivoDetails');
+            if (maneja) {
+                details.style.display = 'block';
+                details.classList.add('show');
+                document.getElementById('montoEfectivo').required = true;
+            } else {
+                details.style.display = 'none';
+                details.classList.remove('show');
+                document.getElementById('montoEfectivo').required = false;
+            }
+        }
+
+        // ==========================================
+        // VALIDACIÓN Y ENVÍO
+        // ==========================================
+        document.getElementById('sarlaftJuridicoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+            
+            await submitSarlaftJuridicoForm();
+        });
+
+        function validateForm() {
+            // Validar campos de estado
+            if (sarlaftJuridicoState.listadaBolsa === null) {
+                mostrarMensaje('Debe indicar si la empresa está listada en bolsa', 'error');
+                return false;
+            }
+            
+            if (sarlaftJuridicoState.pepRL === null) {
+                mostrarMensaje('Debe indicar si el representante legal es PEP', 'error');
+                return false;
+            }
+            
+            if (sarlaftJuridicoState.numBeneficiarios === 0) {
+                mostrarMensaje('Debe indicar el número de beneficiarios finales', 'error');
+                return false;
+            }
+            
+            // Validar beneficiarios
+            for (let i = 1; i <= sarlaftJuridicoState.numBeneficiarios; i++) {
+                const nombres = document.getElementById(`nombresBenef${i}`);
+                const documento = document.getElementById(`documentoBenef${i}`);
+                const porcentaje = document.getElementById(`porcentajeBenef${i}`);
+                
+                if (!nombres.value || !documento.value || !porcentaje.value) {
+                    mostrarMensaje(`Complete la información del Beneficiario ${i}`, 'error');
+                    return false;
+                }
+                
+                if (!sarlaftJuridicoState.beneficiarios[i]?.esPEP === undefined) {
+                    mostrarMensaje(`Indique si el Beneficiario ${i} es PEP`, 'error');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        async function submitSarlaftJuridicoForm() {
+            const formData = obtenerDatosFormulario('sarlaftJuridicoForm');
+            
+            // Agregar datos del estado
+            formData.listadaBolsa = sarlaftJuridicoState.listadaBolsa;
+            formData.pepRL = sarlaftJuridicoState.pepRL;
+            formData.realizaOperacionesMonedaExtranjera = sarlaftJuridicoState.realizaOperacionesMonedaExtranjera;
+            formData.operacionesInternacionales = sarlaftJuridicoState.operacionesInternacionales;
+            formData.manejaEfectivo = sarlaftJuridicoState.manejaEfectivo;
+            formData.numBeneficiarios = sarlaftJuridicoState.numBeneficiarios;
+            formData.beneficiarios = [];
+            
+            // Agregar datos de beneficiarios
+            for (let i = 1; i <= sarlaftJuridicoState.numBeneficiarios; i++) {
+                formData.beneficiarios.push({
+                    nombres: document.getElementById(`nombresBenef${i}`).value,
+                    documento: document.getElementById(`documentoBenef${i}`).value,
+                    porcentaje: document.getElementById(`porcentajeBenef${i}`).value,
+                    esPEP: sarlaftJuridicoState.beneficiarios[i]?.esPEP || false
+                });
+            }
+            
+            formData.codigoRegistro = sarlaftJuridicoState.codigoRegistro;
+            formData.tipoPersona = 'juridica';
+            
+            try {
+                mostrarOverlay(true, 'Enviando formulario SARLAFT...');
+                
+                const resultado = await realizarLlamadaAPI({
+                    accion: 'procesarFormularioSARLAFT',
+                    datosFormulario: formData
+                });
+                
+                if (resultado.success) {
+                    mostrarOverlay(true, 'Formulario enviado exitosamente. Redirigiendo...');
+                    setTimeout(() => {
+                        redirigirCon('pagina-exito.html', {
+                            estado: 'exitoso',
+                            cdr: sarlaftJuridicoState.codigoRegistro,
+                            tipo: 'sarlaft-juridica'
+                        });
+                    }, 1500);
+                } else {
+                    mostrarMensaje('Error enviando el formulario. Intente nuevamente.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error enviando formulario SARLAFT:', error);
+                mostrarMensaje('Error de conexión. Intente nuevamente.', 'error');
+            } finally {
+                mostrarOverlay(false);
+            }
+        }
+
+        // Auto-completar lugar
+        if (!document.getElementById('lugarDeclaracion').value) {
+            document.getElementById('lugarDeclaracion').value = 'Bogotá D.C.';
+        }
+    </script>
+</body>
+</html>

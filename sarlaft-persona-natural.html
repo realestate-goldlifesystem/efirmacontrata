@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SARLAFT Persona Natural - E-firmaContrata</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/responsive.css">
+    <link rel="stylesheet" href="styles/forms.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🏛️</div>
+            <h1>SARLAFT - Persona Natural</h1>
+            <p>Sistema de Administración del Riesgo de Lavado de Activos y Financiación del Terrorismo</p>
+        </div>
+
+        <div class="content">
+            <!-- Alert informativo -->
+            <div class="alert alert-info">
+                <div class="alert-icon">ℹ️</div>
+                <div class="alert-content">
+                    <div class="alert-title">Importante</div>
+                    <div class="alert-message">
+                        Este formulario es requerido por ley para prevenir el lavado de activos y financiación del terrorismo. 
+                        Toda la información será tratada de manera confidencial según la normativa vigente.
+                    </div>
+                </div>
+            </div>
+
+            <form id="sarlaftForm" class="form-container">
+                <!-- Sección 1: Información Personal -->
+                <div class="form-section">
+                    <h3>👤 Información Personal</h3>
+                    
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Tipo de Documento <span class="required">*</span></label>
+                                <select id="tipoDocumento" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="CC">Cédula de Ciudadanía</option>
+                                    <option value="CE">Cédula de Extranjería</option>
+                                    <option value="PA">Pasaporte</option>
+                                    <option value="TI">Tarjeta de Identidad</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Número de Documento <span class="required">*</span></label>
+                                <input type="text" id="numeroDocumento" placeholder="Número de documento" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Lugar de Expedición <span class="required">*</span></label>
+                                <input type="text" id="lugarExpedicion" placeholder="Ciudad/Departamento" required>
+                            </div>
+                            <div>
+                                <label>Fecha de Expedición <span class="required">*</span></label>
+                                <input type="date" id="fechaExpedicion" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Primer Nombre <span class="required">*</span></label>
+                                <input type="text" id="primerNombre" placeholder="Primer nombre" data-type="name" required>
+                            </div>
+                            <div>
+                                <label>Segundo Nombre</label>
+                                <input type="text" id="segundoNombre" placeholder="Segundo nombre" data-type="name">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Primer Apellido <span class="required">*</span></label>
+                                <input type="text" id="primerApellido" placeholder="Primer apellido" data-type="name" required>
+                            </div>
+                            <div>
+                                <label>Segundo Apellido</label>
+                                <input type="text" id="segundoApellido" placeholder="Segundo apellido" data-type="name">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Fecha de Nacimiento <span class="required">*</span></label>
+                                <input type="date" id="fechaNacimiento" required>
+                            </div>
+                            <div>
+                                <label>Lugar de Nacimiento <span class="required">*</span></label>
+                                <input type="text" id="lugarNacimiento" placeholder="Ciudad/País" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Nacionalidad <span class="required">*</span></label>
+                                <select id="nacionalidad" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Colombiana">Colombiana</option>
+                                    <option value="Venezolana">Venezolana</option>
+                                    <option value="Ecuatoriana">Ecuatoriana</option>
+                                    <option value="Peruana">Peruana</option>
+                                    <option value="Argentina">Argentina</option>
+                                    <option value="Brasileña">Brasileña</option>
+                                    <option value="Estadounidense">Estadounidense</option>
+                                    <option value="Española">Española</option>
+                                    <option value="Otra">Otra</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Género <span class="required">*</span></label>
+                                <select id="genero" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                    <option value="O">Otro</option>
+                                    <option value="P">Prefiero no decir</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 2: Información de Contacto -->
+                <div class="form-section">
+                    <h3>📞 Información de Contacto</h3>
+                    
+                    <div class="form-field show">
+                        <label>Dirección de Residencia <span class="required">*</span></label>
+                        <input type="text" id="direccionResidencia" placeholder="Dirección completa" required>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Ciudad <span class="required">*</span></label>
+                                <input type="text" id="ciudad" placeholder="Ciudad" required>
+                            </div>
+                            <div>
+                                <label>Departamento <span class="required">*</span></label>
+                                <input type="text" id="departamento" placeholder="Departamento" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Teléfono Fijo</label>
+                                <input type="tel" id="telefonoFijo" placeholder="601234567">
+                            </div>
+                            <div>
+                                <label>Teléfono Celular <span class="required">*</span></label>
+                                <input type="tel" id="telefonoCelular" placeholder="3001234567" onblur="validarTelefono(this)" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>Correo Electrónico <span class="required">*</span></label>
+                        <input type="email" id="correoElectronico" placeholder="correo@ejemplo.com" onblur="validarEmail(this)" required>
+                    </div>
+                </div>
+
+                <!-- Sección 3: Información Económica -->
+                <div class="form-section">
+                    <h3>💰 Información Económica</h3>
+                    
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Ocupación/Profesión <span class="required">*</span></label>
+                                <input type="text" id="ocupacion" placeholder="Profesión u ocupación principal" required>
+                            </div>
+                            <div>
+                                <label>Sector Económico <span class="required">*</span></label>
+                                <select id="sectorEconomico" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Agricultura">Agricultura, ganadería, caza y silvicultura</option>
+                                    <option value="Mineria">Explotación de minas y canteras</option>
+                                    <option value="Manufactura">Industrias manufactureras</option>
+                                    <option value="Construccion">Construcción</option>
+                                    <option value="Comercio">Comercio al por mayor y al por menor</option>
+                                    <option value="Transporte">Transporte, almacenamiento y comunicaciones</option>
+                                    <option value="Financiero">Intermediación financiera</option>
+                                    <option value="Inmobiliario">Actividades inmobiliarias</option>
+                                    <option value="Servicios">Servicios comunales, sociales y personales</option>
+                                    <option value="Educacion">Educación</option>
+                                    <option value="Salud">Servicios sociales y de salud</option>
+                                    <option value="Gobierno">Administración pública</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Ingresos Mensuales <span class="required">*</span></label>
+                                <select id="ingresosMensuales" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="0-1">Menos de 1 SMMLV</option>
+                                    <option value="1-2">Entre 1 y 2 SMMLV</option>
+                                    <option value="2-4">Entre 2 y 4 SMMLV</option>
+                                    <option value="4-6">Entre 4 y 6 SMMLV</option>
+                                    <option value="6-10">Entre 6 y 10 SMMLV</option>
+                                    <option value="10-20">Entre 10 y 20 SMMLV</option>
+                                    <option value="20+">Más de 20 SMMLV</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Patrimonio <span class="required">*</span></label>
+                                <select id="patrimonio" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="0-50">Menos de 50 SMMLV</option>
+                                    <option value="50-100">Entre 50 y 100 SMMLV</option>
+                                    <option value="100-200">Entre 100 y 200 SMMLV</option>
+                                    <option value="200-500">Entre 200 y 500 SMMLV</option>
+                                    <option value="500-1000">Entre 500 y 1.000 SMMLV</option>
+                                    <option value="1000+">Más de 1.000 SMMLV</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>Empresa donde Labora</label>
+                        <input type="text" id="empresaLabora" placeholder="Nombre de la empresa">
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Dirección de la Empresa</label>
+                                <input type="text" id="direccionEmpresa" placeholder="Dirección completa">
+                            </div>
+                            <div>
+                                <label>Teléfono de la Empresa</label>
+                                <input type="tel" id="telefonoEmpresa" placeholder="601234567">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 4: Información de Riesgo -->
+                <div class="form-section">
+                    <h3>⚠️ Evaluación de Riesgo</h3>
+                    
+                    <div class="form-field show">
+                        <label>¿Es usted una Persona Políticamente Expuesta (PEP)? <span class="required">*</span></label>
+                        <div class="decision-buttons">
+                            <button type="button" class="decision-btn" onclick="setPEP(true)">SÍ</button>
+                            <button type="button" class="decision-btn" onclick="setPEP(false)">NO</button>
+                        </div>
+                        <div class="form-help">
+                            Personas que ejercen funciones públicas prominentes o han ejercido en el último año
+                        </div>
+                    </div>
+
+                    <div class="form-field" id="pepDetails" style="display: none;">
+                        <label>Especifique el cargo o función <span class="required">*</span></label>
+                        <textarea id="cargoFuncion" placeholder="Describa el cargo o función pública" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>¿Tiene familiares o vínculos con Personas Políticamente Expuestas? <span class="required">*</span></label>
+                        <div class="decision-buttons">
+                            <button type="button" class="decision-btn" onclick="setVinculoPEP(true)">SÍ</button>
+                            <button type="button" class="decision-btn" onclick="setVinculoPEP(false)">NO</button>
+                        </div>
+                    </div>
+
+                    <div class="form-field" id="vinculoPepDetails" style="display: none;">
+                        <label>Especifique el parentesco y cargo <span class="required">*</span></label>
+                        <textarea id="parentescoPEP" placeholder="Describa el parentesco y cargo de la persona" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>¿Realiza operaciones en moneda extranjera? <span class="required">*</span></label>
+                        <div class="decision-buttons">
+                            <button type="button" class="decision-btn" onclick="setMonedaExtranjera(true)">SÍ</button>
+                            <button type="button" class="decision-btn" onclick="setMonedaExtranjera(false)">NO</button>
+                        </div>
+                    </div>
+
+                    <div class="form-field" id="monedaExtranjeraDetails" style="display: none;">
+                        <div class="form-row">
+                            <div>
+                                <label>Tipo de moneda <span class="required">*</span></label>
+                                <select id="tipoMoneda">
+                                    <option value="">Seleccione...</option>
+                                    <option value="USD">Dólares Americanos (USD)</option>
+                                    <option value="EUR">Euros (EUR)</option>
+                                    <option value="GBP">Libras Esterlinas (GBP)</option>
+                                    <option value="Otra">Otra</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Monto mensual aproximado <span class="required">*</span></label>
+                                <input type="text" id="montoMonedaExtranjera" placeholder="Monto en moneda extranjera">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 5: Referencias -->
+                <div class="form-section">
+                    <h3>👥 Referencias</h3>
+                    
+                    <h4>Referencia Personal</h4>
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Nombre Completo <span class="required">*</span></label>
+                                <input type="text" id="nombreReferenciaPersonal" placeholder="Nombre completo" data-type="name" required>
+                            </div>
+                            <div>
+                                <label>Teléfono <span class="required">*</span></label>
+                                <input type="tel" id="telefonoReferenciaPersonal" placeholder="3001234567" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4>Referencia Comercial/Laboral</h4>
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Nombre Completo <span class="required">*</span></label>
+                                <input type="text" id="nombreReferenciaComercial" placeholder="Nombre completo" data-type="name" required>
+                            </div>
+                            <div>
+                                <label>Teléfono <span class="required">*</span></label>
+                                <input type="tel" id="telefonoReferenciaComercial" placeholder="3001234567" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <label>Empresa/Entidad</label>
+                        <input type="text" id="empresaReferenciaComercial" placeholder="Nombre de la empresa">
+                    </div>
+                </div>
+
+                <!-- Sección 6: Declaración -->
+                <div class="form-section">
+                    <h3>📋 Declaración</h3>
+                    
+                    <div class="form-field show">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="declaracionVeracidad" required>
+                            <label for="declaracionVeracidad">
+                                <strong>Declaro que la información suministrada es veraz y completa.</strong> 
+                                Me comprometo a actualizar esta información cuando se presenten cambios 
+                                y autorizo la verificación de la misma.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="autorizacionDatos" required>
+                            <label for="autorizacionDatos">
+                                <strong>Autorizo el tratamiento de mis datos personales</strong> conforme a la 
+                                Ley 1581 de 2012 y demás normas aplicables, para los fines relacionados 
+                                con la prevención del lavado de activos y financiación del terrorismo.
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-field show">
+                        <div class="form-row">
+                            <div>
+                                <label>Lugar <span class="required">*</span></label>
+                                <input type="text" id="lugarDeclaracion" placeholder="Ciudad" required>
+                            </div>
+                            <div>
+                                <label>Fecha <span class="required">*</span></label>
+                                <input type="date" id="fechaDeclaracion" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="form-navigation">
+                    <button type="button" class="btn btn-secondary" onclick="window.history.back()">
+                        ← Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ✓ Enviar Formulario SARLAFT
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <h3>Procesando formulario SARLAFT...</h3>
+        <p id="loadingMsg">Por favor espere</p>
+    </div>
+
+    <!-- Debug Banner -->
+    <div id="debugBanner" class="debug-banner" style="display:none;">DEBUG ACTIVO</div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/validations.js"></script>
+    <script src="js/api.js"></script>
+
+    <script>
+        // ==========================================
+        // ESTADO DEL FORMULARIO SARLAFT
+        // ==========================================
+        const sarlaftState = {
+            codigoRegistro: '',
+            esPEP: null,
+            tieneVinculoPEP: null,
+            realizaOperacionesMonedaExtranjera: null
+        };
+
+        // ==========================================
+        // INICIALIZACIÓN
+        // ==========================================
+        window.onload = function() {
+            initializeSarlaft();
+            if (CONFIG.DEBUG) {
+                document.getElementById('debugBanner').style.display = 'block';
+                document.body.classList.add('debug');
+            }
+        };
+
+        function initializeSarlaft() {
+            const urlParams = new URLSearchParams(window.location.search);
+            sarlaftState.codigoRegistro = urlParams.get('cdr') || '';
+            
+            if (!sarlaftState.codigoRegistro) {
+                mostrarMensaje('Código de registro no válido', 'error');
+                setTimeout(() => window.location.href = 'selector.html', 2500);
+                return;
+            }
+
+            // Establecer fecha actual
+            document.getElementById('fechaDeclaracion').value = new Date().toISOString().split('T')[0];
+            
+            mostrarMensaje(`Código de registro: ${sarlaftState.codigoRegistro}`, 'success');
+        }
+
+        // ==========================================
+        // FUNCIONES DE ESTADO
+        // ==========================================
+        function setPEP(esPEP) {
+            sarlaftState.esPEP = esPEP;
+            
+            // Actualizar UI
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            // Mostrar/ocultar detalles
+            const pepDetails = document.getElementById('pepDetails');
+            if (esPEP) {
+                pepDetails.style.display = 'block';
+                pepDetails.classList.add('show');
+                document.getElementById('cargoFuncion').required = true;
+            } else {
+                pepDetails.style.display = 'none';
+                pepDetails.classList.remove('show');
+                document.getElementById('cargoFuncion').required = false;
+                document.getElementById('cargoFuncion').value = '';
+            }
+        }
+
+        function setVinculoPEP(tieneVinculo) {
+            sarlaftState.tieneVinculoPEP = tieneVinculo;
+            
+            // Actualizar UI
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            // Mostrar/ocultar detalles
+            const vinculoDetails = document.getElementById('vinculoPepDetails');
+            if (tieneVinculo) {
+                vinculoDetails.style.display = 'block';
+                vinculoDetails.classList.add('show');
+                document.getElementById('parentescoPEP').required = true;
+            } else {
+                vinculoDetails.style.display = 'none';
+                vinculoDetails.classList.remove('show');
+                document.getElementById('parentescoPEP').required = false;
+                document.getElementById('parentescoPEP').value = '';
+            }
+        }
+
+        function setMonedaExtranjera(realizaOperaciones) {
+            sarlaftState.realizaOperacionesMonedaExtranjera = realizaOperaciones;
+            
+            // Actualizar UI
+            event.target.parentElement.querySelectorAll('.decision-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            // Mostrar/ocultar detalles
+            const monedaDetails = document.getElementById('monedaExtranjeraDetails');
+            if (realizaOperaciones) {
+                monedaDetails.style.display = 'block';
+                monedaDetails.classList.add('show');
+                document.getElementById('tipoMoneda').required = true;
+                document.getElementById('montoMonedaExtranjera').required = true;
+            } else {
+                monedaDetails.style.display = 'none';
+                monedaDetails.classList.remove('show');
+                document.getElementById('tipoMoneda').required = false;
+                document.getElementById('montoMonedaExtranjera').required = false;
+                document.getElementById('tipoMoneda').value = '';
+                document.getElementById('montoMonedaExtranjera').value = '';
+            }
+        }
+
+        // ==========================================
+        // VALIDACIÓN Y ENVÍO
+        // ==========================================
+        document.getElementById('sarlaftForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+            
+            await submitSarlaftForm();
+        });
+
+        function validateForm() {
+            // Validaciones básicas ya se manejan con HTML5 required
+            
+            // Validar PEP
+            if (sarlaftState.esPEP === null) {
+                mostrarMensaje('Debe indicar si es una Persona Políticamente Expuesta', 'error');
+                return false;
+            }
+            
+            if (sarlaftState.tieneVinculoPEP === null) {
+                mostrarMensaje('Debe indicar si tiene vínculos con Personas Políticamente Expuestas', 'error');
+                return false;
+            }
+            
+            if (sarlaftState.realizaOperacionesMonedaExtranjera === null) {
+                mostrarMensaje('Debe indicar si realiza operaciones en moneda extranjera', 'error');
+                return false;
+            }
+            
+            return true;
+        }
+
+        async function submitSarlaftForm() {
+            const formData = obtenerDatosFormulario('sarlaftForm');
+            
+            // Agregar datos del estado
+            formData.esPEP = sarlaftState.esPEP;
+            formData.tieneVinculoPEP = sarlaftState.tieneVinculoPEP;
+            formData.realizaOperacionesMonedaExtranjera = sarlaftState.realizaOperacionesMonedaExtranjera;
+            formData.codigoRegistro = sarlaftState.codigoRegistro;
+            formData.tipoPersona = 'natural';
+            
+            try {
+                mostrarOverlay(true, 'Enviando formulario SARLAFT...');
+                
+                const resultado = await realizarLlamadaAPI({
+                    accion: 'procesarFormularioSARLAFT',
+                    datosFormulario: formData
+                });
+                
+                if (resultado.success) {
+                    mostrarOverlay(true, 'Formulario enviado exitosamente. Redirigiendo...');
+                    setTimeout(() => {
+                        redirigirCon('pagina-exito.html', {
+                            estado: 'exitoso',
+                            cdr: sarlaftState.codigoRegistro,
+                            tipo: 'sarlaft-natural'
+                        });
+                    }, 1500);
+                } else {
+                    mostrarMensaje('Error enviando el formulario. Intente nuevamente.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error enviando formulario SARLAFT:', error);
+                mostrarMensaje('Error de conexión. Intente nuevamente.', 'error');
+            } finally {
+                mostrarOverlay(false);
+            }
+        }
+
+        // ==========================================
+        // INICIALIZACIÓN DE CAMPOS
+        // ==========================================
+        // Auto-completar lugar si hay geolocalización
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                // En una implementación real, usaríamos un servicio de geocodificación
+                // Por ahora, establecemos Bogotá como valor por defecto
+                if (!document.getElementById('lugarDeclaracion').value) {
+                    document.getElementById('lugarDeclaracion').value = 'Bogotá D.C.';
+                }
+            }, function() {
+                // Si falla la geolocalización, establecer Bogotá por defecto
+                if (!document.getElementById('lugarDeclaracion').value) {
+                    document.getElementById('lugarDeclaracion').value = 'Bogotá D.C.';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
