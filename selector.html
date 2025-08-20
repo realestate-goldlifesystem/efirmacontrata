@@ -74,7 +74,6 @@ body {
   padding: 40px 30px;
 }
 
-/* Estados de validación */
 .validation-state {
   padding: 20px;
   border-radius: 10px;
@@ -122,7 +121,6 @@ body {
   line-height: 1.6;
 }
 
-/* Loading */
 .loading {
   text-align: center;
   padding: 40px;
@@ -143,7 +141,6 @@ body {
   100% { transform: rotate(360deg); }
 }
 
-/* Botones */
 .btn {
   display: inline-block;
   padding: 12px 30px;
@@ -178,7 +175,6 @@ body {
   color: white;
 }
 
-/* Opciones de formulario */
 .form-selector {
   display: flex;
   gap: 15px;
@@ -226,7 +222,6 @@ body {
   color: #666;
 }
 
-/* Info box */
 .info-box {
   background: #f0f4ff;
   border-left: 4px solid var(--primary);
@@ -247,21 +242,6 @@ body {
   margin: 0;
 }
 
-/* Debug */
-.debug-info {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  background: rgba(0,0,0,0.8);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  font-family: monospace;
-  font-size: 12px;
-  max-width: 300px;
-}
-
-/* Detalles del registro */
 .registro-details {
   background: var(--light);
   padding: 20px;
@@ -296,13 +276,23 @@ body {
   font-size: 14px;
 }
 
-/* Actions */
 .actions {
   display: flex;
   gap: 10px;
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .form-selector {
+    flex-direction: column;
+  }
+  
+  .form-option {
+    min-width: 100%;
+  }
 }
 </style>
 </head>
@@ -322,13 +312,10 @@ body {
   </div>
 </div>
 
-<!-- Debug info (solo visible en desarrollo) -->
-<div id="debugInfo" class="debug-info" style="display:none;"></div>
-
 <script>
-// Configuración
+// Configuración PRODUCCIÓN
 const CONFIG = {
-  DEBUG: true, // Cambiar a false en producción
+  DEBUG: false, // IMPORTANTE: false en producción
   API_URL: 'https://script.google.com/macros/s/AKfycbzOnhQ8CD2gWMdvvYnF2v1FL3yto5sM8i_jV9FmIJa1Os05YwXR5RKSsq22ePlwqQgL/exec',
   FORMULARIOS: {
     inquilino: 'formulario_inquilino.html',
@@ -337,11 +324,11 @@ const CONFIG = {
 };
 
 // Variables globales
-let params = new URLSearchParams(window.location.search);
-let action = params.get('action');
-let cdr = params.get('cdr');
-let tipo = params.get('tipo');
-let modo = params.get('modo');
+const params = new URLSearchParams(window.location.search);
+const action = params.get('action');
+const cdr = params.get('cdr');
+const tipo = params.get('tipo');
+const modo = params.get('modo');
 
 // Estado de validación
 let estadoValidacion = {
@@ -350,35 +337,13 @@ let estadoValidacion = {
   datosRegistro: null
 };
 
-// Debug
-function debug(msg) {
-  if (CONFIG.DEBUG) {
-    console.log('[Selector]', msg);
-    const debugEl = document.getElementById('debugInfo');
-    if (debugEl) {
-      debugEl.style.display = 'block';
-      debugEl.innerHTML = `
-        <strong>Debug Info:</strong><br>
-        Action: ${action}<br>
-        CDR: ${cdr}<br>
-        Tipo: ${tipo}<br>
-        Modo: ${modo}<br>
-        URL: ${window.location.href}
-      `;
-    }
-  }
-}
-
 // Inicialización
 window.onload = function() {
-  debug('Iniciando selector...');
   procesarAcceso();
 };
 
 // Procesar acceso
 async function procesarAcceso() {
-  const contentEl = document.getElementById('content');
-  
   // Si no hay parámetros, mostrar selector manual
   if (!action && !cdr) {
     mostrarSelectorManual();
@@ -414,12 +379,36 @@ async function procesarAcceso() {
       await procesarAccesoPropietario(cdr);
       break;
       
-    case 'correccion':
-      if (!cdr || !tipo) {
-        mostrarError('Parámetros incompletos para corrección');
+    case 'correccion_inquilino':
+      if (!cdr) {
+        mostrarError('Código de registro requerido');
         return;
       }
-      procesarCorreccion(cdr, tipo);
+      procesarCorreccion(cdr, 'inquilino');
+      break;
+      
+    case 'correccion_propietario':
+      if (!cdr) {
+        mostrarError('Código de registro requerido');
+        return;
+      }
+      procesarCorreccion(cdr, 'propietario');
+      break;
+      
+    case 'revisar_contrato':
+      if (!cdr) {
+        mostrarError('Código de registro requerido');
+        return;
+      }
+      window.location.href = `revisar_contrato.html?cdr=${encodeURIComponent(cdr)}&tipo=${tipo || 'inquilino'}`;
+      break;
+      
+    case 'aprobar_contrato':
+      if (!cdr || !tipo) {
+        mostrarError('Parámetros incompletos');
+        return;
+      }
+      window.location.href = `aprobar_contrato.html?cdr=${encodeURIComponent(cdr)}&tipo=${tipo}`;
       break;
       
     default:
@@ -449,7 +438,9 @@ async function validarEstadoCDR(cdr) {
     if (responseInq.ok) {
       const resultInq = await responseInq.json();
       estadoValidacion.inquilino = resultInq;
-      estadoValidacion.datosRegistro = resultInq.datosRegistro;
+      if (resultInq.datosRegistro) {
+        estadoValidacion.datosRegistro = resultInq.datosRegistro;
+      }
     }
     
     // Verificar estado del propietario
@@ -462,43 +453,44 @@ async function validarEstadoCDR(cdr) {
       estadoValidacion.propietario = resultProp;
     }
     
-    debug('Estado validación inquilino: ' + JSON.stringify(estadoValidacion.inquilino));
-    debug('Estado validación propietario: ' + JSON.stringify(estadoValidacion.propietario));
-    
   } catch (error) {
     console.error('Error validando CDR:', error);
-    
-    // En modo debug, permitir continuar
-    if (CONFIG.DEBUG) {
-      estadoValidacion.inquilino = { activo: true, mensaje: 'Modo debug' };
-      estadoValidacion.propietario = { activo: true, mensaje: 'Modo debug' };
-    } else {
-      mostrarError('Error verificando el estado del registro');
-    }
+    // En caso de error de conexión, mostrar error
+    mostrarError('Error verificando el estado del registro. Por favor, intente nuevamente.');
   }
 }
 
 // Procesar acceso inquilino
 async function procesarAccesoInquilino(cdr) {
+  // Si no se validó previamente, validar ahora
+  if (!estadoValidacion.inquilino) {
+    await validarEstadoCDR(cdr);
+  }
+  
   // Verificar si ya fue usado
   if (estadoValidacion.inquilino && !estadoValidacion.inquilino.activo) {
     mostrarFormularioYaUsado('inquilino', cdr);
     return;
   }
   
-  // Si está activo, redirigir
+  // Si está activo o no hay respuesta del servidor, redirigir
   redirigirFormularioInquilino(cdr);
 }
 
 // Procesar acceso propietario
 async function procesarAccesoPropietario(cdr) {
+  // Si no se validó previamente, validar ahora
+  if (!estadoValidacion.propietario) {
+    await validarEstadoCDR(cdr);
+  }
+  
   // Verificar si ya fue usado
   if (estadoValidacion.propietario && !estadoValidacion.propietario.activo) {
     mostrarFormularioYaUsado('propietario', cdr);
     return;
   }
   
-  // Si está activo, redirigir
+  // Si está activo o no hay respuesta del servidor, redirigir
   redirigirFormularioPropietario(cdr);
 }
 
@@ -520,14 +512,18 @@ function mostrarOpcionesSegunEstado() {
           <span class="detail-label">Código:</span>
           <span class="detail-value">${estadoValidacion.datosRegistro.codigoRegistro || cdr}</span>
         </div>
+        ${estadoValidacion.datosRegistro.direccion ? `
         <div class="detail-item">
           <span class="detail-label">Dirección:</span>
-          <span class="detail-value">${estadoValidacion.datosRegistro.direccion || 'No disponible'}</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.direccion}</span>
         </div>
+        ` : ''}
+        ${estadoValidacion.datosRegistro.estado ? `
         <div class="detail-item">
           <span class="detail-label">Estado:</span>
-          <span class="detail-value">${estadoValidacion.datosRegistro.estado || 'No disponible'}</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.estado}</span>
         </div>
+        ` : ''}
       </div>
     `;
   }
@@ -577,7 +573,6 @@ function mostrarFormularioYaUsado(tipo, cdr) {
   const contentEl = document.getElementById('content');
   
   const tipoTexto = tipo === 'inquilino' ? 'Inquilino' : 'Propietario';
-  const iconoTipo = tipo === 'inquilino' ? '👤' : '🏠';
   
   contentEl.innerHTML = `
     <div class="validation-state used">
@@ -593,14 +588,18 @@ function mostrarFormularioYaUsado(tipo, cdr) {
     ${estadoValidacion.datosRegistro ? `
       <div class="registro-details">
         <h4>📋 Detalles del Registro</h4>
+        ${estadoValidacion.datosRegistro.direccion ? `
         <div class="detail-item">
           <span class="detail-label">Dirección:</span>
-          <span class="detail-value">${estadoValidacion.datosRegistro.direccion || 'No disponible'}</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.direccion}</span>
         </div>
+        ` : ''}
+        ${estadoValidacion.datosRegistro.estado ? `
         <div class="detail-item">
           <span class="detail-label">Estado actual:</span>
-          <span class="detail-value">${estadoValidacion.datosRegistro.estado || 'No disponible'}</span>
+          <span class="detail-value">${estadoValidacion.datosRegistro.estado}</span>
         </div>
+        ` : ''}
         ${estadoValidacion.datosRegistro.detalles ? `
         <div class="detail-item">
           <span class="detail-label">Detalles:</span>
@@ -679,8 +678,6 @@ async function solicitarCDR(tipo) {
 
 // Redirigir a formulario inquilino
 function redirigirFormularioInquilino(cdr) {
-  debug(`Redirigiendo a formulario inquilino con CDR: ${cdr}`);
-  
   const contentEl = document.getElementById('content');
   contentEl.innerHTML = `
     <div class="validation-state valid">
@@ -694,14 +691,12 @@ function redirigirFormularioInquilino(cdr) {
   `;
   
   setTimeout(() => {
-    window.location.href = `${CONFIG.FORMULARIOS.inquilino}?cdr=${encodeURIComponent(cdr)}`;
+    window.location.href = `${CONFIG.FORMULARIOS.inquilino}?cdr=${encodeURIComponent(cdr)}${modo ? '&modo=' + modo : ''}`;
   }, 1500);
 }
 
 // Redirigir a formulario propietario
 function redirigirFormularioPropietario(cdr) {
-  debug(`Redirigiendo a formulario propietario con CDR: ${cdr}`);
-  
   const contentEl = document.getElementById('content');
   contentEl.innerHTML = `
     <div class="validation-state valid">
@@ -715,18 +710,16 @@ function redirigirFormularioPropietario(cdr) {
   `;
   
   setTimeout(() => {
-    window.location.href = `${CONFIG.FORMULARIOS.propietario}?cdr=${encodeURIComponent(cdr)}`;
+    window.location.href = `${CONFIG.FORMULARIOS.propietario}?cdr=${encodeURIComponent(cdr)}${modo ? '&modo=' + modo : ''}`;
   }, 1500);
 }
 
 // Procesar corrección
 function procesarCorreccion(cdr, tipo) {
-  debug(`Procesando corrección para ${tipo} con CDR: ${cdr}`);
-  
   const documentos = params.get('docs');
   const url = tipo === 'inquilino' 
-    ? `${CONFIG.FORMULARIOS.inquilino}?cdr=${encodeURIComponent(cdr)}&modo=correccion&docs=${encodeURIComponent(documentos || '')}`
-    : `${CONFIG.FORMULARIOS.propietario}?cdr=${encodeURIComponent(cdr)}&modo=correccion&docs=${encodeURIComponent(documentos || '')}`;
+    ? `${CONFIG.FORMULARIOS.inquilino}?cdr=${encodeURIComponent(cdr)}&modo=correccion${documentos ? '&docs=' + encodeURIComponent(documentos) : ''}`
+    : `${CONFIG.FORMULARIOS.propietario}?cdr=${encodeURIComponent(cdr)}&modo=correccion${documentos ? '&docs=' + encodeURIComponent(documentos) : ''}`;
   
   window.location.href = url;
 }
@@ -748,11 +741,12 @@ function mostrarError(mensaje) {
   `;
 }
 
-// Log de inicialización
-console.log('🚀 E-firmaContrata Selector v3.0');
-console.log('📋 CDR:', cdr);
-console.log('🎯 Action:', action);
-console.log('✅ Validación de estado implementada');
+// Silenciar logs en producción
+if (!CONFIG.DEBUG) {
+  console.log = function() {};
+  console.info = function() {};
+  console.warn = function() {};
+}
 </script>
 
 </body>
