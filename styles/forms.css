@@ -1,0 +1,597 @@
+/* ==========================================
+   ESTILOS DE FORMULARIOS E-FIRMACONTRATA
+   Estilos específicos para formularios
+   ========================================== */
+
+/* ==============================
+   VARIABLES DE FORMULARIOS
+   ============================== */
+:root {
+  --form-border: #e0e0e0;
+  --form-border-focus: var(--gold-primary);
+  --form-border-error: #dc2626;
+  --form-border-success: #059669;
+  --form-bg: #ffffff;
+  --form-bg-disabled: #f5f5f5;
+  --form-text: #333333;
+  --form-text-placeholder: #999999;
+  --form-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  --form-shadow-focus: 0 0 0 3px rgba(255, 215, 0, 0.1);
+}
+
+/* ==============================
+   CONTENEDORES DE FORMULARIO
+   ============================== */
+.form-container {
+  background: var(--form-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 30px;
+  margin-bottom: 20px;
+}
+
+.form-section {
+  margin-bottom: 40px;
+  padding: 25px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  border: 1px solid rgba(255,215,0,0.2);
+}
+
+.form-section h3 {
+  color: var(--gold-primary);
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section h3::before {
+  content: "";
+  width: 4px;
+  height: 20px;
+  background: var(--gold-primary);
+  border-radius: 2px;
+}
+
+/* ==============================
+   CAMPOS DE FORMULARIO
+   ============================== */
+.form-field {
+  margin-bottom: 25px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+.form-field.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.form-field.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.form-row > div {
+  flex: 1;
+}
+
+.form-group {
+  position: relative;
+}
+
+/* ==============================
+   LABELS
+   ============================== */
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--form-text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.required {
+  color: var(--form-border-error);
+  font-weight: bold;
+}
+
+.label-description {
+  font-size: 12px;
+  color: var(--form-text-placeholder);
+  font-weight: normal;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+/* ==============================
+   INPUTS BASE
+   ============================== */
+input, select, textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--form-border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--form-bg);
+  color: var(--form-text);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--form-border-focus);
+  box-shadow: var(--form-shadow-focus);
+  transform: translateY(-1px);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--form-text-placeholder);
+  opacity: 1;
+}
+
+input:disabled, select:disabled, textarea:disabled {
+  background: var(--form-bg-disabled);
+  color: #666;
+  cursor: not-allowed;
+}
+
+/* ==============================
+   ESTADOS DE VALIDACIÓN
+   ============================== */
+.valid {
+  border-color: var(--form-border-success) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23059669'%3e%3cpath d='M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.invalid {
+  border-color: var(--form-border-error) !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23dc2626'%3e%3cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z'/%3e%3cpath d='M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+/* ==============================
+   MENSAJES DE VALIDACIÓN
+   ============================== */
+.validation-message {
+  font-size: 12px;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  display: none;
+}
+
+.validation-message.show {
+  opacity: 1;
+  transform: translateY(0);
+  display: block;
+}
+
+.validation-message.success {
+  color: var(--form-border-success);
+  background: rgba(5, 150, 105, 0.1);
+  border: 1px solid rgba(5, 150, 105, 0.2);
+}
+
+.validation-message.error {
+  color: var(--form-border-error);
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.validation-message.info {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+/* ==============================
+   TIPOS ESPECÍFICOS DE INPUT
+   ============================== */
+input[type="email"] {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23999'%3e%3cpath d='M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757zm3.436-.586L16 11.801V4.697l-5.803 3.546z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  padding-right: 36px;
+}
+
+input[type="tel"] {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23999'%3e%3cpath d='M3.654 1.328a.678.678 0 0 0-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 0 0 4.168 6.608 17.569 17.569 0 0 0 6.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 0 0-.063-1.015l-2.307-1.794a.678.678 0 0 0-.58-.122L9.98 10.65a.678.678 0 0 1-.643-.15L6.788 7.951a.678.678 0 0 1-.15-.643l.219-1.805a.678.678 0 0 0-.122-.58L4.941 2.615a.678.678 0 0 0-.063-.017z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  padding-right: 36px;
+}
+
+input[type="date"] {
+  position: relative;
+}
+
+/* ==============================
+   SELECT PERSONALIZADO
+   ============================== */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+select:focus {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23FFD700' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* ==============================
+   TEXTAREA
+   ============================== */
+textarea {
+  min-height: 100px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+/* ==============================
+   FILE UPLOAD
+   ============================== */
+.file-upload-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+.file-upload-input {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+}
+
+.file-upload-label {
+  display: block;
+  padding: 16px 20px;
+  border: 2px dashed var(--form-border);
+  border-radius: 12px;
+  background: var(--form-bg);
+  color: var(--form-text);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  position: relative;
+}
+
+.file-upload-label::before {
+  content: "📎";
+  font-size: 24px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.file-upload-label:hover {
+  border-color: var(--form-border-focus);
+  background: rgba(255, 215, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.file-upload-label.file-selected {
+  border-color: var(--form-border-success);
+  background: rgba(5, 150, 105, 0.05);
+  color: var(--form-border-success);
+}
+
+.file-upload-label.file-selected::before {
+  content: "✓";
+  color: var(--form-border-success);
+}
+
+.file-size-info {
+  font-size: 11px;
+  color: var(--form-text-placeholder);
+  margin-top: 4px;
+  text-align: center;
+}
+
+/* ==============================
+   BOTONES DE DECISIÓN
+   ============================== */
+.decision-buttons {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.decision-btn {
+  flex: 1;
+  padding: 15px 20px;
+  border: 2px solid var(--form-border);
+  border-radius: 8px;
+  background: var(--form-bg);
+  color: var(--form-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  text-align: center;
+}
+
+.decision-btn:hover {
+  border-color: var(--form-border-focus);
+  background: rgba(255, 215, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.decision-btn.selected {
+  border-color: var(--form-border-focus);
+  background: var(--gold-primary);
+  color: var(--black-primary);
+  transform: scale(1.02);
+}
+
+.decision-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ==============================
+   CHECKBOX Y RADIO
+   ============================== */
+.checkbox-wrapper, .radio-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 15px 0;
+  cursor: pointer;
+}
+
+.checkbox-wrapper input[type="checkbox"],
+.radio-wrapper input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--gold-primary);
+}
+
+.checkbox-wrapper label,
+.radio-wrapper label {
+  margin: 0;
+  cursor: pointer;
+  font-weight: normal;
+  line-height: 1.4;
+}
+
+/* ==============================
+   CAMPOS AGRUPADOS
+   ============================== */
+.input-group {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--form-border);
+  transition: border-color 0.3s ease;
+}
+
+.input-group:focus-within {
+  border-color: var(--form-border-focus);
+}
+
+.input-group input {
+  border: none;
+  border-radius: 0;
+  flex: 1;
+}
+
+.input-group input:focus {
+  box-shadow: none;
+  transform: none;
+}
+
+.input-group-addon {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-right: 1px solid var(--form-border);
+  font-weight: 600;
+  color: #666;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.input-group-addon:last-child {
+  border-right: none;
+  border-left: 1px solid var(--form-border);
+}
+
+/* ==============================
+   PROGRESS FORM
+   ============================== */
+.form-progress {
+  margin-bottom: 30px;
+}
+
+.form-progress-bar {
+  height: 4px;
+  background: #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.form-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-primary) 0%, var(--gold-light) 100%);
+  transition: width 0.5s ease;
+  border-radius: 2px;
+}
+
+.form-progress-text {
+  font-size: 12px;
+  color: var(--form-text-placeholder);
+  text-align: center;
+}
+
+/* ==============================
+   LOADING STATES
+   ============================== */
+.form-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.form-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid var(--form-border-focus);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* ==============================
+   HELP TEXT
+   ============================== */
+.form-help {
+  font-size: 12px;
+  color: var(--form-text-placeholder);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.form-help.error {
+  color: var(--form-border-error);
+}
+
+.form-help.success {
+  color: var(--form-border-success);
+}
+
+/* ==============================
+   FLOATING LABELS
+   ============================== */
+.floating-label {
+  position: relative;
+}
+
+.floating-label input {
+  padding-top: 20px;
+  padding-bottom: 8px;
+}
+
+.floating-label label {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  background: var(--form-bg);
+  padding: 0 4px;
+  color: var(--form-text-placeholder);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  font-weight: normal;
+}
+
+.floating-label input:focus + label,
+.floating-label input:not(:placeholder-shown) + label {
+  top: -8px;
+  font-size: 12px;
+  color: var(--form-border-focus);
+  font-weight: 600;
+}
+
+/* ==============================
+   RESPONSIVE FORMS
+   ============================== */
+@media (max-width: 480px) {
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .decision-buttons {
+    flex-direction: column;
+  }
+  
+  .input-group {
+    flex-direction: column;
+  }
+  
+  .input-group-addon {
+    border-right: none;
+    border-bottom: 1px solid var(--form-border);
+  }
+  
+  .input-group-addon:last-child {
+    border-bottom: none;
+    border-top: 1px solid var(--form-border);
+  }
+}
+
+/* ==============================
+   ACCESIBILIDAD
+   ============================== */
+@media (prefers-reduced-motion: reduce) {
+  .form-field {
+    transition: opacity 0.1s ease;
+  }
+  
+  input, select, textarea, .decision-btn {
+    transition: border-color 0.1s ease;
+  }
+}
+
+/* Focus visible para navegación por teclado */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.decision-btn:focus-visible {
+  outline: 2px solid var(--form-border-focus);
+  outline-offset: 2px;
+}
+
+/* Alto contraste */
+@media (prefers-contrast: high) {
+  input, select, textarea {
+    border-width: 3px;
+  }
+  
+  .validation-message {
+    font-weight: bold;
+  }
+}
