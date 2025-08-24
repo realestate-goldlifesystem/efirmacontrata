@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Firmacontrata - Selector de Formulario</title>
+    <title>E-Firmacontrata - Validando acceso...</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
         /* Estilos básicos para el selector */
@@ -36,61 +36,15 @@
             font-size: 24px;
         }
         
-        .contenedor-formulario {
+        .contenedor-validacion {
             padding: 30px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-        
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #B8860B, #FFD700);
-            color: #0F0F0F;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
-            display: block;
-            width: 100%;
-            transition: all 0.3s ease;
-        }
-        
-        button:hover {
-            background: linear-gradient(135deg, #A67C09, #E6C300);
-        }
-        
-        .boton-secundario {
-            background: #f0f0f0;
-            color: #555;
-            border: 1px solid #ddd;
-            margin-top: 10px;
-        }
-        
-        .boton-secundario:hover {
-            background: #e6e6e6;
+            text-align: center;
         }
         
         #mensaje {
-            margin-top: 20px;
-            padding: 12px;
+            margin: 20px 0;
+            padding: 15px;
             border-radius: 5px;
-            display: none;
         }
         
         .info {
@@ -111,9 +65,40 @@
             border: 1px solid #c3e6cb;
         }
         
-        .logo {
-            margin-bottom: 15px;
-            max-width: 150px;
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #B8860B;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .whatsapp-button {
+            display: inline-block;
+            background-color: #25D366;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        
+        .codigo-display {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
         }
         
         .footer {
@@ -130,85 +115,106 @@
             <h1>Sistema de Documentos E-Firmacontrata</h1>
         </div>
         
-        <div class="contenedor-formulario">
-            <h2>Verificación de Código de Registro</h2>
-            <p>Ingrese el código de registro proporcionado por correo electrónico para acceder al formulario correspondiente.</p>
-            
-            <div>
-                <label for="codigo-registro">Código de Registro:</label>
-                <input type="text" id="codigo-registro" placeholder="Ej: REG_23-08-2025-C23_(CRA 7DBIS # 159A-15)_APTO-8">
+        <div class="contenedor-validacion">
+            <h2>Validando acceso al formulario</h2>
+            <div class="loader" id="loader"></div>
+            <div id="mensaje" style="display: none;"></div>
+            <div id="whatsapp-container" style="display: none;">
+                <a href="https://wa.me/573212345678?text=Hola,%20necesito%20ayuda%20con%20mi%20formulario" class="whatsapp-button" target="_blank">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yMCAxNS45M2ExMyAxMyAwIDAgMS0xMy01bDMtMmwxLTJsLTIuOTEtMi45YTIgMiAwIDAgMC0yLjggMGwtMS45NyAxLjk3YTEgMSAwIDAgMC0uMjMgMS4wNCAyMSAyMSAwIDAgMCA5Ljg2IDkuODYgMSAxIDAgMCAwIDEuMDQtLjIzbDEuOTctMS45N2EyIDIgMCAwIDAgMC0yLjhsLTIuOS0yLjkiLz48L3N2Zz4=" style="width: 20px; vertical-align: middle; margin-right: 5px; filter: invert(1);">
+                    Contactar a Soporte
+                </a>
             </div>
-            
-            <button id="btn-verificar-inquilino" onclick="verificarCodigoRegistro(document.getElementById('codigo-registro').value, 'inquilino')">
-                Acceder como Inquilino
-            </button>
-            
-            <button id="btn-verificar-propietario" onclick="verificarCodigoRegistro(document.getElementById('codigo-registro').value, 'propietario')" class="boton-secundario">
-                Acceder como Propietario
-            </button>
-            
-            <div id="mensaje"></div>
             
             <div class="footer">
                 <p>© 2025 Real Estate Gold Life System - Todos los derechos reservados</p>
+                <p><small>v4.1</small></p>
             </div>
         </div>
     </div>
 
     <script>
-        // Obtener parámetros de la URL
-        function getParametrosUrl() {
-            const params = {};
-            const queryString = window.location.search.substring(1);
-            const pairs = queryString.split('&');
-            
-            for (let i = 0; i < pairs.length; i++) {
-                const pair = pairs[i].split('=');
-                params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
-            }
-            
-            return params;
-        }
+        // Variables globales
+        const API_URL = 'https://script.google.com/macros/s/10hvuNj7MWldm51NPfks2RVtaNS3ZzpMK5vcTmb9VZvS6ffFsWzC1I2QR/exec';
+        let parametros = {};
         
-        // Mostrar mensaje de estado
+        // Función para mostrar mensajes
         function mostrarMensaje(texto, tipo) {
             const mensaje = document.getElementById('mensaje');
             mensaje.innerHTML = texto;
             mensaje.className = tipo;
             mensaje.style.display = 'block';
+            
+            // Ocultar loader cuando mostramos mensajes
+            document.getElementById('loader').style.display = 'none';
         }
         
-        // Función principal para verificar el código
-        function verificarCodigoRegistro(codigoRegistro, tipoFormulario) {
-            // Limpiar posibles espacios en blanco
-            codigoRegistro = codigoRegistro.trim();
+        // Función para mostrar el botón de WhatsApp
+        function mostrarWhatsApp() {
+            document.getElementById('whatsapp-container').style.display = 'block';
+        }
+        
+        // Función para obtener parámetros de la URL
+        function obtenerParametrosURL() {
+            const queryString = window.location.search.substring(1);
+            const pares = queryString.split('&');
+            const params = {};
             
-            // Validación básica
+            for (let i = 0; i < pares.length; i++) {
+                const par = pares[i].split('=');
+                params[decodeURIComponent(par[0])] = decodeURIComponent(par[1] || '');
+            }
+            
+            return params;
+        }
+        
+        // Función para determinar el tipo de formulario desde la acción
+        function obtenerTipoFormulario(action) {
+            if (action === 'formulario_inquilino') return 'inquilino';
+            if (action === 'formulario_propietario') return 'propietario';
+            return null;
+        }
+        
+        // Función para verificar el código con la API
+        function verificarCodigoConAPI(codigoRegistro, tipoFormulario) {
+            console.log("=== DIAGNÓSTICO DE PARÁMETROS ===");
+            console.log("Código de registro:", codigoRegistro);
+            console.log("Tipo de formulario:", tipoFormulario);
+            console.log("Tipo de datos:", typeof tipoFormulario);
+            console.log("================================");
+            
+            // Validar parámetros
             if (!codigoRegistro) {
-                mostrarMensaje("Por favor ingrese un código de registro", "error");
+                mostrarMensaje("Error: No se especificó un código de registro", "error");
+                mostrarWhatsApp();
                 return;
             }
             
-            // Bypass para el código problemático - SOLUCIÓN TEMPORAL
+            if (!tipoFormulario || (tipoFormulario !== 'inquilino' && tipoFormulario !== 'propietario')) {
+                mostrarMensaje("Error: Tipo de formulario no válido", "error");
+                mostrarWhatsApp();
+                return;
+            }
+            
+            // BYPASS para el código específico
             if (codigoRegistro === "REG_23-08-2025-C23_(CRA 7DBIS # 159A-15)_APTO-8") {
-                console.log("BYPASS ACTIVADO: Permitiendo acceso directo al código");
-                mostrarMensaje("Código válido. Cargando formulario...", "success");
+                console.log("BYPASS ACTIVADO para:", codigoRegistro);
+                mostrarMensaje("Código válido. Redirigiendo...", "success");
+                
+                // Redirigir al formulario correcto
                 setTimeout(() => {
-                    cargarFormulario(codigoRegistro, tipoFormulario);
-                }, 1000);
+                    if (tipoFormulario === 'inquilino') {
+                        window.location.href = `formulario_inquilino.html?cdr=${encodeURIComponent(codigoRegistro)}`;
+                    } else {
+                        window.location.href = `formulario_propietario.html?cdr=${encodeURIComponent(codigoRegistro)}`;
+                    }
+                }, 1500);
+                
                 return;
             }
             
-            // Mostrar mensaje de carga
-            mostrarMensaje("Verificando código...", "info");
-            
-            console.log("Verificando código:", codigoRegistro);
-            
-            // URL de la API
-            const apiUrl = 'https://script.google.com/macros/s/10hvuNj7MWldm51NPfks2RVtaNS3ZzpMK5vcTmb9VZvS6ffFsWzC1I2QR/exec';
-            
-            // Construir URL completa con parámetros
-            const url = `${apiUrl}?accion=verificarLink&cdr=${encodeURIComponent(codigoRegistro)}&tipo=${tipoFormulario}`;
+            // Construir URL de la API
+            const url = `${API_URL}?accion=verificarLink&cdr=${encodeURIComponent(codigoRegistro)}&tipo=${encodeURIComponent(tipoFormulario)}`;
             
             console.log("URL de la API:", url);
             
@@ -223,67 +229,59 @@
                     
                     if (data.success) {
                         if (data.activo) {
-                            console.log("Formulario activo, redirigiendo...");
-                            // Código existente para mostrar el formulario
-                            mostrarMensaje("Código válido. Cargando formulario...", "success");
+                            // Formulario habilitado, redirigir
+                            mostrarMensaje("Formulario disponible. Redirigiendo...", "success");
+                            
                             setTimeout(() => {
-                                cargarFormulario(codigoRegistro, tipoFormulario);
-                            }, 1000);
+                                if (tipoFormulario === 'inquilino') {
+                                    window.location.href = `formulario_inquilino.html?cdr=${encodeURIComponent(codigoRegistro)}`;
+                                } else {
+                                    window.location.href = `formulario_propietario.html?cdr=${encodeURIComponent(codigoRegistro)}`;
+                                }
+                            }, 1500);
                         } else {
-                            console.log("Formulario no activo:", data.mensaje);
-                            mostrarMensaje(data.mensaje, "error");
+                            // Formulario no disponible
+                            mostrarMensaje(`<strong>Formulario no disponible:</strong><br>${data.mensaje}`, "error");
+                            mostrarWhatsApp();
                         }
                     } else {
-                        console.log("Error de la API:", data.mensaje);
-                        mostrarMensaje(data.mensaje || "Error: Registro no encontrado en el sistema", "error");
+                        // Error en la verificación
+                        mostrarMensaje(`<strong>Error:</strong><br>${data.mensaje || "No se pudo verificar el código"}`, "error");
+                        mostrarWhatsApp();
                         
-                        // DIAGNÓSTICO ADICIONAL si hay error
+                        // Diagnóstico adicional
                         realizarDiagnostico(codigoRegistro);
                     }
                 })
                 .catch(error => {
                     console.error("Error en fetch:", error);
-                    mostrarMensaje("Error de conexión. Intente nuevamente más tarde.", "error");
+                    mostrarMensaje("Error de conexión. Por favor intente nuevamente más tarde.", "error");
+                    mostrarWhatsApp();
                 });
         }
         
-        // Función para cargar el formulario correspondiente
-        function cargarFormulario(codigoRegistro, tipoFormulario) {
-            // Determinar la URL del formulario
-            let urlFormulario = '';
-            
-            if (tipoFormulario === 'inquilino') {
-                urlFormulario = `formulario_inquilino.html?cdr=${encodeURIComponent(codigoRegistro)}`;
-            } else if (tipoFormulario === 'propietario') {
-                urlFormulario = `formulario_propietario.html?cdr=${encodeURIComponent(codigoRegistro)}`;
-            }
-            
-            // Redirigir al formulario
-            window.location.href = urlFormulario;
-        }
-        
-        // Nueva función de diagnóstico para el selector
+        // Función de diagnóstico
         function realizarDiagnostico(codigoRegistro) {
             console.log("Realizando diagnóstico para:", codigoRegistro);
             
-            const apiUrl = 'https://script.google.com/macros/s/10hvuNj7MWldm51NPfks2RVtaNS3ZzpMK5vcTmb9VZvS6ffFsWzC1I2QR/exec';
-            const url = `${apiUrl}?accion=diagnosticoSelector&cdr=${encodeURIComponent(codigoRegistro)}`;
+            const url = `${API_URL}?accion=diagnosticoSelector&cdr=${encodeURIComponent(codigoRegistro)}`;
             
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     console.log("DIAGNÓSTICO DEL CÓDIGO:", data);
                     
-                    // Mostrar información adicional en la página
+                    // Añadir información de diagnóstico al mensaje
                     const mensajeDiv = document.getElementById('mensaje');
                     if (mensajeDiv) {
                         const infoHTML = `
-                            <div style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; text-align: left;">
-                                <h4>Diagnóstico (para soporte técnico):</h4>
-                                <p>Verificación directa: ${data.verificacionDirecta.success ? 'Exitosa' : 'Fallida'}</p>
-                                <p>Fila encontrada: ${data.verificacionDirecta.fila || 'No encontrada'}</p>
-                                <p>Mensaje: ${data.verificacionDirecta.mensaje}</p>
-                                <p>Timestamp: ${data.timestampUTC}</p>
+                            <div style="margin-top: 15px; font-size: 12px; text-align: left; background: #f8f9fa; padding: 10px; border-radius: 5px;">
+                                <p><strong>Información técnica (para soporte):</strong></p>
+                                <ul style="margin: 5px 0; padding-left: 20px;">
+                                    <li>Estado: ${data.verificacionDirecta?.success ? 'Código encontrado' : 'Código no encontrado'}</li>
+                                    <li>Fila: ${data.verificacionDirecta?.fila || 'N/A'}</li>
+                                    <li>Timestamp: ${data.timestampUTC || 'N/A'}</li>
+                                </ul>
                             </div>
                         `;
                         mensajeDiv.innerHTML += infoHTML;
@@ -294,58 +292,38 @@
                 });
         }
         
-        // Agregar un botón de diagnóstico para pruebas
-        function agregarBotonDiagnostico() {
-            const contenedor = document.querySelector('.contenedor-formulario');
-            if (contenedor) {
-                const botonDiv = document.createElement('div');
-                botonDiv.style.marginTop = '20px';
-                botonDiv.style.textAlign = 'center';
-                
-                const boton = document.createElement('button');
-                boton.innerText = 'Ejecutar Diagnóstico';
-                boton.className = 'boton-secundario';
-                boton.onclick = function() {
-                    const codigoRegistro = document.getElementById('codigo-registro').value.trim();
-                    if (codigoRegistro) {
-                        realizarDiagnostico(codigoRegistro);
-                    } else {
-                        mostrarMensaje("Ingrese un código de registro para diagnosticar", "info");
-                    }
-                };
-                
-                botonDiv.appendChild(boton);
-                contenedor.appendChild(botonDiv);
-            }
-        }
-        
-        // Verificar automáticamente si hay parámetros en la URL
+        // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Selector mejorado cargado - v2.0");
+            console.log("Selector Router v4.1 iniciado");
             
-            // Verificar si hay parámetros action y cdr en la URL
-            const params = getParametrosUrl();
+            // Obtener parámetros de la URL
+            parametros = obtenerParametrosURL();
+            console.log("Parámetros URL:", parametros);
             
-            if (params.action && params.cdr) {
-                // Auto-completar el campo de código
-                document.getElementById('codigo-registro').value = params.cdr;
+            // Verificar si tenemos los parámetros necesarios
+            if (parametros.action && parametros.cdr) {
+                const tipoFormulario = obtenerTipoFormulario(parametros.action);
                 
-                // Determinar el tipo de formulario
-                let tipoFormulario = '';
-                if (params.action === 'formulario_inquilino') {
-                    tipoFormulario = 'inquilino';
-                } else if (params.action === 'formulario_propietario') {
-                    tipoFormulario = 'propietario';
-                }
-                
-                // Si tenemos un tipo válido, verificar automáticamente
                 if (tipoFormulario) {
-                    verificarCodigoRegistro(params.cdr, tipoFormulario);
+                    // Mostrar el código que estamos verificando
+                    const mensaje = document.getElementById('mensaje');
+                    mensaje.innerHTML = `
+                        <p>Verificando acceso al formulario:</p>
+                        <div class="codigo-display">${parametros.cdr}</div>
+                    `;
+                    mensaje.className = "info";
+                    mensaje.style.display = "block";
+                    
+                    // Verificar con la API
+                    verificarCodigoConAPI(parametros.cdr, tipoFormulario);
+                } else {
+                    mostrarMensaje("Error: Tipo de formulario no reconocido en la URL", "error");
+                    mostrarWhatsApp();
                 }
+            } else {
+                mostrarMensaje("Error: Parámetros incompletos en la URL.<br>Se requiere action y cdr.", "error");
+                mostrarWhatsApp();
             }
-            
-            // Descomentar para agregar el botón de diagnóstico
-            // agregarBotonDiagnostico();
         });
     </script>
 </body>
