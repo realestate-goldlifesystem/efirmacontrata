@@ -128,7 +128,7 @@
             
             <div class="footer">
                 <p>© 2025 Real Estate Gold Life System - Todos los derechos reservados</p>
-                <p><small>v4.1</small></p>
+                <p><small>v4.2 • Actualizado: 2025-08-24</small></p>
             </div>
         </div>
     </div>
@@ -170,8 +170,9 @@
         
         // Función para determinar el tipo de formulario desde la acción
         function obtenerTipoFormulario(action) {
-            if (action === 'formulario_inquilino') return 'inquilino';
-            if (action === 'formulario_propietario') return 'propietario';
+            // Soportar ambos formatos (con guión o con guión bajo)
+            if (action === 'formulario_inquilino' || action === 'formulario-inquilino') return 'inquilino';
+            if (action === 'formulario_propietario' || action === 'formulario-propietario') return 'propietario';
             return null;
         }
         
@@ -201,12 +202,12 @@
                 console.log("BYPASS ACTIVADO para:", codigoRegistro);
                 mostrarMensaje("Código válido. Redirigiendo...", "success");
                 
-                // Redirigir al formulario correcto
+                // Redirigir al formulario correcto - AHORA CON GUIÓN
                 setTimeout(() => {
                     if (tipoFormulario === 'inquilino') {
-                        window.location.href = `formulario_inquilino.html?cdr=${encodeURIComponent(codigoRegistro)}`;
+                        window.location.href = `formulario-inquilino.html?cdr=${encodeURIComponent(codigoRegistro)}`;
                     } else {
-                        window.location.href = `formulario_propietario.html?cdr=${encodeURIComponent(codigoRegistro)}`;
+                        window.location.href = `formulario-propietario.html?cdr=${encodeURIComponent(codigoRegistro)}`;
                     }
                 }, 1500);
                 
@@ -233,10 +234,11 @@
                             mostrarMensaje("Formulario disponible. Redirigiendo...", "success");
                             
                             setTimeout(() => {
+                                // CORREGIDO: Ahora con guión en lugar de guión bajo
                                 if (tipoFormulario === 'inquilino') {
-                                    window.location.href = `formulario_inquilino.html?cdr=${encodeURIComponent(codigoRegistro)}`;
+                                    window.location.href = `formulario-inquilino.html?cdr=${encodeURIComponent(codigoRegistro)}`;
                                 } else {
-                                    window.location.href = `formulario_propietario.html?cdr=${encodeURIComponent(codigoRegistro)}`;
+                                    window.location.href = `formulario-propietario.html?cdr=${encodeURIComponent(codigoRegistro)}`;
                                 }
                             }, 1500);
                         } else {
@@ -281,6 +283,7 @@
                                     <li>Estado: ${data.verificacionDirecta?.success ? 'Código encontrado' : 'Código no encontrado'}</li>
                                     <li>Fila: ${data.verificacionDirecta?.fila || 'N/A'}</li>
                                     <li>Timestamp: ${data.timestampUTC || 'N/A'}</li>
+                                    <li>Usuario: ${data.usuario || 'realestate-goldlifesystem'}</li>
                                 </ul>
                             </div>
                         `;
@@ -294,7 +297,7 @@
         
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Selector Router v4.1 iniciado");
+            console.log("Selector Router v4.2 iniciado - 2025-08-24");
             
             // Obtener parámetros de la URL
             parametros = obtenerParametrosURL();
