@@ -1,1052 +1,376 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validación de Contrato - E-firmaContrata</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #667eea;
-            --secondary: #764ba2;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #1f2937;
-            --gray: #6b7280;
-            --light: #f3f4f6;
-            --white: #ffffff;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --radius: 12px;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            min-height: 100vh;
-            padding: 20px;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Header */
-        .header {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            text-align: center;
-        }
-
-        .header h1 {
-            color: var(--dark);
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-        }
-
-        .header .icon {
-            font-size: 2.5rem;
-        }
-
-        .subtitle {
-            color: var(--gray);
-            font-size: 1rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white);
-            border-radius: 2rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-top: 1rem;
-        }
-
-        /* Info Cards */
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .info-card {
-            background: var(--white);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-        }
-
-        .info-card h3 {
-            color: var(--dark);
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
-            opacity: 0.6;
-        }
-
-        .info-card p {
-            color: var(--dark);
-            font-size: 1.125rem;
-            font-weight: 600;
-        }
-
-        /* Contrato Container */
-        .contract-container {
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-            margin-bottom: 2rem;
-        }
-
-        .contract-header {
-            background: var(--light);
-            padding: 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .contract-title {
-            font-size: 1.25rem;
-            color: var(--dark);
-            font-weight: 600;
-        }
-
-        .contract-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn-tool {
-            padding: 0.5rem 1rem;
-            background: var(--white);
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.875rem;
-            color: var(--gray);
-        }
-
-        .btn-tool:hover {
-            background: var(--light);
-            transform: translateY(-1px);
-        }
-
-        /* Visor de Contrato */
-        .contract-viewer {
-            height: 600px;
-            overflow-y: auto;
-            padding: 3rem;
-            background: var(--white);
-            position: relative;
-        }
-
-        .contract-content {
-            max-width: 800px;
-            margin: 0 auto;
-            font-family: 'Times New Roman', serif;
-            color: #000;
-            line-height: 1.8;
-        }
-
-        .contract-content h1 {
-            text-align: center;
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .contract-content h2 {
-            font-size: 1.25rem;
-            margin: 2rem 0 1rem;
-            font-weight: bold;
-        }
-
-        .contract-content p {
-            text-align: justify;
-            margin-bottom: 1rem;
-            font-size: 1rem;
-        }
-
-        .contract-field {
-            background: #fffbeb;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-            color: var(--warning);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-
-        /* Loading */
-        .loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 4rem;
-            color: var(--gray);
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--light);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Sección de Aprobación */
-        .approval-section {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 2rem;
-            box-shadow: var(--shadow);
-        }
-
-        .approval-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .approval-header h2 {
-            color: var(--dark);
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .approval-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .approval-card {
-            border: 2px solid #e5e7eb;
-            border-radius: var(--radius);
-            padding: 2rem;
-            text-align: center;
-            transition: all 0.3s;
-            cursor: pointer;
-            background: var(--white);
-        }
-
-        .approval-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow);
-        }
-
-        .approval-card.approve {
-            border-color: var(--success);
-        }
-
-        .approval-card.approve:hover {
-            background: #f0fdf4;
-            border-color: var(--success);
-        }
-
-        .approval-card.reject {
-            border-color: var(--warning);
-        }
-
-        .approval-card.reject:hover {
-            background: #fffbeb;
-            border-color: var(--warning);
-        }
-
-        .approval-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .approval-card.approve .approval-icon {
-            color: var(--success);
-        }
-
-        .approval-card.reject .approval-icon {
-            color: var(--warning);
-        }
-
-        .approval-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 0.5rem;
-        }
-
-        .approval-desc {
-            color: var(--gray);
-            font-size: 0.875rem;
-        }
-
-        /* Modal de Comentarios */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.3s;
-        }
-
-        .modal.show {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 2rem;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.3s;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .modal-header {
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-header h3 {
-            color: var(--dark);
-            font-size: 1.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            color: var(--dark);
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            font-size: 1rem;
-            resize: vertical;
-            min-height: 120px;
-            font-family: inherit;
-        }
-
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-        }
-
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            font-size: 1rem;
-        }
-
-        .btn-cancel {
-            background: var(--light);
-            color: var(--dark);
-        }
-
-        .btn-cancel:hover {
-            background: #e5e7eb;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: var(--white);
-        }
-
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
-        }
-
-        /* Mensajes */
-        .alert {
-            padding: 1rem 1.5rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            animation: slideDown 0.3s;
-        }
-
-        @keyframes slideDown {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .alert-success {
-            background: #f0fdf4;
-            color: #065f46;
-            border: 1px solid #86efac;
-        }
-
-        .alert-warning {
-            background: #fffbeb;
-            color: #92400e;
-            border: 1px solid #fde68a;
-        }
-
-        .alert-error {
-            background: #fef2f2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
-        }
-
-        .alert-info {
-            background: #eff6ff;
-            color: #1e40af;
-            border: 1px solid #93c5fd;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            color: var(--white);
-            padding: 2rem;
-            font-size: 0.875rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .contract-viewer {
-                height: 400px;
-                padding: 1.5rem;
-            }
-
-            .approval-options {
-                grid-template-columns: 1fr;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .header h1 {
-                font-size: 1.5rem;
-            }
-
-            .contract-header {
-                flex-direction: column;
-            }
-        }
-
-        /* Estado del documento */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            background: var(--light);
-            color: var(--gray);
-        }
-
-        .status-badge.pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .status-badge.approved {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-badge.rejected {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        /* Print styles */
-        @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-
-            .header, .info-grid, .approval-section, .footer,
-            .contract-header, .btn-tool {
-                display: none;
-            }
-
-            .container {
-                max-width: 100%;
-            }
-
-            .contract-container {
-                box-shadow: none;
-                border: none;
-            }
-
-            .contract-viewer {
-                height: auto;
-                padding: 0;
-            }
-
-            .contract-content {
-                max-width: 100%;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Validación de Contrato • E-FirmaContrata</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Branding global -->
+  <link rel="stylesheet" href="theme.css" />
+
+  <!-- Estilos mínimos específicos -->
+  <style>
+    .page{
+      min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:24px;
+      background: radial-gradient(1600px 800px at 50% -20%, rgba(255,215,0,.10), transparent 60%), var(--black-primary);
+    }
+    .wrap{ width:min(1100px, 96vw) }
+    .hr{ height:1px; background: rgba(255,215,0,.18); margin:18px 0 }
+    .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:16px }
+    .grid-3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px }
+    @media (max-width: 900px){ .grid-2,.grid-3{ grid-template-columns: 1fr } }
+    .meta div{ display:flex; gap:8px; align-items:center }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; background:#111; border:1px solid rgba(255,215,0,.25); border-radius:8px; padding:2px 6px; color:#ffe082; }
+    .actions{ display:flex; flex-wrap:wrap; gap:10px }
+    .small{ font-size: var(--fs-small); color: var(--gray-400) }
+    .hidden{ display:none !important }
+    .table{ width:100%; border-collapse: collapse; }
+    .table th, .table td{ padding:10px 12px; border-bottom:1px solid rgba(255,215,0,.18) }
+    .table th{ text-align:left; color: var(--gold-300) }
+    .pill{ padding:6px 10px; border-radius: var(--radius-round); border:1px solid rgba(255,215,0,.25); color:#ffd54f; background: rgba(255,215,0,.08); font-size: var(--fs-small) }
+    .right{ text-align:right }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>
-                <span class="icon">📄</span>
-                Validación de Contrato de Arrendamiento
-            </h1>
-            <p class="subtitle">Por favor revise cuidadosamente el contrato antes de aprobar</p>
-            <div class="badge" id="cdrBadge">CDR: Cargando...</div>
+  <main class="page">
+    <section class="card wrap">
+      <header class="card-header">
+        <div class="badge">E-FirmaContrata</div>
+        <h1>Validación de Contrato</h1>
+        <p class="muted" style="margin:6px 0 0">Revisa datos, genera el borrador y gestiona aprobaciones.</p>
+      </header>
+
+      <div class="card-body">
+        <!-- Notificaciones -->
+        <div id="alertBox" class="alert hidden" role="alert"></div>
+
+        <!-- Encabezado -->
+        <div class="grid-3 meta">
+          <div><strong>CDR:</strong> <span id="cdrTxt" class="kbd">—</span></div>
+          <div><strong>Estado:</strong> <span id="estadoBadge" class="badge">Cargando…</span></div>
+          <div class="right"><span id="lastSync" class="small">Sincronizado: —</span></div>
         </div>
 
-        <!-- Mensajes del sistema -->
-        <div id="messageContainer"></div>
+        <div class="hr"></div>
 
-        <!-- Info Cards -->
-        <div class="info-grid">
-            <div class="info-card">
-                <h3>Tipo de Participante</h3>
-                <p id="tipoParticipante">Cargando...</p>
+        <!-- Datos de contrato (resumen) -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-body">
+              <h3>Inquilino</h3>
+              <table class="table">
+                <tbody id="tblInquilino"><tr><td class="small">Cargando…</td></tr></tbody>
+              </table>
             </div>
-            <div class="info-card">
-                <h3>Propiedad</h3>
-                <p id="direccionPropiedad">Cargando...</p>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <h3>Propietario</h3>
+              <table class="table">
+                <tbody id="tblPropietario"><tr><td class="small">Cargando…</td></tr></tbody>
+              </table>
             </div>
-            <div class="info-card">
-                <h3>Canon de Arrendamiento</h3>
-                <p id="canonMensual">Cargando...</p>
-            </div>
-            <div class="info-card">
-                <h3>Fecha de Inicio</h3>
-                <p id="fechaInicio">Cargando...</p>
-            </div>
+          </div>
         </div>
 
-        <!-- Visor de Contrato -->
-        <div class="contract-container">
-            <div class="contract-header">
-                <div class="contract-title">
-                    📋 Contrato de Arrendamiento
-                </div>
-                <div class="contract-actions">
-                    <button class="btn-tool" onclick="imprimirContrato()">
-                        🖨️ Imprimir
-                    </button>
-                    <button class="btn-tool" onclick="descargarPDF()">
-                        📥 Descargar PDF
-                    </button>
-                    <button class="btn-tool" onclick="ampliarContrato()">
-                        🔍 Ampliar
-                    </button>
-                </div>
-            </div>
-            <div class="contract-viewer" id="contractViewer">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Cargando contrato...</p>
-                </div>
-            </div>
+        <div class="hr"></div>
+
+        <!-- Acciones principales -->
+        <div class="actions" style="margin-bottom:8px">
+          <button id="btnGenerar" class="btn btn-primary btn-pill" type="button">Generar borrador</button>
+          <button id="btnVerBorrador" class="btn btn-secondary btn-pill hidden" type="button">Ver borrador</button>
+          <button id="btnEnviarAprob" class="btn btn-info btn-pill" type="button">Enviar para aprobación</button>
+          <button id="btnRefrescar" class="btn btn-ghost btn-pill" type="button">Refrescar</button>
         </div>
 
-        <!-- Sección de Aprobación -->
-        <div class="approval-section">
-            <div class="approval-header">
-                <h2>¿Está de acuerdo con los términos del contrato?</h2>
-                <p style="color: var(--gray);">Su decisión será registrada y notificada a todas las partes</p>
-            </div>
-            
-            <div class="approval-options">
-                <div class="approval-card approve" onclick="aprobarContrato()">
-                    <div class="approval-icon">✅</div>
-                    <div class="approval-title">Aprobar Contrato</div>
-                    <div class="approval-desc">
-                        Confirmo que he leído y acepto todos los términos y condiciones
-                    </div>
-                </div>
-                
-                <div class="approval-card reject" onclick="abrirModalRechazo()">
-                    <div class="approval-icon">✏️</div>
-                    <div class="approval-title">Solicitar Cambios</div>
-                    <div class="approval-desc">
-                        Necesito que se realicen modificaciones al contrato
-                    </div>
-                </div>
-            </div>
+        <div class="small">
+          * El borrador reemplaza placeholders definidos en el backend. Revisa nombres, direcciones, cánones, cuentas y fechas.
         </div>
-    </div>
 
-    <!-- Modal de Rechazo/Comentarios -->
-    <div class="modal" id="modalComentarios">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Solicitar Cambios al Contrato</h3>
+        <div class="hr"></div>
+
+        <!-- Aprobaciones -->
+        <div class="card">
+          <div class="card-body">
+            <h3>Aprobaciones</h3>
+            <div class="grid-2">
+              <div>
+                <div class="badge">Estado de aprobaciones</div>
+                <table class="table" style="margin-top:10px">
+                  <thead>
+                    <tr><th>Parte</th><th>Estado</th><th>Fecha</th><th>Observación</th></tr>
+                  </thead>
+                  <tbody id="tblAprobaciones"><tr><td colspan="4" class="small">Sin datos.</td></tr></tbody>
+                </table>
+              </div>
+              <div>
+                <div class="badge">Acciones de aprobación</div>
+                <div class="actions" style="margin-top:10px">
+                  <select id="selParte" class="input" style="max-width:220px">
+                    <option value="inquilino">Inquilino</option>
+                    <option value="propietario">Propietario</option>
+                    <option value="administrador">Administrador</option>
+                  </select>
+                  <button id="btnAprobar" class="btn btn-success btn-pill" type="button">Aprobar</button>
+                  <button id="btnRechazar" class="btn btn-danger btn-pill" type="button">Rechazar</button>
+                </div>
+                <label for="obs" style="margin-top:10px">Observación (opcional)</label>
+                <textarea id="obs" class="input" rows="3" placeholder="Motivo / notas"></textarea>
+              </div>
             </div>
-            <div class="form-group">
-                <label for="comentarios">Por favor, indique qué cambios necesita:</label>
-                <textarea 
-                    id="comentarios" 
-                    placeholder="Describa detalladamente los cambios que solicita..."
-                    required
-                ></textarea>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="cerrarModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="enviarSolicitudCambios()">
-                    Enviar Solicitud
-                </button>
-            </div>
+          </div>
         </div>
-    </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <p>E-firmaContrata © 2024 - Real Estate Gold Life System</p>
-        <p>Sistema de Gestión Digital de Contratos de Arrendamiento</p>
-    </div>
+        <!-- Loader -->
+        <div id="loader" class="loader hidden" aria-label="Procesando"></div>
+      </div>
+    </section>
+  </main>
 
-    <!-- Scripts -->
-    <script>
-        // Variables globales
-        let datosContrato = null;
-        let parametros = {};
-        let procesando = false;
+  <!-- Config global -->
+  <script src="config.js"></script>
 
-        // Configuración
-        const CONFIG = {
-            API_URL: 'https://script.google.com/macros/s/AKfycbzOnhQ8CD2gWMdvvYnF2v1FL3yto5sM8i_jV9FmIJa1Os05YwXR5RKSsq22ePlwqQgL/exec',
-            TIPOS_PARTICIPANTE: {
-                'inquilino': 'Inquilino',
-                'propietario': 'Propietario',
-                'codeudor1': 'Primer Codeudor',
-                'codeudor2': 'Segundo Codeudor',
-                'codeudor3': 'Tercer Codeudor'
-            }
-        };
+  <script>
+  (function(){
+    // ---------- Estado ----------
+    const state = {
+      cdr: '',
+      contrato: null,   // datos agregados
+      borradorUrl: '',
+      estado: 'CARGANDO',
+      aprobaciones: []
+    };
 
-        // Inicialización
-        window.onload = function() {
-            inicializarPagina();
-        };
+    // ---------- Helpers ----------
+    const $ = (id) => document.getElementById(id);
+    const setBadge = (text, type='info') => {
+      const m = {success:'badge-success', warning:'badge-warning', danger:'badge-danger', info:'badge-info'};
+      const b = $('estadoBadge');
+      b.className = `badge ${m[type]||'badge-info'}`;
+      b.textContent = text;
+    };
+    const showAlert = (type, text) => {
+      const map = { success:'alert-success', warning:'alert-warning', danger:'alert-danger', info:'alert-info' };
+      const box = $('alertBox');
+      box.className = `alert ${map[type]||'alert-info'}`;
+      box.innerHTML = escapeHTML(text);
+      box.classList.remove('hidden');
+    };
+    const clearAlert = () => $('alertBox').classList.add('hidden');
+    const toggleLoading = (v) => $('loader').classList.toggle('hidden', !v);
+    const nowFmt = () => new Date().toLocaleString();
 
-        function inicializarPagina() {
-            // Obtener parámetros de la URL
-            const urlParams = new URLSearchParams(window.location.search);
-            parametros = {
-                cdr: urlParams.get('cdr'),
-                tipo: urlParams.get('tipo'),
-                docId: urlParams.get('docId')
-            };
+    // ---------- Init ----------
+    init();
 
-            // Validar parámetros
-            if (!parametros.cdr || !parametros.tipo || !parametros.docId) {
-                mostrarError('Enlace inválido. Faltan parámetros necesarios.');
-                deshabilitarAprobacion();
-                return;
-            }
+    function init(){
+      const qs = new URLSearchParams(location.search);
+      state.cdr = qs.get('cdr') || '';
+      $('cdrTxt').textContent = state.cdr || '—';
 
-            // Actualizar UI con información básica
-            document.getElementById('cdrBadge').textContent = `CDR: ${parametros.cdr}`;
-            document.getElementById('tipoParticipante').textContent = 
-                CONFIG.TIPOS_PARTICIPANTE[parametros.tipo] || parametros.tipo;
+      bindEvents();
+      if (!state.cdr) {
+        showAlert('warning', 'Falta el CDR. Abre esta página desde el panel o selector.');
+        return;
+      }
+      loadContrato();
+    }
 
-            // Cargar datos del contrato
-            cargarContrato();
-        }
+    function bindEvents(){
+      $('btnRefrescar').addEventListener('click', loadContrato);
+      $('btnGenerar').addEventListener('click', onGenerarBorrador);
+      $('btnVerBorrador').addEventListener('click', () => {
+        if (state.borradorUrl) window.open(state.borradorUrl, '_blank');
+      });
+      $('btnEnviarAprob').addEventListener('click', onEnviarAprobacion);
+      $('btnAprobar').addEventListener('click', () => onRegistrarDecision('aprobado'));
+      $('btnRechazar').addEventListener('click', () => onRegistrarDecision('rechazado'));
+    }
 
-        async function cargarContrato() {
-            try {
-                mostrarMensaje('Cargando información del contrato...', 'info');
-                
-                // Simular carga de datos (reemplazar con llamada real a la API)
-                const response = await fetch(`${CONFIG.API_URL}?accion=obtenerContrato&cdr=${parametros.cdr}&docId=${parametros.docId}`);
-                
-                // Por ahora, usar datos de ejemplo
-                setTimeout(() => {
-                    mostrarContratoEjemplo();
-                }, 1500);
+    // ---------- Cargas ----------
+    async function loadContrato(){
+      clearAlert();
+      toggleLoading(true);
+      try{
+        const url = new URL(CONFIG.API_URL);
+        url.searchParams.set('accion','obtenerDatosContrato');
+        url.searchParams.set('cdr', state.cdr);
+        const res = await fetch(url.toString(), { method:'GET' });
+        const data = await res.json();
 
-            } catch (error) {
-                console.error('Error cargando contrato:', error);
-                mostrarError('Error al cargar el contrato. Intente nuevamente.');
-            }
-        }
+        if (!data || data.ok !== true) throw new Error(data?.message || 'No fue posible obtener los datos del contrato.');
 
-        function mostrarContratoEjemplo() {
-            // Datos de ejemplo para mostrar
-            document.getElementById('direccionPropiedad').textContent = 'Carrera 8 #170-52 Torre 1 Apto 1206';
-            document.getElementById('canonMensual').textContent = '$2,500,000 COP';
-            document.getElementById('fechaInicio').textContent = '1 de Enero de 2025';
+        state.contrato = data.contrato || {};
+        state.estado = data.estado || 'SIN_ESTADO';
+        state.borradorUrl = data.borradorUrl || '';
+        state.aprobaciones = data.aprobaciones || [];
 
-            // HTML del contrato (versión simplificada)
-            const contratoHTML = `
-                <div class="contract-content">
-                    <h1>CONTRATO DE ARRENDAMIENTO DE VIVIENDA URBANA</h1>
-                    
-                    <p>Entre los suscritos a saber: <span class="contract-field">JUAN CARLOS PÉREZ</span>, 
-                    mayor de edad, identificado(a) con cédula de ciudadanía No. <span class="contract-field">80.123.456</span>, 
-                    quien en adelante se denominará <strong>EL ARRENDADOR</strong>, y 
-                    <span class="contract-field">MARIA GONZÁLEZ RODRÍGUEZ</span>, mayor de edad, 
-                    identificado(a) con cédula de ciudadanía No. <span class="contract-field">52.987.654</span>, 
-                    quien en adelante se denominará <strong>EL ARRENDATARIO</strong>, hemos convenido celebrar el 
-                    presente contrato de arrendamiento de vivienda urbana.</p>
+        renderResumen();
+        renderAprobaciones();
+        renderEstado();
 
-                    <h2>CLÁUSULA PRIMERA - OBJETO</h2>
-                    <p>EL ARRENDADOR entrega a título de arrendamiento al ARRENDATARIO, quien recibe 
-                    en el mismo concepto, el inmueble ubicado en: 
-                    <span class="contract-field">CARRERA 8 #170-52 TORRE 1 APARTAMENTO 1206, 
-                    CONJUNTO RESIDENCIAL HACIENDA LA ESTANCIA NAVARRA P.H.</span> 
-                    de la ciudad de Bogotá D.C.</p>
+        $('lastSync').textContent = `Sincronizado: ${nowFmt()}`;
+        $('btnVerBorrador').classList.toggle('hidden', !state.borradorUrl);
+      }catch(err){
+        console.error('[validacion-contrato] loadContrato:', err);
+        showAlert('danger', err.message || 'Error cargando datos.');
+      }finally{
+        toggleLoading(false);
+      }
+    }
 
-                    <h2>CLÁUSULA SEGUNDA - CANON</h2>
-                    <p>El precio del arrendamiento es la suma de 
-                    <span class="contract-field">DOS MILLONES QUINIENTOS MIL PESOS ($2,500,000)</span> 
-                    moneda corriente, que EL ARRENDATARIO pagará a EL ARRENDADOR por mensualidades 
-                    anticipadas, dentro de los primeros cinco (5) días de cada mes.</p>
+    // ---------- Render ----------
+    function renderResumen(){
+      const i = state.contrato?.inquilino || {};
+      const p = state.contrato?.propietario || {};
+      $('tblInquilino').innerHTML = toRows({
+        'Nombre': full(i.nombres, i.apellidos),
+        'Documento': i.tipoDocumento && i.numeroDocumento ? `${i.tipoDocumento} ${i.numeroDocumento}` : '—',
+        'Email': i.email || '—',
+        'Celular': i.celular || '—',
+        'Inmueble': state.contrato?.inmueble || '—',
+        'Canon / Mes': money(state.contrato?.canon)||'—'
+      });
+      $('tblPropietario').innerHTML = toRows({
+        'Nombre': full(p.nombres, p.apellidos),
+        'Documento': p.tipoDocumento && p.numeroDocumento ? `${p.tipoDocumento} ${p.numeroDocumento}` : '—',
+        'Email': p.email || '—',
+        'Celular': p.celular || '—',
+        'Cuenta Bancaria': state.contrato?.cuenta || '—',
+        'Ciudad / Dirección': state.contrato?.direccion || '—'
+      });
+    }
 
-                    <h2>CLÁUSULA TERCERA - TÉRMINO</h2>
-                    <p>El término de duración del presente contrato es de 
-                    <span class="contract-field">DOCE (12) MESES</span>, contados a partir del 
-                    <span class="contract-field">1 de Enero de 2025</span>.</p>
+    function renderAprobaciones(){
+      const rows = (state.aprobaciones||[]).map(a => `
+        <tr>
+          <td>${escapeHTML(cap(a.parte))}</td>
+          <td><span class="pill">${escapeHTML(cap(a.estado||'pendiente'))}</span></td>
+          <td>${escapeHTML(a.fecha||'—')}</td>
+          <td>${escapeHTML(a.observacion||'')}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="4" class="small">Sin datos.</td></tr>';
+      $('tblAprobaciones').innerHTML = rows;
+    }
 
-                    <h2>CLÁUSULA CUARTA - DESTINACIÓN</h2>
-                    <p>El inmueble objeto del presente contrato será destinado por parte del ARRENDATARIO 
-                    única y exclusivamente para vivienda. No podrá darle otro uso sin previa autorización 
-                    escrita del ARRENDADOR.</p>
+    function renderEstado(){
+      const e = (state.estado||'').toUpperCase();
+      if (e.includes('FINAL')) return setBadge('FINALIZADO', 'success');
+      if (e.includes('APROBADO')) return setBadge('APROBADO TOTAL', 'success');
+      if (e.includes('CORRECCION')) return setBadge('CORRECCIÓN SOLICITADA', 'warning');
+      if (e.includes('BORRADOR')) return setBadge('BORRADOR GENERADO', 'info');
+      if (e.includes('LISTO') || e.includes('INCOMPLETO')) return setBadge(e.replaceAll('_',' '), 'info');
+      setBadge(e || 'SIN ESTADO', 'info');
+    }
 
-                    <h2>CLÁUSULA QUINTA - SERVICIOS PÚBLICOS</h2>
-                    <p>Los servicios públicos domiciliarios de acueducto, energía eléctrica, gas, 
-                    teléfono y demás que se causen por el uso del inmueble, serán pagados por 
-                    EL ARRENDATARIO.</p>
-
-                    <h2>CLÁUSULA SEXTA - CODEUDOR</h2>
-                    <p>Como codeudor solidario del presente contrato se presenta 
-                    <span class="contract-field">PEDRO RAMÍREZ LÓPEZ</span>, identificado con 
-                    cédula de ciudadanía No. <span class="contract-field">79.456.789</span>, 
-                    quien se obliga solidariamente con EL ARRENDATARIO al cumplimiento de todas 
-                    las obligaciones derivadas del presente contrato.</p>
-
-                    <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ccc;">
-                        <p style="text-align: center; color: #666; font-size: 0.9rem;">
-                            Este es un borrador del contrato para su revisión y aprobación.<br>
-                            Una vez aprobado por todas las partes, se generará el documento final para firma.
-                        </p>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('contractViewer').innerHTML = contratoHTML;
-            
-            // Limpiar mensajes anteriores
-            document.getElementById('messageContainer').innerHTML = '';
-        }
-
-        function mostrarMensaje(mensaje, tipo = 'info') {
-            const container = document.getElementById('messageContainer');
-            const alertClass = `alert alert-${tipo}`;
-            const icons = {
-                'success': '✅',
-                'error': '❌',
-                'warning': '⚠️',
-                'info': 'ℹ️'
-            };
-
-            container.innerHTML = `
-                <div class="${alertClass}">
-                    <span>${icons[tipo] || ''}</span>
-                    <span>${mensaje}</span>
-                </div>
-            `;
-
-            // Auto-ocultar mensajes de éxito después de 5 segundos
-            if (tipo === 'success') {
-                setTimeout(() => {
-                    container.innerHTML = '';
-                }, 5000);
-            }
-        }
-
-        function mostrarError(mensaje) {
-            mostrarMensaje(mensaje, 'error');
-        }
-
-        function deshabilitarAprobacion() {
-            document.querySelectorAll('.approval-card').forEach(card => {
-                card.style.opacity = '0.5';
-                card.style.cursor = 'not-allowed';
-                card.onclick = null;
-            });
-        }
-
-        // Funciones de aprobación
-        async function aprobarContrato() {
-            if (procesando) return;
-
-            const confirmar = confirm(
-                '¿Está seguro que desea APROBAR este contrato?\n\n' +
-                'Al aprobar, confirma que:\n' +
-                '• Ha leído todo el contrato\n' +
-                '• Está de acuerdo con todos los términos\n' +
-                '• Acepta las obligaciones establecidas'
-            );
-
-            if (!confirmar) return;
-
-            procesando = true;
-            mostrarMensaje('Procesando su aprobación...', 'info');
-
-            try {
-                const datos = {
-                    accion: 'registrarAprobacionContrato',
-                    cdr: parametros.cdr,
-                    tipo: parametros.tipo,
-                    accion: 'APROBADO',
-                    comentarios: '',
-                    timestamp: new Date().toISOString()
-                };
-
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(datos)
-                });
-
-                // Simular respuesta exitosa
-                setTimeout(() => {
-                    mostrarMensaje(
-                        '✅ ¡Contrato aprobado exitosamente! Se ha notificado a todas las partes.',
-                        'success'
-                    );
-                    deshabilitarAprobacion();
-                    
-                    // Mostrar estado actualizado
-                    document.querySelector('.approval-section').innerHTML = `
-                        <div style="text-align: center; padding: 3rem;">
-                            <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
-                            <h2 style="color: var(--success); margin-bottom: 1rem;">
-                                Contrato Aprobado
-                            </h2>
-                            <p style="color: var(--gray);">
-                                Su aprobación ha sido registrada exitosamente.<br>
-                                Fecha: ${new Date().toLocaleString('es-CO')}
-                            </p>
-                            <p style="margin-top: 2rem; padding: 1rem; background: var(--light); border-radius: 0.5rem;">
-                                📧 Recibirá una copia del contrato final una vez todas las partes lo hayan aprobado.
-                            </p>
-                        </div>
-                    `;
-                }, 2000);
-
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarError('Error al procesar la aprobación. Intente nuevamente.');
-            } finally {
-                procesando = false;
-            }
-        }
-
-        function abrirModalRechazo() {
-            if (procesando) return;
-            document.getElementById('modalComentarios').classList.add('show');
-            document.getElementById('comentarios').focus();
-        }
-
-        function cerrarModal() {
-            document.getElementById('modalComentarios').classList.remove('show');
-            document.getElementById('comentarios').value = '';
-        }
-
-        async function enviarSolicitudCambios() {
-            const comentarios = document.getElementById('comentarios').value.trim();
-            
-            if (!comentarios) {
-                alert('Por favor, describa los cambios que necesita');
-                return;
-            }
-
-            if (procesando) return;
-
-            procesando = true;
-            mostrarMensaje('Enviando solicitud de cambios...', 'info');
-            cerrarModal();
-
-            try {
-                const datos = {
-                    accion: 'registrarAprobacionContrato',
-                    cdr: parametros.cdr,
-                    tipo: parametros.tipo,
-                    accion: 'CAMBIOS_SOLICITADOS',
-                    comentarios: comentarios,
-                    timestamp: new Date().toISOString()
-                };
-
-                const response = await fetch(CONFIG.API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(datos)
-                });
-
-                // Simular respuesta exitosa
-                setTimeout(() => {
-                    mostrarMensaje(
-                        '📝 Solicitud de cambios enviada. Se notificará al administrador.',
-                        'warning'
-                    );
-                    deshabilitarAprobacion();
-                    
-                    // Mostrar estado actualizado
-                    document.querySelector('.approval-section').innerHTML = `
-                        <div style="text-align: center; padding: 3rem;">
-                            <div style="font-size: 4rem; margin-bottom: 1rem;">📝</div>
-                            <h2 style="color: var(--warning); margin-bottom: 1rem;">
-                                Cambios Solicitados
-                            </h2>
-                            <div style="text-align: left; max-width: 600px; margin: 2rem auto; 
-                                        padding: 1.5rem; background: var(--light); border-radius: 0.5rem;">
-                                <h4 style="margin-bottom: 0.5rem;">Sus observaciones:</h4>
-                                <p style="color: var(--gray); white-space: pre-wrap;">${comentarios}</p>
-                            </div>
-                            <p style="color: var(--gray);">
-                                Fecha: ${new Date().toLocaleString('es-CO')}
-                            </p>
-                            <p style="margin-top: 2rem;">
-                                📧 Recibirá una notificación cuando el contrato sea actualizado.
-                            </p>
-                        </div>
-                    `;
-                }, 2000);
-
-            } catch (error) {
-                console.error('Error:', error);
-                mostrarError('Error al enviar la solicitud. Intente nuevamente.');
-            } finally {
-                procesando = false;
-            }
-        }
-
-        // Funciones de utilidad
-        function imprimirContrato() {
-            window.print();
-        }
-
-        function descargarPDF() {
-            // Redirigir al Google Doc para descargar como PDF
-            if (parametros.docId) {
-                window.open(
-                    `https://docs.google.com/document/d/${parametros.docId}/export?format=pdf`,
-                    '_blank'
-                );
-            } else {
-                mostrarError('No se puede descargar el PDF en este momento');
-            }
-        }
-
-        function ampliarContrato() {
-            const viewer = document.getElementById('contractViewer');
-            if (viewer.requestFullscreen) {
-                viewer.requestFullscreen();
-            } else if (viewer.webkitRequestFullscreen) {
-                viewer.webkitRequestFullscreen();
-            } else if (viewer.msRequestFullscreen) {
-                viewer.msRequestFullscreen();
-            }
-        }
-
-        // Manejo de teclas
-        document.addEventListener('keydown', function(e) {
-            // ESC para cerrar modal
-            if (e.key === 'Escape') {
-                cerrarModal();
-            }
+    // ---------- Acciones ----------
+    async function onGenerarBorrador(){
+      clearAlert(); toggleLoading(true);
+      try{
+        const url = new URL(CONFIG.API_URL);
+        const body = { accion:'generarContrato', cdr: state.cdr };
+        const res = await fetch(url.toString(), {
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
         });
+        const data = await res.json();
+        if (!data || data.ok !== true) throw new Error(data?.message || 'No se pudo generar el borrador.');
+        state.borradorUrl = data.borradorUrl || '';
+        state.estado = data.estado || state.estado;
+        renderEstado();
+        $('btnVerBorrador').classList.toggle('hidden', !state.borradorUrl);
+        showAlert('success','Borrador generado con éxito.');
+      }catch(err){
+        console.error('[generarContrato]', err);
+        showAlert('danger', err.message || 'Error generando el borrador.');
+      }finally{
+        toggleLoading(false);
+      }
+    }
 
-        // Click fuera del modal para cerrar
-        document.getElementById('modalComentarios').addEventListener('click', function(e) {
-            if (e.target === this) {
-                cerrarModal();
-            }
+    async function onEnviarAprobacion(){
+      clearAlert(); toggleLoading(true);
+      try{
+        // Normalmente el backend envía notificaciones y marca el estado como “EN APROBACIÓN”
+        const url = new URL(CONFIG.API_URL);
+        const body = { accion:'enviarParaAprobacion', cdr: state.cdr };
+        const res = await fetch(url.toString(), {
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
         });
-    </script>
+        const data = await res.json();
+        if (!data || data.ok !== true) throw new Error(data?.message || 'No se pudo enviar a aprobación.');
+        state.estado = data.estado || state.estado;
+        renderEstado();
+        showAlert('success','Enviado a aprobación. Se notificó a las partes.');
+        // refrescar aprobaciones por si vienen ya creadas
+        await loadAprobacionesSolo();
+      }catch(err){
+        console.error('[enviarParaAprobacion]', err);
+        showAlert('danger', err.message || 'Error enviando a aprobación.');
+      }finally{
+        toggleLoading(false);
+      }
+    }
+
+    async function onRegistrarDecision(decision){
+      clearAlert(); toggleLoading(true);
+      try{
+        const parte = $('selParte').value;
+        const observacion = $('obs').value || '';
+        const url = new URL(CONFIG.API_URL);
+        const body = {
+          accion:'registrarAprobacionContrato',
+          cdr: state.cdr,
+          parte, // 'inquilino' | 'propietario' | 'administrador'
+          decision, // 'aprobado' | 'rechazado'
+          observacion
+        };
+        const res = await fetch(url.toString(), {
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!data || data.ok !== true) throw new Error(data?.message || 'No se pudo registrar la decisión.');
+        showAlert('success', `Decisión registrada: ${cap(decision)} (${cap(parte)}).`);
+        await loadAprobacionesSolo();
+        // Si todas las partes aprobaron, backend puede avanzar a APROBADO_TOTAL o FINALIZADO
+        state.estado = data.estado || state.estado;
+        renderEstado();
+        $('obs').value = '';
+      }catch(err){
+        console.error('[registrarAprobacionContrato]', err);
+        showAlert('danger', err.message || 'Error registrando aprobación.');
+      }finally{
+        toggleLoading(false);
+      }
+    }
+
+    async function loadAprobacionesSolo(){
+      try{
+        const url = new URL(CONFIG.API_URL);
+        url.searchParams.set('accion','obtenerEstadoAprobaciones');
+        url.searchParams.set('cdr', state.cdr);
+        const res = await fetch(url.toString(), { method:'GET' });
+        const data = await res.json();
+        if (data && data.ok === true) {
+          state.aprobaciones = data.aprobaciones || [];
+          renderAprobaciones();
+        }
+      }catch(e){/* silencioso */}
+    }
+
+    // ---------- Util ----------
+    function toRows(obj){
+      return Object.entries(obj).map(([k,v]) => `<tr><th>${escapeHTML(k)}</th><td>${val(v)}</td></tr>`).join('');
+    }
+    function full(n,a){ return [n||'', a||''].filter(Boolean).join(' ') || '—'; }
+    function money(n){
+      if (n == null || n === '') return '';
+      const num = Number(n); if (Number.isNaN(num)) return escapeHTML(String(n));
+      return new Intl.NumberFormat('es-CO',{ style:'currency', currency:'COP', maximumFractionDigits:0 }).format(num);
+    }
+    function val(v){ return v ? `<span class="muted">${escapeHTML(String(v))}</span>` : '<span class="muted">—</span>'; }
+    function cap(s){ return String(s||'').replace(/\b\w/g, m => m.toUpperCase()); }
+    function escapeHTML(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  })();
+  </script>
 </body>
 </html>
