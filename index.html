@@ -1,49 +1,84 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-firmaContrata - Sistema de Gestión de Contratos</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .container {
-            text-align: center;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-        p {
-            color: #666;
-            margin-bottom: 30px;
-        }
-        .logo {
-            font-size: 80px;
-            margin-bottom: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-firmaContrata - Sistema de Gestión de Contratos</title>
+  <style>
+    :root {
+      --gold-primary: #FFD700;
+      --black-primary: #0F0F0F;
+      --gray-dark: #222;
+      --text-light: #f4f4f4;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--black-primary);
+      background-image: radial-gradient(#FFD70011 1px, transparent 1px);
+      background-size: 40px 40px;
+      color: var(--text-light);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      text-align: center;
+      background: var(--gray-dark);
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      max-width: 600px;
+      width: 90%;
+    }
+
+    .logo {
+      font-size: 80px;
+      margin-bottom: 20px;
+      color: var(--gold-primary);
+    }
+
+    h1 {
+      color: var(--gold-primary);
+      margin-bottom: 20px;
+    }
+
+    p {
+      color: #ccc;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+
+    .notice {
+      margin-top: 30px;
+      padding: 20px;
+      background: #1e1e1e;
+      border-left: 5px solid var(--gold-primary);
+      border-radius: 8px;
+      color: #f4f4f4;
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #999;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">🏠</div>
-        <h1>E-firmaContrata</h1>
-        <p>Sistema de Gestión de Documentos para Contratos de Arrendamiento</p>
-        <p style="color: #999; font-size: 14px;">Real Estate Gold Life System</p>
-        <p style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
-            ⚠️ El acceso a este sistema requiere un enlace válido enviado por email.
-        </p>
+  <div class="container">
+    <div class="logo">🏠</div>
+    <h1>E-firmaContrata</h1>
+    <p>Sistema de Gestión de Documentos para Contratos de Arrendamiento</p>
+    <p class="footer">Real Estate Gold Life System</p>
+    <div class="notice">
+      ⚠️ El acceso a este sistema requiere un enlace válido enviado por email.
     </div>
+  </div>
 </body>
 </html>
