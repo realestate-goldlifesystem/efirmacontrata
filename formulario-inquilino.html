@@ -8,7 +8,7 @@
   <!-- Branding global -->
   <link rel="stylesheet" href="theme.css" />
 
-  <!-- Estilos mínimos específicos (wizard) -->
+  <!-- Estilos mínimos específicos (wizard + modal + toast) -->
   <style>
     .page{
       min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:24px;
@@ -39,6 +39,15 @@
     .chip{ padding:6px 10px; border-radius: var(--radius-round); background: rgba(255,215,0,.12); border:1px solid rgba(255,215,0,.25); font-size: var(--fs-small); color: var(--gold-300) }
     .hidden{ display:none !important }
     .pay-note{ font-size: var(--fs-small); color: var(--gray-400) }
+
+    /* Modal simple */
+    .modal{ position: fixed; inset: 0; background: rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index: 50; }
+    .modal.show{ display:flex }
+    .modal .sheet{ width:min(520px, 92vw) }
+
+    /* Toast */
+    .toast{ position: fixed; right:16px; bottom:16px; padding:12px 14px; border-radius:12px; background: #0f172a; color:#e9e9e9; border:1px solid rgba(255,215,0,.35); box-shadow: var(--glow-gold); z-index:60; opacity:0; transform: translateY(8px); transition: .25s all ease; }
+    .toast.show{ opacity:1; transform: translateY(0) }
   </style>
 </head>
 <body>
@@ -229,7 +238,7 @@
                   <h3>Bre-B / Nequi / Daviplata</h3>
                   <p class="pay-note">Transferencia directa. Confirmación en minutos.</p>
                   <div class="actions">
-                    <button id="btnPayBreb" class="btn btn-primary btn-pill" type="button">Pagar con Bre-B / Nequi / Daviplata</button>
+                    <button id="btnPayBreb" class="btn btn-primary btn-pill" type="button">Ver número y copiar</button>
                   </div>
                 </div>
               </div>
@@ -273,6 +282,35 @@
       </div>
     </section>
   </main>
+
+  <!-- Modal pago Bre-B/Nequi/Daviplata -->
+  <div id="modalBreb" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalBrebTitle" aria-hidden="true">
+    <div class="card sheet">
+      <div class="card-header">
+        <h2 id="modalBrebTitle" class="header-premium" style="margin:0">Transferencia: Bre-B / Nequi / Daviplata</h2>
+      </div>
+      <div class="card-body">
+        <p class="muted">Transfiere al siguiente número y luego vuelve para finalizar tu proceso.</p>
+        <div class="grid-2col" style="align-items:end">
+          <div>
+            <label>Número de cuenta / celular</label>
+            <input id="brebNumber" class="input" type="text" value="" readonly />
+            <p class="pay-note" style="margin-top:6px">Se copiará exactamente este valor.</p>
+          </div>
+          <div class="actions">
+            <button id="btnCopyBreb" class="btn btn-primary btn-pill" type="button">Copiar al portapapeles</button>
+            <button id="btnCloseBreb" class="btn btn-ghost btn-pill" type="button">Cerrar</button>
+          </div>
+        </div>
+        <div class="alert alert-info" style="margin-top:12px">
+          Consejo: agrega una nota de referencia con tu <strong>CDR</strong> si la pasarela lo permite.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite">Copiado al portapapeles</div>
 
   <!-- Config global -->
   <script src="config.js"></script>
@@ -333,6 +371,12 @@
       // Pagos
       btnPayBreb: $("btnPayBreb"),
       btnPayWompi: $("btnPayWompi"),
+      // Modal + toast
+      modalBreb: $("modalBreb"),
+      brebNumber: $("brebNumber"),
+      btnCopyBreb: $("btnCopyBreb"),
+      btnCloseBreb: $("btnCloseBreb"),
+      toast: $("toast"),
     };
 
     // --------- Init ----------
@@ -364,13 +408,17 @@
       bindFile(el.docFront, 'docFront', el.docFrontName);
       bindFile(el.docBack, 'docBack', el.docBackName);
       bindFile(el.ingresos, 'ingresos', el.ingresosName);
-
       bindFile(el.coDocFront, 'coDocFront', el.coDocFrontName);
       bindFile(el.coDocBack, 'coDocBack', el.coDocBackName);
       bindFile(el.coIngresos, 'coIngresos', el.coIngresosName);
 
-      // Pagos
-      el.btnPayBreb.addEventListener('click', handlePayBreb);
+      // Pago: modal + tarjeta
+      el.brebNumber.value = CONFIG?.PAY_BREB_NEQUI_DAVIPLATA || '3177623878';
+      el.btnPayBreb.addEventListener('click', openBrebModal);
+      el.btnCloseBreb.addEventListener('click', closeBrebModal);
+      el.modalBreb.addEventListener('click', (e)=>{ if (e.target === el.modalBreb) closeBrebModal(); });
+      el.btnCopyBreb.addEventListener('click', copyBreb);
+
       el.btnPayWompi.addEventListener('click', handlePayWompi);
     }
 
@@ -542,16 +590,25 @@
     }
 
     // --------- Pagos ----------
-    function handlePayBreb(){
-      const url =
-        CONFIG?.PAY_BREB_URL ||
-        CONFIG?.NEQUI_URL ||
-        CONFIG?.DAVIPLATA_URL ||
-        '';
-      if (!url) return showAlert('warning', 'No encontramos un enlace de pago para Bre-B / Nequi / Daviplata en config.js.');
-      window.open(url, '_blank', 'noopener');
+    function openBrebModal(){
+      el.modalBreb.classList.add('show');
+      el.modalBreb.setAttribute('aria-hidden', 'false');
+      el.brebNumber.select();
     }
-
+    function closeBrebModal(){
+      el.modalBreb.classList.remove('show');
+      el.modalBreb.setAttribute('aria-hidden', 'true');
+    }
+    async function copyBreb(){
+      const value = (CONFIG?.PAY_BREB_NEQUI_DAVIPLATA || '').toString().trim();
+      try{
+        if (!value) throw new Error('Número de pago no configurado.');
+        await navigator.clipboard.writeText(value);
+        toast('Número copiado: ' + value);
+      }catch(e){
+        toast('No se pudo copiar. Selecciona y copia manualmente.');
+      }
+    }
     function handlePayWompi(){
       const url = CONFIG?.PAY_WOMPI_URL || '';
       if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta en config.js.');
@@ -622,6 +679,12 @@
     function toggleLoading(show){
       el.loader.classList.toggle('hidden', !show);
       el.btnPrev.disabled = !!show; el.btnNext.disabled = !!show; el.btnEnviar.disabled = !!show;
+    }
+    function toast(text){
+      el.toast.textContent = text || 'Acción realizada.';
+      el.toast.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=> el.toast.classList.remove('show'), 2200);
     }
     function escapeHTML(s){
       return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
