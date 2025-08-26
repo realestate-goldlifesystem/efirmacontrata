@@ -2,716 +2,250 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Formulario Propietario • E-FirmaContrata</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Branding global -->
-  <link rel="stylesheet" href="theme.css" />
-
-  <!-- Estilos mínimos específicos (wizard) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Formulario del Propietario - EFirmaContrata</title>
   <style>
-    .page{
-      min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:24px;
-      background: radial-gradient(1600px 800px at 50% -20%, rgba(255,215,0,.10), transparent 60%), var(--black-primary);
+    :root {
+      --gold-primary: #FFD700;
+      --black-primary: #0F0F0F;
+      --gray-dark: #333;
+      --text-light: #f4f4f4;
     }
-    .wizard{ width:min(1060px, 96vw) }
-    .progress{ display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin-top:8px }
-    .step{
-      position:relative; text-align:center; padding:10px 8px; border-radius: var(--radius-md);
-      background: linear-gradient(135deg, var(--black-secondary), var(--gray-800));
-      border:1px solid rgba(255,215,0,.18); color:#ccc; user-select:none;
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--black-primary);
+      color: var(--text-light);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: radial-gradient(#FFD70011 1px, transparent 1px);
+      background-size: 40px 40px;
     }
-    .step.active{
-      color:#111; background: linear-gradient(135deg, var(--gold-700), var(--gold-500));
-      border-color: rgba(255,215,0,.45); box-shadow: var(--glow-gold); font-weight:700;
+
+    .main-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
     }
-    .step .k{ display:block; font-size: var(--fs-small); opacity:.85 }
-    .steps-wrap{ margin-top:18px }
-    .step-pane{ display:none }
-    .step-pane.show{ display:block }
-    .hr{ height:1px; background: rgba(255,215,0,.18); margin:18px 0 }
-    .grid-2col{ display:grid; grid-template-columns: 1fr 1fr; gap:16px }
-    .grid-3col{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px }
-    @media (max-width: 860px){ .grid-2col,.grid-3col{ grid-template-columns: 1fr } }
-    .file{ position:relative }
-    .file .name{ display:block; margin-top:6px; font-size: var(--fs-small); color: var(--gray-400) }
-    .actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top:18px }
-    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px }
-    .chip{ padding:6px 10px; border-radius: var(--radius-round); background: rgba(255,215,0,.12); border:1px solid rgba(255,215,0,.25); font-size: var(--fs-small); color: var(--gold-300) }
-    .hidden{ display:none !important }
-    .drop{ border:2px dashed rgba(255,215,0,.35); padding:12px; border-radius: var(--radius-md); text-align:center }
-    .drop.drag{ border-color: var(--gold-500); background: rgba(255,215,0,.06) }
+
+    .form-card {
+      background-color: #1a1a1a;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+      padding: 30px;
+      overflow: hidden;
+    }
+
+    .form-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .form-header h1 {
+      margin: 0;
+      font-size: 2rem;
+      color: var(--gold-primary);
+    }
+
+    .form-header p {
+      margin-top: 10px;
+      color: #ccc;
+    }
+
+    .form-section {
+      display: none;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="file"],
+    input[type="tel"],
+    select {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      background-color: #2a2a2a;
+      color: #fff;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      background: var(--gold-primary);
+      color: var(--black-primary);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #f2c300;
+    }
+
+    .btn-secondary {
+      background: #333;
+      color: #fff;
+    }
+
+    .btn-secondary:hover {
+      background: #555;
+    }
+
+    .form-navigation {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+
+    .summary {
+      background-color: #222;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .summary p {
+      margin: 8px 0;
+    }
+
+    .step-indicator {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
-  <main class="page">
-    <section class="card wizard" aria-labelledby="title">
-      <header class="card-header">
-        <div class="badge">E-FirmaContrata</div>
-        <h1 id="title">Formulario del Propietario</h1>
-        <p class="muted" style="margin:6px 0 0">Completa los pasos para cargar tu documentación. Todo bajo el estándar Real Estate – Gold Life System.</p>
-
-        <!-- Barra de progreso -->
-        <div class="progress" aria-label="Progreso">
-          <div class="step" data-step="0"><span class="k">1</span>Identificación</div>
-          <div class="step" data-step="1"><span class="k">2</span>Documentos</div>
-          <div class="step" data-step="2"><span class="k">3</span>Servicios</div>
-          <div class="step" data-step="3"><span class="k">4</span>Opcionales</div>
-          <div class="step" data-step="4"><span class="k">5</span>Resumen</div>
-        </div>
-      </header>
-
-      <div class="card-body">
-        <!-- Banner de corrección -->
-        <div id="bannerCorreccion" class="banner hidden" role="status" aria-live="polite">
-          <strong>Corrección solicitada:</strong>
-          <div id="correccionDocs" class="chips"></div>
-          <p id="correccionObs" class="muted" style="margin-top:8px">Vuelve a cargar los documentos marcados.</p>
-        </div>
-
-        <!-- Estado / Notificaciones -->
-        <div id="alertBox" class="alert hidden" role="alert"></div>
-
-        <!-- PANE 0: Identificación -->
-        <div class="steps-wrap">
-          <div class="step-pane" data-pane="0">
-            <h2 class="header-premium" style="margin:0 0 12px">Identificación</h2>
-            <div class="grid-2col">
-              <div>
-                <label for="tipoDocumento">Tipo de Documento <span class="required">*</span></label>
-                <select id="tipoDocumento" class="input" autocomplete="off" required>
-                  <option value="">Seleccione...</option>
-                  <option value="CC">Cédula de Ciudadanía</option>
-                  <option value="CE">Cédula de Extranjería</option>
-                  <option value="PA">Pasaporte</option>
-                  <option value="NIT">NIT</option>
-                </select>
-              </div>
-              <div>
-                <label for="numeroDocumento">Número de Documento <span class="required">*</span></label>
-                <input id="numeroDocumento" class="input" type="text" placeholder="Ej: 1234567890" required />
-              </div>
-              <div>
-                <label for="confirmarDocumento">Confirmar Número <span class="required">*</span></label>
-                <input id="confirmarDocumento" class="input" type="text" placeholder="Confirme el número" required />
-                <div id="docError" class="error-msg">El número no coincide.</div>
-              </div>
-              <div>
-                <label for="fechaExpedicion">Fecha de Expedición</label>
-                <input id="fechaExpedicion" class="input" type="date" />
-              </div>
-              <div>
-                <label for="nombres">Nombres <span class="required">*</span></label>
-                <input id="nombres" class="input" type="text" placeholder="Nombres completos" required />
-              </div>
-              <div>
-                <label for="apellidos">Apellidos <span class="required">*</span></label>
-                <input id="apellidos" class="input" type="text" placeholder="Apellidos completos" required />
-              </div>
-              <div>
-                <label for="email">Correo <span class="required">*</span></label>
-                <input id="email" class="input" type="email" placeholder="correo@ejemplo.com" required />
-              </div>
-              <div>
-                <label for="confirmarEmail">Confirmar Correo <span class="required">*</span></label>
-                <input id="confirmarEmail" class="input" type="email" placeholder="Confirme el correo" required />
-                <div id="emailError" class="error-msg">El correo no coincide.</div>
-              </div>
-              <div>
-                <label for="celular">Celular <span class="required">*</span></label>
-                <input id="celular" class="input" type="tel" placeholder="3001234567" required />
-              </div>
-              <div>
-                <label for="confirmarCelular">Confirmar Celular <span class="required">*</span></label>
-                <input id="confirmarCelular" class="input" type="tel" placeholder="Confirme el celular" required />
-                <div id="celError" class="error-msg">El celular no coincide.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 1: Documentos requeridos -->
-          <div class="step-pane" data-pane="1">
-            <h2 class="header-premium" style="margin:0 0 12px">Documentos requeridos</h2>
-            <div class="grid">
-              <div>
-                <label>SARLAFT (PDF o imagen) <span class="required">*</span></label>
-                <label class="file drop" data-key="sarlaft">
-                  <input id="sarlaft" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Haz clic o arrastra para seleccionar</span>
-                  <span id="sarlaftName" class="name"></span>
-                </label>
-                <p class="muted" style="margin-top:6px">Formatos: PDF/JPG/PNG • Máx: 10MB</p>
-              </div>
-
-              <div>
-                <label>Certificado Bancario (PDF o imagen) <span class="required">*</span></label>
-                <label class="file drop" data-key="certBancario">
-                  <input id="certBancario" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Haz clic o arrastra para seleccionar</span>
-                  <span id="certBancarioName" class="name"></span>
-                </label>
-                <p class="muted" style="margin-top:6px">Formatos: PDF/JPG/PNG • Máx: 10MB</p>
-              </div>
-
-              <div>
-                <label>Certificado de Tradición y Libertad <span class="required">*</span></label>
-                <label class="file drop" data-key="certTradicion">
-                  <input id="certTradicion" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Haz clic o arrastra para seleccionar</span>
-                  <span id="certTradicionName" class="name"></span>
-                </label>
-                <p class="muted" style="margin-top:6px">Usaremos OCR para validar dirección, PIN y propietarios.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 2: Servicios -->
-          <div class="step-pane" data-pane="2">
-            <h2 class="header-premium" style="margin:0 0 12px">Servicios públicos (mínimo 2)</h2>
-            <div class="grid-3col">
-              <div>
-                <label>Subir servicio #1 <span class="required">*</span></label>
-                <label class="file drop" data-key="serv1">
-                  <input id="serv1" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Haz clic o arrastra para seleccionar</span>
-                  <span id="serv1Name" class="name"></span>
-                </label>
-              </div>
-              <div>
-                <label>Subir servicio #2 <span class="required">*</span></label>
-                <label class="file drop" data-key="serv2">
-                  <input id="serv2" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Haz clic o arrastra para seleccionar</span>
-                  <span id="serv2Name" class="name"></span>
-                </label>
-              </div>
-              <div>
-                <label>Subir servicio #3 (opcional)</label>
-                <label class="file drop" data-key="serv3">
-                  <input id="serv3" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Haz clic o arrastra para seleccionar</span>
-                  <span id="serv3Name" class="name"></span>
-                </label>
-              </div>
-            </div>
-            <p class="muted" style="margin-top:6px">Aceptamos facturas de agua, luz, gas, internet u otras vigentes.</p>
-          </div>
-
-          <!-- PANE 3: Opcionales -->
-          <div class="step-pane" data-pane="3">
-            <h2 class="header-premium" style="margin:0 0 12px">Opcionales</h2>
-            <div class="grid-2col">
-              <div>
-                <label>Reglamento de Propiedad Horizontal (opcional)</label>
-                <label class="file drop" data-key="reglamento">
-                  <input id="reglamento" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Haz clic o arrastra para seleccionar</span>
-                  <span id="reglamentoName" class="name"></span>
-                </label>
-              </div>
-              <div>
-                <label>Manual de Convivencia (opcional)</label>
-                <label class="file drop" data-key="manual">
-                  <input id="manual" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Haz clic o arrastra para seleccionar</span>
-                  <span id="manualName" class="name"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 4: Resumen -->
-          <div class="step-pane" data-pane="4">
-            <h2 class="header-premium" style="margin:0 0 12px">Resumen</h2>
-            <div id="resumen" class="grid"><!-- Se llena dinámicamente --></div>
-            <div class="alert alert-info" style="margin-top:10px" aria-live="polite">
-              Verifica que los datos y archivos listados sean correctos antes de enviar.
-            </div>
-          </div>
-        </div>
-
-        <!-- Acciones del wizard -->
-        <div class="actions">
-          <a class="btn btn-secondary btn-pill" href="selector.html">Volver al selector</a>
-          <button id="btnPrev" class="btn btn-ghost btn-pill" type="button">Anterior</button>
-          <button id="btnNext" class="btn btn-primary btn-pill" type="button">Siguiente</button>
-          <button id="btnEnviar" class="btn btn-success btn-pill hidden" type="button">Enviar documentación</button>
-        </div>
-
-        <!-- Loader -->
-        <div id="loader" class="loader hidden" aria-label="Procesando"></div>
+  <div class="main-container">
+    <div class="form-card">
+      <div class="form-header">
+        <h1>EFirmaContrata</h1>
+        <p>Formulario de Registro del Propietario</p>
       </div>
-    </section>
-  </main>
 
-  <!-- Config global -->
-  <script src="config.js"></script>
+      <div class="step-indicator" id="stepIndicator">Paso 1 de 3</div>
 
-  <script>
-  (function(){
-    // --------- Estado ----------
-    const state = {
-      cdr: '',
-      modoCorreccion: false,
-      docsCorreccion: [],
-      step: 0,
-      max: 4, // último índice de paso
-      archivos: {}, // { key: {nombre, tipo, contenido(base64)} }
-      maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024),
-      dirty: false
-    };
-
-    // --------- Shortcuts ----------
-    const $ = (id) => document.getElementById(id);
-    const qs = (sel, ctx=document) => ctx.querySelector(sel);
-    const qsa = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
-
-    // --------- Elementos ----------
-    const el = {
-      bannerCorreccion: $("bannerCorreccion"),
-      correccionDocs: $("correccionDocs"),
-      correccionObs: $("correccionObs"),
-      alertBox: $("alertBox"),
-      loader: $("loader"),
-      btnPrev: $("btnPrev"),
-      btnNext: $("btnNext"),
-      btnEnviar: $("btnEnviar"),
-      resumen: $("resumen"),
-      // campos
-      tipoDocumento: $("tipoDocumento"),
-      numeroDocumento: $("numeroDocumento"),
-      confirmarDocumento: $("confirmarDocumento"),
-      fechaExpedicion: $("fechaExpedicion"),
-      nombres: $("nombres"),
-      apellidos: $("apellidos"),
-      email: $("email"),
-      confirmarEmail: $("confirmarEmail"),
-      celular: $("celular"),
-      confirmarCelular: $("confirmarCelular"),
-      docError: $("docError"),
-      emailError: $("emailError"),
-      celError: $("celError"),
-      // files
-      sarlaft: $("sarlaft"), sarlaftName: $("sarlaftName"),
-      certBancario: $("certBancario"), certBancarioName: $("certBancarioName"),
-      certTradicion: $("certTradicion"), certTradicionName: $("certTradicionName"),
-      serv1: $("serv1"), serv1Name: $("serv1Name"),
-      serv2: $("serv2"), serv2Name: $("serv2Name"),
-      serv3: $("serv3"), serv3Name: $("serv3Name"),
-      reglamento: $("reglamento"), reglamentoName: $("reglamentoName"),
-      manual: $("manual"), manualName: $("manualName"),
-    };
-
-    // --------- Init ----------
-    init();
-
-    function init(){
-      // Params
-      const params = new URLSearchParams(location.search);
-      state.cdr = params.get('cdr') || '';
-      state.modoCorreccion = (params.get('modo') === 'correccion');
-      const docs = params.get('docs');
-
-      if (!state.cdr) {
-        showAlert('warning', 'CDR no presente. Regresa al selector para validar tu enlace.');
-      }
-
-      if (state.modoCorreccion) {
-        try {
-          state.docsCorreccion = docs ? JSON.parse(decodeURIComponent(docs)) : [];
-        } catch(e){ state.docsCorreccion = []; }
-        renderCorreccionBanner();
-      }
-
-      // Restaurar autosave (si existe)
-      restoreDraft();
-
-      // Wizard
-      renderSteps();
-      bindWizard();
-
-      // Files
-      bindFile(el.sarlaft, 'sarlaft', el.sarlaftName);
-      bindFile(el.certBancario, 'certBancario', el.certBancarioName);
-      bindFile(el.certTradicion, 'certTradicion', el.certTradicionName);
-      bindFile(el.serv1, 'serv1', el.serv1Name);
-      bindFile(el.serv2, 'serv2', el.serv2Name);
-      bindFile(el.serv3, 'serv3', el.serv3Name);
-      bindFile(el.reglamento, 'reglamento', el.reglamentoName);
-      bindFile(el.manual, 'manual', el.manualName);
-
-      // Autosave on input
-      qsa('input,select,textarea').forEach(i => {
-        i.addEventListener('input', markDirtyThenSave);
-        i.addEventListener('change', markDirtyThenSave);
-      });
-
-      // Salida protegida si hay cambios
-      window.addEventListener('beforeunload', (e) => {
-        if (state.dirty) { e.preventDefault(); e.returnValue = ''; }
-      });
-
-      // Drag & Drop para labels con clase .drop
-      qsa('.file.drop').forEach(w => {
-        w.addEventListener('dragover', (e)=>{ e.preventDefault(); w.classList.add('drag'); });
-        w.addEventListener('dragleave', ()=> w.classList.remove('drag'));
-        w.addEventListener('drop', (e)=>{
-          e.preventDefault(); w.classList.remove('drag');
-          const key = w.dataset.key;
-          const fileInput = w.querySelector('input[type="file"]');
-          const file = e.dataTransfer.files?.[0];
-          if (fileInput && file) {
-            // setear archivo visualmente
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            fileInput.files = dt.files;
-            fileInput.dispatchEvent(new Event('change'));
-          }
-        });
-      });
-    }
-
-    // --------- Corrección ----------
-    function renderCorreccionBanner(){
-      if (!state.docsCorreccion.length){ return; }
-      el.bannerCorreccion.classList.remove('hidden');
-      el.correccionDocs.innerHTML = state.docsCorreccion.map(d => `<span class="chip">${escapeHTML(d)}</span>`).join('');
-    }
-
-    // --------- Wizard ----------
-    function renderSteps(){ gotoStep(0, true); }
-
-    function bindWizard(){
-      el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
-      el.btnNext.addEventListener('click', () => {
-        if (!validateStep(state.step)) return;
-        if (state.step < state.max) gotoStep(state.step + 1);
-      });
-      el.btnEnviar.addEventListener('click', onSubmit);
-
-      // Click directo sobre pasos (permite volver; para avanzar, valida el actual)
-      qsa('.progress .step').forEach(s => {
-        s.addEventListener('click', () => {
-          const target = Number(s.dataset.step);
-          if (target <= state.step) return gotoStep(target);
-          if (validateStep(state.step)) gotoStep(target);
-        });
-      });
-    }
-
-    function gotoStep(n, first=false){
-      state.step = Math.max(0, Math.min(n, state.max));
-      // visibilidad panes
-      qsa('.step-pane').forEach(p => p.classList.toggle('show', Number(p.dataset.pane) === state.step));
-      // progreso
-      qsa('.progress .step').forEach(s => {
-        const idx = Number(s.dataset.step);
-        s.classList.toggle('active', idx === state.step);
-      });
-      // botones
-      el.btnPrev.disabled = (state.step === 0);
-      el.btnNext.classList.toggle('hidden', state.step === state.max);
-      el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
-
-      if (state.step === state.max) buildSummary(); // llenar resumen al llegar
-
-      if (!first) window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // --------- Files ----------
-    function bindFile(input, key, nameEl){
-      input.addEventListener('change', () => handleFile(input.files?.[0], key, nameEl));
-    }
-
-    async function handleFile(file, key, nameEl){
-      if (!file) return;
-      if (file.size > state.maxFileSize){
-        showAlert('danger', `El archivo "${file.name}" excede el límite de ${(state.maxFileSize/1024/1024).toFixed(0)}MB.`);
-        return;
-      }
-
-      // Si es imagen grande, intentamos comprimir
-      const isImage = /^image\/(png|jpe?g|webp)$/i.test(file.type);
-      let finalFile = file;
-      if (isImage && file.size > 1024 * 1024) { // >1MB
-        try {
-          finalFile = await compressImage(file, { maxW:2400, maxH:2400, quality:0.82 });
-        } catch(e){ /* si falla compresión, seguimos con original */ }
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        state.archivos[key] = { nombre:finalFile.name || file.name, tipo:finalFile.type || file.type, contenido:e.target.result };
-        if (nameEl) nameEl.textContent = state.archivos[key].nombre;
-        markDirtyThenSave();
-      };
-      reader.readAsDataURL(finalFile);
-    }
-
-    function compressImage(file, opts){
-      return new Promise((resolve, reject)=>{
-        const img = new Image();
-        img.onload = () => {
-          const { maxW, maxH, quality } = opts;
-          let { width:w, height:h } = img;
-
-          const scale = Math.min(maxW / w, maxH / h, 1);
-          const nw = Math.round(w * scale), nh = Math.round(h * scale);
-
-          const canvas = document.createElement('canvas');
-          canvas.width = nw; canvas.height = nh;
-          const ctx = canvas.getContext('2d', { alpha:false });
-          ctx.drawImage(img, 0, 0, nw, nh);
-
-          canvas.toBlob((blob)=>{
-            if (!blob) return reject(new Error('No se pudo comprimir'));
-            const name = (file.name || 'img').replace(/\.(png|jpg|jpeg|webp)$/i, '') + '.jpg';
-            resolve(new File([blob], name, { type:'image/jpeg' }));
-          }, 'image/jpeg', quality || 0.82);
-        };
-        img.onerror = () => reject(new Error('Imagen inválida'));
-        img.src = URL.createObjectURL(file);
-      });
-    }
-
-    // --------- Validación por paso (robusta) ----------
-    const rx = {
-      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      phone: /^\d{10}$/,
-      num: /^[0-9A-Za-z.-]{5,}$/
-    };
-
-    function validateStep(step){
-      hideInlineErrors();
-      switch(step){
-        case 0:{
-          const required = [
-            el.tipoDocumento, el.numeroDocumento, el.confirmarDocumento,
-            el.nombres, el.apellidos, el.email, el.confirmarEmail,
-            el.celular, el.confirmarCelular
-          ];
-          for (const r of required){
-            if (!r.value || !r.value.trim()){
-              showAlert('warning', 'Completa los campos obligatorios del paso Identificación.');
-              r.focus(); return false;
-            }
-          }
-          if (!rx.num.test(el.numeroDocumento.value.trim())){
-            showAlert('warning', 'Número de documento inválido.'); el.numeroDocumento.focus(); return false;
-          }
-          if (el.numeroDocumento.value.trim() !== el.confirmarDocumento.value.trim()){
-            el.docError.classList.add('show'); el.confirmarDocumento.classList.add('invalid'); return false;
-          }
-          if (!rx.email.test(el.email.value.trim())){
-            showAlert('warning', 'Correo inválido.'); el.email.focus(); return false;
-          }
-          if (el.email.value.trim() !== el.confirmarEmail.value.trim()){
-            el.emailError.classList.add('show'); el.confirmarEmail.classList.add('invalid'); return false;
-          }
-          if (!rx.phone.test(el.celular.value.trim())){
-            showAlert('warning', 'Celular inválido (10 dígitos).'); el.celular.focus(); return false;
-          }
-          if (el.celular.value.trim() !== el.confirmarCelular.value.trim()){
-            el.celError.classList.add('show'); el.confirmarCelular.classList.add('invalid'); return false;
-          }
-          return true;
-        }
-        case 1:{
-          const need = ['sarlaft','certBancario','certTradicion'];
-          for (const k of need){
-            if (!state.archivos[k]){
-              showAlert('warning', 'Faltan documentos requeridos (SARLAFT, Cert. Bancario y Cert. Tradición).');
-              return false;
-            }
-          }
-          return true;
-        }
-        case 2:{
-          if (!state.archivos['serv1'] || !state.archivos['serv2']){
-            showAlert('warning', 'Debes adjuntar al menos 2 servicios públicos (servicio #1 y #2).');
-            return false;
-          }
-          return true;
-        }
-        case 3:{
-          // No obligatorios; sin validación
-          return true;
-        }
-        default: return true;
-      }
-    }
-
-    function hideInlineErrors(){
-      [el.docError, el.emailError, el.celError].forEach(n => n.classList.remove('show'));
-      [el.confirmarDocumento, el.confirmarEmail, el.confirmarCelular].forEach(i => i.classList.remove('invalid'));
-      el.alertBox.classList.add('hidden');
-    }
-
-    // --------- Resumen ----------
-    function buildSummary(){
-      const files = Object.entries(state.archivos).map(([k,v]) => {
-        const nice = {
-          sarlaft:'SARLAFT', certBancario:'Certificado Bancario', certTradicion:'Cert. Tradición',
-          serv1:'Servicio #1', serv2:'Servicio #2', serv3:'Servicio #3',
-          reglamento:'Reglamento', manual:'Manual'
-        }[k] || k;
-        return `<li>${nice}: <span class="muted">${escapeHTML(v?.nombre || '—')}</span></li>`;
-      }).join('');
-
-      el.resumen.innerHTML = `
-        <div class="card">
-          <div class="card-body">
-            <h3>Datos</h3>
-            <div class="grid-2col" style="margin-top:10px">
-              <div><strong>Tipo Doc.:</strong> <span class="muted">${escapeHTML(el.tipoDocumento.value||'')}</span></div>
-              <div><strong>N° Documento:</strong> <span class="muted">${escapeHTML(el.numeroDocumento.value||'')}</span></div>
-              <div><strong>Nombre:</strong> <span class="muted">${escapeHTML(el.nombres.value||'')} ${escapeHTML(el.apellidos.value||'')}</span></div>
-              <div><strong>Correo:</strong> <span class="muted">${escapeHTML(el.email.value||'')}</span></div>
-              <div><strong>Celular:</strong> <span class="muted">${escapeHTML(el.celular.value||'')}</span></div>
-              <div><strong>Fecha Exp.:</strong> <span class="muted">${escapeHTML(el.fechaExpedicion.value||'')}</span></div>
-            </div>
-            <div class="hr"></div>
-            <h3>Archivos</h3>
-            <ul style="margin-top:8px">${files || '<li class="muted">Sin archivos</li>'}</ul>
+      <form id="formPropietario">
+        <!-- Paso 1 -->
+        <div class="form-section active" id="step1">
+          <div class="form-group">
+            <label for="nombre">Nombre completo</label>
+            <input type="text" id="nombre" required />
+          </div>
+          <div class="form-group">
+            <label for="documento">Número de documento</label>
+            <input type="text" id="documento" required />
+          </div>
+          <div class="form-group">
+            <label for="email">Correo electrónico</label>
+            <input type="email" id="email" required />
+          </div>
+          <div class="form-group">
+            <label for="celular">Celular</label>
+            <input type="tel" id="celular" required />
           </div>
         </div>
-      `;
+
+        <!-- Paso 2 -->
+        <div class="form-section" id="step2">
+          <div class="form-group">
+            <label for="sarlaft">Documento SARLAFT</label>
+            <input type="file" id="sarlaft" accept=".pdf" />
+          </div>
+          <div class="form-group">
+            <label for="certificadoBancario">Certificado Bancario</label>
+            <input type="file" id="certificadoBancario" accept=".pdf" />
+          </div>
+          <div class="form-group">
+            <label for="certificadoTradicion">Certificado de Tradición</label>
+            <input type="file" id="certificadoTradicion" accept=".pdf" />
+          </div>
+        </div>
+
+        <!-- Paso 3 -->
+        <div class="form-section" id="step3">
+          <div class="form-group">
+            <label for="serviciosPublicos">Recibos de servicios públicos</label>
+            <input type="file" id="serviciosPublicos" multiple accept=".pdf,.jpg,.jpeg,.png" />
+          </div>
+          <div class="form-group">
+            <label for="admin">Recibo de administración (si aplica)</label>
+            <input type="file" id="admin" accept=".pdf,.jpg,.jpeg,.png" />
+          </div>
+          <div class="form-group">
+            <label for="manual">Manual de convivencia (si aplica)</label>
+            <input type="file" id="manual" accept=".pdf,.jpg,.jpeg,.png" />
+          </div>
+
+          <div class="summary" id="resumenFinal">
+            <h3>Resumen:</h3>
+            <p><strong>Nombre:</strong> <span id="resNombre"></span></p>
+            <p><strong>Documento:</strong> <span id="resDocumento"></span></p>
+            <p><strong>Email:</strong> <span id="resEmail"></span></p>
+            <p><strong>Celular:</strong> <span id="resCelular"></span></p>
+          </div>
+        </div>
+
+        <!-- Navegación -->
+        <div class="form-navigation">
+          <button type="button" class="btn-secondary" onclick="anteriorPaso()">Anterior</button>
+          <button type="button" class="btn" onclick="siguientePaso()">Siguiente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    let pasoActual = 1;
+    const totalPasos = 3;
+
+    function actualizarPaso() {
+      document.querySelectorAll('.form-section').forEach((sec, i) => {
+        sec.classList.toggle('active', i === pasoActual - 1);
+      });
+      document.getElementById("stepIndicator").textContent = "Paso " + pasoActual + " de " + totalPasos;
     }
 
-    // --------- Autosave ----------
-    const DRAFT_KEY = () => `ownerForm:${state.cdr || 'sinCDR'}`;
-
-    function markDirtyThenSave(){
-      state.dirty = true;
-      // throttle simple
-      clearTimeout(markDirtyThenSave._t);
-      markDirtyThenSave._t = setTimeout(saveDraft, 350);
-    }
-
-    function saveDraft(){
-      const payload = {
-        step: state.step,
-        propietario: {
-          tipoDocumento: el.tipoDocumento.value,
-          numeroDocumento: el.numeroDocumento.value,
-          confirmarDocumento: el.confirmarDocumento.value,
-          fechaExpedicion: el.fechaExpedicion.value,
-          nombres: el.nombres.value,
-          apellidos: el.apellidos.value,
-          email: el.email.value,
-          confirmarEmail: el.confirmarEmail.value,
-          celular: el.celular.value,
-          confirmarCelular: el.confirmarCelular.value
-        },
-        archivos: state.archivos
-      };
-      try { localStorage.setItem(DRAFT_KEY(), JSON.stringify(payload)); } catch(e){}
-    }
-
-    function restoreDraft(){
-      try {
-        const raw = localStorage.getItem(DRAFT_KEY());
-        if (!raw) return;
-        const d = JSON.parse(raw);
-        if (d?.propietario){
-          el.tipoDocumento.value = d.propietario.tipoDocumento || '';
-          el.numeroDocumento.value = d.propietario.numeroDocumento || '';
-          el.confirmarDocumento.value = d.propietario.confirmarDocumento || '';
-          el.fechaExpedicion.value = d.propietario.fechaExpedicion || '';
-          el.nombres.value = d.propietario.nombres || '';
-          el.apellidos.value = d.propietario.apellidos || '';
-          el.email.value = d.propietario.email || '';
-          el.confirmarEmail.value = d.propietario.confirmarEmail || '';
-          el.celular.value = d.propietario.celular || '';
-          el.confirmarCelular.value = d.propietario.confirmarCelular || '';
+    function siguientePaso() {
+      if (pasoActual < totalPasos) {
+        pasoActual++;
+        if (pasoActual === 3) {
+          document.getElementById("resNombre").textContent = document.getElementById("nombre").value;
+          document.getElementById("resDocumento").textContent = document.getElementById("documento").value;
+          document.getElementById("resEmail").textContent = document.getElementById("email").value;
+          document.getElementById("resCelular").textContent = document.getElementById("celular").value;
         }
-        if (d?.archivos){
-          state.archivos = d.archivos;
-          // pintar nombres si estaban
-          const map = {
-            sarlaft: el.sarlaftName, certBancario: el.certBancarioName, certTradicion: el.certTradicionName,
-            serv1: el.serv1Name, serv2: el.serv2Name, serv3: el.serv3Name,
-            reglamento: el.reglamentoName, manual: el.manualName
-          };
-          Object.entries(state.archivos).forEach(([k,v]) => {
-            if (map[k] && v?.nombre) map[k].textContent = v.nombre;
-          });
-        }
-        if (typeof d.step === 'number') state.step = Math.min(Math.max(d.step,0), state.max);
-      } catch(e){}
-    }
-
-    function clearDraft(){
-      try { localStorage.removeItem(DRAFT_KEY()); } catch(e){}
-      state.dirty = false;
-    }
-
-    // --------- Submit ----------
-    async function onSubmit(){
-      // Validación final integral
-      for (let i=0; i<=3; i++){
-        if (!validateStep(i)) { gotoStep(i); return; }
-      }
-
-      toggleLoading(true);
-
-      const payload = {
-        accion: 'procesarFormularioPropietario',
-        cdr: state.cdr,
-        modo: state.modoCorreccion ? 'correccion' : 'normal',
-        propietario: {
-          tipoDocumento: el.tipoDocumento.value.trim(),
-          numeroDocumento: el.numeroDocumento.value.trim(),
-          fechaExpedicion: el.fechaExpedicion.value || '',
-          nombres: el.nombres.value.trim(),
-          apellidos: el.apellidos.value.trim(),
-          email: el.email.value.trim(),
-          celular: el.celular.value.trim()
-        },
-        archivos: state.archivos   // base64
-      };
-
-      try{
-        const url = new URL(CONFIG.API_URL);
-        const res = await fetch(url.toString(), {
-          method:'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (!data || data.ok !== true){
-          throw new Error(data && data.message ? data.message : 'No fue posible procesar la información.');
-        }
-        clearDraft();
-        const msg = encodeURIComponent('Documentación enviada correctamente.');
-        location.href = `pagina-exito.html?status=success&msg=${msg}`;
-      }catch(err){
-        console.error('[Propietario] Error:', err);
-        showAlert('danger', err.message || 'Ocurrió un error inesperado.');
-        // Si quieres, puedes redirigir a la página de estado:
-        // const msg = encodeURIComponent('Error al procesar la documentación.');
-        // location.href = `pagina-exito.html?status=error&msg=${msg}`;
-      }finally{
-        toggleLoading(false);
+        actualizarPaso();
+      } else {
+        alert("Formulario listo para enviar.");
+        // Aquí puedes implementar la lógica de envío real
       }
     }
 
-    // --------- Utilidades ----------
-    function showAlert(type, text){
-      const map = { success:'alert-success', warning:'alert-warning', danger:'alert-danger', info:'alert-info' };
-      el.alertBox.className = `alert ${map[type] || 'alert-info'}`;
-      el.alertBox.innerHTML = escapeHTML(text);
-      el.alertBox.classList.remove('hidden');
-      el.alertBox.focus?.();
+    function anteriorPaso() {
+      if (pasoActual > 1) {
+        pasoActual--;
+        actualizarPaso();
+      }
     }
-    function toggleLoading(show){
-      el.loader.classList.toggle('hidden', !show);
-      el.btnPrev.disabled = !!show; el.btnNext.disabled = !!show; el.btnEnviar.disabled = !!show;
-    }
-    function escapeHTML(s){
-      return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-  })();
+
+    window.onload = () => actualizarPaso();
   </script>
 </body>
 </html>
