@@ -2,131 +2,153 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>E-FirmaContrata • Estado de envío</title>
+  <title>Confirmación - E-firmaContrata</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Branding global -->
-  <link rel="stylesheet" href="theme.css" />
-
-  <!-- (Opcional) estilos mínimos específicos de página -->
   <style>
-    .page-wrap{
-      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
-      background: radial-gradient(1200px 600px at 50% -20%, rgba(255,215,0,.08), transparent 60%) , var(--black-primary);
+    :root {
+      --gold-primary: #FFD700;
+      --black-primary: #0F0F0F;
+      --gray-dark: #222;
+      --text-light: #f4f4f4;
     }
-    .status-card { width:min(720px, 95vw); }
-    .status-icon{ font-size:56px; line-height:1; }
-    .status-title{ font-size: var(--fs-h1); margin-top:8px; }
-    .status-desc{ color: var(--gray-400); margin-top:8px }
-    .actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top:22px }
-    .divider{ height:1px; background:rgba(255,215,0,.18); margin:18px 0 }
-    .details{ display:none; }
-    .details.show{ display:block; }
-    .footer-note{ font-size: var(--fs-small); color: var(--gray-400); margin-top: 10px }
+
+    body {
+      margin: 0;
+      padding: 25px;
+      background-color: var(--black-primary);
+      background-image: radial-gradient(#FFD70011 1px, transparent 1px);
+      background-size: 40px 40px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: var(--text-light);
+    }
+
+    .center-box {
+      max-width: 680px;
+      margin: 40px auto;
+      background: var(--gray-dark);
+      padding: 35px;
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.5);
+      text-align: center;
+    }
+
+    .status-icon {
+      font-size: 58px;
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 30px;
+      color: var(--gold-primary);
+    }
+
+    p {
+      color: var(--text-light);
+      font-size: 15px;
+      margin: 10px 0;
+      line-height: 1.55;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 18px;
+      background: #333;
+      color: var(--gold-primary);
+      font-weight: 600;
+      font-size: 12px;
+      margin: 5px 4px;
+      border: 1px solid var(--gold-primary);
+    }
+
+    .actions {
+      margin-top: 28px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      border-radius: 30px;
+      text-transform: none;
+      letter-spacing: .5px;
+      font-size: 14px;
+      padding: 10px 20px;
+      font-weight: bold;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+      background: var(--gold-primary);
+      color: var(--black-primary);
+    }
+
+    .btn-primary:hover {
+      background: #f2c300;
+    }
+
+    .btn-secondary {
+      background: #333;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #555;
+    }
+
+    .small-note {
+      margin-top: 25px;
+      font-size: 12px;
+      color: #aaa;
+    }
   </style>
 </head>
 <body>
-  <main class="page-wrap">
-    <section class="card status-card">
-      <header class="card-header">
-        <div class="badge">E-FirmaContrata</div>
-        <h1 class="status-title">Estado del envío</h1>
-      </header>
-
-      <div class="card-body">
-        <div id="statusBlock" class="grid" style="grid-template-columns: 72px 1fr;">
-          <div id="statusIcon" class="status-icon" aria-hidden="true">✨</div>
-          <div>
-            <h2 id="statusTitle">Procesando...</h2>
-            <p id="statusDesc" class="status-desc">Estamos validando tu información.</p>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="actions">
-          <a class="btn btn-primary btn-pill" href="selector.html">Volver al selector</a>
-          <button id="btnVerDetalles" class="btn btn-secondary btn-pill" type="button">Ver detalles</button>
-          <button id="btnCopiarMsg" class="btn btn-ghost btn-pill" type="button">Copiar mensaje</button>
-        </div>
-
-        <div id="details" class="details">
-          <div class="banner" id="bannerInfo" style="margin-top:18px;">
-            <strong>Detalles técnicos:</strong>
-            <div id="detailText" class="muted" style="margin-top:8px;">—</div>
-          </div>
-        </div>
-
-        <p class="footer-note">
-          Real Estate – Gold Life System • © <span id="year"></span>
-        </p>
-      </div>
-    </section>
-  </main>
-
-  <!-- Config global -->
-  <script src="config.js"></script>
+  <div class="center-box" id="box">
+    <div id="icon" class="status-icon">⌛</div>
+    <h1 id="title">Procesando...</h1>
+    <p id="desc">Validando información.</p>
+    <div id="badges"></div>
+    <div class="actions">
+      <a href="selector.html" class="btn btn-primary">Ir al Selector</a>
+      <a href="index.html" class="btn btn-secondary">Inicio</a>
+    </div>
+    <div class="small-note">E-firmaContrata • Real Estate Gold Life System</div>
+  </div>
 
   <script>
-    (function init(){
-      const qs = new URLSearchParams(location.search);
-      const status = (qs.get('status') || 'success').toLowerCase(); // success | used | error
-      const extraMsg = qs.get('msg') ? decodeURIComponent(qs.get('msg')) : '';
+    (function(){
+      const p = new URLSearchParams(window.location.search);
+      const estado = p.get('estado') || 'exitoso';
+      const cdr = p.get('cdr') || '-';
+      const tipo = p.get('tipo') || '-';
+      const icon = document.getElementById('icon');
+      const title = document.getElementById('title');
+      const desc = document.getElementById('desc');
+      const badges = document.getElementById('badges');
 
-      const icon = document.getElementById('statusIcon');
-      const title = document.getElementById('statusTitle');
-      const desc = document.getElementById('statusDesc');
-      const details = document.getElementById('details');
-      const detailText = document.getElementById('detailText');
-      const yearEl = document.getElementById('year');
-      yearEl.textContent = new Date().getFullYear();
-
-      // Acciones
-      document.getElementById('btnVerDetalles').addEventListener('click', () => {
-        details.classList.toggle('show');
-      });
-
-      document.getElementById('btnCopiarMsg').addEventListener('click', async () => {
-        const text = `[E-FirmaContrata] Estado: ${title.textContent} — ${desc.textContent}`;
-        try { await navigator.clipboard.writeText(text); } catch(e){}
-      });
-
-      // Render según estado
-      const views = {
-        success: () => {
-          icon.textContent = '✅';
-          title.textContent = 'Envío exitoso';
-          desc.textContent = 'Recibimos tu información. Te notificaremos por correo cuando finalice la validación.';
-          document.querySelector('.badge').classList.add('badge-success');
-          detailText.textContent = extraMsg || 'El envío fue recibido correctamente por el servidor.';
-        },
-        used: () => {
-          icon.textContent = '⚠️';
-          title.textContent = 'Enlace ya utilizado';
-          desc.textContent = 'Este enlace ya fue usado previamente. Si necesitas actualizar documentos, solicita un nuevo enlace de corrección.';
-          document.querySelector('.badge').classList.add('badge-warning');
-          detailText.textContent = extraMsg || 'El CDR o token aparece como consumido en la base.';
-        },
-        error: () => {
-          icon.textContent = '❌';
-          title.textContent = 'Ocurrió un error';
-          desc.textContent = 'No pudimos procesar tu envío. Inténtalo nuevamente o contáctanos por soporte.';
-          document.querySelector('.badge').classList.add('badge-danger');
-          detailText.textContent = extraMsg || 'El servidor devolvió un estado inválido o se produjo un fallo de red.';
-        }
-      };
-
-      (views[status] || views.success)();
-
-      // Micro interacción: brillo sutil del icono
-      icon.style.transition = 'transform .3s var(--ease-soft)';
-      icon.addEventListener('mouseenter', () => icon.style.transform = 'scale(1.06)');
-      icon.addEventListener('mouseleave', () => icon.style.transform = 'scale(1)');
-
-      // Seguridad mínima: no exponer URL sensibles en detalles
-      if (detailText.textContent && /https?:\/\//i.test(detailText.textContent)) {
-        detailText.textContent = 'Detalle oculto por seguridad.';
+      if(estado === 'exitoso'){
+        icon.textContent = '✅';
+        title.textContent = 'Documentos Enviados';
+        desc.innerHTML = 'Hemos recibido sus documentos correctamente. Se enviará confirmación por correo una vez validados.';
+      } else if(estado === 'usado'){
+        icon.textContent = '🔒';
+        title.textContent = 'Enlace Utilizado';
+        desc.innerHTML = 'Este enlace ya fue utilizado anteriormente. Si necesita volver a enviar documentos, contacte a soporte.';
+      } else {
+        icon.textContent = 'ℹ️';
+        title.textContent = 'Estado Desconocido';
+        desc.textContent = 'No se pudo determinar el estado del envío.';
       }
+
+      badges.innerHTML = `
+        <span class="badge">CDR: ${cdr}</span>
+        <span class="badge">Tipo: ${tipo}</span>
+        <span class="badge">Estado: ${estado}</span>
+      `;
     })();
   </script>
 </body>
