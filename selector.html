@@ -1,406 +1,207 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Firmacontrata - Validando acceso...</title>
-    <style>
-        /* Estilos basicos para el selector */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .contenedor {
-            max-width: 600px;
-            width: 90%;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #B8860B, #FFD700);
-            color: #0F0F0F;
-            padding: 25px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: bold;
-        }
-        
-        .header p {
-            margin: 10px 0 0 0;
-            opacity: 0.9;
-            font-size: 14px;
-        }
-        
-        .contenedor-validacion {
-            padding: 40px 30px;
-            text-align: center;
-        }
-        
-        #mensaje {
-            margin: 20px 0;
-            padding: 20px;
-            border-radius: 10px;
-            display: none;
-        }
-        
-        .info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .loader {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #764ba2;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 30px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .codigo-display {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 16px;
-            font-weight: bold;
-            color: #764ba2;
-            margin: 15px 0;
-            border: 2px dashed #dee2e6;
-        }
-        
-        .whatsapp-container {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 1px solid #e0e0e0;
-            display: none;
-        }
-        
-        .whatsapp-btn {
-            display: inline-block;
-            background: #25D366;
-            color: white;
-            padding: 12px 30px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        
-        .whatsapp-btn:hover {
-            background: #128C7E;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
-        }
-        
-        .estado-info {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            color: #856404;
-        }
-        
-        .debug-info {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 20px;
-            font-size: 12px;
-            text-align: left;
-            display: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>E-FirmaContrata • Selector de acceso</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Branding global -->
+  <link rel="stylesheet" href="theme.css" />
+
+  <!-- Estilos mínimos específicos -->
+  <style>
+    .wrap{
+      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+      background: radial-gradient(1200px 600px at 50% -20%, rgba(255,215,0,.08), transparent 60%), var(--black-primary);
+    }
+    .selector{ width:min(760px,95vw) }
+    .row{ display:grid; grid-template-columns: 1fr auto; gap:12px }
+    @media (max-width: 640px){ .row{ grid-template-columns: 1fr } }
+    .hint{ font-size: var(--fs-small); color: var(--gray-400) }
+    .hr{ height:1px; background:rgba(255,215,0,.18); margin:18px 0 }
+    .skeleton{
+      height:12px; background:linear-gradient(90deg,#2a2a2a,#343434,#2a2a2a); background-size:200% 100%;
+      animation: sk 1.2s linear infinite;
+    }
+    @keyframes sk{ to{ background-position: -200% 0 } }
+  </style>
 </head>
 <body>
-    <div class="contenedor">
-        <div class="header">
-            <h1>🏠 E-Firmacontrata</h1>
-            <p>Sistema de Gestión de Contratos de Arrendamiento</p>
+  <main class="wrap">
+    <section class="card selector">
+      <header class="card-header">
+        <div class="badge">E-FirmaContrata</div>
+        <h1>Validación de enlace / CDR</h1>
+      </header>
+
+      <div class="card-body">
+        <div class="alert alert-info" id="msgInfo" style="display:none">
+          Procesando tu enlace. Por favor espera…
         </div>
-        
-        <div class="contenedor-validacion">
-            <div class="loader"></div>
-            <p style="color: #666;">Validando acceso al formulario...</p>
-            
-            <div id="mensaje"></div>
-            
-            <div class="whatsapp-container" id="whatsappContainer">
-                <p style="color: #666; margin-bottom: 15px;">
-                    Si necesita ayuda o tiene alguna pregunta, contáctenos:
-                </p>
-                <a href="https://wa.me/573177623878" target="_blank" class="whatsapp-btn">
-                    💬 Contactar por WhatsApp
-                </a>
+
+        <div id="formBlock">
+          <p class="muted" style="margin-top:0">
+            Pega tu <strong>CDR</strong> (código de registro) o abre este selector desde el enlace que recibiste.
+          </p>
+
+          <label for="cdr">Código de registro (CDR) <span class="required">*</span></label>
+          <div class="row">
+            <input id="cdr" class="input" type="text" placeholder="Ej: V-000123 o A-000456" />
+            <button id="btnValidar" class="btn btn-primary">Validar</button>
+          </div>
+          <p class="hint">También detectamos automáticamente el CDR si viene en la URL (?cdr=...)</p>
+
+          <div class="hr"></div>
+
+          <div class="grid grid-2">
+            <div class="banner">
+              <strong>¿Modo corrección?</strong><br/>
+              Si tu enlace es de corrección, cargaremos los documentos solicitados.
             </div>
-            
-            <div class="debug-info" id="debugInfo"></div>
+            <div class="banner success">
+              <strong>Consejo:</strong><br/>
+              Ten a mano tus PDFs/imagenes (máx. 10MB) para agilizar el proceso.
+            </div>
+          </div>
         </div>
-    </div>
-    
-    <script>
-        // Configuracion de la API
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzOnhQ8CD2gWMdvvYnF2v1FL3yto5sM8i_jV9FmIJa1Os05YwXR5RKSsq22ePlwqQgL/exec';
-        const DEBUG = false; // Cambiar a true para ver información de depuración
-        
-        // Variables globales
-        let parametros = {};
-        
-        // Función para mostrar mensajes
-        function mostrarMensaje(mensaje, tipo) {
-            const mensajeDiv = document.getElementById('mensaje');
-            mensajeDiv.innerHTML = mensaje;
-            mensajeDiv.className = tipo;
-            mensajeDiv.style.display = 'block';
-            
-            // Ocultar el loader
-            document.querySelector('.loader').style.display = 'none';
-            document.querySelector('.contenedor-validacion p').style.display = 'none';
+
+        <div id="loadingBlock" style="display:none">
+          <div class="loader" aria-label="Cargando"></div>
+          <p class="muted" style="margin-top:10px">Validando con el servidor…</p>
+          <div class="skeleton" style="margin-top:8px"></div>
+        </div>
+
+        <div id="resultBlock" style="display:none">
+          <div id="resultAlert" class="alert"></div>
+          <div class="actions" style="display:flex;gap:12px;flex-wrap:wrap">
+            <a id="btnContinuar" href="#" class="btn btn-primary btn-pill" style="display:none">Ir al formulario</a>
+            <a href="index.html" class="btn btn-secondary btn-pill">Volver al inicio</a>
+            <a href="pagina-exito.html?status=error&msg=CDR%20inv%C3%A1lido" class="btn btn-ghost btn-pill">Reportar</a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Config global -->
+  <script src="config.js"></script>
+
+  <script>
+    (function(){
+      const el = {
+        cdr: document.getElementById('cdr'),
+        btn: document.getElementById('btnValidar'),
+        msgInfo: document.getElementById('msgInfo'),
+        formBlock: document.getElementById('formBlock'),
+        loading: document.getElementById('loadingBlock'),
+        result: document.getElementById('resultBlock'),
+        resultAlert: document.getElementById('resultAlert'),
+        btnContinuar: document.getElementById('btnContinuar'),
+      };
+
+      // Si viene por enlace, leer parámetros
+      const qs = new URLSearchParams(location.search);
+      const cdrFromUrl = qs.get('cdr') || '';
+      const modo = qs.get('modo') || ''; // 'correccion' si aplica
+      const docs = qs.get('docs') || ''; // lista codificada si aplica
+      const demo = qs.get('demo') === '1';
+
+      if (cdrFromUrl) {
+        el.cdr.value = cdrFromUrl;
+        el.msgInfo.style.display = 'block';
+        validar();
+      }
+
+      if (demo) {
+        el.cdr.value = 'V-000123';
+      }
+
+      el.btn.addEventListener('click', validar);
+      el.cdr.addEventListener('keydown', e => (e.key === 'Enter') && validar());
+
+      function validar(){
+        const cdr = (el.cdr.value || '').trim();
+        if (!cdr) {
+          renderError('Por favor ingresa un CDR válido.');
+          return;
         }
-        
-        // Función para mostrar WhatsApp
-        function mostrarWhatsApp() {
-            document.getElementById('whatsappContainer').style.display = 'block';
-        }
-        
-        // Función para obtener parametros de la URL
-        function obtenerParametrosURL() {
-            const params = {};
-            const queryString = window.location.search.substring(1);
-            const pares = queryString.split('&');
-            
-            for (let i = 0; i < pares.length; i++) {
-                const par = pares[i].split('=');
-                params[decodeURIComponent(par[0])] = decodeURIComponent(par[1] || '');
+
+        toggleLoading(true);
+
+        const url = new URL(CONFIG.API_URL);
+        url.searchParams.set('accion', 'verificarLink');
+        url.searchParams.set('cdr', cdr);
+        if (modo) url.searchParams.set('modo', modo);
+        if (docs) url.searchParams.set('docs', docs);
+
+        fetch(url.toString(), { method:'GET' })
+          .then(r => r.json())
+          .then(data => {
+            // Estructura esperada:
+            // { ok:true, tipo:'inquilino'|'propietario', modo:'correccion'|null, docs:[...], redirectParams:{}, usado:false }
+            if (!data || data.ok !== true) {
+              throw new Error(data && data.message ? data.message : 'Respuesta inválida del servidor');
             }
-            
-            return params;
-        }
-        
-        // Función para determinar el tipo de formulario desde la accion
-        function obtenerTipoFormulario(action) {
-            // Soportar ambos formatos (con guion o con guion bajo)
-            if (action === 'formulario_inquilino' || action === 'formulario-inquilino') return 'inquilino';
-            if (action === 'formulario_propietario' || action === 'formulario-propietario') return 'propietario';
-            if (action === 'correccion_inquilino' || action === 'correccion-inquilino') return 'inquilino';
-            if (action === 'correccion_propietario' || action === 'correccion-propietario') return 'propietario';
-            return null;
-        }
-        
-        // Función para verificar el codigo con la API
-        function verificarCodigoConAPI(codigoRegistro, tipoFormulario) {
-            console.log("=== VERIFICACIÓN DE ACCESO ===");
-            console.log("Código de registro:", codigoRegistro);
-            console.log("Tipo de formulario:", tipoFormulario);
-            
-            // Validar parametros
-            if (!codigoRegistro) {
-                mostrarMensaje("Error: No se especificó un código de registro", "error");
-                mostrarWhatsApp();
-                return;
+
+            // Construir URL de destino
+            const tipo = (data.tipo || '').toLowerCase();
+            let dest = tipo === 'propietario' ? 'formulario-propietario.html' : 'formulario-inquilino.html';
+            const params = new URLSearchParams();
+            params.set('cdr', cdr);
+
+            // Modo corrección
+            const isCorreccion = (data.modo === 'correccion') || (modo === 'correccion');
+            if (isCorreccion) {
+              params.set('modo', 'correccion');
+              if (data.docs && Array.isArray(data.docs) && data.docs.length) {
+                params.set('docs', encodeURIComponent(JSON.stringify(data.docs)));
+              } else if (docs) {
+                params.set('docs', docs);
+              }
             }
-            
-            if (!tipoFormulario || (tipoFormulario !== 'inquilino' && tipoFormulario !== 'propietario')) {
-                mostrarMensaje("Error: Tipo de formulario no válido", "error");
-                mostrarWhatsApp();
-                return;
+
+            const finalUrl = `${dest}?${params.toString()}`;
+
+            // Si ya está usado
+            if (data.usado === true) {
+              renderWarning('Este enlace ya fue utilizado. Si necesitas cargar correcciones, solicita un nuevo enlace.');
+              el.btnContinuar.style.display = 'none';
+              return;
             }
-            
-            // Mostrar el codigo que estamos verificando
-            const mensaje = document.getElementById('mensaje');
-            mensaje.innerHTML = `
-                <p style="margin: 0;">Verificando acceso al formulario:</p>
-                <div class="codigo-display">${codigoRegistro}</div>
-            `;
-            mensaje.className = "info";
-            mensaje.style.display = "block";
-            
-            // Construir URL de la API
-            const url = `${API_URL}?accion=verificarLink&cdr=${encodeURIComponent(codigoRegistro)}&tipo=${encodeURIComponent(tipoFormulario)}`;
-            
-            console.log("URL de la API:", url);
-            
-            // Realizar la peticion
-            fetch(url)
-                .then(response => {
-                    console.log("Respuesta recibida:", response);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log("Datos de la respuesta:", data);
-                    
-                    if (DEBUG) {
-                        document.getElementById('debugInfo').style.display = 'block';
-                        document.getElementById('debugInfo').innerHTML = `
-                            <strong>Debug Info:</strong><br>
-                            Estado actual: ${data.estadoActual || 'Desconocido'}<br>
-                            Activo: ${data.activo ? 'Sí' : 'No'}<br>
-                            Mensaje: ${data.mensaje}
-                        `;
-                    }
-                    
-                    if (data.success) {
-                        if (data.activo) {
-                            // Formulario habilitado, redirigir
-                            mostrarMensaje(
-                                `<strong>✅ Formulario disponible</strong><br>
-                                <span style="font-size: 14px;">Redirigiendo al formulario de ${tipoFormulario}...</span>`,
-                                "success"
-                            );
-                            
-                            // Determinar si es modo corrección
-                            const esCorreccion = parametros.action && parametros.action.includes('correccion');
-                            
-                            setTimeout(() => {
-                                if (tipoFormulario === 'inquilino') {
-                                    let urlDestino = `formulario-inquilino.html?cdr=${encodeURIComponent(codigoRegistro)}`;
-                                    if (esCorreccion) {
-                                        urlDestino += '&modo=correccion';
-                                    }
-                                    window.location.href = urlDestino;
-                                } else {
-                                    let urlDestino = `formulario-propietario.html?cdr=${encodeURIComponent(codigoRegistro)}`;
-                                    if (esCorreccion) {
-                                        urlDestino += '&modo=correccion';
-                                    }
-                                    window.location.href = urlDestino;
-                                }
-                            }, 1500);
-                        } else {
-                            // Formulario no disponible - Mostrar estado actual
-                            let mensajeHTML = `<strong>🔒 Formulario no disponible</strong><br><br>`;
-                            
-                            // Mensajes específicos según el estado
-                            if (data.estadoActual) {
-                                if (data.estadoActual.includes('Documentos del inquilino recibidos')) {
-                                    mensajeHTML += `
-                                        <div class="estado-info">
-                                            <strong>Estado actual:</strong><br>
-                                            Los documentos ya fueron recibidos y están en proceso de validación.<br><br>
-                                            Si necesita realizar correcciones, espere a que el equipo de validación 
-                                            le envíe un nuevo enlace por correo electrónico.
-                                        </div>
-                                    `;
-                                } else if (data.estadoActual.includes('Formulario del inquilino aprobado')) {
-                                    mensajeHTML += `
-                                        <div class="estado-info">
-                                            <strong>Estado actual:</strong><br>
-                                            Los documentos del inquilino ya fueron aprobados.<br><br>
-                                            El proceso continúa con el propietario.
-                                        </div>
-                                    `;
-                                } else if (data.estadoActual.includes('Formulario ya completado')) {
-                                    mensajeHTML += `
-                                        <div class="estado-info">
-                                            Este formulario ya fue completado anteriormente.<br><br>
-                                            Si necesita enviar documentos adicionales o correcciones, 
-                                            contacte al equipo de soporte.
-                                        </div>
-                                    `;
-                                } else {
-                                    mensajeHTML += `
-                                        <div class="estado-info">
-                                            <strong>Estado:</strong> ${data.estadoActual}
-                                        </div>
-                                    `;
-                                }
-                            } else {
-                                mensajeHTML += `${data.mensaje || "El formulario no está disponible en este momento"}`;
-                            }
-                            
-                            mostrarMensaje(mensajeHTML, "error");
-                            mostrarWhatsApp();
-                        }
-                    } else {
-                        // Error en la verificación
-                        mostrarMensaje(
-                            `<strong>❌ Error de verificación</strong><br>
-                            ${data.mensaje || "No se pudo verificar el código"}`,
-                            "error"
-                        );
-                        mostrarWhatsApp();
-                    }
-                })
-                .catch(error => {
-                    console.error("Error en fetch:", error);
-                    mostrarMensaje(
-                        `<strong>Error de conexión</strong><br>
-                        Por favor intente nuevamente más tarde.<br>
-                        <small>${error.message}</small>`,
-                        "error"
-                    );
-                    mostrarWhatsApp();
-                });
-        }
-        
-        // Inicialización
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("Selector Router iniciado");
-            
-            // Obtener parametros de la URL
-            parametros = obtenerParametrosURL();
-            console.log("Parametros URL:", parametros);
-            
-            // Verificar si tenemos los parametros necesarios
-            if (parametros.action && parametros.cdr) {
-                const tipoFormulario = obtenerTipoFormulario(parametros.action);
-                
-                if (tipoFormulario) {
-                    // Verificar con la API
-                    verificarCodigoConAPI(parametros.cdr, tipoFormulario);
-                } else {
-                    mostrarMensaje(
-                        "<strong>Error: Tipo de formulario no reconocido</strong><br>" +
-                        "Por favor verifique el enlace proporcionado.",
-                        "error"
-                    );
-                    mostrarWhatsApp();
-                }
-            } else {
-                mostrarMensaje(
-                    "<strong>Error: Enlace incompleto</strong><br>" +
-                    "El enlace que está utilizando no contiene toda la información necesaria.<br>" +
-                    "Por favor use el enlace completo que recibió por correo electrónico.",
-                    "error"
-                );
-                mostrarWhatsApp();
-            }
-        });
-    </script>
+
+            // OK → permitir continuar
+            renderSuccess(`Encontramos tu registro como <b>${tipo || 'inquilino'}</b>.`);
+            el.btnContinuar.href = finalUrl;
+            el.btnContinuar.style.display = 'inline-flex';
+          })
+          .catch(err => {
+            console.error('[selector] Error:', err);
+            renderError(err.message || 'No fue posible validar tu CDR.');
+          })
+          .finally(() => toggleLoading(false));
+      }
+
+      function toggleLoading(isLoading){
+        el.formBlock.style.display = isLoading ? 'none' : 'block';
+        el.loading.style.display = isLoading ? 'block' : 'none';
+        el.result.style.display = isLoading ? 'none' : 'block';
+      }
+
+      function renderSuccess(text){
+        el.resultAlert.className = 'alert alert-success';
+        el.resultAlert.innerHTML = text;
+      }
+      function renderWarning(text){
+        el.resultAlert.className = 'alert alert-warning';
+        el.resultAlert.innerHTML = text;
+      }
+      function renderError(text){
+        el.resultAlert.className = 'alert alert-danger';
+        el.resultAlert.innerHTML = text;
+        el.btnContinuar.style.display = 'none';
+      }
+    })();
+  </script>
 </body>
 </html>
-<link rel="stylesheet" href="theme.css">
