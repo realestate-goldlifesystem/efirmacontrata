@@ -1,65 +1,49 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>E-FirmaContrata • Real Estate - Gold Life System</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Branding global -->
-  <link rel="stylesheet" href="theme.css" />
-
-  <!-- Estilos mínimos específicos -->
-  <style>
-    .hero{
-      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
-      background: radial-gradient(1400px 700px at 50% -20%, rgba(255,215,0,.1), transparent 60%), var(--black-primary);
-    }
-    .logo-xl{ font-size: var(--fs-display); color:#111 }
-    .tag{ color:#222; font-weight:700; letter-spacing:.3px }
-    .actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top:18px }
-    .legal{ margin-top:16px; color: var(--gray-400); font-size: var(--fs-small) }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-firmaContrata - Sistema de Gestión de Contratos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-  <main class="hero">
-    <section class="card" style="width:min(880px,95vw)">
-      <header class="card-header">
-        <div class="badge">E-FirmaContrata</div>
-        <h1 class="logo-xl">Real Estate – Gold Life System</h1>
-        <div class="tag">Gestión de documentación y contratos de arrendamiento</div>
-      </header>
-
-      <div class="card-body">
-        <p class="muted">
-          Accede con tu enlace único para continuar con tu proceso (inquilino/propietario) o ingresa tu
-          <strong>CDR</strong> manualmente para validarlo.
+    <div class="container">
+        <div class="logo">🏠</div>
+        <h1>E-firmaContrata</h1>
+        <p>Sistema de Gestión de Documentos para Contratos de Arrendamiento</p>
+        <p style="color: #999; font-size: 14px;">Real Estate Gold Life System</p>
+        <p style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            ⚠️ El acceso a este sistema requiere un enlace válido enviado por email.
         </p>
-
-        <div class="actions">
-          <a class="btn btn-primary btn-pill" href="selector.html">Usar enlace / Validar CDR</a>
-          <a class="btn btn-ghost btn-pill" href="selector.html?demo=1">Ver demo</a>
-        </div>
-
-        <div class="divider" style="height:1px;background:rgba(255,215,0,.18);margin:18px 0"></div>
-
-        <div class="grid grid-2">
-          <div class="header-premium">
-            <h2 style="margin:0 0 6px">Inquilinos</h2>
-            <p class="muted" style="margin:0">Carga de documentos, validaciones, codeudores y seguimiento.</p>
-          </div>
-          <div class="header-premium">
-            <h2 style="margin:0 0 6px">Propietarios</h2>
-            <p class="muted" style="margin:0">SARLAFT, certificados, servicios y aprobación de contrato.</p>
-          </div>
-        </div>
-
-        <p class="legal">© <span id="year"></span> Real Estate – Gold Life System.</p>
-      </div>
-    </section>
-  </main>
-
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
+    </div>
 </body>
 </html>
