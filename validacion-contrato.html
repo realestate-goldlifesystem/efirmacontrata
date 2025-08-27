@@ -1,131 +1,401 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Validación de Contrato • E-FirmaContrata</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Branding global -->
-  <link rel="stylesheet" href="theme.css" />
-
-  <!-- Estilos mínimos específicos -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Validación de Contrato - E-FirmaContrata</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="theme.css">
   <style>
-    .page{
-      min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:24px;
-      background: radial-gradient(1600px 800px at 50% -20%, rgba(255,215,0,.10), transparent 60%), var(--black-primary);
+    /* Layout específico */
+    .validation-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
     }
-    .wrap{ width:min(1100px, 96vw) }
-    .hr{ height:1px; background: rgba(255,215,0,.18); margin:18px 0 }
-    .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:16px }
-    .grid-3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px }
-    @media (max-width: 900px){ .grid-2,.grid-3{ grid-template-columns: 1fr } }
-    .meta div{ display:flex; gap:8px; align-items:center }
-    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; background:#111; border:1px solid rgba(255,215,0,.25); border-radius:8px; padding:2px 6px; color:#ffe082; }
-    .actions{ display:flex; flex-wrap:wrap; gap:10px }
-    .small{ font-size: var(--fs-small); color: var(--gray-400) }
-    .hidden{ display:none !important }
-    .table{ width:100%; border-collapse: collapse; }
-    .table th, .table td{ padding:10px 12px; border-bottom:1px solid rgba(255,215,0,.18) }
-    .table th{ text-align:left; color: var(--gold-300) }
-    .pill{ padding:6px 10px; border-radius: var(--radius-round); border:1px solid rgba(255,215,0,.25); color:#ffd54f; background: rgba(255,215,0,.08); font-size: var(--fs-small) }
-    .right{ text-align:right }
+    
+    .validation-header {
+      background: linear-gradient(135deg, var(--primary) 0%, #667eea 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 12px 12px 0 0;
+      margin-bottom: 0;
+    }
+    
+    .validation-body {
+      background: white;
+      padding: 2rem;
+      border-radius: 0 0 12px 12px;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    /* Grid de contenido */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    /* Documento preview */
+    .document-preview {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 2rem;
+      min-height: 600px;
+      overflow-y: auto;
+    }
+    
+    .document-content {
+      font-family: 'Times New Roman', serif;
+      line-height: 1.6;
+      color: #111827;
+    }
+    
+    /* Panel lateral */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .info-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    
+    .info-card h3 {
+      margin-bottom: 1rem;
+      color: var(--dark);
+      font-size: 1.1rem;
+    }
+    
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .info-item:last-child {
+      border-bottom: none;
+    }
+    
+    .info-label {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+    
+    .info-value {
+      color: var(--dark);
+      font-weight: 500;
+    }
+    
+    /* Estados */
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .status-approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .status-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    /* Acciones */
+    .actions-card {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+    
+    .actions-card h3 {
+      color: white;
+      margin-bottom: 1rem;
+    }
+    
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .btn-action {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn-approve {
+      background: #10b981;
+      color: white;
+    }
+    
+    .btn-approve:hover {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+    
+    .btn-reject {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .btn-reject:hover {
+      background: #dc2626;
+      transform: translateY(-2px);
+    }
+    
+    .btn-download {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .btn-download:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+    }
+    
+    /* Observaciones */
+    .observations-field {
+      margin-top: 1rem;
+    }
+    
+    .observations-field label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: white;
+      font-size: 0.9rem;
+    }
+    
+    .observations-field textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      resize: vertical;
+      min-height: 100px;
+    }
+    
+    .observations-field textarea::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .sidebar {
+        order: -1;
+      }
+      
+      .document-preview {
+        min-height: 400px;
+      }
+    }
+    
+    /* Loader overlay */
+    .loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .loader-overlay.hidden {
+      display: none;
+    }
+    
+    /* Toast mejorado */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #1f2937;
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 10000;
+    }
+    
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
-  <main class="page">
-    <section class="card wrap">
-      <header class="card-header">
-        <div class="badge">E-FirmaContrata</div>
-        <h1>Validación de Contrato</h1>
-        <p class="muted" style="margin:6px 0 0">Revisa datos, genera el borrador y gestiona aprobaciones.</p>
-      </header>
-
-      <div class="card-body">
-        <!-- Notificaciones -->
-        <div id="alertBox" class="alert hidden" role="alert"></div>
-
-        <!-- Encabezado -->
-        <div class="grid-3 meta">
-          <div><strong>CDR:</strong> <span id="cdrTxt" class="kbd">—</span></div>
-          <div><strong>Estado:</strong> <span id="estadoBadge" class="badge">Cargando…</span></div>
-          <div class="right"><span id="lastSync" class="small">Sincronizado: —</span></div>
-        </div>
-
-        <div class="hr"></div>
-
-        <!-- Datos de contrato (resumen) -->
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-body">
-              <h3>Inquilino</h3>
-              <table class="table">
-                <tbody id="tblInquilino"><tr><td class="small">Cargando…</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-body">
-              <h3>Propietario</h3>
-              <table class="table">
-                <tbody id="tblPropietario"><tr><td class="small">Cargando…</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <!-- Acciones principales -->
-        <div class="actions" style="margin-bottom:8px">
-          <button id="btnGenerar" class="btn btn-primary btn-pill" type="button">Generar borrador</button>
-          <button id="btnVerBorrador" class="btn btn-secondary btn-pill hidden" type="button">Ver borrador</button>
-          <button id="btnEnviarAprob" class="btn btn-info btn-pill" type="button">Enviar para aprobación</button>
-          <button id="btnRefrescar" class="btn btn-ghost btn-pill" type="button">Refrescar</button>
-        </div>
-
-        <div class="small">
-          * El borrador reemplaza placeholders definidos en el backend. Revisa nombres, direcciones, cánones, cuentas y fechas.
-        </div>
-
-        <div class="hr"></div>
-
-        <!-- Aprobaciones -->
-        <div class="card">
-          <div class="card-body">
-            <h3>Aprobaciones</h3>
-            <div class="grid-2">
-              <div>
-                <div class="badge">Estado de aprobaciones</div>
-                <table class="table" style="margin-top:10px">
-                  <thead>
-                    <tr><th>Parte</th><th>Estado</th><th>Fecha</th><th>Observación</th></tr>
-                  </thead>
-                  <tbody id="tblAprobaciones"><tr><td colspan="4" class="small">Sin datos.</td></tr></tbody>
-                </table>
-              </div>
-              <div>
-                <div class="badge">Acciones de aprobación</div>
-                <div class="actions" style="margin-top:10px">
-                  <select id="selParte" class="input" style="max-width:220px">
-                    <option value="inquilino">Inquilino</option>
-                    <option value="propietario">Propietario</option>
-                    <option value="administrador">Administrador</option>
-                  </select>
-                  <button id="btnAprobar" class="btn btn-success btn-pill" type="button">Aprobar</button>
-                  <button id="btnRechazar" class="btn btn-danger btn-pill" type="button">Rechazar</button>
-                </div>
-                <label for="obs" style="margin-top:10px">Observación (opcional)</label>
-                <textarea id="obs" class="input" rows="3" placeholder="Motivo / notas"></textarea>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Loader -->
-        <div id="loader" class="loader hidden" aria-label="Procesando"></div>
+  <!-- Header -->
+  <header class="header-main">
+    <div class="container">
+      <div class="header-content">
+        <h1 class="logo">🏠 E-FirmaContrata</h1>
+        <nav class="nav-menu">
+          <a href="index.html">Inicio</a>
+          <a href="selector.html">Portal</a>
+        </nav>
       </div>
-    </section>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="validation-container">
+      <!-- Header de validación -->
+      <div class="validation-header">
+        <h2>📄 Validación de Contrato</h2>
+        <p>Código de Registro: <strong id="cdrDisplay">-</strong></p>
+        <div style="margin-top: 1rem;">
+          <span id="estadoBadge" class="status-badge status-pending">Pendiente de Validación</span>
+        </div>
+      </div>
+
+      <!-- Body de validación -->
+      <div class="validation-body">
+        <!-- Alert Box -->
+        <div id="alertBox" class="alert alert-info hidden" role="alert"></div>
+
+        <!-- Grid de contenido -->
+        <div class="content-grid">
+          <!-- Preview del documento -->
+          <div class="document-preview">
+            <div id="documentContent" class="document-content">
+              <p class="muted" style="text-align: center;">Cargando contrato...</p>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="sidebar">
+            <!-- Información del contrato -->
+            <div class="info-card">
+              <h3>📋 Información del Contrato</h3>
+              <div class="info-item">
+                <span class="info-label">Inquilino:</span>
+                <span id="nombreInquilino" class="info-value">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Propietario:</span>
+                <span id="nombrePropietario" class="info-value">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Inmueble:</span>
+                <span id="direccionInmueble" class="info-value">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Canon:</span>
+                <span id="valorCanon" class="info-value">-</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Duración:</span>
+                <span id="duracionContrato" class="info-value">-</span>
+              </div>
+            </div>
+
+            <!-- Estado de aprobaciones -->
+            <div class="info-card">
+              <h3>✅ Estado de Aprobaciones</h3>
+              <div id="estadoAprobaciones">
+                <div class="info-item">
+                  <span class="info-label">Inquilino:</span>
+                  <span class="status-badge status-pending">Pendiente</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Propietario:</span>
+                  <span class="status-badge status-pending">Pendiente</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Administrador:</span>
+                  <span class="status-badge status-pending">Pendiente</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="actions-card">
+              <h3>🎯 Acciones Disponibles</h3>
+              <div class="action-buttons">
+                <button id="btnDownload" class="btn-action btn-download">
+                  📥 Descargar Borrador
+                </button>
+                <button id="btnApprove" class="btn-action btn-approve">
+                  ✓ Aprobar Contrato
+                </button>
+                <button id="btnReject" class="btn-action btn-reject">
+                  ✗ Solicitar Corrección
+                </button>
+              </div>
+              
+              <div class="observations-field">
+                <label for="observaciones">Observaciones (Opcional)</label>
+                <textarea id="observaciones" placeholder="Ingrese sus comentarios o motivo de rechazo..."></textarea>
+              </div>
+            </div>
+
+            <!-- Selector de parte (oculto, se muestra dinámicamente) -->
+            <div id="selectorParte" class="info-card hidden">
+              <h3>👤 Seleccione su rol</h3>
+              <select id="selectParte" class="input">
+                <option value="">Seleccione...</option>
+                <option value="inquilino">Inquilino</option>
+                <option value="propietario">Propietario</option>
+                <option value="administrador">Administrador</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2024 Real Estate - Gold Life System. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- Loader Overlay -->
+  <div id="loaderOverlay" class="loader-overlay hidden">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- Config global -->
   <script src="config.js"></script>
@@ -135,241 +405,340 @@
     // ---------- Estado ----------
     const state = {
       cdr: '',
-      contrato: null,   // datos agregados
-      borradorUrl: '',
-      estado: 'CARGANDO',
-      aprobaciones: []
+      docId: null,
+      contrato: null,
+      parte: null,
+      estadoGlobal: 'PENDIENTE'
     };
 
     // ---------- Helpers ----------
     const $ = (id) => document.getElementById(id);
-    const setBadge = (text, type='info') => {
-      const m = {success:'badge-success', warning:'badge-warning', danger:'badge-danger', info:'badge-info'};
-      const b = $('estadoBadge');
-      b.className = `badge ${m[type]||'badge-info'}`;
-      b.textContent = text;
-    };
+    
     const showAlert = (type, text) => {
-      const map = { success:'alert-success', warning:'alert-warning', danger:'alert-danger', info:'alert-info' };
+      const map = { 
+        success: 'alert-success', 
+        warning: 'alert-warning', 
+        danger: 'alert-danger', 
+        info: 'alert-info' 
+      };
       const box = $('alertBox');
-      box.className = `alert ${map[type]||'alert-info'}`;
+      box.className = `alert ${map[type] || 'alert-info'}`;
       box.innerHTML = escapeHTML(text);
       box.classList.remove('hidden');
     };
+    
     const clearAlert = () => $('alertBox').classList.add('hidden');
-    const toggleLoading = (v) => $('loader').classList.toggle('hidden', !v);
-    const nowFmt = () => new Date().toLocaleString();
+    
+    const toggleLoading = (show) => {
+      $('loaderOverlay').classList.toggle('hidden', !show);
+    };
+    
+    const toast = (text) => {
+      const t = $('toast');
+      t.textContent = text;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    };
+    
+    const escapeHTML = (str) => {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    };
+    
+    const formatCurrency = (num) => {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0
+      }).format(num || 0);
+    };
 
     // ---------- Init ----------
     init();
 
-    function init(){
-      const qs = new URLSearchParams(location.search);
-      state.cdr = qs.get('cdr') || '';
-      $('cdrTxt').textContent = state.cdr || '—';
-
-      bindEvents();
+    async function init(){
+      const params = new URLSearchParams(location.search);
+      state.cdr = params.get('cdr') || '';
+      state.docId = params.get('docId') || '';
+      state.parte = params.get('parte') || '';
+      
+      $('cdrDisplay').textContent = state.cdr || '—';
+      
       if (!state.cdr) {
-        showAlert('warning', 'Falta el CDR. Abre esta página desde el panel o selector.');
+        showAlert('warning', 'Falta el código de registro. Accede desde el panel de validación.');
         return;
       }
-      loadContrato();
+      
+      // Si hay parte predefinida, ocultamos el selector
+      if (state.parte) {
+        $('selectorParte').classList.add('hidden');
+      } else {
+        $('selectorParte').classList.remove('hidden');
+      }
+      
+      bindEvents();
+      await loadContractData();
+      await loadApprovalStatus();
     }
 
+    // ---------- Bindings ----------
     function bindEvents(){
-      $('btnRefrescar').addEventListener('click', loadContrato);
-      $('btnGenerar').addEventListener('click', onGenerarBorrador);
-      $('btnVerBorrador').addEventListener('click', () => {
-        if (state.borradorUrl) window.open(state.borradorUrl, '_blank');
+      $('btnApprove').addEventListener('click', handleApprove);
+      $('btnReject').addEventListener('click', handleReject);
+      $('btnDownload').addEventListener('click', handleDownload);
+      $('selectParte').addEventListener('change', (e) => {
+        state.parte = e.target.value;
       });
-      $('btnEnviarAprob').addEventListener('click', onEnviarAprobacion);
-      $('btnAprobar').addEventListener('click', () => onRegistrarDecision('aprobado'));
-      $('btnRechazar').addEventListener('click', () => onRegistrarDecision('rechazado'));
     }
 
-    // ---------- Cargas ----------
-    async function loadContrato(){
-      clearAlert();
+    // ---------- Load Data CORREGIDO ----------
+    async function loadContractData(){
       toggleLoading(true);
-      try{
+      
+      try {
         const url = new URL(CONFIG.API_URL);
-        url.searchParams.set('accion','obtenerDatosContrato');
-        url.searchParams.set('cdr', state.cdr);
-        const res = await fetch(url.toString(), { method:'GET' });
+        url.searchParams.append('accion', 'obtenerContrato');
+        url.searchParams.append('cdr', state.cdr);
+        if (state.docId) url.searchParams.append('docId', state.docId);
+        
+        const res = await fetch(url.toString());
         const data = await res.json();
-
-        if (!data || data.ok !== true) throw new Error(data?.message || 'No fue posible obtener los datos del contrato.');
-
-        state.contrato = data.contrato || {};
-        state.estado = data.estado || 'SIN_ESTADO';
-        state.borradorUrl = data.borradorUrl || '';
-        state.aprobaciones = data.aprobaciones || [];
-
-        renderResumen();
-        renderAprobaciones();
-        renderEstado();
-
-        $('lastSync').textContent = `Sincronizado: ${nowFmt()}`;
-        $('btnVerBorrador').classList.toggle('hidden', !state.borradorUrl);
-      }catch(err){
-        console.error('[validacion-contrato] loadContrato:', err);
-        showAlert('danger', err.message || 'Error cargando datos.');
-      }finally{
-        toggleLoading(false);
-      }
-    }
-
-    // ---------- Render ----------
-    function renderResumen(){
-      const i = state.contrato?.inquilino || {};
-      const p = state.contrato?.propietario || {};
-      $('tblInquilino').innerHTML = toRows({
-        'Nombre': full(i.nombres, i.apellidos),
-        'Documento': i.tipoDocumento && i.numeroDocumento ? `${i.tipoDocumento} ${i.numeroDocumento}` : '—',
-        'Email': i.email || '—',
-        'Celular': i.celular || '—',
-        'Inmueble': state.contrato?.inmueble || '—',
-        'Canon / Mes': money(state.contrato?.canon)||'—'
-      });
-      $('tblPropietario').innerHTML = toRows({
-        'Nombre': full(p.nombres, p.apellidos),
-        'Documento': p.tipoDocumento && p.numeroDocumento ? `${p.tipoDocumento} ${p.numeroDocumento}` : '—',
-        'Email': p.email || '—',
-        'Celular': p.celular || '—',
-        'Cuenta Bancaria': state.contrato?.cuenta || '—',
-        'Ciudad / Dirección': state.contrato?.direccion || '—'
-      });
-    }
-
-    function renderAprobaciones(){
-      const rows = (state.aprobaciones||[]).map(a => `
-        <tr>
-          <td>${escapeHTML(cap(a.parte))}</td>
-          <td><span class="pill">${escapeHTML(cap(a.estado||'pendiente'))}</span></td>
-          <td>${escapeHTML(a.fecha||'—')}</td>
-          <td>${escapeHTML(a.observacion||'')}</td>
-        </tr>
-      `).join('') || '<tr><td colspan="4" class="small">Sin datos.</td></tr>';
-      $('tblAprobaciones').innerHTML = rows;
-    }
-
-    function renderEstado(){
-      const e = (state.estado||'').toUpperCase();
-      if (e.includes('FINAL')) return setBadge('FINALIZADO', 'success');
-      if (e.includes('APROBADO')) return setBadge('APROBADO TOTAL', 'success');
-      if (e.includes('CORRECCION')) return setBadge('CORRECCIÓN SOLICITADA', 'warning');
-      if (e.includes('BORRADOR')) return setBadge('BORRADOR GENERADO', 'info');
-      if (e.includes('LISTO') || e.includes('INCOMPLETO')) return setBadge(e.replaceAll('_',' '), 'info');
-      setBadge(e || 'SIN ESTADO', 'info');
-    }
-
-    // ---------- Acciones ----------
-    async function onGenerarBorrador(){
-      clearAlert(); toggleLoading(true);
-      try{
-        const url = new URL(CONFIG.API_URL);
-        const body = { accion:'generarContrato', cdr: state.cdr };
-        const res = await fetch(url.toString(), {
-          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!data || data.ok !== true) throw new Error(data?.message || 'No se pudo generar el borrador.');
-        state.borradorUrl = data.borradorUrl || '';
-        state.estado = data.estado || state.estado;
-        renderEstado();
-        $('btnVerBorrador').classList.toggle('hidden', !state.borradorUrl);
-        showAlert('success','Borrador generado con éxito.');
-      }catch(err){
-        console.error('[generarContrato]', err);
-        showAlert('danger', err.message || 'Error generando el borrador.');
-      }finally{
-        toggleLoading(false);
-      }
-    }
-
-    async function onEnviarAprobacion(){
-      clearAlert(); toggleLoading(true);
-      try{
-        // Normalmente el backend envía notificaciones y marca el estado como “EN APROBACIÓN”
-        const url = new URL(CONFIG.API_URL);
-        const body = { accion:'enviarParaAprobacion', cdr: state.cdr };
-        const res = await fetch(url.toString(), {
-          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!data || data.ok !== true) throw new Error(data?.message || 'No se pudo enviar a aprobación.');
-        state.estado = data.estado || state.estado;
-        renderEstado();
-        showAlert('success','Enviado a aprobación. Se notificó a las partes.');
-        // refrescar aprobaciones por si vienen ya creadas
-        await loadAprobacionesSolo();
-      }catch(err){
-        console.error('[enviarParaAprobacion]', err);
-        showAlert('danger', err.message || 'Error enviando a aprobación.');
-      }finally{
-        toggleLoading(false);
-      }
-    }
-
-    async function onRegistrarDecision(decision){
-      clearAlert(); toggleLoading(true);
-      try{
-        const parte = $('selParte').value;
-        const observacion = $('obs').value || '';
-        const url = new URL(CONFIG.API_URL);
-        const body = {
-          accion:'registrarAprobacionContrato',
-          cdr: state.cdr,
-          parte, // 'inquilino' | 'propietario' | 'administrador'
-          decision, // 'aprobado' | 'rechazado'
-          observacion
-        };
-        const res = await fetch(url.toString(), {
-          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!data || data.ok !== true) throw new Error(data?.message || 'No se pudo registrar la decisión.');
-        showAlert('success', `Decisión registrada: ${cap(decision)} (${cap(parte)}).`);
-        await loadAprobacionesSolo();
-        // Si todas las partes aprobaron, backend puede avanzar a APROBADO_TOTAL o FINALIZADO
-        state.estado = data.estado || state.estado;
-        renderEstado();
-        $('obs').value = '';
-      }catch(err){
-        console.error('[registrarAprobacionContrato]', err);
-        showAlert('danger', err.message || 'Error registrando aprobación.');
-      }finally{
-        toggleLoading(false);
-      }
-    }
-
-    async function loadAprobacionesSolo(){
-      try{
-        const url = new URL(CONFIG.API_URL);
-        url.searchParams.set('accion','obtenerEstadoAprobaciones');
-        url.searchParams.set('cdr', state.cdr);
-        const res = await fetch(url.toString(), { method:'GET' });
-        const data = await res.json();
-        if (data && data.ok === true) {
-          state.aprobaciones = data.aprobaciones || [];
-          renderAprobaciones();
+        
+        // VALIDACIÓN CORREGIDA
+        if (!data || !data.success) {
+          throw new Error(data?.message || 'No se pudo cargar el contrato');
         }
-      }catch(e){/* silencioso */}
+        
+        state.contrato = data;
+        displayContract(data);
+        displayContractInfo(data.datos);
+        
+      } catch(err) {
+        console.error('[Contrato] Error:', err);
+        showAlert('danger', err.message || 'Error cargando el contrato');
+      } finally {
+        toggleLoading(false);
+      }
     }
 
-    // ---------- Util ----------
-    function toRows(obj){
-      return Object.entries(obj).map(([k,v]) => `<tr><th>${escapeHTML(k)}</th><td>${val(v)}</td></tr>`).join('');
+    // ---------- Load Approval Status CORREGIDO ----------
+    async function loadApprovalStatus(){
+      try {
+        const url = new URL(CONFIG.API_URL);
+        url.searchParams.append('accion', 'obtenerEstadoAprobaciones');
+        url.searchParams.append('cdr', state.cdr);
+        
+        const res = await fetch(url.toString());
+        const data = await res.json();
+        
+        // VALIDACIÓN CORREGIDA
+        if (!data || !data.success) {
+          console.warn('No se pudo cargar el estado de aprobaciones');
+          return;
+        }
+        
+        displayApprovalStatus(data.estados);
+        
+      } catch(err) {
+        console.error('[Aprobaciones] Error:', err);
+      }
     }
-    function full(n,a){ return [n||'', a||''].filter(Boolean).join(' ') || '—'; }
-    function money(n){
-      if (n == null || n === '') return '';
-      const num = Number(n); if (Number.isNaN(num)) return escapeHTML(String(n));
-      return new Intl.NumberFormat('es-CO',{ style:'currency', currency:'COP', maximumFractionDigits:0 }).format(num);
+
+    // ---------- Display Functions ----------
+    function displayContract(data){
+      const content = $('documentContent');
+      if (data.contenido) {
+        // Mostrar el contenido del contrato con formato
+        content.innerHTML = `
+          <div style="padding: 2rem; background: white; border-radius: 8px;">
+            <h2 style="text-align: center; margin-bottom: 2rem;">CONTRATO DE ARRENDAMIENTO</h2>
+            <div style="white-space: pre-wrap; font-family: 'Times New Roman', serif; line-height: 1.8;">
+              ${escapeHTML(data.contenido)}
+            </div>
+          </div>
+        `;
+      } else {
+        content.innerHTML = '<p class="muted" style="text-align: center;">No se pudo cargar el contenido del contrato.</p>';
+      }
     }
-    function val(v){ return v ? `<span class="muted">${escapeHTML(String(v))}</span>` : '<span class="muted">—</span>'; }
-    function cap(s){ return String(s||'').replace(/\b\w/g, m => m.toUpperCase()); }
-    function escapeHTML(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+    function displayContractInfo(datos){
+      if (!datos) return;
+      
+      // Actualizar información del contrato
+      $('nombreInquilino').textContent = datos['NOMBRE-INQUILINO'] || '—';
+      $('nombrePropietario').textContent = datos['NOMBRE-PROPIETARIO'] || '—';
+      $('direccionInmueble').textContent = datos['DIRECCION-DEL-INMUEBLE-DEL-FOLIO-DE-MATRICULA'] || '—';
+      $('valorCanon').textContent = formatCurrency(datos['PRECIO-DEL-CANON-EN-NUMERO']);
+      $('duracionContrato').textContent = `${datos['numero-de-meses-del-contrato-en-numero'] || '—'} meses`;
+    }
+
+    function displayApprovalStatus(estados){
+      if (!estados || !Array.isArray(estados)) return;
+      
+      const container = $('estadoAprobaciones');
+      let html = '';
+      
+      estados.forEach(est => {
+        const badgeClass = est.estado === 'APROBADO' ? 'status-approved' :
+                          est.estado === 'RECHAZADO' ? 'status-rejected' : 
+                          'status-pending';
+        const badgeText = est.estado === 'APROBADO' ? 'Aprobado' :
+                         est.estado === 'RECHAZADO' ? 'Rechazado' :
+                         'Pendiente';
+        
+        html += `
+          <div class="info-item">
+            <span class="info-label">${escapeHTML(est.parte)}:</span>
+            <span class="status-badge ${badgeClass}">${badgeText}</span>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+      
+      // Actualizar badge global
+      const todosAprobados = estados.every(e => e.estado === 'APROBADO');
+      const hayRechazado = estados.some(e => e.estado === 'RECHAZADO');
+      
+      const badge = $('estadoBadge');
+      if (todosAprobados) {
+        badge.className = 'status-badge status-approved';
+        badge.textContent = 'Contrato Aprobado';
+        state.estadoGlobal = 'APROBADO';
+      } else if (hayRechazado) {
+        badge.className = 'status-badge status-rejected';
+        badge.textContent = 'Requiere Corrección';
+        state.estadoGlobal = 'CORRECCION';
+      } else {
+        badge.className = 'status-badge status-pending';
+        badge.textContent = 'Pendiente de Validación';
+        state.estadoGlobal = 'PENDIENTE';
+      }
+    }
+
+    // ---------- Actions CORREGIDO ----------
+    async function handleApprove(){
+      if (!state.parte && !$('selectParte').value) {
+        showAlert('warning', 'Seleccione su rol para aprobar el contrato');
+        $('selectParte').focus();
+        return;
+      }
+      
+      const parte = state.parte || $('selectParte').value;
+      const observaciones = $('observaciones').value.trim();
+      
+      if (!confirm('¿Está seguro de aprobar este contrato?')) return;
+      
+      toggleLoading(true);
+      
+      try {
+        // ESTRUCTURA CORREGIDA
+        const payload = {
+          accion: 'registrarAprobacionContrato',
+          cdr: state.cdr,
+          parte: parte,
+          estado: 'APROBADO',
+          comentarios: observaciones || null
+        };
+        
+        const url = new URL(CONFIG.API_URL);
+        const res = await fetch(url.toString(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        
+        // VALIDACIÓN CORREGIDA
+        if (!data || !data.success) {
+          throw new Error(data?.message || 'No se pudo registrar la aprobación');
+        }
+        
+        toast('✅ Contrato aprobado exitosamente');
+        $('observaciones').value = '';
+        
+        // Recargar estado
+        await loadApprovalStatus();
+        
+      } catch(err) {
+        console.error('[Aprobar] Error:', err);
+        showAlert('danger', err.message || 'Error al aprobar el contrato');
+      } finally {
+        toggleLoading(false);
+      }
+    }
+
+    async function handleReject(){
+      if (!state.parte && !$('selectParte').value) {
+        showAlert('warning', 'Seleccione su rol para rechazar el contrato');
+        $('selectParte').focus();
+        return;
+      }
+      
+      const parte = state.parte || $('selectParte').value;
+      const observaciones = $('observaciones').value.trim();
+      
+      if (!observaciones) {
+        showAlert('warning', 'Por favor indique el motivo del rechazo');
+        $('observaciones').focus();
+        return;
+      }
+      
+      if (!confirm('¿Está seguro de solicitar corrección en este contrato?')) return;
+      
+      toggleLoading(true);
+      
+      try {
+        // ESTRUCTURA CORREGIDA
+        const payload = {
+          accion: 'registrarAprobacionContrato',
+          cdr: state.cdr,
+          parte: parte,
+          estado: 'RECHAZADO',
+          comentarios: observaciones
+        };
+        
+        const url = new URL(CONFIG.API_URL);
+        const res = await fetch(url.toString(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        
+        // VALIDACIÓN CORREGIDA
+        if (!data || !data.success) {
+          throw new Error(data?.message || 'No se pudo registrar el rechazo');
+        }
+        
+        toast('⚠️ Corrección solicitada');
+        $('observaciones').value = '';
+        
+        // Recargar estado
+        await loadApprovalStatus();
+        
+      } catch(err) {
+        console.error('[Rechazar] Error:', err);
+        showAlert('danger', err.message || 'Error al rechazar el contrato');
+      } finally {
+        toggleLoading(false);
+      }
+    }
+
+    function handleDownload(){
+      if (!state.contrato?.url) {
+        showAlert('warning', 'No hay documento disponible para descargar');
+        return;
+      }
+      
+      window.open(state.contrato.url, '_blank', 'noopener');
+      toast('📥 Descargando contrato...');
+    }
+
   })();
   </script>
 </body>
