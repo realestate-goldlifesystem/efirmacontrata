@@ -1,316 +1,330 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Formulario Inquilino • E-FirmaContrata</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Branding global -->
-  <link rel="stylesheet" href="theme.css" />
-
-  <!-- Estilos mínimos específicos (wizard + modal + toast) -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formulario Inquilino - E-FirmaContrata</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="theme.css">
   <style>
-    .page{
-      min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:24px;
-      background: radial-gradient(1600px 800px at 50% -20%, rgba(255,215,0,.10), transparent 60%), var(--black-primary);
+    /* Wizard Steps */
+    .progress { display:flex; justify-content:space-between; margin-bottom:2rem; position:relative; }
+    .progress::before { content:''; position:absolute; top:20px; left:0; right:0; height:2px; background:#e5e7eb; z-index:0; }
+    .progress .step { background:#fff; border:2px solid #e5e7eb; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-weight:600; color:#9ca3af; cursor:pointer; transition:all 0.3s; z-index:1; }
+    .progress .step.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+    .step-pane { display:none; animation:fadeIn 0.3s; }
+    .step-pane.show { display:block; }
+    @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+    
+    /* Files */
+    .file-upload { position:relative; margin-bottom:1rem; }
+    .file-input { display:none; }
+    .file-label { display:flex; align-items:center; padding:12px; border:2px dashed #d1d5db; border-radius:8px; cursor:pointer; transition:all 0.3s; }
+    .file-label:hover { border-color:var(--primary); background:#f9fafb; }
+    .file-name { margin-left:10px; color:#6b7280; }
+    
+    /* Inline Errors */
+    .error-msg { display:none; color:#ef4444; font-size:0.875rem; margin-top:4px; }
+    .error-msg.show { display:block; }
+    .input.invalid { border-color:#ef4444 !important; }
+    
+    /* Modal */
+    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000; }
+    .modal.show { display:flex; }
+    .modal-content { background:#fff; padding:2rem; border-radius:12px; max-width:400px; width:90%; position:relative; }
+    .modal-header { margin-bottom:1.5rem; }
+    .close-modal { position:absolute; top:15px; right:15px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af; }
+    
+    /* Utilities */
+    .hidden { display:none !important; }
+    .grid-2col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .hr { height:1px; background:#e5e7eb; margin:1.5rem 0; }
+    .muted { color:#6b7280; }
+    .chip { display:inline-block; padding:4px 12px; background:#fef3c7; color:#92400e; border-radius:12px; font-size:0.875rem; margin:0 4px; }
+    
+    /* Responsive */
+    @media(max-width:640px) {
+      .grid-2col { grid-template-columns:1fr; }
+      .modal-content { width:95%; padding:1.5rem; }
     }
-    .wizard{ width:min(1100px, 96vw) }
-    .progress{ display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin-top:8px }
-    .step{
-      position:relative; text-align:center; padding:10px 8px; border-radius: var(--radius-md);
-      background: linear-gradient(135deg, var(--black-secondary), var(--gray-800));
-      border:1px solid rgba(255,215,0,.18); color:#ccc; user-select:none;
-    }
-    .step.active{
-      color:#111; background: linear-gradient(135deg, var(--gold-700), var(--gold-500));
-      border-color: rgba(255,215,0,.45); box-shadow: var(--glow-gold); font-weight:700;
-    }
-    .step .k{ display:block; font-size: var(--fs-small); opacity:.85 }
-    .steps-wrap{ margin-top:18px }
-    .step-pane{ display:none }
-    .step-pane.show{ display:block }
-    .hr{ height:1px; background: rgba(255,215,0,.18); margin:18px 0 }
-    .grid-2col{ display:grid; grid-template-columns: 1fr 1fr; gap:16px }
-    .grid-3col{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px }
-    @media (max-width: 860px){ .grid-2col,.grid-3col{ grid-template-columns: 1fr } }
-    .file .name{ display:block; margin-top:6px; font-size: var(--fs-small); color: var(--gray-400) }
-    .actions{ display:flex; gap:12px; flex-wrap:wrap; margin-top:18px }
-    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px }
-    .chip{ padding:6px 10px; border-radius: var(--radius-round); background: rgba(255,215,0,.12); border:1px solid rgba(255,215,0,.25); font-size: var(--fs-small); color: var(--gold-300) }
-    .hidden{ display:none !important }
-    .pay-note{ font-size: var(--fs-small); color: var(--gray-400) }
-
-    /* Modal simple */
-    .modal{ position: fixed; inset: 0; background: rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index: 50; }
-    .modal.show{ display:flex }
-    .modal .sheet{ width:min(520px, 92vw) }
-
-    /* Toast */
-    .toast{ position: fixed; right:16px; bottom:16px; padding:12px 14px; border-radius:12px; background: #0f172a; color:#e9e9e9; border:1px solid rgba(255,215,0,.35); box-shadow: var(--glow-gold); z-index:60; opacity:0; transform: translateY(8px); transition: .25s all ease; }
-    .toast.show{ opacity:1; transform: translateY(0) }
   </style>
 </head>
 <body>
-  <main class="page">
-    <section class="card wizard" aria-labelledby="title">
-      <header class="card-header">
-        <div class="badge">E-FirmaContrata</div>
-        <h1 id="title">Formulario del Inquilino</h1>
-        <p class="muted" style="margin:6px 0 0">Completa los pasos y realiza el pago para continuar con tu validación.</p>
-
-        <!-- Barra de progreso -->
-        <div class="progress" aria-label="Progreso">
-          <div class="step" data-step="0"><span class="k">1</span>Datos</div>
-          <div class="step" data-step="1"><span class="k">2</span>Documentos</div>
-          <div class="step" data-step="2"><span class="k">3</span>Codeudor</div>
-          <div class="step" data-step="3"><span class="k">4</span>Pago</div>
-          <div class="step" data-step="4"><span class="k">5</span>Resumen</div>
-        </div>
-      </header>
-
-      <div class="card-body">
-        <!-- Banner de corrección -->
-        <div id="bannerCorreccion" class="banner hidden" role="status" aria-live="polite">
-          <strong>Corrección solicitada:</strong>
-          <div id="correccionDocs" class="chips"></div>
-          <p id="correccionObs" class="muted" style="margin-top:8px">Vuelve a cargar los documentos marcados.</p>
-        </div>
-
-        <!-- Estado / Notificaciones -->
-        <div id="alertBox" class="alert hidden" role="alert"></div>
-
-        <!-- PANE 0: Datos -->
-        <div class="steps-wrap">
-          <div class="step-pane" data-pane="0">
-            <h2 class="header-premium" style="margin:0 0 12px">Datos personales</h2>
-            <div class="grid-2col">
-              <div>
-                <label for="tipoDocumento">Tipo de Documento <span class="required">*</span></label>
-                <select id="tipoDocumento" class="input" required>
-                  <option value="">Seleccione...</option>
-                  <option value="CC">Cédula de Ciudadanía</option>
-                  <option value="CE">Cédula de Extranjería</option>
-                  <option value="PA">Pasaporte</option>
-                </select>
-              </div>
-              <div>
-                <label for="numeroDocumento">Número de Documento <span class="required">*</span></label>
-                <input id="numeroDocumento" class="input" type="text" placeholder="Ej: 1234567890" required />
-              </div>
-              <div>
-                <label for="confirmarDocumento">Confirmar Número <span class="required">*</span></label>
-                <input id="confirmarDocumento" class="input" type="text" placeholder="Confirme el número" required />
-                <div id="docError" class="error-msg">El número no coincide.</div>
-              </div>
-              <div>
-                <label for="nombres">Nombres <span class="required">*</span></label>
-                <input id="nombres" class="input" type="text" placeholder="Nombres completos" required />
-              </div>
-              <div>
-                <label for="apellidos">Apellidos <span class="required">*</span></label>
-                <input id="apellidos" class="input" type="text" placeholder="Apellidos completos" required />
-              </div>
-              <div>
-                <label for="email">Correo <span class="required">*</span></label>
-                <input id="email" class="input" type="email" placeholder="correo@ejemplo.com" required />
-              </div>
-              <div>
-                <label for="confirmarEmail">Confirmar Correo <span class="required">*</span></label>
-                <input id="confirmarEmail" class="input" type="email" placeholder="Confirme el correo" required />
-                <div id="emailError" class="error-msg">El correo no coincide.</div>
-              </div>
-              <div>
-                <label for="celular">Celular <span class="required">*</span></label>
-                <input id="celular" class="input" type="tel" placeholder="3001234567" required />
-              </div>
-              <div>
-                <label for="confirmarCelular">Confirmar Celular <span class="required">*</span></label>
-                <input id="confirmarCelular" class="input" type="tel" placeholder="Confirme el celular" required />
-                <div id="celError" class="error-msg">El celular no coincide.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 1: Documentos -->
-          <div class="step-pane" data-pane="1">
-            <h2 class="header-premium" style="margin:0 0 12px">Documentos del inquilino</h2>
-            <div class="grid-3col">
-              <div>
-                <label>Documento de identidad (frontal) <span class="required">*</span></label>
-                <label class="file">
-                  <input id="docFront" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Seleccionar archivo</span>
-                  <span id="docFrontName" class="name"></span>
-                </label>
-              </div>
-              <div>
-                <label>Documento de identidad (reverso) <span class="required">*</span></label>
-                <label class="file">
-                  <input id="docBack" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Seleccionar archivo</span>
-                  <span id="docBackName" class="name"></span>
-                </label>
-              </div>
-              <div>
-                <label>Soporte de ingresos <span class="required">*</span></label>
-                <label class="file">
-                  <input id="ingresos" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Seleccionar archivo</span>
-                  <span id="ingresosName" class="name"></span>
-                </label>
-              </div>
-            </div>
-            <p class="muted" style="margin-top:6px">Formatos: PDF/JPG/PNG • Máx: 10MB por archivo.</p>
-          </div>
-
-          <!-- PANE 2: Codeudor -->
-          <div class="step-pane" data-pane="2">
-            <h2 class="header-premium" style="margin:0 0 12px">Codeudor (si aplica)</h2>
-            <div class="grid-2col">
-              <div>
-                <label for="coTipo">Tipo de Documento</label>
-                <select id="coTipo" class="input">
-                  <option value="">Seleccione...</option>
-                  <option value="CC">Cédula de Ciudadanía</option>
-                  <option value="CE">Cédula de Extranjería</option>
-                </select>
-              </div>
-              <div>
-                <label for="coNumero">Número de Documento</label>
-                <input id="coNumero" class="input" type="text" placeholder="Ej: 1234567890" />
-              </div>
-              <div>
-                <label for="coNombres">Nombres</label>
-                <input id="coNombres" class="input" type="text" placeholder="Nombres completos" />
-              </div>
-              <div>
-                <label for="coApellidos">Apellidos</label>
-                <input id="coApellidos" class="input" type="text" placeholder="Apellidos completos" />
-              </div>
-              <div>
-                <label for="coEmail">Correo</label>
-                <input id="coEmail" class="input" type="email" placeholder="correo@ejemplo.com" />
-              </div>
-              <div>
-                <label for="coCelular">Celular</label>
-                <input id="coCelular" class="input" type="tel" placeholder="3001234567" />
-              </div>
-            </div>
-
-            <div class="hr"></div>
-
-            <div class="grid-3col">
-              <div>
-                <label>Documento de identidad (frontal)</label>
-                <label class="file">
-                  <input id="coDocFront" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Seleccionar archivo</span>
-                  <span id="coDocFrontName" class="name"></span>
-                </label>
-              </div>
-              <div>
-                <label>Documento de identidad (reverso)</label>
-                <label class="file">
-                  <input id="coDocBack" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Seleccionar archivo</span>
-                  <span id="coDocBackName" class="name"></span>
-                </label>
-              </div>
-              <div>
-                <label>Soporte de ingresos</label>
-                <label class="file">
-                  <input id="coIngresos" type="file" class="file-upload-input hidden" accept="application/pdf,image/*" />
-                  <span>Seleccionar archivo</span>
-                  <span id="coIngresosName" class="name"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- PANE 3: Pago -->
-          <div class="step-pane" data-pane="3">
-            <h2 class="header-premium" style="margin:0 0 12px">Pago de validación</h2>
-            <p class="muted">Selecciona tu método de pago preferido para continuar con la validación.</p>
-
-            <div class="grid-2col">
-              <div class="card">
-                <div class="card-body">
-                  <h3>Bre-B / Nequi / Daviplata</h3>
-                  <p class="pay-note">Transferencia directa. Confirmación en minutos.</p>
-                  <div class="actions">
-                    <button id="btnPayBreb" class="btn btn-primary btn-pill" type="button">Ver número y copiar</button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card">
-                <div class="card-body">
-                  <h3>Tarjeta de crédito / Débito <span class="muted">(más impuestos)</span></h3>
-                  <p class="pay-note">Procesado por pasarela segura.</p>
-                  <div class="actions">
-                    <button id="btnPayWompi" class="btn btn-secondary btn-pill" type="button">Pagar con tarjeta</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="alert alert-info" style="margin-top:12px">
-              Si tienes problemas con el pago, contáctanos para brindarte un enlace alterno.
-            </div>
-          </div>
-
-          <!-- PANE 4: Resumen -->
-          <div class="step-pane" data-pane="4">
-            <h2 class="header-premium" style="margin:0 0 12px">Resumen</h2>
-            <div id="resumen" class="grid"><!-- Se llena dinámicamente --></div>
-            <div class="alert alert-info" style="margin-top:10px" aria-live="polite">
-              Verifica que los datos y archivos listados sean correctos antes de enviar.
-            </div>
-          </div>
-        </div>
-
-        <!-- Acciones del wizard -->
-        <div class="actions">
-          <a class="btn btn-secondary btn-pill" href="selector.html">Volver al selector</a>
-          <button id="btnPrev" class="btn btn-ghost btn-pill" type="button">Anterior</button>
-          <button id="btnNext" class="btn btn-primary btn-pill" type="button">Siguiente</button>
-          <button id="btnEnviar" class="btn btn-success btn-pill hidden" type="button">Enviar documentación</button>
-        </div>
-
-        <!-- Loader -->
-        <div id="loader" class="loader hidden" aria-label="Procesando"></div>
+  <!-- Header -->
+  <header class="header-main">
+    <div class="container">
+      <div class="header-content">
+        <h1 class="logo">🏠 E-FirmaContrata</h1>
+        <nav class="nav-menu">
+          <a href="index.html">Inicio</a>
+          <a href="selector.html">Portal</a>
+        </nav>
       </div>
-    </section>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      <!-- Banner Corrección -->
+      <div id="bannerCorreccion" class="alert alert-warning hidden">
+        <strong>⚠️ Corrección Requerida</strong>
+        <p>Debes corregir los siguientes documentos:</p>
+        <div id="correccionDocs"></div>
+        <div id="correccionObs" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Alert Box -->
+      <div id="alertBox" class="alert alert-info hidden" role="alert"></div>
+
+      <!-- Form Container -->
+      <div class="form-container">
+        <h2 class="form-title">📋 Formulario del Inquilino</h2>
+        <p class="form-subtitle">Complete la información requerida para el contrato de arrendamiento</p>
+
+        <!-- Progress -->
+        <div class="progress">
+          <div class="step active" data-step="0">1</div>
+          <div class="step" data-step="1">2</div>
+          <div class="step" data-step="2">3</div>
+          <div class="step" data-step="3">4</div>
+          <div class="step" data-step="4">✓</div>
+        </div>
+
+        <!-- Step 1: Datos -->
+        <div class="step-pane show" data-pane="0">
+          <h3>Datos Personales del Inquilino</h3>
+          <div class="form-group">
+            <label for="tipoDocumento">Tipo de Documento <span class="required">*</span></label>
+            <select id="tipoDocumento" class="input" required>
+              <option value="">Seleccione...</option>
+              <option value="CC">Cédula de Ciudadanía</option>
+              <option value="CE">Cédula de Extranjería</option>
+              <option value="PA">Pasaporte</option>
+              <option value="NIT">NIT</option>
+            </select>
+          </div>
+
+          <div class="grid-2col">
+            <div class="form-group">
+              <label for="numeroDocumento">Número de Documento <span class="required">*</span></label>
+              <input type="text" id="numeroDocumento" class="input" required>
+            </div>
+            <div class="form-group">
+              <label for="confirmarDocumento">Confirmar Documento <span class="required">*</span></label>
+              <input type="text" id="confirmarDocumento" class="input" required>
+              <span id="docError" class="error-msg">Los documentos no coinciden</span>
+            </div>
+          </div>
+
+          <div class="grid-2col">
+            <div class="form-group">
+              <label for="nombres">Nombres <span class="required">*</span></label>
+              <input type="text" id="nombres" class="input" required>
+            </div>
+            <div class="form-group">
+              <label for="apellidos">Apellidos <span class="required">*</span></label>
+              <input type="text" id="apellidos" class="input" required>
+            </div>
+          </div>
+
+          <div class="grid-2col">
+            <div class="form-group">
+              <label for="email">Correo Electrónico <span class="required">*</span></label>
+              <input type="email" id="email" class="input" required>
+            </div>
+            <div class="form-group">
+              <label for="confirmarEmail">Confirmar Correo <span class="required">*</span></label>
+              <input type="email" id="confirmarEmail" class="input" required>
+              <span id="emailError" class="error-msg">Los correos no coinciden</span>
+            </div>
+          </div>
+
+          <div class="grid-2col">
+            <div class="form-group">
+              <label for="celular">Celular <span class="required">*</span></label>
+              <input type="tel" id="celular" class="input" placeholder="3001234567" required>
+            </div>
+            <div class="form-group">
+              <label for="confirmarCelular">Confirmar Celular <span class="required">*</span></label>
+              <input type="tel" id="confirmarCelular" class="input" required>
+              <span id="celError" class="error-msg">Los celulares no coinciden</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Documentos -->
+        <div class="step-pane" data-pane="1">
+          <h3>Documentos del Inquilino</h3>
+          <p class="muted">Cargue los documentos requeridos en formato PDF o imagen</p>
+
+          <div class="file-upload">
+            <input type="file" id="docFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="docFront" class="file-label">
+              <span>📄 Documento de Identidad (Frontal) *</span>
+              <span id="docFrontName" class="file-name"></span>
+            </label>
+          </div>
+
+          <div class="file-upload">
+            <input type="file" id="docBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="docBack" class="file-label">
+              <span>📄 Documento de Identidad (Reverso) *</span>
+              <span id="docBackName" class="file-name"></span>
+            </label>
+          </div>
+
+          <div class="file-upload">
+            <input type="file" id="ingresos" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="ingresos" class="file-label">
+              <span>💰 Soporte de Ingresos *</span>
+              <span id="ingresosName" class="file-name"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Step 3: Codeudor -->
+        <div class="step-pane" data-pane="2">
+          <h3>Datos del Codeudor (Opcional)</h3>
+          <p class="muted">Si cuenta con codeudor, complete su información</p>
+
+          <div class="form-group">
+            <label for="coTipo">Tipo de Documento</label>
+            <select id="coTipo" class="input">
+              <option value="">Seleccione...</option>
+              <option value="CC">Cédula de Ciudadanía</option>
+              <option value="CE">Cédula de Extranjería</option>
+              <option value="PA">Pasaporte</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="coNumero">Número de Documento</label>
+            <input type="text" id="coNumero" class="input">
+          </div>
+
+          <div class="grid-2col">
+            <div class="form-group">
+              <label for="coNombres">Nombres</label>
+              <input type="text" id="coNombres" class="input">
+            </div>
+            <div class="form-group">
+              <label for="coApellidos">Apellidos</label>
+              <input type="text" id="coApellidos" class="input">
+            </div>
+          </div>
+
+          <div class="grid-2col">
+            <div class="form-group">
+              <label for="coEmail">Correo Electrónico</label>
+              <input type="email" id="coEmail" class="input">
+            </div>
+            <div class="form-group">
+              <label for="coCelular">Celular</label>
+              <input type="tel" id="coCelular" class="input">
+            </div>
+          </div>
+
+          <div class="hr"></div>
+          <h4>Documentos del Codeudor</h4>
+
+          <div class="file-upload">
+            <input type="file" id="coDocFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="coDocFront" class="file-label">
+              <span>📄 Documento (Frontal)</span>
+              <span id="coDocFrontName" class="file-name"></span>
+            </label>
+          </div>
+
+          <div class="file-upload">
+            <input type="file" id="coDocBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="coDocBack" class="file-label">
+              <span>📄 Documento (Reverso)</span>
+              <span id="coDocBackName" class="file-name"></span>
+            </label>
+          </div>
+
+          <div class="file-upload">
+            <input type="file" id="coIngresos" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="coIngresos" class="file-label">
+              <span>💰 Soporte de Ingresos</span>
+              <span id="coIngresosName" class="file-name"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Step 4: Pago -->
+        <div class="step-pane" data-pane="3">
+          <h3>💳 Pago del Estudio</h3>
+          <div class="card">
+            <div class="card-body">
+              <h4>Valor: $60.000 COP</h4>
+              <p>Seleccione su método de pago preferido:</p>
+              
+              <div class="payment-options">
+                <button id="btnPayBreb" class="btn btn-secondary btn-lg btn-block">
+                  📱 Pagar con Nequi/Daviplata
+                </button>
+                <button id="btnPayWompi" class="btn btn-primary btn-lg btn-block">
+                  💳 Pagar con Tarjeta
+                </button>
+              </div>
+
+              <div class="alert alert-info" style="margin-top:1rem">
+                <small>Una vez realizado el pago, puede continuar con el envío del formulario.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: Resumen -->
+        <div class="step-pane" data-pane="4">
+          <h3>📄 Resumen de Información</h3>
+          <div id="resumen"></div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="form-navigation">
+          <button id="btnPrev" class="btn btn-secondary">← Anterior</button>
+          <button id="btnNext" class="btn btn-primary">Siguiente →</button>
+          <button id="btnEnviar" class="btn btn-success hidden">✓ Enviar Formulario</button>
+        </div>
+      </div>
+    </div>
   </main>
 
-  <!-- Modal pago Bre-B/Nequi/Daviplata -->
-  <div id="modalBreb" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalBrebTitle" aria-hidden="true">
-    <div class="card sheet">
-      <div class="card-header">
-        <h2 id="modalBrebTitle" class="header-premium" style="margin:0">Transferencia: Bre-B / Nequi / Daviplata</h2>
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>&copy; 2024 Real Estate - Gold Life System. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- Modal Pago -->
+  <div id="modalBreb" class="modal" role="dialog" aria-hidden="true">
+    <div class="modal-content">
+      <button id="btnCloseBreb" class="close-modal" aria-label="Cerrar">&times;</button>
+      <div class="modal-header">
+        <h3>📱 Pago por Nequi/Daviplata</h3>
       </div>
-      <div class="card-body">
-        <p class="muted">Transfiere al siguiente número y luego vuelve para finalizar tu proceso.</p>
-        <div class="grid-2col" style="align-items:end">
-          <div>
-            <label>Número de cuenta / celular</label>
-            <input id="brebNumber" class="input" type="text" value="" readonly />
-            <p class="pay-note" style="margin-top:6px">Se copiará exactamente este valor.</p>
-          </div>
-          <div class="actions">
-            <button id="btnCopyBreb" class="btn btn-primary btn-pill" type="button">Copiar al portapapeles</button>
-            <button id="btnCloseBreb" class="btn btn-ghost btn-pill" type="button">Cerrar</button>
-          </div>
+      <div class="modal-body">
+        <p>Transfiere $60.000 COP al siguiente número:</p>
+        <div class="form-group">
+          <input type="text" id="brebNumber" class="input" readonly style="font-size:1.5rem; text-align:center; font-weight:bold;">
         </div>
-        <div class="alert alert-info" style="margin-top:12px">
-          Consejo: agrega una nota de referencia con tu <strong>CDR</strong> si la pasarela lo permite.
-        </div>
+        <button id="btnCopyBreb" class="btn btn-primary btn-block">📋 Copiar Número</button>
+        <p class="muted" style="margin-top:1rem; font-size:0.9rem">
+          Después de realizar la transferencia, cierra esta ventana y continúa con el formulario.
+        </p>
       </div>
     </div>
   </div>
 
   <!-- Toast -->
   <div id="toast" class="toast" role="status" aria-live="polite">Copiado al portapapeles</div>
+
+  <!-- Loader -->
+  <div id="loader" class="loader hidden" aria-label="Procesando"></div>
 
   <!-- Config global -->
   <script src="config.js"></script>
@@ -323,8 +337,8 @@
       modoCorreccion: false,
       docsCorreccion: [],
       step: 0,
-      max: 4, // último índice de paso
-      archivos: {}, // { key: {nombre, tipo, contenido(base64)} }
+      max: 4,
+      archivos: {},
       maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
     };
 
@@ -344,7 +358,6 @@
       btnNext: $("btnNext"),
       btnEnviar: $("btnEnviar"),
       resumen: $("resumen"),
-      // Datos
       tipoDocumento: $("tipoDocumento"),
       numeroDocumento: $("numeroDocumento"),
       confirmarDocumento: $("confirmarDocumento"),
@@ -357,21 +370,26 @@
       docError: $("docError"),
       emailError: $("emailError"),
       celError: $("celError"),
-      // Docs inquilino
-      docFront: $("docFront"), docFrontName: $("docFrontName"),
-      docBack: $("docBack"), docBackName: $("docBackName"),
-      ingresos: $("ingresos"), ingresosName: $("ingresosName"),
-      // Codeudor
-      coTipo: $("coTipo"), coNumero: $("coNumero"),
-      coNombres: $("coNombres"), coApellidos: $("coApellidos"),
-      coEmail: $("coEmail"), coCelular: $("coCelular"),
-      coDocFront: $("coDocFront"), coDocFrontName: $("coDocFrontName"),
-      coDocBack: $("coDocBack"), coDocBackName: $("coDocBackName"),
-      coIngresos: $("coIngresos"), coIngresosName: $("coIngresosName"),
-      // Pagos
+      docFront: $("docFront"),
+      docFrontName: $("docFrontName"),
+      docBack: $("docBack"),
+      docBackName: $("docBackName"),
+      ingresos: $("ingresos"),
+      ingresosName: $("ingresosName"),
+      coTipo: $("coTipo"),
+      coNumero: $("coNumero"),
+      coNombres: $("coNombres"),
+      coApellidos: $("coApellidos"),
+      coEmail: $("coEmail"),
+      coCelular: $("coCelular"),
+      coDocFront: $("coDocFront"),
+      coDocFrontName: $("coDocFrontName"),
+      coDocBack: $("coDocBack"),
+      coDocBackName: $("coDocBackName"),
+      coIngresos: $("coIngresos"),
+      coIngresosName: $("coIngresosName"),
       btnPayBreb: $("btnPayBreb"),
       btnPayWompi: $("btnPayWompi"),
-      // Modal + toast
       modalBreb: $("modalBreb"),
       brebNumber: $("brebNumber"),
       btnCopyBreb: $("btnCopyBreb"),
@@ -390,7 +408,8 @@
       const docs = params.get('docs');
 
       if (!state.cdr) {
-        showAlert('warning', 'CDR no presente. Regresa al selector para validar tu enlace.');
+        showAlert('warning', 'CDR no presente.');
+        return;
       }
 
       if (state.modoCorreccion) {
@@ -412,13 +431,12 @@
       bindFile(el.coDocBack, 'coDocBack', el.coDocBackName);
       bindFile(el.coIngresos, 'coIngresos', el.coIngresosName);
 
-      // Pago: modal + tarjeta
-      el.brebNumber.value = CONFIG?.PAY_BREB_NEQUI_DAVIPLATA || '3177623878';
+      // Pago
+      el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
       el.btnPayBreb.addEventListener('click', openBrebModal);
       el.btnCloseBreb.addEventListener('click', closeBrebModal);
       el.modalBreb.addEventListener('click', (e)=>{ if (e.target === el.modalBreb) closeBrebModal(); });
       el.btnCopyBreb.addEventListener('click', copyBreb);
-
       el.btnPayWompi.addEventListener('click', handlePayWompi);
     }
 
@@ -480,7 +498,7 @@
       reader.readAsDataURL(file);
     }
 
-    // --------- Validación por paso (mínima y coherente) ----------
+    // --------- Validación ----------
     const rx = {
       email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       phone: /^\d{10}$/,
@@ -533,11 +551,11 @@
           return true;
         }
         case 2:{
-          // Codeudor opcional: sin bloqueo
+          // Codeudor opcional
           return true;
         }
         case 3:{
-          // Paso de pago: no bloqueamos navegación aquí; el backend validará pago si aplica
+          // Pago opcional para validación
           return true;
         }
         default: return true;
@@ -595,12 +613,14 @@
       el.modalBreb.setAttribute('aria-hidden', 'false');
       el.brebNumber.select();
     }
+    
     function closeBrebModal(){
       el.modalBreb.classList.remove('show');
       el.modalBreb.setAttribute('aria-hidden', 'true');
     }
+    
     async function copyBreb(){
-      const value = (CONFIG?.PAY_BREB_NEQUI_DAVIPLATA || '').toString().trim();
+      const value = (CONFIG?.PAGO?.NEQUI || '').toString().trim();
       try{
         if (!value) throw new Error('Número de pago no configurado.');
         await navigator.clipboard.writeText(value);
@@ -609,42 +629,46 @@
         toast('No se pudo copiar. Selecciona y copia manualmente.');
       }
     }
+    
     function handlePayWompi(){
-      const url = CONFIG?.PAY_WOMPI_URL || '';
-      if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta en config.js.');
+      const url = CONFIG?.PAGO?.WOMPI_LINK || '';
+      if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta.');
       window.open(url, '_blank', 'noopener');
     }
 
-    // --------- Submit ----------
+    // --------- Submit CORREGIDO ----------
     async function onSubmit(){
-      // Validación final integral
+      // Validación final
       for (let i=0; i<=3; i++){
         if (!validateStep(i)) { gotoStep(i); return; }
       }
 
       toggleLoading(true);
 
+      // ESTRUCTURA CORREGIDA para coincidir con el backend
       const payload = {
         accion: 'procesarFormularioInquilino',
-        cdr: state.cdr,
-        modo: state.modoCorreccion ? 'correccion' : 'normal',
-        inquilino: {
-          tipoDocumento: el.tipoDocumento.value.trim(),
-          numeroDocumento: el.numeroDocumento.value.trim(),
-          nombres: el.nombres.value.trim(),
-          apellidos: el.apellidos.value.trim(),
-          email: el.email.value.trim(),
-          celular: el.celular.value.trim()
+        codigoRegistro: state.cdr,  // Cambio: cdr → codigoRegistro
+        datosFormulario: {  // Cambio: agrupamos inquilino y codeudor aquí
+          inquilino: {
+            tipoDocumento: el.tipoDocumento.value.trim(),
+            numeroDocumento: el.numeroDocumento.value.trim(),
+            nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`,
+            email: el.email.value.trim(),
+            celular: el.celular.value.trim(),
+            ocupacion: 'Por definir'  // Campo requerido por el backend
+          },
+          codeudor: el.coNumero.value.trim() ? {
+            tipoDocumento: el.coTipo.value.trim(),
+            numeroDocumento: el.coNumero.value.trim(),
+            nombre: `${el.coNombres.value.trim()} ${el.coApellidos.value.trim()}`,
+            email: el.coEmail.value.trim(),
+            celular: el.coCelular.value.trim()
+          } : null,
+          fechaInicio: new Date().toISOString().split('T')[0],
+          modoCorreccion: state.modoCorreccion
         },
-        codeudor: {
-          tipoDocumento: el.coTipo.value.trim(),
-          numeroDocumento: el.coNumero.value.trim(),
-          nombres: el.coNombres.value.trim(),
-          apellidos: el.coApellidos.value.trim(),
-          email: el.coEmail.value.trim(),
-          celular: el.coCelular.value.trim()
-        },
-        archivos: state.archivos   // base64
+        archivosBase64: state.archivos  // Cambio: archivos → archivosBase64
       };
 
       try{
@@ -654,12 +678,17 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        
         const data = await res.json();
-        if (!data || data.ok !== true){
-          throw new Error(data && data.message ? data.message : 'No fue posible procesar la información.');
+        
+        // VALIDACIÓN CORREGIDA: success en lugar de ok
+        if (!data || !data.success){
+          throw new Error(data?.message || 'No fue posible procesar la información.');
         }
-        const msg = encodeURIComponent('Documentación enviada correctamente.');
+        
+        const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
         location.href = `pagina-exito.html?status=success&msg=${msg}`;
+        
       }catch(err){
         console.error('[Inquilino] Error:', err);
         showAlert('danger', err.message || 'Ocurrió un error inesperado.');
@@ -676,18 +705,24 @@
       el.alertBox.classList.remove('hidden');
       el.alertBox.focus?.();
     }
+    
     function toggleLoading(show){
       el.loader.classList.toggle('hidden', !show);
-      el.btnPrev.disabled = !!show; el.btnNext.disabled = !!show; el.btnEnviar.disabled = !!show;
+      el.btnPrev.disabled = !!show;
+      el.btnNext.disabled = !!show;
+      el.btnEnviar.disabled = !!show;
     }
+    
     function toast(text){
       el.toast.textContent = text || 'Acción realizada.';
       el.toast.classList.add('show');
-      clearTimeout(toast._t);
-      toast._t = setTimeout(()=> el.toast.classList.remove('show'), 2200);
+      setTimeout(() => el.toast.classList.remove('show'), 3000);
     }
-    function escapeHTML(s){
-      return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    
+    function escapeHTML(str){
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
     }
   })();
   </script>
