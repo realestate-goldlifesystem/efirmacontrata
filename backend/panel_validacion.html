@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Validación - E-FirmaContrata</title>
+    <style>
+        /* Variables de diseño */
+        :root {
+            --primary: #FFD700;
+            --secondary: #1e1e1e;
+            --dark: #0F0F0F;
+            --light: #f8f9fa;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --white: #ffffff;
+            --gray: #6b7280;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            background: linear-gradient(135deg, #0F0F0F 0%, #1e1e1e 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Container */
+        .container {
+            max-width: 100%;
+            padding: 2rem;
+            margin: 0 auto;
+        }
+
+        /* Header Principal */
+        .main-header {
+            background: linear-gradient(135deg, var(--primary) 0%, #FFA500 100%);
+            padding: 2rem;
+            border-radius: var(--radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+            color: var(--dark);
+        }
+
+        .main-header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .main-header p {
+            color: rgba(0, 0, 0, 0.7);
+            font-size: 1.1rem;
+        }
+
+        /* Tabs Navigation */
+        .tabs-nav {
+            display: flex;
+            gap: 1rem;
+            background: var(--white);
+            padding: 0.5rem;
+            border-radius: var(--radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-radius: calc(var(--radius) / 2);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--gray);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            background: var(--light);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: var(--dark);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stats Container */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Registros Grid */
+        .registros-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .registro-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .registro-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .registro-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .registro-header h3 {
+            color: var(--dark);
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        .registro-info {
+            padding: 1.5rem;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: var(--gray);
+        }
+
+        .info-value {
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Botón de copiar */
+        .btn-copy {
+            background: var(--light);
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:hover {
+            background: var(--primary);
+            color: var(--dark);
+        }
+
+        .btn-copy.copied {
+            background: var(--success);
+            color: white;
+        }
+
+        /* Registro Actions */
+        .registro-actions {
+            padding: 1rem 1.5rem;
+            background: var(--light);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: calc(var(--radius) / 2);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--dark);
+        }
+
+        .btn-primary:hover {
+            background: #FFA500;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background: #2d2d2d;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--white);
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--radius);
+            max-width: 90%;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-lg {
+            width: 1200px;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary) 0%, #FFA500 100%);
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--dark);
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .close-modal:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 2rem;
+            max-height: calc(90vh - 80px);
+            overflow-y: auto;
+        }
+
+        /* Document Preview Container */
+        .documents-container {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            height: 600px;
+        }
+
+        .documents-list {
+            background: var(--light);
+            border-radius: var(--radius);
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .doc-item {
+            background: var(--white);
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: calc(var(--radius) / 2);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .doc-item:hover {
+            background: var(--primary);
+            color: var(--dark);
+            transform: translateX(5px);
+        }
+
+        .doc-item.active {
+            background: var(--primary);
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .doc-type {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        .doc-size {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        /* Preview Area */
+        .preview-area {
+            background: #f8f9fa;
+            border-radius: var(--radius);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            padding: 1rem;
+            background: var(--white);
+            border-radius: calc(var(--radius) / 2);
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-content {
+            flex: 1;
+            background: var(--white);
+            border-radius: calc(var(--radius) / 2);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .preview-placeholder {
+            text-align: center;
+            color: var(--gray);
+            padding: 3rem;
+        }
+
+        /* Validation Checklist */
+        .validation-checklist {
+            background: var(--light);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .checklist-title {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checklist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--white);
+            border-radius: calc(var(--radius) / 2);
+            transition: all 0.2s;
+        }
+
+        .checklist-item:hover {
+            transform: translateX(5px);
+        }
+
+        .checklist-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checklist-label {
+            flex: 1;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checklist-item.checked {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        /* Corrections Form */
+        .corrections-form {
+            background: #fef3c7;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .corrections-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 1rem;
+        }
+
+        .correction-field {
+            margin-bottom: 1rem;
+        }
+
+        .correction-field label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #92400e;
+        }
+
+        .correction-field select,
+        .correction-field textarea {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid #fbbf24;
+            border-radius: calc(var(--radius) / 2);
+            background: var(--white);
+        }
+
+        .correction-field select:focus,
+        .correction-field textarea:focus {
+            outline: none;
+            border-color: var(--warning);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .corrections-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .correction-tag {
+            background: var(--warning);
+            color: var(--white);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .correction-tag button {
+            background: none;
+            border: none;
+            color: var(--white);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        /* Data Display with Copy */
+        .data-display {
+            background: var(--light);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .data-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--white);
+            border-radius: calc(var(--radius) / 2);
+        }
+
+        .data-label {
+            font-weight: 600;
+            color: var(--gray);
+        }
+
+        .data-value-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .data-value {
+            color: var(--dark);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Badge States */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .badge-warning {
+            background: var(--warning);
+            color: var(--white);
+        }
+
+        .badge-success {
+            background: var(--success);
+            color: var(--white);
+        }
+
+        .badge-danger {
+            background: var(--danger);
+            color: var(--white);
+        }
+
+        .badge-info {
+            background: var(--info);
+            color: var(--white);
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--dark);
+            color: var(--white);
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 2000;
+            animation: slideUp 0.3s ease;
+        }
+
+        .toast.show {
+            display: flex;
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.warning {
+            background: var(--warning);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .registros-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                max-width: 95%;
+            }
+
+            .documents-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .checklist-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Principal -->
+        <div class="main-header">
+            <h1>🔍 Panel de Validación - E-FirmaContrata</h1>
+            <p>Sistema de validación de documentos y generación de contratos</p>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="cambiarTab('inquilinos', this)">
+                📋 Inquilinos
+            </button>
+            <button class="tab-btn" onclick="cambiarTab('propietarios', this)">
+                🏠 Propietarios
+            </button>
+            <button class="tab-btn" onclick="cambiarTab('contratos', this)">
+                📄 Contratos
+            </button>
+            <button class="tab-btn" onclick="cambiarTab('configuracion', this)">
+                ⚙️ Configuración
+            </button>
+        </div>
+
+        <!-- Tab Inquilinos -->
+        <div id="tabInquilinos" class="tab-content active">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalInquilinos">0</div>
+                        <div class="stat-label">Total Pendientes</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="aprobadosInquilinos">0</div>
+                        <div class="stat-label">Aprobados</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="correccionesInquilinos">0</div>
+                        <div class="stat-label">En Corrección</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="listaInquilinos" class="registros-grid">
+                <!-- Se llena dinámicamente -->
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h3>No hay registros pendientes</h3>
+                    <p>Los registros aparecerán aquí cuando los inquilinos completen sus formularios</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Propietarios -->
+        <div id="tabPropietarios" class="tab-content">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalPropietarios">0</div>
+                        <div class="stat-label">Total Pendientes</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="aprobadosPropietarios">0</div>
+                        <div class="stat-label">Aprobados</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="correccionesPropietarios">0</div>
+                        <div class="stat-label">En Corrección</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="listaPropietarios" class="registros-grid">
+                <!-- Se llena dinámicamente -->
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h3>No hay registros pendientes</h3>
+                    <p>Los registros aparecerán aquí cuando los propietarios completen sus formularios</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Contratos -->
+        <div id="tabContratos" class="tab-content">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalContratos">0</div>
+                        <div class="stat-label">Listos para Generar</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📄</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="generadosContratos">0</div>
+                        <div class="stat-label">Contratos Generados</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✍️</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="firmadosContratos">0</div>
+                        <div class="stat-label">Firmados</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="listaContratos" class="registros-grid">
+                <!-- Se llena dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Tab Configuración -->
+        <div id="tabConfiguracion" class="tab-content">
+            <div class="registro-card">
+                <div class="registro-header">
+                    <h3>⚙️ Configuración del Sistema</h3>
+                </div>
+                <div class="registro-info">
+                    <div class="info-row">
+                        <span class="info-label">Versión:</span>
+                        <span class="info-value">3.0.0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">API URL:</span>
+                        <span class="info-value">Configurado ✅</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Carpeta Drive:</span>
+                        <span class="info-value">Configurado ✅</span>
+                    </div>
+                </div>
+                <div class="registro-actions">
+                    <button class="btn btn-primary" onclick="actualizarTodo()">
+                        🔄 Actualizar Todo
+                    </button>
+                    <button class="btn btn-secondary" onclick="limpiarCache()">
+                        🧹 Limpiar Caché
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Validación -->
+    <div id="modalValidacion" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2 id="modalTitle">📋 Validación de Documentos</h2>
+                <button class="close-modal" onclick="cerrarModal('modalValidacion')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Información del Registro -->
+                <div class="data-display">
+                    <h3>📌 Información del Registro</h3>
+                    <div class="data-grid" id="infoRegistro">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Container de Documentos y Preview -->
+                <div class="documents-container">
+                    <div class="documents-list">
+                        <h3>📁 Documentos Cargados</h3>
+                        <div id="listaDocumentos">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                    </div>
+                    <div class="preview-area">
+                        <div class="preview-header">
+                            <span id="previewTitle">Vista Previa</span>
+                            <div>
+                                <button class="btn btn-primary btn-sm" onclick="descargarDocumento()">
+                                    ⬇️ Descargar
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="abrirEnNuevaVentana()">
+                                    🔗 Abrir
+                                </button>
+                            </div>
+                        </div>
+                        <div class="preview-content" id="previewContent">
+                            <div class="preview-placeholder">
+                                <p>👈 Selecciona un documento para ver la vista previa</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Checklist de Validación -->
+                <div class="validation-checklist">
+                    <div class="checklist-title">
+                        ✅ Lista de Validación
+                    </div>
+                    <div class="checklist-grid" id="checklistGrid">
+                        <!-- Se llena dinámicamente según el tipo -->
+                    </div>
+                </div>
+
+                <!-- Formulario de Correcciones -->
+                <div class="corrections-form">
+                    <div class="corrections-title">
+                        ⚠️ Correcciones Requeridas
+                    </div>
+                    <div class="correction-field">
+                        <label>Seleccionar documentos a corregir:</label>
+                        <select id="selectCorrecciones" multiple size="4">
+                            <option value="docIdentidad">Documento de Identidad</option>
+                            <option value="soporteIngresos">Soporte de Ingresos</option>
+                            <option value="certTradicion">Certificado Tradición</option>
+                            <option value="sarlaft">Formato SARLAFT</option>
+                            <option value="certBancario">Certificación Bancaria</option>
+                            <option value="servicios">Servicios Públicos</option>
+                        </select>
+                    </div>
+                    <div class="correction-field">
+                        <label>Observaciones específicas:</label>
+                        <textarea id="observacionesCorrecciones" rows="4" placeholder="Describa detalladamente qué debe corregirse..."></textarea>
+                    </div>
+                    <div class="corrections-list" id="correctionsList">
+                        <!-- Tags de correcciones seleccionadas -->
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="registro-actions" style="margin-top: 2rem;">
+                    <button class="btn btn-success" onclick="aprobarDocumentos()">
+                        ✅ Aprobar Todo
+                    </button>
+                    <button class="btn btn-warning" onclick="solicitarCorrecciones()">
+                        📝 Solicitar Correcciones
+                    </button>
+                    <button class="btn btn-danger" onclick="rechazarDocumentos()">
+                        ❌ Rechazar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <span id="toastMessage">Mensaje</span>
+    </div>
+
+    <script>
+        // Configuración
+        const API_URL = google.script.run;
+        let registroActual = null;
+        let tipoActual = null;
+        let documentoActual = null;
+        let documentosData = {};
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarDatos();
+            configurarEventListeners();
+        });
+
+        // Cargar datos iniciales
+        function cargarDatos() {
+            cargarRegistrosInquilinos();
+            cargarRegistrosPropietarios();
+            cargarContratos();
+        }
+
+        // Event Listeners
+        function configurarEventListeners() {
+            // Listener para selección múltiple de correcciones
+            document.getElementById('selectCorrecciones').addEventListener('change', function() {
+                actualizarTagsCorrecciones();
+            });
+        }
+
+        // Cambiar Tab
+        function cambiarTab(tab, btn) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            // Mostrar tab seleccionado
+            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // Cargar Registros de Inquilinos
+        function cargarRegistrosInquilinos() {
+            google.script.run
+                .withSuccessHandler(function(registros) {
+                    mostrarRegistrosInquilinos(registros);
+                    actualizarEstadisticas('inquilinos', registros);
+                })
+                .withFailureHandler(function(error) {
+                    console.error('Error cargando inquilinos:', error);
+                    mostrarToast('Error al cargar registros de inquilinos', 'error');
+                })
+                .obtenerRegistrosInquilinos();
+        }
+
+        // Cargar Registros de Propietarios
+        function cargarRegistrosPropietarios() {
+            google.script.run
+                .withSuccessHandler(function(registros) {
+                    mostrarRegistrosPropietarios(registros);
+                    actualizarEstadisticas('propietarios', registros);
+                })
+                .withFailureHandler(function(error) {
+                    console.error('Error cargando propietarios:', error);
+                    mostrarToast('Error al cargar registros de propietarios', 'error');
+                })
+                .obtenerRegistrosPropietarios();
+        }
+
+        // Cargar Contratos
+        function cargarContratos() {
+            // Implementar carga de contratos
+            console.log('Cargando contratos...');
+        }
+
+        // Mostrar registros de inquilinos
+        function mostrarRegistrosInquilinos(registros) {
+            const lista = document.getElementById('listaInquilinos');
+            
+            if (!registros || registros.length === 0) {
+                lista.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <h3>No hay registros pendientes</h3>
+                        <p>Los registros aparecerán aquí cuando los inquilinos completen sus formularios</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            registros.forEach(registro => {
+                const estado = obtenerEstadoRegistro(registro.detalles);
+                html += `
+                    <div class="registro-card">
+                        <div class="registro-header">
+                            <h3>📋 ${registro.cdr}</h3>
+                            <span class="badge badge-${estado.clase}">${estado.texto}</span>
+                        </div>
+                        <div class="registro-info">
+                            <div class="info-row">
+                                <span class="info-label">Nombre:</span>
+                                <span class="info-value">
+                                    ${registro.inquilino.nombre}
+                                    <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.nombre}', this)">
+                                        📋 Copiar
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Documento:</span>
+                                <span class="info-value">
+                                    ${registro.inquilino.documento}
+                                    <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.documento}', this)">
+                                        📋 Copiar
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Email:</span>
+                                <span class="info-value">
+                                    ${registro.inquilino.email}
+                                    <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.email}', this)">
+                                        📋 Copiar
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Celular:</span>
+                                <span class="info-value">
+                                    ${registro.inquilino.celular}
+                                    <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.celular}', this)">
+                                        📋 Copiar
+                                    </button>
+                                </span>
+                            </div>
+                            ${registro.codeudores && registro.codeudores.length > 0 ? `
+                            <div class="info-row">
+                                <span class="info-label">Codeudores:</span>
+                                <span class="info-value">${registro.codeudores.length}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                        <div class="registro-actions">
+                            <button class="btn btn-primary" onclick="validarInquilino('${registro.cdr}')">
+                                🔍 Validar
+                            </button>
+                            <button class="btn btn-secondary" onclick="verDocumentosInquilino('${registro.cdr}')">
+                                📁 Ver Documentos
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            lista.innerHTML = html;
+        }
+
+        // Mostrar registros de propietarios
+        function mostrarRegistrosPropietarios(registros) {
+            const lista = document.getElementById('listaPropietarios');
+            
+            if (!registros || registros.length === 0) {
+                lista.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📭</div>
+                        <h3>No hay registros pendientes</h3>
+                        <p>Los registros aparecerán aquí cuando los propietarios completen sus formularios</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            registros.forEach(registro => {
+                const estado = obtenerEstadoRegistro(registro.detalles);
+                html += `
+                    <div class="registro-card">
+                        <div class="registro-header">
+                            <h3>🏠 ${registro.cdr}</h3>
+                            <span class="badge badge-${estado.clase}">${estado.texto}</span>
+                        </div>
+                        <div class="registro-info">
+                            <div class="info-row">
+                                <span class="info-label">Nombre:</span>
+                                <span class="info-value">
+                                    ${registro.propietario.nombre}
+                                    <button class="btn-copy" onclick="copiarTexto('${registro.propietario.nombre}', this)">
+                                        📋 Copiar
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Documento:</span>
+                                <span class="info-value">
+                                    ${registro.propietario.documento}
+                                    <button class="btn-copy" onclick="copiarTexto('${registro.propietario.documento}', this)">
+                                        📋 Copiar
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Email:</span>
+                                <span class="info-value">
+                                    ${registro.propietario.email}
+                                    <button class="btn-copy" onclick="copiarTexto('${registro.propietario.email}', this)">
+                                        📋 Copiar
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Celular:</span>
+                                <span class="info-value">
+                                    ${registro.propietario.celular}
+                                    <button class="btn-copy" onclick="copiarTexto('${registro.propietario.celular}', this)">
+                                        📋 Copiar
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="registro-actions">
+                            <button class="btn btn-primary" onclick="validarPropietario('${registro.cdr}')">
+                                🔍 Validar
+                            </button>
+                            <button class="btn btn-secondary" onclick="verDocumentosPropietario('${registro.cdr}')">
+                                📁 Ver Documentos
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            lista.innerHTML = html;
+        }
+
+        // Función para copiar texto al portapapeles
+        function copiarTexto(texto, btn) {
+            navigator.clipboard.writeText(texto).then(function() {
+                // Cambiar el botón temporalmente
+                const textoOriginal = btn.innerHTML;
+                btn.innerHTML = '✅ Copiado';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.innerHTML = textoOriginal;
+                    btn.classList.remove('copied');
+                }, 2000);
+                
+                mostrarToast(`Copiado: ${texto}`, 'success');
+            }).catch(function(err) {
+                console.error('Error al copiar:', err);
+                mostrarToast('Error al copiar', 'error');
+            });
+        }
+
+        // Validar Inquilino
+        function validarInquilino(cdr) {
+            registroActual = cdr;
+            tipoActual = 'inquilino';
+            
+            // Cargar documentos y mostrar modal
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    mostrarModalValidacion(cdr, 'inquilino', data.documentos);
+                })
+                .withFailureHandler(function(error) {
+                    mostrarToast('Error al cargar documentos', 'error');
+                })
+                .obtenerDocumentosDelCDR(cdr);
+        }
+
+        // Validar Propietario
+        function validarPropietario(cdr) {
+            registroActual = cdr;
+            tipoActual = 'propietario';
+            
+            // Cargar documentos y mostrar modal
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    mostrarModalValidacion(cdr, 'propietario', data.documentos);
+                })
+                .withFailureHandler(function(error) {
+                    mostrarToast('Error al cargar documentos', 'error');
+                })
+                .obtenerDocumentosDelCDR(cdr);
+        }
+
+        // Mostrar Modal de Validación
+        function mostrarModalValidacion(cdr, tipo, documentos) {
+            documentosData = documentos;
+            
+            // Actualizar título
+            document.getElementById('modalTitle').textContent = 
+                `📋 Validación de ${tipo === 'inquilino' ? 'Inquilino' : 'Propietario'} - ${cdr}`;
+            
+            // Mostrar información del registro
+            mostrarInfoRegistro(cdr, tipo);
+            
+            // Mostrar lista de documentos
+            mostrarListaDocumentos(documentos[tipo] || []);
+            
+            // Crear checklist según tipo
+            crearChecklist(tipo);
+            
+            // Mostrar modal
+            document.getElementById('modalValidacion').classList.add('show');
+        }
+
+        // Mostrar información del registro
+        function mostrarInfoRegistro(cdr, tipo) {
+            // Aquí se cargarían los datos específicos del registro
+            const infoHtml = `
+                <div class="data-item">
+                    <span class="data-label">CDR:</span>
+                    <div class="data-value-group">
+                        <span class="data-value">${cdr}</span>
+                        <button class="btn-copy" onclick="copiarTexto('${cdr}', this)">📋</button>
+                    </div>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Tipo:</span>
+                    <div class="data-value-group">
+                        <span class="data-value">${tipo.toUpperCase()}</span>
+                    </div>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Fecha Registro:</span>
+                    <div class="data-value-group">
+                        <span class="data-value">${new Date().toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('infoRegistro').innerHTML = infoHtml;
+        }
+
+        // Mostrar lista de documentos
+        function mostrarListaDocumentos(documentos) {
+            let html = '';
+            
+            documentos.forEach((doc, index) => {
+                html += `
+                    <div class="doc-item ${index === 0 ? 'active' : ''}" 
+                         onclick="verPreview('${doc.url}', '${doc.tipo}', '${doc.nombre}', this)"
+                         data-index="${index}">
+                        <div>
+                            <div>${obtenerIconoDocumento(doc.tipo)} ${doc.nombre}</div>
+                            <div class="doc-type">${doc.tipo}</div>
+                        </div>
+                        <div class="doc-size">${formatearTamaño(doc.tamaño)}</div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('listaDocumentos').innerHTML = html || 
+                '<p style="text-align:center; color:#999;">No hay documentos</p>';
+            
+            // Cargar preview del primer documento si existe
+            if (documentos.length > 0) {
+                verPreview(documentos[0].url, documentos[0].tipo, documentos[0].nombre);
+            }
+        }
+
+        // Ver preview del documento
+        function verPreview(url, tipo, nombre, elemento) {
+            documentoActual = { url, tipo, nombre };
+            
+            // Actualizar selección activa
+            if (elemento) {
+                document.querySelectorAll('.doc-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                elemento.classList.add('active');
+            }
+            
+            // Actualizar título del preview
+            document.getElementById('previewTitle').textContent = nombre;
+            
+            // Mostrar preview según tipo
+            const previewContent = document.getElementById('previewContent');
+            
+            if (tipo.includes('pdf')) {
+                previewContent.innerHTML = `
+                    <iframe src="${url}" class="preview-iframe"></iframe>
+                `;
+            } else if (tipo.includes('image')) {
+                previewContent.innerHTML = `
+                    <img src="${url}" class="preview-image" alt="${nombre}">
+                `;
+            } else {
+                previewContent.innerHTML = `
+                    <div class="preview-placeholder">
+                        <p>⚠️ No se puede previsualizar este tipo de archivo</p>
+                        <button class="btn btn-primary" onclick="abrirEnNuevaVentana()">
+                            Abrir en nueva ventana
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Crear checklist de validación
+        function crearChecklist(tipo) {
+            let items = [];
+            
+            if (tipo === 'inquilino') {
+                items = [
+                    'Documento de identidad legible',
+                    'Nombre coincide con documento',
+                    'Número de documento correcto',
+                    'Soporte de ingresos válido',
+                    'Comprobante de pago adjunto',
+                    'Datos del codeudor completos (si aplica)'
+                ];
+            } else {
+                items = [
+                    'Documento de identidad legible',
+                    'Certificado de tradición válido',
+                    'SARLAFT diligenciado',
+                    'Certificación bancaria actualizada',
+                    'Servicios públicos al día',
+                    'Datos bancarios correctos'
+                ];
+            }
+            
+            let html = '';
+            items.forEach((item, index) => {
+                html += `
+                    <div class="checklist-item" id="check-${index}">
+                        <input type="checkbox" class="checklist-checkbox" 
+                               id="checkbox-${index}" 
+                               onchange="toggleCheck(${index})">
+                        <label class="checklist-label" for="checkbox-${index}">
+                            ${item}
+                        </label>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('checklistGrid').innerHTML = html;
+        }
+
+        // Toggle checklist item
+        function toggleCheck(index) {
+            const item = document.getElementById(`check-${index}`);
+            const checkbox = document.getElementById(`checkbox-${index}`);
+            
+            if (checkbox.checked) {
+                item.classList.add('checked');
+            } else {
+                item.classList.remove('checked');
+            }
+            
+            verificarCompletitud();
+        }
+
+        // Verificar si todo está completo
+        function verificarCompletitud() {
+            const checkboxes = document.querySelectorAll('.checklist-checkbox');
+            const todosChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            // Habilitar/deshabilitar botón de aprobar
+            const btnAprobar = document.querySelector('.btn-success');
+            if (btnAprobar) {
+                btnAprobar.disabled = !todosChecked;
+                if (todosChecked) {
+                    btnAprobar.textContent = '✅ Aprobar Todo (Listo)';
+                } else {
+                    btnAprobar.textContent = '✅ Aprobar Todo (Pendiente)';
+                }
+            }
+        }
+
+        // Actualizar tags de correcciones
+        function actualizarTagsCorrecciones() {
+            const select = document.getElementById('selectCorrecciones');
+            const container = document.getElementById('correctionsList');
+            const selected = Array.from(select.selectedOptions);
+            
+            let html = '';
+            selected.forEach(option => {
+                html += `
+                    <span class="correction-tag">
+                        ${option.text}
+                        <button onclick="removerCorreccion('${option.value}')">×</button>
+                    </span>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Remover corrección
+        function removerCorreccion(valor) {
+            const select = document.getElementById('selectCorrecciones');
+            const option = select.querySelector(`option[value="${valor}"]`);
+            if (option) {
+                option.selected = false;
+                actualizarTagsCorrecciones();
+            }
+        }
+
+        // Aprobar documentos
+        function aprobarDocumentos() {
+            if (!confirm('¿Está seguro de aprobar todos los documentos?')) return;
+            
+            const datos = {
+                cdr: registroActual,
+                tipo: tipoActual,
+                estado: 'aprobado',
+                observaciones: ''
+            };
+            
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    mostrarToast('✅ Documentos aprobados exitosamente', 'success');
+                    cerrarModal('modalValidacion');
+                    cargarDatos(); // Recargar datos
+                })
+                .withFailureHandler(function(error) {
+                    mostrarToast('Error al aprobar documentos', 'error');
+                })
+                .procesarValidacion(datos);
+        }
+
+        // Solicitar correcciones
+        function solicitarCorrecciones() {
+            const select = document.getElementById('selectCorrecciones');
+            const observaciones = document.getElementById('observacionesCorrecciones').value;
+            const selected = Array.from(select.selectedOptions);
+            
+            if (selected.length === 0 || !observaciones) {
+                mostrarToast('Seleccione los documentos y agregue observaciones', 'warning');
+                return;
+            }
+            
+            if (!confirm('¿Enviar solicitud de correcciones?')) return;
+            
+            const datos = {
+                cdr: registroActual,
+                tipo: tipoActual,
+                estado: 'correccion',
+                documentosCorregir: selected.map(opt => opt.value),
+                observaciones: observaciones
+            };
+            
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    mostrarToast('📝 Correcciones solicitadas', 'warning');
+                    cerrarModal('modalValidacion');
+                    cargarDatos();
+                })
+                .withFailureHandler(function(error) {
+                    mostrarToast('Error al solicitar correcciones', 'error');
+                })
+                .enviarCorrecciones(datos);
+        }
+
+        // Rechazar documentos
+        function rechazarDocumentos() {
+            const motivo = prompt('Ingrese el motivo del rechazo:');
+            if (!motivo) return;
+            
+            if (!confirm('¿Está seguro de rechazar estos documentos?')) return;
+            
+            const datos = {
+                cdr: registroActual,
+                tipo: tipoActual,
+                estado: 'rechazado',
+                observaciones: motivo
+            };
+            
+            google.script.run
+                .withSuccessHandler(function(result) {
+                    mostrarToast('❌ Documentos rechazados', 'error');
+                    cerrarModal('modalValidacion');
+                    cargarDatos();
+                })
+                .withFailureHandler(function(error) {
+                    mostrarToast('Error al rechazar documentos', 'error');
+                })
+                .procesarValidacion(datos);
+        }
+
+        // Funciones auxiliares
+        function descargarDocumento() {
+            if (documentoActual && documentoActual.url) {
+                window.open(documentoActual.url, '_blank');
+            }
+        }
+
+        function abrirEnNuevaVentana() {
+            if (documentoActual && documentoActual.url) {
+                window.open(documentoActual.url, '_blank');
+            }
+        }
+
+        function obtenerIconoDocumento(tipo) {
+            if (tipo.includes('pdf')) return '📄';
+            if (tipo.includes('image')) return '🖼️';
+            if (tipo.includes('doc')) return '📝';
+            return '📎';
+        }
+
+        function formatearTamaño(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function obtenerEstadoRegistro(detalles) {
+            if (!detalles) return { texto: 'NUEVO', clase: 'warning' };
+            
+            if (detalles.includes('aprobado') || detalles.includes('Aprobado')) {
+                return { texto: 'APROBADO', clase: 'success' };
+            } else if (detalles.includes('corrección') || detalles.includes('Corrección')) {
+                return { texto: 'EN CORRECCIÓN', clase: 'warning' };
+            } else if (detalles.includes('diligenciado') || detalles.includes('Pendiente validación')) {
+                return { texto: 'PENDIENTE', clase: 'info' };
+            } else {
+                return { texto: 'NUEVO', clase: 'warning' };
+            }
+        }
+
+        function actualizarEstadisticas(tipo, registros) {
+            if (!registros) return;
+            
+            const total = registros.length;
+            let aprobados = 0;
+            let correcciones = 0;
+            
+            registros.forEach(registro => {
+                const estado = obtenerEstadoRegistro(registro.detalles);
+                if (estado.texto === 'APROBADO') aprobados++;
+                if (estado.texto === 'EN CORRECCIÓN') correcciones++;
+            });
+            
+            if (tipo === 'inquilinos') {
+                document.getElementById('totalInquilinos').textContent = total;
+                document.getElementById('aprobadosInquilinos').textContent = aprobados;
+                document.getElementById('correccionesInquilinos').textContent = correcciones;
+            } else {
+                document.getElementById('totalPropietarios').textContent = total;
+                document.getElementById('aprobadosPropietarios').textContent = aprobados;
+                document.getElementById('correccionesPropietarios').textContent = correcciones;
+            }
+        }
+
+        function cerrarModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            // Limpiar formularios
+            document.getElementById('selectCorrecciones').selectedIndex = -1;
+            document.getElementById('observacionesCorrecciones').value = '';
+            document.getElementById('correctionsList').innerHTML = '';
+        }
+
+        function mostrarToast(mensaje, tipo = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = mensaje;
+            toast.className = `toast show ${tipo}`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function actualizarTodo() {
+            mostrarToast('Actualizando datos...', 'info');
+            cargarDatos();
+        }
+
+        function limpiarCache() {
+            if (confirm('¿Limpiar caché del sistema?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                mostrarToast('Caché limpiado exitosamente', 'success');
+                location.reload();
+            }
+        }
+
+        // Ver documentos sin validación
+        function verDocumentosInquilino(cdr) {
+            validarInquilino(cdr);
+        }
+
+        function verDocumentosPropietario(cdr) {
+            validarPropietario(cdr);
+        }
+    </script>
+</body>
+</html>

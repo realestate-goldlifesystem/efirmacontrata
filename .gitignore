@@ -1,0 +1,20 @@
+# Clasp credentials (never upload)
+.clasprc.json
+.clasp.json
+creds.json
+client_secret_*.json
+
+# Node modules
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Temp
+temp_clasp/
