@@ -1096,7 +1096,7 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
       // Revisando la definición (línea 1750 aprox), espera: (emailInquilino, nombreInquilino, codigoRegistro)
       // Pero si esa función no existe o cambió, usaremos la genérica si existe.
       // Asumimos que enviarEmailConfirmacionInquilino existe y tiene esa firma.
-      enviarEmailConfirmacionInquilino(datosFormulario.inquilino.email, datosFormulario.inquilino.nombre, codigoRegistro);
+      enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario);
     }
 
     return {
@@ -1447,6 +1447,35 @@ function buscarFilaPorCDR(cdr) {
   } catch (error) {
     Logger.log('Error buscando CDR: ' + error.toString());
     return null;
+  }
+}
+
+/**
+ * Actualizar campos del inquilino en la hoja
+ */
+function actualizarCamposInquilino(fila, datos) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) return;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    const mapCampos = {
+      'NOMBRE COMPLETO INQUILINO': datos.nombre,
+      'Documento de Identidad': datos.documento, // Ajusta según tu header exacto
+      'CORREO INQUILINO': datos.email,
+      'CELULAR INQUILINO': datos.celular
+    };
+
+    Object.entries(mapCampos).forEach(([header, valor]) => {
+      const colIndex = headers.indexOf(header) + 1;
+      if (colIndex > 0 && valor) {
+        sheet.getRange(fila, colIndex).setValue(valor);
+      }
+    });
+
+  } catch (error) {
+    Logger.log('Error actualizando campos inquilino: ' + error.toString());
   }
 }
 
