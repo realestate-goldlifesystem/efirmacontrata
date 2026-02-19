@@ -1,0 +1,17 @@
+# Ignorar carpetas de sistema y configuración local
+node_modules/
+.clasp.json
+.clasprc.json
+package.json
+package-lock.json
+creds.json
+.gitignore
+
+# Ignorar carpeta de legacy (respaldos locales)
+**_legacy/**
+_legacy
+
+# Ignorar documentación y artefactos
+*.md
+**/*.md
+.gemini/

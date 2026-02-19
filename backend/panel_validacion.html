@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -111,8 +112,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Stats Container */
@@ -704,8 +712,15 @@
         }
 
         @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         /* Loading Spinner */
@@ -720,7 +735,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Empty State */
@@ -770,6 +787,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <!-- Header Principal -->
@@ -1001,7 +1019,8 @@
                     </div>
                     <div class="correction-field">
                         <label>Observaciones específicas:</label>
-                        <textarea id="observacionesCorrecciones" rows="4" placeholder="Describa detalladamente qué debe corregirse..."></textarea>
+                        <textarea id="observacionesCorrecciones" rows="4"
+                            placeholder="Describa detalladamente qué debe corregirse..."></textarea>
                     </div>
                     <div class="corrections-list" id="correctionsList">
                         <!-- Tags de correcciones seleccionadas -->
@@ -1038,7 +1057,7 @@
         let documentosData = {};
 
         // Inicialización
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             cargarDatos();
             configurarEventListeners();
         });
@@ -1053,7 +1072,7 @@
         // Event Listeners
         function configurarEventListeners() {
             // Listener para selección múltiple de correcciones
-            document.getElementById('selectCorrecciones').addEventListener('change', function() {
+            document.getElementById('selectCorrecciones').addEventListener('change', function () {
                 actualizarTagsCorrecciones();
             });
         }
@@ -1063,7 +1082,7 @@
             // Ocultar todos los tabs
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            
+
             // Mostrar tab seleccionado
             document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
             btn.classList.add('active');
@@ -1072,11 +1091,11 @@
         // Cargar Registros de Inquilinos
         function cargarRegistrosInquilinos() {
             google.script.run
-                .withSuccessHandler(function(registros) {
+                .withSuccessHandler(function (registros) {
                     mostrarRegistrosInquilinos(registros);
                     actualizarEstadisticas('inquilinos', registros);
                 })
-                .withFailureHandler(function(error) {
+                .withFailureHandler(function (error) {
                     console.error('Error cargando inquilinos:', error);
                     mostrarToast('Error al cargar registros de inquilinos', 'error');
                 })
@@ -1086,11 +1105,11 @@
         // Cargar Registros de Propietarios
         function cargarRegistrosPropietarios() {
             google.script.run
-                .withSuccessHandler(function(registros) {
+                .withSuccessHandler(function (registros) {
                     mostrarRegistrosPropietarios(registros);
                     actualizarEstadisticas('propietarios', registros);
                 })
-                .withFailureHandler(function(error) {
+                .withFailureHandler(function (error) {
                     console.error('Error cargando propietarios:', error);
                     mostrarToast('Error al cargar registros de propietarios', 'error');
                 })
@@ -1099,14 +1118,119 @@
 
         // Cargar Contratos
         function cargarContratos() {
-            // Implementar carga de contratos
             console.log('Cargando contratos...');
+            const lista = document.getElementById('listaContratos');
+
+            // Mostrar loading
+            lista.innerHTML = `
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Buscando inmuebles aprobados...</p>
+                </div>
+            `;
+
+            // Llamada al backend
+            google.script.run
+                .withSuccessHandler(function (contratos) {
+                    mostrarListaContratos(contratos);
+                    actualizarContadoresContratos(contratos);
+                })
+                .withFailureHandler(function (error) {
+                    lista.innerHTML = `
+                        <div class="error-state">
+                            <span class="error-icon">❌</span>
+                            <p>Error cargando contratos: ${error.message}</p>
+                            <button onclick="cargarContratos()" class="btn-retry">Reintentar</button>
+                        </div>
+                    `;
+                })
+                .obtenerContratosPendientes(); // Necesitamos crear esta función en Backend
+        }
+
+        function mostrarListaContratos(contratos) {
+            const lista = document.getElementById('listaContratos');
+
+            if (!contratos || contratos.length === 0) {
+                lista.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📝</div>
+                        <h3>No hay contratos pendientes</h3>
+                        <p>Los inmuebles con "ESTUDIO APROBADO" aparecerán aquí.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            contratos.forEach(c => {
+                html += `
+                    <div class="registro-card contrato-card">
+                        <div class="registro-header">
+                            <h3>🏠 ${c.cdr}</h3>
+                            <span class="badge badge-ready">LISTO PARA GENERAR</span>
+                        </div>
+                        <div class="registro-info">
+                            <div class="info-row">
+                                <span class="info-label">Inquilino:</span>
+                                <span class="info-value">${c.inquilino}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Tipo Negocio:</span>
+                                <span class="info-value">${c.tipoNegocio}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Canon:</span>
+                                <span class="info-value">${c.canon}</span>
+                            </div>
+                        </div>
+                        <div class="registro-actions">
+                            <button class="btn btn-primary" onclick="generarContrato('${c.cdr}')">
+                                📄 Generar Contrato
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            lista.innerHTML = html;
+        }
+
+        function generarContrato(cdr) {
+            if (!confirm(`¿Estás seguro de generar el contrato para ${cdr}? Esto creará el PDF y notificará a las partes.`)) return;
+
+            // Mostrar estado de carga (bloqueo simple)
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Generando...';
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    if (res.success) {
+                        alert('✅ Contrato generado exitosamente!\nURL PDF: ' + res.urlPdf);
+                        cargarContratos(); // Recargar lista
+                    } else {
+                        alert('❌ Error: ' + res.message);
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    alert('❌ Error de red: ' + err.message);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                })
+                .generarContrato(cdr);
+        }
+
+        function actualizarContadoresContratos(contratos) {
+            document.getElementById('totalContratos').textContent = contratos ? contratos.length : 0;
+            // Otros contadores se actualizarían si tuviéramos estados distintos (Firmados, etc)
         }
 
         // Mostrar registros de inquilinos
         function mostrarRegistrosInquilinos(registros) {
             const lista = document.getElementById('listaInquilinos');
-            
+
             if (!registros || registros.length === 0) {
                 lista.innerHTML = `
                     <div class="empty-state">
@@ -1117,7 +1241,7 @@
                 `;
                 return;
             }
-            
+
             let html = '';
             registros.forEach(registro => {
                 const estado = obtenerEstadoRegistro(registro.detalles);
@@ -1182,14 +1306,14 @@
                     </div>
                 `;
             });
-            
+
             lista.innerHTML = html;
         }
 
         // Mostrar registros de propietarios
         function mostrarRegistrosPropietarios(registros) {
             const lista = document.getElementById('listaPropietarios');
-            
+
             if (!registros || registros.length === 0) {
                 lista.innerHTML = `
                     <div class="empty-state">
@@ -1200,7 +1324,7 @@
                 `;
                 return;
             }
-            
+
             let html = '';
             registros.forEach(registro => {
                 const estado = obtenerEstadoRegistro(registro.detalles);
@@ -1259,25 +1383,25 @@
                     </div>
                 `;
             });
-            
+
             lista.innerHTML = html;
         }
 
         // Función para copiar texto al portapapeles
         function copiarTexto(texto, btn) {
-            navigator.clipboard.writeText(texto).then(function() {
+            navigator.clipboard.writeText(texto).then(function () {
                 // Cambiar el botón temporalmente
                 const textoOriginal = btn.innerHTML;
                 btn.innerHTML = '✅ Copiado';
                 btn.classList.add('copied');
-                
+
                 setTimeout(() => {
                     btn.innerHTML = textoOriginal;
                     btn.classList.remove('copied');
                 }, 2000);
-                
+
                 mostrarToast(`Copiado: ${texto}`, 'success');
-            }).catch(function(err) {
+            }).catch(function (err) {
                 console.error('Error al copiar:', err);
                 mostrarToast('Error al copiar', 'error');
             });
@@ -1287,13 +1411,13 @@
         function validarInquilino(cdr) {
             registroActual = cdr;
             tipoActual = 'inquilino';
-            
+
             // Cargar documentos y mostrar modal
             google.script.run
-                .withSuccessHandler(function(data) {
+                .withSuccessHandler(function (data) {
                     mostrarModalValidacion(cdr, 'inquilino', data.documentos);
                 })
-                .withFailureHandler(function(error) {
+                .withFailureHandler(function (error) {
                     mostrarToast('Error al cargar documentos', 'error');
                 })
                 .obtenerDocumentosDelCDR(cdr);
@@ -1303,13 +1427,13 @@
         function validarPropietario(cdr) {
             registroActual = cdr;
             tipoActual = 'propietario';
-            
+
             // Cargar documentos y mostrar modal
             google.script.run
-                .withSuccessHandler(function(data) {
+                .withSuccessHandler(function (data) {
                     mostrarModalValidacion(cdr, 'propietario', data.documentos);
                 })
-                .withFailureHandler(function(error) {
+                .withFailureHandler(function (error) {
                     mostrarToast('Error al cargar documentos', 'error');
                 })
                 .obtenerDocumentosDelCDR(cdr);
@@ -1318,20 +1442,20 @@
         // Mostrar Modal de Validación
         function mostrarModalValidacion(cdr, tipo, documentos) {
             documentosData = documentos;
-            
+
             // Actualizar título
-            document.getElementById('modalTitle').textContent = 
+            document.getElementById('modalTitle').textContent =
                 `📋 Validación de ${tipo === 'inquilino' ? 'Inquilino' : 'Propietario'} - ${cdr}`;
-            
+
             // Mostrar información del registro
             mostrarInfoRegistro(cdr, tipo);
-            
+
             // Mostrar lista de documentos
             mostrarListaDocumentos(documentos[tipo] || []);
-            
+
             // Crear checklist según tipo
             crearChecklist(tipo);
-            
+
             // Mostrar modal
             document.getElementById('modalValidacion').classList.add('show');
         }
@@ -1360,14 +1484,14 @@
                     </div>
                 </div>
             `;
-            
+
             document.getElementById('infoRegistro').innerHTML = infoHtml;
         }
 
         // Mostrar lista de documentos
         function mostrarListaDocumentos(documentos) {
             let html = '';
-            
+
             documentos.forEach((doc, index) => {
                 html += `
                     <div class="doc-item ${index === 0 ? 'active' : ''}" 
@@ -1381,10 +1505,10 @@
                     </div>
                 `;
             });
-            
-            document.getElementById('listaDocumentos').innerHTML = html || 
+
+            document.getElementById('listaDocumentos').innerHTML = html ||
                 '<p style="text-align:center; color:#999;">No hay documentos</p>';
-            
+
             // Cargar preview del primer documento si existe
             if (documentos.length > 0) {
                 verPreview(documentos[0].url, documentos[0].tipo, documentos[0].nombre);
@@ -1394,7 +1518,7 @@
         // Ver preview del documento
         function verPreview(url, tipo, nombre, elemento) {
             documentoActual = { url, tipo, nombre };
-            
+
             // Actualizar selección activa
             if (elemento) {
                 document.querySelectorAll('.doc-item').forEach(item => {
@@ -1402,13 +1526,13 @@
                 });
                 elemento.classList.add('active');
             }
-            
+
             // Actualizar título del preview
             document.getElementById('previewTitle').textContent = nombre;
-            
+
             // Mostrar preview según tipo
             const previewContent = document.getElementById('previewContent');
-            
+
             if (tipo.includes('pdf')) {
                 previewContent.innerHTML = `
                     <iframe src="${url}" class="preview-iframe"></iframe>
@@ -1432,7 +1556,7 @@
         // Crear checklist de validación
         function crearChecklist(tipo) {
             let items = [];
-            
+
             if (tipo === 'inquilino') {
                 items = [
                     'Documento de identidad legible',
@@ -1452,7 +1576,7 @@
                     'Datos bancarios correctos'
                 ];
             }
-            
+
             let html = '';
             items.forEach((item, index) => {
                 html += `
@@ -1466,7 +1590,7 @@
                     </div>
                 `;
             });
-            
+
             document.getElementById('checklistGrid').innerHTML = html;
         }
 
@@ -1474,13 +1598,13 @@
         function toggleCheck(index) {
             const item = document.getElementById(`check-${index}`);
             const checkbox = document.getElementById(`checkbox-${index}`);
-            
+
             if (checkbox.checked) {
                 item.classList.add('checked');
             } else {
                 item.classList.remove('checked');
             }
-            
+
             verificarCompletitud();
         }
 
@@ -1488,7 +1612,7 @@
         function verificarCompletitud() {
             const checkboxes = document.querySelectorAll('.checklist-checkbox');
             const todosChecked = Array.from(checkboxes).every(cb => cb.checked);
-            
+
             // Habilitar/deshabilitar botón de aprobar
             const btnAprobar = document.querySelector('.btn-success');
             if (btnAprobar) {
@@ -1506,7 +1630,7 @@
             const select = document.getElementById('selectCorrecciones');
             const container = document.getElementById('correctionsList');
             const selected = Array.from(select.selectedOptions);
-            
+
             let html = '';
             selected.forEach(option => {
                 html += `
@@ -1516,7 +1640,7 @@
                     </span>
                 `;
             });
-            
+
             container.innerHTML = html;
         }
 
@@ -1533,21 +1657,21 @@
         // Aprobar documentos
         function aprobarDocumentos() {
             if (!confirm('¿Está seguro de aprobar todos los documentos?')) return;
-            
+
             const datos = {
                 cdr: registroActual,
                 tipo: tipoActual,
                 estado: 'aprobado',
                 observaciones: ''
             };
-            
+
             google.script.run
-                .withSuccessHandler(function(result) {
+                .withSuccessHandler(function (result) {
                     mostrarToast('✅ Documentos aprobados exitosamente', 'success');
                     cerrarModal('modalValidacion');
                     cargarDatos(); // Recargar datos
                 })
-                .withFailureHandler(function(error) {
+                .withFailureHandler(function (error) {
                     mostrarToast('Error al aprobar documentos', 'error');
                 })
                 .procesarValidacion(datos);
@@ -1558,14 +1682,14 @@
             const select = document.getElementById('selectCorrecciones');
             const observaciones = document.getElementById('observacionesCorrecciones').value;
             const selected = Array.from(select.selectedOptions);
-            
+
             if (selected.length === 0 || !observaciones) {
                 mostrarToast('Seleccione los documentos y agregue observaciones', 'warning');
                 return;
             }
-            
+
             if (!confirm('¿Enviar solicitud de correcciones?')) return;
-            
+
             const datos = {
                 cdr: registroActual,
                 tipo: tipoActual,
@@ -1573,14 +1697,14 @@
                 documentosCorregir: selected.map(opt => opt.value),
                 observaciones: observaciones
             };
-            
+
             google.script.run
-                .withSuccessHandler(function(result) {
+                .withSuccessHandler(function (result) {
                     mostrarToast('📝 Correcciones solicitadas', 'warning');
                     cerrarModal('modalValidacion');
                     cargarDatos();
                 })
-                .withFailureHandler(function(error) {
+                .withFailureHandler(function (error) {
                     mostrarToast('Error al solicitar correcciones', 'error');
                 })
                 .enviarCorrecciones(datos);
@@ -1590,23 +1714,23 @@
         function rechazarDocumentos() {
             const motivo = prompt('Ingrese el motivo del rechazo:');
             if (!motivo) return;
-            
+
             if (!confirm('¿Está seguro de rechazar estos documentos?')) return;
-            
+
             const datos = {
                 cdr: registroActual,
                 tipo: tipoActual,
                 estado: 'rechazado',
                 observaciones: motivo
             };
-            
+
             google.script.run
-                .withSuccessHandler(function(result) {
+                .withSuccessHandler(function (result) {
                     mostrarToast('❌ Documentos rechazados', 'error');
                     cerrarModal('modalValidacion');
                     cargarDatos();
                 })
-                .withFailureHandler(function(error) {
+                .withFailureHandler(function (error) {
                     mostrarToast('Error al rechazar documentos', 'error');
                 })
                 .procesarValidacion(datos);
@@ -1642,7 +1766,7 @@
 
         function obtenerEstadoRegistro(detalles) {
             if (!detalles) return { texto: 'NUEVO', clase: 'warning' };
-            
+
             if (detalles.includes('aprobado') || detalles.includes('Aprobado')) {
                 return { texto: 'APROBADO', clase: 'success' };
             } else if (detalles.includes('corrección') || detalles.includes('Corrección')) {
@@ -1656,17 +1780,17 @@
 
         function actualizarEstadisticas(tipo, registros) {
             if (!registros) return;
-            
+
             const total = registros.length;
             let aprobados = 0;
             let correcciones = 0;
-            
+
             registros.forEach(registro => {
                 const estado = obtenerEstadoRegistro(registro.detalles);
                 if (estado.texto === 'APROBADO') aprobados++;
                 if (estado.texto === 'EN CORRECCIÓN') correcciones++;
             });
-            
+
             if (tipo === 'inquilinos') {
                 document.getElementById('totalInquilinos').textContent = total;
                 document.getElementById('aprobadosInquilinos').textContent = aprobados;
@@ -1689,10 +1813,10 @@
         function mostrarToast(mensaje, tipo = 'info') {
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toastMessage');
-            
+
             toastMessage.textContent = mensaje;
             toast.className = `toast show ${tipo}`;
-            
+
             setTimeout(() => {
                 toast.classList.remove('show');
             }, 3000);
@@ -1722,4 +1846,5 @@
         }
     </script>
 </body>
+
 </html>

@@ -921,6 +921,9 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
 /**
  * Verificar estado del link
  */
+/**
+ * Verificar estado del link y determinar acción
+ */
 function verificarEstadoLink(cdr, tipo) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
@@ -930,37 +933,60 @@ function verificarEstadoLink(cdr, tipo) {
       return {
         success: false,
         activo: false,
-        mensaje: 'Código de registro no válido'
+        mensaje: 'Código de registro no encontrado',
+        status: 'diligenciado'
       };
     }
 
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
-    const detalles = sheet.getRange(fila, detallesCol).getValue();
+    const detalles = sheet.getRange(fila, detallesCol).getValue().toString();
 
-    // Verificar según el tipo
+    let status = 'pendiente';
+    let mensaje = 'Formulario disponible';
+    let redirectUrl = '';
+
+    // Lógica de redirección base
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+
     if (tipo === 'inquilino') {
+      redirectUrl = `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr)}`;
+
       if (detalles.includes('Formulario del inquilino diligenciado')) {
-        return {
-          success: true,
-          activo: false,
-          mensaje: 'Este formulario ya fue completado'
-        };
+        status = 'diligenciado';
+        mensaje = 'Ya has enviado tu formulario. Estamos validando tus documentos.';
+      } else if (detalles.includes('Corrección solicitada al inquilino')) {
+        status = 'correccion';
+        mensaje = 'Se requieren correcciones en tu formulario.';
+        redirectUrl += '&modo=correccion';
+      } else if (detalles.includes('Documentos del inquilino aprobados')) {
+        status = 'aprobado';
+        mensaje = 'Tus documentos ya han sido aprobados. El proceso continúa con el propietario.';
       }
+
     } else if (tipo === 'propietario') {
+      redirectUrl = `${baseUrl}/formulario-propietario.html?cdr=${encodeURIComponent(cdr)}`;
+
       if (detalles.includes('Formulario del propietario diligenciado')) {
-        return {
-          success: true,
-          activo: false,
-          mensaje: 'Este formulario ya fue completado'
-        };
+        status = 'diligenciado';
+        mensaje = 'Ya has enviado tu formulario. Estamos validando tus documentos.';
+      } else if (detalles.includes('Corrección solicitada al propietario')) {
+        status = 'correccion';
+        mensaje = 'Se requieren correcciones en tu formulario.';
+        redirectUrl += '&modo=correccion';
+      } else if (detalles.includes('Documentos completos') || detalles.includes('Listo para generar contrato')) {
+        status = 'aprobado';
+        mensaje = 'Tus documentos han sido aprobados y el contrato está en proceso.';
       }
     }
 
     return {
       success: true,
-      activo: true,
-      mensaje: 'Link activo y válido'
+      activo: (status === 'pendiente' || status === 'correccion'),
+      status: status,
+      mensaje: mensaje,
+      redirectUrl: redirectUrl,
+      tipo: tipo
     };
 
   } catch (error) {
@@ -968,7 +994,8 @@ function verificarEstadoLink(cdr, tipo) {
     return {
       success: false,
       activo: false,
-      mensaje: 'Error al verificar el link'
+      mensaje: 'Error técnico al verificar el link',
+      error: error.message
     };
   }
 }
@@ -1874,7 +1901,7 @@ function enviarEmailPropietario(cdr) {
     }
 
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlFormulario = `${baseUrl}/selector.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}`;
+    const urlFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}`;
 
     const asunto = `Documentación requerida - Contrato de arrendamiento ${cdr}`;
 
@@ -2004,7 +2031,7 @@ function enviarEmailCorreccionInquilino(cdr, observaciones) {
     const nombre = obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO');
 
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlCorreccion = `${baseUrl}/selector.html?action=formulario-inquilino&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
+    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
 
     const asunto = `Corrección requerida - Documentos de arrendamiento ${cdr}`;
 
@@ -2075,7 +2102,7 @@ function enviarEmailCorreccionPropietario(cdr, observaciones) {
     const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
 
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlCorreccion = `${baseUrl}/selector.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
+    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
 
     const asunto = `Corrección requerida - Documentos del propietario ${cdr}`;
 
@@ -2374,7 +2401,7 @@ function enviarEmailPropietario(cdr) {
   const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
 
   const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-  const url = `${baseUrl}/selector.html?action=formulario-propietario&cdr=${cdr}`;
+  const url = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${cdr}`;
 
   const asunto = "Formulario Propietario - E-FirmaContrata";
   const cuerpoHTML = `
@@ -2419,7 +2446,7 @@ function enviarEmailCorreccionPropietario(cdr, observaciones) {
   const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
 
   const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-  const url = `${baseUrl}/selector.html?action=formulario-propietario&cdr=${cdr}&modo=correccion`;
+  const url = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${cdr}&modo=correccion`;
 
   const asunto = "Corrección Requerida - E-FirmaContrata";
   const cuerpoHTML = `

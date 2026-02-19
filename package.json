@@ -1,0 +1,25 @@
+{
+  "name": "real-estate-(apps-script)",
+  "version": "1.0.0",
+  "description": "Sistema de gestión inmobiliaria desarrollado con Google Apps Script, vinculado a Google Sheets.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/realestate-goldlifesystem/efirmacontrata.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/realestate-goldlifesystem/efirmacontrata/issues"
+  },
+  "homepage": "https://github.com/realestate-goldlifesystem/efirmacontrata#readme",
+  "dependencies": {
+    "googleapis": "^171.4.0",
+    "pdf-parse": "^2.4.5"
+  }
+}

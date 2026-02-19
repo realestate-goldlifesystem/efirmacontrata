@@ -1,0 +1,23 @@
+node_modules/**
+**/node_modules/**
+.git/
+.gitignore
+.clasp.json
+.claspignore
+package.json
+package-lock.json
+README.md
+*.md
+*.zip
+backend_backup.zip
+backend_legacy_backup/
+content-download/
+temp_check/
+temp_clasp/
+backend_ready/
+deployment_fix/
+EfirmaContrata - Gold Life System.pdf
+simple_auth_backup.js
+sheets-helper.js
+apps-script.json
+_legacy/

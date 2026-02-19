@@ -9,7 +9,7 @@ const ESTADOS_CONFIG = {
   HOJA_PRINCIPAL: '1.1 - INMUEBLES REGISTRADOS',
   HOJA_LOG: 'LOG_VALIDACIONES',
   VERSION: 'v9.4-produccion',
-  
+
   // Columnas principales
   COLUMNAS: {
     CDR: 'CODIGO DE REGISTRO',
@@ -27,6 +27,7 @@ const ESTADOS_SISTEMA = {
   ACTUALIZAR: 'ACTUALIZAR',
   ACTIVAR: 'ACTIVAR',
   PUBLICADO: 'PUBLICADO',
+  PUBLICADO_ARRIENDO: 'PUBLICADO ARRIENDO',
   PUBLICADO_VENTA: 'PUBLICADO VENTA',
   PUBLICADO_VENTA_RENTA: 'PUBLICADO VENTA/RENTA',
   ESTUDIO_APROBADO: 'ESTUDIO APROBADO',
@@ -54,6 +55,9 @@ const MENSAJES_ESTADO = {
   ACTUALIZAR: '✅ Publicación actualizada con éxito.',
   ACTIVAR: '✅ Publicación activada con éxito.',
   PUBLICADO: '🟢 Publicación pendiente de estudio y aprobación.',
+  PUBLICADO_ARRIENDO: '🟢 Publicación pendiente de estudio y aprobación (Arriendo/Admin).',
+  PUBLICADO_CORRETAJE: '🟢 Publicación pendiente de estudio y aprobación (Corretaje).',
+  PUBLICADO_ADMINISTRACION: '🟢 Publicación pendiente de estudio y aprobación (Administración).',
   PUBLICADO_VENTA: '🟢 Publicación pendiente de propuesta de compra.',
   PUBLICADO_VENTA_RENTA: '🟢 Publicación pendiente de propuesta de compra o renta.',
   ESTUDIO_APROBADO: '📄 Solicitar documentos para contrato.',
@@ -109,10 +113,10 @@ function findRowByCDR(cdr) {
   const sheet = getSheet();
   const cdrCol = getColumnIndex(sheet, ESTADOS_CONFIG.COLUMNAS.CDR);
   if (cdrCol === -1) return -1;
-  
+
   const lastRow = sheet.getLastRow();
   const values = sheet.getRange(2, cdrCol, lastRow - 1, 1).getValues();
-  
+
   for (let i = 0; i < values.length; i++) {
     if (values[i][0] && values[i][0].toString().trim() === cdr.trim()) {
       return i + 2;
@@ -141,10 +145,10 @@ function onEditEstados(e) {
     if (col !== estadoColIndex) return;
 
     const estadoNuevo = e.value;
-    
+
     // Procesar cambio de estado
     procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesColIndex);
-    
+
   } catch (err) {
     logError('onEditEstados', err.message);
   }
@@ -165,18 +169,18 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
     case ESTADOS_SISTEMA.ACTIVAR:
       // Mostrar mensaje inicial
       sheet.getRange(row, detallesColIndex).setValue(
-        estadoNuevo === ESTADOS_SISTEMA.ACTUALIZAR ? 
-        MENSAJES_ESTADO.ACTUALIZAR : 
-        MENSAJES_ESTADO.ACTIVAR
+        estadoNuevo === ESTADOS_SISTEMA.ACTUALIZAR ?
+          MENSAJES_ESTADO.ACTUALIZAR :
+          MENSAJES_ESTADO.ACTIVAR
       );
       SpreadsheetApp.flush();
       Utilities.sleep(2000);
-      
+
       // Verificar tipo de negocio
       const tipoNegocioIndex = getColumnIndex(sheet, ESTADOS_CONFIG.COLUMNAS.TIPO_NEGOCIO);
       const tipoNegocio = sheet.getRange(row, tipoNegocioIndex).getValue();
       const tipoNegocioNormalizado = tipoNegocio ? tipoNegocio.toString().trim().toLowerCase() : '';
-      
+
       // Cambiar estado según el tipo de negocio
       if (tipoNegocioNormalizado === 'vendi-renta' || tipoNegocioNormalizado === 'admi-venta') {
         sheet.getRange(row, estadoColIndex).setValue(ESTADOS_SISTEMA.PUBLICADO_VENTA_RENTA);
@@ -184,7 +188,16 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
       } else if (tipoNegocioNormalizado === 'venta') {
         sheet.getRange(row, estadoColIndex).setValue(ESTADOS_SISTEMA.PUBLICADO_VENTA);
         sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.PUBLICADO_VENTA);
+      } else if (tipoNegocioNormalizado === 'corretaje') {
+        // Nueva lógica para Corretaje
+        sheet.getRange(row, estadoColIndex).setValue(ESTADOS_SISTEMA.PUBLICADO_ARRIENDO);
+        sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.PUBLICADO_CORRETAJE);
+      } else if (tipoNegocioNormalizado === 'administración') {
+        // Nueva lógica para Administración
+        sheet.getRange(row, estadoColIndex).setValue(ESTADOS_SISTEMA.PUBLICADO_ARRIENDO);
+        sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.PUBLICADO_ADMINISTRACION);
       } else {
+        // Arriendo (y otros no especificados)
         sheet.getRange(row, estadoColIndex).setValue(ESTADOS_SISTEMA.PUBLICADO);
         sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.PUBLICADO);
       }
@@ -192,6 +205,10 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
 
     case ESTADOS_SISTEMA.PUBLICADO:
       sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.PUBLICADO);
+      break;
+
+    case ESTADOS_SISTEMA.PUBLICADO_ARRIENDO:
+      sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.PUBLICADO_ARRIENDO);
       break;
 
     case ESTADOS_SISTEMA.PUBLICADO_VENTA:
@@ -204,8 +221,15 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
 
     case ESTADOS_SISTEMA.ESTUDIO_APROBADO:
       sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.ESTUDIO_APROBADO);
-      // Aquí se puede llamar a función del gestor documental si es necesario
-      mostrarPopupEmailInquilino(sheet, row);
+      const tipoNegocioColIndex = getColumnIndex(sheet, ESTADOS_CONFIG.COLUMNAS.TIPO_NEGOCIO);
+      const tipoNegocioVal = sheet.getRange(row, tipoNegocioColIndex).getValue();
+      const tipoNegocioNorm = tipoNegocioVal ? tipoNegocioVal.toString().trim().toUpperCase() : '';
+
+      const tiposPermitidos = ['ARRIENDO', 'VENDI-RENTA', 'ADMI-VENTA'];
+
+      if (tiposPermitidos.includes(tipoNegocioNorm)) {
+        mostrarPopupEmailInquilino(sheet, row);
+      }
       break;
 
     case ESTADOS_SISTEMA.BORRADOR_ENVIADO:
@@ -261,12 +285,12 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
       if (tipoNegocioPolizaNormalizado === 'corretaje' || tipoNegocioPolizaNormalizado === 'vendi-renta') {
         sheet.getRange(row, estadoColIndex).setValue(ESTADOS_SISTEMA.INACTIVO);
         sheet.getRange(row, detallesColIndex).setValue('🚫 Inmueble inactivado (Arrendado por corretaje).');
-      } 
+      }
       // Administración y Admi-Venta → ADMINISTRANDO
       else if (tipoNegocioPolizaNormalizado === 'administración' || tipoNegocioPolizaNormalizado === 'admi-venta') {
         sheet.getRange(row, estadoColIndex).setValue(ESTADOS_SISTEMA.ADMINISTRANDO);
         sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.ADMINISTRANDO);
-      } 
+      }
       else {
         sheet.getRange(row, detallesColIndex).setValue('📝 Revisar tipo de negocio para continuar.');
       }
@@ -278,12 +302,12 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
       const tipoNegocioVendidoNormalizado = tipoNegocioVendido ? tipoNegocioVendido.toString().trim().toLowerCase() : '';
 
       // Venta, Vendi-Renta y Admi-Venta → INACTIVO (Vendido)
-      if (tipoNegocioVendidoNormalizado === 'venta' || 
-          tipoNegocioVendidoNormalizado === 'vendi-renta' || 
-          tipoNegocioVendidoNormalizado === 'admi-venta') {
+      if (tipoNegocioVendidoNormalizado === 'venta' ||
+        tipoNegocioVendidoNormalizado === 'vendi-renta' ||
+        tipoNegocioVendidoNormalizado === 'admi-venta') {
         sheet.getRange(row, estadoColIndex).setValue(ESTADOS_SISTEMA.INACTIVO);
         sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.VENDIDO);
-      } 
+      }
       // Corretaje y Administración → Revisar
       else {
         sheet.getRange(row, detallesColIndex).setValue('📝 Revisar tipo de negocio para continuar.');
@@ -302,21 +326,67 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
       sheet.getRange(row, detallesColIndex).setValue('ℹ️ Estado no reconocido. Verifica.');
       break;
   }
-  
+
   // Log del cambio
   logCambioEstado(row, estadoNuevo);
 }
 
 // ==========================================
-// FUNCIÓN POPUP (puede integrarse con gestor documental)
+// FUNCIÓN POPUP - Definida en GESTOR DE DOCUMENTOS.js
+// mostrarPopupEmailInquilino(sheetParam, filaParam) vive allí
+// para evitar conflicto de nombres en el scope global de Apps Script.
 // ==========================================
 
-function mostrarPopupEmailInquilino(sheet, row) {
-  // Esta función puede disparar el flujo documental
-  // Por ahora solo registra en log
-  const cdr = safeGetValue(sheet, row, ESTADOS_CONFIG.COLUMNAS.CDR);
-  logAccion(cdr, 'Estado ESTUDIO APROBADO - Listo para solicitar documentos');
+// ==========================================
+// FUNCIONES BACKEND PARA EL POPUP
+// ==========================================
+
+function obtenerDatosRegistroActual() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const rowStr = props.getProperty('currentRow');
+
+    const sheet = getSheet();
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    let row;
+    if (rowStr) {
+      row = parseInt(rowStr);
+    } else {
+      const range = sheet.getActiveRange();
+      if (!range) throw new Error('No hay rango activo y no se encontraron propiedades guardadas');
+      row = range.getRow();
+    }
+
+    const cdr = safeGetValue(sheet, row, ESTADOS_CONFIG.COLUMNAS.CDR);
+    // Ajustar nombre de columna si es diferente, usando getColumnIndex si es necesario
+    const colDireccion = getColumnIndex(sheet, 'DIRECCION DEL INMUEBLE');
+    const direccion = colDireccion > 0 ? sheet.getRange(row, colDireccion).getValue() : 'Dirección no especificada';
+
+    const tipoNegocio = safeGetValue(sheet, row, ESTADOS_CONFIG.COLUMNAS.TIPO_NEGOCIO);
+
+    // Verificar si ya se envió antes
+    const detalles = safeGetValue(sheet, row, ESTADOS_CONFIG.COLUMNAS.DETALLES);
+    const yaEnviado = detalles && detalles.toString().includes('Formulario enviado');
+
+    return {
+      success: true,
+      cdr: cdr,
+      direccion: direccion,
+      tipoNegocio: tipoNegocio,
+      yaEnviado: yaEnviado
+    };
+
+  } catch (e) {
+    logError('obtenerDatosRegistroActual', e.message);
+    return {
+      success: false,
+      message: e.message
+    };
+  }
 }
+
+// La implementación real de este proceso está en GESTOR DE DOCUMENTOS.js
 
 // ==========================================
 // FUNCIONES DE LOG
@@ -336,14 +406,14 @@ function logAccion(cdr, accion) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let logSheet = ss.getSheetByName(ESTADOS_CONFIG.HOJA_LOG);
-    
+
     if (!logSheet) {
       logSheet = ss.insertSheet(ESTADOS_CONFIG.HOJA_LOG);
       logSheet.getRange(1, 1, 1, 5).setValues([
         ['TIMESTAMP', 'CDR', 'ACCION', 'USUARIO', 'VERSION']
       ]);
     }
-    
+
     logSheet.appendRow([
       new Date(),
       cdr,
@@ -372,11 +442,11 @@ function logError(funcion, mensaje) {
 function initEstados() {
   // Verificar que las hojas existan
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
+
   if (!ss.getSheetByName(ESTADOS_CONFIG.HOJA_PRINCIPAL)) {
     throw new Error('Hoja principal no encontrada: ' + ESTADOS_CONFIG.HOJA_PRINCIPAL);
   }
-  
+
   // Crear hoja de log si no existe
   if (!ss.getSheetByName(ESTADOS_CONFIG.HOJA_LOG)) {
     const logSheet = ss.insertSheet(ESTADOS_CONFIG.HOJA_LOG);
@@ -384,7 +454,7 @@ function initEstados() {
       ['TIMESTAMP', 'CDR', 'ACCION', 'USUARIO', 'VERSION']
     ]);
   }
-  
+
   console.log('✅ Sistema de Estados iniciado - ' + ESTADOS_CONFIG.VERSION);
 }
 
