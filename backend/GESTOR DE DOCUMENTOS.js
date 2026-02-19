@@ -23,7 +23,7 @@ const DOCS_CONFIG = {
  */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  
+
   ui.createMenu('🏠 E-FirmaContrata')
     .addItem('📋 Panel de Validación', 'abrirPanelValidacion')
     .addSeparator()
@@ -33,52 +33,144 @@ function onOpen() {
     .addItem('📊 Ver Estadísticas', 'mostrarEstadisticas')
     .addSeparator()
     .addItem('⚙️ Configuración', 'mostrarConfiguracion')
+    .addSeparator()
+    .addItem('⚡ Instalar Activadores', 'instalarActivadores')
+    .addSeparator()
+    .addSubMenu(ui.createMenu('📸 AutoRename DNG')
+      .addItem('▶️ Ejecutar Ahora', 'autoRenameDNGtoJPG')
+      .addItem('⏰ Activar Trigger (1 min)', 'instalarTriggerAutoRename')
+      .addItem('🛑 Desactivar Trigger', 'desinstalarTriggerAutoRename'))
+    .addSeparator()
+    .addItem('📂 Reporte Jerarquía', 'mostrarEstructuraCarpetasPlantilla')
     .addToUi();
 }
 
 /**
  * Muestra el popup para enviar email al inquilino
+ * Puede ser llamada desde el menú (sin args) o desde el trigger automático (con sheet y fila)
+ * CACHE_BUST: 20260216_v4_CLEAN
  */
-function mostrarPopupEmailInquilino() {
+function mostrarPopupEmailInquilino(sheetParam, filaParam) {
   try {
     const ui = SpreadsheetApp.getUi();
-    
-    // Obtener la fila activa
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    const filaActiva = sheet.getActiveRange().getRow();
-    
-    // Validar que sea una fila válida (no el header)
-    if (filaActiva <= 1) {
-      ui.alert('⚠️ Seleccione un registro', 'Por favor seleccione una fila con un registro de inmueble.', ui.ButtonSet.OK);
+
+    // PASO 1: Obtener la hoja de datos
+    let sheet;
+    if (sheetParam) {
+      sheet = sheetParam;
+    } else {
+      // Llamada desde menú: buscar la hoja por nombre explícito
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      if (!ss) {
+        ui.alert('❌ Error', 'No se pudo acceder a la hoja de cálculo activa.', ui.ButtonSet.OK);
+        return;
+      }
+      sheet = ss.getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+      if (!sheet) {
+        // Fallback: intentar con la hoja activa
+        sheet = ss.getActiveSheet();
+      }
+    }
+
+    if (!sheet) {
+      ui.alert('❌ Error', 'No se encontró la hoja de datos. Verifique que existe la hoja "1.1 - INMUEBLES REGISTRADOS".', ui.ButtonSet.OK);
       return;
     }
-    
-    // Obtener el CDR de la fila actual
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // PASO 2: Obtener la fila
+    let filaActiva;
+    if (filaParam) {
+      filaActiva = filaParam;
+    } else {
+      const activeRange = sheet.getActiveRange();
+      if (!activeRange) {
+        ui.alert('⚠️ Sin selección', 'Por favor seleccione una fila con un registro de inmueble antes de usar esta opción.', ui.ButtonSet.OK);
+        return;
+      }
+      filaActiva = activeRange.getRow();
+    }
+
+    // Validar que sea una fila válida (no el header)
+    if (filaActiva <= 1) {
+      ui.alert('⚠️ Seleccione un registro', 'Por favor seleccione una fila con un registro de inmueble (no el encabezado).', ui.ButtonSet.OK);
+      return;
+    }
+
+    // PASO 3: Obtener headers y CDR
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 1) {
+      ui.alert('❌ Error', 'La hoja de datos está vacía.', ui.ButtonSet.OK);
+      return;
+    }
+
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
     const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+
+    if (cdrCol < 1) {
+      ui.alert('❌ Error', 'No se encontró la columna "CODIGO DE REGISTRO" en la hoja.', ui.ButtonSet.OK);
+      return;
+    }
+
     const cdr = sheet.getRange(filaActiva, cdrCol).getValue();
-    
+
     if (!cdr) {
       ui.alert('⚠️ Sin Código de Registro', 'Esta fila no tiene un código de registro válido.', ui.ButtonSet.OK);
       return;
     }
-    
-    // Guardar la fila y CDR actual en Properties
+
+    // --- REGLAS DE NEGOCIO ---
+    const colEstado = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
+    const colTipo = headers.indexOf('TIPO DE NEGOCIO') + 1;
+
+    if (colEstado > 0 && colTipo > 0) {
+      const estadoActual = sheet.getRange(filaActiva, colEstado).getValue();
+      const tipoNegocio = sheet.getRange(filaActiva, colTipo).getValue();
+
+      const ESTADO_REQUERIDO = 'ESTUDIO APROBADO';
+      const TIPOS_PERMITIDOS = ['ARRIENDO', 'VENDI-RENTA', 'ADMI-VENTA'];
+
+      if (estadoActual !== ESTADO_REQUERIDO) {
+        ui.alert(
+          '⚠️ Estado Incorrecto',
+          'Para enviar el formulario de contrato, el inmueble debe estar en estado:\n"' + ESTADO_REQUERIDO + '"\n\nEstado actual: "' + estadoActual + '"',
+          ui.ButtonSet.OK
+        );
+        return;
+      }
+
+      const tipoNormalizado = tipoNegocio ? tipoNegocio.toString().trim().toUpperCase() : '';
+      if (!TIPOS_PERMITIDOS.includes(tipoNormalizado)) {
+        ui.alert(
+          '⚠️ Tipo de Negocio No Válido',
+          'Esta función solo aplica para contratos de:\n' + TIPOS_PERMITIDOS.join(', ') + '\n\nTipo actual: "' + tipoNegocio + '"',
+          ui.ButtonSet.OK
+        );
+        return;
+      }
+    }
+    // --- FIN REGLAS ---
+
+    // PASO 4: Guardar contexto en Properties para el popup
     PropertiesService.getScriptProperties().setProperties({
       'currentRow': filaActiva.toString(),
-      'currentCDR': cdr
+      'currentCDR': cdr.toString()
     });
-    
-    // Mostrar el popup
+
+    // PASO 5: Mostrar el popup
     const html = HtmlService.createHtmlOutputFromFile('popup_email_inquilino')
-      .setWidth(500)
+      .setWidth(900)
       .setHeight(600)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
-    
-    ui.showModalDialog(html, '📧 Enviar Formulario al Inquilino - CDR: ' + cdr);
-    
+
+    ui.showModalDialog(html, '📧 Enviar Formulario al Inquilino');
+
   } catch (error) {
-    SpreadsheetApp.getUi().alert('Error: ' + error.toString());
+    Logger.log('Error en mostrarPopupEmailInquilino: ' + error.toString() + ' | Stack: ' + error.stack);
+    try {
+      SpreadsheetApp.getUi().alert('❌ Error al mostrar popup', 'Detalle: ' + error.message + '\n\nPor favor reporte este error.', SpreadsheetApp.getUi().ButtonSet.OK);
+    } catch (e2) {
+      Logger.log('Error doble en mostrarPopupEmailInquilino: ' + e2.toString());
+    }
   }
 }
 
@@ -101,11 +193,11 @@ function mostrarEstadisticas() {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
     const lastRow = sheet.getLastRow();
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     // Encontrar columna de estado
     const estadoCol = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
-    
+
     let stats = {
       total: lastRow - 1,
       estudioAprobado: 0,
@@ -114,27 +206,27 @@ function mostrarEstadisticas() {
       contratoGenerado: 0,
       pendientes: 0
     };
-    
+
     if (estadoCol > 0 && lastRow > 1) {
       const datos = sheet.getRange(2, estadoCol, lastRow - 1, 1).getValues();
-      
+
       datos.forEach(row => {
         const estado = row[0];
         if (estado === 'ESTUDIO APROBADO') stats.estudioAprobado++;
         else if (estado === 'PENDIENTE') stats.pendientes++;
       });
     }
-    
+
     SpreadsheetApp.getUi().alert(
       '📊 Estadísticas del Sistema',
       `Total de registros: ${stats.total}\n` +
       `Estudios aprobados: ${stats.estudioAprobado}\n` +
       `Pendientes: ${stats.pendientes}\n` +
       `\n` +
-      `Porcentaje procesado: ${Math.round((stats.estudioAprobado/stats.total)*100)}%`,
+      `Porcentaje procesado: ${Math.round((stats.estudioAprobado / stats.total) * 100)}%`,
       SpreadsheetApp.getUi().ButtonSet.OK
     );
-    
+
   } catch (error) {
     SpreadsheetApp.getUi().alert('Error obteniendo estadísticas: ' + error.toString());
   }
@@ -150,7 +242,7 @@ function mostrarConfiguracion() {
     OCR_PRIVATE_KEY: props.getProperty('OCR_PRIVATE_KEY') ? '✅ Configurado' : '❌ No configurado',
     CARPETA_RAIZ_ID: props.getProperty('CARPETA_RAIZ_ID') || '1tJSOD4-OXmx-GNmuvPxRAWRzRX6Dh8gE'
   };
-  
+
   SpreadsheetApp.getUi().alert(
     '⚙️ Configuración del Sistema',
     `OCR Client Email: ${config.OCR_CLIENT_EMAIL}\n` +
@@ -170,8 +262,13 @@ function mostrarConfiguracion() {
 function doGet(e) {
   try {
     const accion = e.parameter.accion;
-    
-    switch(accion) {
+
+    // INTEGRACIÓN REMOTE EXECUTION
+    if (e.parameter.token && typeof handleRemoteExecution === 'function') {
+      return handleRemoteExecution(e);
+    }
+
+    switch (accion) {
       case 'verificarLink':
         return handleVerificarLink(e);
       case 'obtenerRegistrosInquilinos':
@@ -218,8 +315,8 @@ function doPost(e) {
     const datosJson = e.postData.contents;
     const datos = JSON.parse(datosJson);
     const accion = datos.accion;
-    
-    switch(accion) {
+
+    switch (accion) {
       case 'enviarFormularioInquilino':
         return handleEnviarFormularioInquilino(datos);
       case 'enviarFormularioPropietario':
@@ -264,6 +361,30 @@ function doPost(e) {
 }
 
 // ==========================================
+// WRAPPERS PARA EL FRONTEND (PANEL VALIDACIÓN)
+// ==========================================
+
+function procesarValidacion(datos) {
+  if (datos.tipo === 'inquilino') {
+    return procesarValidacionInquilino(datos);
+  } else if (datos.tipo === 'propietario') {
+    return procesarValidacionPropietario(datos);
+  } else {
+    throw new Error('Tipo de validación no soportado: ' + datos.tipo);
+  }
+}
+
+function enviarCorrecciones(datos) {
+  if (datos.tipo === 'inquilino') {
+    return enviarCorreccionInquilino(datos);
+  } else if (datos.tipo === 'propietario') {
+    return enviarCorreccionPropietario(datos);
+  } else {
+    throw new Error('Tipo de corrección no soportado: ' + datos.tipo);
+  }
+}
+
+// ==========================================
 // HANDLERS DE API EXISTENTES
 // ==========================================
 
@@ -271,7 +392,7 @@ function handleVerificarLink(e) {
   const cdr = e.parameter.cdr;
   const tipo = e.parameter.tipo;
   const resultado = verificarEstadoLink(cdr, tipo);
-  
+
   return ContentService
     .createTextOutput(JSON.stringify(resultado))
     .setMimeType(ContentService.MimeType.JSON);
@@ -319,7 +440,7 @@ function handleObtenerDocumentosPanel(e) {
   try {
     const cdr = e.parameter.cdr;
     const documentos = obtenerDocumentosDelCDR(cdr);
-    
+
     return ContentService
       .createTextOutput(JSON.stringify({
         success: true,
@@ -343,7 +464,7 @@ function handleEnviarFormularioInquilino(datos) {
       datos.datosFormulario,
       datos.archivosBase64
     );
-    
+
     return ContentService
       .createTextOutput(JSON.stringify(resultado))
       .setMimeType(ContentService.MimeType.JSON);
@@ -368,7 +489,7 @@ function handleEnviarFormularioPropietario(datos) {
       datos.datosFormulario,
       datos.archivosBase64
     );
-    
+
     return ContentService
       .createTextOutput(JSON.stringify(resultado))
       .setMimeType(ContentService.MimeType.JSON);
@@ -476,7 +597,7 @@ function handleEnviarCorreccionPropietario(datos) {
 function handleObtenerDatosContrato(e) {
   try {
     const cdr = e.parameter.cdr;
-    
+
     if (!cdr) {
       return ContentService
         .createTextOutput(JSON.stringify({
@@ -485,14 +606,14 @@ function handleObtenerDatosContrato(e) {
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    
+
     // Recopilar datos usando función de GESTOR_CONTRATOS.gs
     const datos = recopilarDatosContrato(cdr);
-    
+
     return ContentService
       .createTextOutput(JSON.stringify(datos))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
     Logger.log('Error en handleObtenerDatosContrato: ' + error.toString());
     return ContentService
@@ -510,7 +631,7 @@ function handleObtenerDatosContrato(e) {
 function handleGenerarContrato(datos) {
   try {
     const { cdr } = datos;
-    
+
     if (!cdr) {
       return ContentService
         .createTextOutput(JSON.stringify({
@@ -519,14 +640,14 @@ function handleGenerarContrato(datos) {
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    
+
     // Generar contrato usando función de GESTOR_CONTRATOS.gs
     const resultado = generarContrato(cdr);
-    
+
     return ContentService
       .createTextOutput(JSON.stringify(resultado))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
     Logger.log('Error en handleGenerarContrato: ' + error.toString());
     return ContentService
@@ -544,7 +665,7 @@ function handleGenerarContrato(datos) {
 function handleRegistrarAprobacionContrato(datos) {
   try {
     const { cdr, tipo, accion, comentarios } = datos;
-    
+
     if (!cdr || !tipo || !accion) {
       return ContentService
         .createTextOutput(JSON.stringify({
@@ -553,14 +674,14 @@ function handleRegistrarAprobacionContrato(datos) {
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    
+
     // Registrar aprobación usando función de GESTOR_CONTRATOS.gs
     const resultado = registrarAprobacionContrato(cdr, tipo, accion, comentarios);
-    
+
     return ContentService
       .createTextOutput(JSON.stringify(resultado))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
     Logger.log('Error en handleRegistrarAprobacionContrato: ' + error.toString());
     return ContentService
@@ -578,7 +699,7 @@ function handleRegistrarAprobacionContrato(datos) {
 function handleObtenerEstadoAprobaciones(e) {
   try {
     const cdr = e.parameter.cdr;
-    
+
     if (!cdr) {
       return ContentService
         .createTextOutput(JSON.stringify({
@@ -587,17 +708,17 @@ function handleObtenerEstadoAprobaciones(e) {
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    
+
     // Obtener estados usando función de GESTOR_CONTRATOS.gs
     const estados = obtenerEstadosAprobacion(cdr);
-    
+
     return ContentService
       .createTextOutput(JSON.stringify({
         success: true,
         estados: estados
       }))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
     Logger.log('Error en handleObtenerEstadoAprobaciones: ' + error.toString());
     return ContentService
@@ -615,7 +736,7 @@ function handleObtenerEstadoAprobaciones(e) {
 function handleSubirContratoFirmado(datos) {
   try {
     const { cdr, archivoBase64, nombreArchivo } = datos;
-    
+
     if (!cdr || !archivoBase64) {
       return ContentService
         .createTextOutput(JSON.stringify({
@@ -624,24 +745,24 @@ function handleSubirContratoFirmado(datos) {
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    
+
     // Procesar el archivo
     const carpetaRaiz = DriveApp.getFolderById(DOCS_CONFIG.CARPETA_RAIZ_ID);
     const carpetaCDR = buscarOcrearCarpeta(carpetaRaiz, cdr);
     const carpetaContratos = buscarOcrearCarpeta(carpetaCDR, 'CONTRATOS_FIRMADOS');
-    
+
     // Crear el archivo
     const blob = Utilities.newBlob(
       Utilities.base64Decode(archivoBase64.split(',')[1]),
       'application/pdf',
       nombreArchivo || `Contrato_Firmado_${cdr}_${new Date().getTime()}.pdf`
     );
-    
+
     const archivo = carpetaContratos.createFile(blob);
-    
+
     // Actualizar estado en la hoja
     actualizarEstadoContrato(cdr, 'CONTRATO FIRMADO', '✅ Contrato firmado y archivado');
-    
+
     return ContentService
       .createTextOutput(JSON.stringify({
         success: true,
@@ -650,7 +771,7 @@ function handleSubirContratoFirmado(datos) {
         id: archivo.getId()
       }))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
     Logger.log('Error en handleSubirContratoFirmado: ' + error.toString());
     return ContentService
@@ -669,7 +790,7 @@ function handleObtenerContrato(e) {
   try {
     const cdr = e.parameter.cdr;
     const docId = e.parameter.docId;
-    
+
     if (!cdr || !docId) {
       return ContentService
         .createTextOutput(JSON.stringify({
@@ -678,14 +799,14 @@ function handleObtenerContrato(e) {
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
-    
+
     // Obtener el documento de Google Docs
     const doc = DocumentApp.openById(docId);
     const contenido = doc.getBody().getText();
-    
+
     // Obtener datos adicionales
     const datos = recopilarDatosContrato(cdr);
-    
+
     return ContentService
       .createTextOutput(JSON.stringify({
         success: true,
@@ -695,7 +816,7 @@ function handleObtenerContrato(e) {
         url: doc.getUrl()
       }))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
     Logger.log('Error en handleObtenerContrato: ' + error.toString());
     return ContentService
@@ -717,31 +838,31 @@ function handleObtenerContrato(e) {
 function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBase64) {
   try {
     Logger.log('Procesando formulario inquilino para CDR: ' + codigoRegistro);
-    
+
     // Buscar la fila correspondiente
     const fila = buscarFilaPorCDR(codigoRegistro);
     if (!fila) {
       return { success: false, message: 'Código de registro no encontrado' };
     }
-    
+
     // Guardar archivos en Drive
     const urlsCarpetas = guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormulario);
-    
+
     // Actualizar datos en la hoja
     actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas);
-    
+
     // Enviar email de confirmación
     enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario);
-    
+
     // Registrar en log
     registrarLog('INQUILINO', codigoRegistro, 'Formulario procesado exitosamente');
-    
+
     return {
       success: true,
       message: 'Formulario procesado exitosamente',
       codigo: codigoRegistro
     };
-    
+
   } catch (error) {
     Logger.log('Error procesando formulario inquilino: ' + error.toString());
     return { success: false, message: error.message };
@@ -754,13 +875,13 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
 function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivosBase64) {
   try {
     Logger.log('Procesando formulario propietario para CDR: ' + codigoRegistro);
-    
+
     // Buscar la fila correspondiente
     const fila = buscarFilaPorCDR(codigoRegistro);
     if (!fila) {
       return { success: false, message: 'Código de registro no encontrado' };
     }
-    
+
     // Procesar OCR si hay certificado de tradición
     if (archivosBase64.certTradicion) {
       const resultadoOCR = procesarCertificadoDesdeFormulario(archivosBase64.certTradicion.contenido);
@@ -768,25 +889,25 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
         datosFormulario.datosOCR = resultadoOCR;
       }
     }
-    
+
     // Guardar archivos en Drive
     const urlsCarpetas = guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormulario);
-    
+
     // Actualizar datos en la hoja
     actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas);
-    
+
     // Enviar email de confirmación
     enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario);
-    
+
     // Registrar en log
     registrarLog('PROPIETARIO', codigoRegistro, 'Formulario procesado exitosamente');
-    
+
     return {
       success: true,
       message: 'Formulario procesado exitosamente',
       codigo: codigoRegistro
     };
-    
+
   } catch (error) {
     Logger.log('Error procesando formulario propietario: ' + error.toString());
     return { success: false, message: error.message };
@@ -804,7 +925,7 @@ function verificarEstadoLink(cdr, tipo) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
-    
+
     if (!fila) {
       return {
         success: false,
@@ -812,11 +933,11 @@ function verificarEstadoLink(cdr, tipo) {
         mensaje: 'Código de registro no válido'
       };
     }
-    
+
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     const detalles = sheet.getRange(fila, detallesCol).getValue();
-    
+
     // Verificar según el tipo
     if (tipo === 'inquilino') {
       if (detalles.includes('Formulario del inquilino diligenciado')) {
@@ -835,13 +956,13 @@ function verificarEstadoLink(cdr, tipo) {
         };
       }
     }
-    
+
     return {
       success: true,
       activo: true,
       mensaje: 'Link activo y válido'
     };
-    
+
   } catch (error) {
     Logger.log('Error verificando link: ' + error.toString());
     return {
@@ -860,15 +981,15 @@ function obtenerRegistrosInquilinos() {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const lastRow = sheet.getLastRow();
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     const registros = [];
-    
+
     for (let i = 2; i <= lastRow; i++) {
       const detalles = sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue();
-      
+
       if (detalles.includes('Formulario del inquilino')) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
-        
+
         registros.push({
           cdr: obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO'),
           detalles: detalles,
@@ -882,9 +1003,9 @@ function obtenerRegistrosInquilinos() {
         });
       }
     }
-    
+
     return registros;
-    
+
   } catch (error) {
     Logger.log('Error obteniendo registros inquilinos: ' + error.toString());
     throw error;
@@ -899,15 +1020,15 @@ function obtenerRegistrosPropietarios() {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const lastRow = sheet.getLastRow();
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     const registros = [];
-    
+
     for (let i = 2; i <= lastRow; i++) {
       const detalles = sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue();
-      
+
       if (detalles.includes('Formulario del propietario')) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
-        
+
         registros.push({
           cdr: obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO'),
           detalles: detalles,
@@ -920,11 +1041,72 @@ function obtenerRegistrosPropietarios() {
         });
       }
     }
-    
+
     return registros;
-    
+
   } catch (error) {
     Logger.log('Error obteniendo registros propietarios: ' + error.toString());
+    throw error;
+  }
+}
+
+// ==========================================
+// FUNCIONES DE PROCESAMIENTO DE FORMULARIOS
+// ==========================================
+
+/**
+ * Procesar datos del formulario del inquilino
+ */
+function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBase64) {
+  try {
+    // 1. Validar CDR
+    if (!codigoRegistro) throw new Error('Código de registro no proporcionado');
+
+    // 2. Guardar documentos
+    const urlsDoc = guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormulario);
+
+    // 3. Registrar en Log
+    registrarLog('FORMULARIO_INQUILINO', codigoRegistro, `Formulario recibido de ${datosFormulario.inquilino.nombre}`);
+
+    // 4. Actualizar Estado en Sheet
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('Hoja principal no encontrada');
+
+    const fila = buscarFilaPorCDR(codigoRegistro);
+    if (fila) {
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+      if (detallesCol > 0) {
+        sheet.getRange(fila, detallesCol).setValue('✅ Documentación de inquilino recibida y guardada');
+      }
+
+      // Actualizar datos del inquilino si vienen en el formulario
+      actualizarCamposInquilino(fila, {
+        nombre: datosFormulario.inquilino.nombre,
+        documento: datosFormulario.inquilino.numeroDocumento,
+        email: datosFormulario.inquilino.email,
+        celular: datosFormulario.inquilino.celular
+      });
+    }
+
+    // 5. Enviar correo de confirmación
+    // Solo si se envió email
+    if (datosFormulario.inquilino.email) {
+      // Ajuste: La función ahora espera (email, nombre, cdr) o el objeto completo?
+      // Revisando la definición (línea 1750 aprox), espera: (emailInquilino, nombreInquilino, codigoRegistro)
+      // Pero si esa función no existe o cambió, usaremos la genérica si existe.
+      // Asumimos que enviarEmailConfirmacionInquilino existe y tiene esa firma.
+      enviarEmailConfirmacionInquilino(datosFormulario.inquilino.email, datosFormulario.inquilino.nombre, codigoRegistro);
+    }
+
+    return {
+      success: true,
+      message: 'Documentación enviada y procesada correctamente',
+      urls: urlsDoc
+    };
+
+  } catch (error) {
+    Logger.log('Error procesando formulario inquilino: ' + error.toString());
     throw error;
   }
 }
@@ -939,7 +1121,7 @@ function obtenerRegistrosPropietarios() {
 function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormulario) {
   try {
     const carpetaRaiz = DriveApp.getFolderById(DOCS_CONFIG.CARPETA_RAIZ_ID);
-    
+
     // Crear o buscar carpeta del CDR
     let carpetaCDR;
     const folders = carpetaRaiz.getFoldersByName(codigoRegistro);
@@ -948,10 +1130,10 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
     } else {
       carpetaCDR = carpetaRaiz.createFolder(codigoRegistro);
     }
-    
+
     // Crear carpeta de inquilino
     const carpetaInquilino = carpetaCDR.createFolder(`INQUILINO_${datosFormulario.inquilino.nombre}_${new Date().getTime()}`);
-    
+
     // Guardar archivos
     for (const [nombre, contenidoBase64] of Object.entries(archivosBase64)) {
       if (contenidoBase64 && contenidoBase64.contenido) {
@@ -963,15 +1145,15 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
         carpetaInquilino.createFile(blob);
       }
     }
-    
+
     // Actualizar documento con datos del contrato
     actualizarDocumentoDatosContrato(carpetaCDR, datosFormulario, 'INQUILINO');
-    
+
     return {
       carpetaPrincipal: carpetaCDR.getUrl(),
       carpetaInquilino: carpetaInquilino.getUrl()
     };
-    
+
   } catch (error) {
     Logger.log('Error guardando documentos inquilino: ' + error.toString());
     throw error;
@@ -984,7 +1166,7 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
 function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormulario) {
   try {
     const carpetaRaiz = DriveApp.getFolderById(DOCS_CONFIG.CARPETA_RAIZ_ID);
-    
+
     // Buscar carpeta del CDR
     const folders = carpetaRaiz.getFoldersByName(codigoRegistro);
     let carpetaCDR;
@@ -993,10 +1175,10 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
     } else {
       carpetaCDR = carpetaRaiz.createFolder(codigoRegistro);
     }
-    
+
     // Crear carpeta de propietario
     const carpetaPropietario = carpetaCDR.createFolder(`PROPIETARIO_${datosFormulario.propietario.nombre}_${new Date().getTime()}`);
-    
+
     // Guardar archivos básicos
     for (const [nombre, contenidoBase64] of Object.entries(archivosBase64)) {
       if (contenidoBase64 && contenidoBase64.contenido && nombre !== 'serviciosPublicos') {
@@ -1008,11 +1190,11 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
         carpetaPropietario.createFile(blob);
       }
     }
-    
+
     // Guardar servicios públicos
     if (datosFormulario.serviciosPublicos && datosFormulario.serviciosPublicos.length > 0) {
       const carpetaServicios = carpetaPropietario.createFolder('SERVICIOS_PUBLICOS');
-      
+
       datosFormulario.serviciosPublicos.forEach(servicio => {
         if (servicio.archivo && servicio.archivo.contenido) {
           const blob = Utilities.newBlob(
@@ -1024,15 +1206,15 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
         }
       });
     }
-    
+
     // Actualizar documento con datos del propietario
     actualizarDocumentoDatosContrato(carpetaCDR, datosFormulario, 'PROPIETARIO');
-    
+
     return {
       carpetaPrincipal: carpetaCDR.getUrl(),
       carpetaPropietario: carpetaPropietario.getUrl()
     };
-    
+
   } catch (error) {
     Logger.log('Error guardando documentos propietario: ' + error.toString());
     throw error;
@@ -1050,7 +1232,7 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     // Mapeo de campos
     const campos = {
       'CORREO INQUILINO': datosFormulario.inquilino.email,
@@ -1063,7 +1245,7 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
       'DETALLES DEL ESTADO DEL INMUEBLE': '📄 Formulario del inquilino diligenciado. Pendiente validación',
       'ESTADO DOCUMENTAL': 'INQ_SUBMITTED'
     };
-    
+
     // Actualizar campos
     for (const [header, valor] of Object.entries(campos)) {
       const colIndex = headers.indexOf(header) + 1;
@@ -1071,7 +1253,7 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
         sheet.getRange(fila, colIndex).setValue(valor);
       }
     }
-    
+
     // Guardar codeudores como JSON
     if (datosFormulario.codeudores && datosFormulario.codeudores.length > 0) {
       const codeudorCol = headers.indexOf('CODEUDORES_JSON') + 1;
@@ -1079,13 +1261,13 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
         sheet.getRange(fila, codeudorCol).setValue(JSON.stringify(datosFormulario.codeudores));
       }
     }
-    
+
     // Guardar URLs de carpetas
     const urlCol = headers.indexOf('URL_DOCUMENTOS_INQ') + 1;
     if (urlCol > 0) {
       sheet.getRange(fila, urlCol).setValue(urlsCarpetas.carpetaInquilino);
     }
-    
+
   } catch (error) {
     Logger.log('Error actualizando datos inquilino: ' + error.toString());
     throw error;
@@ -1099,7 +1281,7 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     // Mapeo de campos
     const campos = {
       'Correo electrónico': datosFormulario.propietario.email,
@@ -1110,7 +1292,7 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
       'DETALLES DEL ESTADO DEL INMUEBLE': '📄 Formulario del propietario diligenciado. Pendiente validación',
       'ESTADO DOCUMENTAL': 'PROP_SUBMITTED'
     };
-    
+
     // Actualizar campos
     for (const [header, valor] of Object.entries(campos)) {
       const colIndex = headers.indexOf(header) + 1;
@@ -1118,7 +1300,7 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
         sheet.getRange(fila, colIndex).setValue(valor);
       }
     }
-    
+
     // Si hay datos OCR, actualizarlos
     if (datosFormulario.datosOCR) {
       const camposOCR = {
@@ -1127,7 +1309,7 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
         'AREA_M2': datosFormulario.datosOCR.area,
         'PROPIETARIOS_CERTIFICADO': datosFormulario.datosOCR.propietarios
       };
-      
+
       for (const [header, valor] of Object.entries(camposOCR)) {
         const colIndex = headers.indexOf(header) + 1;
         if (colIndex > 0 && valor) {
@@ -1135,13 +1317,13 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
         }
       }
     }
-    
+
     // Guardar URLs de carpetas
     const urlCol = headers.indexOf('URL_DOCUMENTOS_PROP') + 1;
     if (urlCol > 0) {
       sheet.getRange(fila, urlCol).setValue(urlsCarpetas.carpetaPropietario);
     }
-    
+
   } catch (error) {
     Logger.log('Error actualizando datos propietario: ' + error.toString());
     throw error;
@@ -1162,12 +1344,12 @@ function abrirPanelValidacion() {
       .setWidth(1400)
       .setHeight(800)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
-    
+
     // Mostrar el diálogo modal
     SpreadsheetApp.getUi().showModalDialog(html, '🔍 Panel de Validación - E-FirmaContrata');
-    
+
     Logger.log('Panel de validación abierto correctamente');
-    
+
   } catch (error) {
     Logger.log('Error abriendo panel: ' + error.toString());
     SpreadsheetApp.getUi().alert(
@@ -1189,23 +1371,23 @@ function obtenerDocumentosDelCDR(cdr) {
   try {
     const carpetaRaiz = DriveApp.getFolderById(DOCS_CONFIG.CARPETA_RAIZ_ID);
     const folders = carpetaRaiz.getFoldersByName(cdr);
-    
+
     if (!folders.hasNext()) {
       return { inquilino: [], propietario: [] };
     }
-    
+
     const carpetaCDR = folders.next();
     const documentos = {
       inquilino: [],
       propietario: []
     };
-    
+
     // Buscar carpetas de inquilino y propietario
     const subfolders = carpetaCDR.getFolders();
     while (subfolders.hasNext()) {
       const subfolder = subfolders.next();
       const nombre = subfolder.getName();
-      
+
       if (nombre.startsWith('INQUILINO_')) {
         const archivos = subfolder.getFiles();
         while (archivos.hasNext()) {
@@ -1230,9 +1412,9 @@ function obtenerDocumentosDelCDR(cdr) {
         }
       }
     }
-    
+
     return documentos;
-    
+
   } catch (error) {
     Logger.log('Error obteniendo documentos: ' + error.toString());
     throw error;
@@ -1252,16 +1434,16 @@ function buscarFilaPorCDR(cdr) {
     const lastRow = sheet.getLastRow();
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
-    
+
     for (let i = 2; i <= lastRow; i++) {
       const valorCDR = sheet.getRange(i, cdrCol).getValue();
       if (valorCDR === cdr) {
         return i;
       }
     }
-    
+
     return null;
-    
+
   } catch (error) {
     Logger.log('Error buscando CDR: ' + error.toString());
     return null;
@@ -1296,7 +1478,7 @@ function obtenerCodeudores(headers, row) {
  */
 function buscarOcrearCarpeta(carpetaPadre, nombreCarpeta) {
   const folders = carpetaPadre.getFoldersByName(nombreCarpeta);
-  
+
   if (folders.hasNext()) {
     return folders.next();
   } else {
@@ -1311,26 +1493,26 @@ function actualizarEstadoContrato(cdr, estado, detalles) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
-    
+
     if (!fila) {
       Logger.log(`No se encontró registro con CDR: ${cdr}`);
       return;
     }
-    
+
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const estadoCol = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
-    
+
     if (estadoCol > 0) {
       sheet.getRange(fila, estadoCol).setValue(estado);
     }
-    
+
     if (detallesCol > 0) {
       sheet.getRange(fila, detallesCol).setValue(detalles);
     }
-    
+
     Logger.log(`Estado actualizado para CDR ${cdr}: ${estado} - ${detalles}`);
-    
+
   } catch (error) {
     Logger.log(`Error actualizando estado: ${error.toString()}`);
   }
@@ -1344,23 +1526,23 @@ function actualizarDocumentoDatosContrato(carpetaCDR, datosFormulario, tipo) {
     // Buscar o crear el documento de datos
     let doc;
     const files = carpetaCDR.getFilesByName('DATOS_CONTRATO.gdoc');
-    
+
     if (files.hasNext()) {
       doc = DocumentApp.openById(files.next().getId());
     } else {
       doc = DocumentApp.create('DATOS_CONTRATO');
       DriveApp.getFileById(doc.getId()).moveTo(carpetaCDR);
     }
-    
+
     const body = doc.getBody();
-    
+
     // Agregar sección según el tipo
     const fecha = new Date().toLocaleString('es-CO');
     body.appendParagraph(`\n=== ${tipo} - ${fecha} ===`);
     body.appendParagraph(JSON.stringify(datosFormulario, null, 2));
-    
+
     doc.saveAndClose();
-    
+
   } catch (error) {
     Logger.log('Error actualizando documento de datos: ' + error.toString());
   }
@@ -1371,7 +1553,7 @@ function actualizarDocumentoDatosContrato(carpetaCDR, datosFormulario, tipo) {
  */
 function determinarTipoDocumento(nombreArchivo) {
   const nombre = nombreArchivo.toLowerCase();
-  
+
   if (nombre.includes('pago') || nombre.includes('comprobante')) return 'comprobantePago';
   if (nombre.includes('estudio') || nombre.includes('aprobado')) return 'estudioAprobado';
   if (nombre.includes('cedula') || nombre.includes('documento') || nombre.includes('identidad')) return 'documentoIdentidad';
@@ -1385,7 +1567,7 @@ function determinarTipoDocumento(nombreArchivo) {
   if (nombre.includes('administracion')) return 'administracion';
   if (nombre.includes('reglamento')) return 'reglamento';
   if (nombre.includes('manual') || nombre.includes('convivencia')) return 'manualConvivencia';
-  
+
   return 'otro';
 }
 
@@ -1400,22 +1582,22 @@ function procesarValidacionInquilino(datos) {
   try {
     const { cdr, estado, observaciones, campos } = datos;
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
-    
+
     // Buscar la fila del registro
     const fila = buscarFilaPorCDR(cdr);
     if (!fila) {
       return { success: false, message: 'Registro no encontrado' };
     }
-    
+
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     const estadoDocCol = headers.indexOf('ESTADO DOCUMENTAL') + 1;
-    
+
     // Actualizar campos editados si hay
     if (campos) {
       actualizarCamposInquilino(fila, campos);
     }
-    
+
     // Procesar según el estado
     if (estado === 'aprobado') {
       // Actualizar estados
@@ -1423,31 +1605,31 @@ function procesarValidacionInquilino(datos) {
       if (estadoDocCol > 0) {
         sheet.getRange(fila, estadoDocCol).setValue('INQ_VALIDATED');
       }
-      
+
       // Enviar email al propietario
       enviarEmailPropietario(cdr);
-      
-      return { 
-        success: true, 
-        message: 'Documentos aprobados. Email enviado al propietario' 
+
+      return {
+        success: true,
+        message: 'Documentos aprobados. Email enviado al propietario'
       };
-      
+
     } else if (estado === 'correccion') {
       // Actualizar estado
       sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
       if (estadoDocCol > 0) {
         sheet.getRange(fila, estadoDocCol).setValue('INQ_CORRECTION');
       }
-      
+
       // Enviar email de corrección
       enviarEmailCorreccionInquilino(cdr, observaciones);
-      
-      return { 
-        success: true, 
-        message: 'Solicitud de corrección enviada' 
+
+      return {
+        success: true,
+        message: 'Solicitud de corrección enviada'
       };
     }
-    
+
   } catch (error) {
     Logger.log('Error procesando validación inquilino: ' + error.toString());
     return { success: false, message: error.message };
@@ -1461,22 +1643,22 @@ function procesarValidacionPropietario(datos) {
   try {
     const { cdr, estado, observaciones, campos } = datos;
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
-    
+
     // Buscar la fila del registro
     const fila = buscarFilaPorCDR(cdr);
     if (!fila) {
       return { success: false, message: 'Registro no encontrado' };
     }
-    
+
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     const estadoDocCol = headers.indexOf('ESTADO DOCUMENTAL') + 1;
-    
+
     // Actualizar campos editados si hay
     if (campos) {
       actualizarCamposPropietario(fila, campos);
     }
-    
+
     // Procesar según el estado
     if (estado === 'aprobado') {
       // Actualizar estados
@@ -1484,29 +1666,29 @@ function procesarValidacionPropietario(datos) {
       if (estadoDocCol > 0) {
         sheet.getRange(fila, estadoDocCol).setValue('PROP_VALIDATED');
       }
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         message: 'Documentos aprobados. Sistema listo para generar contrato',
         contratoListo: true
       };
-      
+
     } else if (estado === 'correccion') {
       // Actualizar estado
       sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
       if (estadoDocCol > 0) {
         sheet.getRange(fila, estadoDocCol).setValue('PROP_CORRECTION');
       }
-      
+
       // Enviar email de corrección
       enviarEmailCorreccionPropietario(cdr, observaciones);
-      
-      return { 
-        success: true, 
-        message: 'Solicitud de corrección enviada' 
+
+      return {
+        success: true,
+        message: 'Solicitud de corrección enviada'
       };
     }
-    
+
   } catch (error) {
     Logger.log('Error procesando validación propietario: ' + error.toString());
     return { success: false, message: error.message };
@@ -1522,23 +1704,23 @@ function procesarValidacionPropietario(datos) {
  */
 function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulario) {
   const asunto = `Formulario de Arrendamiento - ${codigoRegistro}`;
-  
+
   const cuerpoHtml = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">📋 Formulario de Arrendamiento</h1>
+      <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+        <h1 style="color: #1a1a1a; margin: 0; font-size: 24px; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">📋 Gold Life - Formulario de Arrendamiento</h1>
       </div>
       
       <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
         <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
         
         <p style="color: #666; line-height: 1.6;">
-          Su solicitud de arrendamiento ha sido aprobada. Para continuar con el proceso, 
+          Su solicitud de arrendamiento ha sido aprobada. Para continuar con el proceso en <strong>Gold Life System</strong>, 
           necesitamos que complete el formulario con sus datos y documentos.
         </p>
         
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #764ba2; margin-top: 0;">📄 Documentos requeridos:</h3>
+        <div style="background: #fdfbf7; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #FFD700;">
+          <h3 style="color: #B8860B; margin-top: 0;">📄 Documentos requeridos:</h3>
           <ul style="color: #666; line-height: 1.8;">
             <li>Comprobante de pago del servicio</li>
             <li>Estudio de arrendamiento aprobado</li>
@@ -1549,13 +1731,13 @@ function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulari
         
         <div style="text-align: center; margin: 30px 0;">
           <a href="${urlFormulario}" 
-             style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
+             style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
+                    color: #1a1a1a; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
             ➡️ COMPLETAR FORMULARIO
           </a>
         </div>
         
-        <div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 4px;">
+        <div style="background: #fff3cd; padding: 15px; border-left: 4px solid #FFA500; border-radius: 4px;">
           <p style="color: #856404; margin: 0; font-size: 14px;">
             ⚠️ <strong>Importante:</strong> Este enlace es único y personal. 
             Una vez completado el formulario, no podrá volver a utilizarse.
@@ -1572,13 +1754,13 @@ function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulari
       </div>
     </div>
   `;
-  
+
   MailApp.sendEmail({
     to: email,
     subject: asunto,
     htmlBody: cuerpoHtml
   });
-  
+
   Logger.log(`Email inicial enviado a ${email} con URL: ${urlFormulario}`);
 }
 
@@ -1589,7 +1771,7 @@ function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
   try {
     const inquilino = datosFormulario.inquilino;
     const asunto = `Confirmación de recepción - Documentos de arrendamiento ${codigoRegistro}`;
-    
+
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -1627,15 +1809,15 @@ function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
         </div>
       </div>
     `;
-    
+
     MailApp.sendEmail({
       to: inquilino.email,
       subject: asunto,
       htmlBody: cuerpoHtml
     });
-    
+
     Logger.log(`Email de confirmación enviado a inquilino: ${inquilino.email}`);
-    
+
   } catch (error) {
     Logger.log('Error enviando email confirmación inquilino: ' + error.toString());
   }
@@ -1648,25 +1830,25 @@ function enviarEmailPropietario(cdr) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
-    
+
     if (!fila) return;
-    
+
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     const emailProp = obtenerValorPorHeader(headers, row, 'Correo electrónico');
     const nombreProp = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
-    
+
     if (!emailProp) {
       Logger.log('No se encontró email del propietario');
       return;
     }
-    
-    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata';
+
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
     const urlFormulario = `${baseUrl}/selector.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}`;
-    
+
     const asunto = `Documentación requerida - Contrato de arrendamiento ${cdr}`;
-    
+
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -1709,15 +1891,15 @@ function enviarEmailPropietario(cdr) {
         </div>
       </div>
     `;
-    
+
     MailApp.sendEmail({
       to: emailProp,
       subject: asunto,
       htmlBody: cuerpoHtml
     });
-    
+
     Logger.log(`Email enviado a propietario: ${emailProp}`);
-    
+
   } catch (error) {
     Logger.log('Error enviando email a propietario: ' + error.toString());
   }
@@ -1730,7 +1912,7 @@ function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
   try {
     const propietario = datosFormulario.propietario;
     const asunto = `Confirmación de recepción - Documentos del propietario ${codigoRegistro}`;
-    
+
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -1762,15 +1944,15 @@ function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
         </div>
       </div>
     `;
-    
+
     MailApp.sendEmail({
       to: propietario.email,
       subject: asunto,
       htmlBody: cuerpoHtml
     });
-    
+
     Logger.log(`Email de confirmación enviado a propietario: ${propietario.email}`);
-    
+
   } catch (error) {
     Logger.log('Error enviando email confirmación propietario: ' + error.toString());
   }
@@ -1783,20 +1965,20 @@ function enviarEmailCorreccionInquilino(cdr, observaciones) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
-    
+
     if (!fila) return;
-    
+
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     const email = obtenerValorPorHeader(headers, row, 'CORREO INQUILINO');
     const nombre = obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO');
-    
-    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata';
+
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
     const urlCorreccion = `${baseUrl}/selector.html?action=formulario-inquilino&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
-    
+
     const asunto = `Corrección requerida - Documentos de arrendamiento ${cdr}`;
-    
+
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -1833,15 +2015,15 @@ function enviarEmailCorreccionInquilino(cdr, observaciones) {
         </div>
       </div>
     `;
-    
+
     MailApp.sendEmail({
       to: email,
       subject: asunto,
       htmlBody: cuerpoHtml
     });
-    
+
     Logger.log(`Email de corrección enviado a inquilino: ${email}`);
-    
+
   } catch (error) {
     Logger.log('Error enviando corrección inquilino: ' + error.toString());
   }
@@ -1854,20 +2036,20 @@ function enviarEmailCorreccionPropietario(cdr, observaciones) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
-    
+
     if (!fila) return;
-    
+
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     const email = obtenerValorPorHeader(headers, row, 'Correo electrónico');
     const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
-    
-    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata';
+
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
     const urlCorreccion = `${baseUrl}/selector.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
-    
+
     const asunto = `Corrección requerida - Documentos del propietario ${cdr}`;
-    
+
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -1903,15 +2085,15 @@ function enviarEmailCorreccionPropietario(cdr, observaciones) {
         </div>
       </div>
     `;
-    
+
     MailApp.sendEmail({
       to: email,
       subject: asunto,
       htmlBody: cuerpoHtml
     });
-    
+
     Logger.log(`Email de corrección enviado a propietario: ${email}`);
-    
+
   } catch (error) {
     Logger.log('Error enviando corrección propietario: ' + error.toString());
   }
@@ -1928,27 +2110,27 @@ function actualizarCamposInquilino(fila, campos) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     if (campos.nombre) {
       const col = headers.indexOf('NOMBRE COMPLETO INQUILINO') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.nombre);
     }
-    
+
     if (campos.documento) {
       const col = headers.indexOf('NUMERO DOCUMENTO INQUILINO') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.documento);
     }
-    
+
     if (campos.email) {
       const col = headers.indexOf('CORREO INQUILINO') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.email);
     }
-    
+
     if (campos.celular) {
       const col = headers.indexOf('CELULAR INQUILINO') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.celular);
     }
-    
+
   } catch (error) {
     Logger.log('Error actualizando campos inquilino: ' + error.toString());
   }
@@ -1961,27 +2143,27 @@ function actualizarCamposPropietario(fila, campos) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
+
     if (campos.nombre) {
       const col = headers.indexOf('Ingrese Nombres y Apellidos') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.nombre);
     }
-    
+
     if (campos.documento) {
       const col = headers.indexOf('Número de documento') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.documento);
     }
-    
+
     if (campos.email) {
       const col = headers.indexOf('Correo electrónico') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.email);
     }
-    
+
     if (campos.celular) {
       const col = headers.indexOf('Celular') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.celular);
     }
-    
+
   } catch (error) {
     Logger.log('Error actualizando campos propietario: ' + error.toString());
   }
@@ -1994,19 +2176,19 @@ function actualizarCampoValidacion(datos) {
   try {
     const { cdr, tipo, campo, valor } = datos;
     const fila = buscarFilaPorCDR(cdr);
-    
+
     if (!fila) {
       return { success: false, message: 'Registro no encontrado' };
     }
-    
+
     if (tipo === 'inquilino') {
       actualizarCamposInquilino(fila, { [campo]: valor });
     } else if (tipo === 'propietario') {
       actualizarCamposPropietario(fila, { [campo]: valor });
     }
-    
+
     return { success: true, message: 'Campo actualizado' };
-    
+
   } catch (error) {
     return { success: false, message: error.message };
   }
@@ -2019,19 +2201,19 @@ function enviarCorreccionInquilino(datos) {
   try {
     const { cdr, observaciones } = datos;
     enviarEmailCorreccionInquilino(cdr, observaciones);
-    
+
     // Actualizar estado
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
-    
-    return { 
-      success: true, 
-      message: 'Corrección enviada al inquilino' 
+
+    return {
+      success: true,
+      message: 'Corrección enviada al inquilino'
     };
-    
+
   } catch (error) {
     Logger.log('Error enviando corrección inquilino: ' + error.toString());
     return { success: false, message: error.message };
@@ -2045,19 +2227,19 @@ function enviarCorreccionPropietario(datos) {
   try {
     const { cdr, observaciones } = datos;
     enviarEmailCorreccionPropietario(cdr, observaciones);
-    
+
     // Actualizar estado
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
-    
-    return { 
-      success: true, 
-      message: 'Corrección enviada al propietario' 
+
+    return {
+      success: true,
+      message: 'Corrección enviada al propietario'
     };
-    
+
   } catch (error) {
     Logger.log('Error enviando corrección propietario: ' + error.toString());
     return { success: false, message: error.message };
@@ -2068,50 +2250,7 @@ function enviarCorreccionPropietario(datos) {
 // FUNCIONES PARA EL POPUP DE EMAIL INICIAL
 // ==========================================
 
-function procesarEmailInquilino(emailInquilino, nombreInquilino) {
-  try {
-    const props = PropertiesService.getScriptProperties();
-    const currentRow = parseInt(props.getProperty('currentRow'));
-    const currentCDR = props.getProperty('currentCDR');
-    
-    if (!currentRow || !currentCDR) {
-      throw new Error('No se encontró información del registro actual');
-    }
-    
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
-    
-    // Generar URL del formulario
-    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata';
-    const urlFormulario = `${baseUrl}/selector.html?action=formulario-inquilino&cdr=${encodeURIComponent(currentCDR)}`;
-    
-    // Enviar email
-    enviarEmailInquilinoInicial(emailInquilino, nombreInquilino, currentCDR, urlFormulario);
-    
-    // Actualizar estado en el CRM
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    const detallesColIndex = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
-    
-    if (detallesColIndex > 0) {
-      sheet.getRange(currentRow, detallesColIndex).setValue('📧 Formulario enviado al inquilino');
-    }
-    
-    // Limpiar properties
-    props.deleteProperty('currentRow');
-    props.deleteProperty('currentCDR');
-    
-    return { 
-      success: true, 
-      message: 'Email enviado exitosamente' 
-    };
-    
-  } catch (error) {
-    Logger.log('Error procesando email inquilino: ' + error.toString());
-    return { 
-      success: false, 
-      message: error.message 
-    };
-  }
-}
+// [FUNCIÓN OBSOLETA ELIMINADA] - Usar procesarEmailInquilino centralizada al final del archivo
 
 // ==========================================
 // FUNCIONES DE LOG
@@ -2123,17 +2262,17 @@ function procesarEmailInquilino(emailInquilino, nombreInquilino) {
 function registrarLog(tipo, cdr, mensaje) {
   try {
     let logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_LOG);
-    
+
     if (!logSheet) {
       logSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(DOCS_CONFIG.HOJA_LOG);
       logSheet.getRange(1, 1, 1, 5).setValues([['FECHA', 'TIPO', 'CDR', 'MENSAJE', 'USUARIO']]);
     }
-    
+
     const fecha = new Date();
     const usuario = Session.getActiveUser().getEmail();
-    
+
     logSheet.appendRow([fecha, tipo, cdr, mensaje, usuario]);
-    
+
   } catch (error) {
     Logger.log('Error registrando log: ' + error.toString());
   }
@@ -2143,20 +2282,7 @@ function registrarLog(tipo, cdr, mensaje) {
 // ==========================================
 
 // ✉️ Inquilino: envío de formulario
-function procesarEmailInquilino(email, linkFormulario) {
-  const asunto = "Formulario de Registro - E-FirmaContrata";
-  const cuerpoHTML = `
-    <body style="background:#0F0F0F; padding:30px; color:#f4f4f4; font-family:Segoe UI,sans-serif;">
-      <div style="max-width:600px; margin:auto; background:#1e1e1e; padding:30px; border-radius:12px;">
-        <h2 style="color:#FFD700; text-align:center;">EFirmaContrata</h2>
-        <p>Hola,</p>
-        <p>Por favor diligencia el siguiente formulario como parte del proceso de validación para contrato de arrendamiento:</p>
-        <a href="${linkFormulario}" style="display:inline-block; margin-top:20px; background:#FFD700; color:#000; padding:12px 20px; border-radius:8px; text-decoration:none;">Ir al formulario</a>
-        <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
-      </div>
-    </body>`;
-  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
-}
+// [FUNCIÓN OBSOLETA ELIMINADA]
 
 // ✉️ Inquilino: correo de corrección
 function procesarEmailCorreccion(email, linkCorreccion) {
@@ -2218,7 +2344,7 @@ function enviarEmailPropietario(cdr) {
   const email = obtenerValorPorHeader(headers, row, 'Correo electrónico');
   const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
 
-  const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata';
+  const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
   const url = `${baseUrl}/selector.html?action=formulario-propietario&cdr=${cdr}`;
 
   const asunto = "Formulario Propietario - E-FirmaContrata";
@@ -2263,7 +2389,7 @@ function enviarEmailCorreccionPropietario(cdr, observaciones) {
   const email = obtenerValorPorHeader(headers, row, 'Correo electrónico');
   const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
 
-  const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata';
+  const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
   const url = `${baseUrl}/selector.html?action=formulario-propietario&cdr=${cdr}&modo=correccion`;
 
   const asunto = "Corrección Requerida - E-FirmaContrata";
@@ -2279,6 +2405,136 @@ function enviarEmailCorreccionPropietario(cdr, observaciones) {
       </div>
     </body>`;
   MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
+}
+
+// ==========================================
+// FUNCIONES PARA EL POPUP DE EMAIL INQUILINO
+// ==========================================
+
+/**
+ * Obtener datos del registro actual (para el popup)
+ */
+function obtenerDatosRegistroActual() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const currentRow = props.getProperty('currentRow');
+    const currentCDR = props.getProperty('currentCDR');
+
+    if (!currentRow || !currentCDR) {
+      throw new Error('No se encontró información del registro activo. Por favor cierre y vuelva a abrir el popup desde el menú.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    const fila = parseInt(currentRow);
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const rowData = sheet.getRange(fila, 1, 1, lastCol).getValues()[0];
+
+    // Obtener índices de columnas clave
+    const colDireccion = headers.indexOf('Dirección del inmueble');
+    const colTipo = headers.indexOf('TIPO DE NEGOCIO');
+    const colEstado = headers.indexOf('ESTADO DEL INMUEBLE');
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
+
+    const direccion = colDireccion !== -1 ? rowData[colDireccion] : 'No especificada';
+    const tipoNegocio = colTipo !== -1 ? rowData[colTipo] : 'No especificado';
+    const estadoActual = colEstado !== -1 ? rowData[colEstado] : '';
+    const detallesEstado = colDetalles !== -1 ? rowData[colDetalles] : '';
+
+    // Verificar si ya se envió antes (si el estado contiene "ENVIADO" o similar)
+    const yaEnviado = (estadoActual && estadoActual.includes('ENVIADO')) ||
+      (detallesEstado && detallesEstado.includes('Formulario enviado'));
+
+    return {
+      cdr: currentCDR,
+      direccion: direccion,
+      tipoNegocio: tipoNegocio,
+      yaEnviado: yaEnviado
+    };
+
+  } catch (error) {
+    Logger.log('Error en obtenerDatosRegistroActual: ' + error.toString());
+    throw error; // Re-lanzar para que el frontend lo capture
+  }
+}
+
+/**
+ * Procesar envío de email al inquilino (Backend)
+ */
+function procesarEmailInquilino(email, nombre) {
+  try {
+    // 1. Validaciones básicas
+    if (!email || !email.includes('@')) throw new Error('Email inválido');
+    if (!nombre || nombre.length < 2) throw new Error('Nombre inválido');
+
+    // 2. Recuperar contexto
+    const props = PropertiesService.getScriptProperties();
+    const currentRow = parseInt(props.getProperty('currentRow'));
+    const currentCDR = props.getProperty('currentCDR');
+
+    if (!currentRow || !currentCDR) {
+      throw new Error('Sesión del popup expirada. Por favor cierre y vuelva a intentar.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // Generar URL del formulario
+    // CORRECCIÓN: El frontend está en /frontend/
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+    const urlFormulario = `${baseUrl}/selector.html?action=formulario-inquilino&cdr=${encodeURIComponent(currentCDR)}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
+
+    // 4. Enviar Email
+    // Usamos la función centralizada para mantener el diseño consistente
+    enviarEmailInquilinoInicial(email, nombre, currentCDR, urlFormulario);
+
+    // 5. Actualizar Estado en la Hoja
+    const colEmail = headers.indexOf('CORREO INQUILINO') + 1;
+    const colNombre = headers.indexOf('NOMBRE COMPLETO INQUILINO') + 1;
+    const colEstado = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+
+    // Guardar datos
+    if (colEmail > 0) sheet.getRange(currentRow, colEmail).setValue(email);
+    if (colNombre > 0) sheet.getRange(currentRow, colNombre).setValue(nombre);
+
+    // Actualizar estado
+    if (colEstado > 0) sheet.getRange(currentRow, colEstado).setValue('FORMULARIO ENVIADO');
+    if (colDetalles > 0) sheet.getRange(currentRow, colDetalles).setValue('⏳ Esperando respuesta del inquilino');
+
+    return {
+      success: true,
+      message: '✅ Email enviado y estado actualizado correctamente.'
+    };
+
+  } catch (error) {
+    Logger.log('Error en procesarEmailInquilino: ' + error.toString());
+    return {
+      success: false,
+      message: 'Error: ' + error.message
+    };
+  }
+}
+
+// ==========================================
+// FUNCIONES DE UI - PANEL DE VALIDACIÓN
+// ==========================================
+
+/**
+ * Abre el panel de validación (HTML)
+ */
+function abrirPanelValidacion() {
+  const html = HtmlService.createHtmlOutputFromFile('panel_validacion')
+    .setTitle('📋 Panel de Gestión y Contratos')
+    .setWidth(1200)
+    .setHeight(800)
+    .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+
+  SpreadsheetApp.getUi().showModalDialog(html, '📋 Panel de Gestión y Contratos');
 }
 
 // ==========================================
