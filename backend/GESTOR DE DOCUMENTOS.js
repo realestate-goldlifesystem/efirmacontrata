@@ -259,12 +259,20 @@ function mostrarConfiguracion() {
 // FUNCIONES PRINCIPALES DE API
 // ==========================================
 
-// Helper para crear respuestas CORS
-function corsResponse(data) {
-  return ContentService
-    .createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON)
-    .appendHeader("Access-Control-Allow-Origin", "*");
+// Helper para crear respuestas CORS (o JSONP si hay callback)
+function corsResponse(data, callback = null) {
+  if (callback) {
+    // Modo JSONP
+    return ContentService
+      .createTextOutput(callback + '(' + JSON.stringify(data) + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  } else {
+    // Modo CORS Normal
+    return ContentService
+      .createTextOutput(JSON.stringify(data))
+      .setMimeType(ContentService.MimeType.JSON)
+      .appendHeader("Access-Control-Allow-Origin", "*");
+  }
 }
 
 function doGet(e) {
@@ -321,14 +329,14 @@ function doGet(e) {
         break;
     }
 
-    return corsResponse(result);
+    return corsResponse(result, e.parameter.callback);
 
   } catch (error) {
     Logger.log('Error en doGet: ' + error.toString());
     return corsResponse({
       success: false,
       message: error.message
-    });
+    }, e.parameter ? e.parameter.callback : null);
   }
 }
 
@@ -337,48 +345,61 @@ function doPost(e) {
     const datosJson = e.postData.contents;
     const datos = JSON.parse(datosJson);
     const accion = datos.accion;
+    let result;
 
     switch (accion) {
       case 'enviarFormularioInquilino':
-        return handleEnviarFormularioInquilino(datos);
+        result = handleEnviarFormularioInquilino(datos);
+        break;
       case 'enviarFormularioPropietario':
-        return handleEnviarFormularioPropietario(datos);
+        result = handleEnviarFormularioPropietario(datos);
+        break;
       case 'procesarFormularioInquilino':
-        return handleProcesarFormularioInquilino(datos);
+        result = handleProcesarFormularioInquilino(datos);
+        break;
       case 'procesarFormularioPropietario':
-        return handleProcesarFormularioPropietario(datos);
+        result = handleProcesarFormularioPropietario(datos);
+        break;
       case 'procesarValidacionInquilino':
-        return handleProcesarValidacionInquilino(datos);
+        result = handleProcesarValidacionInquilino(datos);
+        break;
       case 'procesarValidacionPropietario':
-        return handleProcesarValidacionPropietario(datos);
+        result = handleProcesarValidacionPropietario(datos);
+        break;
       case 'actualizarCampoValidacion':
-        return handleActualizarCampoValidacion(datos);
+        result = handleActualizarCampoValidacion(datos);
+        break;
       case 'enviarCorreccionInquilino':
-        return handleEnviarCorreccionInquilino(datos);
+        result = handleEnviarCorreccionInquilino(datos);
+        break;
       case 'enviarCorreccionPropietario':
-        return handleEnviarCorreccionPropietario(datos);
+        result = handleEnviarCorreccionPropietario(datos);
+        break;
       case 'generarContrato':
-        return handleGenerarContrato(datos);
+        result = handleGenerarContrato(datos);
+        break;
       case 'registrarAprobacionContrato':
-        return handleRegistrarAprobacionContrato(datos);
+        result = handleRegistrarAprobacionContrato(datos);
+        break;
       case 'subirContratoFirmado':
-        return handleSubirContratoFirmado(datos);
+        result = handleSubirContratoFirmado(datos);
+        break;
       default:
-        return ContentService
-          .createTextOutput(JSON.stringify({
-            success: false,
-            message: 'Acción POST no válida'
-          }))
-          .setMimeType(ContentService.MimeType.JSON);
+        result = {
+          success: false,
+          message: 'Acción POST no válida: ' + accion
+        };
+        break;
     }
+
+    return corsResponse(result);
+
   } catch (error) {
     Logger.log('Error en doPost: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return corsResponse({
+      success: false,
+      message: error.message
+    });
   }
 }
 
@@ -498,29 +519,23 @@ function handleObtenerDatosContrato(e) {
     const cdr = e.parameter.cdr;
 
     if (!cdr) {
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          success: false,
-          message: 'CDR no proporcionado'
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return {
+        success: false,
+        message: 'CDR no proporcionado'
+      };
     }
 
     // Recopilar datos usando función de GESTOR_CONTRATOS.gs
     const datos = recopilarDatosContrato(cdr);
 
-    return ContentService
-      .createTextOutput(JSON.stringify(datos))
-      .setMimeType(ContentService.MimeType.JSON);
+    return datos;
 
   } catch (error) {
     Logger.log('Error en handleObtenerDatosContrato: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return {
+      success: false,
+      message: error.message
+    };
   }
 }
 
@@ -532,29 +547,23 @@ function handleGenerarContrato(datos) {
     const { cdr } = datos;
 
     if (!cdr) {
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          success: false,
-          message: 'CDR no proporcionado'
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return {
+        success: false,
+        message: 'CDR no proporcionado'
+      };
     }
 
     // Generar contrato usando función de GESTOR_CONTRATOS.gs
     const resultado = generarContrato(cdr);
 
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
+    return resultado;
 
   } catch (error) {
     Logger.log('Error en handleGenerarContrato: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return {
+      success: false,
+      message: error.message
+    };
   }
 }
 
@@ -566,29 +575,23 @@ function handleRegistrarAprobacionContrato(datos) {
     const { cdr, tipo, accion, comentarios } = datos;
 
     if (!cdr || !tipo || !accion) {
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          success: false,
-          message: 'Faltan datos requeridos'
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return {
+        success: false,
+        message: 'Faltan datos requeridos'
+      };
     }
 
     // Registrar aprobación usando función de GESTOR_CONTRATOS.gs
     const resultado = registrarAprobacionContrato(cdr, tipo, accion, comentarios);
 
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
+    return resultado;
 
   } catch (error) {
     Logger.log('Error en handleRegistrarAprobacionContrato: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return {
+      success: false,
+      message: error.message
+    };
   }
 }
 
@@ -596,37 +599,22 @@ function handleRegistrarAprobacionContrato(datos) {
  * Obtener estado de aprobaciones
  */
 function handleObtenerEstadoAprobaciones(e) {
-  try {
-    const cdr = e.parameter.cdr;
+  const cdr = e.parameter.cdr;
 
-    if (!cdr) {
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          success: false,
-          message: 'CDR no proporcionado'
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // Obtener estados usando función de GESTOR_CONTRATOS.gs
-    const estados = obtenerEstadosAprobacion(cdr);
-
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: true,
-        estados: estados
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-
-  } catch (error) {
-    Logger.log('Error en handleObtenerEstadoAprobaciones: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+  if (!cdr) {
+    return {
+      success: false,
+      message: 'CDR no proporcionado'
+    };
   }
+
+  // Obtener estados usando función de GESTOR_CONTRATOS.gs
+  const estados = obtenerEstadosAprobacion(cdr);
+
+  return {
+    success: true,
+    estados: estados
+  };
 }
 
 /**
@@ -637,12 +625,10 @@ function handleSubirContratoFirmado(datos) {
     const { cdr, archivoBase64, nombreArchivo } = datos;
 
     if (!cdr || !archivoBase64) {
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          success: false,
-          message: 'Faltan datos requeridos'
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return {
+        success: false,
+        message: 'Faltan datos requeridos'
+      };
     }
 
     // Procesar el archivo
@@ -662,23 +648,19 @@ function handleSubirContratoFirmado(datos) {
     // Actualizar estado en la hoja
     actualizarEstadoContrato(cdr, 'CONTRATO FIRMADO', '✅ Contrato firmado y archivado');
 
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: true,
-        message: 'Contrato firmado guardado exitosamente',
-        url: archivo.getUrl(),
-        id: archivo.getId()
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return {
+      success: true,
+      message: 'Contrato firmado guardado exitosamente',
+      url: archivo.getUrl(),
+      id: archivo.getId()
+    };
 
   } catch (error) {
     Logger.log('Error en handleSubirContratoFirmado: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return {
+      success: false,
+      message: error.message
+    };
   }
 }
 
