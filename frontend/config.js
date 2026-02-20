@@ -10,7 +10,7 @@ const CONFIG = {
   // ==========================================
 
   // URL del Google Apps Script (Backend) - PRODUCCIÓN
-  API_URL: 'https://script.google.com/macros/s/AKfycbxSXgKUwROd2eebSWBjqJq3UyHFSTs4ze1AsR45blQC1GlRITaTcSycbgOkrYXsI1pQLg/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbzQ_2J62Qam0AW6lo3_KRBQTA0O30zQxVUNJYao-rqXdPTspfBOIhmMmTGBcwhMwpC8dQ/exec',
 
   // URL base del frontend en GitHub Pages
   BASE_URL: 'https://realestate-goldlifesystem.github.io/efirmacontrata',
