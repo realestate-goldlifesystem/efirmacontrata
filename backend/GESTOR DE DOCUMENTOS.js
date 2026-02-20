@@ -395,7 +395,8 @@ function handleVerificarLink(e) {
 
   return ContentService
     .createTextOutput(JSON.stringify(resultado))
-    .setMimeType(ContentService.MimeType.JSON);
+    .setMimeType(ContentService.MimeType.JSON)
+    .appendHeader("Access-Control-Allow-Origin", "*");
 }
 
 function handleObtenerRegistrosInquilinos() {

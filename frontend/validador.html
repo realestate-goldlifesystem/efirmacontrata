@@ -200,6 +200,7 @@
 
   </div>
 
+  <script src="config.js"></script>
   <script>
     // Obtener parámetros de la URL
     function getParams() {
@@ -242,11 +243,6 @@
       const { cdr, action, modo } = getParams();
 
       if (!cdr || !action) {
-        // Si faltan parámetros clave, mostrar error o redirigir a una selección manual (opcional)
-        // Por ahora, asumimos que siempre debe venir un link completo.
-        // O si no hay action, mostrar el menú antiguo? (Si el usuario quiere mantener selector)
-        // El usuario dijo: "seleccionar botones... pero no quiero que haga eso, sino que valide"
-        // Entonces error si no hay cdr/action.
         showError('Enlace incompleto o inválido. Falta código de registro.');
         return;
       }
@@ -260,9 +256,18 @@
         return;
       }
 
-      // Llamar al backend
-      google.script.run
-        .withSuccessHandler(function (response) {
+      // IMPORTANTE: En GitHub Pages NO funciona google.script.run
+      // Debemos usar fetch() al Web App URL
+      if (typeof CONFIG === 'undefined' || !CONFIG.API_URL) {
+        showError('Error de configuración: No se encontró la URL de la API.');
+        return;
+      }
+
+      const apiUrl = `${CONFIG.API_URL}?accion=verificarLink&cdr=${encodeURIComponent(cdr)}&tipo=${rol}`;
+
+      fetch(apiUrl)
+        .then(response => response.json())
+        .then(response => {
           console.log('Respuesta backend:', response);
 
           if (!response.success) {
@@ -273,7 +278,7 @@
           if (response.activo) {
             // Redirección automática
             document.querySelector('.status-text').innerText = 'Redirigiendo al formulario...';
-            // Agregar parámetros que ya teníamos
+
             let targetUrl = response.redirectUrl;
 
             // Si el backend no devolvió URL completa, construirla aqui (fallback)
@@ -291,11 +296,10 @@
             showInfo(icon, 'Estado del Proceso', response.mensaje);
           }
         })
-        .withFailureHandler(function (error) {
+        .catch(error => {
           console.error(error);
           showError('Error de conexión con el servidor: ' + error.message);
-        })
-        .verificarEstadoLink(cdr, rol);
+        });
     }
 
     // Iniciar al cargar
