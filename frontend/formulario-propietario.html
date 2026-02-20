@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,54 +9,228 @@
   <link rel="stylesheet" href="theme.css">
   <style>
     /* Wizard Steps */
-    .progress { display:flex; justify-content:space-between; margin-bottom:2rem; position:relative; }
-    .progress::before { content:''; position:absolute; top:20px; left:0; right:0; height:2px; background:#e5e7eb; z-index:0; }
-    .progress .step { background:#fff; border:2px solid #e5e7eb; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-weight:600; color:#9ca3af; cursor:pointer; transition:all 0.3s; z-index:1; }
-    .progress .step.active { background:var(--primary); border-color:var(--primary); color:#fff; }
-    .step-pane { display:none; animation:fadeIn 0.3s; }
-    .step-pane.show { display:block; }
-    @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
-    
+    .progress {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .progress::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #e5e7eb;
+      z-index: 0;
+    }
+
+    .progress .step {
+      background: #fff;
+      border: 2px solid #e5e7eb;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: all 0.3s;
+      z-index: 1;
+    }
+
+    .progress .step.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .step-pane {
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+
+    .step-pane.show {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     /* Files */
-    .file-upload { position:relative; margin-bottom:1rem; }
-    .file-input { display:none; }
-    .file-label { display:flex; align-items:center; padding:12px; border:2px dashed #d1d5db; border-radius:8px; cursor:pointer; transition:all 0.3s; }
-    .file-label:hover { border-color:var(--primary); background:#f9fafb; }
-    .file-name { margin-left:10px; color:#6b7280; }
-    
+    .file-upload {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-label {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border: 2px dashed #d1d5db;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .file-label:hover {
+      border-color: var(--primary);
+      background: #f9fafb;
+    }
+
+    .file-name {
+      margin-left: 10px;
+      color: #6b7280;
+    }
+
     /* Servicios */
-    .servicios-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin:1rem 0; }
-    .servicio-item { padding:1rem; border:2px solid #e5e7eb; border-radius:8px; transition:all 0.3s; }
-    .servicio-item.selected { background:#eff6ff; border-color:var(--primary); }
-    .servicio-checkbox { margin-bottom:0.5rem; }
-    
+    .servicios-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .servicio-item {
+      padding: 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .servicio-item.selected {
+      background: #eff6ff;
+      border-color: var(--primary);
+    }
+
+    .servicio-checkbox {
+      margin-bottom: 0.5rem;
+    }
+
     /* Inline Errors */
-    .error-msg { display:none; color:#ef4444; font-size:0.875rem; margin-top:4px; }
-    .error-msg.show { display:block; }
-    .input.invalid { border-color:#ef4444 !important; }
-    
+    .error-msg {
+      display: none;
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: 4px;
+    }
+
+    .error-msg.show {
+      display: block;
+    }
+
+    .input.invalid {
+      border-color: #ef4444 !important;
+    }
+
     /* Modal */
-    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000; }
-    .modal.show { display:flex; }
-    .modal-content { background:#fff; padding:2rem; border-radius:12px; max-width:400px; width:90%; position:relative; }
-    .modal-header { margin-bottom:1.5rem; }
-    .close-modal { position:absolute; top:15px; right:15px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af; }
-    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 90%;
+      position: relative;
+    }
+
+    .modal-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+
     /* Utilities */
-    .hidden { display:none !important; }
-    .grid-2col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-    .hr { height:1px; background:#e5e7eb; margin:1.5rem 0; }
-    .muted { color:#6b7280; }
-    .chip { display:inline-block; padding:4px 12px; background:#fef3c7; color:#92400e; border-radius:12px; font-size:0.875rem; margin:0 4px; }
-    
+    .hidden {
+      display: none !important;
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .hr {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 1.5rem 0;
+    }
+
+    .muted {
+      color: #6b7280;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      margin: 0 4px;
+    }
+
     /* Responsive */
     @media(max-width:640px) {
-      .grid-2col { grid-template-columns:1fr; }
-      .modal-content { width:95%; padding:1.5rem; }
-      .servicios-grid { grid-template-columns:1fr; }
+      .grid-2col {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-content {
+        width: 95%;
+        padding: 1.5rem;
+      }
+
+      .servicios-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
   <!-- Header -->
   <header class="header-main">
@@ -64,7 +239,7 @@
         <h1 class="logo">🏠 E-FirmaContrata</h1>
         <nav class="nav-menu">
           <a href="index.html">Inicio</a>
-          <a href="selector.html">Portal</a>
+          <a href="validador.html">Portal</a>
         </nav>
       </div>
     </div>
@@ -102,7 +277,7 @@
         <!-- Step 1: Datos Personales -->
         <div class="step-pane show" data-pane="0">
           <h3>Datos Personales del Propietario</h3>
-          
+
           <div class="form-group">
             <label for="tipoDocumento">Tipo de Documento <span class="required">*</span></label>
             <select id="tipoDocumento" class="input" required>
@@ -202,8 +377,10 @@
           <div class="alert alert-info">
             <p>📥 Descargar formato SARLAFT:</p>
             <div style="margin-top:8px">
-              <a href="https://bit.ly/B114-Persona-Natural" target="_blank" class="btn btn-sm btn-outline">Persona Natural</a>
-              <a href="https://bit.ly/B115-Persona-Juridica" target="_blank" class="btn btn-sm btn-outline">Persona Jurídica</a>
+              <a href="https://bit.ly/B114-Persona-Natural" target="_blank" class="btn btn-sm btn-outline">Persona
+                Natural</a>
+              <a href="https://bit.ly/B115-Persona-Juridica" target="_blank" class="btn btn-sm btn-outline">Persona
+                Jurídica</a>
             </div>
           </div>
         </div>
@@ -211,7 +388,7 @@
         <!-- Step 3: Información Bancaria -->
         <div class="step-pane" data-pane="2">
           <h3>Información Bancaria</h3>
-          
+
           <div class="form-group">
             <label for="tipoCuenta">Tipo de Cuenta <span class="required">*</span></label>
             <select id="tipoCuenta" class="input" required>
@@ -335,7 +512,7 @@
             <div class="card-body">
               <h4>Valor: $60.000 COP</h4>
               <p>Seleccione su método de pago preferido:</p>
-              
+
               <div class="payment-options">
                 <button id="btnPayBreb" class="btn btn-secondary btn-lg btn-block">
                   📱 Pagar con Nequi/Daviplata
@@ -385,7 +562,8 @@
       <div class="modal-body">
         <p>Transfiere $60.000 COP al siguiente número:</p>
         <div class="form-group">
-          <input type="text" id="brebNumber" class="input" readonly style="font-size:1.5rem; text-align:center; font-weight:bold;">
+          <input type="text" id="brebNumber" class="input" readonly
+            style="font-size:1.5rem; text-align:center; font-weight:bold;">
         </div>
         <button id="btnCopyBreb" class="btn btn-primary btn-block">📋 Copiar Número</button>
         <p class="muted" style="margin-top:1rem; font-size:0.9rem">
@@ -405,354 +583,354 @@
   <script src="config.js"></script>
 
   <script>
-  (function(){
-    // --------- Estado ----------
-    const state = {
-      cdr: '',
-      modoCorreccion: false,
-      docsCorreccion: [],
-      step: 0,
-      max: 5,
-      archivos: {},
-      servicios: [],
-      maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
-    };
-
-    // --------- Shortcuts ----------
-    const $ = (id) => document.getElementById(id);
-    const qsa = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
-
-    // --------- Elementos ----------
-    const el = {
-      bannerCorreccion: $("bannerCorreccion"),
-      correccionDocs: $("correccionDocs"),
-      alertBox: $("alertBox"),
-      loader: $("loader"),
-      btnPrev: $("btnPrev"),
-      btnNext: $("btnNext"),
-      btnEnviar: $("btnEnviar"),
-      resumen: $("resumen"),
-      // Datos personales
-      tipoDocumento: $("tipoDocumento"),
-      numeroDocumento: $("numeroDocumento"),
-      confirmarDocumento: $("confirmarDocumento"),
-      nombres: $("nombres"),
-      apellidos: $("apellidos"),
-      email: $("email"),
-      confirmarEmail: $("confirmarEmail"),
-      celular: $("celular"),
-      confirmarCelular: $("confirmarCelular"),
-      docError: $("docError"),
-      emailError: $("emailError"),
-      celError: $("celError"),
-      // Documentos
-      docFront: $("docFront"),
-      docFrontName: $("docFrontName"),
-      docBack: $("docBack"),
-      docBackName: $("docBackName"),
-      certTradicion: $("certTradicion"),
-      certTradicionName: $("certTradicionName"),
-      sarlaft: $("sarlaft"),
-      sarlaftName: $("sarlaftName"),
-      // Bancarios
-      tipoCuenta: $("tipoCuenta"),
-      numeroCuenta: $("numeroCuenta"),
-      banco: $("banco"),
-      titularCuenta: $("titularCuenta"),
-      docTitular: $("docTitular"),
-      certBancario: $("certBancario"),
-      certBancarioName: $("certBancarioName"),
-      // Servicios
-      servicioAgua: $("servicioAgua"),
-      servicioLuz: $("servicioLuz"),
-      servicioGas: $("servicioGas"),
-      servicioTelefono: $("servicioTelefono"),
-      servicioInternet: $("servicioInternet"),
-      // Pagos
-      btnPayBreb: $("btnPayBreb"),
-      btnPayWompi: $("btnPayWompi"),
-      modalBreb: $("modalBreb"),
-      brebNumber: $("brebNumber"),
-      btnCopyBreb: $("btnCopyBreb"),
-      btnCloseBreb: $("btnCloseBreb"),
-      toast: $("toast")
-    };
-
-    // --------- Init ----------
-    init();
-
-    function init(){
-      const params = new URLSearchParams(location.search);
-      state.cdr = params.get('cdr') || '';
-      state.modoCorreccion = (params.get('modo') === 'correccion');
-      const docs = params.get('docs');
-
-      if (!state.cdr) {
-        showAlert('warning', 'CDR no presente.');
-        return;
-      }
-
-      if (state.modoCorreccion) {
-        try {
-          state.docsCorreccion = docs ? JSON.parse(decodeURIComponent(docs)) : [];
-        } catch(e){ state.docsCorreccion = []; }
-        renderCorreccionBanner();
-      }
-
-      renderSteps();
-      bindWizard();
-      bindFiles();
-      bindServicios();
-      bindPagos();
-    }
-
-    // --------- Corrección ----------
-    function renderCorreccionBanner(){
-      if (!state.docsCorreccion.length) return;
-      el.bannerCorreccion.classList.remove('hidden');
-      el.correccionDocs.innerHTML = state.docsCorreccion.map(d => 
-        `<span class="chip">${escapeHTML(d)}</span>`
-      ).join('');
-    }
-
-    // --------- Wizard ----------
-    function renderSteps(){ gotoStep(0, true); }
-
-    function bindWizard(){
-      el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
-      el.btnNext.addEventListener('click', () => {
-        if (!validateStep(state.step)) return;
-        if (state.step < state.max) gotoStep(state.step + 1);
-      });
-      el.btnEnviar.addEventListener('click', onSubmit);
-
-      qsa('.progress .step').forEach(s => {
-        s.addEventListener('click', () => {
-          const target = Number(s.dataset.step);
-          if (target <= state.step) return gotoStep(target);
-          if (validateStep(state.step)) gotoStep(target);
-        });
-      });
-    }
-
-    function gotoStep(n, first=false){
-      state.step = Math.max(0, Math.min(n, state.max));
-      qsa('.step-pane').forEach(p => p.classList.toggle('show', Number(p.dataset.pane) === state.step));
-      qsa('.progress .step').forEach(s => s.classList.toggle('active', Number(s.dataset.step) === state.step));
-      el.btnPrev.disabled = (state.step === 0);
-      el.btnNext.classList.toggle('hidden', state.step === state.max);
-      el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
-
-      if (state.step === state.max) buildSummary();
-      if (!first) window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // --------- Files ----------
-    function bindFiles(){
-      bindFile(el.docFront, 'docFront', el.docFrontName);
-      bindFile(el.docBack, 'docBack', el.docBackName);
-      bindFile(el.certTradicion, 'certTradicion', el.certTradicionName);
-      bindFile(el.sarlaft, 'sarlaft', el.sarlaftName);
-      bindFile(el.certBancario, 'certBancario', el.certBancarioName);
-      
-      // Servicios
-      bindFile($('facturaAgua'), 'facturaAgua', $('facturaAguaName'));
-      bindFile($('facturaLuz'), 'facturaLuz', $('facturaLuzName'));
-      bindFile($('facturaGas'), 'facturaGas', $('facturaGasName'));
-      bindFile($('facturaTelefono'), 'facturaTelefono', $('facturaTelefonoName'));
-      bindFile($('facturaInternet'), 'facturaInternet', $('facturaInternetName'));
-    }
-
-    function bindFile(input, key, nameEl){
-      if (!input) return;
-      input.addEventListener('change', () => handleFile(input.files?.[0], key, nameEl));
-    }
-
-    function handleFile(file, key, nameEl){
-      if (!file) return;
-      if (file.size > state.maxFileSize){
-        showAlert('danger', `El archivo "${file.name}" excede el límite de ${(state.maxFileSize/1024/1024).toFixed(0)}MB.`);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        state.archivos[key] = { nombre:file.name, tipo:file.type, contenido:e.target.result };
-        if (nameEl) nameEl.textContent = file.name;
+    (function () {
+      // --------- Estado ----------
+      const state = {
+        cdr: '',
+        modoCorreccion: false,
+        docsCorreccion: [],
+        step: 0,
+        max: 5,
+        archivos: {},
+        servicios: [],
+        maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
       };
-      reader.readAsDataURL(file);
-    }
 
-    // --------- Servicios ----------
-    function bindServicios(){
-      ['agua','luz','gas','telefono','internet'].forEach(tipo => {
-        const checkbox = $(`servicio${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
-        const item = document.querySelector(`.servicio-item[data-servicio="${tipo}"]`);
-        
-        checkbox?.addEventListener('change', () => {
-          if (checkbox.checked) {
-            item?.classList.add('selected');
-            if (!state.servicios.includes(tipo)) state.servicios.push(tipo);
-          } else {
-            item?.classList.remove('selected');
-            state.servicios = state.servicios.filter(s => s !== tipo);
-          }
-        });
-      });
-    }
+      // --------- Shortcuts ----------
+      const $ = (id) => document.getElementById(id);
+      const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
-    // --------- Pagos ----------
-    function bindPagos(){
-      el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
-      el.btnPayBreb.addEventListener('click', openBrebModal);
-      el.btnCloseBreb.addEventListener('click', closeBrebModal);
-      el.modalBreb.addEventListener('click', (e)=>{ if (e.target === el.modalBreb) closeBrebModal(); });
-      el.btnCopyBreb.addEventListener('click', copyBreb);
-      el.btnPayWompi.addEventListener('click', handlePayWompi);
-    }
+      // --------- Elementos ----------
+      const el = {
+        bannerCorreccion: $("bannerCorreccion"),
+        correccionDocs: $("correccionDocs"),
+        alertBox: $("alertBox"),
+        loader: $("loader"),
+        btnPrev: $("btnPrev"),
+        btnNext: $("btnNext"),
+        btnEnviar: $("btnEnviar"),
+        resumen: $("resumen"),
+        // Datos personales
+        tipoDocumento: $("tipoDocumento"),
+        numeroDocumento: $("numeroDocumento"),
+        confirmarDocumento: $("confirmarDocumento"),
+        nombres: $("nombres"),
+        apellidos: $("apellidos"),
+        email: $("email"),
+        confirmarEmail: $("confirmarEmail"),
+        celular: $("celular"),
+        confirmarCelular: $("confirmarCelular"),
+        docError: $("docError"),
+        emailError: $("emailError"),
+        celError: $("celError"),
+        // Documentos
+        docFront: $("docFront"),
+        docFrontName: $("docFrontName"),
+        docBack: $("docBack"),
+        docBackName: $("docBackName"),
+        certTradicion: $("certTradicion"),
+        certTradicionName: $("certTradicionName"),
+        sarlaft: $("sarlaft"),
+        sarlaftName: $("sarlaftName"),
+        // Bancarios
+        tipoCuenta: $("tipoCuenta"),
+        numeroCuenta: $("numeroCuenta"),
+        banco: $("banco"),
+        titularCuenta: $("titularCuenta"),
+        docTitular: $("docTitular"),
+        certBancario: $("certBancario"),
+        certBancarioName: $("certBancarioName"),
+        // Servicios
+        servicioAgua: $("servicioAgua"),
+        servicioLuz: $("servicioLuz"),
+        servicioGas: $("servicioGas"),
+        servicioTelefono: $("servicioTelefono"),
+        servicioInternet: $("servicioInternet"),
+        // Pagos
+        btnPayBreb: $("btnPayBreb"),
+        btnPayWompi: $("btnPayWompi"),
+        modalBreb: $("modalBreb"),
+        brebNumber: $("brebNumber"),
+        btnCopyBreb: $("btnCopyBreb"),
+        btnCloseBreb: $("btnCloseBreb"),
+        toast: $("toast")
+      };
 
-    function openBrebModal(){
-      el.modalBreb.classList.add('show');
-      el.modalBreb.setAttribute('aria-hidden', 'false');
-      el.brebNumber.select();
-    }
+      // --------- Init ----------
+      init();
 
-    function closeBrebModal(){
-      el.modalBreb.classList.remove('show');
-      el.modalBreb.setAttribute('aria-hidden', 'true');
-    }
+      function init() {
+        const params = new URLSearchParams(location.search);
+        state.cdr = params.get('cdr') || '';
+        state.modoCorreccion = (params.get('modo') === 'correccion');
+        const docs = params.get('docs');
 
-    async function copyBreb(){
-      const value = (CONFIG?.PAGO?.NEQUI || '').toString().trim();
-      try{
-        if (!value) throw new Error('Número de pago no configurado.');
-        await navigator.clipboard.writeText(value);
-        toast('Número copiado: ' + value);
-      }catch(e){
-        toast('No se pudo copiar. Selecciona y copia manualmente.');
+        if (!state.cdr) {
+          showAlert('warning', 'CDR no presente.');
+          return;
+        }
+
+        if (state.modoCorreccion) {
+          try {
+            state.docsCorreccion = docs ? JSON.parse(decodeURIComponent(docs)) : [];
+          } catch (e) { state.docsCorreccion = []; }
+          renderCorreccionBanner();
+        }
+
+        renderSteps();
+        bindWizard();
+        bindFiles();
+        bindServicios();
+        bindPagos();
       }
-    }
 
-    function handlePayWompi(){
-      const url = CONFIG?.PAGO?.WOMPI_LINK || '';
-      if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta.');
-      window.open(url, '_blank', 'noopener');
-    }
+      // --------- Corrección ----------
+      function renderCorreccionBanner() {
+        if (!state.docsCorreccion.length) return;
+        el.bannerCorreccion.classList.remove('hidden');
+        el.correccionDocs.innerHTML = state.docsCorreccion.map(d =>
+          `<span class="chip">${escapeHTML(d)}</span>`
+        ).join('');
+      }
 
-    // --------- Validación ----------
-    const rx = {
-      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      phone: /^\d{10}$/,
-      num: /^[0-9A-Za-z.-]{5,}$/
-    };
+      // --------- Wizard ----------
+      function renderSteps() { gotoStep(0, true); }
 
-    function validateStep(step){
-      hideInlineErrors();
-      switch(step){
-        case 0: // Datos personales
-          const required = [
-            el.tipoDocumento, el.numeroDocumento, el.confirmarDocumento,
-            el.nombres, el.apellidos, el.email, el.confirmarEmail,
-            el.celular, el.confirmarCelular
-          ];
-          for (const r of required){
-            if (!r.value?.trim()){
-              showAlert('warning', 'Completa todos los campos obligatorios.');
-              r.focus(); return false;
+      function bindWizard() {
+        el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
+        el.btnNext.addEventListener('click', () => {
+          if (!validateStep(state.step)) return;
+          if (state.step < state.max) gotoStep(state.step + 1);
+        });
+        el.btnEnviar.addEventListener('click', onSubmit);
+
+        qsa('.progress .step').forEach(s => {
+          s.addEventListener('click', () => {
+            const target = Number(s.dataset.step);
+            if (target <= state.step) return gotoStep(target);
+            if (validateStep(state.step)) gotoStep(target);
+          });
+        });
+      }
+
+      function gotoStep(n, first = false) {
+        state.step = Math.max(0, Math.min(n, state.max));
+        qsa('.step-pane').forEach(p => p.classList.toggle('show', Number(p.dataset.pane) === state.step));
+        qsa('.progress .step').forEach(s => s.classList.toggle('active', Number(s.dataset.step) === state.step));
+        el.btnPrev.disabled = (state.step === 0);
+        el.btnNext.classList.toggle('hidden', state.step === state.max);
+        el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
+
+        if (state.step === state.max) buildSummary();
+        if (!first) window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // --------- Files ----------
+      function bindFiles() {
+        bindFile(el.docFront, 'docFront', el.docFrontName);
+        bindFile(el.docBack, 'docBack', el.docBackName);
+        bindFile(el.certTradicion, 'certTradicion', el.certTradicionName);
+        bindFile(el.sarlaft, 'sarlaft', el.sarlaftName);
+        bindFile(el.certBancario, 'certBancario', el.certBancarioName);
+
+        // Servicios
+        bindFile($('facturaAgua'), 'facturaAgua', $('facturaAguaName'));
+        bindFile($('facturaLuz'), 'facturaLuz', $('facturaLuzName'));
+        bindFile($('facturaGas'), 'facturaGas', $('facturaGasName'));
+        bindFile($('facturaTelefono'), 'facturaTelefono', $('facturaTelefonoName'));
+        bindFile($('facturaInternet'), 'facturaInternet', $('facturaInternetName'));
+      }
+
+      function bindFile(input, key, nameEl) {
+        if (!input) return;
+        input.addEventListener('change', () => handleFile(input.files?.[0], key, nameEl));
+      }
+
+      function handleFile(file, key, nameEl) {
+        if (!file) return;
+        if (file.size > state.maxFileSize) {
+          showAlert('danger', `El archivo "${file.name}" excede el límite de ${(state.maxFileSize / 1024 / 1024).toFixed(0)}MB.`);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.archivos[key] = { nombre: file.name, tipo: file.type, contenido: e.target.result };
+          if (nameEl) nameEl.textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // --------- Servicios ----------
+      function bindServicios() {
+        ['agua', 'luz', 'gas', 'telefono', 'internet'].forEach(tipo => {
+          const checkbox = $(`servicio${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
+          const item = document.querySelector(`.servicio-item[data-servicio="${tipo}"]`);
+
+          checkbox?.addEventListener('change', () => {
+            if (checkbox.checked) {
+              item?.classList.add('selected');
+              if (!state.servicios.includes(tipo)) state.servicios.push(tipo);
+            } else {
+              item?.classList.remove('selected');
+              state.servicios = state.servicios.filter(s => s !== tipo);
             }
-          }
-          if (!rx.num.test(el.numeroDocumento.value.trim())){
-            showAlert('warning', 'Número de documento inválido.');
-            el.numeroDocumento.focus(); return false;
-          }
-          if (el.numeroDocumento.value.trim() !== el.confirmarDocumento.value.trim()){
-            el.docError.classList.add('show');
-            el.confirmarDocumento.classList.add('invalid');
-            return false;
-          }
-          if (!rx.email.test(el.email.value.trim())){
-            showAlert('warning', 'Correo inválido.');
-            el.email.focus(); return false;
-          }
-          if (el.email.value.trim() !== el.confirmarEmail.value.trim()){
-            el.emailError.classList.add('show');
-            el.confirmarEmail.classList.add('invalid');
-            return false;
-          }
-          if (!rx.phone.test(el.celular.value.trim())){
-            showAlert('warning', 'Celular inválido (10 dígitos).');
-            el.celular.focus(); return false;
-          }
-          if (el.celular.value.trim() !== el.confirmarCelular.value.trim()){
-            el.celError.classList.add('show');
-            el.confirmarCelular.classList.add('invalid');
-            return false;
-          }
-          return true;
+          });
+        });
+      }
 
-        case 1: // Documentos
-          const docs = ['docFront','docBack','certTradicion','sarlaft'];
-          for (const d of docs){
-            if (!state.archivos[d]){
-              showAlert('warning', 'Faltan documentos obligatorios.');
+      // --------- Pagos ----------
+      function bindPagos() {
+        el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
+        el.btnPayBreb.addEventListener('click', openBrebModal);
+        el.btnCloseBreb.addEventListener('click', closeBrebModal);
+        el.modalBreb.addEventListener('click', (e) => { if (e.target === el.modalBreb) closeBrebModal(); });
+        el.btnCopyBreb.addEventListener('click', copyBreb);
+        el.btnPayWompi.addEventListener('click', handlePayWompi);
+      }
+
+      function openBrebModal() {
+        el.modalBreb.classList.add('show');
+        el.modalBreb.setAttribute('aria-hidden', 'false');
+        el.brebNumber.select();
+      }
+
+      function closeBrebModal() {
+        el.modalBreb.classList.remove('show');
+        el.modalBreb.setAttribute('aria-hidden', 'true');
+      }
+
+      async function copyBreb() {
+        const value = (CONFIG?.PAGO?.NEQUI || '').toString().trim();
+        try {
+          if (!value) throw new Error('Número de pago no configurado.');
+          await navigator.clipboard.writeText(value);
+          toast('Número copiado: ' + value);
+        } catch (e) {
+          toast('No se pudo copiar. Selecciona y copia manualmente.');
+        }
+      }
+
+      function handlePayWompi() {
+        const url = CONFIG?.PAGO?.WOMPI_LINK || '';
+        if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta.');
+        window.open(url, '_blank', 'noopener');
+      }
+
+      // --------- Validación ----------
+      const rx = {
+        email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        phone: /^\d{10}$/,
+        num: /^[0-9A-Za-z.-]{5,}$/
+      };
+
+      function validateStep(step) {
+        hideInlineErrors();
+        switch (step) {
+          case 0: // Datos personales
+            const required = [
+              el.tipoDocumento, el.numeroDocumento, el.confirmarDocumento,
+              el.nombres, el.apellidos, el.email, el.confirmarEmail,
+              el.celular, el.confirmarCelular
+            ];
+            for (const r of required) {
+              if (!r.value?.trim()) {
+                showAlert('warning', 'Completa todos los campos obligatorios.');
+                r.focus(); return false;
+              }
+            }
+            if (!rx.num.test(el.numeroDocumento.value.trim())) {
+              showAlert('warning', 'Número de documento inválido.');
+              el.numeroDocumento.focus(); return false;
+            }
+            if (el.numeroDocumento.value.trim() !== el.confirmarDocumento.value.trim()) {
+              el.docError.classList.add('show');
+              el.confirmarDocumento.classList.add('invalid');
               return false;
             }
-          }
-          return true;
-
-        case 2: // Bancarios
-          const bancarios = [el.tipoCuenta, el.numeroCuenta, el.banco, el.titularCuenta, el.docTitular];
-          for (const b of bancarios){
-            if (!b.value?.trim()){
-              showAlert('warning', 'Complete toda la información bancaria.');
-              b.focus(); return false;
+            if (!rx.email.test(el.email.value.trim())) {
+              showAlert('warning', 'Correo inválido.');
+              el.email.focus(); return false;
             }
-          }
-          if (!state.archivos.certBancario){
-            showAlert('warning', 'Falta la certificación bancaria.');
-            return false;
-          }
-          return true;
+            if (el.email.value.trim() !== el.confirmarEmail.value.trim()) {
+              el.emailError.classList.add('show');
+              el.confirmarEmail.classList.add('invalid');
+              return false;
+            }
+            if (!rx.phone.test(el.celular.value.trim())) {
+              showAlert('warning', 'Celular inválido (10 dígitos).');
+              el.celular.focus(); return false;
+            }
+            if (el.celular.value.trim() !== el.confirmarCelular.value.trim()) {
+              el.celError.classList.add('show');
+              el.confirmarCelular.classList.add('invalid');
+              return false;
+            }
+            return true;
 
-        case 3: // Servicios - opcional
-          return true;
+          case 1: // Documentos
+            const docs = ['docFront', 'docBack', 'certTradicion', 'sarlaft'];
+            for (const d of docs) {
+              if (!state.archivos[d]) {
+                showAlert('warning', 'Faltan documentos obligatorios.');
+                return false;
+              }
+            }
+            return true;
 
-        case 4: // Pago - opcional
-          return true;
+          case 2: // Bancarios
+            const bancarios = [el.tipoCuenta, el.numeroCuenta, el.banco, el.titularCuenta, el.docTitular];
+            for (const b of bancarios) {
+              if (!b.value?.trim()) {
+                showAlert('warning', 'Complete toda la información bancaria.');
+                b.focus(); return false;
+              }
+            }
+            if (!state.archivos.certBancario) {
+              showAlert('warning', 'Falta la certificación bancaria.');
+              return false;
+            }
+            return true;
 
-        default:
-          return true;
+          case 3: // Servicios - opcional
+            return true;
+
+          case 4: // Pago - opcional
+            return true;
+
+          default:
+            return true;
+        }
       }
-    }
 
-    function hideInlineErrors(){
-      [el.docError, el.emailError, el.celError].forEach(n => n.classList.remove('show'));
-      [el.confirmarDocumento, el.confirmarEmail, el.confirmarCelular].forEach(i => i.classList.remove('invalid'));
-      el.alertBox.classList.add('hidden');
-    }
+      function hideInlineErrors() {
+        [el.docError, el.emailError, el.celError].forEach(n => n.classList.remove('show'));
+        [el.confirmarDocumento, el.confirmarEmail, el.confirmarCelular].forEach(i => i.classList.remove('invalid'));
+        el.alertBox.classList.add('hidden');
+      }
 
-    // --------- Resumen ----------
-    function buildSummary(){
-      const serviciosHtml = state.servicios.length > 0 
-        ? state.servicios.map(s => `<span class="chip">💡 ${s}</span>`).join('')
-        : '<span class="muted">Sin servicios seleccionados</span>';
+      // --------- Resumen ----------
+      function buildSummary() {
+        const serviciosHtml = state.servicios.length > 0
+          ? state.servicios.map(s => `<span class="chip">💡 ${s}</span>`).join('')
+          : '<span class="muted">Sin servicios seleccionados</span>';
 
-      const archivosHtml = Object.entries(state.archivos).map(([k,v]) => {
-        const nice = {
-          docFront: 'Doc. Frontal',
-          docBack: 'Doc. Reverso',
-          certTradicion: 'Certificado T&L',
-          sarlaft: 'SARLAFT',
-          certBancario: 'Cert. Bancaria',
-          facturaAgua: 'Factura Agua',
-          facturaLuz: 'Factura Luz',
-          facturaGas: 'Factura Gas',
-          facturaTelefono: 'Factura Teléfono',
-          facturaInternet: 'Factura Internet'
-        }[k] || k;
-        return `<li>${nice}: <span class="muted">${escapeHTML(v?.nombre || '—')}</span></li>`;
-      }).join('');
+        const archivosHtml = Object.entries(state.archivos).map(([k, v]) => {
+          const nice = {
+            docFront: 'Doc. Frontal',
+            docBack: 'Doc. Reverso',
+            certTradicion: 'Certificado T&L',
+            sarlaft: 'SARLAFT',
+            certBancario: 'Cert. Bancaria',
+            facturaAgua: 'Factura Agua',
+            facturaLuz: 'Factura Luz',
+            facturaGas: 'Factura Gas',
+            facturaTelefono: 'Factura Teléfono',
+            facturaInternet: 'Factura Internet'
+          }[k] || k;
+          return `<li>${nice}: <span class="muted">${escapeHTML(v?.nombre || '—')}</span></li>`;
+        }).join('');
 
-      el.resumen.innerHTML = `
+        el.resumen.innerHTML = `
         <div class="card">
           <div class="card-body">
             <h3>Datos Personales</h3>
@@ -782,111 +960,112 @@
           </div>
         </div>
       `;
-    }
-
-    // --------- Submit CORREGIDO ----------
-    async function onSubmit(){
-      // Validación final
-      for (let i=0; i<=4; i++){
-        if (!validateStep(i)) { gotoStep(i); return; }
       }
 
-      toggleLoading(true);
-
-      // Preparar servicios públicos con archivos
-      const serviciosPublicos = state.servicios.map(tipo => {
-        const facturaKey = `factura${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
-        return {
-          tipo: tipo,
-          archivo: state.archivos[facturaKey] || null
-        };
-      });
-
-      // ESTRUCTURA CORREGIDA para coincidir con el backend
-      const payload = {
-        accion: 'procesarFormularioPropietario',
-        codigoRegistro: state.cdr,  // Cambio: cdr → codigoRegistro
-        datosFormulario: {  // Cambio: agrupamos todo aquí
-          propietario: {
-            tipoDocumento: el.tipoDocumento.value.trim(),
-            numeroDocumento: el.numeroDocumento.value.trim(),
-            nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`,
-            email: el.email.value.trim(),
-            celular: el.celular.value.trim()
-          },
-          bancarios: {
-            tipoCuenta: el.tipoCuenta.value.trim(),
-            numeroCuenta: el.numeroCuenta.value.trim(),
-            banco: el.banco.value.trim(),
-            titularCuenta: el.titularCuenta.value.trim(),
-            documentoTitular: el.docTitular.value.trim()
-          },
-          serviciosPublicos: serviciosPublicos,
-          modoCorreccion: state.modoCorreccion
-        },
-        archivosBase64: {  // Cambio: archivos → archivosBase64
-          docFront: state.archivos.docFront,
-          docBack: state.archivos.docBack,
-          certTradicion: state.archivos.certTradicion,
-          sarlaft: state.archivos.sarlaft,
-          certBancario: state.archivos.certBancario
+      // --------- Submit CORREGIDO ----------
+      async function onSubmit() {
+        // Validación final
+        for (let i = 0; i <= 4; i++) {
+          if (!validateStep(i)) { gotoStep(i); return; }
         }
-      };
 
-      try{
-        const url = new URL(CONFIG.API_URL);
-        const res = await fetch(url.toString(), {
-          method:'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+        toggleLoading(true);
+
+        // Preparar servicios públicos con archivos
+        const serviciosPublicos = state.servicios.map(tipo => {
+          const facturaKey = `factura${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
+          return {
+            tipo: tipo,
+            archivo: state.archivos[facturaKey] || null
+          };
         });
-        
-        const data = await res.json();
-        
-        // VALIDACIÓN CORREGIDA: success en lugar de ok
-        if (!data || !data.success){
-          throw new Error(data?.message || 'No fue posible procesar la información.');
+
+        // ESTRUCTURA CORREGIDA para coincidir con el backend
+        const payload = {
+          accion: 'procesarFormularioPropietario',
+          codigoRegistro: state.cdr,  // Cambio: cdr → codigoRegistro
+          datosFormulario: {  // Cambio: agrupamos todo aquí
+            propietario: {
+              tipoDocumento: el.tipoDocumento.value.trim(),
+              numeroDocumento: el.numeroDocumento.value.trim(),
+              nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`,
+              email: el.email.value.trim(),
+              celular: el.celular.value.trim()
+            },
+            bancarios: {
+              tipoCuenta: el.tipoCuenta.value.trim(),
+              numeroCuenta: el.numeroCuenta.value.trim(),
+              banco: el.banco.value.trim(),
+              titularCuenta: el.titularCuenta.value.trim(),
+              documentoTitular: el.docTitular.value.trim()
+            },
+            serviciosPublicos: serviciosPublicos,
+            modoCorreccion: state.modoCorreccion
+          },
+          archivosBase64: {  // Cambio: archivos → archivosBase64
+            docFront: state.archivos.docFront,
+            docBack: state.archivos.docBack,
+            certTradicion: state.archivos.certTradicion,
+            sarlaft: state.archivos.sarlaft,
+            certBancario: state.archivos.certBancario
+          }
+        };
+
+        try {
+          const url = new URL(CONFIG.API_URL);
+          const res = await fetch(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+
+          // VALIDACIÓN CORREGIDA: success en lugar de ok
+          if (!data || !data.success) {
+            throw new Error(data?.message || 'No fue posible procesar la información.');
+          }
+
+          const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
+          location.href = `pagina-exito.html?status=success&msg=${msg}`;
+
+        } catch (err) {
+          console.error('[Propietario] Error:', err);
+          showAlert('danger', err.message || 'Ocurrió un error inesperado.');
+        } finally {
+          toggleLoading(false);
         }
-        
-        const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
-        location.href = `pagina-exito.html?status=success&msg=${msg}`;
-        
-      }catch(err){
-        console.error('[Propietario] Error:', err);
-        showAlert('danger', err.message || 'Ocurrió un error inesperado.');
-      }finally{
-        toggleLoading(false);
       }
-    }
 
-    // --------- Utilidades ----------
-    function showAlert(type, text){
-      const map = { success:'alert-success', warning:'alert-warning', danger:'alert-danger', info:'alert-info' };
-      el.alertBox.className = `alert ${map[type] || 'alert-info'}`;
-      el.alertBox.innerHTML = escapeHTML(text);
-      el.alertBox.classList.remove('hidden');
-      el.alertBox.focus?.();
-    }
+      // --------- Utilidades ----------
+      function showAlert(type, text) {
+        const map = { success: 'alert-success', warning: 'alert-warning', danger: 'alert-danger', info: 'alert-info' };
+        el.alertBox.className = `alert ${map[type] || 'alert-info'}`;
+        el.alertBox.innerHTML = escapeHTML(text);
+        el.alertBox.classList.remove('hidden');
+        el.alertBox.focus?.();
+      }
 
-    function toggleLoading(show){
-      el.loader.classList.toggle('hidden', !show);
-      el.btnPrev.disabled = !!show;
-      el.btnNext.disabled = !!show;
-      el.btnEnviar.disabled = !!show;
-    }
+      function toggleLoading(show) {
+        el.loader.classList.toggle('hidden', !show);
+        el.btnPrev.disabled = !!show;
+        el.btnNext.disabled = !!show;
+        el.btnEnviar.disabled = !!show;
+      }
 
-    function toast(text){
-      el.toast.textContent = text || 'Acción realizada.';
-      el.toast.classList.add('show');
-      setTimeout(() => el.toast.classList.remove('show'), 3000);
-    }
+      function toast(text) {
+        el.toast.textContent = text || 'Acción realizada.';
+        el.toast.classList.add('show');
+        setTimeout(() => el.toast.classList.remove('show'), 3000);
+      }
 
-    function escapeHTML(str){
-      const div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
-    }
-  })();
+      function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      }
+    })();
   </script>
 </body>
+
 </html>

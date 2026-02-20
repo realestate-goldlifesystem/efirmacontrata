@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,47 +9,200 @@
   <link rel="stylesheet" href="theme.css">
   <style>
     /* Wizard Steps */
-    .progress { display:flex; justify-content:space-between; margin-bottom:2rem; position:relative; }
-    .progress::before { content:''; position:absolute; top:20px; left:0; right:0; height:2px; background:#e5e7eb; z-index:0; }
-    .progress .step { background:#fff; border:2px solid #e5e7eb; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-weight:600; color:#9ca3af; cursor:pointer; transition:all 0.3s; z-index:1; }
-    .progress .step.active { background:var(--primary); border-color:var(--primary); color:#fff; }
-    .step-pane { display:none; animation:fadeIn 0.3s; }
-    .step-pane.show { display:block; }
-    @keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
-    
+    .progress {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .progress::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #e5e7eb;
+      z-index: 0;
+    }
+
+    .progress .step {
+      background: #fff;
+      border: 2px solid #e5e7eb;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: all 0.3s;
+      z-index: 1;
+    }
+
+    .progress .step.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .step-pane {
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+
+    .step-pane.show {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     /* Files */
-    .file-upload { position:relative; margin-bottom:1rem; }
-    .file-input { display:none; }
-    .file-label { display:flex; align-items:center; padding:12px; border:2px dashed #d1d5db; border-radius:8px; cursor:pointer; transition:all 0.3s; }
-    .file-label:hover { border-color:var(--primary); background:#f9fafb; }
-    .file-name { margin-left:10px; color:#6b7280; }
-    
+    .file-upload {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-label {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border: 2px dashed #d1d5db;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .file-label:hover {
+      border-color: var(--primary);
+      background: #f9fafb;
+    }
+
+    .file-name {
+      margin-left: 10px;
+      color: #6b7280;
+    }
+
     /* Inline Errors */
-    .error-msg { display:none; color:#ef4444; font-size:0.875rem; margin-top:4px; }
-    .error-msg.show { display:block; }
-    .input.invalid { border-color:#ef4444 !important; }
-    
+    .error-msg {
+      display: none;
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: 4px;
+    }
+
+    .error-msg.show {
+      display: block;
+    }
+
+    .input.invalid {
+      border-color: #ef4444 !important;
+    }
+
     /* Modal */
-    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000; }
-    .modal.show { display:flex; }
-    .modal-content { background:#fff; padding:2rem; border-radius:12px; max-width:400px; width:90%; position:relative; }
-    .modal-header { margin-bottom:1.5rem; }
-    .close-modal { position:absolute; top:15px; right:15px; background:none; border:none; font-size:1.5rem; cursor:pointer; color:#9ca3af; }
-    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 90%;
+      position: relative;
+    }
+
+    .modal-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+
     /* Utilities */
-    .hidden { display:none !important; }
-    .grid-2col { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
-    .hr { height:1px; background:#e5e7eb; margin:1.5rem 0; }
-    .muted { color:#6b7280; }
-    .chip { display:inline-block; padding:4px 12px; background:#fef3c7; color:#92400e; border-radius:12px; font-size:0.875rem; margin:0 4px; }
-    
+    .hidden {
+      display: none !important;
+    }
+
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .hr {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 1.5rem 0;
+    }
+
+    .muted {
+      color: #6b7280;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      margin: 0 4px;
+    }
+
     /* Responsive */
     @media(max-width:640px) {
-      .grid-2col { grid-template-columns:1fr; }
-      .modal-content { width:95%; padding:1.5rem; }
+      .grid-2col {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-content {
+        width: 95%;
+        padding: 1.5rem;
+      }
     }
   </style>
 </head>
+
 <body>
   <!-- Header -->
   <header class="header-main">
@@ -57,7 +211,7 @@
         <h1 class="logo">🏠 E-FirmaContrata</h1>
         <nav class="nav-menu">
           <a href="index.html">Inicio</a>
-          <a href="selector.html">Portal</a>
+          <a href="validador.html">Portal</a>
         </nav>
       </div>
     </div>
@@ -260,7 +414,7 @@
             <div class="card-body">
               <h4>Valor: $60.000 COP</h4>
               <p>Seleccione su método de pago preferido:</p>
-              
+
               <div class="payment-options">
                 <button id="btnPayBreb" class="btn btn-secondary btn-lg btn-block">
                   📱 Pagar con Nequi/Daviplata
@@ -310,7 +464,8 @@
       <div class="modal-body">
         <p>Transfiere $60.000 COP al siguiente número:</p>
         <div class="form-group">
-          <input type="text" id="brebNumber" class="input" readonly style="font-size:1.5rem; text-align:center; font-weight:bold;">
+          <input type="text" id="brebNumber" class="input" readonly
+            style="font-size:1.5rem; text-align:center; font-weight:bold;">
         </div>
         <button id="btnCopyBreb" class="btn btn-primary btn-block">📋 Copiar Número</button>
         <p class="muted" style="margin-top:1rem; font-size:0.9rem">
@@ -330,274 +485,274 @@
   <script src="config.js"></script>
 
   <script>
-  (function(){
-    // --------- Estado ----------
-    const state = {
-      cdr: '',
-      modoCorreccion: false,
-      docsCorreccion: [],
-      step: 0,
-      max: 4,
-      archivos: {},
-      maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
-    };
-
-    // --------- Shortcuts ----------
-    const $ = (id) => document.getElementById(id);
-    const qs = (sel, ctx=document) => ctx.querySelector(sel);
-    const qsa = (sel, ctx=document) => Array.from(ctx.querySelectorAll(sel));
-
-    // --------- Elementos ----------
-    const el = {
-      bannerCorreccion: $("bannerCorreccion"),
-      correccionDocs: $("correccionDocs"),
-      correccionObs: $("correccionObs"),
-      alertBox: $("alertBox"),
-      loader: $("loader"),
-      btnPrev: $("btnPrev"),
-      btnNext: $("btnNext"),
-      btnEnviar: $("btnEnviar"),
-      resumen: $("resumen"),
-      tipoDocumento: $("tipoDocumento"),
-      numeroDocumento: $("numeroDocumento"),
-      confirmarDocumento: $("confirmarDocumento"),
-      nombres: $("nombres"),
-      apellidos: $("apellidos"),
-      email: $("email"),
-      confirmarEmail: $("confirmarEmail"),
-      celular: $("celular"),
-      confirmarCelular: $("confirmarCelular"),
-      docError: $("docError"),
-      emailError: $("emailError"),
-      celError: $("celError"),
-      docFront: $("docFront"),
-      docFrontName: $("docFrontName"),
-      docBack: $("docBack"),
-      docBackName: $("docBackName"),
-      ingresos: $("ingresos"),
-      ingresosName: $("ingresosName"),
-      coTipo: $("coTipo"),
-      coNumero: $("coNumero"),
-      coNombres: $("coNombres"),
-      coApellidos: $("coApellidos"),
-      coEmail: $("coEmail"),
-      coCelular: $("coCelular"),
-      coDocFront: $("coDocFront"),
-      coDocFrontName: $("coDocFrontName"),
-      coDocBack: $("coDocBack"),
-      coDocBackName: $("coDocBackName"),
-      coIngresos: $("coIngresos"),
-      coIngresosName: $("coIngresosName"),
-      btnPayBreb: $("btnPayBreb"),
-      btnPayWompi: $("btnPayWompi"),
-      modalBreb: $("modalBreb"),
-      brebNumber: $("brebNumber"),
-      btnCopyBreb: $("btnCopyBreb"),
-      btnCloseBreb: $("btnCloseBreb"),
-      toast: $("toast"),
-    };
-
-    // --------- Init ----------
-    init();
-
-    function init(){
-      // Params
-      const params = new URLSearchParams(location.search);
-      state.cdr = params.get('cdr') || '';
-      state.modoCorreccion = (params.get('modo') === 'correccion');
-      const docs = params.get('docs');
-
-      if (!state.cdr) {
-        showAlert('warning', 'CDR no presente.');
-        return;
-      }
-
-      if (state.modoCorreccion) {
-        try {
-          state.docsCorreccion = docs ? JSON.parse(decodeURIComponent(docs)) : [];
-        } catch(e){ state.docsCorreccion = []; }
-        renderCorreccionBanner();
-      }
-
-      // Wizard
-      renderSteps();
-      bindWizard();
-
-      // Files
-      bindFile(el.docFront, 'docFront', el.docFrontName);
-      bindFile(el.docBack, 'docBack', el.docBackName);
-      bindFile(el.ingresos, 'ingresos', el.ingresosName);
-      bindFile(el.coDocFront, 'coDocFront', el.coDocFrontName);
-      bindFile(el.coDocBack, 'coDocBack', el.coDocBackName);
-      bindFile(el.coIngresos, 'coIngresos', el.coIngresosName);
-
-      // Pago
-      el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
-      el.btnPayBreb.addEventListener('click', openBrebModal);
-      el.btnCloseBreb.addEventListener('click', closeBrebModal);
-      el.modalBreb.addEventListener('click', (e)=>{ if (e.target === el.modalBreb) closeBrebModal(); });
-      el.btnCopyBreb.addEventListener('click', copyBreb);
-      el.btnPayWompi.addEventListener('click', handlePayWompi);
-    }
-
-    // --------- Corrección ----------
-    function renderCorreccionBanner(){
-      if (!state.docsCorreccion.length){ return; }
-      el.bannerCorreccion.classList.remove('hidden');
-      el.correccionDocs.innerHTML = state.docsCorreccion.map(d => `<span class="chip">${escapeHTML(d)}</span>`).join('');
-    }
-
-    // --------- Wizard ----------
-    function renderSteps(){ gotoStep(0, true); }
-
-    function bindWizard(){
-      el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
-      el.btnNext.addEventListener('click', () => {
-        if (!validateStep(state.step)) return;
-        if (state.step < state.max) gotoStep(state.step + 1);
-      });
-      el.btnEnviar.addEventListener('click', onSubmit);
-
-      qsa('.progress .step').forEach(s => {
-        s.addEventListener('click', () => {
-          const target = Number(s.dataset.step);
-          if (target <= state.step) return gotoStep(target);
-          if (validateStep(state.step)) gotoStep(target);
-        });
-      });
-    }
-
-    function gotoStep(n, first=false){
-      state.step = Math.max(0, Math.min(n, state.max));
-      qsa('.step-pane').forEach(p => p.classList.toggle('show', Number(p.dataset.pane) === state.step));
-      qsa('.progress .step').forEach(s => s.classList.toggle('active', Number(s.dataset.step) === state.step));
-      el.btnPrev.disabled = (state.step === 0);
-      el.btnNext.classList.toggle('hidden', state.step === state.max);
-      el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
-
-      if (state.step === state.max) buildSummary();
-      if (!first) window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // --------- Files ----------
-    function bindFile(input, key, nameEl){
-      input.addEventListener('change', () => handleFile(input.files?.[0], key, nameEl));
-    }
-
-    function handleFile(file, key, nameEl){
-      if (!file) return;
-      if (file.size > state.maxFileSize){
-        showAlert('danger', `El archivo "${file.name}" excede el límite de ${(state.maxFileSize/1024/1024).toFixed(0)}MB.`);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        state.archivos[key] = { nombre:file.name, tipo:file.type, contenido:e.target.result };
-        if (nameEl) nameEl.textContent = file.name;
+    (function () {
+      // --------- Estado ----------
+      const state = {
+        cdr: '',
+        modoCorreccion: false,
+        docsCorreccion: [],
+        step: 0,
+        max: 4,
+        archivos: {},
+        maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
       };
-      reader.readAsDataURL(file);
-    }
 
-    // --------- Validación ----------
-    const rx = {
-      email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      phone: /^\d{10}$/,
-      num: /^[0-9A-Za-z.-]{5,}$/
-    };
+      // --------- Shortcuts ----------
+      const $ = (id) => document.getElementById(id);
+      const qs = (sel, ctx = document) => ctx.querySelector(sel);
+      const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
-    function validateStep(step){
-      hideInlineErrors();
-      switch(step){
-        case 0:{
-          const required = [
-            el.tipoDocumento, el.numeroDocumento, el.confirmarDocumento,
-            el.nombres, el.apellidos, el.email, el.confirmarEmail,
-            el.celular, el.confirmarCelular
-          ];
-          for (const r of required){
-            if (!r.value || !r.value.trim()){
-              showAlert('warning', 'Completa los campos obligatorios del paso Datos.');
-              r.focus(); return false;
-            }
-          }
-          if (!rx.num.test(el.numeroDocumento.value.trim())){
-            showAlert('warning', 'Número de documento inválido.'); el.numeroDocumento.focus(); return false;
-          }
-          if (el.numeroDocumento.value.trim() !== el.confirmarDocumento.value.trim()){
-            el.docError.classList.add('show'); el.confirmarDocumento.classList.add('invalid'); return false;
-          }
-          if (!rx.email.test(el.email.value.trim())){
-            showAlert('warning', 'Correo inválido.'); el.email.focus(); return false;
-          }
-          if (el.email.value.trim() !== el.confirmarEmail.value.trim()){
-            el.emailError.classList.add('show'); el.confirmarEmail.classList.add('invalid'); return false;
-          }
-          if (!rx.phone.test(el.celular.value.trim())){
-            showAlert('warning', 'Celular inválido (10 dígitos).'); el.celular.focus(); return false;
-          }
-          if (el.celular.value.trim() !== el.confirmarCelular.value.trim()){
-            el.celError.classList.add('show'); el.confirmarCelular.classList.add('invalid'); return false;
-          }
-          return true;
+      // --------- Elementos ----------
+      const el = {
+        bannerCorreccion: $("bannerCorreccion"),
+        correccionDocs: $("correccionDocs"),
+        correccionObs: $("correccionObs"),
+        alertBox: $("alertBox"),
+        loader: $("loader"),
+        btnPrev: $("btnPrev"),
+        btnNext: $("btnNext"),
+        btnEnviar: $("btnEnviar"),
+        resumen: $("resumen"),
+        tipoDocumento: $("tipoDocumento"),
+        numeroDocumento: $("numeroDocumento"),
+        confirmarDocumento: $("confirmarDocumento"),
+        nombres: $("nombres"),
+        apellidos: $("apellidos"),
+        email: $("email"),
+        confirmarEmail: $("confirmarEmail"),
+        celular: $("celular"),
+        confirmarCelular: $("confirmarCelular"),
+        docError: $("docError"),
+        emailError: $("emailError"),
+        celError: $("celError"),
+        docFront: $("docFront"),
+        docFrontName: $("docFrontName"),
+        docBack: $("docBack"),
+        docBackName: $("docBackName"),
+        ingresos: $("ingresos"),
+        ingresosName: $("ingresosName"),
+        coTipo: $("coTipo"),
+        coNumero: $("coNumero"),
+        coNombres: $("coNombres"),
+        coApellidos: $("coApellidos"),
+        coEmail: $("coEmail"),
+        coCelular: $("coCelular"),
+        coDocFront: $("coDocFront"),
+        coDocFrontName: $("coDocFrontName"),
+        coDocBack: $("coDocBack"),
+        coDocBackName: $("coDocBackName"),
+        coIngresos: $("coIngresos"),
+        coIngresosName: $("coIngresosName"),
+        btnPayBreb: $("btnPayBreb"),
+        btnPayWompi: $("btnPayWompi"),
+        modalBreb: $("modalBreb"),
+        brebNumber: $("brebNumber"),
+        btnCopyBreb: $("btnCopyBreb"),
+        btnCloseBreb: $("btnCloseBreb"),
+        toast: $("toast"),
+      };
+
+      // --------- Init ----------
+      init();
+
+      function init() {
+        // Params
+        const params = new URLSearchParams(location.search);
+        state.cdr = params.get('cdr') || '';
+        state.modoCorreccion = (params.get('modo') === 'correccion');
+        const docs = params.get('docs');
+
+        if (!state.cdr) {
+          showAlert('warning', 'CDR no presente.');
+          return;
         }
-        case 1:{
-          const need = ['docFront','docBack','ingresos'];
-          for (const k of need){
-            if (!state.archivos[k]){
-              showAlert('warning', 'Faltan documentos requeridos (frontal, reverso e ingresos).');
-              return false;
-            }
-          }
-          return true;
+
+        if (state.modoCorreccion) {
+          try {
+            state.docsCorreccion = docs ? JSON.parse(decodeURIComponent(docs)) : [];
+          } catch (e) { state.docsCorreccion = []; }
+          renderCorreccionBanner();
         }
-        case 2:{
-          // Codeudor opcional
-          return true;
-        }
-        case 3:{
-          // Pago opcional para validación
-          return true;
-        }
-        default: return true;
+
+        // Wizard
+        renderSteps();
+        bindWizard();
+
+        // Files
+        bindFile(el.docFront, 'docFront', el.docFrontName);
+        bindFile(el.docBack, 'docBack', el.docBackName);
+        bindFile(el.ingresos, 'ingresos', el.ingresosName);
+        bindFile(el.coDocFront, 'coDocFront', el.coDocFrontName);
+        bindFile(el.coDocBack, 'coDocBack', el.coDocBackName);
+        bindFile(el.coIngresos, 'coIngresos', el.coIngresosName);
+
+        // Pago
+        el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
+        el.btnPayBreb.addEventListener('click', openBrebModal);
+        el.btnCloseBreb.addEventListener('click', closeBrebModal);
+        el.modalBreb.addEventListener('click', (e) => { if (e.target === el.modalBreb) closeBrebModal(); });
+        el.btnCopyBreb.addEventListener('click', copyBreb);
+        el.btnPayWompi.addEventListener('click', handlePayWompi);
       }
-    }
 
-    function hideInlineErrors(){
-      [el.docError, el.emailError, el.celError].forEach(n => n.classList.remove('show'));
-      [el.confirmarDocumento, el.confirmarEmail, el.confirmarCelular].forEach(i => i.classList.remove('invalid'));
-      el.alertBox.classList.add('hidden');
-    }
+      // --------- Corrección ----------
+      function renderCorreccionBanner() {
+        if (!state.docsCorreccion.length) { return; }
+        el.bannerCorreccion.classList.remove('hidden');
+        el.correccionDocs.innerHTML = state.docsCorreccion.map(d => `<span class="chip">${escapeHTML(d)}</span>`).join('');
+      }
 
-    // --------- Resumen ----------
-    function buildSummary(){
-      const files = Object.entries(state.archivos).map(([k,v]) => {
-        const nice = {
-          docFront:'Doc. Identidad (frontal)', docBack:'Doc. Identidad (reverso)', ingresos:'Soporte de ingresos',
-          coDocFront:'Codeudor: Doc. (frontal)', coDocBack:'Codeudor: Doc. (reverso)', coIngresos:'Codeudor: Ingresos'
-        }[k] || k;
-        return `<li>${nice}: <span class="muted">${escapeHTML(v?.nombre || '—')}</span></li>`;
-      }).join('');
+      // --------- Wizard ----------
+      function renderSteps() { gotoStep(0, true); }
 
-      const co = [el.coTipo.value, el.coNumero.value, el.coNombres.value, el.coApellidos.value, el.coEmail.value, el.coCelular.value].some(Boolean);
+      function bindWizard() {
+        el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
+        el.btnNext.addEventListener('click', () => {
+          if (!validateStep(state.step)) return;
+          if (state.step < state.max) gotoStep(state.step + 1);
+        });
+        el.btnEnviar.addEventListener('click', onSubmit);
 
-      el.resumen.innerHTML = `
+        qsa('.progress .step').forEach(s => {
+          s.addEventListener('click', () => {
+            const target = Number(s.dataset.step);
+            if (target <= state.step) return gotoStep(target);
+            if (validateStep(state.step)) gotoStep(target);
+          });
+        });
+      }
+
+      function gotoStep(n, first = false) {
+        state.step = Math.max(0, Math.min(n, state.max));
+        qsa('.step-pane').forEach(p => p.classList.toggle('show', Number(p.dataset.pane) === state.step));
+        qsa('.progress .step').forEach(s => s.classList.toggle('active', Number(s.dataset.step) === state.step));
+        el.btnPrev.disabled = (state.step === 0);
+        el.btnNext.classList.toggle('hidden', state.step === state.max);
+        el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
+
+        if (state.step === state.max) buildSummary();
+        if (!first) window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // --------- Files ----------
+      function bindFile(input, key, nameEl) {
+        input.addEventListener('change', () => handleFile(input.files?.[0], key, nameEl));
+      }
+
+      function handleFile(file, key, nameEl) {
+        if (!file) return;
+        if (file.size > state.maxFileSize) {
+          showAlert('danger', `El archivo "${file.name}" excede el límite de ${(state.maxFileSize / 1024 / 1024).toFixed(0)}MB.`);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          state.archivos[key] = { nombre: file.name, tipo: file.type, contenido: e.target.result };
+          if (nameEl) nameEl.textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // --------- Validación ----------
+      const rx = {
+        email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        phone: /^\d{10}$/,
+        num: /^[0-9A-Za-z.-]{5,}$/
+      };
+
+      function validateStep(step) {
+        hideInlineErrors();
+        switch (step) {
+          case 0: {
+            const required = [
+              el.tipoDocumento, el.numeroDocumento, el.confirmarDocumento,
+              el.nombres, el.apellidos, el.email, el.confirmarEmail,
+              el.celular, el.confirmarCelular
+            ];
+            for (const r of required) {
+              if (!r.value || !r.value.trim()) {
+                showAlert('warning', 'Completa los campos obligatorios del paso Datos.');
+                r.focus(); return false;
+              }
+            }
+            if (!rx.num.test(el.numeroDocumento.value.trim())) {
+              showAlert('warning', 'Número de documento inválido.'); el.numeroDocumento.focus(); return false;
+            }
+            if (el.numeroDocumento.value.trim() !== el.confirmarDocumento.value.trim()) {
+              el.docError.classList.add('show'); el.confirmarDocumento.classList.add('invalid'); return false;
+            }
+            if (!rx.email.test(el.email.value.trim())) {
+              showAlert('warning', 'Correo inválido.'); el.email.focus(); return false;
+            }
+            if (el.email.value.trim() !== el.confirmarEmail.value.trim()) {
+              el.emailError.classList.add('show'); el.confirmarEmail.classList.add('invalid'); return false;
+            }
+            if (!rx.phone.test(el.celular.value.trim())) {
+              showAlert('warning', 'Celular inválido (10 dígitos).'); el.celular.focus(); return false;
+            }
+            if (el.celular.value.trim() !== el.confirmarCelular.value.trim()) {
+              el.celError.classList.add('show'); el.confirmarCelular.classList.add('invalid'); return false;
+            }
+            return true;
+          }
+          case 1: {
+            const need = ['docFront', 'docBack', 'ingresos'];
+            for (const k of need) {
+              if (!state.archivos[k]) {
+                showAlert('warning', 'Faltan documentos requeridos (frontal, reverso e ingresos).');
+                return false;
+              }
+            }
+            return true;
+          }
+          case 2: {
+            // Codeudor opcional
+            return true;
+          }
+          case 3: {
+            // Pago opcional para validación
+            return true;
+          }
+          default: return true;
+        }
+      }
+
+      function hideInlineErrors() {
+        [el.docError, el.emailError, el.celError].forEach(n => n.classList.remove('show'));
+        [el.confirmarDocumento, el.confirmarEmail, el.confirmarCelular].forEach(i => i.classList.remove('invalid'));
+        el.alertBox.classList.add('hidden');
+      }
+
+      // --------- Resumen ----------
+      function buildSummary() {
+        const files = Object.entries(state.archivos).map(([k, v]) => {
+          const nice = {
+            docFront: 'Doc. Identidad (frontal)', docBack: 'Doc. Identidad (reverso)', ingresos: 'Soporte de ingresos',
+            coDocFront: 'Codeudor: Doc. (frontal)', coDocBack: 'Codeudor: Doc. (reverso)', coIngresos: 'Codeudor: Ingresos'
+          }[k] || k;
+          return `<li>${nice}: <span class="muted">${escapeHTML(v?.nombre || '—')}</span></li>`;
+        }).join('');
+
+        const co = [el.coTipo.value, el.coNumero.value, el.coNombres.value, el.coApellidos.value, el.coEmail.value, el.coCelular.value].some(Boolean);
+
+        el.resumen.innerHTML = `
         <div class="card">
           <div class="card-body">
             <h3>Datos</h3>
             <div class="grid-2col" style="margin-top:10px">
-              <div><strong>Documento:</strong> <span class="muted">${escapeHTML(el.tipoDocumento.value||'')} ${escapeHTML(el.numeroDocumento.value||'')}</span></div>
-              <div><strong>Nombre:</strong> <span class="muted">${escapeHTML(el.nombres.value||'')} ${escapeHTML(el.apellidos.value||'')}</span></div>
-              <div><strong>Correo:</strong> <span class="muted">${escapeHTML(el.email.value||'')}</span></div>
-              <div><strong>Celular:</strong> <span class="muted">${escapeHTML(el.celular.value||'')}</span></div>
+              <div><strong>Documento:</strong> <span class="muted">${escapeHTML(el.tipoDocumento.value || '')} ${escapeHTML(el.numeroDocumento.value || '')}</span></div>
+              <div><strong>Nombre:</strong> <span class="muted">${escapeHTML(el.nombres.value || '')} ${escapeHTML(el.apellidos.value || '')}</span></div>
+              <div><strong>Correo:</strong> <span class="muted">${escapeHTML(el.email.value || '')}</span></div>
+              <div><strong>Celular:</strong> <span class="muted">${escapeHTML(el.celular.value || '')}</span></div>
             </div>
             ${co ? `
             <div class="hr"></div>
             <h3>Codeudor</h3>
             <div class="grid-2col" style="margin-top:10px">
-              <div><strong>Documento:</strong> <span class="muted">${escapeHTML(el.coTipo.value||'')} ${escapeHTML(el.coNumero.value||'')}</span></div>
-              <div><strong>Nombre:</strong> <span class="muted">${escapeHTML(el.coNombres.value||'')} ${escapeHTML(el.coApellidos.value||'')}</span></div>
-              <div><strong>Correo:</strong> <span class="muted">${escapeHTML(el.coEmail.value||'')}</span></div>
-              <div><strong>Celular:</strong> <span class="muted">${escapeHTML(el.coCelular.value||'')}</span></div>
+              <div><strong>Documento:</strong> <span class="muted">${escapeHTML(el.coTipo.value || '')} ${escapeHTML(el.coNumero.value || '')}</span></div>
+              <div><strong>Nombre:</strong> <span class="muted">${escapeHTML(el.coNombres.value || '')} ${escapeHTML(el.coApellidos.value || '')}</span></div>
+              <div><strong>Correo:</strong> <span class="muted">${escapeHTML(el.coEmail.value || '')}</span></div>
+              <div><strong>Celular:</strong> <span class="muted">${escapeHTML(el.coCelular.value || '')}</span></div>
             </div>` : ''}
             <div class="hr"></div>
             <h3>Archivos</h3>
@@ -605,126 +760,127 @@
           </div>
         </div>
       `;
-    }
-
-    // --------- Pagos ----------
-    function openBrebModal(){
-      el.modalBreb.classList.add('show');
-      el.modalBreb.setAttribute('aria-hidden', 'false');
-      el.brebNumber.select();
-    }
-    
-    function closeBrebModal(){
-      el.modalBreb.classList.remove('show');
-      el.modalBreb.setAttribute('aria-hidden', 'true');
-    }
-    
-    async function copyBreb(){
-      const value = (CONFIG?.PAGO?.NEQUI || '').toString().trim();
-      try{
-        if (!value) throw new Error('Número de pago no configurado.');
-        await navigator.clipboard.writeText(value);
-        toast('Número copiado: ' + value);
-      }catch(e){
-        toast('No se pudo copiar. Selecciona y copia manualmente.');
-      }
-    }
-    
-    function handlePayWompi(){
-      const url = CONFIG?.PAGO?.WOMPI_LINK || '';
-      if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta.');
-      window.open(url, '_blank', 'noopener');
-    }
-
-    // --------- Submit CORREGIDO ----------
-    async function onSubmit(){
-      // Validación final
-      for (let i=0; i<=3; i++){
-        if (!validateStep(i)) { gotoStep(i); return; }
       }
 
-      toggleLoading(true);
+      // --------- Pagos ----------
+      function openBrebModal() {
+        el.modalBreb.classList.add('show');
+        el.modalBreb.setAttribute('aria-hidden', 'false');
+        el.brebNumber.select();
+      }
 
-      // ESTRUCTURA CORREGIDA para coincidir con el backend
-      const payload = {
-        accion: 'procesarFormularioInquilino',
-        codigoRegistro: state.cdr,  // Cambio: cdr → codigoRegistro
-        datosFormulario: {  // Cambio: agrupamos inquilino y codeudor aquí
-          inquilino: {
-            tipoDocumento: el.tipoDocumento.value.trim(),
-            numeroDocumento: el.numeroDocumento.value.trim(),
-            nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`,
-            email: el.email.value.trim(),
-            celular: el.celular.value.trim(),
-            ocupacion: 'Por definir'  // Campo requerido por el backend
-          },
-          codeudor: el.coNumero.value.trim() ? {
-            tipoDocumento: el.coTipo.value.trim(),
-            numeroDocumento: el.coNumero.value.trim(),
-            nombre: `${el.coNombres.value.trim()} ${el.coApellidos.value.trim()}`,
-            email: el.coEmail.value.trim(),
-            celular: el.coCelular.value.trim()
-          } : null,
-          fechaInicio: new Date().toISOString().split('T')[0],
-          modoCorreccion: state.modoCorreccion
-        },
-        archivosBase64: state.archivos  // Cambio: archivos → archivosBase64
-      };
+      function closeBrebModal() {
+        el.modalBreb.classList.remove('show');
+        el.modalBreb.setAttribute('aria-hidden', 'true');
+      }
 
-      try{
-        const url = new URL(CONFIG.API_URL);
-        const res = await fetch(url.toString(), {
-          method:'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        
-        const data = await res.json();
-        
-        // VALIDACIÓN CORREGIDA: success en lugar de ok
-        if (!data || !data.success){
-          throw new Error(data?.message || 'No fue posible procesar la información.');
+      async function copyBreb() {
+        const value = (CONFIG?.PAGO?.NEQUI || '').toString().trim();
+        try {
+          if (!value) throw new Error('Número de pago no configurado.');
+          await navigator.clipboard.writeText(value);
+          toast('Número copiado: ' + value);
+        } catch (e) {
+          toast('No se pudo copiar. Selecciona y copia manualmente.');
         }
-        
-        const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
-        location.href = `pagina-exito.html?status=success&msg=${msg}`;
-        
-      }catch(err){
-        console.error('[Inquilino] Error:', err);
-        showAlert('danger', err.message || 'Ocurrió un error inesperado.');
-      }finally{
-        toggleLoading(false);
       }
-    }
 
-    // --------- Utilidades ----------
-    function showAlert(type, text){
-      const map = { success:'alert-success', warning:'alert-warning', danger:'alert-danger', info:'alert-info' };
-      el.alertBox.className = `alert ${map[type] || 'alert-info'}`;
-      el.alertBox.innerHTML = escapeHTML(text);
-      el.alertBox.classList.remove('hidden');
-      el.alertBox.focus?.();
-    }
-    
-    function toggleLoading(show){
-      el.loader.classList.toggle('hidden', !show);
-      el.btnPrev.disabled = !!show;
-      el.btnNext.disabled = !!show;
-      el.btnEnviar.disabled = !!show;
-    }
-    
-    function toast(text){
-      el.toast.textContent = text || 'Acción realizada.';
-      el.toast.classList.add('show');
-      setTimeout(() => el.toast.classList.remove('show'), 3000);
-    }
-    
-    function escapeHTML(str){
-      const div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
-    }
-  })();
+      function handlePayWompi() {
+        const url = CONFIG?.PAGO?.WOMPI_LINK || '';
+        if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta.');
+        window.open(url, '_blank', 'noopener');
+      }
+
+      // --------- Submit CORREGIDO ----------
+      async function onSubmit() {
+        // Validación final
+        for (let i = 0; i <= 3; i++) {
+          if (!validateStep(i)) { gotoStep(i); return; }
+        }
+
+        toggleLoading(true);
+
+        // ESTRUCTURA CORREGIDA para coincidir con el backend
+        const payload = {
+          accion: 'procesarFormularioInquilino',
+          codigoRegistro: state.cdr,  // Cambio: cdr → codigoRegistro
+          datosFormulario: {  // Cambio: agrupamos inquilino y codeudor aquí
+            inquilino: {
+              tipoDocumento: el.tipoDocumento.value.trim(),
+              numeroDocumento: el.numeroDocumento.value.trim(),
+              nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`,
+              email: el.email.value.trim(),
+              celular: el.celular.value.trim(),
+              ocupacion: 'Por definir'  // Campo requerido por el backend
+            },
+            codeudor: el.coNumero.value.trim() ? {
+              tipoDocumento: el.coTipo.value.trim(),
+              numeroDocumento: el.coNumero.value.trim(),
+              nombre: `${el.coNombres.value.trim()} ${el.coApellidos.value.trim()}`,
+              email: el.coEmail.value.trim(),
+              celular: el.coCelular.value.trim()
+            } : null,
+            fechaInicio: new Date().toISOString().split('T')[0],
+            modoCorreccion: state.modoCorreccion
+          },
+          archivosBase64: state.archivos  // Cambio: archivos → archivosBase64
+        };
+
+        try {
+          const url = new URL(CONFIG.API_URL);
+          const res = await fetch(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+
+          // VALIDACIÓN CORREGIDA: success en lugar de ok
+          if (!data || !data.success) {
+            throw new Error(data?.message || 'No fue posible procesar la información.');
+          }
+
+          const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
+          location.href = `pagina-exito.html?status=success&msg=${msg}`;
+
+        } catch (err) {
+          console.error('[Inquilino] Error:', err);
+          showAlert('danger', err.message || 'Ocurrió un error inesperado.');
+        } finally {
+          toggleLoading(false);
+        }
+      }
+
+      // --------- Utilidades ----------
+      function showAlert(type, text) {
+        const map = { success: 'alert-success', warning: 'alert-warning', danger: 'alert-danger', info: 'alert-info' };
+        el.alertBox.className = `alert ${map[type] || 'alert-info'}`;
+        el.alertBox.innerHTML = escapeHTML(text);
+        el.alertBox.classList.remove('hidden');
+        el.alertBox.focus?.();
+      }
+
+      function toggleLoading(show) {
+        el.loader.classList.toggle('hidden', !show);
+        el.btnPrev.disabled = !!show;
+        el.btnNext.disabled = !!show;
+        el.btnEnviar.disabled = !!show;
+      }
+
+      function toast(text) {
+        el.toast.textContent = text || 'Acción realizada.';
+        el.toast.classList.add('show');
+        setTimeout(() => el.toast.classList.remove('show'), 3000);
+      }
+
+      function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      }
+    })();
   </script>
 </body>
+
 </html>

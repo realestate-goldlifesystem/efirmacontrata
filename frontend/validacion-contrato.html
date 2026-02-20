@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,7 +14,7 @@
       margin: 2rem auto;
       padding: 0 1rem;
     }
-    
+
     .validation-header {
       background: linear-gradient(135deg, var(--primary) 0%, #667eea 100%);
       color: white;
@@ -21,14 +22,14 @@
       border-radius: 12px 12px 0 0;
       margin-bottom: 0;
     }
-    
+
     .validation-body {
       background: white;
       padding: 2rem;
       border-radius: 0 0 12px 12px;
       box-shadow: var(--shadow-lg);
     }
-    
+
     /* Grid de contenido */
     .content-grid {
       display: grid;
@@ -36,7 +37,7 @@
       gap: 2rem;
       margin-top: 2rem;
     }
-    
+
     /* Documento preview */
     .document-preview {
       background: #f9fafb;
@@ -46,54 +47,54 @@
       min-height: 600px;
       overflow-y: auto;
     }
-    
+
     .document-content {
       font-family: 'Times New Roman', serif;
       line-height: 1.6;
       color: #111827;
     }
-    
+
     /* Panel lateral */
     .sidebar {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
     }
-    
+
     .info-card {
       background: white;
       border: 1px solid #e5e7eb;
       border-radius: 8px;
       padding: 1.5rem;
     }
-    
+
     .info-card h3 {
       margin-bottom: 1rem;
       color: var(--dark);
       font-size: 1.1rem;
     }
-    
+
     .info-item {
       display: flex;
       justify-content: space-between;
       padding: 0.5rem 0;
       border-bottom: 1px solid #f3f4f6;
     }
-    
+
     .info-item:last-child {
       border-bottom: none;
     }
-    
+
     .info-label {
       color: #6b7280;
       font-size: 0.9rem;
     }
-    
+
     .info-value {
       color: var(--dark);
       font-weight: 500;
     }
-    
+
     /* Estados */
     .status-badge {
       display: inline-block;
@@ -102,22 +103,22 @@
       font-size: 0.875rem;
       font-weight: 500;
     }
-    
+
     .status-pending {
       background: #fef3c7;
       color: #92400e;
     }
-    
+
     .status-approved {
       background: #d1fae5;
       color: #065f46;
     }
-    
+
     .status-rejected {
       background: #fee2e2;
       color: #991b1b;
     }
-    
+
     /* Acciones */
     .actions-card {
       background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
@@ -125,18 +126,18 @@
       padding: 1.5rem;
       border-radius: 8px;
     }
-    
+
     .actions-card h3 {
       color: white;
       margin-bottom: 1rem;
     }
-    
+
     .action-buttons {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
     }
-    
+
     .btn-action {
       width: 100%;
       padding: 0.75rem;
@@ -146,49 +147,49 @@
       cursor: pointer;
       transition: all 0.3s;
     }
-    
+
     .btn-approve {
       background: #10b981;
       color: white;
     }
-    
+
     .btn-approve:hover {
       background: #059669;
       transform: translateY(-2px);
     }
-    
+
     .btn-reject {
       background: #ef4444;
       color: white;
     }
-    
+
     .btn-reject:hover {
       background: #dc2626;
       transform: translateY(-2px);
     }
-    
+
     .btn-download {
       background: #3b82f6;
       color: white;
     }
-    
+
     .btn-download:hover {
       background: #2563eb;
       transform: translateY(-2px);
     }
-    
+
     /* Observaciones */
     .observations-field {
       margin-top: 1rem;
     }
-    
+
     .observations-field label {
       display: block;
       margin-bottom: 0.5rem;
       color: white;
       font-size: 0.9rem;
     }
-    
+
     .observations-field textarea {
       width: 100%;
       padding: 0.75rem;
@@ -199,26 +200,26 @@
       resize: vertical;
       min-height: 100px;
     }
-    
+
     .observations-field textarea::placeholder {
       color: rgba(255, 255, 255, 0.5);
     }
-    
+
     /* Responsive */
     @media (max-width: 768px) {
       .content-grid {
         grid-template-columns: 1fr;
       }
-      
+
       .sidebar {
         order: -1;
       }
-      
+
       .document-preview {
         min-height: 400px;
       }
     }
-    
+
     /* Loader overlay */
     .loader-overlay {
       position: fixed;
@@ -232,11 +233,11 @@
       justify-content: center;
       z-index: 9999;
     }
-    
+
     .loader-overlay.hidden {
       display: none;
     }
-    
+
     /* Toast mejorado */
     .toast {
       position: fixed;
@@ -252,13 +253,14 @@
       transition: all 0.3s;
       z-index: 10000;
     }
-    
+
     .toast.show {
       transform: translateY(0);
       opacity: 1;
     }
   </style>
 </head>
+
 <body>
   <!-- Header -->
   <header class="header-main">
@@ -267,7 +269,7 @@
         <h1 class="logo">🏠 E-FirmaContrata</h1>
         <nav class="nav-menu">
           <a href="index.html">Inicio</a>
-          <a href="selector.html">Portal</a>
+          <a href="validador.html">Portal</a>
         </nav>
       </div>
     </div>
@@ -359,7 +361,7 @@
                   ✗ Solicitar Corrección
                 </button>
               </div>
-              
+
               <div class="observations-field">
                 <label for="observaciones">Observaciones (Opcional)</label>
                 <textarea id="observaciones" placeholder="Ingrese sus comentarios o motivo de rechazo..."></textarea>
@@ -401,156 +403,156 @@
   <script src="config.js"></script>
 
   <script>
-  (function(){
-    // ---------- Estado ----------
-    const state = {
-      cdr: '',
-      docId: null,
-      contrato: null,
-      parte: null,
-      estadoGlobal: 'PENDIENTE'
-    };
-
-    // ---------- Helpers ----------
-    const $ = (id) => document.getElementById(id);
-    
-    const showAlert = (type, text) => {
-      const map = { 
-        success: 'alert-success', 
-        warning: 'alert-warning', 
-        danger: 'alert-danger', 
-        info: 'alert-info' 
+    (function () {
+      // ---------- Estado ----------
+      const state = {
+        cdr: '',
+        docId: null,
+        contrato: null,
+        parte: null,
+        estadoGlobal: 'PENDIENTE'
       };
-      const box = $('alertBox');
-      box.className = `alert ${map[type] || 'alert-info'}`;
-      box.innerHTML = escapeHTML(text);
-      box.classList.remove('hidden');
-    };
-    
-    const clearAlert = () => $('alertBox').classList.add('hidden');
-    
-    const toggleLoading = (show) => {
-      $('loaderOverlay').classList.toggle('hidden', !show);
-    };
-    
-    const toast = (text) => {
-      const t = $('toast');
-      t.textContent = text;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3000);
-    };
-    
-    const escapeHTML = (str) => {
-      const div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
-    };
-    
-    const formatCurrency = (num) => {
-      return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0
-      }).format(num || 0);
-    };
 
-    // ---------- Init ----------
-    init();
+      // ---------- Helpers ----------
+      const $ = (id) => document.getElementById(id);
 
-    async function init(){
-      const params = new URLSearchParams(location.search);
-      state.cdr = params.get('cdr') || '';
-      state.docId = params.get('docId') || '';
-      state.parte = params.get('parte') || '';
-      
-      $('cdrDisplay').textContent = state.cdr || '—';
-      
-      if (!state.cdr) {
-        showAlert('warning', 'Falta el código de registro. Accede desde el panel de validación.');
-        return;
-      }
-      
-      // Si hay parte predefinida, ocultamos el selector
-      if (state.parte) {
-        $('selectorParte').classList.add('hidden');
-      } else {
-        $('selectorParte').classList.remove('hidden');
-      }
-      
-      bindEvents();
-      await loadContractData();
-      await loadApprovalStatus();
-    }
+      const showAlert = (type, text) => {
+        const map = {
+          success: 'alert-success',
+          warning: 'alert-warning',
+          danger: 'alert-danger',
+          info: 'alert-info'
+        };
+        const box = $('alertBox');
+        box.className = `alert ${map[type] || 'alert-info'}`;
+        box.innerHTML = escapeHTML(text);
+        box.classList.remove('hidden');
+      };
 
-    // ---------- Bindings ----------
-    function bindEvents(){
-      $('btnApprove').addEventListener('click', handleApprove);
-      $('btnReject').addEventListener('click', handleReject);
-      $('btnDownload').addEventListener('click', handleDownload);
-      $('selectParte').addEventListener('change', (e) => {
-        state.parte = e.target.value;
-      });
-    }
+      const clearAlert = () => $('alertBox').classList.add('hidden');
 
-    // ---------- Load Data CORREGIDO ----------
-    async function loadContractData(){
-      toggleLoading(true);
-      
-      try {
-        const url = new URL(CONFIG.API_URL);
-        url.searchParams.append('accion', 'obtenerContrato');
-        url.searchParams.append('cdr', state.cdr);
-        if (state.docId) url.searchParams.append('docId', state.docId);
-        
-        const res = await fetch(url.toString());
-        const data = await res.json();
-        
-        // VALIDACIÓN CORREGIDA
-        if (!data || !data.success) {
-          throw new Error(data?.message || 'No se pudo cargar el contrato');
-        }
-        
-        state.contrato = data;
-        displayContract(data);
-        displayContractInfo(data.datos);
-        
-      } catch(err) {
-        console.error('[Contrato] Error:', err);
-        showAlert('danger', err.message || 'Error cargando el contrato');
-      } finally {
-        toggleLoading(false);
-      }
-    }
+      const toggleLoading = (show) => {
+        $('loaderOverlay').classList.toggle('hidden', !show);
+      };
 
-    // ---------- Load Approval Status CORREGIDO ----------
-    async function loadApprovalStatus(){
-      try {
-        const url = new URL(CONFIG.API_URL);
-        url.searchParams.append('accion', 'obtenerEstadoAprobaciones');
-        url.searchParams.append('cdr', state.cdr);
-        
-        const res = await fetch(url.toString());
-        const data = await res.json();
-        
-        // VALIDACIÓN CORREGIDA
-        if (!data || !data.success) {
-          console.warn('No se pudo cargar el estado de aprobaciones');
+      const toast = (text) => {
+        const t = $('toast');
+        t.textContent = text;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+      };
+
+      const escapeHTML = (str) => {
+        const div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      };
+
+      const formatCurrency = (num) => {
+        return new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          minimumFractionDigits: 0
+        }).format(num || 0);
+      };
+
+      // ---------- Init ----------
+      init();
+
+      async function init() {
+        const params = new URLSearchParams(location.search);
+        state.cdr = params.get('cdr') || '';
+        state.docId = params.get('docId') || '';
+        state.parte = params.get('parte') || '';
+
+        $('cdrDisplay').textContent = state.cdr || '—';
+
+        if (!state.cdr) {
+          showAlert('warning', 'Falta el código de registro. Accede desde el panel de validación.');
           return;
         }
-        
-        displayApprovalStatus(data.estados);
-        
-      } catch(err) {
-        console.error('[Aprobaciones] Error:', err);
-      }
-    }
 
-    // ---------- Display Functions ----------
-    function displayContract(data){
-      const content = $('documentContent');
-      if (data.contenido) {
-        // Mostrar el contenido del contrato con formato
-        content.innerHTML = `
+        // Si hay parte predefinida, ocultamos el selector
+        if (state.parte) {
+          $('selectorParte').classList.add('hidden');
+        } else {
+          $('selectorParte').classList.remove('hidden');
+        }
+
+        bindEvents();
+        await loadContractData();
+        await loadApprovalStatus();
+      }
+
+      // ---------- Bindings ----------
+      function bindEvents() {
+        $('btnApprove').addEventListener('click', handleApprove);
+        $('btnReject').addEventListener('click', handleReject);
+        $('btnDownload').addEventListener('click', handleDownload);
+        $('selectParte').addEventListener('change', (e) => {
+          state.parte = e.target.value;
+        });
+      }
+
+      // ---------- Load Data CORREGIDO ----------
+      async function loadContractData() {
+        toggleLoading(true);
+
+        try {
+          const url = new URL(CONFIG.API_URL);
+          url.searchParams.append('accion', 'obtenerContrato');
+          url.searchParams.append('cdr', state.cdr);
+          if (state.docId) url.searchParams.append('docId', state.docId);
+
+          const res = await fetch(url.toString());
+          const data = await res.json();
+
+          // VALIDACIÓN CORREGIDA
+          if (!data || !data.success) {
+            throw new Error(data?.message || 'No se pudo cargar el contrato');
+          }
+
+          state.contrato = data;
+          displayContract(data);
+          displayContractInfo(data.datos);
+
+        } catch (err) {
+          console.error('[Contrato] Error:', err);
+          showAlert('danger', err.message || 'Error cargando el contrato');
+        } finally {
+          toggleLoading(false);
+        }
+      }
+
+      // ---------- Load Approval Status CORREGIDO ----------
+      async function loadApprovalStatus() {
+        try {
+          const url = new URL(CONFIG.API_URL);
+          url.searchParams.append('accion', 'obtenerEstadoAprobaciones');
+          url.searchParams.append('cdr', state.cdr);
+
+          const res = await fetch(url.toString());
+          const data = await res.json();
+
+          // VALIDACIÓN CORREGIDA
+          if (!data || !data.success) {
+            console.warn('No se pudo cargar el estado de aprobaciones');
+            return;
+          }
+
+          displayApprovalStatus(data.estados);
+
+        } catch (err) {
+          console.error('[Aprobaciones] Error:', err);
+        }
+      }
+
+      // ---------- Display Functions ----------
+      function displayContract(data) {
+        const content = $('documentContent');
+        if (data.contenido) {
+          // Mostrar el contenido del contrato con formato
+          content.innerHTML = `
           <div style="padding: 2rem; background: white; border-radius: 8px;">
             <h2 style="text-align: center; margin-bottom: 2rem;">CONTRATO DE ARRENDAMIENTO</h2>
             <div style="white-space: pre-wrap; font-family: 'Times New Roman', serif; line-height: 1.8;">
@@ -558,188 +560,189 @@
             </div>
           </div>
         `;
-      } else {
-        content.innerHTML = '<p class="muted" style="text-align: center;">No se pudo cargar el contenido del contrato.</p>';
+        } else {
+          content.innerHTML = '<p class="muted" style="text-align: center;">No se pudo cargar el contenido del contrato.</p>';
+        }
       }
-    }
 
-    function displayContractInfo(datos){
-      if (!datos) return;
-      
-      // Actualizar información del contrato
-      $('nombreInquilino').textContent = datos['NOMBRE-INQUILINO'] || '—';
-      $('nombrePropietario').textContent = datos['NOMBRE-PROPIETARIO'] || '—';
-      $('direccionInmueble').textContent = datos['DIRECCION-DEL-INMUEBLE-DEL-FOLIO-DE-MATRICULA'] || '—';
-      $('valorCanon').textContent = formatCurrency(datos['PRECIO-DEL-CANON-EN-NUMERO']);
-      $('duracionContrato').textContent = `${datos['numero-de-meses-del-contrato-en-numero'] || '—'} meses`;
-    }
+      function displayContractInfo(datos) {
+        if (!datos) return;
 
-    function displayApprovalStatus(estados){
-      if (!estados || !Array.isArray(estados)) return;
-      
-      const container = $('estadoAprobaciones');
-      let html = '';
-      
-      estados.forEach(est => {
-        const badgeClass = est.estado === 'APROBADO' ? 'status-approved' :
-                          est.estado === 'RECHAZADO' ? 'status-rejected' : 
-                          'status-pending';
-        const badgeText = est.estado === 'APROBADO' ? 'Aprobado' :
-                         est.estado === 'RECHAZADO' ? 'Rechazado' :
-                         'Pendiente';
-        
-        html += `
+        // Actualizar información del contrato
+        $('nombreInquilino').textContent = datos['NOMBRE-INQUILINO'] || '—';
+        $('nombrePropietario').textContent = datos['NOMBRE-PROPIETARIO'] || '—';
+        $('direccionInmueble').textContent = datos['DIRECCION-DEL-INMUEBLE-DEL-FOLIO-DE-MATRICULA'] || '—';
+        $('valorCanon').textContent = formatCurrency(datos['PRECIO-DEL-CANON-EN-NUMERO']);
+        $('duracionContrato').textContent = `${datos['numero-de-meses-del-contrato-en-numero'] || '—'} meses`;
+      }
+
+      function displayApprovalStatus(estados) {
+        if (!estados || !Array.isArray(estados)) return;
+
+        const container = $('estadoAprobaciones');
+        let html = '';
+
+        estados.forEach(est => {
+          const badgeClass = est.estado === 'APROBADO' ? 'status-approved' :
+            est.estado === 'RECHAZADO' ? 'status-rejected' :
+              'status-pending';
+          const badgeText = est.estado === 'APROBADO' ? 'Aprobado' :
+            est.estado === 'RECHAZADO' ? 'Rechazado' :
+              'Pendiente';
+
+          html += `
           <div class="info-item">
             <span class="info-label">${escapeHTML(est.parte)}:</span>
             <span class="status-badge ${badgeClass}">${badgeText}</span>
           </div>
         `;
-      });
-      
-      container.innerHTML = html;
-      
-      // Actualizar badge global
-      const todosAprobados = estados.every(e => e.estado === 'APROBADO');
-      const hayRechazado = estados.some(e => e.estado === 'RECHAZADO');
-      
-      const badge = $('estadoBadge');
-      if (todosAprobados) {
-        badge.className = 'status-badge status-approved';
-        badge.textContent = 'Contrato Aprobado';
-        state.estadoGlobal = 'APROBADO';
-      } else if (hayRechazado) {
-        badge.className = 'status-badge status-rejected';
-        badge.textContent = 'Requiere Corrección';
-        state.estadoGlobal = 'CORRECCION';
-      } else {
-        badge.className = 'status-badge status-pending';
-        badge.textContent = 'Pendiente de Validación';
-        state.estadoGlobal = 'PENDIENTE';
-      }
-    }
-
-    // ---------- Actions CORREGIDO ----------
-    async function handleApprove(){
-      if (!state.parte && !$('selectParte').value) {
-        showAlert('warning', 'Seleccione su rol para aprobar el contrato');
-        $('selectParte').focus();
-        return;
-      }
-      
-      const parte = state.parte || $('selectParte').value;
-      const observaciones = $('observaciones').value.trim();
-      
-      if (!confirm('¿Está seguro de aprobar este contrato?')) return;
-      
-      toggleLoading(true);
-      
-      try {
-        // ESTRUCTURA CORREGIDA
-        const payload = {
-          accion: 'registrarAprobacionContrato',
-          cdr: state.cdr,
-          parte: parte,
-          estado: 'APROBADO',
-          comentarios: observaciones || null
-        };
-        
-        const url = new URL(CONFIG.API_URL);
-        const res = await fetch(url.toString(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
         });
-        
-        const data = await res.json();
-        
-        // VALIDACIÓN CORREGIDA
-        if (!data || !data.success) {
-          throw new Error(data?.message || 'No se pudo registrar la aprobación');
+
+        container.innerHTML = html;
+
+        // Actualizar badge global
+        const todosAprobados = estados.every(e => e.estado === 'APROBADO');
+        const hayRechazado = estados.some(e => e.estado === 'RECHAZADO');
+
+        const badge = $('estadoBadge');
+        if (todosAprobados) {
+          badge.className = 'status-badge status-approved';
+          badge.textContent = 'Contrato Aprobado';
+          state.estadoGlobal = 'APROBADO';
+        } else if (hayRechazado) {
+          badge.className = 'status-badge status-rejected';
+          badge.textContent = 'Requiere Corrección';
+          state.estadoGlobal = 'CORRECCION';
+        } else {
+          badge.className = 'status-badge status-pending';
+          badge.textContent = 'Pendiente de Validación';
+          state.estadoGlobal = 'PENDIENTE';
         }
-        
-        toast('✅ Contrato aprobado exitosamente');
-        $('observaciones').value = '';
-        
-        // Recargar estado
-        await loadApprovalStatus();
-        
-      } catch(err) {
-        console.error('[Aprobar] Error:', err);
-        showAlert('danger', err.message || 'Error al aprobar el contrato');
-      } finally {
-        toggleLoading(false);
       }
-    }
 
-    async function handleReject(){
-      if (!state.parte && !$('selectParte').value) {
-        showAlert('warning', 'Seleccione su rol para rechazar el contrato');
-        $('selectParte').focus();
-        return;
-      }
-      
-      const parte = state.parte || $('selectParte').value;
-      const observaciones = $('observaciones').value.trim();
-      
-      if (!observaciones) {
-        showAlert('warning', 'Por favor indique el motivo del rechazo');
-        $('observaciones').focus();
-        return;
-      }
-      
-      if (!confirm('¿Está seguro de solicitar corrección en este contrato?')) return;
-      
-      toggleLoading(true);
-      
-      try {
-        // ESTRUCTURA CORREGIDA
-        const payload = {
-          accion: 'registrarAprobacionContrato',
-          cdr: state.cdr,
-          parte: parte,
-          estado: 'RECHAZADO',
-          comentarios: observaciones
-        };
-        
-        const url = new URL(CONFIG.API_URL);
-        const res = await fetch(url.toString(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        
-        const data = await res.json();
-        
-        // VALIDACIÓN CORREGIDA
-        if (!data || !data.success) {
-          throw new Error(data?.message || 'No se pudo registrar el rechazo');
+      // ---------- Actions CORREGIDO ----------
+      async function handleApprove() {
+        if (!state.parte && !$('selectParte').value) {
+          showAlert('warning', 'Seleccione su rol para aprobar el contrato');
+          $('selectParte').focus();
+          return;
         }
-        
-        toast('⚠️ Corrección solicitada');
-        $('observaciones').value = '';
-        
-        // Recargar estado
-        await loadApprovalStatus();
-        
-      } catch(err) {
-        console.error('[Rechazar] Error:', err);
-        showAlert('danger', err.message || 'Error al rechazar el contrato');
-      } finally {
-        toggleLoading(false);
-      }
-    }
 
-    function handleDownload(){
-      if (!state.contrato?.url) {
-        showAlert('warning', 'No hay documento disponible para descargar');
-        return;
-      }
-      
-      window.open(state.contrato.url, '_blank', 'noopener');
-      toast('📥 Descargando contrato...');
-    }
+        const parte = state.parte || $('selectParte').value;
+        const observaciones = $('observaciones').value.trim();
 
-  })();
+        if (!confirm('¿Está seguro de aprobar este contrato?')) return;
+
+        toggleLoading(true);
+
+        try {
+          // ESTRUCTURA CORREGIDA
+          const payload = {
+            accion: 'registrarAprobacionContrato',
+            cdr: state.cdr,
+            parte: parte,
+            estado: 'APROBADO',
+            comentarios: observaciones || null
+          };
+
+          const url = new URL(CONFIG.API_URL);
+          const res = await fetch(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+
+          // VALIDACIÓN CORREGIDA
+          if (!data || !data.success) {
+            throw new Error(data?.message || 'No se pudo registrar la aprobación');
+          }
+
+          toast('✅ Contrato aprobado exitosamente');
+          $('observaciones').value = '';
+
+          // Recargar estado
+          await loadApprovalStatus();
+
+        } catch (err) {
+          console.error('[Aprobar] Error:', err);
+          showAlert('danger', err.message || 'Error al aprobar el contrato');
+        } finally {
+          toggleLoading(false);
+        }
+      }
+
+      async function handleReject() {
+        if (!state.parte && !$('selectParte').value) {
+          showAlert('warning', 'Seleccione su rol para rechazar el contrato');
+          $('selectParte').focus();
+          return;
+        }
+
+        const parte = state.parte || $('selectParte').value;
+        const observaciones = $('observaciones').value.trim();
+
+        if (!observaciones) {
+          showAlert('warning', 'Por favor indique el motivo del rechazo');
+          $('observaciones').focus();
+          return;
+        }
+
+        if (!confirm('¿Está seguro de solicitar corrección en este contrato?')) return;
+
+        toggleLoading(true);
+
+        try {
+          // ESTRUCTURA CORREGIDA
+          const payload = {
+            accion: 'registrarAprobacionContrato',
+            cdr: state.cdr,
+            parte: parte,
+            estado: 'RECHAZADO',
+            comentarios: observaciones
+          };
+
+          const url = new URL(CONFIG.API_URL);
+          const res = await fetch(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+
+          // VALIDACIÓN CORREGIDA
+          if (!data || !data.success) {
+            throw new Error(data?.message || 'No se pudo registrar el rechazo');
+          }
+
+          toast('⚠️ Corrección solicitada');
+          $('observaciones').value = '';
+
+          // Recargar estado
+          await loadApprovalStatus();
+
+        } catch (err) {
+          console.error('[Rechazar] Error:', err);
+          showAlert('danger', err.message || 'Error al rechazar el contrato');
+        } finally {
+          toggleLoading(false);
+        }
+      }
+
+      function handleDownload() {
+        if (!state.contrato?.url) {
+          showAlert('warning', 'No hay documento disponible para descargar');
+          return;
+        }
+
+        window.open(state.contrato.url, '_blank', 'noopener');
+        toast('📥 Descargando contrato...');
+      }
+
+    })();
   </script>
 </body>
+
 </html>

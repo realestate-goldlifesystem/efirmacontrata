@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <title>Confirmación - E-firmaContrata</title>
@@ -28,7 +29,7 @@
       background: var(--gray-dark);
       padding: 35px;
       border-radius: 16px;
-      box-shadow: 0 12px 32px rgba(0,0,0,.5);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
       text-align: center;
     }
 
@@ -106,6 +107,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="center-box" id="box">
     <div id="icon" class="status-icon">⌛</div>
@@ -113,14 +115,14 @@
     <p id="desc">Validando información.</p>
     <div id="badges"></div>
     <div class="actions">
-      <a href="selector.html" class="btn btn-primary">Ir al Selector</a>
+      <a href="validador.html" class="btn btn-primary">Ir al Portal</a>
       <a href="index.html" class="btn btn-secondary">Inicio</a>
     </div>
     <div class="small-note">E-firmaContrata • Real Estate Gold Life System</div>
   </div>
 
   <script>
-    (function(){
+    (function () {
       const p = new URLSearchParams(window.location.search);
       const estado = p.get('estado') || 'exitoso';
       const cdr = p.get('cdr') || '-';
@@ -130,11 +132,11 @@
       const desc = document.getElementById('desc');
       const badges = document.getElementById('badges');
 
-      if(estado === 'exitoso'){
+      if (estado === 'exitoso') {
         icon.textContent = '✅';
         title.textContent = 'Documentos Enviados';
         desc.innerHTML = 'Hemos recibido sus documentos correctamente. Se enviará confirmación por correo una vez validados.';
-      } else if(estado === 'usado'){
+      } else if (estado === 'usado') {
         icon.textContent = '🔒';
         title.textContent = 'Enlace Utilizado';
         desc.innerHTML = 'Este enlace ya fue utilizado anteriormente. Si necesita volver a enviar documentos, contacte a soporte.';
@@ -152,4 +154,5 @@
     })();
   </script>
 </body>
+
 </html>

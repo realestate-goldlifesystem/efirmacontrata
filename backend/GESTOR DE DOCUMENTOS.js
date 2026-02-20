@@ -2543,7 +2543,7 @@ function procesarEmailInquilino(email, nombre) {
     // Generar URL del formulario
     // CORRECCIÓN: El frontend está en /frontend/
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlFormulario = `${baseUrl}/selector.html?action=formulario-inquilino&cdr=${encodeURIComponent(currentCDR)}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
+    const urlFormulario = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(currentCDR)}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
 
     // 4. Enviar Email
     // Usamos la función centralizada para mantener el diseño consistente
