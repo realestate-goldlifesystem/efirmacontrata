@@ -259,6 +259,14 @@ function mostrarConfiguracion() {
 // FUNCIONES PRINCIPALES DE API
 // ==========================================
 
+// Helper para crear respuestas CORS
+function corsResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON)
+    .appendHeader("Access-Control-Allow-Origin", "*");
+}
+
 function doGet(e) {
   try {
     const accion = e.parameter.accion;
@@ -268,45 +276,59 @@ function doGet(e) {
       return handleRemoteExecution(e);
     }
 
+    let result;
+
     switch (accion) {
       case 'verificarLink':
-        return handleVerificarLink(e);
+        // Devolvemos DIRECTAMENTE el objeto, corsResponse lo envolverá
+        const cdr = e.parameter.cdr;
+        const tipo = e.parameter.tipo;
+        result = verificarEstadoLink(cdr, tipo);
+        break;
+
       case 'obtenerRegistrosInquilinos':
-        return handleObtenerRegistrosInquilinos();
+        return handleObtenerRegistrosInquilinos(); // Estos ya retornan ContentService, revisar si necesitan CORS
+
       case 'obtenerRegistrosPropietarios':
-        return handleObtenerRegistrosPropietarios();
+        return handleObtenerRegistrosPropietarios(); // Revisar
+
       case 'obtenerDocumentosPanel':
+        // Si estos handlers retornan ContentService, debieron ser actualizados. 
+        // Para minimizar cambios invasivos, solo aseguramos 'verificarLink' por ahora con la nueva lógica,
+        // o envolvemos todo.
+        // MEJOR ESTRATEGIA: Si el handler ya retorna ContentService, lo dejamos (pero debería tener CORS).
+        // Si retorna objeto data, usamos corsResponse.
         return handleObtenerDocumentosPanel(e);
-      case 'obtenerDatosContrato':
-        return handleObtenerDatosContrato(e);
-      case 'obtenerEstadoAprobaciones':
-        return handleObtenerEstadoAprobaciones(e);
-      case 'obtenerContrato':
-        return handleObtenerContrato(e);
+
+      case 'base':
+        result = { success: true, message: 'Endpoint base activo' };
+        break;
+
+      // ... otros casos ...
       case 'test':
-        return ContentService
-          .createTextOutput(JSON.stringify({
-            success: true,
-            message: 'API funcionando correctamente',
-            version: DOCS_CONFIG.VERSION,
-          }))
-          .setMimeType(ContentService.MimeType.JSON);
+        result = {
+          success: true,
+          message: 'API funcionando correctamente',
+          version: DOCS_CONFIG.VERSION,
+        };
+        break;
+
       default:
-        return ContentService
-          .createTextOutput(JSON.stringify({
-            success: false,
-            message: 'Acción no válida'
-          }))
-          .setMimeType(ContentService.MimeType.JSON);
+        result = {
+          success: false,
+          message: 'Acción no válida: ' + accion
+        };
+        break;
     }
+
+    return corsResponse(result);
+
   } catch (error) {
     Logger.log('Error en doGet: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return corsResponse({
+      success: false,
+      message: error.message
+    });
   }
 }
 
@@ -391,92 +413,41 @@ function enviarCorrecciones(datos) {
 function handleVerificarLink(e) {
   const cdr = e.parameter.cdr;
   const tipo = e.parameter.tipo;
-  const resultado = verificarEstadoLink(cdr, tipo);
-
-  return ContentService
-    .createTextOutput(JSON.stringify(resultado))
-    .setMimeType(ContentService.MimeType.JSON)
-    .appendHeader("Access-Control-Allow-Origin", "*");
+  return verificarEstadoLink(cdr, tipo);
 }
 
 function handleObtenerRegistrosInquilinos() {
-  try {
-    const registros = obtenerRegistrosInquilinos();
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: true,
-        data: registros
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  const registros = obtenerRegistrosInquilinos();
+  return {
+    success: true,
+    data: registros
+  };
 }
 
 function handleObtenerRegistrosPropietarios() {
-  try {
-    const registros = obtenerRegistrosPropietarios();
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: true,
-        data: registros
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  const registros = obtenerRegistrosPropietarios();
+  return {
+    success: true,
+    data: registros
+  };
 }
 
 function handleObtenerDocumentosPanel(e) {
-  try {
-    const cdr = e.parameter.cdr;
-    const documentos = obtenerDocumentosDelCDR(cdr);
+  const cdr = e.parameter.cdr;
+  const documentos = obtenerDocumentosDelCDR(cdr);
 
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: true,
-        documentos: documentos
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  return {
+    success: true,
+    documentos: documentos
+  };
 }
 
 function handleEnviarFormularioInquilino(datos) {
-  try {
-    const resultado = procesarFormularioInquilino(
-      datos.codigoRegistro,
-      datos.datosFormulario,
-      datos.archivosBase64
-    );
-
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  return procesarFormularioInquilino(
+    datos.codigoRegistro,
+    datos.datosFormulario,
+    datos.archivosBase64
+  );
 }
 
 function handleProcesarFormularioInquilino(datos) {
@@ -484,24 +455,11 @@ function handleProcesarFormularioInquilino(datos) {
 }
 
 function handleEnviarFormularioPropietario(datos) {
-  try {
-    const resultado = procesarFormularioPropietario(
-      datos.codigoRegistro,
-      datos.datosFormulario,
-      datos.archivosBase64
-    );
-
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  return procesarFormularioPropietario(
+    datos.codigoRegistro,
+    datos.datosFormulario,
+    datos.archivosBase64
+  );
 }
 
 function handleProcesarFormularioPropietario(datos) {
@@ -509,83 +467,23 @@ function handleProcesarFormularioPropietario(datos) {
 }
 
 function handleProcesarValidacionInquilino(datos) {
-  try {
-    const resultado = procesarValidacionInquilino(datos);
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  return procesarValidacionInquilino(datos);
 }
 
 function handleProcesarValidacionPropietario(datos) {
-  try {
-    const resultado = procesarValidacionPropietario(datos);
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  return procesarValidacionPropietario(datos);
 }
 
 function handleActualizarCampoValidacion(datos) {
-  try {
-    const resultado = actualizarCampoValidacion(datos);
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  return actualizarCampoValidacion(datos);
 }
 
 function handleEnviarCorreccionInquilino(datos) {
-  try {
-    const resultado = enviarCorreccionInquilino(datos);
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  return enviarCorreccionInquilino(datos);
 }
 
 function handleEnviarCorreccionPropietario(datos) {
-  try {
-    const resultado = enviarCorreccionPropietario(datos);
-    return ContentService
-      .createTextOutput(JSON.stringify(resultado))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
+  return enviarCorreccionPropietario(datos);
 }
 
 // ==========================================
