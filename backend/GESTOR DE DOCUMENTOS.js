@@ -993,24 +993,58 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
 function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormulario) {
   try {
     Logger.log('Iniciando enrutamiento dinámico para CDR: ' + codigoRegistro);
-    const ROOT_FOLDER_ID = '1ozAkjspgSj6m2fN4tqqCm-mjrsux6ULi'; // Carpeta Inmuebles Raíz
+    const ROOT_FOLDER_ID = '1ozAkjspgSj6m2fN4tqqCm-mjrsux6ULi'; // Carpeta INMUEBLES
     const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
 
-    // 1. Encontrar la subcarpeta del inmueble por CDR (ej. "CDR - DIRECCION" o "CDR")
+    // 1. La carpeta CDR vive dentro de: INMUEBLES > [TIPO_NEGOCIO] > CDR
+    //    Debemos buscar en cada subcarpeta de tipo de negocio
     let inmuebleFolder = null;
-    const folders = rootFolder.getFolders();
-    while (folders.hasNext()) {
-      const folder = folders.next();
-      if (folder.getName().startsWith(codigoRegistro + ' -') || folder.getName() === codigoRegistro) {
-        inmuebleFolder = folder;
-        break;
+
+    // Primero buscar directamente en el root (por si acaso)
+    const directFolders = rootFolder.getFoldersByName(codigoRegistro);
+    if (directFolders.hasNext()) {
+      inmuebleFolder = directFolders.next();
+    }
+
+    // Si no está directo, buscar dentro de cada subcarpeta de tipo de negocio
+    if (!inmuebleFolder) {
+      const tipoNegocioFolders = rootFolder.getFolders();
+      while (tipoNegocioFolders.hasNext() && !inmuebleFolder) {
+        const tipoFolder = tipoNegocioFolders.next();
+        Logger.log('Buscando CDR en subcarpeta: ' + tipoFolder.getName());
+
+        // Buscar por nombre exacto dentro de esta subcarpeta
+        const subFolders = tipoFolder.getFoldersByName(codigoRegistro);
+        if (subFolders.hasNext()) {
+          inmuebleFolder = subFolders.next();
+          Logger.log('✅ CDR encontrado en: ' + tipoFolder.getName() + ' > ' + inmuebleFolder.getName());
+        }
+
+        // Fallback: buscar carpetas que empiecen con el CDR
+        if (!inmuebleFolder) {
+          const allSub = tipoFolder.getFolders();
+          while (allSub.hasNext()) {
+            const sf = allSub.next();
+            if (sf.getName().startsWith(codigoRegistro + ' -') || sf.getName().startsWith(codigoRegistro + '_')) {
+              inmuebleFolder = sf;
+              Logger.log('✅ CDR encontrado (parcial) en: ' + tipoFolder.getName() + ' > ' + sf.getName());
+              break;
+            }
+          }
+        }
       }
     }
 
-    // Fallback: búsqueda exacta por nombre de CDR
+    // Fallback final: búsqueda global en Drive por nombre exacto
     if (!inmuebleFolder) {
-      const exactFolders = rootFolder.getFoldersByName(codigoRegistro);
-      if (exactFolders.hasNext()) inmuebleFolder = exactFolders.next();
+      Logger.log('🔍 Usando búsqueda global en Drive para CDR: ' + codigoRegistro);
+      // Escapar caracteres especiales para la query de Drive
+      const cdrEscaped = codigoRegistro.replace(/'/g, "\\'");
+      const globalSearch = DriveApp.searchFolders(`title = '${cdrEscaped}' and trashed = false`);
+      if (globalSearch.hasNext()) {
+        inmuebleFolder = globalSearch.next();
+        Logger.log('✅ CDR encontrado por búsqueda global: ' + inmuebleFolder.getName());
+      }
     }
 
     if (!inmuebleFolder) {
@@ -1040,70 +1074,62 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
       if (!variosFolder) variosFolder = docsEntregaInqFolder.createFolder('4- VARIOS, FORMATO DE MUDANZAS, ETC');
     }
 
-    let pagoDerechosFolder = getFolderByNameHelper(docsEntregaInqFolder, '6- PAGO DE LOS DERECHOS DE CONTRATO') || docsEntregaInqFolder.createFolder('6- PAGO DE LOS DERECHOS DE CONTRATO');
+    // 6. Carpeta del comprobante de pago (vive DENTRO de variosFolder, no de docsEntregaInqFolder)
+    let pagoDerechosFolder = getFolderByNameHelper(variosFolder, '6- PAGO DE LOS DERECHOS DE CONTRATO')
+      || variosFolder.createFolder('6- PAGO DE LOS DERECHOS DE CONTRATO');
 
-    // 6. Carpetas destino: '2- CEDULA DEL INQUILINO' y '3- CEDULA DE CODEUDOR(ES)'
-    let cedulaInquilinoFolder = getFolderByNameHelper(variosFolder, '2- CEDULA DEL INQUILINO') || variosFolder.createFolder('2- CEDULA DEL INQUILINO');
-    let cedulaCodeudoresFolder = getFolderByNameHelper(variosFolder, '3- CEDULA DE CODEUDOR(ES)') || variosFolder.createFolder('3- CEDULA DE CODEUDOR(ES)');
+    // 7. Carpetas destino para cédulas
+    let cedulaInquilinoFolder = getFolderByNameHelper(variosFolder, '2- CEDULA DEL INQUILINO')
+      || variosFolder.createFolder('2- CEDULA DEL INQUILINO');
+    let cedulaCodeudoresFolder = getFolderByNameHelper(variosFolder, '3- CEDULA DE CODEUDOR(ES)')
+      || variosFolder.createFolder('3- CEDULA DE CODEUDOR(ES)');
 
-    // 7. Procesar archivos y aplicar Renombramiento Inteligente
-    for (const [nombreOriginal, contenidoBase64] of Object.entries(archivosBase64)) {
-      if (contenidoBase64 && contenidoBase64.contenido) {
+    // 8. Procesar archivos con rutas y nombres correctos
+    // Claves del formulario: docFront, docBack, ingresos, coDocFront, coDocBack, coIngresos, comprobantePago
+    const RUTAS_ARCHIVOS = {
+      'docFront': { carpeta: cedulaInquilinoFolder, nombre: `CEDULA_INQU_FRONTAL_[${codigoRegistro}]` },
+      'docBack': { carpeta: cedulaInquilinoFolder, nombre: `CEDULA_INQU_REVERSO_[${codigoRegistro}]` },
+      'ingresos': { carpeta: cedulaInquilinoFolder, nombre: `SOPORTES_INGRESO_INQU_[${codigoRegistro}]` },
+      'coDocFront': { carpeta: cedulaCodeudoresFolder, nombre: `CEDULA_COD_1_FRONTAL_[${codigoRegistro}]` },
+      'coDocBack': { carpeta: cedulaCodeudoresFolder, nombre: `CEDULA_COD_1_REVERSO_[${codigoRegistro}]` },
+      'coIngresos': { carpeta: cedulaCodeudoresFolder, nombre: `SOPORTES_INGRESO_COD_1_[${codigoRegistro}]` },
+      'comprobantePago': { carpeta: pagoDerechosFolder, nombre: `COMPROBANTE_PAGO_INQU_[${codigoRegistro}]` },
+    };
 
-        // Extraer mimeType
-        let mimeType = contenidoBase64.tipo || MimeType.JPEG;
-        let extension = 'jpg';
-        if (mimeType.includes('png')) extension = 'png';
-        if (mimeType.includes('pdf')) extension = 'pdf';
+    for (const [clave, contenidoBase64] of Object.entries(archivosBase64)) {
+      if (!contenidoBase64 || !contenidoBase64.contenido) continue;
 
-        const base64Data = contenidoBase64.contenido.split(',')[1];
-        const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType);
+      const mimeType = contenidoBase64.tipo || MimeType.JPEG;
+      let extension = 'jpg';
+      if (mimeType.includes('png')) extension = 'png';
+      if (mimeType.includes('pdf')) extension = 'pdf';
 
-        let nuevoNombre = '';
-        let targetFolder = null;
+      const base64Data = contenidoBase64.contenido.split(',')[1];
+      const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType);
 
-        if (nombreOriginal === 'cedulaFrontal') {
-          nuevoNombre = `CEDULA_INQU_FRONTAL_[${codigoRegistro}].${extension}`;
-          targetFolder = cedulaInquilinoFolder;
-        } else if (nombreOriginal === 'cedulaReverso') {
-          nuevoNombre = `CEDULA_INQU_REVERSO_[${codigoRegistro}].${extension}`;
-          targetFolder = cedulaInquilinoFolder;
-        } else if (nombreOriginal && nombreOriginal.startsWith('codeudor_')) {
-          const partes = nombreOriginal.split('_');
-          const indexCodeudor = parseInt(partes[1], 10) + 1; // Hacerlo base 1
-          const tipoCara = partes[2];
+      const ruta = RUTAS_ARCHIVOS[clave];
+      let targetFolder, nuevoNombre;
 
-          if (tipoCara === 'cedulaFrontal') nuevoNombre = `CEDULA_COD_${indexCodeudor}_FRONTAL_[${codigoRegistro}].${extension}`;
-          else if (tipoCara === 'cedulaReverso') nuevoNombre = `CEDULA_COD_${indexCodeudor}_REVERSO_[${codigoRegistro}].${extension}`;
-          else nuevoNombre = `DOC_COD_${indexCodeudor}_[${codigoRegistro}].${extension}`;
-
-          targetFolder = cedulaCodeudoresFolder;
-        } else if (nombreOriginal === 'comprobantePago') {
-          nuevoNombre = `COMPROBANTE_PAGO_INQU_[${codigoRegistro}].${extension}`;
-          targetFolder = pagoDerechosFolder;
-        } else if (nombreOriginal === 'ingresos') {
-          nuevoNombre = `SOPORTES_INGRESO_INQU_[${codigoRegistro}].${extension}`;
-          targetFolder = variosFolder;
-        } else {
-          nuevoNombre = `${nombreOriginal.toUpperCase()}_[${codigoRegistro}].${extension}`;
-          targetFolder = variosFolder;
-        }
-
-        // --- Lógica de Limpieza (Trash) evitar repeticiones ---
-        const archivosExistentes = targetFolder.getFilesByName(nuevoNombre);
-        while (archivosExistentes.hasNext()) {
-          const oldFile = archivosExistentes.next();
-          Logger.log(`Moviendo archivo viejo duplicado a papelera: ${oldFile.getName()}`);
-          oldFile.setTrashed(true);
-        }
-
-        blob.setName(nuevoNombre);
-        targetFolder.createFile(blob);
-        Logger.log(`✅ Archivo guardado: ${nuevoNombre}`);
+      if (ruta) {
+        targetFolder = ruta.carpeta;
+        nuevoNombre = `${ruta.nombre}.${extension}`;
+      } else {
+        // Cualquier clave no mapeada va a variosFolder
+        targetFolder = variosFolder;
+        nuevoNombre = `${clave.toUpperCase()}_[${codigoRegistro}].${extension}`;
+        Logger.log(`⚠️ Clave no mapeada "${clave}" → variosFolder`);
       }
+
+      // Limpiar duplicados antes de guardar
+      const existentes = targetFolder.getFilesByName(nuevoNombre);
+      while (existentes.hasNext()) existentes.next().setTrashed(true);
+
+      blob.setName(nuevoNombre);
+      targetFolder.createFile(blob);
+      Logger.log(`✅ Guardado: ${nuevoNombre} en "${targetFolder.getName()}"`);
     }
 
-    // 8. Escribir en el Documento Nivel 7: "DATOS DE ELABORACION DE CONTRATO"
+    // 9. Escribir datos del formulario en "DATOS DE ELABORACION DE CONTRATO"
     escribirDatosContratoDocNivel7(cedulaInquilinoFolder, datosFormulario, codigoRegistro);
 
     return {
@@ -1145,17 +1171,29 @@ function obtenerCarpetaAnioMasRecienteLocal(entregasFolder) {
 function escribirDatosContratoDocNivel7(cedulaFolder, datosFormulario, cdr) {
   try {
     let docFile = null;
-    const files = cedulaFolder.getFilesByType(MimeType.GOOGLE_DOCS);
-    while (files.hasNext()) {
-      const fd = files.next();
-      if (fd.getName().includes('DATOS DE ELABORACION DE CONTRATO') || fd.getName().includes('[DATOS CONTRATO]')) {
-        docFile = fd;
-        break;
+
+    // Buscar primero por nombre exacto (como está en la plantilla maestra)
+    const exactSearch = cedulaFolder.getFilesByName('DATOS DE ELABORACION DE CONTRATO');
+    if (exactSearch.hasNext()) {
+      docFile = exactSearch.next();
+    }
+
+    // Fallback: buscar por nombre parcial entre todos los archivos de la carpeta
+    if (!docFile) {
+      const allFiles = cedulaFolder.getFiles();
+      while (allFiles.hasNext()) {
+        const f = allFiles.next();
+        if (f.getName().includes('DATOS DE ELABORACION') || f.getName().includes('DATOS CONTRATO')) {
+          docFile = f;
+          break;
+        }
       }
     }
 
+    // Si definitivamente no existe, crearlo
     if (!docFile) {
-      const docNuevo = DocumentApp.create(`[DATOS CONTRATO] ${cdr}`);
+      Logger.log('⚠️ No se encontró DATOS DE ELABORACION DE CONTRATO, creando nuevo...');
+      const docNuevo = DocumentApp.create(`DATOS DE ELABORACION DE CONTRATO`);
       const newFile = DriveApp.getFileById(docNuevo.getId());
       newFile.moveTo(cedulaFolder);
       docFile = newFile;
@@ -1163,35 +1201,40 @@ function escribirDatosContratoDocNivel7(cedulaFolder, datosFormulario, cdr) {
 
     const doc = DocumentApp.openById(docFile.getId());
     const body = doc.getBody();
-    body.appendParagraph('\n------------------------------------------\n');
-    body.appendParagraph(`[INICIO - ENVIADO EL ${new Date().toLocaleDateString()}]`);
+    body.appendParagraph('\n------------------------------------------');
+    body.appendParagraph(`[INICIO - ENVIADO EL ${new Date().toLocaleDateString('es-CO')}]`);
 
     body.appendParagraph('DATOS DEL INQUILINO:');
-    body.appendParagraph(`NOMBRES:: ${datosFormulario.inquilino.nombre}`);
-    body.appendParagraph(`TIPO DE IDENTIFICACIÓN:: ${datosFormulario.inquilino.tipoDocumento}`);
-    body.appendParagraph(`NÚMERO DE IDENTIFICACIÓN:: ${datosFormulario.inquilino.numeroDocumento}`);
-    body.appendParagraph(`CELULAR:: ${datosFormulario.inquilino.celular}`);
-    body.appendParagraph(`CORREO:: ${datosFormulario.inquilino.email}`);
-    body.appendParagraph(`OCUPACIÓN:: ${datosFormulario.inquilino.ocupacion}`);
+    body.appendParagraph(`NOMBRES:: ${datosFormulario?.inquilino?.nombre || ''}`);
+    body.appendParagraph(`TIPO DE IDENTIFICACIÓN:: ${datosFormulario?.inquilino?.tipoDocumento || ''}`);
+    body.appendParagraph(`NÚMERO DE IDENTIFICACIÓN:: ${datosFormulario?.inquilino?.numeroDocumento || ''}`);
+    body.appendParagraph(`CELULAR:: ${datosFormulario?.inquilino?.celular || ''}`);
+    body.appendParagraph(`CORREO:: ${datosFormulario?.inquilino?.email || ''}`);
 
-    if (datosFormulario.codeudores && datosFormulario.codeudores.length > 0) {
+    // Normalizar codeudor: el formulario envía un objeto único (o null), no un array
+    const codeudorRaw = datosFormulario?.codeudor || datosFormulario?.codeudores;
+    const codeudores = Array.isArray(codeudorRaw)
+      ? codeudorRaw
+      : (codeudorRaw && codeudorRaw.numeroDocumento ? [codeudorRaw] : []);
+
+    if (codeudores.length > 0) {
       body.appendParagraph('\nCODEUDORES:');
-      datosFormulario.codeudores.forEach((c, i) => {
+      codeudores.forEach((c, i) => {
         body.appendParagraph(`[CODEUDOR ${i + 1}]`);
         body.appendParagraph(`NOMBRES:: ${c.nombre || ''}`);
         body.appendParagraph(`TIPO DE IDENTIFICACIÓN:: ${c.tipoDocumento || 'CC'}`);
-        body.appendParagraph(`NÚMERO DE IDENTIFICACIÓN:: ${c.documento || ''}`);
+        body.appendParagraph(`NÚMERO DE IDENTIFICACIÓN:: ${c.numeroDocumento || c.documento || ''}`);
         body.appendParagraph(`CELULAR:: ${c.celular || ''}`);
         body.appendParagraph(`CORREO:: ${c.email || ''}`);
-        body.appendParagraph(`-----------------------`);
+        body.appendParagraph('-----------------------');
       });
     }
 
-    body.appendParagraph(`[FIN]`);
+    body.appendParagraph('[FIN]');
     doc.saveAndClose();
-    Logger.log('✅ Datos de contrato escritos en Doc Nivel 7.');
+    Logger.log('✅ Datos de contrato escritos en DATOS DE ELABORACION DE CONTRATO.');
   } catch (e) {
-    Logger.log('⚠️ Error escribiendo Doc Nivel 7: ' + e.message);
+    Logger.log('⚠️ Error escribiendo DATOS DE ELABORACION DE CONTRATO: ' + e.message);
   }
 }
 

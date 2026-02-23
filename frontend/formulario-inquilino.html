@@ -600,6 +600,63 @@
         bindFile(el.coIngresos, 'coIngresos', el.coIngresosName);
         bindFile(el.comprobantePago, 'comprobantePago', el.comprobantePagoName);
 
+        // sessionStorage: guardar por CDR para no mezclar formularios
+        const STORAGE_KEY = `inq_form_${state.cdr}`;
+
+        function saveForm() {
+          const TEXT_FIELDS = [
+            'tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
+            'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
+            'coTipo', 'coNumero', 'coNombres', 'coApellidos', 'coEmail', 'coCelular'
+          ];
+          const data = { step: state.step, archivos: {}, campos: {} };
+          TEXT_FIELDS.forEach(id => {
+            const el2 = document.getElementById(id);
+            if (el2) data.campos[id] = el2.value;
+          });
+          // Guardar metadatos de archivos (nombre y base64)
+          Object.entries(state.archivos).forEach(([k, v]) => {
+            if (v && v.contenido) {
+              data.archivos[k] = { nombre: v.nombre || k, tipo: v.tipo, contenido: v.contenido };
+            }
+          });
+          try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { }
+        }
+
+        function restoreForm() {
+          let saved;
+          try { saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY)); } catch (e) { }
+          if (!saved) return;
+
+          // Restaurar campos de texto
+          Object.entries(saved.campos || {}).forEach(([id, val]) => {
+            const el2 = document.getElementById(id);
+            if (el2) el2.value = val;
+          });
+
+          // Restaurar archivos al state y mostrar nombre guardado
+          Object.entries(saved.archivos || {}).forEach(([k, v]) => {
+            state.archivos[k] = v;
+            const nameEl = document.getElementById(`${k}Name`);
+            if (nameEl && v.nombre) {
+              nameEl.textContent = `📂 ${v.nombre}`;
+              nameEl.style.color = '#f59e0b';
+            }
+          });
+        }
+
+        // Auto-guardar en cada cambio de campo de texto
+        ['tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
+          'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
+          'coTipo', 'coNumero', 'coNombres', 'coApellidos', 'coEmail', 'coCelular'
+        ].forEach(id => {
+          const el2 = document.getElementById(id);
+          if (el2) el2.addEventListener('input', saveForm);
+        });
+
+        // Restaurar datos previos al cargar
+        restoreForm();
+
         // Pago
         el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
         el.btnPayBreb.addEventListener('click', openBrebModal);
@@ -663,6 +720,7 @@
         reader.onload = (e) => {
           state.archivos[key] = { nombre: file.name, tipo: file.type, contenido: e.target.result };
           if (nameEl) nameEl.textContent = file.name;
+          if (typeof saveForm === 'function') saveForm();
         };
         reader.readAsDataURL(file);
       }
@@ -862,6 +920,7 @@
           }
 
           const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
+          try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) { }
           location.href = `pagina-exito.html?status=success&msg=${msg}`;
 
         } catch (err) {
