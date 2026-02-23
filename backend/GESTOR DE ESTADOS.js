@@ -223,9 +223,9 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
       sheet.getRange(row, detallesColIndex).setValue(MENSAJES_ESTADO.ESTUDIO_APROBADO);
       const tipoNegocioColIndex = getColumnIndex(sheet, ESTADOS_CONFIG.COLUMNAS.TIPO_NEGOCIO);
       const tipoNegocioVal = sheet.getRange(row, tipoNegocioColIndex).getValue();
-      const tipoNegocioNorm = tipoNegocioVal ? tipoNegocioVal.toString().trim().toUpperCase() : '';
+      const tipoNegocioNorm = tipoNegocioVal ? tipoNegocioVal.toString().trim() : '';
 
-      const tiposPermitidos = ['ARRIENDO', 'VENDI-RENTA', 'ADMI-VENTA'];
+      const tiposPermitidos = ['Arriendo', 'Vendi-Renta', 'Admi-Venta', 'Corretaje', 'Administración', 'Administracion'];
 
       if (tiposPermitidos.includes(tipoNegocioNorm)) {
         mostrarPopupEmailInquilino(sheet, row);
