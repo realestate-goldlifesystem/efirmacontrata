@@ -730,6 +730,9 @@ function insertarLinksTipo11(sheet, row, rprFolder, regFolder, datos) {
 
   // Link Inquilino
   insertarLinkInquilino(sheet, row, regFolder);
+
+  // Link Soportes Contables
+  insertarLinkSoportesContables(sheet, row, regFolder);
 }
 
 function actualizarLinksTipo12(sheet, filaOriginal, filaTemp, carpetaNuevoAnio, regFolder) {
@@ -757,6 +760,18 @@ function actualizarLinksTipo12(sheet, filaOriginal, filaTemp, carpetaNuevoAnio, 
     if (inquilinoCol) {
       sheet.getRange(filaOriginal, inquilinoCol).setFormula(formulaInquilino);
       Logger.log('✅ Link INQUILINO actualizado');
+    }
+  }
+
+  // Actualizar link SOPORTES CONTABLES con la nueva carpeta de año
+  var nuevoAnioFolder = carpetaNuevoAnio;
+  var soportesNuevo = getFolderByName(nuevoAnioFolder, 'SOPORTES CONTABLES');
+  if (soportesNuevo) {
+    var soportesCol = getColumnByName(sheet, 'SOPORTES CONTABLES');
+    if (soportesCol) {
+      var soportesUrl = 'https://drive.google.com/drive/folders/' + soportesNuevo.getId();
+      sheet.getRange(filaOriginal, soportesCol).setFormula('=HYPERLINK("' + soportesUrl + '";"📑")');
+      Logger.log('✅ Link SOPORTES CONTABLES actualizado');
     }
   }
 
@@ -944,6 +959,37 @@ function insertarLinkInquilino(sheet, row, regFolder) {
 
   sheet.getRange(row, linkInquilinoCol).setFormula(formula);
   Logger.log('✅ Link INQUILINO insertado');
+}
+
+function insertarLinkSoportesContables(sheet, row, regFolder) {
+  var col = getColumnByName(sheet, 'SOPORTES CONTABLES');
+  if (!col) {
+    Logger.log('⚠️ Columna "SOPORTES CONTABLES" no encontrada en la hoja');
+    return;
+  }
+
+  var entregasFolder = getFolderByName(regFolder, 'ENTREGAS DEL INMUEBLE');
+  if (!entregasFolder) {
+    Logger.log('⚠️ No se encontró ENTREGAS DEL INMUEBLE');
+    return;
+  }
+
+  var anioFolder = obtenerCarpetaAnioMasReciente(entregasFolder);
+  if (!anioFolder) {
+    Logger.log('⚠️ No se encontró carpeta de año para SOPORTES CONTABLES');
+    return;
+  }
+
+  var soportesFolder = getFolderByName(anioFolder, 'SOPORTES CONTABLES');
+  if (!soportesFolder) {
+    Logger.log('⚠️ No se encontró carpeta SOPORTES CONTABLES');
+    return;
+  }
+
+  var url = 'https://drive.google.com/drive/folders/' + soportesFolder.getId();
+  var formula = '=HYPERLINK("' + url + '";"📑")';
+  sheet.getRange(row, col).setFormula(formula);
+  Logger.log('✅ Link SOPORTES CONTABLES insertado');
 }
 
 function obtenerCarpetaAnioMasReciente(entregasFolder) {
