@@ -820,7 +820,14 @@
         reader.onload = (e) => {
           state.archivos[key] = { nombre: file.name, tipo: file.type, contenido: e.target.result };
           if (nameEl) nameEl.textContent = file.name;
+          // Marcar contenedor en verde
+          const container = document.getElementById(key);
+          if (container) {
+            const wrapper = container.closest('.file-upload');
+            if (wrapper) wrapper.classList.add('has-file');
+          }
           if (typeof saveForm === 'function') saveForm();
+          evaluateProgress();
         };
         reader.readAsDataURL(file);
       }
@@ -861,6 +868,14 @@
 
           const vNum = el.numeroDocumento.value.trim();
           const vConfNum = el.confirmarDocumento.value.trim();
+          // Feedback visual de coincidencia en Documento
+          if (vNum && vConfNum && vNum !== vConfNum) {
+            el.confirmarDocumento.classList.add('invalid');
+            el.docError.classList.add('show');
+          } else {
+            el.confirmarDocumento.classList.remove('invalid');
+            el.docError.classList.remove('show');
+          }
           const prog3 = document.getElementById('prog-inq-0-3');
           if (prog3) {
             if (vNum && vConfNum && vNum === vConfNum && rx.num.test(vNum)) {
@@ -883,6 +898,14 @@
 
           const vEmail = el.email.value.trim();
           const vConfEmail = el.confirmarEmail.value.trim();
+          // Feedback visual de coincidencia en Email
+          if (vEmail && vConfEmail && vEmail !== vConfEmail) {
+            el.confirmarEmail.classList.add('invalid');
+            el.emailError.classList.add('show');
+          } else {
+            el.confirmarEmail.classList.remove('invalid');
+            el.emailError.classList.remove('show');
+          }
           const prog5 = document.getElementById('prog-inq-0-5');
           if (prog5) {
             if (vEmail && vConfEmail && vEmail === vConfEmail && rx.email.test(vEmail)) {
@@ -890,6 +913,17 @@
             } else {
               prog5.classList.add('progressive-hidden'); prog5.classList.remove('progressive-visible');
             }
+          }
+
+          // Feedback visual de coincidencia en Celular
+          const vCel = el.celular.value.trim();
+          const vConfCel = el.confirmarCelular.value.trim();
+          if (vCel && vConfCel && vCel !== vConfCel) {
+            el.confirmarCelular.classList.add('invalid');
+            el.celError.classList.add('show');
+          } else {
+            el.confirmarCelular.classList.remove('invalid');
+            el.celError.classList.remove('show');
           }
         } else if (state.step === 1) {
           const prog2 = document.getElementById('prog-inq-1-2');
