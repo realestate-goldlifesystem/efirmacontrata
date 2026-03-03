@@ -413,13 +413,6 @@
             </label>
           </div>
 
-          <div class="file-upload progressive-hidden" id="prog-inq-1-3">
-            <input type="file" id="ingresos" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-            <label for="ingresos" class="file-label">
-              <span>💰 Soporte de Ingresos *</span>
-              <span id="ingresosName" class="file-name"></span>
-            </label>
-          </div>
         </div>
 
         <!-- Step 3: Codeudor -->
@@ -625,8 +618,6 @@
         docFrontName: $("docFrontName"),
         docBack: $("docBack"),
         docBackName: $("docBackName"),
-        ingresos: $("ingresos"),
-        ingresosName: $("ingresosName"),
         coTipo: $("coTipo"),
         coNumero: $("coNumero"),
         coNombres: $("coNombres"),
@@ -676,7 +667,6 @@
         // Files
         bindFile(el.docFront, 'docFront', el.docFrontName);
         bindFile(el.docBack, 'docBack', el.docBackName);
-        bindFile(el.ingresos, 'ingresos', el.ingresosName);
         bindFile(el.coDocFront, 'coDocFront', el.coDocFrontName);
         bindFile(el.coDocBack, 'coDocBack', el.coDocBackName);
         bindFile(el.coIngresos, 'coIngresos', el.coIngresosName);
@@ -934,14 +924,6 @@
               prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
             }
           }
-          const prog3 = document.getElementById('prog-inq-1-3');
-          if (prog3) {
-            if (state.archivos['docBack']) {
-              prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
-            } else {
-              prog3.classList.add('progressive-hidden'); prog3.classList.remove('progressive-visible');
-            }
-          }
         }
 
         // Only enable next if fully validated
@@ -963,8 +945,7 @@
         ];
         if (step === 1) return [
           { id: 'docFront', isType: 'file' },
-          { id: 'docBack', isType: 'file' },
-          { id: 'ingresos', isType: 'file' }
+          { id: 'docBack', isType: 'file' }
         ];
         if (step === 3) return [
           { id: 'comprobantePago', isType: 'file' }
@@ -1043,10 +1024,10 @@
             return true;
           }
           case 1: {
-            const need = ['docFront', 'docBack', 'ingresos'];
+            const need = ['docFront', 'docBack'];
             for (const k of need) {
               if (!state.archivos[k]) {
-                showAlert('warning', 'Faltan documentos requeridos (frontal, reverso e ingresos).');
+                showAlert('warning', 'Faltan documentos requeridos (frontal y reverso).');
                 return false;
               }
             }
@@ -1078,7 +1059,7 @@
       function buildSummary() {
         const files = Object.entries(state.archivos).map(([k, v]) => {
           const nice = {
-            docFront: 'Doc. Identidad (frontal)', docBack: 'Doc. Identidad (reverso)', ingresos: 'Soporte de ingresos',
+            docFront: 'Doc. Identidad (frontal)', docBack: 'Doc. Identidad (reverso)',
             coDocFront: 'Codeudor: Doc. (frontal)', coDocBack: 'Codeudor: Doc. (reverso)', coIngresos: 'Codeudor: Ingresos',
             comprobantePago: 'Comprobante de Pago'
           }[k] || k;
