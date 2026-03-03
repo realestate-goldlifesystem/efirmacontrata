@@ -373,7 +373,7 @@
         <div class="step-pane show" data-pane="0">
           <h3>Datos Personales del Propietario</h3>
 
-          <div class="form-group">
+          <div class="form-group" id="prog-prop-0-1">
             <label for="tipoDocumento">Tipo de Documento <span class="required">*</span></label>
             <select id="tipoDocumento" class="input" required>
               <option value="">Seleccione...</option>
@@ -384,7 +384,7 @@
             </select>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-prop-0-2">
             <div class="form-group">
               <label for="numeroDocumento">Número de Documento <span class="required">*</span></label>
               <input type="text" id="numeroDocumento" class="input" required>
@@ -396,7 +396,7 @@
             </div>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-prop-0-3">
             <div class="form-group">
               <label for="nombres">Nombres <span class="required">*</span></label>
               <input type="text" id="nombres" class="input" required>
@@ -407,7 +407,7 @@
             </div>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-prop-0-4">
             <div class="form-group">
               <label for="email">Correo Electrónico <span class="required">*</span></label>
               <input type="email" id="email" class="input" required>
@@ -419,7 +419,7 @@
             </div>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-prop-0-5">
             <div class="form-group">
               <label for="celular">Celular <span class="required">*</span></label>
               <input type="tel" id="celular" class="input" placeholder="3001234567" required>
@@ -437,7 +437,7 @@
           <h3>Documentos del Propietario</h3>
           <p class="muted">Cargue los documentos requeridos en formato PDF o imagen</p>
 
-          <div class="file-upload">
+          <div class="file-upload" id="prog-prop-1-1">
             <input type="file" id="docFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
             <label for="docFront" class="file-label">
               <span>📄 Documento de Identidad (Frontal) *</span>
@@ -445,7 +445,7 @@
             </label>
           </div>
 
-          <div class="file-upload">
+          <div class="file-upload progressive-hidden" id="prog-prop-1-2">
             <input type="file" id="docBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
             <label for="docBack" class="file-label">
               <span>📄 Documento de Identidad (Reverso) *</span>
@@ -453,7 +453,7 @@
             </label>
           </div>
 
-          <div class="file-upload">
+          <div class="file-upload progressive-hidden" id="prog-prop-1-3">
             <input type="file" id="certTradicion" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
             <label for="certTradicion" class="file-label">
               <span>🏡 Certificado de Tradición y Libertad *</span>
@@ -461,7 +461,7 @@
             </label>
           </div>
 
-          <div class="file-upload">
+          <div class="file-upload progressive-hidden" id="prog-prop-1-4">
             <input type="file" id="sarlaft" class="file-input" accept=".pdf">
             <label for="sarlaft" class="file-label">
               <span>📋 Formato SARLAFT *</span>
@@ -484,7 +484,7 @@
         <div class="step-pane" data-pane="2">
           <h3>Información Bancaria</h3>
 
-          <div class="form-group">
+          <div class="form-group" id="prog-prop-2-1">
             <label for="tipoCuenta">Tipo de Cuenta <span class="required">*</span></label>
             <select id="tipoCuenta" class="input" required>
               <option value="">Seleccione...</option>
@@ -493,27 +493,27 @@
             </select>
           </div>
 
-          <div class="form-group">
+          <div class="form-group progressive-hidden" id="prog-prop-2-2">
             <label for="numeroCuenta">Número de Cuenta <span class="required">*</span></label>
             <input type="text" id="numeroCuenta" class="input" required>
           </div>
 
-          <div class="form-group">
+          <div class="form-group progressive-hidden" id="prog-prop-2-3">
             <label for="banco">Banco <span class="required">*</span></label>
             <input type="text" id="banco" class="input" placeholder="Ej: Bancolombia, Davivienda..." required>
           </div>
 
-          <div class="form-group">
+          <div class="form-group progressive-hidden" id="prog-prop-2-4">
             <label for="titularCuenta">Titular de la Cuenta <span class="required">*</span></label>
             <input type="text" id="titularCuenta" class="input" required>
           </div>
 
-          <div class="form-group">
+          <div class="form-group progressive-hidden" id="prog-prop-2-5">
             <label for="docTitular">Documento del Titular <span class="required">*</span></label>
             <input type="text" id="docTitular" class="input" required>
           </div>
 
-          <div class="file-upload">
+          <div class="file-upload progressive-hidden" id="prog-prop-2-6">
             <input type="file" id="certBancario" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
             <label for="certBancario" class="file-label">
               <span>🏦 Certificación Bancaria *</span>
@@ -778,6 +778,7 @@
         bindServicios();
         bindPagos();
         bindProgressValidators();
+        evaluateProgress();
       }
 
       // --------- Corrección ----------
@@ -944,6 +945,79 @@
           line.style.width = (baseWidth + extraWidth) + '%';
         }
 
+        // --- LÓGICA DE REVELACIÓN PROGRESIVA ---
+        if (state.step === 0) {
+          const vTipo = el.tipoDocumento.value.trim();
+          const prog2 = document.getElementById('prog-prop-0-2');
+          if (vTipo && prog2) {
+            prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+          }
+
+          const vNum = el.numeroDocumento.value.trim();
+          const vConfNum = el.confirmarDocumento.value.trim();
+          const prog3 = document.getElementById('prog-prop-0-3');
+          if (vNum && vConfNum && vNum === vConfNum && rx.num.test(vNum) && prog3) {
+            prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+          }
+
+          const vNom = el.nombres.value.trim();
+          const vApe = el.apellidos.value.trim();
+          const prog4 = document.getElementById('prog-prop-0-4');
+          if (vNom && vApe && prog4) {
+            prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
+          }
+
+          const vEmail = el.email.value.trim();
+          const vConfEmail = el.confirmarEmail.value.trim();
+          const prog5 = document.getElementById('prog-prop-0-5');
+          if (vEmail && vConfEmail && vEmail === vConfEmail && rx.email.test(vEmail) && prog5) {
+            prog5.classList.remove('progressive-hidden'); prog5.classList.add('progressive-visible');
+          }
+        } else if (state.step === 1) {
+          const prog2 = document.getElementById('prog-prop-1-2');
+          if (state.archivos['docFront'] && prog2) {
+            prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+          }
+          const prog3 = document.getElementById('prog-prop-1-3');
+          if (state.archivos['docBack'] && prog3) {
+            prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+          }
+          const prog4 = document.getElementById('prog-prop-1-4');
+          if (state.archivos['certTradicion'] && prog4) {
+            prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
+          }
+        } else if (state.step === 2) {
+          const vTCuenta = el.tipoCuenta.value.trim();
+          const prog2 = document.getElementById('prog-prop-2-2');
+          if (vTCuenta && prog2) {
+            prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+          }
+
+          const vNCuenta = el.numeroCuenta.value.trim();
+          const prog3 = document.getElementById('prog-prop-2-3');
+          if (vNCuenta && prog3) {
+            prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+          }
+
+          const vBanco = el.banco.value.trim();
+          const prog4 = document.getElementById('prog-prop-2-4');
+          if (vBanco && prog4) {
+            prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
+          }
+
+          const vTitular = el.titularCuenta.value.trim();
+          const prog5 = document.getElementById('prog-prop-2-5');
+          if (vTitular && prog5) {
+            prog5.classList.remove('progressive-hidden'); prog5.classList.add('progressive-visible');
+          }
+
+          const vDocTitular = el.docTitular.value.trim();
+          const prog6 = document.getElementById('prog-prop-2-6');
+          if (vDocTitular && prog6) {
+            prog6.classList.remove('progressive-hidden'); prog6.classList.add('progressive-visible');
+          }
+        }
+
         const isValid = validateStepRaw(state.step);
         el.btnNext.disabled = !isValid;
       }
@@ -964,10 +1038,16 @@
           { id: 'docFront', isType: 'file' },
           { id: 'docBack', isType: 'file' },
           { id: 'certTradicion', isType: 'file' },
-          { id: 'sarlaft', isType: 'file' },
+          { id: 'sarlaft', isType: 'file' }
+        ];
+        if (step === 2) return [
+          { id: 'tipoCuenta', isType: 'input', el: el.tipoCuenta },
+          { id: 'numeroCuenta', isType: 'input', el: el.numeroCuenta },
+          { id: 'banco', isType: 'input', el: el.banco },
+          { id: 'titularCuenta', isType: 'input', el: el.titularCuenta },
+          { id: 'docTitular', isType: 'input', el: el.docTitular },
           { id: 'certBancario', isType: 'file' }
         ];
-        // Step 2 and 3 can be empty/optional depending on the logic, let's look at the validation
         if (step === 4) return [
           { id: 'comprobantePago', isType: 'file' }
         ];

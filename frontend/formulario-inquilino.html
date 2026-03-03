@@ -333,7 +333,7 @@
         <!-- Step 1: Datos -->
         <div class="step-pane show" data-pane="0">
           <h3>Datos Personales del Inquilino</h3>
-          <div class="form-group">
+          <div class="form-group" id="prog-inq-0-1">
             <label for="tipoDocumento">Tipo de Documento <span class="required">*</span></label>
             <select id="tipoDocumento" class="input" required>
               <option value="">Seleccione...</option>
@@ -344,7 +344,7 @@
             </select>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-inq-0-2">
             <div class="form-group">
               <label for="numeroDocumento">Número de Documento <span class="required">*</span></label>
               <input type="text" id="numeroDocumento" class="input" required>
@@ -356,7 +356,7 @@
             </div>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-inq-0-3">
             <div class="form-group">
               <label for="nombres">Nombres <span class="required">*</span></label>
               <input type="text" id="nombres" class="input" required>
@@ -367,7 +367,7 @@
             </div>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-inq-0-4">
             <div class="form-group">
               <label for="email">Correo Electrónico <span class="required">*</span></label>
               <input type="email" id="email" class="input" required>
@@ -379,7 +379,7 @@
             </div>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-inq-0-5">
             <div class="form-group">
               <label for="celular">Celular <span class="required">*</span></label>
               <input type="tel" id="celular" class="input" placeholder="3001234567" required>
@@ -397,7 +397,7 @@
           <h3>Documentos del Inquilino</h3>
           <p class="muted">Cargue los documentos requeridos en formato PDF o imagen</p>
 
-          <div class="file-upload">
+          <div class="file-upload" id="prog-inq-1-1">
             <input type="file" id="docFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
             <label for="docFront" class="file-label">
               <span>📄 Documento de Identidad (Frontal) *</span>
@@ -405,7 +405,7 @@
             </label>
           </div>
 
-          <div class="file-upload">
+          <div class="file-upload progressive-hidden" id="prog-inq-1-2">
             <input type="file" id="docBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
             <label for="docBack" class="file-label">
               <span>📄 Documento de Identidad (Reverso) *</span>
@@ -413,7 +413,7 @@
             </label>
           </div>
 
-          <div class="file-upload">
+          <div class="file-upload progressive-hidden" id="prog-inq-1-3">
             <input type="file" id="ingresos" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
             <label for="ingresos" class="file-label">
               <span>💰 Soporte de Ingresos *</span>
@@ -745,6 +745,7 @@
 
       // Restaurar datos previos al cargar
       restoreForm();
+      evaluateProgress();
 
       // Pago
       el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
@@ -825,6 +826,7 @@
       }
 
       // --------- Progressive Validation ----------
+      // --------- Progressive Validation ----------
       function evaluateProgress() {
         if (state.step === state.max) return;
         const requiredFields = getRequiredForStep(state.step);
@@ -843,6 +845,45 @@
         const line = document.getElementById('progressLine');
         if (line) {
           line.style.width = (baseWidth + extraWidth) + '%';
+        }
+
+        // --- LÓGICA DE REVELACIÓN PROGRESIVA ---
+        if (state.step === 0) {
+          const vTipo = el.tipoDocumento.value.trim();
+          const prog2 = document.getElementById('prog-inq-0-2');
+          if (vTipo && prog2) {
+            prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+          }
+
+          const vNum = el.numeroDocumento.value.trim();
+          const vConfNum = el.confirmarDocumento.value.trim();
+          const prog3 = document.getElementById('prog-inq-0-3');
+          if (vNum && vConfNum && vNum === vConfNum && rx.num.test(vNum) && prog3) {
+            prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+          }
+
+          const vNom = el.nombres.value.trim();
+          const vApe = el.apellidos.value.trim();
+          const prog4 = document.getElementById('prog-inq-0-4');
+          if (vNom && vApe && prog4) {
+            prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
+          }
+
+          const vEmail = el.email.value.trim();
+          const vConfEmail = el.confirmarEmail.value.trim();
+          const prog5 = document.getElementById('prog-inq-0-5');
+          if (vEmail && vConfEmail && vEmail === vConfEmail && rx.email.test(vEmail) && prog5) {
+            prog5.classList.remove('progressive-hidden'); prog5.classList.add('progressive-visible');
+          }
+        } else if (state.step === 1) {
+          const prog2 = document.getElementById('prog-inq-1-2');
+          if (state.archivos['docFront'] && prog2) {
+            prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+          }
+          const prog3 = document.getElementById('prog-inq-1-3');
+          if (state.archivos['docBack'] && prog3) {
+            prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+          }
         }
 
         // Only enable next if fully validated

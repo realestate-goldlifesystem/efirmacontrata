@@ -72,11 +72,22 @@ body {
 
 /* CARDS */
 .card {
-  background: var(--white);
+  background: rgba(255, 255, 255, 0.96);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
+  /* Efecto Flotante Neón + 3D */
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.6),
+    /* Sombra de levitación profunda */
+    0 0 20px rgba(220, 181, 60, 0.35),
+    /* Glow neón dorado cercano */
+    0 0 50px rgba(220, 181, 60, 0.15);
+  /* Glow neón dorado extendido */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid rgba(255, 255, 255, 0.9);
+  /* Luz superior 3D */
+  border-left: 1px solid rgba(255, 255, 255, 0.7);
+  /* Luz lateral 3D */
+  backdrop-filter: blur(12px);
   overflow: hidden;
   margin-bottom: 25px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -459,6 +470,27 @@ textarea.input:focus {
 
 .d-none {
   display: none;
+}
+
+/* PROGRESSIVE DISCLOSURE ANIMATIONS */
+.progressive-hidden {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.progressive-visible {
+  opacity: 1;
+  max-height: 500px;
+  /* Expansión suave */
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: auto;
 }
 
 /* INDICADORES DE DISPOSITIVO */
