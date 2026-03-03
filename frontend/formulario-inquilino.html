@@ -420,7 +420,7 @@
           <h3>Datos del Codeudor (Opcional)</h3>
           <p class="muted">Si cuenta con codeudor, complete su información</p>
 
-          <div class="form-group">
+          <div class="form-group" id="prog-inq-2-1">
             <label for="coTipo">Tipo de Documento</label>
             <select id="coTipo" class="input">
               <option value="">Seleccione...</option>
@@ -430,12 +430,19 @@
             </select>
           </div>
 
-          <div class="form-group">
-            <label for="coNumero">Número de Documento</label>
-            <input type="text" id="coNumero" class="input">
+          <div class="grid-2col progressive-hidden" id="prog-inq-2-2">
+            <div class="form-group">
+              <label for="coNumero">Número de Documento</label>
+              <input type="text" id="coNumero" class="input">
+            </div>
+            <div class="form-group">
+              <label for="coConfirmarDocumento">Confirmar Documento</label>
+              <input type="text" id="coConfirmarDocumento" class="input">
+              <span id="coDocError" class="error-msg">Los documentos no coinciden</span>
+            </div>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-inq-2-3">
             <div class="form-group">
               <label for="coNombres">Nombres</label>
               <input type="text" id="coNombres" class="input">
@@ -446,42 +453,49 @@
             </div>
           </div>
 
-          <div class="grid-2col">
+          <div class="grid-2col progressive-hidden" id="prog-inq-2-4">
             <div class="form-group">
               <label for="coEmail">Correo Electrónico</label>
               <input type="email" id="coEmail" class="input">
             </div>
             <div class="form-group">
-              <label for="coCelular">Celular</label>
-              <input type="tel" id="coCelular" class="input">
+              <label for="coConfirmarEmail">Confirmar Correo</label>
+              <input type="email" id="coConfirmarEmail" class="input">
+              <span id="coEmailError" class="error-msg">Los correos no coinciden</span>
             </div>
           </div>
 
-          <div class="hr"></div>
-          <h4>Documentos del Codeudor</h4>
-
-          <div class="file-upload">
-            <input type="file" id="coDocFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-            <label for="coDocFront" class="file-label">
-              <span>📄 Documento (Frontal)</span>
-              <span id="coDocFrontName" class="file-name"></span>
-            </label>
+          <div class="grid-2col progressive-hidden" id="prog-inq-2-5">
+            <div class="form-group">
+              <label for="coCelular">Celular</label>
+              <input type="tel" id="coCelular" class="input" placeholder="3001234567">
+            </div>
+            <div class="form-group">
+              <label for="coConfirmarCelular">Confirmar Celular</label>
+              <input type="tel" id="coConfirmarCelular" class="input">
+              <span id="coCelError" class="error-msg">Los celulares no coinciden</span>
+            </div>
           </div>
 
-          <div class="file-upload">
-            <input type="file" id="coDocBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-            <label for="coDocBack" class="file-label">
-              <span>📄 Documento (Reverso)</span>
-              <span id="coDocBackName" class="file-name"></span>
-            </label>
-          </div>
+          <div class="progressive-hidden" id="prog-inq-2-6">
+            <div class="hr"></div>
+            <h4>Documentos del Codeudor</h4>
 
-          <div class="file-upload">
-            <input type="file" id="coIngresos" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-            <label for="coIngresos" class="file-label">
-              <span>💰 Soporte de Ingresos</span>
-              <span id="coIngresosName" class="file-name"></span>
-            </label>
+            <div class="file-upload" id="prog-inq-2-7">
+              <input type="file" id="coDocFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+              <label for="coDocFront" class="file-label">
+                <span>📄 Documento (Frontal)</span>
+                <span id="coDocFrontName" class="file-name"></span>
+              </label>
+            </div>
+
+            <div class="file-upload progressive-hidden" id="prog-inq-2-8">
+              <input type="file" id="coDocBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+              <label for="coDocBack" class="file-label">
+                <span>📄 Documento (Reverso)</span>
+                <span id="coDocBackName" class="file-name"></span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -620,16 +634,20 @@
         docBackName: $("docBackName"),
         coTipo: $("coTipo"),
         coNumero: $("coNumero"),
+        coConfirmarDocumento: $("coConfirmarDocumento"),
+        coDocError: $("coDocError"),
         coNombres: $("coNombres"),
         coApellidos: $("coApellidos"),
         coEmail: $("coEmail"),
+        coConfirmarEmail: $("coConfirmarEmail"),
+        coEmailError: $("coEmailError"),
         coCelular: $("coCelular"),
+        coConfirmarCelular: $("coConfirmarCelular"),
+        coCelError: $("coCelError"),
         coDocFront: $("coDocFront"),
         coDocFrontName: $("coDocFrontName"),
         coDocBack: $("coDocBack"),
         coDocBackName: $("coDocBackName"),
-        coIngresos: $("coIngresos"),
-        coIngresosName: $("coIngresosName"),
         comprobantePago: $("comprobantePago"),
         comprobantePagoName: $("comprobantePagoName"),
         btnPayBreb: $("btnPayBreb"),
@@ -669,7 +687,6 @@
         bindFile(el.docBack, 'docBack', el.docBackName);
         bindFile(el.coDocFront, 'coDocFront', el.coDocFrontName);
         bindFile(el.coDocBack, 'coDocBack', el.coDocBackName);
-        bindFile(el.coIngresos, 'coIngresos', el.coIngresosName);
         bindFile(el.comprobantePago, 'comprobantePago', el.comprobantePagoName);
 
         bindProgressValidators();
@@ -726,7 +743,8 @@
       // Auto-guardar en cada cambio de campo de texto
       const textFieldsList = ['tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
         'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
-        'coTipo', 'coNumero', 'coNombres', 'coApellidos', 'coEmail', 'coCelular'];
+        'coTipo', 'coNumero', 'coConfirmarDocumento', 'coNombres', 'coApellidos',
+        'coEmail', 'coConfirmarEmail', 'coCelular', 'coConfirmarCelular'];
 
       textFieldsList.forEach(id => {
         const el2 = document.getElementById(id);
@@ -924,6 +942,92 @@
               prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
             }
           }
+        } else if (state.step === 2) {
+          // --- CODEUDOR: Revelación progresiva ---
+          const coTipo = el.coTipo.value.trim();
+          const prog22 = document.getElementById('prog-inq-2-2');
+          if (prog22) {
+            if (coTipo) {
+              prog22.classList.remove('progressive-hidden'); prog22.classList.add('progressive-visible');
+            } else {
+              prog22.classList.add('progressive-hidden'); prog22.classList.remove('progressive-visible');
+            }
+          }
+
+          const coNum = el.coNumero.value.trim();
+          const coConfNum = el.coConfirmarDocumento.value.trim();
+          if (coNum && coConfNum && coNum !== coConfNum) {
+            el.coConfirmarDocumento.classList.add('invalid');
+            el.coDocError.classList.add('show');
+          } else {
+            el.coConfirmarDocumento.classList.remove('invalid');
+            el.coDocError.classList.remove('show');
+          }
+          const prog23 = document.getElementById('prog-inq-2-3');
+          if (prog23) {
+            if (coNum && coConfNum && coNum === coConfNum && rx.num.test(coNum)) {
+              prog23.classList.remove('progressive-hidden'); prog23.classList.add('progressive-visible');
+            } else {
+              prog23.classList.add('progressive-hidden'); prog23.classList.remove('progressive-visible');
+            }
+          }
+
+          const coNom = el.coNombres.value.trim();
+          const coApe = el.coApellidos.value.trim();
+          const prog24 = document.getElementById('prog-inq-2-4');
+          if (prog24) {
+            if (coNom && coApe) {
+              prog24.classList.remove('progressive-hidden'); prog24.classList.add('progressive-visible');
+            } else {
+              prog24.classList.add('progressive-hidden'); prog24.classList.remove('progressive-visible');
+            }
+          }
+
+          const coEm = el.coEmail.value.trim();
+          const coConfEm = el.coConfirmarEmail.value.trim();
+          if (coEm && coConfEm && coEm !== coConfEm) {
+            el.coConfirmarEmail.classList.add('invalid');
+            el.coEmailError.classList.add('show');
+          } else {
+            el.coConfirmarEmail.classList.remove('invalid');
+            el.coEmailError.classList.remove('show');
+          }
+          const prog25 = document.getElementById('prog-inq-2-5');
+          if (prog25) {
+            if (coEm && coConfEm && coEm === coConfEm && rx.email.test(coEm)) {
+              prog25.classList.remove('progressive-hidden'); prog25.classList.add('progressive-visible');
+            } else {
+              prog25.classList.add('progressive-hidden'); prog25.classList.remove('progressive-visible');
+            }
+          }
+
+          const coCel = el.coCelular.value.trim();
+          const coConfCel = el.coConfirmarCelular.value.trim();
+          if (coCel && coConfCel && coCel !== coConfCel) {
+            el.coConfirmarCelular.classList.add('invalid');
+            el.coCelError.classList.add('show');
+          } else {
+            el.coConfirmarCelular.classList.remove('invalid');
+            el.coCelError.classList.remove('show');
+          }
+          const prog26 = document.getElementById('prog-inq-2-6');
+          if (prog26) {
+            if (coCel && coConfCel && coCel === coConfCel && rx.phone.test(coCel)) {
+              prog26.classList.remove('progressive-hidden'); prog26.classList.add('progressive-visible');
+            } else {
+              prog26.classList.add('progressive-hidden'); prog26.classList.remove('progressive-visible');
+            }
+          }
+
+          // Documentos del codeudor: revelación progresiva
+          const prog28 = document.getElementById('prog-inq-2-8');
+          if (prog28) {
+            if (state.archivos['coDocFront']) {
+              prog28.classList.remove('progressive-hidden'); prog28.classList.add('progressive-visible');
+            } else {
+              prog28.classList.add('progressive-hidden'); prog28.classList.remove('progressive-visible');
+            }
+          }
         }
 
         // Only enable next if fully validated
@@ -1050,8 +1154,8 @@
       }
 
       function hideInlineErrors() {
-        [el.docError, el.emailError, el.celError].forEach(n => n.classList.remove('show'));
-        [el.confirmarDocumento, el.confirmarEmail, el.confirmarCelular].forEach(i => i.classList.remove('invalid'));
+        [el.docError, el.emailError, el.celError, el.coDocError, el.coEmailError, el.coCelError].forEach(n => { if (n) n.classList.remove('show'); });
+        [el.confirmarDocumento, el.confirmarEmail, el.confirmarCelular, el.coConfirmarDocumento, el.coConfirmarEmail, el.coConfirmarCelular].forEach(i => { if (i) i.classList.remove('invalid'); });
         el.alertBox.classList.add('hidden');
       }
 
@@ -1060,7 +1164,7 @@
         const files = Object.entries(state.archivos).map(([k, v]) => {
           const nice = {
             docFront: 'Doc. Identidad (frontal)', docBack: 'Doc. Identidad (reverso)',
-            coDocFront: 'Codeudor: Doc. (frontal)', coDocBack: 'Codeudor: Doc. (reverso)', coIngresos: 'Codeudor: Ingresos',
+            coDocFront: 'Codeudor: Doc. (frontal)', coDocBack: 'Codeudor: Doc. (reverso)',
             comprobantePago: 'Comprobante de Pago'
           }[k] || k;
           return `<li>${nice}: <span class="muted">${escapeHTML(v?.nombre || '—')}</span></li>`;
