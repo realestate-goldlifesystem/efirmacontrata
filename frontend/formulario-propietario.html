@@ -777,6 +777,7 @@
         bindFiles();
         bindServicios();
         bindPagos();
+        bindProgressValidators();
       }
 
       // --------- Corrección ----------
@@ -922,12 +923,92 @@
         window.open(url, '_blank', 'noopener');
       }
 
+      // --------- Progressive Validation ----------
+      function evaluateProgress() {
+        if (state.step === state.max) return;
+        const requiredFields = getRequiredForStep(state.step);
+        if (!requiredFields.length) return;
+
+        let filledCount = 0;
+        requiredFields.forEach(field => {
+          if (field.isType === 'file' && state.archivos[field.id]) filledCount++;
+          else if (field.isType === 'input' && field.el && field.el.value.trim() !== '') filledCount++;
+        });
+
+        const percentage = (filledCount / requiredFields.length) * 100;
+        const baseWidth = (state.step / state.max) * 100;
+        const extraWidth = (percentage / 100) * (100 / state.max);
+
+        const line = document.getElementById('progressLine');
+        if (line) {
+          line.style.width = (baseWidth + extraWidth) + '%';
+        }
+
+        const isValid = validateStepRaw(state.step);
+        el.btnNext.disabled = !isValid;
+      }
+
+      function getRequiredForStep(step) {
+        if (step === 0) return [
+          { id: 'tipoDocumento', isType: 'input', el: el.tipoDocumento },
+          { id: 'numeroDocumento', isType: 'input', el: el.numeroDocumento },
+          { id: 'confirmarDocumento', isType: 'input', el: el.confirmarDocumento },
+          { id: 'nombres', isType: 'input', el: el.nombres },
+          { id: 'apellidos', isType: 'input', el: el.apellidos },
+          { id: 'email', isType: 'input', el: el.email },
+          { id: 'confirmarEmail', isType: 'input', el: el.confirmarEmail },
+          { id: 'celular', isType: 'input', el: el.celular },
+          { id: 'confirmarCelular', isType: 'input', el: el.confirmarCelular }
+        ];
+        if (step === 1) return [
+          { id: 'docFront', isType: 'file' },
+          { id: 'docBack', isType: 'file' },
+          { id: 'certTradicion', isType: 'file' },
+          { id: 'sarlaft', isType: 'file' },
+          { id: 'certBancario', isType: 'file' }
+        ];
+        // Step 2 and 3 can be empty/optional depending on the logic, let's look at the validation
+        if (step === 4) return [
+          { id: 'comprobantePago', isType: 'file' }
+        ];
+        return [];
+      }
+
+      function bindProgressValidators() {
+        const inputs = document.querySelectorAll('.form-control, .input, .file-input, .servicio-checkbox');
+        inputs.forEach(input => {
+          input.addEventListener('input', evaluateProgress);
+          input.addEventListener('change', evaluateProgress);
+        });
+      }
+
       // --------- Validación ----------
       const rx = {
         email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         phone: /^\d{10}$/,
         num: /^[0-9A-Za-z.-]{5,}$/
       };
+
+      function validateStepRaw(step) {
+        switch (step) {
+          case 0: {
+            const required = getRequiredForStep(0).map(f => f.el);
+            for (const r of required) { if (!r.value?.trim()) return false; }
+            if (!rx.num.test(el.numeroDocumento.value.trim())) return false;
+            if (el.numeroDocumento.value.trim() !== el.confirmarDocumento.value.trim()) return false;
+            if (!rx.email.test(el.email.value.trim())) return false;
+            if (el.email.value.trim() !== el.confirmarEmail.value.trim()) return false;
+            if (!rx.phone.test(el.celular.value.trim())) return false;
+            if (el.celular.value.trim() !== el.confirmarCelular.value.trim()) return false;
+            return true;
+          }
+          case 1: return getRequiredForStep(1).every(f => state.archivos[f.id]);
+          case 2: return true;
+          case 3: return true;
+          case 4: return !!state.archivos['comprobantePago'];
+          default: return true;
+        }
+      }
 
       function validateStep(step) {
         hideInlineErrors();

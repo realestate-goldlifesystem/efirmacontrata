@@ -651,10 +651,7 @@
       };
 
       // --------- Init ----------
-      init();
-
       function init() {
-        // Params
         const params = new URLSearchParams(location.search);
         state.cdr = params.get('cdr') || '';
         state.modoCorreccion = (params.get('modo') === 'correccion');
@@ -685,71 +682,77 @@
         bindFile(el.coIngresos, 'coIngresos', el.coIngresosName);
         bindFile(el.comprobantePago, 'comprobantePago', el.comprobantePagoName);
 
-        // sessionStorage: guardar por CDR para no mezclar formularios
-        const STORAGE_KEY = `inq_form_${state.cdr}`;
+        bindProgressValidators();
+      }
 
-        function saveForm() {
-          const TEXT_FIELDS = [
-            'tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
-            'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
-            'coTipo', 'coNumero', 'coNombres', 'coApellidos', 'coEmail', 'coCelular'
-          ];
-          const data = { step: state.step, archivos: {}, campos: {} };
-          TEXT_FIELDS.forEach(id => {
-            const el2 = document.getElementById(id);
-            if (el2) data.campos[id] = el2.value;
-          });
-          // Guardar metadatos de archivos (nombre y base64)
-          Object.entries(state.archivos).forEach(([k, v]) => {
-            if (v && v.contenido) {
-              data.archivos[k] = { nombre: v.nombre || k, tipo: v.tipo, contenido: v.contenido };
-            }
-          });
-          try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { }
-        }
+      init();
 
-        function restoreForm() {
-          let saved;
-          try { saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY)); } catch (e) { }
-          if (!saved) return;
+      // sessionStorage: guardar por CDR para no mezclar formularios
+      const STORAGE_KEY = `inq_form_${state.cdr}`;
 
-          // Restaurar campos de texto
-          Object.entries(saved.campos || {}).forEach(([id, val]) => {
-            const el2 = document.getElementById(id);
-            if (el2) el2.value = val;
-          });
 
-          // Restaurar archivos al state y mostrar nombre guardado
-          Object.entries(saved.archivos || {}).forEach(([k, v]) => {
-            state.archivos[k] = v;
-            const nameEl = document.getElementById(`${k}Name`);
-            if (nameEl && v.nombre) {
-              nameEl.textContent = `📂 ${v.nombre}`;
-              nameEl.style.color = '#f59e0b';
-            }
-          });
-        }
-
-        // Auto-guardar en cada cambio de campo de texto
-        ['tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
+      function saveForm() {
+        const TEXT_FIELDS = [
+          'tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
           'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
           'coTipo', 'coNumero', 'coNombres', 'coApellidos', 'coEmail', 'coCelular'
-        ].forEach(id => {
+        ];
+        const data = { step: state.step, archivos: {}, campos: {} };
+        TEXT_FIELDS.forEach(id => {
           const el2 = document.getElementById(id);
-          if (el2) el2.addEventListener('input', saveForm);
+          if (el2) data.campos[id] = el2.value;
+        });
+        // Guardar metadatos de archivos (nombre y base64)
+        Object.entries(state.archivos).forEach(([k, v]) => {
+          if (v && v.contenido) {
+            data.archivos[k] = { nombre: v.nombre || k, tipo: v.tipo, contenido: v.contenido };
+          }
+        });
+        try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) { }
+      }
+
+      function restoreForm() {
+        let saved;
+        try { saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY)); } catch (e) { }
+        if (!saved) return;
+
+        // Restaurar campos de texto
+        Object.entries(saved.campos || {}).forEach(([id, val]) => {
+          const el2 = document.getElementById(id);
+          if (el2) el2.value = val;
         });
 
-        // Restaurar datos previos al cargar
-        restoreForm();
-
-        // Pago
-        el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
-        el.btnPayBreb.addEventListener('click', openBrebModal);
-        el.btnCloseBreb.addEventListener('click', closeBrebModal);
-        el.modalBreb.addEventListener('click', (e) => { if (e.target === el.modalBreb) closeBrebModal(); });
-        el.btnCopyBreb.addEventListener('click', copyBreb);
-        el.btnPayWompi.addEventListener('click', handlePayWompi);
+        // Restaurar archivos al state y mostrar nombre guardado
+        Object.entries(saved.archivos || {}).forEach(([k, v]) => {
+          state.archivos[k] = v;
+          const nameEl = document.getElementById(`${k}Name`);
+          if (nameEl && v.nombre) {
+            nameEl.textContent = `📂 ${v.nombre}`;
+            nameEl.style.color = '#f59e0b';
+          }
+        });
       }
+
+      // Auto-guardar en cada cambio de campo de texto
+      const textFieldsList = ['tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
+        'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
+        'coTipo', 'coNumero', 'coNombres', 'coApellidos', 'coEmail', 'coCelular'];
+
+      textFieldsList.forEach(id => {
+        const el2 = document.getElementById(id);
+        if (el2) el2.addEventListener('input', saveForm);
+      });
+
+      // Restaurar datos previos al cargar
+      restoreForm();
+
+      // Pago
+      el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
+      el.btnPayBreb.addEventListener('click', openBrebModal);
+      el.btnCloseBreb.addEventListener('click', closeBrebModal);
+      el.modalBreb.addEventListener('click', (e) => { if (e.target === el.modalBreb) closeBrebModal(); });
+      el.btnCopyBreb.addEventListener('click', copyBreb);
+      el.btnPayWompi.addEventListener('click', handlePayWompi);
 
       // --------- Corrección ----------
       function renderCorreccionBanner() {
@@ -821,12 +824,89 @@
         reader.readAsDataURL(file);
       }
 
+      // --------- Progressive Validation ----------
+      function evaluateProgress() {
+        if (state.step === state.max) return;
+        const requiredFields = getRequiredForStep(state.step);
+        if (!requiredFields.length) return;
+
+        let filledCount = 0;
+        requiredFields.forEach(field => {
+          if (field.isType === 'file' && state.archivos[field.id]) filledCount++;
+          else if (field.isType === 'input' && field.el && field.el.value.trim() !== '') filledCount++;
+        });
+
+        const percentage = (filledCount / requiredFields.length) * 100;
+        const baseWidth = (state.step / state.max) * 100;
+        const extraWidth = (percentage / 100) * (100 / state.max);
+
+        const line = document.getElementById('progressLine');
+        if (line) {
+          line.style.width = (baseWidth + extraWidth) + '%';
+        }
+
+        // Only enable next if fully validated
+        const isValid = validateStepRaw(state.step);
+        el.btnNext.disabled = !isValid;
+      }
+
+      function getRequiredForStep(step) {
+        if (step === 0) return [
+          { id: 'tipoDocumento', isType: 'input', el: el.tipoDocumento },
+          { id: 'numeroDocumento', isType: 'input', el: el.numeroDocumento },
+          { id: 'confirmarDocumento', isType: 'input', el: el.confirmarDocumento },
+          { id: 'nombres', isType: 'input', el: el.nombres },
+          { id: 'apellidos', isType: 'input', el: el.apellidos },
+          { id: 'email', isType: 'input', el: el.email },
+          { id: 'confirmarEmail', isType: 'input', el: el.confirmarEmail },
+          { id: 'celular', isType: 'input', el: el.celular },
+          { id: 'confirmarCelular', isType: 'input', el: el.confirmarCelular }
+        ];
+        if (step === 1) return [
+          { id: 'docFront', isType: 'file' },
+          { id: 'docBack', isType: 'file' },
+          { id: 'ingresos', isType: 'file' }
+        ];
+        if (step === 3) return [
+          { id: 'comprobantePago', isType: 'file' }
+        ];
+        return [];
+      }
+
+      function bindProgressValidators() {
+        const inputs = document.querySelectorAll('.form-control, .input, .file-input');
+        inputs.forEach(input => {
+          input.addEventListener('input', evaluateProgress);
+          input.addEventListener('change', evaluateProgress);
+        });
+      }
+
       // --------- Validación ----------
       const rx = {
         email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         phone: /^\d{10}$/,
         num: /^[0-9A-Za-z.-]{5,}$/
       };
+
+      function validateStepRaw(step) {
+        switch (step) {
+          case 0: {
+            const required = getRequiredForStep(0).map(f => f.el);
+            for (const r of required) { if (!r.value || !r.value.trim()) return false; }
+            if (!rx.num.test(el.numeroDocumento.value.trim())) return false;
+            if (el.numeroDocumento.value.trim() !== el.confirmarDocumento.value.trim()) return false;
+            if (!rx.email.test(el.email.value.trim())) return false;
+            if (el.email.value.trim() !== el.confirmarEmail.value.trim()) return false;
+            if (!rx.phone.test(el.celular.value.trim())) return false;
+            if (el.celular.value.trim() !== el.confirmarCelular.value.trim()) return false;
+            return true;
+          }
+          case 1: { return getRequiredForStep(1).every(f => state.archivos[f.id]); }
+          case 2: return true;
+          case 3: return !!state.archivos['comprobantePago'];
+          default: return true;
+        }
+      }
 
       function validateStep(step) {
         hideInlineErrors();
