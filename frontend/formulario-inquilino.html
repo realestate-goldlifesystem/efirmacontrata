@@ -851,38 +851,62 @@
         if (state.step === 0) {
           const vTipo = el.tipoDocumento.value.trim();
           const prog2 = document.getElementById('prog-inq-0-2');
-          if (vTipo && prog2) {
-            prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+          if (prog2) {
+            if (vTipo) {
+              prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+            } else {
+              prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
+            }
           }
 
           const vNum = el.numeroDocumento.value.trim();
           const vConfNum = el.confirmarDocumento.value.trim();
           const prog3 = document.getElementById('prog-inq-0-3');
-          if (vNum && vConfNum && vNum === vConfNum && rx.num.test(vNum) && prog3) {
-            prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+          if (prog3) {
+            if (vNum && vConfNum && vNum === vConfNum && rx.num.test(vNum)) {
+              prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+            } else {
+              prog3.classList.add('progressive-hidden'); prog3.classList.remove('progressive-visible');
+            }
           }
 
           const vNom = el.nombres.value.trim();
           const vApe = el.apellidos.value.trim();
           const prog4 = document.getElementById('prog-inq-0-4');
-          if (vNom && vApe && prog4) {
-            prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
+          if (prog4) {
+            if (vNom && vApe) {
+              prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
+            } else {
+              prog4.classList.add('progressive-hidden'); prog4.classList.remove('progressive-visible');
+            }
           }
 
           const vEmail = el.email.value.trim();
           const vConfEmail = el.confirmarEmail.value.trim();
           const prog5 = document.getElementById('prog-inq-0-5');
-          if (vEmail && vConfEmail && vEmail === vConfEmail && rx.email.test(vEmail) && prog5) {
-            prog5.classList.remove('progressive-hidden'); prog5.classList.add('progressive-visible');
+          if (prog5) {
+            if (vEmail && vConfEmail && vEmail === vConfEmail && rx.email.test(vEmail)) {
+              prog5.classList.remove('progressive-hidden'); prog5.classList.add('progressive-visible');
+            } else {
+              prog5.classList.add('progressive-hidden'); prog5.classList.remove('progressive-visible');
+            }
           }
         } else if (state.step === 1) {
           const prog2 = document.getElementById('prog-inq-1-2');
-          if (state.archivos['docFront'] && prog2) {
-            prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+          if (prog2) {
+            if (state.archivos['docFront']) {
+              prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
+            } else {
+              prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
+            }
           }
           const prog3 = document.getElementById('prog-inq-1-3');
-          if (state.archivos['docBack'] && prog3) {
-            prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+          if (prog3) {
+            if (state.archivos['docBack']) {
+              prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+            } else {
+              prog3.classList.add('progressive-hidden'); prog3.classList.remove('progressive-visible');
+            }
           }
         }
 
