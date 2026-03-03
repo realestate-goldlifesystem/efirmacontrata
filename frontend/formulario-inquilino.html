@@ -6,74 +6,124 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Formulario Inquilino - E-FirmaContrata</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="theme.css">
+
   <style>
-    /* Wizard Steps */
+    /* =========================================
+       PREMIUM FORM CONTAINER (Glassmorphism)
+       ========================================= */
+    .form-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 15px 35px rgba(24, 7, 43, 0.1);
+      margin-top: 20px;
+    }
+
+    .form-title {
+      color: var(--primary);
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .form-subtitle {
+      color: var(--text-muted);
+      margin-bottom: 30px;
+      font-weight: 400;
+    }
+
+    /* =========================================
+       WIZARD PROGRESS BAR (Connected & Animated)
+       ========================================= */
     .progress {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 2rem;
+      margin-bottom: 3rem;
       position: relative;
+      padding: 0 10px;
     }
 
     .progress::before {
       content: '';
       position: absolute;
-      top: 20px;
-      left: 0;
-      right: 0;
-      height: 2px;
+      top: 50%;
+      left: 30px;
+      right: 30px;
+      height: 4px;
       background: #e5e7eb;
+      transform: translateY(-50%);
       z-index: 0;
+      border-radius: 2px;
+    }
+
+    /* Active progress line connecting the dots */
+    .progress-line {
+      position: absolute;
+      top: 50%;
+      left: 30px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+      transform: translateY(-50%);
+      z-index: 0;
+      border-radius: 2px;
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .progress .step {
       background: #fff;
-      border: 2px solid #e5e7eb;
+      border: 3px solid #e5e7eb;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
+      width: 44px;
+      height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 600;
+      font-weight: 700;
       color: #9ca3af;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
       z-index: 1;
+      font-size: 16px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
 
     .progress .step.active {
       background: var(--primary);
       border-color: var(--primary);
       color: #fff;
+      transform: scale(1.15);
+      box-shadow: 0 8px 15px rgba(86, 18, 162, 0.25);
     }
 
+    .progress .step.completed {
+      background: var(--secondary);
+      border-color: var(--secondary);
+      color: #fff;
+    }
+
+    /* Panel Transitions */
     .step-pane {
       display: none;
-      animation: fadeIn 0.3s;
+      opacity: 0;
+      transform: translateY(15px);
+      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .step-pane.show {
       display: block;
+      opacity: 1;
+      transform: translateY(0);
     }
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Files */
+    /* =========================================
+       FILE UPLOAD (Premium Drag & Drop)
+       ========================================= */
     .file-upload {
       position: relative;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
 
     .file-input {
@@ -83,40 +133,78 @@
     .file-label {
       display: flex;
       align-items: center;
-      padding: 12px;
+      padding: 16px;
+      background: #f9fafb;
       border: 2px dashed #d1d5db;
-      border-radius: 8px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.3s ease;
+      color: var(--dark);
+      font-weight: 500;
     }
 
     .file-label:hover {
-      border-color: var(--primary);
-      background: #f9fafb;
+      border-color: var(--secondary);
+      background: #fffdf5;
+      /* Subtle gold tint */
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(220, 181, 60, 0.1);
     }
 
     .file-name {
-      margin-left: 10px;
-      color: #6b7280;
+      margin-left: 12px;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.9rem;
     }
 
-    /* Inline Errors */
+    /* =========================================
+       INLINE ERRORS & VALIDATION
+       ========================================= */
     .error-msg {
       display: none;
-      color: #ef4444;
-      font-size: 0.875rem;
-      margin-top: 4px;
+      color: var(--danger);
+      font-size: 0.85rem;
+      margin-top: 6px;
+      font-weight: 500;
     }
 
     .error-msg.show {
       display: block;
+      animation: shake 0.4s;
     }
 
-    .input.invalid {
-      border-color: #ef4444 !important;
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-4px);
+      }
+
+      75% {
+        transform: translateX(4px);
+      }
     }
 
-    /* Modal */
+    .input.invalid,
+    .form-control.invalid {
+      border-color: var(--danger) !important;
+      background-color: #fef2f2 !important;
+    }
+
+    .input.valid,
+    .form-control.valid {
+      border-color: var(--success) !important;
+      background-color: #f0fdf4 !important;
+    }
+
+    /* =========================================
+       MODAL ALERTS (Premium)
+       ========================================= */
     .modal {
       display: none;
       position: fixed;
@@ -209,10 +297,6 @@
     <div class="container">
       <div class="header-content">
         <h1 class="logo">🏠 E-FirmaContrata</h1>
-        <nav class="nav-menu">
-          <a href="index.html">Inicio</a>
-          <a href="validador.html">Portal</a>
-        </nav>
       </div>
     </div>
   </header>
@@ -238,6 +322,7 @@
 
         <!-- Progress -->
         <div class="progress">
+          <div class="progress-line" id="progressLine" style="width: 0%;"></div>
           <div class="step active" data-step="0">1</div>
           <div class="step" data-step="1">2</div>
           <div class="step" data-step="2">3</div>
@@ -696,7 +781,18 @@
       function gotoStep(n, first = false) {
         state.step = Math.max(0, Math.min(n, state.max));
         qsa('.step-pane').forEach(p => p.classList.toggle('show', Number(p.dataset.pane) === state.step));
-        qsa('.progress .step').forEach(s => s.classList.toggle('active', Number(s.dataset.step) === state.step));
+
+        qsa('.progress .step').forEach(s => {
+          const sNum = Number(s.dataset.step);
+          s.classList.toggle('active', sNum === state.step);
+          s.classList.toggle('completed', sNum < state.step);
+        });
+
+        const line = document.getElementById('progressLine');
+        if (line) {
+          line.style.width = (state.step / state.max) * 100 + '%';
+        }
+
         el.btnPrev.disabled = (state.step === 0);
         el.btnNext.classList.toggle('hidden', state.step === state.max);
         el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
