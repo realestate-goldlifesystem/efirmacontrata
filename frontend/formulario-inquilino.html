@@ -835,7 +835,7 @@
           line.style.width = (state.step / state.max) * 100 + '%';
         }
 
-        el.btnPrev.disabled = (state.step === 0);
+        el.btnPrev.classList.toggle('hidden', state.step === 0);
         el.btnNext.classList.toggle('hidden', state.step === state.max);
         el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
 
