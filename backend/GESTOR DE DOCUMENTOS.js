@@ -1224,9 +1224,9 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
         Logger.log(`⚠️ Clave no mapeada "${clave}" → variosFolder`);
       }
 
-      // Limpiar duplicados antes de guardar
-      const existentes = targetFolder.getFilesByName(nuevoNombre);
-      while (existentes.hasNext()) existentes.next().setTrashed(true);
+      // Limpiar TODAS las versiones anteriores del archivo (cualquier extensión)
+      const nombreBase = ruta ? ruta.nombre : `${clave.toUpperCase()}_[${codigoRegistro}]`;
+      limpiarArchivosAnteriores(targetFolder, nombreBase);
 
       blob.setName(nuevoNombre);
       targetFolder.createFile(blob);
@@ -1254,6 +1254,25 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
 function getFolderByNameHelper(parent, name) {
   const folders = parent.getFoldersByName(name);
   return folders.hasNext() ? folders.next() : null;
+}
+
+/**
+ * Elimina TODOS los archivos existentes que coincidan con el nombre base
+ * (sin importar la extensión), para evitar duplicados al re-subir.
+ * Ejemplo: nombreBase = "CEDULA_INQU_FRONTAL_[REG_...]"
+ *   → elimina: CEDULA_INQU_FRONTAL_[REG_...].jpg, .pdf, .png, etc.
+ */
+function limpiarArchivosAnteriores(folder, nombreBase) {
+  const extensiones = ['jpg', 'jpeg', 'png', 'pdf'];
+  extensiones.forEach(ext => {
+    const nombre = `${nombreBase}.${ext}`;
+    const existentes = folder.getFilesByName(nombre);
+    while (existentes.hasNext()) {
+      const archivo = existentes.next();
+      archivo.setTrashed(true);
+      Logger.log(`🗑️ Archivo anterior eliminado: ${nombre}`);
+    }
+  });
 }
 
 function obtenerCarpetaAnioMasRecienteLocal(entregasFolder) {
@@ -1512,9 +1531,9 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
         Logger.log(`⚠️ Carpeta no encontrada para "${clave}", guardando en CDR raíz`);
       }
 
-      // Limpiar duplicados
-      const existentes = targetFolder.getFilesByName(nuevoNombre);
-      while (existentes.hasNext()) existentes.next().setTrashed(true);
+      // Limpiar TODAS las versiones anteriores del archivo (cualquier extensión)
+      const nombreBase = ruta && ruta.carpeta ? ruta.nombre : `${clave.toUpperCase()}_[${codigoRegistro}]`;
+      limpiarArchivosAnteriores(targetFolder, nombreBase);
 
       const base64Data = contenidoBase64.contenido.split(',')[1];
       const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType);
