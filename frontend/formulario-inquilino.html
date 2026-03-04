@@ -1086,7 +1086,22 @@
             return true;
           }
           case 1: { return getRequiredForStep(1).every(f => state.archivos[f.id]); }
-          case 2: return true;
+          case 2: {
+            // Codeudor: si tocó algún campo, exigir todos
+            const coStarted = el.coTipo.value.trim();
+            if (!coStarted) return true; // no tocó nada, skip libre
+            const coFields = [el.coTipo, el.coNumero, el.coConfirmarDocumento, el.coNombres, el.coApellidos,
+            el.coEmail, el.coConfirmarEmail, el.coCelular, el.coConfirmarCelular];
+            for (const f of coFields) { if (!f.value || !f.value.trim()) return false; }
+            if (!rx.num.test(el.coNumero.value.trim())) return false;
+            if (el.coNumero.value.trim() !== el.coConfirmarDocumento.value.trim()) return false;
+            if (!rx.email.test(el.coEmail.value.trim())) return false;
+            if (el.coEmail.value.trim() !== el.coConfirmarEmail.value.trim()) return false;
+            if (!rx.phone.test(el.coCelular.value.trim())) return false;
+            if (el.coCelular.value.trim() !== el.coConfirmarCelular.value.trim()) return false;
+            if (!state.archivos['coDocFront'] || !state.archivos['coDocBack']) return false;
+            return true;
+          }
           case 3: return !!state.archivos['comprobantePago'];
           default: return true;
         }
@@ -1138,7 +1153,39 @@
             return true;
           }
           case 2: {
-            // Codeudor opcional
+            // Codeudor: si tocó algún campo, exigir todos
+            const coStarted = el.coTipo.value.trim();
+            if (!coStarted) return true;
+            const coReq = [el.coTipo, el.coNumero, el.coConfirmarDocumento, el.coNombres, el.coApellidos,
+            el.coEmail, el.coConfirmarEmail, el.coCelular, el.coConfirmarCelular];
+            for (const f of coReq) {
+              if (!f.value || !f.value.trim()) {
+                showAlert('warning', 'Si agregas un codeudor, debes completar todos sus datos.');
+                f.focus(); return false;
+              }
+            }
+            if (!rx.num.test(el.coNumero.value.trim())) {
+              showAlert('warning', 'Número de documento del codeudor inválido.'); el.coNumero.focus(); return false;
+            }
+            if (el.coNumero.value.trim() !== el.coConfirmarDocumento.value.trim()) {
+              el.coDocError.classList.add('show'); el.coConfirmarDocumento.classList.add('invalid'); return false;
+            }
+            if (!rx.email.test(el.coEmail.value.trim())) {
+              showAlert('warning', 'Correo del codeudor inválido.'); el.coEmail.focus(); return false;
+            }
+            if (el.coEmail.value.trim() !== el.coConfirmarEmail.value.trim()) {
+              el.coEmailError.classList.add('show'); el.coConfirmarEmail.classList.add('invalid'); return false;
+            }
+            if (!rx.phone.test(el.coCelular.value.trim())) {
+              showAlert('warning', 'Celular del codeudor inválido (10 dígitos).'); el.coCelular.focus(); return false;
+            }
+            if (el.coCelular.value.trim() !== el.coConfirmarCelular.value.trim()) {
+              el.coCelError.classList.add('show'); el.coConfirmarCelular.classList.add('invalid'); return false;
+            }
+            if (!state.archivos['coDocFront'] || !state.archivos['coDocBack']) {
+              showAlert('warning', 'Faltan documentos del codeudor (frontal y reverso).');
+              return false;
+            }
             return true;
           }
           case 3: {
