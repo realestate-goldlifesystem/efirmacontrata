@@ -845,21 +845,22 @@
       function evaluateProgress() {
         if (state.step === state.max) return;
         const requiredFields = getRequiredForStep(state.step);
-        if (!requiredFields.length) return;
 
-        let filledCount = 0;
-        requiredFields.forEach(field => {
-          if (field.isType === 'file' && state.archivos[field.id]) filledCount++;
-          else if (field.isType === 'input' && field.el && field.el.value.trim() !== '') filledCount++;
-        });
+        if (requiredFields.length) {
+          let filledCount = 0;
+          requiredFields.forEach(field => {
+            if (field.isType === 'file' && state.archivos[field.id]) filledCount++;
+            else if (field.isType === 'input' && field.el && field.el.value.trim() !== '') filledCount++;
+          });
 
-        const percentage = (filledCount / requiredFields.length) * 100;
-        const baseWidth = (state.step / state.max) * 100;
-        const extraWidth = (percentage / 100) * (100 / state.max);
+          const percentage = (filledCount / requiredFields.length) * 100;
+          const baseWidth = (state.step / state.max) * 100;
+          const extraWidth = (percentage / 100) * (100 / state.max);
 
-        const line = document.getElementById('progressLine');
-        if (line) {
-          line.style.width = (baseWidth + extraWidth) + '%';
+          const line = document.getElementById('progressLine');
+          if (line) {
+            line.style.width = (baseWidth + extraWidth) + '%';
+          }
         }
 
         // --- LÓGICA DE REVELACIÓN PROGRESIVA ---
