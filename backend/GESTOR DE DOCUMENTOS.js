@@ -861,9 +861,10 @@ function obtenerRegistrosInquilinos() {
 
       if (detalles.includes('Formulario del inquilino') || detalles.includes('Documentación de inquilino recibida')) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
+        const cdrValue = obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO');
 
         registros.push({
-          cdr: obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO'),
+          cdr: cdrValue,
           detalles: detalles,
           inquilino: {
             nombre: obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO'),
@@ -871,7 +872,7 @@ function obtenerRegistrosInquilinos() {
             email: obtenerValorPorHeader(headers, row, 'CORREO INQUILINO'),
             celular: obtenerValorPorHeader(headers, row, 'CELULAR INQUILINO')
           },
-          codeudores: obtenerCodeudores(headers, row)
+          codeudores: obtenerCodeudoresDesdeCerebro(cdrValue)
         });
       }
     }
@@ -1862,6 +1863,102 @@ function obtenerCodeudores(headers, row) {
     }
   }
   return [];
+}
+
+/**
+ * Obtener codeudores directamente del documento "DATOS DE ELABORACION DE CONTRATO" (Cerebro)
+ */
+function obtenerCodeudoresDesdeCerebro(cdr) {
+  try {
+    const cdrEscaped = cdr.replace(/'/g, "\\'");
+    let inmuebleFolder = null;
+
+    // Búsqueda global del CDR en Drive
+    const searchRoot = DriveApp.searchFolders(`title contains '${cdrEscaped}' and trashed = false`);
+    while (searchRoot.hasNext()) {
+      const f = searchRoot.next();
+      const fName = f.getName();
+      if (fName === cdr || fName.startsWith(cdr + ' -') || fName.startsWith(cdr + '_')) {
+        inmuebleFolder = f;
+        break;
+      }
+    }
+    if (!inmuebleFolder) return [];
+
+    let entregasFolder = getFolderByNameHelper(inmuebleFolder, 'ENTREGAS DEL INMUEBLE');
+    if (!entregasFolder) return [];
+
+    let anioFolder = obtenerCarpetaAnioMasRecienteLocal(entregasFolder);
+    if (!anioFolder) return [];
+
+    let docsEntregaInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+    if (!docsEntregaInqFolder) return [];
+
+    let variosFolder = getFolderByNameHelper(docsEntregaInqFolder, '4- VARIOS, FORMATO DE MUDANZAS, ETC');
+    if (!variosFolder) {
+      const subF = docsEntregaInqFolder.getFolders();
+      while (subF.hasNext()) {
+        const sf = subF.next();
+        if (sf.getName().includes('VARIOS') || sf.getName().includes('FORMATO DE MUDANZAS')) {
+          variosFolder = sf; break;
+        }
+      }
+    }
+
+    if (!variosFolder) return [];
+
+    let docFile = null;
+    // Buscar el documento Cerebro en VARIOS
+    const searchVarios = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${variosFolder.getId()}' in parents and trashed = false`);
+    if (searchVarios.hasNext()) docFile = searchVarios.next();
+
+    // Búsqueda profunda si el archivo quedó guardado en subnivel u otra subcarpeta temporalmente
+    if (!docFile) {
+      const subs = variosFolder.getFolders();
+      while (subs.hasNext() && !docFile) {
+        const sf = subs.next();
+        const searchSub = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${sf.getId()}' in parents and trashed = false`);
+        if (searchSub.hasNext()) docFile = searchSub.next();
+      }
+    }
+
+    if (!docFile) return [];
+
+    // Extraer y parsear datos del Cerebro
+    const doc = DocumentApp.openById(docFile.getId());
+    const text = doc.getBody().getText();
+
+    const codeudoresLoc = text.indexOf('CODEUDORES:');
+    if (codeudoresLoc === -1) return [];
+
+    const codesStr = text.substring(codeudoresLoc);
+    const codes = [];
+    const blocks = codesStr.split(/\[CODEUDOR \d+\]/);
+
+    for (let i = 1; i < blocks.length; i++) {
+      const block = blocks[i];
+      const matchName = block.match(/NOMBRES::\s*(.+)/);
+      const matchType = block.match(/TIPO DE IDENTIFICACIÓN::\s*(.+)/);
+      const matchDoc = block.match(/NÚMERO DE IDENTIFICACIÓN::\s*(.+)/);
+      const matchPhone = block.match(/CELULAR::\s*(.+)/);
+      const matchEmail = block.match(/CORREO::\s*(.+)/);
+
+      if (matchName || matchDoc) {
+        codes.push({
+          nombre: matchName ? matchName[1].trim() : '',
+          tipoDocumento: matchType ? matchType[1].trim() : '',
+          documento: matchDoc ? matchDoc[1].trim() : '',
+          celular: matchPhone ? matchPhone[1].trim() : '',
+          email: matchEmail ? matchEmail[1].trim() : ''
+        });
+      }
+    }
+    return codes;
+
+  } catch (e) {
+    Logger.log('Error en obtenerCodeudoresDesdeCerebro (' + cdr + '): ' + e.message);
+    return [];
+  }
 }
 
 /**

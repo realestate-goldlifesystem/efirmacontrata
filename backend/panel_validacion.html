@@ -1415,7 +1415,7 @@
             // Cargar documentos y mostrar modal
             google.script.run
                 .withSuccessHandler(function (data) {
-                    mostrarModalValidacion(cdr, 'inquilino', data.documentos);
+                    mostrarModalValidacion(cdr, 'inquilino', data);
                 })
                 .withFailureHandler(function (error) {
                     mostrarToast('Error al cargar documentos', 'error');
@@ -1431,7 +1431,7 @@
             // Cargar documentos y mostrar modal
             google.script.run
                 .withSuccessHandler(function (data) {
-                    mostrarModalValidacion(cdr, 'propietario', data.documentos);
+                    mostrarModalValidacion(cdr, 'propietario', data);
                 })
                 .withFailureHandler(function (error) {
                     mostrarToast('Error al cargar documentos', 'error');
