@@ -811,16 +811,7 @@
         });
       }
 
-      // Re-evaluar revelación progresiva para TODOS los pasos
-      (function reEvaluateAllSteps() {
-        const originalStep = state.step;
-        for (let s = 0; s <= state.max; s++) {
-          state.step = s;
-          evaluateProgress();
-        }
-        state.step = originalStep;
-        evaluateProgress();
-      })();
+
 
       function gotoStep(n, first = false) {
         state.step = Math.max(0, Math.min(n, state.max));
@@ -1426,6 +1417,17 @@
         div.textContent = str || '';
         return div.innerHTML;
       }
+
+      // Re-evaluar revelación progresiva para TODOS los pasos con datos restaurados
+      (function reEvaluateAllSteps() {
+        const originalStep = state.step;
+        for (let s = 0; s <= state.max; s++) {
+          state.step = s;
+          evaluateProgress();
+        }
+        state.step = originalStep;
+        evaluateProgress();
+      })();
     })();
   </script>
 </body>
