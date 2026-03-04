@@ -1722,8 +1722,8 @@ function abrirPanelValidacion() {
   try {
     // Cargar el archivo HTML que está en el proyecto de Apps Script
     const html = HtmlService.createHtmlOutputFromFile('backend/panel_validacion')
-      .setWidth(1400)
-      .setHeight(800)
+      .setWidth(1500)
+      .setHeight(900)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
 
     // Mostrar el diálogo modal
