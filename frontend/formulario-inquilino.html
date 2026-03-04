@@ -796,10 +796,34 @@
         if (!state.docsCorreccion.length) { return; }
         el.bannerCorreccion.classList.remove('hidden');
         el.correccionDocs.innerHTML = state.docsCorreccion.map(d => `<span class="chip">${escapeHTML(d)}</span>`).join('');
+
+        // Ocultar paso 0 (Datos personales) de la barra de progreso
+        const step0Item = document.querySelector('.progress .step[data-step="0"]');
+        if (step0Item) step0Item.style.display = 'none';
+
+        // Marcar archivos no requeridos como Aprobados
+        const allFileKeys = ['docFront', 'docBack', 'coDocFront', 'coDocBack', 'comprobantePago'];
+        allFileKeys.forEach(key => {
+          if (!state.docsCorreccion.includes(key)) {
+            const input = document.getElementById(key);
+            if (input) {
+              const wrapper = input.closest('.file-upload');
+              if (wrapper) {
+                wrapper.innerHTML = `<div style="padding: 15px; border: 2px dashed #10b981; border-radius: 8px; background: #ecfdf5; color: #047857; text-align: center; font-weight: bold;">✅ Documento Previamente Aprobado</div>`;
+              }
+            }
+          }
+        });
       }
 
       // --------- Wizard ----------
-      function renderSteps() { gotoStep(0, true); }
+      function renderSteps() {
+        if (state.modoCorreccion && state.docsCorreccion.length > 0) {
+          gotoStep(1, true); // Saltar paso 0
+        } else {
+          gotoStep(0, true);
+        }
+      }
 
       function bindWizard() {
         el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
@@ -1067,6 +1091,13 @@
       }
 
       function getRequiredForStep(step) {
+        if (state.modoCorreccion) {
+          if (step === 1) return [{ id: 'docFront', isType: 'file' }, { id: 'docBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 2) return [{ id: 'coDocFront', isType: 'file' }, { id: 'coDocBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 3) return [{ id: 'comprobantePago', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          return [];
+        }
+
         if (step === 0) return [
           { id: 'tipoDocumento', isType: 'input', el: el.tipoDocumento },
           { id: 'numeroDocumento', isType: 'input', el: el.numeroDocumento },
@@ -1106,6 +1137,7 @@
       function validateStepRaw(step) {
         switch (step) {
           case 0: {
+            if (state.modoCorreccion) return true;
             const required = getRequiredForStep(0).map(f => f.el);
             for (const r of required) { if (!r.value || !r.value.trim()) return false; }
             if (!rx.num.test(el.numeroDocumento.value.trim())) return false;
@@ -1116,8 +1148,13 @@
             if (el.celular.value.trim() !== el.confirmarCelular.value.trim()) return false;
             return true;
           }
-          case 1: { return getRequiredForStep(1).every(f => state.archivos[f.id]); }
+          case 1: {
+            if (state.modoCorreccion) return ['docFront', 'docBack'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
+            return getRequiredForStep(1).every(f => state.archivos[f.id]);
+          }
           case 2: {
+            if (state.modoCorreccion) return ['coDocFront', 'coDocBack'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
+
             // Codeudor: si tocó algún campo, exigir todos
             const coStarted = el.coTipo.value.trim();
             if (!coStarted) return true; // no tocó nada, skip libre
@@ -1133,7 +1170,10 @@
             if (!state.archivos['coDocFront'] || !state.archivos['coDocBack']) return false;
             return true;
           }
-          case 3: return !!state.archivos['comprobantePago'];
+          case 3: {
+            if (state.modoCorreccion) return !state.docsCorreccion.includes('comprobantePago') || !!state.archivos['comprobantePago'];
+            return !!state.archivos['comprobantePago'];
+          }
           default: return true;
         }
       }
@@ -1142,6 +1182,7 @@
         hideInlineErrors();
         switch (step) {
           case 0: {
+            if (state.modoCorreccion) return true;
             const required = [
               el.tipoDocumento, el.numeroDocumento, el.confirmarDocumento,
               el.nombres, el.apellidos, el.email, el.confirmarEmail,
@@ -1174,6 +1215,17 @@
             return true;
           }
           case 1: {
+            if (state.modoCorreccion) {
+              const need = ['docFront', 'docBack'].filter(k => state.docsCorreccion.includes(k));
+              for (const k of need) {
+                if (!state.archivos[k]) {
+                  showAlert('warning', 'Falta el documento requerido de corrección.');
+                  return false;
+                }
+              }
+              return true;
+            }
+
             const need = ['docFront', 'docBack'];
             for (const k of need) {
               if (!state.archivos[k]) {
@@ -1184,6 +1236,17 @@
             return true;
           }
           case 2: {
+            if (state.modoCorreccion) {
+              const need = ['coDocFront', 'coDocBack'].filter(k => state.docsCorreccion.includes(k));
+              for (const k of need) {
+                if (!state.archivos[k]) {
+                  showAlert('warning', 'Falta documento del codeudor requerido para corrección.');
+                  return false;
+                }
+              }
+              return true;
+            }
+
             // Codeudor: si tocó algún campo, exigir todos
             const coStarted = el.coTipo.value.trim();
             if (!coStarted) return true;
@@ -1220,6 +1283,14 @@
             return true;
           }
           case 3: {
+            if (state.modoCorreccion) {
+              if (state.docsCorreccion.includes('comprobantePago') && !state.archivos['comprobantePago']) {
+                showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar.');
+                return false;
+              }
+              return true;
+            }
+
             // Pago obligatorio para validación
             if (!state.archivos['comprobantePago']) {
               showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar.');

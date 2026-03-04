@@ -786,13 +786,48 @@
       function renderCorreccionBanner() {
         if (!state.docsCorreccion.length) return;
         el.bannerCorreccion.classList.remove('hidden');
-        el.correccionDocs.innerHTML = state.docsCorreccion.map(d =>
-          `<span class="chip">${escapeHTML(d)}</span>`
-        ).join('');
+        el.correccionDocs.innerHTML = state.docsCorreccion.map(d => `<span class="chip">${escapeHTML(d)}</span>`).join('');
+
+        // Ocultar paso 0 (Datos personales) de la barra de progreso
+        const step0Item = document.querySelector('.progress .step[data-step="0"]');
+        if (step0Item) step0Item.style.display = 'none';
+
+        // Ocultar paso 2 (Información Bancaria) de la barra de progreso si no se pide el certBancario
+        if (!state.docsCorreccion.includes('certBancario')) {
+          const step2Item = document.querySelector('.progress .step[data-step="2"]');
+          // if (step2Item) step2Item.style.display = 'none'; // Optional to hide step 2 as well, but lets just skip validation
+        }
+
+        // Marcar archivos no requeridos como Aprobados
+        const allFileKeys = [
+          'docFront', 'docBack', 'certTradicion', 'sarlaft', 'certBancario',
+          'facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'
+        ];
+        allFileKeys.forEach(key => {
+          if (!state.docsCorreccion.includes(key)) {
+            const input = document.getElementById(key);
+            if (input) {
+              const wrapper = input.closest('.file-upload') || input.closest('.servicio-item');
+              if (wrapper) {
+                if (wrapper.classList.contains('servicio-item')) {
+                  wrapper.innerHTML = `<div style="padding: 10px; border: 1px dashed #10b981; border-radius: 8px; background: #ecfdf5; color: #047857; text-align: center; font-size: 0.9em; font-weight: bold;">✅ S. Público Aprobado</div>`;
+                } else {
+                  wrapper.innerHTML = `<div style="padding: 15px; border: 2px dashed #10b981; border-radius: 8px; background: #ecfdf5; color: #047857; text-align: center; font-weight: bold;">✅ Documento Previamente Aprobado</div>`;
+                }
+              }
+            }
+          }
+        });
       }
 
       // --------- Wizard ----------
-      function renderSteps() { gotoStep(0, true); }
+      function renderSteps() {
+        if (state.modoCorreccion && state.docsCorreccion.length > 0) {
+          gotoStep(1, true); // Saltar paso 0
+        } else {
+          gotoStep(0, true);
+        }
+      }
 
       function bindWizard() {
         el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
@@ -1109,6 +1144,14 @@
       }
 
       function getRequiredForStep(step) {
+        if (state.modoCorreccion) {
+          if (step === 1) return [{ id: 'docFront', isType: 'file' }, { id: 'docBack', isType: 'file' }, { id: 'certTradicion', isType: 'file' }, { id: 'sarlaft', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 2) return [{ id: 'certBancario', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 3) return [{ id: 'facturaAgua', isType: 'file' }, { id: 'facturaLuz', isType: 'file' }, { id: 'facturaGas', isType: 'file' }, { id: 'facturaTelefono', isType: 'file' }, { id: 'facturaInternet', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 4) return [{ id: 'comprobantePago', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          return [];
+        }
+
         if (step === 0) return [
           { id: 'tipoDocumento', isType: 'input', el: el.tipoDocumento },
           { id: 'numeroDocumento', isType: 'input', el: el.numeroDocumento },
@@ -1158,6 +1201,7 @@
       function validateStepRaw(step) {
         switch (step) {
           case 0: {
+            if (state.modoCorreccion) return true;
             const required = getRequiredForStep(0).map(f => f.el);
             for (const r of required) { if (!r.value?.trim()) return false; }
             if (!rx.num.test(el.numeroDocumento.value.trim())) return false;
@@ -1168,10 +1212,22 @@
             if (el.celular.value.trim() !== el.confirmarCelular.value.trim()) return false;
             return true;
           }
-          case 1: return getRequiredForStep(1).every(f => state.archivos[f.id]);
-          case 2: return true;
-          case 3: return true;
-          case 4: return !!state.archivos['comprobantePago'];
+          case 1: {
+            if (state.modoCorreccion) return ['docFront', 'docBack', 'certTradicion', 'sarlaft'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
+            return getRequiredForStep(1).every(f => state.archivos[f.id]);
+          }
+          case 2: {
+            if (state.modoCorreccion) return !state.docsCorreccion.includes('certBancario') || !!state.archivos['certBancario'];
+            return true;
+          }
+          case 3: {
+            if (state.modoCorreccion) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
+            return true;
+          }
+          case 4: {
+            if (state.modoCorreccion) return !state.docsCorreccion.includes('comprobantePago') || !!state.archivos['comprobantePago'];
+            return !!state.archivos['comprobantePago'];
+          }
           default: return true;
         }
       }
@@ -1180,6 +1236,7 @@
         hideInlineErrors();
         switch (step) {
           case 0: // Datos personales
+            if (state.modoCorreccion) return true;
             const required = [
               el.tipoDocumento, el.numeroDocumento, el.confirmarDocumento,
               el.nombres, el.apellidos, el.email, el.confirmarEmail,
@@ -1221,6 +1278,17 @@
             return true;
 
           case 1: // Documentos
+            if (state.modoCorreccion) {
+              const docsAcorregir = ['docFront', 'docBack', 'certTradicion', 'sarlaft'].filter(k => state.docsCorreccion.includes(k));
+              for (const d of docsAcorregir) {
+                if (!state.archivos[d]) {
+                  showAlert('warning', 'Falta el documento requerido para la corrección.');
+                  return false;
+                }
+              }
+              return true;
+            }
+
             const docs = ['docFront', 'docBack', 'certTradicion', 'sarlaft'];
             for (const d of docs) {
               if (!state.archivos[d]) {
@@ -1231,6 +1299,14 @@
             return true;
 
           case 2: // Bancarios
+            if (state.modoCorreccion) {
+              if (state.docsCorreccion.includes('certBancario') && !state.archivos['certBancario']) {
+                showAlert('warning', 'Falta adjuntar la certificación bancaria solicitada en la corrección.');
+                return false;
+              }
+              return true;
+            }
+
             const bancarios = [el.tipoCuenta, el.numeroCuenta, el.banco, el.titularCuenta, el.docTitular];
             for (const b of bancarios) {
               if (!b.value?.trim()) {
@@ -1245,9 +1321,26 @@
             return true;
 
           case 3: // Servicios - opcional
+            if (state.modoCorreccion) {
+              const srAcorregir = ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'].filter(k => state.docsCorreccion.includes(k));
+              for (const d of srAcorregir) {
+                if (!state.archivos[d]) {
+                  showAlert('warning', 'Falta adjuntar factura de servicio público para corrección.');
+                  return false;
+                }
+              }
+              return true;
+            }
             return true;
 
           case 4: // Pago - opcional
+            if (state.modoCorreccion) {
+              if (state.docsCorreccion.includes('comprobantePago') && !state.archivos['comprobantePago']) {
+                showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar con la corrección.');
+                return false;
+              }
+              return true;
+            }
             return true;
 
           default:

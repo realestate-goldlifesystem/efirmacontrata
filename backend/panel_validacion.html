@@ -360,7 +360,7 @@
 
         .modal-header {
             background: linear-gradient(135deg, var(--primary) 0%, #FFA500 100%);
-            padding: 0.75rem 1.5rem;
+            padding: 0.5rem 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -387,15 +387,15 @@
         }
 
         .modal-body {
-            padding: 1rem 1.5rem;
-            max-height: calc(96vh - 60px);
+            padding: 0.5rem 1.5rem 1rem 1.5rem;
+            max-height: calc(96vh - 50px);
             overflow-y: auto;
         }
 
         /* Document Preview Container */
         .documents-container {
             display: grid;
-            grid-template-columns: 380px 1fr;
+            grid-template-columns: 25% 75%;
             gap: 1.5rem;
             height: auto;
             align-items: start;
@@ -1086,73 +1086,113 @@
             </div>
             <div class="modal-body">
                 <!-- Información del Registro -->
-                <div class="data-display">
-                    <h3>📌 Información del Registro</h3>
-                    <div class="data-grid" id="infoRegistro">
+                <div class="data-display"
+                    style="padding: 0.5rem 1rem; margin-bottom: 0.5rem; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: var(--radius);">
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--dark);">📌 Información del Registro
+                    </h3>
+                    <div class="data-grid" id="infoRegistro"
+                        style="display: flex; gap: 1.5rem; align-items: center; justify-content: flex-start;">
                         <!-- Se llena dinámicamente -->
                     </div>
+                </div>
+
+                <!-- Person Tabs (Global) -->
+                <div class="person-tabs-container" id="personTabs"
+                    style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.25rem;">
+                    <!-- Se llena en JS -->
                 </div>
 
                 <!-- Container de Documentos y Preview -->
                 <div class="documents-container">
 
-                    <!-- COLUMNA IZQUIERDA -->
+                    <!-- COLUMNA IZQUIERDA (CEREBRO) -->
                     <div class="doc-left-col">
-                        <!-- Lista de Documentos -->
-                        <div class="documents-list">
-                            <h3>📁 Documentos Cargados</h3>
-                            <div id="listaDocumentos" class="lista-docs-scroll">
-                                <!-- Se llena dinámicamente -->
-                            </div>
-                        </div>
-
                         <!-- Formulario de Datos Extraídos (Cerebro) -->
-                        <div class="cerebro-editor" id="cerebroEditor">
+                        <div class="cerebro-editor" id="cerebroEditor" style="height: 100%;">
                             <style>
-                                .cerebro-tab {
+                                /* Global Tab styles */
+                                .person-tab,
+                                .doc-tab {
                                     background: #f1f5f9;
                                     border: none;
-                                    padding: 0.35rem 0.85rem;
-                                    border-radius: 12px;
-                                    font-size: 0.8rem;
+                                    padding: 0.6rem 1rem;
+                                    border-radius: 8px 8px 0 0;
+                                    font-size: 0.9rem;
                                     cursor: pointer;
                                     font-weight: 500;
                                     color: #475569;
                                     white-space: nowrap;
                                     transition: 0.2s;
+                                    border-bottom: 3px solid transparent;
                                 }
 
-                                .cerebro-tab:hover {
+                                .person-tab:hover,
+                                .doc-tab:hover {
                                     background: #e2e8f0;
                                 }
 
-                                .cerebro-tab.active {
-                                    background: var(--primary);
+                                .person-tab.active,
+                                .doc-tab.active {
+                                    background: var(--white);
                                     color: var(--dark);
                                     font-weight: 700;
-                                    box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
+                                    border-bottom: 3px solid var(--primary);
                                 }
 
-                                .cerebro-tabs-container::-webkit-scrollbar {
-                                    height: 4px;
+                                .doc-tab {
+                                    border-radius: 8px;
+                                    border-bottom: none;
+                                    border: 2px solid transparent;
                                 }
 
-                                .cerebro-tabs-container::-webkit-scrollbar-thumb {
+                                .doc-tab.active {
+                                    border: 2px solid var(--primary);
+                                }
+
+                                /* Status Colors for Doc Tabs */
+                                .doc-tab.status-aprobado {
+                                    border-left: 4px solid #10b981;
+                                }
+
+                                .doc-tab.status-rechazado {
+                                    border-left: 4px solid #f59e0b;
+                                }
+
+                                /* Scroll Buttons Styling */
+                                .scroll-btn {
+                                    background: #e2e8f0;
+                                    border: none;
+                                    border-radius: 8px;
+                                    cursor: pointer;
+                                    padding: 0 0.5rem;
+                                    color: var(--dark);
+                                    font-weight: bold;
+                                    transition: background 0.2s;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                }
+
+                                .scroll-btn:hover {
                                     background: #cbd5e1;
-                                    border-radius: 4px;
+                                }
+
+                                /* Hide scrollbar for document tabs container */
+                                .document-tabs-container::-webkit-scrollbar {
+                                    display: none;
+                                }
+
+                                .document-tabs-container {
+                                    -ms-overflow-style: none;
+                                    /* IE and Edge */
+                                    scrollbar-width: none;
+                                    /* Firefox */
                                 }
                             </style>
-                            <div class="cerebro-header"
-                                style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding-bottom: 0;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <h3 style="margin: 0;">🧠 Datos Extraídos</h3>
-                                    <button class="btn-icon-hover" onclick="toggleEditCerebro()"
-                                        title="Editar Datos">✏️</button>
-                                </div>
-                                <div class="cerebro-tabs-container" id="cerebroTabs"
-                                    style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; margin-top: 0.25rem;">
-                                    <!-- Se llena dinámicamente -->
-                                </div>
+                            <div class="cerebro-header" style="justify-content: space-between; align-items: center;">
+                                <h3 style="margin: 0; font-size: 1.1em;">🧠 Datos Formulario</h3>
+                                <button class="btn-icon-hover" onclick="toggleEditCerebro()"
+                                    title="Editar Datos">✏️</button>
                             </div>
                             <div id="cerebroContent" class="cerebro-content readonly">
                                 <div class="cerebro-field">
@@ -1181,62 +1221,117 @@
                         </div>
                     </div>
 
-                    <!-- COLUMNA DERECHA -->
-                    <div class="doc-right-col">
-                        <!-- Preview Area -->
-                        <div class="preview-area">
-                            <div class="preview-header">
-                                <span id="previewTitle" style="font-weight:600; color:var(--dark);">Vista Previa</span>
-                                <div>
-                                    <button class="btn btn-outline btn-sm" onclick="abrirEnNuevaVentana()"
-                                        style="padding:0.25rem 0.5rem;">
-                                        🔗 Abrir en Drive
-                                    </button>
-                                </div>
+                    <!-- COLUMNA DERECHA (DOCUMENTOS Y EVALUACION) -->
+                    <div class="doc-right-col"
+                        style="display: flex; flex-direction: column; gap: 1rem; height: 100%; min-width: 0;">
+
+                        <!-- Top Bar: Document Tabs + Counter -->
+                        <div
+                            style="display: flex; gap: 0.5rem; align-items: center; justify-content: space-between; border-bottom: 2px solid transparent; padding-bottom: 0; width: 100%;">
+
+                            <!-- Left Scroll Button -->
+                            <button class="scroll-btn"
+                                onclick="document.getElementById('documentTabs').scrollBy({left: -200, behavior: 'smooth'})"
+                                style="flex-shrink: 0;">❮</button>
+
+                            <!-- Document Tabs -->
+                            <div class="document-tabs-container" id="documentTabs"
+                                style="display: flex; gap: 0.5rem; overflow-x: auto; min-height: 45px; flex-grow: 1; padding-bottom: 0.5rem; scroll-behavior: smooth;">
+                                <!-- Dinámico en JS -->
                             </div>
-                            <div class="preview-content" id="previewContent">
+
+                            <!-- Right Scroll Button -->
+                            <button class="scroll-btn"
+                                onclick="document.getElementById('documentTabs').scrollBy({left: 200, behavior: 'smooth'})"
+                                style="flex-shrink: 0;">❯</button>
+
+                            <!-- Counter -->
+                            <div id="documentCounters"
+                                style="font-size: 0.85rem; color: #475569; white-space: nowrap; font-weight: 500; background: #f1f5f9; padding: 0.4rem 0.8rem; border-radius: 8px; align-self: flex-start; margin-top: 0.2rem; display: none; flex-shrink: 0;">
+                                <!-- Llenado por JS -->
+                            </div>
+                        </div>
+
+                        <!-- Preview Area and Action Buttons Combined -->
+                        <div class="preview-area"
+                            style="flex: 1; display: flex; flex-direction: column; padding: 0.5rem; background: var(--white); border-radius: var(--radius); border: 1px solid #e2e8f0; overflow: hidden;">
+
+                            <div class="preview-content" id="previewContent" style="flex: 1; min-height: 250px;">
                                 <div class="preview-placeholder">
-                                    <p>👈 Selecciona un documento para ver la vista previa</p>
+                                    <p>👈 Selecciona un documento de las pestañas de arriba</p>
+                                </div>
+                            </div>
+
+                            <!-- Panel de Evaluación Individual (Mergado) -->
+                            <div class="eval-current-doc-box"
+                                style="display: flex; flex-direction: column; gap: 0.75rem; background: #f8fafc; padding: 0.75rem; border-top: 1px solid #e2e8f0; margin-top: 0.5rem; border-radius: 0 0 var(--radius) var(--radius);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <h4 style="margin:0; font-size: 0.95rem; color: var(--dark);">Evaluar Documento
+                                        Actual</h4>
+                                    <span id="currentDocStatusBadge"
+                                        style="font-size: 0.85rem; font-weight: 600; padding: 0.25rem 0.5rem; border-radius: 4px; display: none;"></span>
+                                </div>
+
+                                <div id="evalDocActions" style="display: flex; gap: 0.5rem;">
+                                    <button class="btn btn-success" id="btnAprobarDoc"
+                                        onclick="aprobarDocumentoActual()" disabled>✅ Aprobar Documento</button>
+                                    <button class="btn btn-warning" id="btnRechazarDoc"
+                                        onclick="mostrarRechazoDocumentoActual()" disabled>⚠️ Solicitar
+                                        Actualizar</button>
+                                </div>
+
+                                <div id="rechazoInputBox"
+                                    style="display:none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <label style="font-size: 0.85rem; font-weight: 600; color: var(--dark);">Motivo de
+                                        rechazo / Instrucciones al cliente:</label>
+                                    <textarea id="motivoRechazoDocActual" rows="2"
+                                        placeholder="Ej: La cédula está borrosa, tomar una nueva foto clara."
+                                        style="width: 100%; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0.5rem;"></textarea>
+                                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                        <button class="btn btn-secondary btn-sm"
+                                            onclick="cancelarRechazoDoc()">Cancelar</button>
+                                        <button class="btn btn-danger btn-sm"
+                                            onclick="guardarRechazoDocumento()">Guardar
+                                            Status</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Formulario de Correcciones Oculto (Se muestra al solicitar) -->
-                        <div class="corrections-form" id="panelCorrecciones" style="display:none; margin-top: 0;">
-                            <div class="corrections-title">
-                                ⚠️ Correcciones Requeridas
-                            </div>
-                            <div class="correction-field">
-                                <label>Seleccionar documentos a corregir:</label>
-                                <!-- Se llena dinámicamente con checkboxes de los documentos actuales -->
-                                <div id="checkboxesCorrecciones"
-                                    style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1rem; max-height: 150px; overflow-y: auto;">
-                                </div>
-                            </div>
-                            <div class="correction-field">
-                                <label>Motivo de rechazo / Instrucciones:</label>
-                                <textarea id="observacionesCorrecciones" rows="3"
-                                    placeholder="Explica qué está mal (ej: La cédula está borrosa, necesito que se vea claro el número)"></textarea>
-                            </div>
-                            <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
-                                <button class="btn btn-secondary btn-sm"
-                                    onclick="cancelarCorrecciones()">Cancelar</button>
-                                <button class="btn btn-danger btn-sm" onclick="enviarSolicitudCorrecciones()">Enviar
-                                    Solicitud</button>
-                            </div>
-                        </div>
+                    </div>
+                </div>
 
-                        <!-- Botones de Acción (Debajo del preview) -->
-                        <div class="validation-actions-box" id="boxAccionesPrincipales">
-                            <button class="btn btn-success" onclick="aprobarDocumentos()">
-                                ✅ Aprobar Todo
-                            </button>
-                            <button class="btn btn-warning" onclick="mostrarPanelCorrecciones()">
-                                📝 Solicitar Correcciones
-                            </button>
-                            <button class="btn btn-danger" onclick="rechazarDocumentos()">
-                                ❌ Rechazar Completo
-                            </button>
+                <!-- Botón Maestro Global (Aparece abajo cuando TODO está evaluado) -->
+                <div id="boxAccionesGlobales"
+                    style="display:none; margin-top: 1.5rem; text-align: right; border-top: 2px solid #e2e8f0; padding-top: 1rem;">
+                    <button class="btn btn-primary" onclick="mostrarConfirmacionFinal()"
+                        style="font-size: 1.1rem; padding: 0.8rem 2.5rem; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);">🚀
+                        Aprobados Todos (Finalizar Validación)</button>
+                </div>
+
+                <!-- Modal de Confirmación Interno -->
+                <div id="modalConfirmacionFinal" class="modal" style="z-index: 2000;">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h2>Confirmación de Evaluación</h2>
+                            <button class="close-modal" onclick="cerrarModal('modalConfirmacionFinal')">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <p style="font-size: 1.1rem; margin-bottom: 1rem;">Has evaluado todos los documentos de este
+                                registro.</p>
+                            <div id="resumenValidacionFinal"
+                                style="background: #f1f5f9; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                                <!-- Resumen dinamico (Todo OK vs X documentos por corregir) -->
+                            </div>
+                            <p>¿Estás seguro de procesar el resultado final y enviar las notificaciones
+                                correspondientes?</p>
+
+                            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                                <button class="btn btn-secondary" onclick="cerrarModal('modalConfirmacionFinal')">✍️
+                                    Verificar de Nuevo</button>
+                                <button class="btn btn-primary" id="btnEjecutarAprobacionMaster"
+                                    onclick="ejecutarAprobacionMaster()">✅ Procesar Todo</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1283,10 +1378,14 @@
         const API_URL = google.script.run;
         let registroActual = null;
         let tipoActual = null;
-        let documentoActual = null;
+        let documentoActual = null; // { id, url, tipo, nombre }
         let documentosData = {};
         let registrosData = { inquilinos: [], propietarios: [] };
-        let pestanaCerebroActiva = 0; // 0 = Inquilino/Propietario, 1+ = Codeudor 1, 2...
+
+        // Estados Split Workspace
+        let personaActivaKey = ''; // 'inquilino', 'propietario', 'codeudor_0', 'codeudor_1'
+        let validacionEstado = {}; // { 'fileId1': 'aprobado', 'fileId2': 'correccion' }
+        let motivosCorreccion = {}; // { 'fileId2': 'Cédula borrosa' }
         let datosCerebroAnteriores = {};
 
         // Inicialización
@@ -1685,108 +1784,114 @@
         function mostrarModalValidacion(cdr, tipo, documentos) {
             documentosData = documentos;
 
+            // Reiniciar estado
+            validacionEstado = {};
+            motivosCorreccion = {};
+            documentoActual = null;
+            personaActivaKey = tipo; // Ej: 'inquilino' o 'propietario'
+
             // Actualizar título
-            document.getElementById('modalTitle').textContent =
-                `📋 Validación de ${tipo === 'inquilino' ? 'Inquilino' : 'Propietario'} - ${cdr}`;
+            document.getElementById('modalTitle').textContent = `📋 Validación de Registro - ${cdr}`;
 
             // Mostrar información básica arriba
             mostrarInfoRegistro(cdr, tipo);
 
-            // Cargar datos editables del cerebro en la columna izquierda
-            cargarDatosCerebro(cdr, tipo);
+            // Ocultar modal final y botones globales
+            document.getElementById('boxAccionesGlobales').style.display = 'none';
+            document.getElementById('evalDocActions').style.display = 'none';
 
-            // Mostrar lista de documentos
-            mostrarListaDocumentos(documentos[tipo] || []);
+            // Construir Person Tabs (Inquilino, Codeudor 1...)
+            renderPersonTabs();
 
-            // Ocultar paneles extra y reiniciar UI
-            document.getElementById('panelCorrecciones').style.display = 'none';
-            document.getElementById('boxAccionesPrincipales').style.display = 'flex';
-            document.getElementById('observacionesCorrecciones').value = '';
+            // Cargar datos a la UI por primera vez
+            cambiarPersona(personaActivaKey);
 
             // Mostrar modal
             document.getElementById('modalValidacion').classList.add('show');
         }
 
-        // Cargar datos del Cerebro en el panel editable
-        function cargarDatosCerebro(cdr, tipo) {
-            const list = tipo === 'inquilino' ? registrosData.inquilinos : registrosData.propietarios;
-            const registro = list.find(r => r.cdr === cdr);
+        // --- MANEJO DE PESTAÑAS Y CEREBRO ---
+
+        function getRegistroData() {
+            const list = tipoActual === 'inquilino' ? registrosData.inquilinos : registrosData.propietarios;
+            return list.find(r => r.cdr === registroActual);
+        }
+
+        function renderPersonTabs() {
+            const registro = getRegistroData();
             if (!registro) return;
 
-            // Renderizar Tabs Codeudores
-            let tabsHtml = `<button class="cerebro-tab ${pestanaCerebroActiva === 0 ? 'active' : ''}" onclick="cambiarTabCerebro(0)">${tipo === 'inquilino' ? 'Inquilino' : 'Propietario'}</button>`;
+            let html = `<button class="person-tab" id="ptab_${tipoActual}" onclick="cambiarPersona('${tipoActual}')">${tipoActual === 'inquilino' ? 'Inquilino' : 'Propietario'}</button>`;
 
-            if (tipo === 'inquilino' && registro.codeudores && registro.codeudores.length > 0) {
+            if (tipoActual === 'inquilino' && registro.codeudores && registro.codeudores.length > 0) {
                 registro.codeudores.forEach((cod, idx) => {
-                    tabsHtml += `<button class="cerebro-tab ${pestanaCerebroActiva === (idx + 1) ? 'active' : ''}" onclick="cambiarTabCerebro(${idx + 1})">Codeudor ${idx + 1}</button>`;
+                    html += `<button class="person-tab" id="ptab_codeudor_${idx}" onclick="cambiarPersona('codeudor_${idx}')">Codeudor ${idx + 1}</button>`;
                 });
             }
 
-            const tabsContainer = document.getElementById('cerebroTabs');
-            if (tabsContainer) {
-                tabsContainer.innerHTML = tabsHtml;
-            }
+            document.getElementById('personTabs').innerHTML = html;
+        }
 
-            // Forzar volver a estado readonly al cargar
+        function cambiarPersona(personKey) {
+            personaActivaKey = personKey;
+
+            // Update Tab UI
+            document.querySelectorAll('.person-tab').forEach(t => t.classList.remove('active'));
+            const activeTab = document.getElementById('ptab_' + personKey);
+            if (activeTab) activeTab.classList.add('active');
+
+            // Cargar Datos en Formulario Izquierdo (Cerebro)
+            cargarDatosCerebroPorPersona(personKey);
+
+            // Renderizar Pestañas de Documentos en la Derecha
+            renderDocumentTabs(personKey);
+        }
+
+        function cargarDatosCerebroPorPersona(personKey) {
+            const registro = getRegistroData();
+            if (!registro) return;
+
+            // Restablecer vista
             document.getElementById('cerebroContent').classList.add('readonly');
             document.getElementById('cerebroActions').style.display = 'none';
 
-            // Cargar datos según tab activa
-            if (pestanaCerebroActiva === 0) {
-                if (tipo === 'inquilino') {
-                    document.getElementById('cerebro_nombre').value = registro.inquilino.nombre || '';
-                    document.getElementById('cerebro_documento').value = registro.inquilino.documento || '';
-                    document.getElementById('cerebro_email').value = registro.inquilino.email || '';
-                    document.getElementById('cerebro_celular').value = registro.inquilino.celular || '';
-                    datosCerebroAnteriores = { ...registro.inquilino };
-                } else {
-                    document.getElementById('cerebro_nombre').value = registro.propietario.nombre || '';
-                    document.getElementById('cerebro_documento').value = registro.propietario.documento || '';
-                    document.getElementById('cerebro_email').value = registro.propietario.email || '';
-                    document.getElementById('cerebro_celular').value = registro.propietario.celular || '';
-                    datosCerebroAnteriores = { ...registro.propietario };
-                }
-            } else if (tipo === 'inquilino' && registro.codeudores) {
-                const codeudor = registro.codeudores[pestanaCerebroActiva - 1];
-                if (codeudor) {
-                    document.getElementById('cerebro_nombre').value = codeudor.nombre || '';
-                    document.getElementById('cerebro_documento').value = codeudor.documento || '';
-                    document.getElementById('cerebro_email').value = codeudor.email || '';
-                    document.getElementById('cerebro_celular').value = codeudor.celular || '';
-                    datosCerebroAnteriores = { ...codeudor };
-                }
+            let dataObj = null;
+            if (personKey === 'inquilino') dataObj = registro.inquilino;
+            else if (personKey === 'propietario') dataObj = registro.propietario;
+            else if (personKey.startsWith('codeudor_')) {
+                const idx = parseInt(personKey.split('_')[1], 10);
+                dataObj = registro.codeudores[idx];
+            }
+
+            if (dataObj) {
+                document.getElementById('cerebro_nombre').value = dataObj.nombre || '';
+                document.getElementById('cerebro_documento').value = dataObj.documento || '';
+                document.getElementById('cerebro_email').value = dataObj.email || '';
+                document.getElementById('cerebro_celular').value = dataObj.celular || '';
+                datosCerebroAnteriores = { ...dataObj };
             }
         }
 
-        // Cambiar tab del cerebro
-        function cambiarTabCerebro(indice) {
-            pestanaCerebroActiva = indice;
-            cargarDatosCerebro(registroActual, tipoActual);
-        }
-
-        // Habilitar edición del cerebro
         function toggleEditCerebro() {
             document.getElementById('cerebroContent').classList.remove('readonly');
             document.getElementById('cerebroActions').style.display = 'flex';
         }
 
-        // Cancelar edición del cerebro
         function cancelarEditCerebro() {
-            document.getElementById('cerebroContent').classList.add('readonly');
-            document.getElementById('cerebroActions').style.display = 'none';
-            // Restaurar datos originales
-            cargarDatosCerebro(registroActual, tipoActual);
+            cargarDatosCerebroPorPersona(personaActivaKey);
         }
 
-        // Guardar Cerebro Editado
         function guardarCerebro() {
             if (!confirm('¿Seguro que deseas guardar estos cambios en el Cerebro/Sheet?')) return;
+
+            let isCod = personaActivaKey.startsWith('codeudor_');
+            let codIdx = isCod ? parseInt(personaActivaKey.split('_')[1], 10) : null;
 
             const nuevosDatos = {
                 cdr: registroActual,
                 tipo: tipoActual,
-                isCodeudor: pestanaCerebroActiva > 0,
-                codeudorIndex: pestanaCerebroActiva > 0 ? pestanaCerebroActiva - 1 : null,
+                isCodeudor: isCod,
+                codeudorIndex: codIdx,
                 nombre: document.getElementById('cerebro_nombre').value,
                 documento: document.getElementById('cerebro_documento').value,
                 email: document.getElementById('cerebro_email').value,
@@ -1804,13 +1909,11 @@
 
             google.script.run
                 .withSuccessHandler(function () {
-                    mostrarToast('✅ Datos actualizados correctamente en Google', 'success');
-                    document.getElementById('cerebroContent').classList.add('readonly');
-                    document.getElementById('cerebroActions').style.display = 'none';
+                    mostrarToast('✅ Datos actualizados correctamente', 'success');
+                    cargarDatosCerebroPorPersona(personaActivaKey);
                     btn.textContent = originalText;
                     btn.disabled = false;
-                    // Recargar vista principal en el fondo
-                    cargarDatos();
+                    cargarDatos(); // Refresh general en background
                 })
                 .withFailureHandler(function (error) {
                     mostrarToast('Error al actualizar: ' + error, 'error');
@@ -1820,7 +1923,7 @@
                 .actualizarDatosCerebro(nuevosDatos);
         }
 
-        // Mostrar información del registro
+        // Mostrar información básica
         function mostrarInfoRegistro(cdr, tipo) {
             const infoHtml = `
                 <div style="display:flex; gap:2rem; flex-wrap:wrap; padding:0.5rem 0;">
@@ -1831,271 +1934,297 @@
                     <div><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</div>
                 </div>
             `;
-
             document.getElementById('infoRegistro').innerHTML = infoHtml;
         }
 
-        // Mostrar lista de documentos
-        function mostrarListaDocumentos(documentos) {
+        // --- MANEJO DE DOCUMENTOS Y EVALUACION ---
+
+        // Renderizar Document Tabs para la persona activa
+        function renderDocumentTabs(personKey) {
+            const docsList = documentosData[personKey] || [];
             let html = '';
 
-            documentos.forEach((doc, index) => {
+            if (docsList.length === 0) {
+                html = '<span style="color:#64748b; font-size:0.9rem; padding: 0.5rem;">No hay documentos registrados</span>';
+                document.getElementById('documentTabs').innerHTML = html;
+                document.getElementById('previewContent').innerHTML = '<div class="preview-placeholder"><p>Sin documentos</p></div>';
+                document.getElementById('evalDocActions').style.display = 'none';
+                document.getElementById('currentDocStatusBadge').style.display = 'none';
+                return;
+            }
+
+            docsList.forEach((doc, idx) => {
                 const fileId = doc.fileId || '';
-                // Limpiar nombre: quitar sufijos de CDR tipo _[REG_23...]
                 const nombreCorto = doc.nombre.replace(/_\[REG_.*?\]/, '').replace(/_/g, ' ');
+                const icon = obtenerIconoDocumento(doc.tipo);
+
+                // Determinar el status visual
+                const currentStatus = validacionEstado[fileId];
+                let statusClass = '';
+                if (currentStatus === 'aprobado') statusClass = 'status-aprobado';
+                else if (currentStatus === 'correccion') statusClass = 'status-rechazado';
 
                 html += `
-                    <div class="doc-item ${index === 0 ? 'active' : ''}" 
-                         onclick="verPreview('${doc.url}', '${doc.tipo}', '${doc.nombre.replace(/'/g, "\\'")}', this, '${fileId}')"
-                         data-index="${index}">
-                        <div>
-                            <div style="font-weight:600;">${obtenerIconoDocumento(doc.tipo)} ${nombreCorto}</div>
-                            <div class="doc-type">${doc.tipo}</div>
-                        </div>
-                        <div class="doc-size">${formatearTamaño(doc.tamaño)}</div>
-                    </div>
+                    <button class="doc-tab ${statusClass}" id="dtab_${fileId}" 
+                            onclick="cambiarDocumento('${fileId}', '${doc.url}', '${doc.tipo}', '${doc.nombre.replace(/'/g, "\\'")}', this)"
+                            style="flex-shrink: 0;">
+                        ${icon} ${nombreCorto}
+                    </button>
                 `;
             });
 
-            document.getElementById('listaDocumentos').innerHTML = html ||
-                '<p style="text-align:center; color:#999;">No hay documentos</p>';
+            document.getElementById('documentTabs').innerHTML = html;
 
-            // Cargar preview del primer documento si existe
-            if (documentos.length > 0) {
-                verPreview(documentos[0].url, documentos[0].tipo, documentos[0].nombre, null, documentos[0].fileId);
+            // Update Counter
+            actualizarContadorUI();
+
+            // Seleccionar el primer doc automáticamente
+            if (docsList.length > 0) {
+                const firstDoc = docsList[0];
+                const btnRef = document.getElementById('dtab_' + firstDoc.fileId);
+                cambiarDocumento(firstDoc.fileId, firstDoc.url, firstDoc.tipo, firstDoc.nombre, btnRef);
             }
         }
 
-        // Ver preview del documento
-        function verPreview(url, tipo, nombre, elemento, fileId) {
-            documentoActual = { url, tipo, nombre };
+        // Seleccionar un Documento Específico
+        function cambiarDocumento(fileId, url, tipo, nombre, btnRef) {
+            documentoActual = { id: fileId, url, tipo, nombre };
 
-            // Actualizar selección activa
-            if (elemento) {
-                document.querySelectorAll('.doc-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                elemento.classList.add('active');
+            // Update Tab UI
+            document.querySelectorAll('.doc-tab').forEach(t => t.classList.remove('active'));
+            if (btnRef) {
+                btnRef.classList.add('active');
+                // Scroll the tab into view automatically
+                btnRef.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             }
 
-            // Actualizar título del preview
-            document.getElementById('previewTitle').textContent = nombre;
-
-            // Mostrar preview usando Google Drive embed URL
+            // Load Preview IFRAME
             const previewContent = document.getElementById('previewContent');
-
             if (fileId) {
-                // Usar la URL de preview de Google Drive que funciona en iframes
                 const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-                previewContent.innerHTML = `
-                    <iframe src="${embedUrl}" class="preview-iframe" allow="autoplay"></iframe>
-                `;
+                previewContent.innerHTML = `<iframe src="${embedUrl}" class="preview-iframe" allow="autoplay"></iframe>`;
             } else {
                 previewContent.innerHTML = `
                     <div class="preview-placeholder">
                         <p>⚠️ No se puede previsualizar este archivo</p>
-                        <button class="btn btn-primary" onclick="abrirEnNuevaVentana()">
-                            🔗 Abrir en Google Drive
-                        </button>
-                    </div>
-                `;
+                        <button class="btn btn-primary" onclick="window.open('${url}', '_blank')">🔗 Abrir en Google Drive</button>
+                    </div>`;
             }
-        }
 
-        // Crear checklist de validación
-        function crearChecklist(tipo) {
-            let items = [];
+            // Update Eval Box UI
+            document.getElementById('evalDocActions').style.display = 'flex';
+            document.getElementById('rechazoInputBox').style.display = 'none';
+            document.getElementById('btnAprobarDoc').disabled = false;
+            document.getElementById('btnRechazarDoc').disabled = false;
 
-            if (tipo === 'inquilino') {
-                items = [
-                    'Documento de identidad legible',
-                    'Nombre coincide con documento',
-                    'Número de documento correcto',
-                    'Soporte de ingresos válido',
-                    'Comprobante de pago adjunto',
-                    'Datos del codeudor completos (si aplica)'
-                ];
+            // Mostrar el Badge actual si ya fue evaluado
+            const currentStatus = validacionEstado[fileId];
+            const badge = document.getElementById('currentDocStatusBadge');
+            if (currentStatus === 'aprobado') {
+                badge.textContent = '✅ APROBADO';
+                badge.style.backgroundColor = '#d1fae5';
+                badge.style.color = '#065f46';
+                badge.style.display = 'inline-block';
+            } else if (currentStatus === 'correccion') {
+                badge.textContent = '⚠️ Requiere Actualizar';
+                badge.style.backgroundColor = '#fef3c7';
+                badge.style.color = '#92400e';
+                badge.style.display = 'inline-block';
             } else {
-                items = [
-                    'Documento de identidad legible',
-                    'Certificado de tradición válido',
-                    'SARLAFT diligenciado',
-                    'Certificación bancaria actualizada',
-                    'Servicios públicos al día',
-                    'Datos bancarios correctos'
-                ];
-            }
-
-            let html = '';
-            items.forEach((item, index) => {
-                html += `
-                    <div class="checklist-item" id="check-${index}">
-                        <input type="checkbox" class="checklist-checkbox" 
-                               id="checkbox-${index}" 
-                               onchange="toggleCheck(${index})">
-                        <label class="checklist-label" for="checkbox-${index}">
-                            ${item}
-                        </label>
-                    </div>
-                `;
-            });
-
-            document.getElementById('checklistGrid').innerHTML = html;
-        }
-
-        // Toggle checklist item
-        function toggleCheck(index) {
-            const item = document.getElementById(`check-${index}`);
-            const checkbox = document.getElementById(`checkbox-${index}`);
-
-            if (checkbox.checked) {
-                item.classList.add('checked');
-            } else {
-                item.classList.remove('checked');
-            }
-
-            verificarCompletitud();
-        }
-
-        // Verificar si todo está completo
-        function verificarCompletitud() {
-            const checkboxes = document.querySelectorAll('.checklist-checkbox');
-            const todosChecked = Array.from(checkboxes).every(cb => cb.checked);
-
-            // Habilitar/deshabilitar botón de aprobar
-            const btnAprobar = document.querySelector('.btn-success');
-            if (btnAprobar) {
-                btnAprobar.disabled = !todosChecked;
-                if (todosChecked) {
-                    btnAprobar.textContent = '✅ Aprobar Todo (Listo)';
-                } else {
-                    btnAprobar.textContent = '✅ Aprobar Todo (Pendiente)';
-                }
+                badge.style.display = 'none';
             }
         }
 
-        // Aprobar todos los documentos
-        function aprobarDocumentos() {
-            if (!confirm('¿Está seguro de aprobar todos los documentos listados?')) return;
+        // Evaluaciones Individuales
+        function aprobarDocumentoActual() {
+            if (!documentoActual || !documentoActual.id) return;
 
-            const datos = {
-                cdr: registroActual,
-                tipo: tipoActual,
-                estado: 'aprobado',
-                observaciones: ''
-            };
+            validacionEstado[documentoActual.id] = 'aprobado';
+            delete motivosCorreccion[documentoActual.id];
 
-            google.script.run
-                .withSuccessHandler(function (result) {
-                    mostrarToast('✅ Documentos aprobados exitosamente', 'success');
-                    cerrarModal('modalValidacion');
-                    cargarDatos(); // Recargar datos
-                })
-                .withFailureHandler(function (error) {
-                    mostrarToast('Error al aprobar documentos: ' + error, 'error');
-                })
-                .procesarValidacion(datos);
+            mostrarToast('Documento marcado como APROBADO', 'success');
+
+            // Re-render tabs and current doc
+            renderDocumentTabs(personaActivaKey);
+            const activeTab = document.getElementById('dtab_' + documentoActual.id);
+            if (activeTab) {
+                cambiarDocumento(documentoActual.id, documentoActual.url, documentoActual.tipo, documentoActual.nombre, activeTab);
+            }
+
+            verificarAprobacionGlobal();
         }
 
-        // Mostrar panel dinámico de correcciones
-        function mostrarPanelCorrecciones() {
-            const panel = document.getElementById('panelCorrecciones');
-            const checkboxesDiv = document.getElementById('checkboxesCorrecciones');
+        function mostrarRechazoDocumentoActual() {
+            document.getElementById('evalDocActions').style.display = 'none';
+            document.getElementById('rechazoInputBox').style.display = 'flex';
+            document.getElementById('motivoRechazoDocActual').value = motivosCorreccion[documentoActual.id] || '';
+            document.getElementById('motivoRechazoDocActual').focus();
+        }
 
-            // Generar checkboxes basados en los documentos EXACTOS que subió el usuario
-            const docs = documentosData[tipoActual] || [];
-            let html = '';
+        function cancelarRechazoDoc() {
+            document.getElementById('evalDocActions').style.display = 'flex';
+            document.getElementById('rechazoInputBox').style.display = 'none';
+        }
 
-            if (docs.length === 0) {
-                html = '<p style="color:#64748b; font-size:0.9rem;">No hay documentos cargados para pedir corrección.</p>';
-            } else {
-                docs.forEach((doc, idx) => {
-                    const docNameSafe = doc.nombre.replace(/'/g, "\\'");
-                    html += `
-                        <div class="checklist-item" style="padding: 0.5rem; background: #fff; border: 1px solid #e2e8f0; margin-bottom: 0.25rem;">
-                            <input type="checkbox" id="corr_chk_${idx}" value="${docNameSafe}" class="checklist-checkbox">
-                            <label for="corr_chk_${idx}" class="checklist-label" style="font-size: 0.9rem;">${docNameSafe}</label>
-                        </div>
-                    `;
+        function guardarRechazoDocumento() {
+            if (!documentoActual || !documentoActual.id) return;
+            const motivo = document.getElementById('motivoRechazoDocActual').value.trim();
+
+            if (!motivo) {
+                alert("Debes escribir el motivo o la instrucción al cliente.");
+                return;
+            }
+
+            validacionEstado[documentoActual.id] = 'correccion';
+            motivosCorreccion[documentoActual.id] = motivo;
+
+            mostrarToast('Documento marcado para ACTUALIZAR', 'warning');
+
+            // Re-render tabs and current doc
+            renderDocumentTabs(personaActivaKey);
+            const activeTab = document.getElementById('dtab_' + documentoActual.id);
+            if (activeTab) {
+                cambiarDocumento(documentoActual.id, documentoActual.url, documentoActual.tipo, documentoActual.nombre, activeTab);
+            }
+
+            verificarAprobacionGlobal();
+        }
+
+        // --- SISTEMA MASTER DE APROBACIÓN ---
+
+        function actualizarContadorUI() {
+            let totalDocsCount = 0;
+            let aprobados = 0;
+            let correcciones = 0;
+
+            for (let person in documentosData) {
+                const docsObj = documentosData[person] || [];
+                totalDocsCount += docsObj.length;
+                docsObj.forEach(doc => {
+                    const id = doc.fileId;
+                    if (validacionEstado[id] === 'aprobado') aprobados++;
+                    if (validacionEstado[id] === 'correccion') correcciones++;
                 });
             }
 
-            checkboxesDiv.innerHTML = html;
-            panel.style.display = 'block';
+            const evalCount = aprobados + correcciones;
+            const counterDiv = document.getElementById('documentCounters');
 
-            // Ocultar botones principales temporales
-            document.getElementById('boxAccionesPrincipales').style.display = 'none';
-        }
-
-        // Cancelar panel de correcciones
-        function cancelarCorrecciones() {
-            document.getElementById('panelCorrecciones').style.display = 'none';
-            document.getElementById('observacionesCorrecciones').value = '';
-            document.getElementById('boxAccionesPrincipales').style.display = 'flex';
-        }
-
-        // Enviar solicitud de correcciones granulares
-        function enviarSolicitudCorrecciones() {
-            const checkboxes = document.querySelectorAll('#checkboxesCorrecciones input[type="checkbox"]:checked');
-            const observaciones = document.getElementById('observacionesCorrecciones').value;
-
-            if (checkboxes.length === 0) {
-                mostrarToast('⚠️ Seleccione al menos un documento a corregir de la lista', 'warning');
-                return;
+            if (totalDocsCount > 0) {
+                counterDiv.style.display = 'block';
+                counterDiv.innerHTML = `
+                    <span style="font-weight: 700; color: var(--dark);">${evalCount} / ${totalDocsCount} Eval.</span>
+                    <span style="margin: 0 0.5rem; color: #cbd5e1;">|</span>
+                    <span style="color: #10b981;">✅ ${aprobados}</span>
+                    <span style="margin: 0 0.5rem; color: #cbd5e1;">|</span>
+                    <span style="color: #f59e0b;">⚠️ ${correcciones}</span>
+                `;
+            } else {
+                counterDiv.style.display = 'none';
             }
-            if (!observaciones.trim()) {
-                mostrarToast('⚠️ Agregue instrucciones de rechazo', 'warning');
-                return;
+        }
+
+        function verificarAprobacionGlobal() {
+            // Conta cuantas keys hay en total en documentosData
+            let totalDocsCount = 0;
+            for (let person in documentosData) {
+                totalDocsCount += (documentosData[person] || []).length;
             }
 
-            if (!confirm('¿Seguro que desea enviar la solicitud de corrección al usuario?')) return;
+            const evalCount = Object.keys(validacionEstado).length;
+            const btnGlobalContainer = document.getElementById('boxAccionesGlobales');
 
-            const docsACorregir = Array.from(checkboxes).map(cb => cb.value);
+            if (evalCount === totalDocsCount && totalDocsCount > 0) {
+                btnGlobalContainer.style.display = 'block';
+            } else {
+                btnGlobalContainer.style.display = 'none';
+            }
 
-            const datos = {
-                cdr: registroActual,
-                tipo: tipoActual,
-                estado: 'correccion',
-                documentosCorregir: docsACorregir,
-                observaciones: observaciones
-            };
-
-            google.script.run
-                .withSuccessHandler(function (result) {
-                    mostrarToast('📝 Correcciones especificas solicitadas', 'warning');
-                    cerrarModal('modalValidacion');
-                    cargarDatos();
-                })
-                .withFailureHandler(function (error) {
-                    mostrarToast('Error al solicitar correcciones', 'error');
-                })
-                .enviarCorrecciones(datos);
+            actualizarContadorUI();
         }
 
-        // Rechazar documentos
-        function rechazarDocumentos() {
-            const motivo = prompt('Ingrese el motivo del rechazo:');
-            if (!motivo) return;
+        function mostrarConfirmacionFinal() {
+            // Contar Aprobados vs Rechazados
+            let aprobados = 0;
+            let correcciones = 0;
 
-            if (!confirm('¿Está seguro de rechazar estos documentos?')) return;
+            for (let id in validacionEstado) {
+                if (validacionEstado[id] === 'aprobado') aprobados++;
+                else correcciones++;
+            }
 
-            const datos = {
+            const html = `
+                <div style="font-size: 1.05rem;">
+                    <div><strong>Total Evaluados:</strong> ${aprobados + correcciones} documentos</div>
+                    <div style="color: #10b981; font-weight: 600;">✅ Listos / Aprobados: ${aprobados}</div>
+                    <div style="color: #f59e0b; font-weight: 600;">⚠️ Por Actualizar: ${correcciones}</div>
+                </div>
+            `;
+            document.getElementById('resumenValidacionFinal').innerHTML = html;
+
+            document.getElementById('modalConfirmacionFinal').classList.add('show');
+        }
+
+        function ejecutarAprobacionMaster() {
+            // Verificar si todo fue aprobado, o si hay rechazos
+            let docIdsConCorreccion = [];
+            let detalleMotivos = "";
+
+            for (let person in documentosData) {
+                const docsObj = documentosData[person] || [];
+                docsObj.forEach(doc => {
+                    const id = doc.fileId;
+                    if (validacionEstado[id] === 'correccion') {
+                        docIdsConCorreccion.push(doc.nombre);
+                        detalleMotivos += `${doc.nombre.replace(/_\[REG_.*?\]/, '').replace(/_/g, ' ')}:\n${motivosCorreccion[id]}\n\n`;
+                    }
+                });
+            }
+
+            const payloadMaster = {
                 cdr: registroActual,
                 tipo: tipoActual,
-                estado: 'rechazado',
-                observaciones: motivo
+                estado: docIdsConCorreccion.length === 0 ? 'aprobado' : 'correccion',
+                documentosCorregir: docIdsConCorreccion, // Empty if all approved
+                observaciones: detalleMotivos.trim()
             };
 
-            google.script.run
-                .withSuccessHandler(function (result) {
-                    mostrarToast('❌ Documentos rechazados', 'error');
-                    cerrarModal('modalValidacion');
-                    cargarDatos();
-                })
-                .withFailureHandler(function (error) {
-                    mostrarToast('Error al rechazar documentos', 'error');
-                })
-                .procesarValidacion(datos);
+            const btn = document.getElementById('btnEjecutarAprobacionMaster');
+            const ogText = btn.textContent;
+            btn.textContent = 'Procesando...';
+            btn.disabled = true;
+
+            // Decidir a qué función backend mandar según resultado final
+            if (payloadMaster.estado === 'aprobado') {
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        mostrarToast('✅ Todo Aprobado Exitosamente', 'success');
+                        cerrarModal('modalConfirmacionFinal');
+                        cerrarModal('modalValidacion');
+                        cargarDatos();
+                    })
+                    .withFailureHandler(function (error) {
+                        mostrarToast('Error al aprobar final: ' + error, 'error');
+                        btn.textContent = ogText;
+                        btn.disabled = false;
+                    })
+                    .procesarValidacion(payloadMaster);
+            } else {
+                // Hay correcciones
+                google.script.run
+                    .withSuccessHandler(function (result) {
+                        mostrarToast('📝 Se envió correo solicitando actualizaciones', 'warning');
+                        cerrarModal('modalConfirmacionFinal');
+                        cerrarModal('modalValidacion');
+                        cargarDatos();
+                    })
+                    .withFailureHandler(function (error) {
+                        mostrarToast('Error al solicitar correcciones: ' + error, 'error');
+                        btn.textContent = ogText;
+                        btn.disabled = false;
+                    })
+                    .enviarCorrecciones(payloadMaster);
+            }
         }
 
         // Funciones auxiliares

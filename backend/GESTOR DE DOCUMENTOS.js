@@ -290,7 +290,8 @@ function doGet(e) {
         // Devolvemos DIRECTAMENTE el objeto, corsResponse lo envolverá
         const cdr = e.parameter.cdr;
         const tipo = e.parameter.tipo;
-        result = verificarEstadoLink(cdr, tipo);
+        const docs = e.parameter.docs; // Parameter passed through by validador.html
+        result = verificarEstadoLink(cdr, tipo, docs);
         break;
 
       case 'obtenerRegistrosInquilinos':
@@ -874,7 +875,7 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
 /**
  * Verificar estado del link y determinar acción
  */
-function verificarEstadoLink(cdr, tipo) {
+function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
@@ -909,6 +910,7 @@ function verificarEstadoLink(cdr, tipo) {
         status = 'correccion';
         mensaje = 'Se requieren correcciones en tu formulario.';
         redirectUrl += '&modo=correccion';
+        if (docsParaCorreccion) redirectUrl += '&docs=' + encodeURIComponent(docsParaCorreccion);
       } else if (detalles.includes('Documentos del inquilino aprobados')) {
         status = 'aprobado';
         mensaje = 'Tus documentos ya han sido aprobados. El proceso continúa con el propietario.';
@@ -924,6 +926,7 @@ function verificarEstadoLink(cdr, tipo) {
         status = 'correccion';
         mensaje = 'Se requieren correcciones en tu formulario.';
         redirectUrl += '&modo=correccion';
+        if (docsParaCorreccion) redirectUrl += '&docs=' + encodeURIComponent(docsParaCorreccion);
       } else if (detalles.includes('Documentos completos') || detalles.includes('Listo para generar contrato')) {
         status = 'aprobado';
         mensaje = 'Tus documentos han sido aprobados y el contrato está en proceso.';
@@ -964,7 +967,7 @@ function obtenerRegistrosInquilinos() {
     for (let i = 2; i <= lastRow; i++) {
       const detalles = sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue().toString();
 
-      if (detalles.includes('Formulario del inquilino') || detalles.includes('Documentación de inquilino recibida')) {
+      if (detalles.includes('Formulario del inquilino') || detalles.includes('Documentación de inquilino recibida') || detalles.includes('Corrección solicitada al inquilino')) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
         const cdrValue = obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO');
 
@@ -1799,32 +1802,49 @@ function obtenerDocumentosDelCDR(cdr) {
             }
 
             if (variosFolder) {
-              // SOLO escanear las 3 carpetas específicas del formulario
-              const carpetasObjetivo = [
-                { buscar: '2- CEDULA DEL INQUILINO', prefijo: '🪪 [Inquilino]' },
-                { buscar: '3- CEDULA DE CODEUDOR', prefijo: '🪪 [Codeudor]' },
-                { buscar: '6- PAGO DE LOS DERECHOS', prefijo: '💲 [Pago]' }
-              ];
-
               const varSubs = variosFolder.getFolders();
               while (varSubs.hasNext()) {
                 const subFolder = varSubs.next();
                 const subName = subFolder.getName();
 
-                for (const objetivo of carpetasObjetivo) {
-                  if (subName.includes(objetivo.buscar) || subName.startsWith(objetivo.buscar.substring(0, 4))) {
-                    const archivos = subFolder.getFiles();
-                    while (archivos.hasNext()) {
-                      const file = archivos.next();
-                      documentos.inquilino.push({
-                        nombre: objetivo.prefijo + ' ' + file.getName(),
-                        url: file.getUrl(),
-                        fileId: file.getId(),
-                        tipo: file.getMimeType(),
-                        tamaño: file.getSize()
-                      });
+                if (subName.includes('2- CEDULA DEL INQUILINO') || subName.includes('6- PAGO')) {
+                  // Van al tab del Inquilino
+                  let pre = subName.includes('PAGO') ? '💲 [Pago]' : '🪪 [Inquilino]';
+                  const archivos = subFolder.getFiles();
+                  while (archivos.hasNext()) {
+                    const file = archivos.next();
+                    documentos.inquilino.push({
+                      nombre: pre + ' ' + file.getName(),
+                      url: file.getUrl(),
+                      fileId: file.getId(),
+                      tipo: file.getMimeType(),
+                      tamaño: file.getSize()
+                    });
+                  }
+                } else if (subName.includes('3- CEDULA DE CODEUDOR')) {
+                  // Clasificar por número de Codeudor
+                  const archivos = subFolder.getFiles();
+                  while (archivos.hasNext()) {
+                    const file = archivos.next();
+                    const fName = file.getName();
+                    let codIndex = 0; // Por defecto Codeudor 1 (codeudor_0 en la UI)
+
+                    // Buscar el _COD_N_ en el nombre
+                    const match = fName.match(/_COD_(\d+)_/);
+                    if (match) {
+                      codIndex = parseInt(match[1], 10) - 1; // COD_1 -> 0, COD_2 -> 1
                     }
-                    break;
+
+                    const key = 'codeudor_' + codIndex;
+                    if (!documentos[key]) documentos[key] = [];
+
+                    documentos[key].push({
+                      nombre: `🪪 [Codeudor ${codIndex + 1}] ` + fName,
+                      url: file.getUrl(),
+                      fileId: file.getId(),
+                      tipo: file.getMimeType(),
+                      tamaño: file.getSize()
+                    });
                   }
                 }
               }
@@ -2528,6 +2548,45 @@ function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
 }
 
 /**
+ * Mapea los nombres físicos de Drive a los IDs del Frontend
+ */
+function mapearNombresAFrontendIds(documentosNombres) {
+  const MAP = {
+    'CEDULA_INQU_FRONTAL': 'docFront',
+    'CEDULA_INQU_REVERSO': 'docBack',
+    'SOPORTES_INGRESO_INQU': 'ingresos',
+    'CEDULA_COD_1_FRONTAL': 'coDocFront',
+    'CEDULA_COD_1_REVERSO': 'coDocBack',
+    'SOPORTES_INGRESO_COD_1': 'coIngresos',
+    'COMPROBANTE_PAGO_INQU': 'comprobantePago',
+    'CEDULA_PROP_FRONTAL': 'docFront',
+    'CEDULA_PROP_REVERSO': 'docBack',
+    'CERT_TRADICION': 'certTradicion',
+    'SARLAFT': 'sarlaft',
+    'CERT_BANCARIO': 'certBancario',
+    'FACTURA_AGUA': 'facturaAgua',
+    'FACTURA_LUZ': 'facturaLuz',
+    'FACTURA_GAS': 'facturaGas',
+    'FACTURA_TELEFONO': 'facturaTelefono',
+    'FACTURA_INTERNET': 'facturaInternet'
+  };
+
+  const ids = [];
+  if (!documentosNombres || !Array.isArray(documentosNombres)) return ids;
+
+  for (const docName of documentosNombres) {
+    if (!docName) continue;
+    for (const [key, frontendId] of Object.entries(MAP)) {
+      if (docName.includes(key)) {
+        if (!ids.includes(frontendId)) ids.push(frontendId);
+        break; // Pasamos al siguiente documento
+      }
+    }
+  }
+  return ids;
+}
+
+/**
  * Enviar corrección al inquilino
  */
 function enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir = []) {
@@ -2543,8 +2602,11 @@ function enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir =
     const email = obtenerValorPorHeader(headers, row, 'CORREO INQUILINO');
     const nombre = obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO');
 
+    const docsMapeados = mapearNombresAFrontendIds(documentosCorregir);
+    const docsParam = docsMapeados.length > 0 ? `&docs=${encodeURIComponent(JSON.stringify(docsMapeados))}` : '';
+
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
+    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(cdr)}&modo=correccion${docsParam}`;
 
     const asunto = `Corrección requerida - Documentos de arrendamiento ${cdr}`;
 
@@ -2619,8 +2681,11 @@ function enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir
     const email = obtenerValorPorHeader(headers, row, 'Correo electrónico');
     const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
 
+    const docsMapeados = mapearNombresAFrontendIds(documentosCorregir);
+    const docsParam = docsMapeados.length > 0 ? `&docs=${encodeURIComponent(JSON.stringify(docsMapeados))}` : '';
+
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
+    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}&modo=correccion${docsParam}`;
 
     const asunto = `Corrección requerida - Documentos del propietario ${cdr}`;
 
@@ -2779,8 +2844,8 @@ function actualizarCampoValidacion(datos) {
  */
 function enviarCorreccionInquilino(datos) {
   try {
-    const { cdr, observaciones } = datos;
-    enviarEmailCorreccionInquilino(cdr, observaciones);
+    const { cdr, observaciones, documentosCorregir } = datos;
+    enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir || []);
 
     // Actualizar estado
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
@@ -2805,8 +2870,8 @@ function enviarCorreccionInquilino(datos) {
  */
 function enviarCorreccionPropietario(datos) {
   try {
-    const { cdr, observaciones } = datos;
-    enviarEmailCorreccionPropietario(cdr, observaciones);
+    const { cdr, observaciones, documentosCorregir } = datos;
+    enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir || []);
 
     // Actualizar estado
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);

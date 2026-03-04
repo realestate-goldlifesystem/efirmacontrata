@@ -208,7 +208,8 @@
       return {
         cdr: params.get('cdr'),
         action: params.get('action'), // formulario-inquilino o formulario-propietario
-        modo: params.get('modo') // correccion, etc.
+        modo: params.get('modo'), // correccion, etc.
+        docs: params.get('docs') // specific correction forms
       };
     }
 
@@ -240,7 +241,7 @@
     }
 
     function init() {
-      const { cdr, action, modo } = getParams();
+      const { cdr, action, modo, docs } = getParams();
 
       if (!cdr || !action) {
         showError('Enlace incompleto o inválido. Falta código de registro.');
@@ -263,7 +264,8 @@
         return;
       }
 
-      const apiUrl = `${CONFIG.API_URL}?accion=verificarLink&cdr=${encodeURIComponent(cdr)}&tipo=${rol}`;
+      let apiUrl = `${CONFIG.API_URL}?accion=verificarLink&cdr=${encodeURIComponent(cdr)}&tipo=${rol}`;
+      if (docs) apiUrl += `&docs=${encodeURIComponent(docs)}`;
 
       // Función para solicitud JSONP, superando el error CORS/Redirect de Fetch
       function jsonpRequest(url, callbackName) {
@@ -309,6 +311,11 @@
             if (!targetUrl) {
               targetUrl = `${action}.html?cdr=${encodeURIComponent(cdr)}`;
               if (modo) targetUrl += `&modo=${modo}`;
+              if (docs) targetUrl += `&docs=${encodeURIComponent(docs)}`;
+            } else {
+              // si targetUrl viene desde el backend sin los extras locales, podemos forzarlos:
+              if (modo && !targetUrl.includes('modo=')) targetUrl += `&modo=${modo}`;
+              if (docs && !targetUrl.includes('docs=')) targetUrl += `&docs=${encodeURIComponent(docs)}`;
             }
 
             window.location.href = targetUrl;
