@@ -1124,8 +1124,8 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
       Logger.log(`✅ Guardado: ${nuevoNombre} en "${targetFolder.getName()}"`);
     }
 
-    // 9. Escribir datos del formulario en "DATOS DE ELABORACION DE CONTRATO"
-    escribirDatosContratoDocNivel7(cedulaInquilinoFolder, datosFormulario, codigoRegistro);
+    // 9. Escribir datos del formulario en "DATOS DE ELABORACION DE CONTRATO" (Nivel 7 - VARIOS)
+    escribirDatosContratoDocNivel7(variosFolder, datosFormulario, codigoRegistro);
 
     return {
       carpetaPrincipal: inmuebleFolder.getUrl(),
@@ -1526,10 +1526,14 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
     }
 
     // Guardar codeudores como JSON
-    if (datosFormulario.codeudores && datosFormulario.codeudores.length > 0) {
-      const codeudorCol = headers.indexOf('CODEUDORES_JSON') + 1;
-      if (codeudorCol > 0) {
-        sheet.getRange(fila, codeudorCol).setValue(JSON.stringify(datosFormulario.codeudores));
+    const codeudorDatos = datosFormulario.codeudor || datosFormulario.codeudores;
+    if (codeudorDatos) {
+      const codeudorList = Array.isArray(codeudorDatos) ? codeudorDatos : [codeudorDatos];
+      if (codeudorList.length > 0) {
+        const codeudorCol = headers.indexOf('CODEUDORES_JSON') + 1;
+        if (codeudorCol > 0) {
+          sheet.getRange(fila, codeudorCol).setValue(JSON.stringify(codeudorList));
+        }
       }
     }
 
