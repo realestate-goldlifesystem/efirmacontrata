@@ -702,7 +702,8 @@
         const TEXT_FIELDS = [
           'tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
           'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
-          'coTipo', 'coNumero', 'coNombres', 'coApellidos', 'coEmail', 'coCelular'
+          'coTipo', 'coNumero', 'coConfirmarDocumento', 'coNombres', 'coApellidos',
+          'coEmail', 'coConfirmarEmail', 'coCelular', 'coConfirmarCelular'
         ];
         const data = { step: state.step, archivos: {}, campos: {} };
         TEXT_FIELDS.forEach(id => {
@@ -753,7 +754,26 @@
 
       // Restaurar datos previos al cargar
       restoreForm();
-      evaluateProgress();
+
+      // Marcar file-uploads restaurados en verde
+      Object.keys(state.archivos).forEach(k => {
+        const inp = document.getElementById(k);
+        if (inp) {
+          const wrapper = inp.closest('.file-upload');
+          if (wrapper) wrapper.classList.add('has-file');
+        }
+      });
+
+      // Re-evaluar revelación progresiva para TODOS los pasos con datos restaurados
+      (function reEvaluateAllSteps() {
+        const originalStep = state.step;
+        for (let s = 0; s <= state.max; s++) {
+          state.step = s;
+          evaluateProgress();
+        }
+        state.step = originalStep;
+        evaluateProgress();
+      })();
 
       // Pago
       el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
