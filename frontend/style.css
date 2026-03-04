@@ -350,25 +350,54 @@ textarea.input:focus {
   border-left-color: var(--danger);
 }
 
-/* LOADING */
-.loading {
-  text-align: center;
+/* LOADING OVERLAY PREMIUM */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.loading-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.loading-content {
+  background: white;
   padding: 40px;
-  display: none;
+  border-radius: var(--radius);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(220, 181, 60, 0.3);
+  max-width: 400px;
+  width: 90%;
+  transform: translateY(20px);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.loading.active {
-  display: block;
+.loading-overlay.active .loading-content {
+  transform: translateY(0);
 }
 
-.spinner {
-  border: 4px solid var(--light);
-  border-top: 4px solid var(--primary);
+.elegant-spinner {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 20px auto;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  border: 4px solid rgba(220, 181, 60, 0.2);
+  border-top-color: var(--secondary);
   animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
 }
 
 @keyframes spin {

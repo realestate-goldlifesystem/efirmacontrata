@@ -584,7 +584,13 @@
   <div id="toast" class="toast" role="status" aria-live="polite">Copiado al portapapeles</div>
 
   <!-- Loader -->
-  <div id="loader" class="loader hidden" aria-label="Procesando"></div>
+  <div id="loader" class="loading-overlay">
+    <div class="loading-content">
+      <div class="elegant-spinner"></div>
+      <h3 style="color:var(--primary); margin-top: 20px;">Procesando Información...</h3>
+      <p style="color:var(--text-muted); margin-top: 10px;">Por favor, espere mientras enviamos su solicitud.</p>
+    </div>
+  </div>
 
   <!-- Config global -->
   <script src="config.js"></script>
@@ -1565,7 +1571,8 @@
       }
 
       function toggleLoading(show) {
-        el.loader.classList.toggle('hidden', !show);
+        if (show) el.loader.classList.add('active');
+        else el.loader.classList.remove('active');
         el.btnPrev.disabled = !!show;
         el.btnNext.disabled = !!show;
         el.btnEnviar.disabled = !!show;
