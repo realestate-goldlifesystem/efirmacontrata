@@ -770,7 +770,18 @@
         }
       });
 
-
+      // Forzar re-evaluacion progresiva luego de restaurar
+      // (setTimeout 0 da tiempo al navegador de procesar los eventos sinteticos)
+      setTimeout(() => {
+        const savedStep = state.step;
+        // Evaluar todos los pasos con datos
+        for (let s = 0; s <= state.max; s++) {
+          state.step = s;
+          evaluateProgress();
+        }
+        state.step = savedStep;
+        evaluateProgress();
+      }, 50);
 
       // Pago
       el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
