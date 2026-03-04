@@ -327,7 +327,8 @@
           <div class="step" data-step="1">2</div>
           <div class="step" data-step="2">3</div>
           <div class="step" data-step="3">4</div>
-          <div class="step" data-step="4">✓</div>
+          <div class="step" data-step="4">5</div>
+          <div class="step" data-step="5">✓</div>
         </div>
 
         <!-- Step 1: Datos -->
@@ -476,31 +477,32 @@
               <span id="coCelError" class="error-msg">Los celulares no coinciden</span>
             </div>
           </div>
+        </div>
 
-          <div class="progressive-hidden" id="prog-inq-2-6">
-            <div class="hr"></div>
-            <h4>Documentos del Codeudor</h4>
+        <!-- Step 4: Documentos Codeudor -->
+        <div class="step-pane" data-pane="3">
+          <h3>Documentos del Codeudor</h3>
+          <p class="muted">Si registró un codeudor en el paso anterior, adjunte aquí sus documentos</p>
 
-            <div class="file-upload" id="prog-inq-2-7">
-              <input type="file" id="coDocFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-              <label for="coDocFront" class="file-label">
-                <span>📄 Documento (Frontal)</span>
-                <span id="coDocFrontName" class="file-name"></span>
-              </label>
-            </div>
+          <div class="file-upload" id="prog-inq-3-1">
+            <input type="file" id="coDocFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="coDocFront" class="file-label">
+              <span>📄 Documento (Frontal)</span>
+              <span id="coDocFrontName" class="file-name"></span>
+            </label>
+          </div>
 
-            <div class="file-upload progressive-hidden" id="prog-inq-2-8">
-              <input type="file" id="coDocBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-              <label for="coDocBack" class="file-label">
-                <span>📄 Documento (Reverso)</span>
-                <span id="coDocBackName" class="file-name"></span>
-              </label>
-            </div>
+          <div class="file-upload progressive-hidden" id="prog-inq-3-2">
+            <input type="file" id="coDocBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <label for="coDocBack" class="file-label">
+              <span>📄 Documento (Reverso)</span>
+              <span id="coDocBackName" class="file-name"></span>
+            </label>
           </div>
         </div>
 
-        <!-- Step 4: Pago -->
-        <div class="step-pane" data-pane="3">
+        <!-- Step 5: Pago -->
+        <div class="step-pane" data-pane="4">
           <h3>💳 Pago del Estudio</h3>
           <div class="card">
             <div class="card-body">
@@ -534,8 +536,8 @@
           </div>
         </div>
 
-        <!-- Step 5: Resumen -->
-        <div class="step-pane" data-pane="4">
+        <!-- Step 6: Resumen -->
+        <div class="step-pane" data-pane="5">
           <h3>📄 Resumen de Información</h3>
           <div id="resumen"></div>
         </div>
@@ -595,7 +597,7 @@
         modoCorreccion: false,
         docsCorreccion: [],
         step: 0,
-        max: 4,
+        max: 5,
         archivos: {},
         maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
       };
@@ -824,41 +826,17 @@
             }
           }
         });
-
-        // En modo corrección, ocultar campos de texto del codeudor (Step 2)
-        // Solo mostrar los file-upload que requieren corrección
-        const step2Pane = document.querySelector('.step-pane[data-pane="2"]');
-        if (step2Pane) {
-          // Ocultar todos los form-group con campos de texto del codeudor
-          step2Pane.querySelectorAll('.form-group').forEach(fg => {
-            // Si el form-group NO contiene un file-upload, ocultarlo
-            if (!fg.querySelector('.file-upload') && !fg.querySelector('.file-input')) {
-              fg.style.display = 'none';
-            }
-          });
-          // Ocultar también los grid-2col que son solo texto
-          step2Pane.querySelectorAll('.grid-2col').forEach(g => {
-            if (!g.querySelector('.file-upload') && !g.querySelector('.file-input')) {
-              g.style.display = 'none';
-            }
-          });
-          // Ocultar el h3 descriptivo si el paso solo tiene archivos aprobados
-          const coDocsNeeded = ['coDocFront', 'coDocBack', 'coIngresos'].filter(k => state.docsCorreccion.includes(k));
-          if (coDocsNeeded.length === 0) {
-            // El paso se saltará automáticamente, no necesita más ajustes
-          }
-        }
       }
 
       // --------- Wizard ----------
 
       // En modo corrección, mapea qué pasos contienen archivos por corregir
-      // Step 0 = datos texto, Step 1 = docFront/docBack/ingresos, Step 2 = codeudor, Step 3 = pago, Step 4 = resumen
+      // Step 0 = texto inq, Step 1 = docs inq, Step 2 = texto codeudor, Step 3 = docs codeudor, Step 4 = pago, Step 5 = resumen
       function getStepFileKeys(step) {
         if (step === 1) return ['docFront', 'docBack', 'ingresos'];
-        if (step === 2) return ['coDocFront', 'coDocBack', 'coIngresos'];
-        if (step === 3) return ['comprobantePago'];
-        return []; // Step 0 y 4 no tienen archivos
+        if (step === 3) return ['coDocFront', 'coDocBack', 'coIngresos'];
+        if (step === 4) return ['comprobantePago'];
+        return [];
       }
 
       function isStepNeededInCorrection(step) {
@@ -1156,22 +1134,15 @@
             el.coConfirmarCelular.classList.remove('invalid');
             el.coCelError.classList.remove('show');
           }
-          const prog26 = document.getElementById('prog-inq-2-6');
-          if (prog26) {
-            if (coCel && coConfCel && coCel === coConfCel && rx.phone.test(coCel)) {
-              prog26.classList.remove('progressive-hidden'); prog26.classList.add('progressive-visible');
-            } else {
-              prog26.classList.add('progressive-hidden'); prog26.classList.remove('progressive-visible');
-            }
-          }
-
+          // No progressive disclosure needed further in Step 2.
+        } else if (state.step === 3) {
           // Documentos del codeudor: revelación progresiva
-          const prog28 = document.getElementById('prog-inq-2-8');
-          if (prog28) {
+          const prog32 = document.getElementById('prog-inq-3-2');
+          if (prog32) {
             if (state.archivos['coDocFront']) {
-              prog28.classList.remove('progressive-hidden'); prog28.classList.add('progressive-visible');
+              prog32.classList.remove('progressive-hidden'); prog32.classList.add('progressive-visible');
             } else {
-              prog28.classList.add('progressive-hidden'); prog28.classList.remove('progressive-visible');
+              prog32.classList.add('progressive-hidden'); prog32.classList.remove('progressive-visible');
             }
           }
         }
@@ -1184,8 +1155,8 @@
       function getRequiredForStep(step) {
         if (state.modoCorreccion) {
           if (step === 1) return [{ id: 'docFront', isType: 'file' }, { id: 'docBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
-          if (step === 2) return [{ id: 'coDocFront', isType: 'file' }, { id: 'coDocBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
-          if (step === 3) return [{ id: 'comprobantePago', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 3) return [{ id: 'coDocFront', isType: 'file' }, { id: 'coDocBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 4) return [{ id: 'comprobantePago', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
           return [];
         }
 
@@ -1204,7 +1175,14 @@
           { id: 'docFront', isType: 'file' },
           { id: 'docBack', isType: 'file' }
         ];
-        if (step === 3) return [
+        if (step === 3) {
+          if (!el.coTipo.value.trim()) return [];
+          return [
+            { id: 'coDocFront', isType: 'file' },
+            { id: 'coDocBack', isType: 'file' }
+          ];
+        }
+        if (step === 4) return [
           { id: 'comprobantePago', isType: 'file' }
         ];
         return [];
@@ -1244,9 +1222,9 @@
             return getRequiredForStep(1).every(f => state.archivos[f.id]);
           }
           case 2: {
-            if (state.modoCorreccion) return ['coDocFront', 'coDocBack'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
+            if (state.modoCorreccion) return true;
 
-            // Codeudor: si tocó algún campo, exigir todos
+            // Codeudor Datos: si tocó algún campo, exigir todos
             const coStarted = el.coTipo.value.trim();
             if (!coStarted) return true; // no tocó nada, skip libre
             const coFields = [el.coTipo, el.coNumero, el.coConfirmarDocumento, el.coNombres, el.coApellidos,
@@ -1258,10 +1236,16 @@
             if (el.coEmail.value.trim() !== el.coConfirmarEmail.value.trim()) return false;
             if (!rx.phone.test(el.coCelular.value.trim())) return false;
             if (el.coCelular.value.trim() !== el.coConfirmarCelular.value.trim()) return false;
-            if (!state.archivos['coDocFront'] || !state.archivos['coDocBack']) return false;
             return true;
           }
           case 3: {
+            if (state.modoCorreccion) return ['coDocFront', 'coDocBack'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
+            const coStarted = el.coTipo.value.trim();
+            if (!coStarted) return true;
+            if (!state.archivos['coDocFront'] || !state.archivos['coDocBack']) return false;
+            return true;
+          }
+          case 4: {
             if (state.modoCorreccion) return !state.docsCorreccion.includes('comprobantePago') || !!state.archivos['comprobantePago'];
             return !!state.archivos['comprobantePago'];
           }
@@ -1327,18 +1311,9 @@
             return true;
           }
           case 2: {
-            if (state.modoCorreccion) {
-              const need = ['coDocFront', 'coDocBack'].filter(k => state.docsCorreccion.includes(k));
-              for (const k of need) {
-                if (!state.archivos[k]) {
-                  showAlert('warning', 'Falta documento del codeudor requerido para corrección.');
-                  return false;
-                }
-              }
-              return true;
-            }
+            if (state.modoCorreccion) return true;
 
-            // Codeudor: si tocó algún campo, exigir todos
+            // Codeudor Datos: si tocó algún campo, exigir todos
             const coStarted = el.coTipo.value.trim();
             if (!coStarted) return true;
             const coReq = [el.coTipo, el.coNumero, el.coConfirmarDocumento, el.coNombres, el.coApellidos,
@@ -1367,13 +1342,30 @@
             if (el.coCelular.value.trim() !== el.coConfirmarCelular.value.trim()) {
               el.coCelError.classList.add('show'); el.coConfirmarCelular.classList.add('invalid'); return false;
             }
+            return true;
+          }
+          case 3: {
+            if (state.modoCorreccion) {
+              const need = ['coDocFront', 'coDocBack'].filter(k => state.docsCorreccion.includes(k));
+              for (const k of need) {
+                if (!state.archivos[k]) {
+                  showAlert('warning', 'Falta documento del codeudor requerido para corrección.');
+                  return false;
+                }
+              }
+              return true;
+            }
+
+            const coStarted = el.coTipo.value.trim();
+            if (!coStarted) return true;
+
             if (!state.archivos['coDocFront'] || !state.archivos['coDocBack']) {
               showAlert('warning', 'Faltan documentos del codeudor (frontal y reverso).');
               return false;
             }
             return true;
           }
-          case 3: {
+          case 4: {
             if (state.modoCorreccion) {
               if (state.docsCorreccion.includes('comprobantePago') && !state.archivos['comprobantePago']) {
                 showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar.');
@@ -1503,7 +1495,7 @@
       // --------- Submit CORREGIDO ----------
       async function onSubmit() {
         // Validación final
-        for (let i = 0; i <= 3; i++) {
+        for (let i = 0; i <= 4; i++) {
           if (!validateStep(i)) { gotoStep(i); return; }
         }
 
