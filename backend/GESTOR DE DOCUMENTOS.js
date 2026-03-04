@@ -797,7 +797,7 @@ function verificarEstadoLink(cdr, tipo) {
     if (tipo === 'inquilino') {
       redirectUrl = `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr)}`;
 
-      if (detalles.includes('Formulario del inquilino diligenciado')) {
+      if (detalles.includes('Formulario del inquilino diligenciado') || detalles.includes('Documentación de inquilino recibida')) {
         status = 'diligenciado';
         mensaje = 'Ya has enviado tu formulario. Estamos validando tus documentos.';
       } else if (detalles.includes('Corrección solicitada al inquilino')) {
