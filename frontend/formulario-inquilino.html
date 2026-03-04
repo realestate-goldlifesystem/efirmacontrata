@@ -727,7 +727,13 @@
         // Restaurar campos de texto
         Object.entries(saved.campos || {}).forEach(([id, val]) => {
           const el2 = document.getElementById(id);
-          if (el2) el2.value = val;
+          if (el2) {
+            el2.value = val;
+            el2.dispatchEvent(new Event('input', { bubbles: true }));
+            if (el2.tagName.toLowerCase() === 'select') {
+              el2.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+          }
         });
 
         // Restaurar archivos al state y mostrar nombre guardado
@@ -1228,36 +1234,68 @@
             coDocFront: 'Codeudor: Doc. (frontal)', coDocBack: 'Codeudor: Doc. (reverso)',
             comprobantePago: 'Comprobante de Pago'
           }[k] || k;
-          return `<li>${nice}: <span class="muted">${escapeHTML(v?.nombre || '—')}</span></li>`;
+          return `<div class="summary-file"><i class="fas fa-file-alt"></i> ${nice}: ${escapeHTML(v?.nombre || '—')}</div>`;
         }).join('');
 
         const co = [el.coTipo.value, el.coNumero.value, el.coNombres.value, el.coApellidos.value, el.coEmail.value, el.coCelular.value].some(Boolean);
 
         el.resumen.innerHTML = `
-        <div class="card">
-          <div class="card-body">
-            <h3>Datos</h3>
-            <div class="grid-2col" style="margin-top:10px">
-              <div><strong>Documento:</strong> <span class="muted">${escapeHTML(el.tipoDocumento.value || '')} ${escapeHTML(el.numeroDocumento.value || '')}</span></div>
-              <div><strong>Nombre:</strong> <span class="muted">${escapeHTML(el.nombres.value || '')} ${escapeHTML(el.apellidos.value || '')}</span></div>
-              <div><strong>Correo:</strong> <span class="muted">${escapeHTML(el.email.value || '')}</span></div>
-              <div><strong>Celular:</strong> <span class="muted">${escapeHTML(el.celular.value || '')}</span></div>
+          <div class="summary-container">
+            <div class="summary-title"><i class="fas fa-clipboard-check"></i> Verificación Final</div>
+            
+            <div class="summary-section">
+              <h4>Datos del Inquilino</h4>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <span class="summary-label">Documento</span>
+                  <span class="summary-value">${escapeHTML(el.tipoDocumento.value || '')} ${escapeHTML(el.numeroDocumento.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Nombre Completo</span>
+                  <span class="summary-value">${escapeHTML(el.nombres.value || '')} ${escapeHTML(el.apellidos.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Correo Electrónico</span>
+                  <span class="summary-value">${escapeHTML(el.email.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Celular</span>
+                  <span class="summary-value">${escapeHTML(el.celular.value || '')}</span>
+                </div>
+              </div>
             </div>
+
             ${co ? `
-            <div class="hr"></div>
-            <h3>Codeudor</h3>
-            <div class="grid-2col" style="margin-top:10px">
-              <div><strong>Documento:</strong> <span class="muted">${escapeHTML(el.coTipo.value || '')} ${escapeHTML(el.coNumero.value || '')}</span></div>
-              <div><strong>Nombre:</strong> <span class="muted">${escapeHTML(el.coNombres.value || '')} ${escapeHTML(el.coApellidos.value || '')}</span></div>
-              <div><strong>Correo:</strong> <span class="muted">${escapeHTML(el.coEmail.value || '')}</span></div>
-              <div><strong>Celular:</strong> <span class="muted">${escapeHTML(el.coCelular.value || '')}</span></div>
+            <div class="summary-section">
+              <h4>Datos del Codeudor</h4>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <span class="summary-label">Documento</span>
+                  <span class="summary-value">${escapeHTML(el.coTipo.value || '')} ${escapeHTML(el.coNumero.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Nombre Completo</span>
+                  <span class="summary-value">${escapeHTML(el.coNombres.value || '')} ${escapeHTML(el.coApellidos.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Correo Electrónico</span>
+                  <span class="summary-value">${escapeHTML(el.coEmail.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Celular</span>
+                  <span class="summary-value">${escapeHTML(el.coCelular.value || '')}</span>
+                </div>
+              </div>
             </div>` : ''}
-            <div class="hr"></div>
-            <h3>Archivos</h3>
-            <ul style="margin-top:8px">${files || '<li class="muted">Sin archivos</li>'}</ul>
+
+            <div class="summary-section">
+              <h4>Archivos Adjuntos</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                ${files || '<span class="muted">Sin archivos adjuntos</span>'}
+              </div>
+            </div>
           </div>
-        </div>
-      `;
+        `;
       }
 
       // --------- Pagos ----------
@@ -1379,18 +1417,6 @@
         div.textContent = str || '';
         return div.innerHTML;
       }
-
-      // Re-evaluar revelación progresiva para TODOS los pasos con datos restaurados
-      // (se ejecuta al final para que const rx y demás ya estén inicializados)
-      (function reEvaluateAllSteps() {
-        const originalStep = state.step;
-        for (let s = 0; s <= state.max; s++) {
-          state.step = s;
-          evaluateProgress();
-        }
-        state.step = originalStep;
-        evaluateProgress();
-      })();
     })();
   </script>
 </body>

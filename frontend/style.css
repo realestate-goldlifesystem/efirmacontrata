@@ -455,6 +455,89 @@ textarea.input:focus {
   }
 }
 
+
+
+/* ===== SUMMARY STYLING ===== */
+.summary-container {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 25px;
+  margin-top: 20px;
+}
+
+.summary-title {
+  color: var(--primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--secondary);
+  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.summary-title i {
+  color: var(--secondary);
+}
+
+.summary-section {
+  background: var(--light);
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.summary-section h4 {
+  color: var(--text-color);
+  font-size: 1rem;
+  margin: 0 0 15px 0;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-size: 0.95rem;
+  color: var(--text-color);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.summary-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(220, 181, 60, 0.1);
+  color: var(--secondary);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin: 4px 0;
+}
+
 /* UTILIDADES */
 .text-center {
   text-align: center;
