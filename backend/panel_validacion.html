@@ -1204,6 +1204,32 @@
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay"
+        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; display:none; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:2rem 3rem; border-radius:16px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+            <div class="spinner"
+                style="margin:0 auto 1rem; width:40px; height:40px; border:4px solid #e2e8f0; border-top-color:#FFD700; border-radius:50%; animation:spin 0.8s linear infinite;">
+            </div>
+            <p style="margin:0; font-weight:600; color:#1e293b; font-size:1.1rem;" id="loadingText">Cargando
+                documentos...</p>
+            <p style="margin:0.5rem 0 0; color:#64748b; font-size:0.9rem;">Buscando archivos en Drive, espere un momento
+            </p>
+        </div>
+    </div>
+    <style>
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loadingOverlay.show {
+            display: flex !important;
+        }
+    </style>
+
     <!-- Toast Notification -->
     <div id="toast" class="toast">
         <span id="toastMessage">Mensaje</span>
@@ -1216,6 +1242,7 @@
         let tipoActual = null;
         let documentoActual = null;
         let documentosData = {};
+        let registrosData = { inquilinos: [], propietarios: [] };
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function () {
@@ -1232,10 +1259,7 @@
 
         // Event Listeners
         function configurarEventListeners() {
-            // Listener para selección múltiple de correcciones
-            document.getElementById('selectCorrecciones').addEventListener('change', function () {
-                actualizarTagsCorrecciones();
-            });
+            // Sin listeners legacy
         }
 
         // Cambiar Tab
@@ -1253,6 +1277,7 @@
         function cargarRegistrosInquilinos() {
             google.script.run
                 .withSuccessHandler(function (registros) {
+                    registrosData.inquilinos = registros || [];
                     mostrarRegistrosInquilinos(registros);
                     actualizarEstadisticas('inquilinos', registros);
                 })
@@ -1267,6 +1292,7 @@
         function cargarRegistrosPropietarios() {
             google.script.run
                 .withSuccessHandler(function (registros) {
+                    registrosData.propietarios = registros || [];
                     mostrarRegistrosPropietarios(registros);
                     actualizarEstadisticas('propietarios', registros);
                 })
@@ -1562,18 +1588,31 @@
             });
         }
 
+        // Mostrar / Ocultar loading overlay
+        function mostrarLoading(texto) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (texto) document.getElementById('loadingText').textContent = texto;
+            overlay.classList.add('show');
+        }
+        function ocultarLoading() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+
         // Validar Inquilino
         function validarInquilino(cdr) {
             registroActual = cdr;
             tipoActual = 'inquilino';
+            mostrarLoading('Cargando documentos del inquilino...');
 
             // Cargar documentos y mostrar modal
             google.script.run
                 .withSuccessHandler(function (data) {
+                    ocultarLoading();
                     mostrarModalValidacion(cdr, 'inquilino', data);
                 })
                 .withFailureHandler(function (error) {
-                    mostrarToast('Error al cargar documentos', 'error');
+                    ocultarLoading();
+                    mostrarToast('Error al cargar documentos: ' + error, 'error');
                 })
                 .obtenerDocumentosDelCDR(cdr);
         }
@@ -1582,14 +1621,17 @@
         function validarPropietario(cdr) {
             registroActual = cdr;
             tipoActual = 'propietario';
+            mostrarLoading('Cargando documentos del propietario...');
 
             // Cargar documentos y mostrar modal
             google.script.run
                 .withSuccessHandler(function (data) {
+                    ocultarLoading();
                     mostrarModalValidacion(cdr, 'propietario', data);
                 })
                 .withFailureHandler(function (error) {
-                    mostrarToast('Error al cargar documentos', 'error');
+                    ocultarLoading();
+                    mostrarToast('Error al cargar documentos: ' + error, 'error');
                 })
                 .obtenerDocumentosDelCDR(cdr);
         }
