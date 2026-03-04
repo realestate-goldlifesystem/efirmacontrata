@@ -857,9 +857,9 @@ function obtenerRegistrosInquilinos() {
     const registros = [];
 
     for (let i = 2; i <= lastRow; i++) {
-      const detalles = sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue();
+      const detalles = sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue().toString();
 
-      if (detalles.includes('Formulario del inquilino')) {
+      if (detalles.includes('Formulario del inquilino') || detalles.includes('Documentación de inquilino recibida')) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
 
         registros.push({
@@ -965,9 +965,6 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
     if (datosFormulario.inquilino.email) {
       enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario);
     }
-
-    // Inmediatamente enviamos el email al propietario para que continúe el flujo
-    enviarEmailPropietario(codigoRegistro);
 
     return {
       success: true,

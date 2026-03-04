@@ -1771,7 +1771,7 @@
                 return { texto: 'APROBADO', clase: 'success' };
             } else if (detalles.includes('corrección') || detalles.includes('Corrección')) {
                 return { texto: 'EN CORRECCIÓN', clase: 'warning' };
-            } else if (detalles.includes('diligenciado') || detalles.includes('Pendiente validación')) {
+            } else if (detalles.includes('diligenciado') || detalles.includes('Pendiente validación') || detalles.includes('recibida')) {
                 return { texto: 'PENDIENTE', clase: 'info' };
             } else {
                 return { texto: 'NUEVO', clase: 'warning' };
