@@ -1744,6 +1744,14 @@
 
         // Validar Inquilino
         function validarInquilino(cdr) {
+            // Guard: verificar si ya se envió una corrección pendiente
+            const registro = registrosData.inquilinos.find(r => r.cdr === cdr);
+            if (registro && registro.detalles && (registro.detalles.includes('Corrección solicitada') || registro.detalles.includes('corrección'))) {
+                if (!confirm('⚠️ Este registro ya tiene una corrección pendiente enviada al inquilino.\n\nSi abres y vuelves a procesar, se enviará otro correo duplicado.\n\n¿Deseas continuar de todas formas?')) {
+                    return;
+                }
+            }
+
             registroActual = cdr;
             tipoActual = 'inquilino';
             mostrarLoading('Cargando documentos del inquilino...');
@@ -1761,8 +1769,15 @@
                 .obtenerDocumentosDelCDR(cdr);
         }
 
-        // Validar Propietario
         function validarPropietario(cdr) {
+            // Guard: verificar si ya se envió una corrección pendiente
+            const registro = registrosData.propietarios.find(r => r.cdr === cdr);
+            if (registro && registro.detalles && (registro.detalles.includes('Corrección solicitada') || registro.detalles.includes('corrección'))) {
+                if (!confirm('⚠️ Este registro ya tiene una corrección pendiente enviada al propietario.\n\nSi abres y vuelves a procesar, se enviará otro correo duplicado.\n\n¿Deseas continuar de todas formas?')) {
+                    return;
+                }
+            }
+
             registroActual = cdr;
             tipoActual = 'propietario';
             mostrarLoading('Cargando documentos del propietario...');
@@ -2044,14 +2059,13 @@
 
             mostrarToast('Documento marcado como APROBADO', 'success');
 
-            // Re-render tabs and current doc
+            // Re-render tabs
             renderDocumentTabs(personaActivaKey);
-            const activeTab = document.getElementById('dtab_' + documentoActual.id);
-            if (activeTab) {
-                cambiarDocumento(documentoActual.id, documentoActual.url, documentoActual.tipo, documentoActual.nombre, activeTab);
-            }
 
             verificarAprobacionGlobal();
+
+            // Auto-advance to the next unvalidated document
+            avanzarAlSiguienteDocumento();
         }
 
         function mostrarRechazoDocumentoActual() {
@@ -2080,14 +2094,58 @@
 
             mostrarToast('Documento marcado para ACTUALIZAR', 'warning');
 
-            // Re-render tabs and current doc
+            // Re-render tabs
             renderDocumentTabs(personaActivaKey);
-            const activeTab = document.getElementById('dtab_' + documentoActual.id);
-            if (activeTab) {
-                cambiarDocumento(documentoActual.id, documentoActual.url, documentoActual.tipo, documentoActual.nombre, activeTab);
-            }
 
             verificarAprobacionGlobal();
+
+            // Auto-advance to the next unvalidated document
+            avanzarAlSiguienteDocumento();
+        }
+
+        /**
+         * Auto-avanza al siguiente documento no evaluado.
+         * Si todos los docs de la persona activa ya están evaluados,
+         * salta a la siguiente persona tab (ej: Inquilino → Codeudor 1).
+         */
+        function avanzarAlSiguienteDocumento() {
+            const docsList = documentosData[personaActivaKey] || [];
+
+            // Buscar el siguiente doc sin evaluar en la persona actual
+            const nextDoc = docsList.find(doc => !validacionEstado[doc.fileId]);
+
+            if (nextDoc) {
+                // Hay un doc pendiente en esta persona, seleccionarlo
+                const btnRef = document.getElementById('dtab_' + nextDoc.fileId);
+                cambiarDocumento(nextDoc.fileId, nextDoc.url, nextDoc.tipo, nextDoc.nombre, btnRef);
+                return;
+            }
+
+            // Todos los docs de esta persona están evaluados.
+            // Buscar la siguiente persona con docs sin evaluar.
+            const personKeys = Object.keys(documentosData);
+            const currentIdx = personKeys.indexOf(personaActivaKey);
+
+            for (let i = 1; i < personKeys.length; i++) {
+                const nextPersonKey = personKeys[(currentIdx + i) % personKeys.length];
+                const nextPersonDocs = documentosData[nextPersonKey] || [];
+                const pendingDoc = nextPersonDocs.find(doc => !validacionEstado[doc.fileId]);
+
+                if (pendingDoc) {
+                    // Cambiar a esa persona y seleccionar el primer doc pendiente
+                    cambiarPersona(nextPersonKey);
+                    mostrarToast(`Pasando a ${nextPersonKey.replace('_', ' ')}...`, 'info');
+                    return;
+                }
+            }
+
+            // Si llegamos aquí, TODOS los docs de TODAS las personas están evaluados.
+            // El botón global ya debería estar visible por verificarAprobacionGlobal().
+            // Quedarnos en el último doc evaluado.
+            if (documentoActual) {
+                const btnRef = document.getElementById('dtab_' + documentoActual.id);
+                if (btnRef) cambiarDocumento(documentoActual.id, documentoActual.url, documentoActual.tipo, documentoActual.nombre, btnRef);
+            }
         }
 
         // --- SISTEMA MASTER DE APROBACIÓN ---
