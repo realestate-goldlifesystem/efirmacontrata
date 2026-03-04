@@ -779,16 +779,7 @@
         bindPagos();
         bindProgressValidators();
 
-        // Re-evaluar revelación progresiva para TODOS los pasos
-        (function reEvaluateAllSteps() {
-          const originalStep = state.step;
-          for (let s = 0; s <= state.max; s++) {
-            state.step = s;
-            evaluateProgress();
-          }
-          state.step = originalStep;
-          evaluateProgress();
-        })();
+
       }
 
       // --------- Corrección ----------
@@ -819,6 +810,17 @@
           });
         });
       }
+
+      // Re-evaluar revelación progresiva para TODOS los pasos
+      (function reEvaluateAllSteps() {
+        const originalStep = state.step;
+        for (let s = 0; s <= state.max; s++) {
+          state.step = s;
+          evaluateProgress();
+        }
+        state.step = originalStep;
+        evaluateProgress();
+      })();
 
       function gotoStep(n, first = false) {
         state.step = Math.max(0, Math.min(n, state.max));
