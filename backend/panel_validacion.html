@@ -360,7 +360,7 @@
 
         .modal-header {
             background: linear-gradient(135deg, var(--primary) 0%, #FFA500 100%);
-            padding: 1.5rem;
+            padding: 0.75rem 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -369,6 +369,7 @@
         .modal-header h2 {
             color: var(--dark);
             margin: 0;
+            font-size: 1.1rem;
         }
 
         .close-modal {
@@ -386,8 +387,8 @@
         }
 
         .modal-body {
-            padding: 2rem;
-            max-height: calc(90vh - 80px);
+            padding: 1rem 1.5rem;
+            max-height: calc(90vh - 60px);
             overflow-y: auto;
         }
 
@@ -1456,26 +1457,13 @@
 
         // Mostrar información del registro
         function mostrarInfoRegistro(cdr, tipo) {
-            // Aquí se cargarían los datos específicos del registro
             const infoHtml = `
-                <div class="data-item">
-                    <span class="data-label">CDR:</span>
-                    <div class="data-value-group">
-                        <span class="data-value">${cdr}</span>
-                        <button class="btn-copy" onclick="copiarTexto('${cdr}', this)">📋</button>
+                <div style="display:flex; gap:2rem; flex-wrap:wrap; padding:0.5rem 0;">
+                    <div><strong>CDR:</strong> <span>${cdr}</span>
+                        <button class="btn-copy" onclick="copiarTexto('${cdr}', this)" style="margin-left:4px;">📋</button>
                     </div>
-                </div>
-                <div class="data-item">
-                    <span class="data-label">Tipo:</span>
-                    <div class="data-value-group">
-                        <span class="data-value">${tipo.toUpperCase()}</span>
-                    </div>
-                </div>
-                <div class="data-item">
-                    <span class="data-label">Fecha Registro:</span>
-                    <div class="data-value-group">
-                        <span class="data-value">${new Date().toLocaleDateString()}</span>
-                    </div>
+                    <div><strong>Tipo:</strong> ${tipo.toUpperCase()}</div>
+                    <div><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</div>
                 </div>
             `;
 
@@ -1487,9 +1475,10 @@
             let html = '';
 
             documentos.forEach((doc, index) => {
+                const fileId = doc.fileId || '';
                 html += `
                     <div class="doc-item ${index === 0 ? 'active' : ''}" 
-                         onclick="verPreview('${doc.url}', '${doc.tipo}', '${doc.nombre}', this)"
+                         onclick="verPreview('${doc.url}', '${doc.tipo}', '${doc.nombre.replace(/'/g, "\\'")}', this, '${fileId}')"
                          data-index="${index}">
                         <div>
                             <div>${obtenerIconoDocumento(doc.tipo)} ${doc.nombre}</div>
@@ -1505,12 +1494,12 @@
 
             // Cargar preview del primer documento si existe
             if (documentos.length > 0) {
-                verPreview(documentos[0].url, documentos[0].tipo, documentos[0].nombre);
+                verPreview(documentos[0].url, documentos[0].tipo, documentos[0].nombre, null, documentos[0].fileId);
             }
         }
 
         // Ver preview del documento
-        function verPreview(url, tipo, nombre, elemento) {
+        function verPreview(url, tipo, nombre, elemento, fileId) {
             documentoActual = { url, tipo, nombre };
 
             // Actualizar selección activa
@@ -1524,23 +1513,21 @@
             // Actualizar título del preview
             document.getElementById('previewTitle').textContent = nombre;
 
-            // Mostrar preview según tipo
+            // Mostrar preview usando Google Drive embed URL
             const previewContent = document.getElementById('previewContent');
 
-            if (tipo.includes('pdf')) {
+            if (fileId) {
+                // Usar la URL de preview de Google Drive que funciona en iframes
+                const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
                 previewContent.innerHTML = `
-                    <iframe src="${url}" class="preview-iframe"></iframe>
-                `;
-            } else if (tipo.includes('image')) {
-                previewContent.innerHTML = `
-                    <img src="${url}" class="preview-image" alt="${nombre}">
+                    <iframe src="${embedUrl}" class="preview-iframe" allow="autoplay"></iframe>
                 `;
             } else {
                 previewContent.innerHTML = `
                     <div class="preview-placeholder">
-                        <p>⚠️ No se puede previsualizar este tipo de archivo</p>
+                        <p>⚠️ No se puede previsualizar este archivo</p>
                         <button class="btn btn-primary" onclick="abrirEnNuevaVentana()">
-                            Abrir en nueva ventana
+                            🔗 Abrir en Google Drive
                         </button>
                     </div>
                 `;

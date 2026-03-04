@@ -1673,45 +1673,66 @@ function obtenerDocumentosDelCDR(cdr) {
       propietario: []
     };
 
-    // --- LÓGICA DE INQUILINOS (BÚSQUEDA GLOBAL DENTRO DEL CDR) ---
-    // Buscar todos los archivos dentro de la carpeta del CDR que pertenezcan al Inquilino 
-    // y no estén en la papelera
+    // --- LÓGICA DE INQUILINOS (SOLO ARCHIVOS DE FORMULARIO) ---
+    // Navegar: ENTREGAS DEL INMUEBLE → AÑO → DOCUMENTOS DE ENTREGA - INQUILINO → subcarpetas
     try {
-      const cdrId = carpetaCDR.getId();
-      // Buscamos archivos que tengan las etiquetas típicas o que simplemente estén en ENTREGAS
-      const searchFiles = DriveApp.searchFiles(`'${cdrId}' in parents and trashed = false`);
-      procesarArchivosRecursivos(carpetaCDR, documentos.inquilino);
+      let entregasFolder = getFolderByNameHelper(carpetaCDR, 'ENTREGAS DEL INMUEBLE');
+      if (entregasFolder) {
+        let anioFolder = obtenerCarpetaAnioMasRecienteLocal(entregasFolder);
+        if (anioFolder) {
+          let docsInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+          if (docsInqFolder) {
+            // Buscar carpeta 4- VARIOS (contiene cédulas inquilino/codeudor y soportes)
+            let variosFolder = null;
+            const subF = docsInqFolder.getFolders();
+            while (subF.hasNext()) {
+              const sf = subF.next();
+              if (sf.getName().includes('VARIOS') || sf.getName().includes('4-')) {
+                variosFolder = sf;
+                break;
+              }
+            }
+
+            if (variosFolder) {
+              // Escanear solo las subcarpetas de formularios dentro de VARIOS
+              escanearCarpetaFormularios(variosFolder, documentos.inquilino);
+            }
+          }
+        }
+      }
     } catch (e) {
-      Logger.log('Error buscando archivos inquilino globalmente: ' + e);
+      Logger.log('Error buscando archivos inquilino: ' + e);
     }
 
-    // Función auxiliar para buscar anidado
-    function procesarArchivosRecursivos(folder, targetArray) {
-      // Ignorar la carpeta del propietario para no mezclar
-      if (folder.getName().startsWith('PROPIETARIO_')) return;
-
+    // Función auxiliar: escanea carpeta y subcarpetas buscando archivos de formulario
+    function escanearCarpetaFormularios(folder, targetArray) {
+      // Archivos sueltos en esta carpeta (excluyendo el Cerebro)
       const files = folder.getFiles();
       while (files.hasNext()) {
         const file = files.next();
         const fname = file.getName();
-        // Ignorar el cerebro y documentos del propietario
-        if (fname.includes('DATOS DE ELABORACION') || fname.includes('CEDULA_PROP') || fname.includes('DATOS_CONTRATO')) continue;
+        if (fname.includes('DATOS DE ELABORACION') || fname.includes('DATOS_CONTRATO')) continue;
 
-        let prefix = '📄 ';
-        if (fname.includes('CEDULA_INQU_') || fname.includes('CEDULA_COD_')) prefix = '📁 ';
-        if (fname.includes('COMPROBANTE_PAGO_')) prefix = '💲 ';
+        let prefix = '📄';
+        if (fname.includes('CEDULA_INQU_')) prefix = '🪪 [Inquilino]';
+        else if (fname.includes('CEDULA_COD_')) prefix = '🪪 [Codeudor]';
+        else if (fname.includes('SOPORTES_INGRESO_INQU_')) prefix = '📑 [Ingresos Inq]';
+        else if (fname.includes('SOPORTES_INGRESO_COD_')) prefix = '📑 [Ingresos Cod]';
+        else if (fname.includes('COMPROBANTE_PAGO_')) prefix = '💲 [Pago]';
 
         targetArray.push({
-          nombre: prefix + fname,
+          nombre: prefix + ' ' + fname,
           url: file.getUrl(),
-          tipo: determinarTipoDocumento(fname),
+          fileId: file.getId(),
+          tipo: file.getMimeType(),
           tamaño: file.getSize()
         });
       }
 
-      const subfolders = folder.getFolders();
-      while (subfolders.hasNext()) {
-        procesarArchivosRecursivos(subfolders.next(), targetArray);
+      // Subcarpetas (2- CEDULA, 3- CODEUDOR, 6- PAGO, etc.)
+      const subs = folder.getFolders();
+      while (subs.hasNext()) {
+        escanearCarpetaFormularios(subs.next(), targetArray);
       }
     }
 
