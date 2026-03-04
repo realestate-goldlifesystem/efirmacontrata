@@ -1699,8 +1699,8 @@ function obtenerDocumentosDelCDR(cdr) {
         if (fname.includes('DATOS DE ELABORACION') || fname.includes('CEDULA_PROP') || fname.includes('DATOS_CONTRATO')) continue;
 
         let prefix = '📄 ';
-        if (fname.includes('CED_INQ') || fname.includes('CED_COD')) prefix = '📁 ';
-        if (fname.includes('PAGO')) prefix = '💲 ';
+        if (fname.includes('CEDULA_INQU_') || fname.includes('CEDULA_COD_')) prefix = '📁 ';
+        if (fname.includes('COMPROBANTE_PAGO_')) prefix = '💲 ';
 
         targetArray.push({
           nombre: prefix + fname,
