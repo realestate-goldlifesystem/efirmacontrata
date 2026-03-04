@@ -1645,29 +1645,28 @@ function abrirPanelValidacion() {
  */
 function obtenerDocumentosDelCDR(cdr) {
   try {
-    const ROOT_FOLDER_ID = '1ozAkjspgSj6m2fN4tqqCm-mjrsux6ULi'; // Carpeta Inmuebles Raíz
-    const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
-
-    // 1. Encontrar la subcarpeta del inmueble por CDR (ej. "CDR - DIRECCION" o "CDR")
+    // 1. Encontrar la carpeta del CDR usando búsqueda global en Drive
+    //    (El CDR NO es hijo directo de INMUEBLES, está anidado: INMUEBLES → ARRIENDO → CDR)
     let carpetaCDR = null;
-    const folders = rootFolder.getFolders();
-    while (folders.hasNext()) {
-      const folder = folders.next();
-      if (folder.getName().startsWith(cdr + ' -') || folder.getName() === cdr) {
+    const cdrEscaped = cdr.replace(/'/g, "\\'");
+
+    // Búsqueda global por nombre exacto o que empiece con el CDR
+    const searchResults = DriveApp.searchFolders(`title contains '${cdrEscaped}' and trashed = false`);
+    while (searchResults.hasNext()) {
+      const folder = searchResults.next();
+      const fName = folder.getName();
+      if (fName === cdr || fName.startsWith(cdr + ' -') || fName.startsWith(cdr + '_')) {
         carpetaCDR = folder;
         break;
       }
     }
 
     if (!carpetaCDR) {
-      const exactFolders = rootFolder.getFoldersByName(cdr);
-      if (exactFolders.hasNext()) carpetaCDR = exactFolders.next();
-    }
-
-    if (!carpetaCDR) {
-      Logger.log('No se encontró CDR para documentos: ' + cdr);
+      Logger.log('❌ No se encontró carpeta CDR en Drive: ' + cdr);
       return { inquilino: [], propietario: [] };
     }
+
+    Logger.log('✅ Carpeta CDR encontrada: ' + carpetaCDR.getName() + ' (ID: ' + carpetaCDR.getId() + ')');
 
     const documentos = {
       inquilino: [],
