@@ -395,50 +395,88 @@
         /* Document Preview Container */
         .documents-container {
             display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 2rem;
-            height: 600px;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+            height: auto;
+            align-items: start;
+        }
+
+        .doc-left-col,
+        .doc-right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         .documents-list {
             background: var(--light);
             border-radius: var(--radius);
-            padding: 1rem;
+            padding: 1.5rem;
+        }
+
+        .documents-list h3 {
+            margin-bottom: 1rem;
+            color: var(--dark);
+            font-size: 1.1rem;
+        }
+
+        .lista-docs-scroll {
+            max-height: 260px;
+            /* Muestra ~2.5 tarjetas */
             overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Estilo Scrollbar personalizado para lista */
+        .lista-docs-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .lista-docs-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
         }
 
         .doc-item {
             background: var(--white);
-            padding: 1rem;
+            padding: 0.75rem 1.25rem;
             margin-bottom: 0.75rem;
-            border-radius: calc(var(--radius) / 2);
+            border-radius: 20px;
+            /* Ovalado */
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
         }
 
         .doc-item:hover {
             background: var(--primary);
             color: var(--dark);
-            transform: translateX(5px);
+            border-color: var(--primary);
+            transform: translateY(-2px);
         }
 
         .doc-item.active {
             background: var(--primary);
             color: var(--dark);
             font-weight: 600;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
         }
 
         .doc-type {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             opacity: 0.8;
+            margin-top: 2px;
         }
 
         .doc-size {
             font-size: 0.75rem;
             opacity: 0.6;
+            white-space: nowrap;
         }
 
         /* Preview Area */
@@ -448,6 +486,9 @@
             padding: 1rem;
             display: flex;
             flex-direction: column;
+            height: 480px;
+            /* Menos alto */
+            border: 1px solid #e2e8f0;
         }
 
         .preview-header {
@@ -598,7 +639,93 @@
             font-size: 0.875rem;
             display: inline-flex;
             align-items: center;
+        }
+
+        /* Validation Actions Box (Right Col) */
+        .validation-actions-box {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding: 1rem 0;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* Cerebro Editor (Left Col) */
+        .cerebro-editor {
+            background: #f8fafc;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .cerebro-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .cerebro-header h3 {
+            font-size: 1.1rem;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .btn-icon-hover {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .btn-icon-hover:hover {
+            opacity: 1;
+        }
+
+        .cerebro-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .cerebro-field {
+            display: flex;
+            flex-direction: column;
             gap: 0.25rem;
+        }
+
+        .cerebro-field label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .cerebro-field input {
+            padding: 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: var(--white);
+            color: var(--dark);
+            transition: all 0.2s;
+        }
+
+        .cerebro-content.readonly .cerebro-field input {
+            background: transparent;
+            border-color: transparent;
+            padding: 0;
+            pointer-events: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .cerebro-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
         }
 
         .correction-tag button {
@@ -966,80 +1093,113 @@
 
                 <!-- Container de Documentos y Preview -->
                 <div class="documents-container">
-                    <div class="documents-list">
-                        <h3>📁 Documentos Cargados</h3>
-                        <div id="listaDocumentos">
-                            <!-- Se llena dinámicamente -->
-                        </div>
-                    </div>
-                    <div class="preview-area">
-                        <div class="preview-header">
-                            <span id="previewTitle">Vista Previa</span>
-                            <div>
-                                <button class="btn btn-primary btn-sm" onclick="descargarDocumento()">
-                                    ⬇️ Descargar
-                                </button>
-                                <button class="btn btn-secondary btn-sm" onclick="abrirEnNuevaVentana()">
-                                    🔗 Abrir
-                                </button>
+
+                    <!-- COLUMNA IZQUIERDA -->
+                    <div class="doc-left-col">
+                        <!-- Lista de Documentos -->
+                        <div class="documents-list">
+                            <h3>📁 Documentos Cargados</h3>
+                            <div id="listaDocumentos" class="lista-docs-scroll">
+                                <!-- Se llena dinámicamente -->
                             </div>
                         </div>
-                        <div class="preview-content" id="previewContent">
-                            <div class="preview-placeholder">
-                                <p>👈 Selecciona un documento para ver la vista previa</p>
+
+                        <!-- Formulario de Datos Extraídos (Cerebro) -->
+                        <div class="cerebro-editor" id="cerebroEditor">
+                            <div class="cerebro-header">
+                                <h3>🧠 Datos Extraídos (Cerebro)</h3>
+                                <button class="btn-icon-hover" onclick="toggleEditCerebro()"
+                                    title="Editar Datos">✏️</button>
                             </div>
+                            <div id="cerebroContent" class="cerebro-content readonly">
+                                <div class="cerebro-field">
+                                    <label>Nombre Completo</label>
+                                    <input type="text" id="cerebro_nombre" value="Cargando...">
+                                </div>
+                                <div class="cerebro-field">
+                                    <label>Documento de Identidad</label>
+                                    <input type="text" id="cerebro_documento" value="Cargando...">
+                                </div>
+                                <div class="cerebro-field">
+                                    <label>Correo Electrónico</label>
+                                    <input type="email" id="cerebro_email" value="Cargando...">
+                                </div>
+                                <div class="cerebro-field">
+                                    <label>Teléfono Celular</label>
+                                    <input type="text" id="cerebro_celular" value="Cargando...">
+                                </div>
+                            </div>
+                            <div id="cerebroActions" class="cerebro-actions" style="display:none;">
+                                <button class="btn btn-secondary btn-sm"
+                                    onclick="cancelarEditCerebro()">Cancelar</button>
+                                <button class="btn btn-primary btn-sm" onclick="guardarCerebro()">💾 Guardar
+                                    Corrección</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA -->
+                    <div class="doc-right-col">
+                        <!-- Preview Area -->
+                        <div class="preview-area">
+                            <div class="preview-header">
+                                <span id="previewTitle" style="font-weight:600; color:var(--dark);">Vista Previa</span>
+                                <div>
+                                    <button class="btn btn-outline btn-sm" onclick="abrirEnNuevaVentana()"
+                                        style="padding:0.25rem 0.5rem;">
+                                        🔗 Abrir en Drive
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="preview-content" id="previewContent">
+                                <div class="preview-placeholder">
+                                    <p>👈 Selecciona un documento para ver la vista previa</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formulario de Correcciones Oculto (Se muestra al solicitar) -->
+                        <div class="corrections-form" id="panelCorrecciones" style="display:none; margin-top: 0;">
+                            <div class="corrections-title">
+                                ⚠️ Correcciones Requeridas
+                            </div>
+                            <div class="correction-field">
+                                <label>Seleccionar documentos a corregir:</label>
+                                <!-- Se llena dinámicamente con checkboxes de los documentos actuales -->
+                                <div id="checkboxesCorrecciones"
+                                    style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1rem; max-height: 150px; overflow-y: auto;">
+                                </div>
+                            </div>
+                            <div class="correction-field">
+                                <label>Motivo de rechazo / Instrucciones:</label>
+                                <textarea id="observacionesCorrecciones" rows="3"
+                                    placeholder="Explica qué está mal (ej: La cédula está borrosa, necesito que se vea claro el número)"></textarea>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; justify-content:flex-end;">
+                                <button class="btn btn-secondary btn-sm"
+                                    onclick="cancelarCorrecciones()">Cancelar</button>
+                                <button class="btn btn-danger btn-sm" onclick="enviarSolicitudCorrecciones()">Enviar
+                                    Solicitud</button>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Acción (Debajo del preview) -->
+                        <div class="validation-actions-box" id="boxAccionesPrincipales">
+                            <button class="btn btn-success" onclick="aprobarDocumentos()">
+                                ✅ Aprobar Todo
+                            </button>
+                            <button class="btn btn-warning" onclick="mostrarPanelCorrecciones()">
+                                📝 Solicitar Correcciones
+                            </button>
+                            <button class="btn btn-danger" onclick="rechazarDocumentos()">
+                                ❌ Rechazar Completo
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Checklist de Validación -->
-                <div class="validation-checklist">
-                    <div class="checklist-title">
-                        ✅ Lista de Validación
-                    </div>
-                    <div class="checklist-grid" id="checklistGrid">
-                        <!-- Se llena dinámicamente según el tipo -->
-                    </div>
-                </div>
-
-                <!-- Formulario de Correcciones -->
-                <div class="corrections-form">
-                    <div class="corrections-title">
-                        ⚠️ Correcciones Requeridas
-                    </div>
-                    <div class="correction-field">
-                        <label>Seleccionar documentos a corregir:</label>
-                        <select id="selectCorrecciones" multiple size="4">
-                            <option value="docIdentidad">Documento de Identidad</option>
-                            <option value="soporteIngresos">Soporte de Ingresos</option>
-                            <option value="certTradicion">Certificado Tradición</option>
-                            <option value="sarlaft">Formato SARLAFT</option>
-                            <option value="certBancario">Certificación Bancaria</option>
-                            <option value="servicios">Servicios Públicos</option>
-                        </select>
-                    </div>
-                    <div class="correction-field">
-                        <label>Observaciones específicas:</label>
-                        <textarea id="observacionesCorrecciones" rows="4"
-                            placeholder="Describa detalladamente qué debe corregirse..."></textarea>
-                    </div>
-                    <div class="corrections-list" id="correctionsList">
-                        <!-- Tags de correcciones seleccionadas -->
-                    </div>
-                </div>
-
-                <!-- Botones de Acción -->
-                <div class="registro-actions" style="margin-top: 2rem;">
-                    <button class="btn btn-success" onclick="aprobarDocumentos()">
-                        ✅ Aprobar Todo
-                    </button>
-                    <button class="btn btn-warning" onclick="solicitarCorrecciones()">
-                        📝 Solicitar Correcciones
-                    </button>
-                    <button class="btn btn-danger" onclick="rechazarDocumentos()">
-                        ❌ Rechazar
-                    </button>
-                </div>
+                <!-- Checklist de Validación (Opcional, abajo) -->
+                <!-- <div class="validation-checklist"> ... </div> -->
             </div>
         </div>
     </div>
@@ -1442,17 +1602,95 @@
             document.getElementById('modalTitle').textContent =
                 `📋 Validación de ${tipo === 'inquilino' ? 'Inquilino' : 'Propietario'} - ${cdr}`;
 
-            // Mostrar información del registro
+            // Mostrar información básica arriba
             mostrarInfoRegistro(cdr, tipo);
+
+            // Cargar datos editables del cerebro en la columna izquierda
+            cargarDatosCerebro(cdr, tipo);
 
             // Mostrar lista de documentos
             mostrarListaDocumentos(documentos[tipo] || []);
 
-            // Crear checklist según tipo
-            crearChecklist(tipo);
+            // Ocultar paneles extra y reiniciar UI
+            document.getElementById('panelCorrecciones').style.display = 'none';
+            document.getElementById('boxAccionesPrincipales').style.display = 'flex';
+            document.getElementById('observacionesCorrecciones').value = '';
 
             // Mostrar modal
             document.getElementById('modalValidacion').classList.add('show');
+        }
+
+        // Cargar datos del Cerebro en el panel editable
+        function cargarDatosCerebro(cdr, tipo) {
+            const list = tipo === 'inquilino' ? registrosData.inquilinos : registrosData.propietarios;
+            const registro = list.find(r => r.cdr === cdr);
+            if (!registro) return;
+
+            // Forzar volver a estado readonly al cargar
+            document.getElementById('cerebroContent').classList.add('readonly');
+            document.getElementById('cerebroActions').style.display = 'none';
+
+            if (tipo === 'inquilino') {
+                document.getElementById('cerebro_nombre').value = registro.inquilino.nombre || '';
+                document.getElementById('cerebro_documento').value = registro.inquilino.documento || '';
+                document.getElementById('cerebro_email').value = registro.inquilino.email || '';
+                document.getElementById('cerebro_celular').value = registro.inquilino.celular || '';
+            } else {
+                document.getElementById('cerebro_nombre').value = registro.propietario.nombre || '';
+                document.getElementById('cerebro_documento').value = registro.propietario.documento || '';
+                document.getElementById('cerebro_email').value = registro.propietario.email || '';
+                document.getElementById('cerebro_celular').value = registro.propietario.celular || '';
+            }
+        }
+
+        // Habilitar edición del cerebro
+        function toggleEditCerebro() {
+            document.getElementById('cerebroContent').classList.remove('readonly');
+            document.getElementById('cerebroActions').style.display = 'flex';
+        }
+
+        // Cancelar edición del cerebro
+        function cancelarEditCerebro() {
+            document.getElementById('cerebroContent').classList.add('readonly');
+            document.getElementById('cerebroActions').style.display = 'none';
+            // Restaurar datos originales
+            cargarDatosCerebro(registroActual, tipoActual);
+        }
+
+        // Guardar Cerebro Editado
+        function guardarCerebro() {
+            if (!confirm('¿Seguro que deseas guardar estos cambios en el Cerebro/Sheet?')) return;
+
+            const nuevosDatos = {
+                cdr: registroActual,
+                tipo: tipoActual,
+                nombre: document.getElementById('cerebro_nombre').value,
+                documento: document.getElementById('cerebro_documento').value,
+                email: document.getElementById('cerebro_email').value,
+                celular: document.getElementById('cerebro_celular').value
+            };
+
+            const btn = document.querySelector('#cerebroActions .btn-primary');
+            const originalText = btn.textContent;
+            btn.textContent = '⏳ Guardando...';
+            btn.disabled = true;
+
+            google.script.run
+                .withSuccessHandler(function () {
+                    mostrarToast('✅ Datos actualizados correctamente en Google', 'success');
+                    document.getElementById('cerebroContent').classList.add('readonly');
+                    document.getElementById('cerebroActions').style.display = 'none';
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    // Recargar vista principal en el fondo
+                    cargarDatos();
+                })
+                .withFailureHandler(function (error) {
+                    mostrarToast('Error al actualizar: ' + error, 'error');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                })
+                .actualizarDatosCerebro(nuevosDatos);
         }
 
         // Mostrar información del registro
@@ -1606,38 +1844,9 @@
             }
         }
 
-        // Actualizar tags de correcciones
-        function actualizarTagsCorrecciones() {
-            const select = document.getElementById('selectCorrecciones');
-            const container = document.getElementById('correctionsList');
-            const selected = Array.from(select.selectedOptions);
-
-            let html = '';
-            selected.forEach(option => {
-                html += `
-                    <span class="correction-tag">
-                        ${option.text}
-                        <button onclick="removerCorreccion('${option.value}')">×</button>
-                    </span>
-                `;
-            });
-
-            container.innerHTML = html;
-        }
-
-        // Remover corrección
-        function removerCorreccion(valor) {
-            const select = document.getElementById('selectCorrecciones');
-            const option = select.querySelector(`option[value="${valor}"]`);
-            if (option) {
-                option.selected = false;
-                actualizarTagsCorrecciones();
-            }
-        }
-
-        // Aprobar documentos
+        // Aprobar todos los documentos
         function aprobarDocumentos() {
-            if (!confirm('¿Está seguro de aprobar todos los documentos?')) return;
+            if (!confirm('¿Está seguro de aprobar todos los documentos listados?')) return;
 
             const datos = {
                 cdr: registroActual,
@@ -1653,35 +1862,77 @@
                     cargarDatos(); // Recargar datos
                 })
                 .withFailureHandler(function (error) {
-                    mostrarToast('Error al aprobar documentos', 'error');
+                    mostrarToast('Error al aprobar documentos: ' + error, 'error');
                 })
                 .procesarValidacion(datos);
         }
 
-        // Solicitar correcciones
-        function solicitarCorrecciones() {
-            const select = document.getElementById('selectCorrecciones');
-            const observaciones = document.getElementById('observacionesCorrecciones').value;
-            const selected = Array.from(select.selectedOptions);
+        // Mostrar panel dinámico de correcciones
+        function mostrarPanelCorrecciones() {
+            const panel = document.getElementById('panelCorrecciones');
+            const checkboxesDiv = document.getElementById('checkboxesCorrecciones');
 
-            if (selected.length === 0 || !observaciones) {
-                mostrarToast('Seleccione los documentos y agregue observaciones', 'warning');
+            // Generar checkboxes basados en los documentos EXACTOS que subió el usuario
+            const docs = documentosData[tipoActual] || [];
+            let html = '';
+
+            if (docs.length === 0) {
+                html = '<p style="color:#64748b; font-size:0.9rem;">No hay documentos cargados para pedir corrección.</p>';
+            } else {
+                docs.forEach((doc, idx) => {
+                    const docNameSafe = doc.nombre.replace(/'/g, "\\'");
+                    html += `
+                        <div class="checklist-item" style="padding: 0.5rem; background: #fff; border: 1px solid #e2e8f0; margin-bottom: 0.25rem;">
+                            <input type="checkbox" id="corr_chk_${idx}" value="${docNameSafe}" class="checklist-checkbox">
+                            <label for="corr_chk_${idx}" class="checklist-label" style="font-size: 0.9rem;">${docNameSafe}</label>
+                        </div>
+                    `;
+                });
+            }
+
+            checkboxesDiv.innerHTML = html;
+            panel.style.display = 'block';
+
+            // Ocultar botones principales temporales
+            document.getElementById('boxAccionesPrincipales').style.display = 'none';
+        }
+
+        // Cancelar panel de correcciones
+        function cancelarCorrecciones() {
+            document.getElementById('panelCorrecciones').style.display = 'none';
+            document.getElementById('observacionesCorrecciones').value = '';
+            document.getElementById('boxAccionesPrincipales').style.display = 'flex';
+        }
+
+        // Enviar solicitud de correcciones granulares
+        function enviarSolicitudCorrecciones() {
+            const checkboxes = document.querySelectorAll('#checkboxesCorrecciones input[type="checkbox"]:checked');
+            const observaciones = document.getElementById('observacionesCorrecciones').value;
+
+            if (checkboxes.length === 0) {
+                mostrarToast('⚠️ Seleccione al menos un documento a corregir de la lista', 'warning');
+                return;
+            }
+            if (!observaciones.trim()) {
+                mostrarToast('⚠️ Agregue instrucciones de rechazo', 'warning');
                 return;
             }
 
-            if (!confirm('¿Enviar solicitud de correcciones?')) return;
+            if (!confirm('¿Seguro que desea enviar la solicitud de corrección al usuario?')) return;
+
+            const docsACorregir = Array.from(checkboxes).map(cb => cb.value);
 
             const datos = {
                 cdr: registroActual,
                 tipo: tipoActual,
                 estado: 'correccion',
-                documentosCorregir: selected.map(opt => opt.value),
+                documentosCorregir: docsACorregir,
                 observaciones: observaciones
             };
 
             google.script.run
                 .withSuccessHandler(function (result) {
-                    mostrarToast('📝 Correcciones solicitadas', 'warning');
+                    mostrarToast('📝 Correcciones especificas solicitadas', 'warning');
                     cerrarModal('modalValidacion');
                     cargarDatos();
                 })

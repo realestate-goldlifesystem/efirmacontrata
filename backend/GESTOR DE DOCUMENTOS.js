@@ -426,6 +426,47 @@ function enviarCorrecciones(datos) {
   }
 }
 
+function actualizarDatosCerebro(datos) {
+  try {
+    const conf = CONFIGURACION_BD;
+    const sheetId = datos.tipo === 'inquilino' ? conf.IDS.SHEET_INQUILINOS : conf.IDS.SHEET_PROPIETARIOS;
+    const sheet = SpreadsheetApp.openById(sheetId).getActiveSheet();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const data = sheet.getDataRange().getValues();
+
+    // Encontrar fila por CDR
+    let rowIdx = -1;
+    const cdrColIdx = headers.findIndex(h => h && h.toString().toUpperCase() === 'CDR');
+
+    if (cdrColIdx === -1) throw new Error("Columna CDR no encontrada");
+
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][cdrColIdx] === datos.cdr) {
+        rowIdx = i + 1; // Apps Script es base 1
+        break;
+      }
+    }
+
+    if (rowIdx === -1) throw new Error("No se encontró el registro con CDR: " + datos.cdr);
+
+    // Encontrar y actualizar cada columna
+    const nomColIdx = headers.findIndex(h => h && (h.toString().toUpperCase().includes('NOMBRE') || h.toString().toUpperCase().includes('NOMBRES')));
+    const docColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('DOCUMENTO'));
+    const mailColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('CORREO'));
+    const celColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('CELULAR'));
+
+    if (nomColIdx > -1) sheet.getRange(rowIdx, nomColIdx + 1).setValue(datos.nombre);
+    if (docColIdx > -1) sheet.getRange(rowIdx, docColIdx + 1).setValue(datos.documento);
+    if (mailColIdx > -1) sheet.getRange(rowIdx, mailColIdx + 1).setValue(datos.email);
+    if (celColIdx > -1) sheet.getRange(rowIdx, celColIdx + 1).setValue(datos.celular);
+
+    return { success: true };
+  } catch (e) {
+    Logger.log("Error actualizarDatosCerebro: " + e.toString());
+    throw new Error("Error interno al actualizar datos: " + e.message);
+  }
+}
+
 // ==========================================
 // HANDLERS DE API EXISTENTES
 // ==========================================
@@ -2086,7 +2127,7 @@ function procesarValidacionInquilino(datos) {
       }
 
       // Enviar email de corrección
-      enviarEmailCorreccionInquilino(cdr, observaciones);
+      enviarEmailCorreccionInquilino(cdr, observaciones, datos.documentosCorregir);
 
       return {
         success: true,
@@ -2145,7 +2186,7 @@ function procesarValidacionPropietario(datos) {
       }
 
       // Enviar email de corrección
-      enviarEmailCorreccionPropietario(cdr, observaciones);
+      enviarEmailCorreccionPropietario(cdr, observaciones, datos.documentosCorregir);
 
       return {
         success: true,
@@ -2425,7 +2466,7 @@ function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
 /**
  * Enviar corrección al inquilino
  */
-function enviarEmailCorreccionInquilino(cdr, observaciones) {
+function enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir = []) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
@@ -2443,6 +2484,10 @@ function enviarEmailCorreccionInquilino(cdr, observaciones) {
 
     const asunto = `Corrección requerida - Documentos de arrendamiento ${cdr}`;
 
+    const listDocsHtml = documentosCorregir && documentosCorregir.length > 0
+      ? `<ul style="color: #666; font-weight: 500; margin-bottom: 20px;">${documentosCorregir.map(d => `<li>${d}</li>`).join('')}</ul>`
+      : '';
+
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -2453,12 +2498,13 @@ function enviarEmailCorreccionInquilino(cdr, observaciones) {
           <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
           
           <p style="color: #666; line-height: 1.6;">
-            Hemos revisado sus documentos y necesitamos que realice algunas correcciones 
-            para continuar con el proceso.
+            Hemos revisado sus documentos y necesitamos que vuelva a enviar los siguientes archivos para continuar con el proceso:
           </p>
+
+          ${listDocsHtml}
           
           <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <h3 style="color: #856404; margin-top: 0;">📋 Observaciones:</h3>
+            <h3 style="color: #856404; margin-top: 0;">📋 Observaciones / Instrucciones:</h3>
             <p style="color: #856404; white-space: pre-wrap;">${observaciones || 'Por favor revise los documentos enviados'}</p>
           </div>
           
@@ -2496,7 +2542,7 @@ function enviarEmailCorreccionInquilino(cdr, observaciones) {
 /**
  * Enviar corrección al propietario
  */
-function enviarEmailCorreccionPropietario(cdr, observaciones) {
+function enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir = []) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
@@ -2514,6 +2560,10 @@ function enviarEmailCorreccionPropietario(cdr, observaciones) {
 
     const asunto = `Corrección requerida - Documentos del propietario ${cdr}`;
 
+    const listDocsHtml = documentosCorregir && documentosCorregir.length > 0
+      ? `<ul style="color: #666; font-weight: 500; margin-bottom: 20px;">${documentosCorregir.map(d => `<li>${d}</li>`).join('')}</ul>`
+      : '';
+
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); padding: 30px; border-radius: 10px 10px 0 0;">
@@ -2524,11 +2574,13 @@ function enviarEmailCorreccionPropietario(cdr, observaciones) {
           <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
           
           <p style="color: #666; line-height: 1.6;">
-            Hemos revisado sus documentos y necesitamos que realice algunas correcciones.
+            Hemos revisado sus documentos y necesitamos que vuelva a enviar los siguientes archivos para continuar con el proceso:
           </p>
+
+          ${listDocsHtml}
           
           <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <h3 style="color: #856404; margin-top: 0;">📋 Observaciones:</h3>
+            <h3 style="color: #856404; margin-top: 0;">📋 Observaciones / Instrucciones:</h3>
             <p style="color: #856404; white-space: pre-wrap;">${observaciones || 'Por favor revise los documentos enviados'}</p>
           </div>
           
