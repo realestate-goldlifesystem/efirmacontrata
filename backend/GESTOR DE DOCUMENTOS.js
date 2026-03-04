@@ -961,15 +961,13 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
       });
     }
 
-    // 5. Enviar correo de confirmación
-    // Solo si se envió email
+    // 5. Enviar correos
     if (datosFormulario.inquilino.email) {
-      // Ajuste: La función ahora espera (email, nombre, cdr) o el objeto completo?
-      // Revisando la definición (línea 1750 aprox), espera: (emailInquilino, nombreInquilino, codigoRegistro)
-      // Pero si esa función no existe o cambió, usaremos la genérica si existe.
-      // Asumimos que enviarEmailConfirmacionInquilino existe y tiene esa firma.
       enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario);
     }
+
+    // Inmediatamente enviamos el email al propietario para que continúe el flujo
+    enviarEmailPropietario(codigoRegistro);
 
     return {
       success: true,
