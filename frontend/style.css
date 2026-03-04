@@ -124,6 +124,12 @@ body {
   display: block;
 }
 
+.step-pane h2,
+.step-pane h3 {
+  color: var(--primary);
+  margin-bottom: 20px;
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(20px);
