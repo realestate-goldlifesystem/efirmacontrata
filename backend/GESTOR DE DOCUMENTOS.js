@@ -1674,7 +1674,7 @@ function obtenerDocumentosDelCDR(cdr) {
     };
 
     // --- LÓGICA DE INQUILINOS (SOLO ARCHIVOS DE FORMULARIO) ---
-    // Navegar: ENTREGAS DEL INMUEBLE → AÑO → DOCUMENTOS DE ENTREGA - INQUILINO → subcarpetas
+    // Navegar: ENTREGAS DEL INMUEBLE → AÑO → DOCUMENTOS DE ENTREGA - INQUILINO → 4- VARIOS → subcarpetas específicas
     try {
       let entregasFolder = getFolderByNameHelper(carpetaCDR, 'ENTREGAS DEL INMUEBLE');
       if (entregasFolder) {
@@ -1682,58 +1682,53 @@ function obtenerDocumentosDelCDR(cdr) {
         if (anioFolder) {
           let docsInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
           if (docsInqFolder) {
-            // Buscar carpeta 4- VARIOS (contiene cédulas inquilino/codeudor y soportes)
+            // Buscar carpeta 4- VARIOS
             let variosFolder = null;
             const subF = docsInqFolder.getFolders();
             while (subF.hasNext()) {
               const sf = subF.next();
-              if (sf.getName().includes('VARIOS') || sf.getName().includes('4-')) {
+              if (sf.getName().includes('VARIOS') || sf.getName().startsWith('4-')) {
                 variosFolder = sf;
                 break;
               }
             }
 
             if (variosFolder) {
-              // Escanear solo las subcarpetas de formularios dentro de VARIOS
-              escanearCarpetaFormularios(variosFolder, documentos.inquilino);
+              // SOLO escanear las 3 carpetas específicas del formulario
+              const carpetasObjetivo = [
+                { buscar: '2- CEDULA DEL INQUILINO', prefijo: '🪪 [Inquilino]' },
+                { buscar: '3- CEDULA DE CODEUDOR', prefijo: '🪪 [Codeudor]' },
+                { buscar: '6- PAGO DE LOS DERECHOS', prefijo: '💲 [Pago]' }
+              ];
+
+              const varSubs = variosFolder.getFolders();
+              while (varSubs.hasNext()) {
+                const subFolder = varSubs.next();
+                const subName = subFolder.getName();
+
+                for (const objetivo of carpetasObjetivo) {
+                  if (subName.includes(objetivo.buscar) || subName.startsWith(objetivo.buscar.substring(0, 4))) {
+                    const archivos = subFolder.getFiles();
+                    while (archivos.hasNext()) {
+                      const file = archivos.next();
+                      documentos.inquilino.push({
+                        nombre: objetivo.prefijo + ' ' + file.getName(),
+                        url: file.getUrl(),
+                        fileId: file.getId(),
+                        tipo: file.getMimeType(),
+                        tamaño: file.getSize()
+                      });
+                    }
+                    break;
+                  }
+                }
+              }
             }
           }
         }
       }
     } catch (e) {
       Logger.log('Error buscando archivos inquilino: ' + e);
-    }
-
-    // Función auxiliar: escanea carpeta y subcarpetas buscando archivos de formulario
-    function escanearCarpetaFormularios(folder, targetArray) {
-      // Archivos sueltos en esta carpeta (excluyendo el Cerebro)
-      const files = folder.getFiles();
-      while (files.hasNext()) {
-        const file = files.next();
-        const fname = file.getName();
-        if (fname.includes('DATOS DE ELABORACION') || fname.includes('DATOS_CONTRATO')) continue;
-
-        let prefix = '📄';
-        if (fname.includes('CEDULA_INQU_')) prefix = '🪪 [Inquilino]';
-        else if (fname.includes('CEDULA_COD_')) prefix = '🪪 [Codeudor]';
-        else if (fname.includes('SOPORTES_INGRESO_INQU_')) prefix = '📑 [Ingresos Inq]';
-        else if (fname.includes('SOPORTES_INGRESO_COD_')) prefix = '📑 [Ingresos Cod]';
-        else if (fname.includes('COMPROBANTE_PAGO_')) prefix = '💲 [Pago]';
-
-        targetArray.push({
-          nombre: prefix + ' ' + fname,
-          url: file.getUrl(),
-          fileId: file.getId(),
-          tipo: file.getMimeType(),
-          tamaño: file.getSize()
-        });
-      }
-
-      // Subcarpetas (2- CEDULA, 3- CODEUDOR, 6- PAGO, etc.)
-      const subs = folder.getFolders();
-      while (subs.hasNext()) {
-        escanearCarpetaFormularios(subs.next(), targetArray);
-      }
     }
 
     // --- LÓGICA DE PROPIETARIOS (MANTENIDA EN RAÍZ DEL CDR TEMPORALMENTE) ---
