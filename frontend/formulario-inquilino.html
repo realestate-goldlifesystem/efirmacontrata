@@ -795,14 +795,24 @@
       function renderCorreccionBanner() {
         if (!state.docsCorreccion.length) { return; }
         el.bannerCorreccion.classList.remove('hidden');
-        el.correccionDocs.innerHTML = state.docsCorreccion.map(d => `<span class="chip">${escapeHTML(d)}</span>`).join('');
 
-        // Ocultar paso 0 (Datos personales) de la barra de progreso
-        const step0Item = document.querySelector('.progress .step[data-step="0"]');
-        if (step0Item) step0Item.style.display = 'none';
+        // Nombres amigables para los IDs de documentos
+        const friendlyNames = {
+          'docFront': 'Cédula Frontal',
+          'docBack': 'Cédula Reverso',
+          'ingresos': 'Soportes de Ingreso',
+          'coDocFront': 'Cédula Codeudor Frontal',
+          'coDocBack': 'Cédula Codeudor Reverso',
+          'coIngresos': 'Soportes Ingreso Codeudor',
+          'comprobantePago': 'Comprobante de Pago'
+        };
+        el.correccionDocs.innerHTML = state.docsCorreccion.map(d => {
+          const label = friendlyNames[d] || d;
+          return `<span class="chip">${escapeHTML(label)}</span>`;
+        }).join('');
 
         // Marcar archivos no requeridos como Aprobados
-        const allFileKeys = ['docFront', 'docBack', 'coDocFront', 'coDocBack', 'comprobantePago'];
+        const allFileKeys = ['docFront', 'docBack', 'ingresos', 'coDocFront', 'coDocBack', 'coIngresos', 'comprobantePago'];
         allFileKeys.forEach(key => {
           if (!state.docsCorreccion.includes(key)) {
             const input = document.getElementById(key);
@@ -814,22 +824,102 @@
             }
           }
         });
+
+        // En modo corrección, ocultar campos de texto del codeudor (Step 2)
+        // Solo mostrar los file-upload que requieren corrección
+        const step2Pane = document.querySelector('.step-pane[data-pane="2"]');
+        if (step2Pane) {
+          // Ocultar todos los form-group con campos de texto del codeudor
+          step2Pane.querySelectorAll('.form-group').forEach(fg => {
+            // Si el form-group NO contiene un file-upload, ocultarlo
+            if (!fg.querySelector('.file-upload') && !fg.querySelector('.file-input')) {
+              fg.style.display = 'none';
+            }
+          });
+          // Ocultar también los grid-2col que son solo texto
+          step2Pane.querySelectorAll('.grid-2col').forEach(g => {
+            if (!g.querySelector('.file-upload') && !g.querySelector('.file-input')) {
+              g.style.display = 'none';
+            }
+          });
+          // Ocultar el h3 descriptivo si el paso solo tiene archivos aprobados
+          const coDocsNeeded = ['coDocFront', 'coDocBack', 'coIngresos'].filter(k => state.docsCorreccion.includes(k));
+          if (coDocsNeeded.length === 0) {
+            // El paso se saltará automáticamente, no necesita más ajustes
+          }
+        }
       }
 
       // --------- Wizard ----------
+
+      // En modo corrección, mapea qué pasos contienen archivos por corregir
+      // Step 0 = datos texto, Step 1 = docFront/docBack/ingresos, Step 2 = codeudor, Step 3 = pago, Step 4 = resumen
+      function getStepFileKeys(step) {
+        if (step === 1) return ['docFront', 'docBack', 'ingresos'];
+        if (step === 2) return ['coDocFront', 'coDocBack', 'coIngresos'];
+        if (step === 3) return ['comprobantePago'];
+        return []; // Step 0 y 4 no tienen archivos
+      }
+
+      function isStepNeededInCorrection(step) {
+        if (step === state.max) return true; // Resumen siempre visible
+        if (!state.modoCorreccion) return true;
+        const keys = getStepFileKeys(step);
+        if (keys.length === 0) return false; // Pasos de texto se saltan
+        return keys.some(k => state.docsCorreccion.includes(k));
+      }
+
+      function getNextRelevantStep(current) {
+        for (let s = current + 1; s <= state.max; s++) {
+          if (isStepNeededInCorrection(s)) return s;
+        }
+        return state.max;
+      }
+
+      function getPrevRelevantStep(current) {
+        for (let s = current - 1; s >= 0; s--) {
+          if (isStepNeededInCorrection(s)) return s;
+        }
+        return current; // No retroceder más si no hay paso previo
+      }
+
+      function getFirstRelevantStep() {
+        for (let s = 0; s <= state.max; s++) {
+          if (isStepNeededInCorrection(s)) return s;
+        }
+        return 0;
+      }
+
       function renderSteps() {
         if (state.modoCorreccion && state.docsCorreccion.length > 0) {
-          gotoStep(1, true); // Saltar paso 0
+          // Ocultar pasos no relevantes de la barra de progreso
+          for (let s = 0; s < state.max; s++) {
+            const stepEl = document.querySelector(`.progress .step[data-step="${s}"]`);
+            if (stepEl && !isStepNeededInCorrection(s)) {
+              stepEl.style.display = 'none';
+            }
+          }
+          gotoStep(getFirstRelevantStep(), true);
         } else {
           gotoStep(0, true);
         }
       }
 
       function bindWizard() {
-        el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
+        el.btnPrev.addEventListener('click', () => {
+          if (state.modoCorreccion) {
+            gotoStep(getPrevRelevantStep(state.step));
+          } else {
+            gotoStep(state.step - 1);
+          }
+        });
         el.btnNext.addEventListener('click', () => {
           if (!validateStep(state.step)) return;
-          if (state.step < state.max) gotoStep(state.step + 1);
+          if (state.modoCorreccion) {
+            gotoStep(getNextRelevantStep(state.step));
+          } else {
+            if (state.step < state.max) gotoStep(state.step + 1);
+          }
         });
         el.btnEnviar.addEventListener('click', onSubmit);
 
@@ -859,7 +949,8 @@
           line.style.width = (state.step / state.max) * 100 + '%';
         }
 
-        el.btnPrev.classList.toggle('hidden', state.step === 0);
+        const firstRelevant = state.modoCorreccion ? getFirstRelevantStep() : 0;
+        el.btnPrev.classList.toggle('hidden', state.step === firstRelevant);
         el.btnNext.classList.toggle('hidden', state.step === state.max);
         el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
 
