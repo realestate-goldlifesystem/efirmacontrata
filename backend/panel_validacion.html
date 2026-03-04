@@ -439,8 +439,8 @@
 
         .doc-item {
             background: var(--white);
-            padding: 0.75rem 1.25rem;
-            margin-bottom: 0.75rem;
+            padding: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
             border-radius: 20px;
             /* Ovalado */
             cursor: pointer;
@@ -450,6 +450,8 @@
             align-items: center;
             border: 1px solid #e2e8f0;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            font-size: 0.9rem;
+            line-height: 1.2;
         }
 
         .doc-item:hover {
@@ -486,8 +488,8 @@
             padding: 1rem;
             display: flex;
             flex-direction: column;
-            height: 480px;
-            /* Menos alto */
+            height: 380px;
+            /* Ajustado para caber mejor con los botones de acción en una sola pantalla */
             border: 1px solid #e2e8f0;
         }
 
@@ -1106,10 +1108,51 @@
 
                         <!-- Formulario de Datos Extraídos (Cerebro) -->
                         <div class="cerebro-editor" id="cerebroEditor">
-                            <div class="cerebro-header">
-                                <h3>🧠 Datos Extraídos (Cerebro)</h3>
-                                <button class="btn-icon-hover" onclick="toggleEditCerebro()"
-                                    title="Editar Datos">✏️</button>
+                            <style>
+                                .cerebro-tab {
+                                    background: #f1f5f9;
+                                    border: none;
+                                    padding: 0.35rem 0.85rem;
+                                    border-radius: 12px;
+                                    font-size: 0.8rem;
+                                    cursor: pointer;
+                                    font-weight: 500;
+                                    color: #475569;
+                                    white-space: nowrap;
+                                    transition: 0.2s;
+                                }
+
+                                .cerebro-tab:hover {
+                                    background: #e2e8f0;
+                                }
+
+                                .cerebro-tab.active {
+                                    background: var(--primary);
+                                    color: var(--dark);
+                                    font-weight: 700;
+                                    box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
+                                }
+
+                                .cerebro-tabs-container::-webkit-scrollbar {
+                                    height: 4px;
+                                }
+
+                                .cerebro-tabs-container::-webkit-scrollbar-thumb {
+                                    background: #cbd5e1;
+                                    border-radius: 4px;
+                                }
+                            </style>
+                            <div class="cerebro-header"
+                                style="flex-direction: column; align-items: stretch; gap: 0.5rem; padding-bottom: 0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <h3 style="margin: 0;">🧠 Datos Extraídos</h3>
+                                    <button class="btn-icon-hover" onclick="toggleEditCerebro()"
+                                        title="Editar Datos">✏️</button>
+                                </div>
+                                <div class="cerebro-tabs-container" id="cerebroTabs"
+                                    style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; margin-top: 0.25rem;">
+                                    <!-- Se llena dinámicamente -->
+                                </div>
                             </div>
                             <div id="cerebroContent" class="cerebro-content readonly">
                                 <div class="cerebro-field">
@@ -1243,6 +1286,8 @@
         let documentoActual = null;
         let documentosData = {};
         let registrosData = { inquilinos: [], propietarios: [] };
+        let pestanaCerebroActiva = 0; // 0 = Inquilino/Propietario, 1+ = Codeudor 1, 2...
+        let datosCerebroAnteriores = {};
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function () {
@@ -1668,21 +1713,55 @@
             const registro = list.find(r => r.cdr === cdr);
             if (!registro) return;
 
+            // Renderizar Tabs Codeudores
+            let tabsHtml = `<button class="cerebro-tab ${pestanaCerebroActiva === 0 ? 'active' : ''}" onclick="cambiarTabCerebro(0)">${tipo === 'inquilino' ? 'Inquilino' : 'Propietario'}</button>`;
+
+            if (tipo === 'inquilino' && registro.codeudores && registro.codeudores.length > 0) {
+                registro.codeudores.forEach((cod, idx) => {
+                    tabsHtml += `<button class="cerebro-tab ${pestanaCerebroActiva === (idx + 1) ? 'active' : ''}" onclick="cambiarTabCerebro(${idx + 1})">Codeudor ${idx + 1}</button>`;
+                });
+            }
+
+            const tabsContainer = document.getElementById('cerebroTabs');
+            if (tabsContainer) {
+                tabsContainer.innerHTML = tabsHtml;
+            }
+
             // Forzar volver a estado readonly al cargar
             document.getElementById('cerebroContent').classList.add('readonly');
             document.getElementById('cerebroActions').style.display = 'none';
 
-            if (tipo === 'inquilino') {
-                document.getElementById('cerebro_nombre').value = registro.inquilino.nombre || '';
-                document.getElementById('cerebro_documento').value = registro.inquilino.documento || '';
-                document.getElementById('cerebro_email').value = registro.inquilino.email || '';
-                document.getElementById('cerebro_celular').value = registro.inquilino.celular || '';
-            } else {
-                document.getElementById('cerebro_nombre').value = registro.propietario.nombre || '';
-                document.getElementById('cerebro_documento').value = registro.propietario.documento || '';
-                document.getElementById('cerebro_email').value = registro.propietario.email || '';
-                document.getElementById('cerebro_celular').value = registro.propietario.celular || '';
+            // Cargar datos según tab activa
+            if (pestanaCerebroActiva === 0) {
+                if (tipo === 'inquilino') {
+                    document.getElementById('cerebro_nombre').value = registro.inquilino.nombre || '';
+                    document.getElementById('cerebro_documento').value = registro.inquilino.documento || '';
+                    document.getElementById('cerebro_email').value = registro.inquilino.email || '';
+                    document.getElementById('cerebro_celular').value = registro.inquilino.celular || '';
+                    datosCerebroAnteriores = { ...registro.inquilino };
+                } else {
+                    document.getElementById('cerebro_nombre').value = registro.propietario.nombre || '';
+                    document.getElementById('cerebro_documento').value = registro.propietario.documento || '';
+                    document.getElementById('cerebro_email').value = registro.propietario.email || '';
+                    document.getElementById('cerebro_celular').value = registro.propietario.celular || '';
+                    datosCerebroAnteriores = { ...registro.propietario };
+                }
+            } else if (tipo === 'inquilino' && registro.codeudores) {
+                const codeudor = registro.codeudores[pestanaCerebroActiva - 1];
+                if (codeudor) {
+                    document.getElementById('cerebro_nombre').value = codeudor.nombre || '';
+                    document.getElementById('cerebro_documento').value = codeudor.documento || '';
+                    document.getElementById('cerebro_email').value = codeudor.email || '';
+                    document.getElementById('cerebro_celular').value = codeudor.celular || '';
+                    datosCerebroAnteriores = { ...codeudor };
+                }
             }
+        }
+
+        // Cambiar tab del cerebro
+        function cambiarTabCerebro(indice) {
+            pestanaCerebroActiva = indice;
+            cargarDatosCerebro(registroActual, tipoActual);
         }
 
         // Habilitar edición del cerebro
@@ -1706,10 +1785,16 @@
             const nuevosDatos = {
                 cdr: registroActual,
                 tipo: tipoActual,
+                isCodeudor: pestanaCerebroActiva > 0,
+                codeudorIndex: pestanaCerebroActiva > 0 ? pestanaCerebroActiva - 1 : null,
                 nombre: document.getElementById('cerebro_nombre').value,
                 documento: document.getElementById('cerebro_documento').value,
                 email: document.getElementById('cerebro_email').value,
-                celular: document.getElementById('cerebro_celular').value
+                celular: document.getElementById('cerebro_celular').value,
+                oldNombre: datosCerebroAnteriores.nombre || '',
+                oldDocumento: datosCerebroAnteriores.documento || '',
+                oldEmail: datosCerebroAnteriores.email || '',
+                oldCelular: datosCerebroAnteriores.celular || ''
             };
 
             const btn = document.querySelector('#cerebroActions .btn-primary');
@@ -1756,12 +1841,15 @@
 
             documentos.forEach((doc, index) => {
                 const fileId = doc.fileId || '';
+                // Limpiar nombre: quitar sufijos de CDR tipo _[REG_23...]
+                const nombreCorto = doc.nombre.replace(/_\[REG_.*?\]/, '').replace(/_/g, ' ');
+
                 html += `
                     <div class="doc-item ${index === 0 ? 'active' : ''}" 
                          onclick="verPreview('${doc.url}', '${doc.tipo}', '${doc.nombre.replace(/'/g, "\\'")}', this, '${fileId}')"
                          data-index="${index}">
                         <div>
-                            <div>${obtenerIconoDocumento(doc.tipo)} ${doc.nombre}</div>
+                            <div style="font-weight:600;">${obtenerIconoDocumento(doc.tipo)} ${nombreCorto}</div>
                             <div class="doc-type">${doc.tipo}</div>
                         </div>
                         <div class="doc-size">${formatearTamaño(doc.tamaño)}</div>

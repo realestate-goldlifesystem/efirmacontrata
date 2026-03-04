@@ -449,16 +449,80 @@ function actualizarDatosCerebro(datos) {
 
     if (rowIdx === -1) throw new Error("No se encontró el registro con CDR: " + datos.cdr);
 
-    // Encontrar y actualizar cada columna
-    const nomColIdx = headers.findIndex(h => h && (h.toString().toUpperCase().includes('NOMBRE') || h.toString().toUpperCase().includes('NOMBRES')));
-    const docColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('DOCUMENTO'));
-    const mailColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('CORREO'));
-    const celColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('CELULAR'));
+    // Actualizar Google Sheet (Sólo para el Inquilino/Propietario principal)
+    if (!datos.isCodeudor) {
+      // Encontrar y actualizar cada columna
+      const nomColIdx = headers.findIndex(h => h && (h.toString().toUpperCase().includes('NOMBRE') || h.toString().toUpperCase().includes('NOMBRES')));
+      const docColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('DOCUMENTO'));
+      const mailColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('CORREO'));
+      const celColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('CELULAR'));
 
-    if (nomColIdx > -1) sheet.getRange(rowIdx, nomColIdx + 1).setValue(datos.nombre);
-    if (docColIdx > -1) sheet.getRange(rowIdx, docColIdx + 1).setValue(datos.documento);
-    if (mailColIdx > -1) sheet.getRange(rowIdx, mailColIdx + 1).setValue(datos.email);
-    if (celColIdx > -1) sheet.getRange(rowIdx, celColIdx + 1).setValue(datos.celular);
+      if (nomColIdx > -1) sheet.getRange(rowIdx, nomColIdx + 1).setValue(datos.nombre);
+      if (docColIdx > -1) sheet.getRange(rowIdx, docColIdx + 1).setValue(datos.documento);
+      if (mailColIdx > -1) sheet.getRange(rowIdx, mailColIdx + 1).setValue(datos.email);
+      if (celColIdx > -1) sheet.getRange(rowIdx, celColIdx + 1).setValue(datos.celular);
+    }
+
+    // Actualizar Documento Cerebro (DATOS DE ELABORACION) usando Reemplazo de Texto
+    const cdrEscaped = datos.cdr.replace(/'/g, "\\'");
+    let docFileId = null;
+
+    // Búsqueda directa
+    const cerebroSearch = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrEscaped}' and trashed = false`);
+    if (cerebroSearch.hasNext()) {
+      docFileId = cerebroSearch.next().getId();
+    } else {
+      // Fallback jerárquico
+      const searchRoot = DriveApp.searchFolders(`title contains '${cdrEscaped}' and trashed = false`);
+      if (searchRoot.hasNext()) {
+        const f = searchRoot.next();
+        let entregas = getFolderByNameHelper(f, 'ENTREGAS DEL INMUEBLE');
+        if (entregas) {
+          let anio = obtenerCarpetaAnioMasRecienteLocal(entregas);
+          if (anio) {
+            let docInq = getFolderByNameHelper(anio, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+            if (docInq) {
+              const subsFiles = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${docInq.getId()}' in parents and trashed = false`);
+              if (subsFiles.hasNext()) docFileId = subsFiles.next().getId();
+              else {
+                const checkVarios = DriveApp.searchFolders(`title contains 'VARIOS' and '${docInq.getId()}' in parents and trashed = false`);
+                if (checkVarios.hasNext()) {
+                  const sf = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${checkVarios.next().getId()}' in parents and trashed = false`);
+                  if (sf.hasNext()) docFileId = sf.next().getId();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (docFileId) {
+      const cerebroDoc = DocumentApp.openById(docFileId);
+      const body = cerebroDoc.getBody();
+
+      if (!datos.isCodeudor) {
+        // Reemplazar campos del inquilino/propietario
+        if (datos.tipo === 'inquilino') {
+          body.replaceText("«N_INQ»", datos.nombre);
+          body.replaceText("«C_INQ»", datos.documento);
+          body.replaceText("«CEL_INQ»", datos.celular);
+          body.replaceText("«EMAIL_INQ»", datos.email);
+
+          if (datos.oldNombre) body.replaceText(datos.oldNombre, datos.nombre);
+          if (datos.oldDocumento) body.replaceText(datos.oldDocumento, datos.documento);
+          if (datos.oldCelular) body.replaceText(datos.oldCelular, datos.celular);
+          if (datos.oldEmail) body.replaceText(datos.oldEmail, datos.email);
+        }
+      } else {
+        // Reemplazar Codeudor
+        if (datos.oldNombre) body.replaceText(datos.oldNombre, datos.nombre);
+        if (datos.oldDocumento) body.replaceText(datos.oldDocumento, datos.documento);
+        if (datos.oldCelular) body.replaceText(datos.oldCelular, datos.celular);
+        if (datos.oldEmail) body.replaceText(datos.oldEmail, datos.email);
+      }
+      cerebroDoc.saveAndClose();
+    }
 
     return { success: true };
   } catch (e) {
