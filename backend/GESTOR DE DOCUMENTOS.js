@@ -1674,84 +1674,45 @@ function obtenerDocumentosDelCDR(cdr) {
       propietario: []
     };
 
-    // --- LÓGICA DE INQUILINOS (RUTA ANIDADA) ---
-    // Intentaremos navegar: ENTREGAS DEL INMUEBLE -> AÑO -> DOCUMENTOS DE ENTREGA - INQUILINO -> (2, 3 y 4)
-    let entregasFolder = getFolderByNameHelper(carpetaCDR, 'ENTREGAS DEL INMUEBLE');
-    if (entregasFolder) {
-      let anioFolder = obtenerCarpetaAnioMasRecienteLocal(entregasFolder);
-      if (anioFolder) {
-        let docsEntregaInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
-        if (docsEntregaInqFolder) {
-          let variosFolder = getFolderByNameHelper(docsEntregaInqFolder, '4- VARIOS, FORMATO DE MUDANZAS, ETC');
-          if (!variosFolder) {
-            // Autocompletar por nombre parcial si el usuario lo alteró
-            const subF = docsEntregaInqFolder.getFolders();
-            while (subF.hasNext()) {
-              const sf = subF.next();
-              if (sf.getName().includes('VARIOS')) { variosFolder = sf; break; }
-            }
-          }
+    // --- LÓGICA DE INQUILINOS (BÚSQUEDA GLOBAL DENTRO DEL CDR) ---
+    // Buscar todos los archivos dentro de la carpeta del CDR que pertenezcan al Inquilino 
+    // y no estén en la papelera
+    try {
+      const cdrId = carpetaCDR.getId();
+      // Buscamos archivos que tengan las etiquetas típicas o que simplemente estén en ENTREGAS
+      const searchFiles = DriveApp.searchFiles(`'${cdrId}' in parents and trashed = false`);
+      procesarArchivosRecursivos(carpetaCDR, documentos.inquilino);
+    } catch (e) {
+      Logger.log('Error buscando archivos inquilino globalmente: ' + e);
+    }
 
-          if (variosFolder) {
-            // Carpeta 2
-            let cedulaInqFolder = getFolderByNameHelper(variosFolder, '2- CEDULA DEL INQUILINO');
-            if (cedulaInqFolder) {
-              const files = cedulaInqFolder.getFiles();
-              while (files.hasNext()) {
-                const file = files.next();
-                documentos.inquilino.push({
-                  nombre: '📁 [CED_INQ] ' + file.getName(),
-                  url: file.getUrl(),
-                  tipo: determinarTipoDocumento(file.getName()),
-                  tamaño: file.getSize()
-                });
-              }
-            }
+    // Función auxiliar para buscar anidado
+    function procesarArchivosRecursivos(folder, targetArray) {
+      // Ignorar la carpeta del propietario para no mezclar
+      if (folder.getName().startsWith('PROPIETARIO_')) return;
 
-            // Carpeta 3
-            let cedulaCodFolder = getFolderByNameHelper(variosFolder, '3- CEDULA DE CODEUDOR(ES)');
-            if (cedulaCodFolder) {
-              const files = cedulaCodFolder.getFiles();
-              while (files.hasNext()) {
-                const file = files.next();
-                documentos.inquilino.push({
-                  nombre: '📁 [CED_COD] ' + file.getName(),
-                  url: file.getUrl(),
-                  tipo: determinarTipoDocumento(file.getName()),
-                  tamaño: file.getSize()
-                });
-              }
-            }
+      const files = folder.getFiles();
+      while (files.hasNext()) {
+        const file = files.next();
+        const fname = file.getName();
+        // Ignorar el cerebro y documentos del propietario
+        if (fname.includes('DATOS DE ELABORACION') || fname.includes('CEDULA_PROP') || fname.includes('DATOS_CONTRATO')) continue;
 
-            // Carpeta 4 (Archivos sueltos como ingresos y recibos de servicios futuros)
-            const variosFiles = variosFolder.getFiles();
-            while (variosFiles.hasNext()) {
-              const file = variosFiles.next();
-              // Evitar listar las subcarpetas, DriveApp getFiles no lista carpetas.
-              documentos.inquilino.push({
-                nombre: '📄 [SOPERTES] ' + file.getName(),
-                url: file.getUrl(),
-                tipo: determinarTipoDocumento(file.getName()),
-                tamaño: file.getSize()
-              });
-            }
-          }
+        let prefix = '📄 ';
+        if (fname.includes('CED_INQ') || fname.includes('CED_COD')) prefix = '📁 ';
+        if (fname.includes('PAGO')) prefix = '💲 ';
 
-          // Carpeta 6 (Pagos) - Ubicada junto a 4- VARIOS
-          let pagoDerechosFolder = getFolderByNameHelper(docsEntregaInqFolder, '6- PAGO DE LOS DERECHOS DE CONTRATO');
-          if (pagoDerechosFolder) {
-            const files = pagoDerechosFolder.getFiles();
-            while (files.hasNext()) {
-              const file = files.next();
-              documentos.inquilino.push({
-                nombre: '💲 [PAGO] ' + file.getName(),
-                url: file.getUrl(),
-                tipo: determinarTipoDocumento(file.getName()),
-                tamaño: file.getSize()
-              });
-            }
-          }
-        }
+        targetArray.push({
+          nombre: prefix + fname,
+          url: file.getUrl(),
+          tipo: determinarTipoDocumento(fname),
+          tamaño: file.getSize()
+        });
+      }
+
+      const subfolders = folder.getFolders();
+      while (subfolders.hasNext()) {
+        procesarArchivosRecursivos(subfolders.next(), targetArray);
       }
     }
 
