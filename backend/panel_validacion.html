@@ -1820,17 +1820,22 @@
                     for (const personKey in documentosData) {
                         const docsList = documentosData[personKey] || [];
                         docsList.forEach(doc => {
-                            // Comparación directa: ambos lados usan el nombre del archivo tal cual
+                            // Comparación robusta
                             const isCorrection = correctionDocNames.some(corrName => {
-                                // Comparar nombres completos directamente
-                                if (doc.nombre === corrName) return true;
-                                // Fallback: comparar sin extensión ni brackets del CDR
-                                const cleanDoc = doc.nombre.replace(/\.[^.]+$/, '').replace(/_\[.*?\]/, '').toUpperCase();
-                                const cleanCorr = corrName.replace(/\.[^.]+$/, '').replace(/_\[.*?\]/, '').toUpperCase();
-                                return cleanDoc === cleanCorr || cleanDoc.includes(cleanCorr) || cleanCorr.includes(cleanDoc);
+                                // Remover prefijos visuales del doc.nombre generados por el backend (ej: "🪪 [Inquilino] CEDULA_INQU_FRONTAL_[123].jpg")
+                                let cleanDoc = doc.nombre.replace(/^[^\w\s]*\s*\[.*?\]\s*/, ''); // Remueve emoji y [Texto] al inicio
+                                cleanDoc = cleanDoc.replace(/\.[^.]+$/, '').replace(/_\[.*?\]/, '').toUpperCase().trim();
+
+                                let cleanCorr = corrName.replace(/^[^\w\s]*\s*\[.*?\]\s*/, '');
+                                cleanCorr = cleanCorr.replace(/\.[^.]+$/, '').replace(/_\[.*?\]/, '').toUpperCase().trim();
+
+                                // Comparar limpia
+                                if (cleanDoc === cleanCorr) return true;
+                                if (cleanDoc.includes(cleanCorr) || cleanCorr.includes(cleanDoc)) return true;
+                                return false;
                             });
 
-                            console.log(`   ${doc.nombre} → ${isCorrection ? '⚠️ CORRECCIÓN' : '✅ APROBADO'}`);
+                            console.log(`   [${doc.nombre}] vs [${correctionDocNames.join(', ')}] → ${isCorrection ? '⚠️ CORRECCIÓN' : '✅ APROBADO'}`);
 
                             if (!isCorrection) {
                                 validacionEstado[doc.fileId] = 'aprobado';
