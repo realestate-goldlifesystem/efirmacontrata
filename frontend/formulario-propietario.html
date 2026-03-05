@@ -1267,150 +1267,148 @@
         }
 
         // --- LÓGICA DE REVELACIÓN PROGRESIVA ---
-        if (state.step === 0) {
-          const vTipo = el.tipoDocumento.value.trim();
-          const prog2 = document.getElementById('prog-prop-0-2');
-          if (prog2) {
-            if (vTipo) {
-              prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
-            } else {
-              prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
-            }
-          }
-
-          const vNum = el.numeroDocumento.value.trim();
-          const vConfNum = el.confirmarDocumento.value.trim();
-          // Feedback visual de coincidencia en Documento
-          if (vNum && vConfNum && vNum !== vConfNum) {
-            el.confirmarDocumento.classList.add('invalid');
-            el.docError.classList.add('show');
+        // Paso 0
+        const vTipo = el.tipoDocumento.value.trim();
+        const prog2_0 = document.getElementById('prog-prop-0-2');
+        if (prog2_0) {
+          if (vTipo) {
+            prog2_0.classList.remove('progressive-hidden'); prog2_0.classList.add('progressive-visible');
           } else {
-            el.confirmarDocumento.classList.remove('invalid');
-            el.docError.classList.remove('show');
+            prog2_0.classList.add('progressive-hidden'); prog2_0.classList.remove('progressive-visible');
           }
-          const prog3 = document.getElementById('prog-prop-0-3');
-          if (prog3) {
-            if (vNum && vConfNum && vNum === vConfNum && rx.num.test(vNum)) {
-              prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
-            } else {
-              prog3.classList.add('progressive-hidden'); prog3.classList.remove('progressive-visible');
-            }
-          }
+        }
 
-          const vNom = el.nombres.value.trim();
-          const vApe = el.apellidos.value.trim();
-          const prog4 = document.getElementById('prog-prop-0-4');
-          if (prog4) {
-            if (vNom && vApe) {
-              prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
-            } else {
-              prog4.classList.add('progressive-hidden'); prog4.classList.remove('progressive-visible');
-            }
-          }
-
-          const vEmail = el.email.value.trim();
-          const vConfEmail = el.confirmarEmail.value.trim();
-          // Feedback visual de coincidencia en Email
-          if (vEmail && vConfEmail && vEmail !== vConfEmail) {
-            el.confirmarEmail.classList.add('invalid');
-            el.emailError.classList.add('show');
+        const vNum = el.numeroDocumento.value.trim();
+        const vConfNum = el.confirmarDocumento.value.trim();
+        if (vNum && vConfNum && vNum !== vConfNum) {
+          el.confirmarDocumento.classList.add('invalid');
+          el.docError.classList.add('show');
+        } else {
+          el.confirmarDocumento.classList.remove('invalid');
+          el.docError.classList.remove('show');
+        }
+        const prog3_0 = document.getElementById('prog-prop-0-3');
+        if (prog3_0) {
+          if (vNum && vConfNum && vNum === vConfNum && rx.num.test(vNum)) {
+            prog3_0.classList.remove('progressive-hidden'); prog3_0.classList.add('progressive-visible');
           } else {
-            el.confirmarEmail.classList.remove('invalid');
-            el.emailError.classList.remove('show');
+            prog3_0.classList.add('progressive-hidden'); prog3_0.classList.remove('progressive-visible');
           }
-          const prog5 = document.getElementById('prog-prop-0-5');
-          if (prog5) {
-            if (vEmail && vConfEmail && vEmail === vConfEmail && rx.email.test(vEmail)) {
-              prog5.classList.remove('progressive-hidden'); prog5.classList.add('progressive-visible');
-            } else {
-              prog5.classList.add('progressive-hidden'); prog5.classList.remove('progressive-visible');
-            }
-          }
+        }
 
-          // Feedback visual de coincidencia en Celular
-          const vCel = el.celular.value.trim();
-          const vConfCel = el.confirmarCelular.value.trim();
-          if (vCel && vConfCel && vCel !== vConfCel) {
-            el.confirmarCelular.classList.add('invalid');
-            el.celError.classList.add('show');
+        const vNom = el.nombres.value.trim();
+        const vApe = el.apellidos.value.trim();
+        const prog4_0 = document.getElementById('prog-prop-0-4');
+        if (prog4_0) {
+          if (vNom && vApe) {
+            prog4_0.classList.remove('progressive-hidden'); prog4_0.classList.add('progressive-visible');
           } else {
-            el.confirmarCelular.classList.remove('invalid');
-            el.celError.classList.remove('show');
+            prog4_0.classList.add('progressive-hidden'); prog4_0.classList.remove('progressive-visible');
           }
-        } else if (state.step === 1) {
-          const prog2 = document.getElementById('prog-prop-1-2');
-          if (prog2) {
-            if (state.archivos['docFront']) {
-              prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
-            } else {
-              prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
-            }
-          }
-          const prog3 = document.getElementById('prog-prop-1-3');
-          if (prog3) {
-            if (state.archivos['docBack']) {
-              prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
-            } else {
-              prog3.classList.add('progressive-hidden'); prog3.classList.remove('progressive-visible');
-            }
-          }
-          const prog4 = document.getElementById('prog-prop-1-4');
-          if (prog4) {
-            if (state.archivos['certTradicion']) {
-              prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
-            } else {
-              prog4.classList.add('progressive-hidden'); prog4.classList.remove('progressive-visible');
-            }
-          }
-        } else if (state.step === 2) {
-          const vTCuenta = el.tipoCuenta.value.trim();
-          const prog2 = document.getElementById('prog-prop-2-2');
-          if (prog2) {
-            if (vTCuenta) {
-              prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
-            } else {
-              prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
-            }
-          }
+        }
 
-          const vNCuenta = el.numeroCuenta.value.trim();
-          const prog3 = document.getElementById('prog-prop-2-3');
-          if (prog3) {
-            if (vNCuenta) {
-              prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
-            } else {
-              prog3.classList.add('progressive-hidden'); prog3.classList.remove('progressive-visible');
-            }
+        const vEmail = el.email.value.trim();
+        const vConfEmail = el.confirmarEmail.value.trim();
+        if (vEmail && vConfEmail && vEmail !== vConfEmail) {
+          el.confirmarEmail.classList.add('invalid');
+          el.emailError.classList.add('show');
+        } else {
+          el.confirmarEmail.classList.remove('invalid');
+          el.emailError.classList.remove('show');
+        }
+        const prog5_0 = document.getElementById('prog-prop-0-5');
+        if (prog5_0) {
+          if (vEmail && vConfEmail && vEmail === vConfEmail && rx.email.test(vEmail)) {
+            prog5_0.classList.remove('progressive-hidden'); prog5_0.classList.add('progressive-visible');
+          } else {
+            prog5_0.classList.add('progressive-hidden'); prog5_0.classList.remove('progressive-visible');
           }
+        }
 
-          const vBanco = el.banco.value.trim();
-          const prog4 = document.getElementById('prog-prop-2-4');
-          if (prog4) {
-            if (vBanco) {
-              prog4.classList.remove('progressive-hidden'); prog4.classList.add('progressive-visible');
-            } else {
-              prog4.classList.add('progressive-hidden'); prog4.classList.remove('progressive-visible');
-            }
+        const vCel = el.celular.value.trim();
+        const vConfCel = el.confirmarCelular.value.trim();
+        if (vCel && vConfCel && vCel !== vConfCel) {
+          el.confirmarCelular.classList.add('invalid');
+          el.celError.classList.add('show');
+        } else {
+          el.confirmarCelular.classList.remove('invalid');
+          el.celError.classList.remove('show');
+        }
+
+        // Paso 1
+        const prog2_1 = document.getElementById('prog-prop-1-2');
+        if (prog2_1) {
+          if (state.archivos['docFront']) {
+            prog2_1.classList.remove('progressive-hidden'); prog2_1.classList.add('progressive-visible');
+          } else {
+            prog2_1.classList.add('progressive-hidden'); prog2_1.classList.remove('progressive-visible');
           }
-
-          const vTitular = el.titularCuenta.value.trim();
-          const prog5 = document.getElementById('prog-prop-2-5');
-          if (prog5) {
-            if (vTitular) {
-              prog5.classList.remove('progressive-hidden'); prog5.classList.add('progressive-visible');
-            } else {
-              prog5.classList.add('progressive-hidden'); prog5.classList.remove('progressive-visible');
-            }
+        }
+        const prog3_1 = document.getElementById('prog-prop-1-3');
+        if (prog3_1) {
+          if (state.archivos['docBack']) {
+            prog3_1.classList.remove('progressive-hidden'); prog3_1.classList.add('progressive-visible');
+          } else {
+            prog3_1.classList.add('progressive-hidden'); prog3_1.classList.remove('progressive-visible');
           }
+        }
+        const prog4_1 = document.getElementById('prog-prop-1-4');
+        if (prog4_1) {
+          if (state.archivos['certTradicion']) {
+            prog4_1.classList.remove('progressive-hidden'); prog4_1.classList.add('progressive-visible');
+          } else {
+            prog4_1.classList.add('progressive-hidden'); prog4_1.classList.remove('progressive-visible');
+          }
+        }
 
-          const vDocTitular = el.docTitular.value.trim();
-          const prog6 = document.getElementById('prog-prop-2-6');
-          if (prog6) {
-            if (vDocTitular) {
-              prog6.classList.remove('progressive-hidden'); prog6.classList.add('progressive-visible');
-            } else {
-              prog6.classList.add('progressive-hidden'); prog6.classList.remove('progressive-visible');
-            }
+        // Paso 2
+        const vTCuenta = el.tipoCuenta.value.trim();
+        const prog2_2 = document.getElementById('prog-prop-2-2');
+        if (prog2_2) {
+          if (vTCuenta) {
+            prog2_2.classList.remove('progressive-hidden'); prog2_2.classList.add('progressive-visible');
+          } else {
+            prog2_2.classList.add('progressive-hidden'); prog2_2.classList.remove('progressive-visible');
+          }
+        }
+
+        const vNCuenta = el.numeroCuenta.value.trim();
+        const prog3_2 = document.getElementById('prog-prop-2-3');
+        if (prog3_2) {
+          if (vNCuenta) {
+            prog3_2.classList.remove('progressive-hidden'); prog3_2.classList.add('progressive-visible');
+          } else {
+            prog3_2.classList.add('progressive-hidden'); prog3_2.classList.remove('progressive-visible');
+          }
+        }
+
+        const vBanco = el.banco.value.trim();
+        const prog4_2 = document.getElementById('prog-prop-2-4');
+        if (prog4_2) {
+          if (vBanco) {
+            prog4_2.classList.remove('progressive-hidden'); prog4_2.classList.add('progressive-visible');
+          } else {
+            prog4_2.classList.add('progressive-hidden'); prog4_2.classList.remove('progressive-visible');
+          }
+        }
+
+        const vTitular = el.titularCuenta.value.trim();
+        const prog5_2 = document.getElementById('prog-prop-2-5');
+        if (prog5_2) {
+          if (vTitular) {
+            prog5_2.classList.remove('progressive-hidden'); prog5_2.classList.add('progressive-visible');
+          } else {
+            prog5_2.classList.add('progressive-hidden'); prog5_2.classList.remove('progressive-visible');
+          }
+        }
+
+        const vDocTitular = el.docTitular.value.trim();
+        const prog6_2 = document.getElementById('prog-prop-2-6');
+        if (prog6_2) {
+          if (vDocTitular) {
+            prog6_2.classList.remove('progressive-hidden'); prog6_2.classList.add('progressive-visible');
+          } else {
+            prog6_2.classList.add('progressive-hidden'); prog6_2.classList.remove('progressive-visible');
           }
         }
 
