@@ -2277,6 +2277,7 @@ function obtenerDocumentosDelCDR(cdr) {
                         documentos.propietario.push({
                           nombre: '🧾 [Propietario] ' + f.getName(),
                           url: f.getUrl(),
+                          fileId: f.getId(),
                           tipo: f.getMimeType(),
                           tamaño: f.getSize()
                         });
@@ -2302,6 +2303,7 @@ function obtenerDocumentosDelCDR(cdr) {
                     documentos.propietario.push({
                       nombre: '🛡️ [Propietario] ' + f.getName(),
                       url: f.getUrl(),
+                      fileId: f.getId(),
                       tipo: f.getMimeType(),
                       tamaño: f.getSize()
                     });
@@ -2325,6 +2327,7 @@ function obtenerDocumentosDelCDR(cdr) {
               documentos.propietario.push({
                 nombre: '📜 [Propietario] ' + f.getName(),
                 url: f.getUrl(),
+                fileId: f.getId(),
                 tipo: f.getMimeType(),
                 tamaño: f.getSize()
               });
@@ -2364,6 +2367,7 @@ function obtenerDocumentosDelCDR(cdr) {
                   documentos.propietario.push({
                     nombre: '🪪 [Propietario] ' + f.getName(),
                     url: f.getUrl(),
+                    fileId: f.getId(),
                     tipo: f.getMimeType(),
                     tamaño: f.getSize()
                   });
@@ -2381,6 +2385,7 @@ function obtenerDocumentosDelCDR(cdr) {
                   documentos.propietario.push({
                     nombre: '🏦 [Propietario] ' + f.getName(),
                     url: f.getUrl(),
+                    fileId: f.getId(),
                     tipo: f.getMimeType(),
                     tamaño: f.getSize()
                   });
