@@ -1818,19 +1818,19 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
     }
 
     // ==============================
-    // 4. Mapa de rutas por clave del formulario
+    // 4. Mapa de rutas por clave del formulario (Lazy Loading de carpetas)
     // ==============================
     const RUTAS = {
-      'docFront': { carpeta: cedulaRPRFolder, nombre: `CEDULA_PROP_FRONTAL_[${codigoRegistro}]` },
-      'docBack': { carpeta: cedulaRPRFolder, nombre: `CEDULA_PROP_REVERSO_[${codigoRegistro}]` },
-      'certTradicion': { carpeta: certTradicionFolder, nombre: `CERT_TRADICION_[${codigoRegistro}]` },
-      'sarlaft': { carpeta: sarlaftFolder, nombre: `SARLAFT_[${codigoRegistro}]` },
-      'certBancario': { carpeta: certBancarioFolder, nombre: `CERT_BANCARIO_[${codigoRegistro}]` },
-      'facturaAgua': { carpeta: buscarOCrearCarpetaServicio('AGUA'), nombre: `FACTURA_AGUA_[${codigoRegistro}]` },
-      'facturaLuz': { carpeta: buscarOCrearCarpetaServicio('LUZ'), nombre: `FACTURA_LUZ_[${codigoRegistro}]` },
-      'facturaGas': { carpeta: buscarOCrearCarpetaServicio('GAS'), nombre: `FACTURA_GAS_[${codigoRegistro}]` },
-      'facturaTelefono': { carpeta: buscarOCrearCarpetaServicio('TELEFONO'), nombre: `FACTURA_TELEFONO_[${codigoRegistro}]` },
-      'facturaInternet': { carpeta: buscarOCrearCarpetaServicio('INTERNET'), nombre: `FACTURA_INTERNET_[${codigoRegistro}]` },
+      'docFront': { getCarpeta: () => cedulaRPRFolder, nombre: `CEDULA_PROP_FRONTAL_[${codigoRegistro}]` },
+      'docBack': { getCarpeta: () => cedulaRPRFolder, nombre: `CEDULA_PROP_REVERSO_[${codigoRegistro}]` },
+      'certTradicion': { getCarpeta: () => certTradicionFolder, nombre: `CERT_TRADICION_[${codigoRegistro}]` },
+      'sarlaft': { getCarpeta: () => sarlaftFolder, nombre: `SARLAFT_[${codigoRegistro}]` },
+      'certBancario': { getCarpeta: () => certBancarioFolder, nombre: `CERT_BANCARIO_[${codigoRegistro}]` },
+      'facturaAgua': { getCarpeta: () => buscarOCrearCarpetaServicio('AGUA'), nombre: `FACTURA_AGUA_[${codigoRegistro}]` },
+      'facturaLuz': { getCarpeta: () => buscarOCrearCarpetaServicio('LUZ'), nombre: `FACTURA_LUZ_[${codigoRegistro}]` },
+      'facturaGas': { getCarpeta: () => buscarOCrearCarpetaServicio('GAS'), nombre: `FACTURA_GAS_[${codigoRegistro}]` },
+      'facturaTelefono': { getCarpeta: () => buscarOCrearCarpetaServicio('TELEFONO'), nombre: `FACTURA_TELEFONO_[${codigoRegistro}]` },
+      'facturaInternet': { getCarpeta: () => buscarOCrearCarpetaServicio('INTERNET'), nombre: `FACTURA_INTERNET_[${codigoRegistro}]` },
     };
 
     // ==============================
@@ -1845,12 +1845,15 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
       if (mimeType.includes('pdf')) extension = 'pdf';
 
       const ruta = RUTAS[clave];
-      let targetFolder, nuevoNombre;
+      let targetFolder = null;
+      let nuevoNombre = null;
 
-      if (ruta && ruta.carpeta) {
-        targetFolder = ruta.carpeta;
+      if (ruta) {
+        targetFolder = ruta.getCarpeta();
         nuevoNombre = `${ruta.nombre}.${extension}`;
-      } else {
+      }
+
+      if (!targetFolder) {
         // Fallback: guardar en la carpeta CDR raíz
         targetFolder = inmuebleFolder;
         nuevoNombre = `${clave.toUpperCase()}_[${codigoRegistro}].${extension}`;
@@ -1858,7 +1861,7 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
       }
 
       // Limpiar TODAS las versiones anteriores del archivo (cualquier extensión)
-      const nombreBase = ruta && ruta.carpeta ? ruta.nombre : `${clave.toUpperCase()}_[${codigoRegistro}]`;
+      const nombreBase = ruta ? ruta.nombre : `${clave.toUpperCase()}_[${codigoRegistro}]`;
       limpiarArchivosAnteriores(targetFolder, nombreBase);
 
       // PREVENCIÓN DE ERROR DRIVE: Validar que el contenido base64 sea un string válido con la coma separadora
