@@ -1832,6 +1832,12 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
       const nombreBase = ruta && ruta.carpeta ? ruta.nombre : `${clave.toUpperCase()}_[${codigoRegistro}]`;
       limpiarArchivosAnteriores(targetFolder, nombreBase);
 
+      // PREVENCIÓN DE ERROR DRIVE: Validar que el contenido base64 sea un string válido con la coma separadora
+      if (typeof contenidoBase64.contenido !== 'string' || !contenidoBase64.contenido.includes(',')) {
+        Logger.log(`⚠️ Archivo ignorado por contenido inválido/vacío: ${clave}`);
+        continue;
+      }
+
       const base64Data = contenidoBase64.contenido.split(',')[1];
       const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType);
       blob.setName(nuevoNombre);
@@ -1907,7 +1913,7 @@ function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr) {
   body.appendParagraph(`CORREO:: ${prop.email || ''}`);
 
   // Datos bancarios
-  const banco = datosFormulario?.bancario || {};
+  const banco = datosFormulario?.bancarios || {};
   if (banco.tipoCuenta || banco.numeroCuenta) {
     body.appendParagraph('\nDATOS BANCARIOS:');
     body.appendParagraph(`TIPO DE CUENTA:: ${banco.tipoCuenta || ''}`);
