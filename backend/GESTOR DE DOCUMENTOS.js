@@ -2228,8 +2228,8 @@ function obtenerDocumentosDelCDR(cdr) {
       Logger.log('Error buscando archivos inquilino: ' + e);
     }
 
-    // --- LÓGICA DE PROPIETARIOS (MANTENIDA EN RAÍZ DEL CDR TEMPORALMENTE) ---
-    // Buscar carpeta de propietario en la raíz
+    // --- LÓGICA DE PROPIETARIOS (MANTENIDA EN RAÍZ Y NUEVAS UBICACIONES) ---
+    // Buscar carpeta de propietario antigua en la raíz (por si acaso hay legacy)
     const subfoldersRaiz = carpetaCDR.getFolders();
     while (subfoldersRaiz.hasNext()) {
       const subfolder = subfoldersRaiz.next();
@@ -2242,11 +2242,158 @@ function obtenerDocumentosDelCDR(cdr) {
           documentos.propietario.push({
             nombre: archivo.getName(),
             url: archivo.getUrl(),
-            tipo: determinarTipoDocumento(archivo.getName()),
+            tipo: archivo.getMimeType(),
             tamaño: archivo.getSize()
           });
         }
       }
+    }
+
+    // --- LÓGICA DE PROPIETARIOS (NUEVA: RPR y CARPETAS DEL INMUEBLE) ---
+    // En las nuevas rutas los archivos del propietario se guardan con los tags CEDULA_PROP, CERT_TRADICION, CERT_BANCARIO, SARLAFT, FACTURA_
+    // Navegamos al nivel ENTREGAS DEL INMUEBLE para las facturas y SARLAFT
+    try {
+      let entregasF = getFolderByNameHelper(carpetaCDR, 'ENTREGAS DEL INMUEBLE');
+      if (entregasF) {
+        let anioF = obtenerCarpetaAnioMasRecienteLocal(entregasF);
+        if (anioF) {
+
+          // 1. FACTURAS (COMPROBANTES DE SERVICIOS PÚBLICOS)
+          let docsEntrega = getFolderByNameHelper(anioF, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+          if (docsEntrega) {
+            let comprobantes = getFolderByNameHelper(docsEntrega, '1- COMPROBANTES DE PAGO DEL INMUEBLE');
+            if (comprobantes) {
+              let serviciosFolder = getFolderByNameHelper(comprobantes, 'COMPROBANTES DE SERVICIOS PÚBLICOS');
+              if (serviciosFolder) {
+                const srvFolders = serviciosFolder.getFolders();
+                while (srvFolders.hasNext()) {
+                  const sV = srvFolders.next();
+                  const ultimoR = getFolderByNameHelper(sV, '1. ULTIMO RECIBO PAGO');
+                  if (ultimoR) {
+                    const archivosSrv = ultimoR.getFiles();
+                    while (archivosSrv.hasNext()) {
+                      const f = archivosSrv.next();
+                      if (f.getName().includes('FACTURA_')) {
+                        documentos.propietario.push({
+                          nombre: '🧾 [Propietario] ' + f.getName(),
+                          url: f.getUrl(),
+                          tipo: f.getMimeType(),
+                          tamaño: f.getSize()
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // 2. SARLAFT
+          let docsAseg = getFolderByNameHelper(anioF, 'DOCUMENTOS DE LA ASEGURADORA');
+          if (docsAseg) {
+            let variosAsg = getFolderByNameHelper(docsAseg, '4- VARIOS, APROBADO, SARLAFT');
+            if (variosAsg) {
+              let sarl = getFolderByNameHelper(variosAsg, 'SARLAFT');
+              if (sarl) {
+                const af = sarl.getFiles();
+                while (af.hasNext()) {
+                  const f = af.next();
+                  if (f.getName().includes('SARLAFT')) {
+                    documentos.propietario.push({
+                      nombre: '🛡️ [Propietario] ' + f.getName(),
+                      url: f.getUrl(),
+                      tipo: f.getMimeType(),
+                      tamaño: f.getSize()
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 3. CERTIFICADO DE TRADICION (Nivel 3 -> ARCHIVOS DEL INMUEBLE)
+      let archF = getFolderByNameHelper(carpetaCDR, 'ARCHIVOS DEL INMUEBLE');
+      if (archF) {
+        let certF = getFolderByNameHelper(archF, 'CERTIFICADO DE LIBERTAD Y TRADICIÓN');
+        if (certF) {
+          const af = certF.getFiles();
+          while (af.hasNext()) {
+            const f = af.next();
+            if (f.getName().includes('CERT_TRADICION')) {
+              documentos.propietario.push({
+                nombre: '📜 [Propietario] ' + f.getName(),
+                url: f.getUrl(),
+                tipo: f.getMimeType(),
+                tamaño: f.getSize()
+              });
+            }
+          }
+        }
+      }
+
+      // 4. DOCUMENTOS DEL RPR (Ruta dinámica y paralela)
+      let rprRoot = null;
+      try {
+        const tipoNegocioParent = carpetaCDR.getParents();
+        if (tipoNegocioParent.hasNext()) {
+          const tipoNeg = tipoNegocioParent.next();
+          const inmueblesParent = tipoNeg.getParents();
+          if (inmueblesParent.hasNext()) {
+            const inmueblesF = inmueblesParent.next();
+            const rprParent = inmueblesF.getParents();
+            if (rprParent.hasNext()) rprRoot = rprParent.next();
+          }
+        }
+      } catch (e) { }
+
+      if (rprRoot) {
+        let docsProp = getFolderByNameHelper(rprRoot, 'DOCUMENTOS DEL PROPIETARIO');
+        if (docsProp) {
+          let repLegal = getFolderByNameHelper(docsProp, '1- REPRESENTANTE LEGAL');
+          if (repLegal) {
+
+            // Cedula
+            let cedRpr = getFolderByNameHelper(repLegal, '1- CEDULA RPR LEGAL');
+            if (cedRpr) {
+              const af = cedRpr.getFiles();
+              while (af.hasNext()) {
+                const f = af.next();
+                if (f.getName().includes('CEDULA_PROP')) {
+                  documentos.propietario.push({
+                    nombre: '🪪 [Propietario] ' + f.getName(),
+                    url: f.getUrl(),
+                    tipo: f.getMimeType(),
+                    tamaño: f.getSize()
+                  });
+                }
+              }
+            }
+
+            // Bancario
+            let certB = getFolderByNameHelper(repLegal, '2- CERTIFICADO BANCARIO RPR LEGAL');
+            if (certB) {
+              const af = certB.getFiles();
+              while (af.hasNext()) {
+                const f = af.next();
+                if (f.getName().includes('CERT_BANCARIO')) {
+                  documentos.propietario.push({
+                    nombre: '🏦 [Propietario] ' + f.getName(),
+                    url: f.getUrl(),
+                    tipo: f.getMimeType(),
+                    tamaño: f.getSize()
+                  });
+                }
+              }
+            }
+
+          }
+        }
+      }
+
+    } catch (e) {
+      Logger.log('Error buscando nuevos archivos de propietario: ' + e);
     }
 
     // --- LEER ESTADOS DE VALIDACIÓN DESDE EL CEREBRO ---
