@@ -1648,6 +1648,17 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
+    let estadoDoc = 'INQ_SUBMITTED';
+    if (datosFormulario.modoCorreccion) {
+      const colEstado = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+      if (colEstado > 0) {
+        const estadoActual = sheet.getRange(fila, colEstado).getValue().toString();
+        if (estadoActual.includes('|')) {
+          estadoDoc = 'INQ_SUBMITTED|' + estadoActual.split('|')[1];
+        }
+      }
+    }
+
     // Mapeo de campos
     const campos = {
       'CORREO INQUILINO': datosFormulario.inquilino.email,
@@ -1658,7 +1669,7 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
       'OCUPACIÓN INQUILINO': datosFormulario.inquilino.ocupacion,
       'FECHA INICIO DEL CONTRATO': datosFormulario.fechaInicio,
       'DETALLES DEL ESTADO DEL INMUEBLE': '📄 Formulario del inquilino diligenciado. Pendiente validación',
-      'ESTADO DOCUMENTAL': 'INQ_SUBMITTED'
+      'ESTADO DOCUMENTAL': estadoDoc
     };
 
     // Actualizar campos
@@ -1701,6 +1712,17 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
+    let estadoDoc = 'PROP_SUBMITTED';
+    if (datosFormulario.modoCorreccion) {
+      const colEstado = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+      if (colEstado > 0) {
+        const estadoActual = sheet.getRange(fila, colEstado).getValue().toString();
+        if (estadoActual.includes('|')) {
+          estadoDoc = 'PROP_SUBMITTED|' + estadoActual.split('|')[1];
+        }
+      }
+    }
+
     // Mapeo de campos
     const campos = {
       'Correo electrónico': datosFormulario.propietario.email,
@@ -1709,7 +1731,7 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
       'Número de documento': datosFormulario.propietario.numeroDocumento,
       'Celular': datosFormulario.propietario.celular,
       'DETALLES DEL ESTADO DEL INMUEBLE': '📄 Formulario del propietario diligenciado. Pendiente validación',
-      'ESTADO DOCUMENTAL': 'PROP_SUBMITTED'
+      'ESTADO DOCUMENTAL': estadoDoc
     };
 
     // Actualizar campos

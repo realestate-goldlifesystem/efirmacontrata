@@ -1808,7 +1808,8 @@
             // ─── Pre-populamos documentos aprobados si hay corrección previa ───
             const registro = getRegistroData();
             console.log('📋 Registro estadoDocumental:', registro ? registro.estadoDocumental : 'NO ENCONTRADO');
-            if (registro && registro.estadoDocumental && registro.estadoDocumental.includes('CORRECTION')) {
+            // Funciona tanto para INQ_CORRECTION|docs como para INQ_SUBMITTED|docs
+            if (registro && registro.estadoDocumental && registro.estadoDocumental.includes('|')) {
                 const parts = registro.estadoDocumental.split('|');
                 const correctionDocNames = parts.length > 1 ? parts[1].split(',').filter(n => n.trim()) : [];
 
