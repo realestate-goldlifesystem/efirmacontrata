@@ -1717,25 +1717,27 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
     // --- DOCUMENTOS DE LA ASEGURADORA > 4- VARIOS, APROBADO, SARLAFT > SARLAFT ---
     let sarlaftFolder = null;
     if (anioFolder) {
-      const docsAseguradora = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE LA ASEGURADORA');
-      if (docsAseguradora) {
-        const variosAseg = getFolderByNameHelper(docsAseguradora, '4- VARIOS, APROBADO, SARLAFT');
-        if (variosAseg) {
-          sarlaftFolder = getFolderByNameHelper(variosAseg, 'SARLAFT');
-        }
-      }
+      let docsAseguradora = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE LA ASEGURADORA');
+      if (!docsAseguradora) docsAseguradora = anioFolder.createFolder('DOCUMENTOS DE LA ASEGURADORA');
+
+      let variosAseg = getFolderByNameHelper(docsAseguradora, '4- VARIOS, APROBADO, SARLAFT');
+      if (!variosAseg) variosAseg = docsAseguradora.createFolder('4- VARIOS, APROBADO, SARLAFT');
+
+      sarlaftFolder = getFolderByNameHelper(variosAseg, 'SARLAFT');
+      if (!sarlaftFolder) sarlaftFolder = variosAseg.createFolder('SARLAFT');
     }
 
     // --- COMPROBANTES DE SERVICIOS PÚBLICOS (para facturas) ---
     let serviciosFolder = null;
     if (anioFolder) {
-      const docsEntrega = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
-      if (docsEntrega) {
-        const comprobantes = getFolderByNameHelper(docsEntrega, '1- COMPROBANTES DE PAGO DEL INMUEBLE');
-        if (comprobantes) {
-          serviciosFolder = getFolderByNameHelper(comprobantes, 'COMPROBANTES DE SERVICIOS PÚBLICOS');
-        }
-      }
+      let docsEntrega = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+      if (!docsEntrega) docsEntrega = anioFolder.createFolder('DOCUMENTOS DE ENTREGA - INQUILINO');
+
+      let comprobantes = getFolderByNameHelper(docsEntrega, '1- COMPROBANTES DE PAGO DEL INMUEBLE');
+      if (!comprobantes) comprobantes = docsEntrega.createFolder('1- COMPROBANTES DE PAGO DEL INMUEBLE');
+
+      serviciosFolder = getFolderByNameHelper(comprobantes, 'COMPROBANTES DE SERVICIOS PÚBLICOS');
+      if (!serviciosFolder) serviciosFolder = comprobantes.createFolder('COMPROBANTES DE SERVICIOS PÚBLICOS');
     }
 
     // --- DOCUMENTOS DEL PROPIETARIO (a nivel RPR, hermano de INMUEBLES) ---
@@ -1872,34 +1874,12 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
 
 // Helper: escribir datos del propietario en el mismo doc DATOS DE ELABORACION DE CONTRATO
 function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr) {
-  // Navegar a: CDR > ENTREGAS > [año] > DOCUMENTOS DE ENTREGA - INQUILINO > 4- VARIOS... > 2- CEDULA DEL INQUILINO
-  const entregasF = getFolderByNameHelper(inmuebleFolder, 'ENTREGAS DEL INMUEBLE');
-  if (!entregasF) return;
-  const anioF = obtenerCarpetaAnioMasRecienteLocal(entregasF);
-  if (!anioF) return;
-  const docsInq = getFolderByNameHelper(anioF, 'DOCUMENTOS DE ENTREGA - INQUILINO');
-  if (!docsInq) return;
-  let variosF = getFolderByNameHelper(docsInq, '4- VARIOS, FORMATO DE MUDANZAS, ETC');
-  if (!variosF) return;
-  const cedulaInqF = getFolderByNameHelper(variosF, '2- CEDULA DEL INQUILINO');
-  if (!cedulaInqF) return;
-
-  // Buscar el doc
-  let docFile = null;
-  const exactSearch = cedulaInqF.getFilesByName('DATOS DE ELABORACION DE CONTRATO');
-  if (exactSearch.hasNext()) docFile = exactSearch.next();
-
-  if (!docFile) {
-    const allFiles = cedulaInqF.getFiles();
-    while (allFiles.hasNext()) {
-      const f = allFiles.next();
-      if (f.getName().includes('DATOS DE ELABORACION')) { docFile = f; break; }
-    }
+  const doc = abrirDocCerebro(cdr);
+  if (!doc) {
+    Logger.log('⚠️ No se encontró el Cerebro para CDR: ' + cdr);
+    return;
   }
 
-  if (!docFile) return;
-
-  const doc = DocumentApp.openById(docFile.getId());
   const body = doc.getBody();
   body.appendParagraph('\n------------------------------------------');
   body.appendParagraph(`[PROPIETARIO - ENVIADO EL ${new Date().toLocaleDateString('es-CO')}]`);
@@ -1923,9 +1903,25 @@ function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr) {
     body.appendParagraph(`DOC TITULAR:: ${banco.docTitular || ''}`);
   }
 
+  // --- BUZONES DE DOCUMENTACIÓN DEL PROPIETARIO ---
+  body.appendParagraph('\nESTADO DOCUMENTAL PROPIETARIO:');
+  body.appendParagraph('BUZON PROPIETARIO FRONTAL:: RECIBIDO');
+  body.appendParagraph('BUZON PROPIETARIO REVERSO:: RECIBIDO');
+  body.appendParagraph('BUZON CERTIFICADO TRADICION:: RECIBIDO');
+  body.appendParagraph('BUZON CERTIFICADO BANCARIO:: RECIBIDO');
+  body.appendParagraph('BUZON SARLAFT:: RECIBIDO');
+
+  // Agregar buzones dinámicos de facturas si el formulario indica que las subió
+  if (datosFormulario?.serviciosPublicos && Array.isArray(datosFormulario.serviciosPublicos)) {
+    datosFormulario.serviciosPublicos.forEach(s => {
+      // s.tipo es 'agua', 'luz', etc.
+      body.appendParagraph(`BUZON FACTURA ${s.tipo.toUpperCase()}:: RECIBIDO`);
+    });
+  }
+
   body.appendParagraph('[FIN PROPIETARIO]');
   doc.saveAndClose();
-  Logger.log('✅ Datos de propietario escritos en DATOS DE ELABORACION DE CONTRATO.');
+  Logger.log('✅ Datos (y buzones) de propietario escritos en el Cerebro.');
 }
 
 // ==========================================

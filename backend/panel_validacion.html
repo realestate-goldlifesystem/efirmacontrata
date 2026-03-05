@@ -2460,6 +2460,19 @@
             }
             if (n.includes('INQU') && n.includes('FRONTAL')) return 'BUZON INQUILINO FRONTAL';
             if (n.includes('INQU') && n.includes('REVERSO')) return 'BUZON INQUILINO REVERSO';
+
+            // --- BUZONES PROPIETARIO ---
+            if (n.includes('PROP_FRONTAL') || n.includes('PROP_FRONTA')) return 'BUZON PROPIETARIO FRONTAL';
+            if (n.includes('PROP_RESERVO') || n.includes('PROP_REVERSO')) return 'BUZON PROPIETARIO REVERSO';
+            if (n.includes('CERT_TRADICION')) return 'BUZON CERTIFICADO TRADICION';
+            if (n.includes('CERT_BANCARIO')) return 'BUZON CERTIFICADO BANCARIO';
+            if (n.includes('SARLAFT')) return 'BUZON SARLAFT';
+            if (n.includes('FACTURA_AGUA')) return 'BUZON FACTURA AGUA';
+            if (n.includes('FACTURA_LUZ')) return 'BUZON FACTURA LUZ';
+            if (n.includes('FACTURA_GAS')) return 'BUZON FACTURA GAS';
+            if (n.includes('FACTURA_TELEFONO')) return 'BUZON FACTURA TELEFONO';
+            if (n.includes('FACTURA_INTERNET')) return 'BUZON FACTURA INTERNET';
+
             return null; // Archivo no mapeado
         }
 
