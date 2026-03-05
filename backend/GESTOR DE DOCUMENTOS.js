@@ -1807,6 +1807,12 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
         const nuevoNombre = `${nuevoNum}. ${nombreServicioKey.toUpperCase()}`;
         carpetaEncontrada = serviciosFolder.createFolder(nuevoNombre);
         Logger.log('📂 Carpeta de servicio creada dinámicamente: ' + nuevoNombre);
+
+        // Dejar lista la estructura de 12 meses para el inquilino (creamos en reversa para ordenar visualmente)
+        for (let i = 12; i >= 1; i--) {
+          carpetaEncontrada.createFolder(`MES #${i}`);
+        }
+        Logger.log('📂 Carpetas mensuales pre-generadas para: ' + nuevoNombre);
       }
 
       let ultimoRecibo = getFolderByNameHelper(carpetaEncontrada, '1. ULTIMO RECIBO PAGO');
