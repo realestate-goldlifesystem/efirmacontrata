@@ -1356,6 +1356,37 @@
             </p>
         </div>
     </div>
+
+    <!-- ═══ PROGRESS OVERLAY (0-100%) ═══ -->
+    <div id="progressOverlay"
+        style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:20000; align-items:center; justify-content:center;">
+        <div
+            style="background:white; padding:2.5rem 3rem; border-radius:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.4); min-width:320px;">
+            <div class="progress-ring-container"
+                style="position:relative; width:120px; height:120px; margin:0 auto 1.5rem;">
+                <svg width="120" height="120" viewBox="0 0 120 120" style="transform:rotate(-90deg);">
+                    <circle cx="60" cy="60" r="52" stroke="#e2e8f0" stroke-width="8" fill="none" />
+                    <circle id="progressCircle" cx="60" cy="60" r="52" stroke="url(#progressGradient)" stroke-width="8"
+                        fill="none" stroke-dasharray="326.73" stroke-dashoffset="326.73" stroke-linecap="round"
+                        style="transition: stroke-dashoffset 0.15s ease;" />
+                    <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#FFD700" />
+                            <stop offset="100%" stop-color="#10b981" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div id="progressPercent"
+                    style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:800; color:#1e293b;">
+                    0%</div>
+            </div>
+            <p id="progressLabel" style="margin:0; font-weight:700; color:#1e293b; font-size:1.15rem;">Procesando
+                validación...</p>
+            <p id="progressSubLabel" style="margin:0.5rem 0 0; color:#64748b; font-size:0.9rem;">Actualizando registros
+                y enviando notificaciones</p>
+        </div>
+    </div>
+
     <style>
         @keyframes spin {
             to {
@@ -1364,6 +1395,10 @@
         }
 
         #loadingOverlay.show {
+            display: flex !important;
+        }
+
+        #progressOverlay.show {
             display: flex !important;
         }
     </style>
@@ -1759,11 +1794,19 @@
             // Cargar documentos y mostrar modal
             google.script.run
                 .withSuccessHandler(function (data) {
+                    console.log('✅ Documentos cargados OK:', data);
                     ocultarLoading();
-                    mostrarModalValidacion(cdr, 'inquilino', data);
+                    try {
+                        mostrarModalValidacion(cdr, 'inquilino', data);
+                    } catch (err) {
+                        console.error('❌ Error en mostrarModalValidacion:', err);
+                        alert('Error al renderizar modal: ' + err.message);
+                    }
                 })
                 .withFailureHandler(function (error) {
+                    console.error('❌ Error backend en obtenerDocumentosDelCDR:', error);
                     ocultarLoading();
+                    alert('Error del Servidor: ' + error.message || error);
                     mostrarToast('Error al cargar documentos: ' + error, 'error');
                 })
                 .obtenerDocumentosDelCDR(cdr);
@@ -1785,11 +1828,19 @@
             // Cargar documentos y mostrar modal
             google.script.run
                 .withSuccessHandler(function (data) {
+                    console.log('✅ Documentos propietario cargados OK:', data);
                     ocultarLoading();
-                    mostrarModalValidacion(cdr, 'propietario', data);
+                    try {
+                        mostrarModalValidacion(cdr, 'propietario', data);
+                    } catch (err) {
+                        console.error('❌ Error en mostrarModalValidacion (Prop):', err);
+                        alert('Error al renderizar modal Prop: ' + err.message);
+                    }
                 })
                 .withFailureHandler(function (error) {
+                    console.error('❌ Error backend en obtenerDocumentosDelCDR (Prop):', error);
                     ocultarLoading();
+                    alert('Error del Servidor: ' + error.message || error);
                     mostrarToast('Error al cargar documentos: ' + error, 'error');
                 })
                 .obtenerDocumentosDelCDR(cdr);
@@ -1804,29 +1855,6 @@
             motivosCorreccion = {};
             documentoActual = null;
             personaActivaKey = tipo; // Ej: 'inquilino' o 'propietario'
-
-            // ─── MAPA: Nombre de archivo → BUZON del Cerebro ───
-            // Función que extrae la categoría BUZON de un nombre de archivo del Drive
-            function obtenerBuzonParaDoc(nombreArchivo) {
-                const n = nombreArchivo.toUpperCase();
-                if (n.includes('COMPROBANTE_PAGO') || n.includes('COMPROBANTE')) return 'BUZON COMPROBANTE DE PAGO';
-                if (n.includes('SOPORTES_INGRESO_COD')) {
-                    const m = n.match(/COD_(\d+)/);
-                    return m ? `BUZON SOPORTES INGRESO CODEUDOR ${m[1]}` : 'BUZON SOPORTES INGRESO CODEUDOR 1';
-                }
-                if (n.includes('SOPORTES_INGRESO_INQ') || n.includes('SOPORTES_INGRESO')) return 'BUZON SOPORTES INGRESO INQUILINO';
-                if (n.includes('COD_') && n.includes('FRONTAL')) {
-                    const m = n.match(/COD_(\d+)/);
-                    return m ? `BUZON CODEUDOR ${m[1]} FRONTAL` : 'BUZON CODEUDOR 1 FRONTAL';
-                }
-                if (n.includes('COD_') && n.includes('REVERSO')) {
-                    const m = n.match(/COD_(\d+)/);
-                    return m ? `BUZON CODEUDOR ${m[1]} REVERSO` : 'BUZON CODEUDOR 1 REVERSO';
-                }
-                if (n.includes('INQU') && n.includes('FRONTAL')) return 'BUZON INQUILINO FRONTAL';
-                if (n.includes('INQU') && n.includes('REVERSO')) return 'BUZON INQUILINO REVERSO';
-                return null; // Archivo no mapeado
-            }
 
             // ─── Pre-aprobación basada en el Cerebro ───
             const estadosBuzon = documentosData.estadosBuzon || {};
@@ -2039,11 +2067,12 @@
             // Update Counter
             actualizarContadorUI();
 
-            // Seleccionar el primer doc automáticamente
+            // Auto-avanzar al primer doc PENDIENTE (no evaluado), o al primero si todos están evaluados
             if (docsList.length > 0) {
-                const firstDoc = docsList[0];
-                const btnRef = document.getElementById('dtab_' + firstDoc.fileId);
-                cambiarDocumento(firstDoc.fileId, firstDoc.url, firstDoc.tipo, firstDoc.nombre, btnRef);
+                const pendingDoc = docsList.find(doc => !validacionEstado[doc.fileId]);
+                const targetDoc = pendingDoc || docsList[0];
+                const btnRef = document.getElementById('dtab_' + targetDoc.fileId);
+                cambiarDocumento(targetDoc.fileId, targetDoc.url, targetDoc.tipo, targetDoc.nombre, btnRef);
             }
         }
 
@@ -2174,6 +2203,8 @@
 
             for (let i = 1; i < personKeys.length; i++) {
                 const nextPersonKey = personKeys[(currentIdx + i) % personKeys.length];
+                if (nextPersonKey === 'estadosBuzon') continue; // Ignorar el mapa de estados
+
                 const nextPersonDocs = documentosData[nextPersonKey] || [];
                 const pendingDoc = nextPersonDocs.find(doc => !validacionEstado[doc.fileId]);
 
@@ -2202,6 +2233,7 @@
             let correcciones = 0;
 
             for (let person in documentosData) {
+                if (person === 'estadosBuzon') continue; // Ignorar el mapa de estados
                 const docsObj = documentosData[person] || [];
                 totalDocsCount += docsObj.length;
                 docsObj.forEach(doc => {
@@ -2232,6 +2264,7 @@
             // Conta cuantas keys hay en total en documentosData
             let totalDocsCount = 0;
             for (let person in documentosData) {
+                if (person === 'estadosBuzon') continue; // Ignorar el mapa de estados
                 totalDocsCount += (documentosData[person] || []).length;
             }
 
@@ -2269,79 +2302,167 @@
             document.getElementById('modalConfirmacionFinal').classList.add('show');
         }
 
+        // ═══ ANIMACIÓN DE PROGRESO 0-100% ═══
+        let progressInterval = null;
+
+        function mostrarProgreso(labelText, subText) {
+            document.getElementById('progressLabel').textContent = labelText || 'Procesando validación...';
+            document.getElementById('progressSubLabel').textContent = subText || 'Actualizando registros y enviando notificaciones';
+            document.getElementById('progressPercent').textContent = '0%';
+            document.getElementById('progressCircle').style.strokeDashoffset = '326.73';
+            document.getElementById('progressOverlay').classList.add('show');
+
+            let pct = 0;
+            const circumference = 326.73;
+            progressInterval = setInterval(() => {
+                // Sube rápido al inicio, luego se frena (~logarítmico)
+                if (pct < 40) pct += 3;
+                else if (pct < 70) pct += 2;
+                else if (pct < 90) pct += 0.5;
+                else if (pct < 95) pct += 0.1;
+                // Se queda en ~95% esperando al backend
+                pct = Math.min(pct, 95);
+
+                const offset = circumference - (circumference * pct / 100);
+                document.getElementById('progressCircle').style.strokeDashoffset = offset;
+                document.getElementById('progressPercent').textContent = Math.round(pct) + '%';
+            }, 60);
+        }
+
+        function completarProgreso(successMsg) {
+            clearInterval(progressInterval);
+            // Animar de donde esté hasta 100%
+            document.getElementById('progressCircle').style.strokeDashoffset = '0';
+            document.getElementById('progressPercent').textContent = '100%';
+            document.getElementById('progressLabel').textContent = successMsg || '✅ ¡Completado!';
+            document.getElementById('progressSubLabel').textContent = '';
+
+            setTimeout(() => {
+                document.getElementById('progressOverlay').classList.remove('show');
+            }, 800);
+        }
+
+        function ocultarProgreso() {
+            clearInterval(progressInterval);
+            document.getElementById('progressOverlay').classList.remove('show');
+        }
+
         function ejecutarAprobacionMaster() {
-            // Verificar si todo fue aprobado, o si hay rechazos
-            let docIdsConCorreccion = [];
-            let detalleMotivos = "";
+            try {
+                // Verificar si todo fue aprobado, o si hay rechazos
+                let docIdsConCorreccion = [];
+                let detalleMotivos = "";
 
-            // Construir mapa de estados BUZON para el Cerebro
-            const estadosBuzonMap = {};
+                // Construir mapa de estados BUZON para el Cerebro
+                const estadosBuzonMap = {};
 
-            for (let person in documentosData) {
-                if (person === 'estadosBuzon') continue; // Saltar el mapa de estados
-                const docsObj = documentosData[person] || [];
-                docsObj.forEach(doc => {
-                    const id = doc.fileId;
-                    const buzonKey = obtenerBuzonParaDoc(doc.nombre);
+                for (let person in documentosData) {
+                    if (person === 'estadosBuzon') continue; // Saltar el mapa de estados
+                    const docsObj = documentosData[person] || [];
+                    docsObj.forEach(doc => {
+                        const id = doc.fileId;
+                        const buzonKey = obtenerBuzonParaDoc(doc.nombre);
 
-                    if (validacionEstado[id] === 'correccion') {
-                        docIdsConCorreccion.push(doc.nombre);
-                        detalleMotivos += `${doc.nombre.replace(/_\[REG_.*?\]/, '').replace(/_/g, ' ')}:\n${motivosCorreccion[id]}\n\n`;
-                        if (buzonKey) estadosBuzonMap[buzonKey] = 'ACTUALIZANDO';
-                    } else if (validacionEstado[id] === 'aprobado') {
-                        if (buzonKey) estadosBuzonMap[buzonKey] = 'APROBADO';
-                    }
-                });
-            }
+                        if (validacionEstado[id] === 'correccion') {
+                            docIdsConCorreccion.push(doc.nombre);
+                            detalleMotivos += `${doc.nombre.replace(/_\[REG_.*?\]/, '').replace(/_/g, ' ')}:\n${motivosCorreccion[id]}\n\n`;
+                            if (buzonKey) estadosBuzonMap[buzonKey] = 'ACTUALIZANDO';
+                        } else if (validacionEstado[id] === 'aprobado') {
+                            if (buzonKey) estadosBuzonMap[buzonKey] = 'APROBADO';
+                        }
+                    });
+                }
 
-            const payloadMaster = {
-                cdr: registroActual,
-                tipo: tipoActual,
-                estado: docIdsConCorreccion.length === 0 ? 'aprobado' : 'correccion',
-                documentosCorregir: docIdsConCorreccion, // Empty if all approved
-                observaciones: detalleMotivos.trim(),
-                estadosBuzon: estadosBuzonMap // Mapa de buzones para el Cerebro
-            };
+                const payloadMaster = {
+                    cdr: registroActual,
+                    tipo: tipoActual,
+                    estado: docIdsConCorreccion.length === 0 ? 'aprobado' : 'correccion',
+                    documentosCorregir: docIdsConCorreccion, // Empty if all approved
+                    observaciones: detalleMotivos.trim(),
+                    estadosBuzon: estadosBuzonMap // Mapa de buzones para el Cerebro
+                };
 
-            const btn = document.getElementById('btnEjecutarAprobacionMaster');
-            const ogText = btn.textContent;
-            btn.textContent = 'Procesando...';
-            btn.disabled = true;
+                const btn = document.getElementById('btnEjecutarAprobacionMaster');
+                btn.textContent = 'Procesando...';
+                btn.disabled = true;
 
-            // Decidir a qué función backend mandar según resultado final
-            if (payloadMaster.estado === 'aprobado') {
-                google.script.run
-                    .withSuccessHandler(function (result) {
-                        mostrarToast('✅ Todo Aprobado Exitosamente', 'success');
-                        cerrarModal('modalConfirmacionFinal');
-                        cerrarModal('modalValidacion');
-                        cargarDatos();
-                    })
-                    .withFailureHandler(function (error) {
-                        mostrarToast('Error al aprobar final: ' + error, 'error');
-                        btn.textContent = ogText;
-                        btn.disabled = false;
-                    })
-                    .procesarValidacion(payloadMaster);
-            } else {
-                // Hay correcciones
-                google.script.run
-                    .withSuccessHandler(function (result) {
-                        mostrarToast('📝 Se envió correo solicitando actualizaciones', 'warning');
-                        cerrarModal('modalConfirmacionFinal');
-                        cerrarModal('modalValidacion');
-                        cargarDatos();
-                    })
-                    .withFailureHandler(function (error) {
-                        mostrarToast('Error al solicitar correcciones: ' + error, 'error');
-                        btn.textContent = ogText;
-                        btn.disabled = false;
-                    })
-                    .enviarCorrecciones(payloadMaster);
+                // Cerrar el modal de confirmación y mostrar el overlay de progreso
+                cerrarModal('modalConfirmacionFinal');
+
+                // Decidir a qué función backend mandar según resultado final
+                if (payloadMaster.estado === 'aprobado') {
+                    mostrarProgreso('Procesando aprobación...', 'Actualizando estados y registros en el sistema');
+                    google.script.run
+                        .withSuccessHandler(function (result) {
+                            completarProgreso('✅ ¡Todo Aprobado Exitosamente!');
+                            setTimeout(() => {
+                                mostrarToast('✅ Todo Aprobado Exitosamente', 'success');
+                                cerrarModal('modalValidacion');
+                                cargarDatos();
+                            }, 900);
+                        })
+                        .withFailureHandler(function (error) {
+                            ocultarProgreso();
+                            console.error('❌ Error enviando aprobación:', error);
+                            alert('Error del Servidor: ' + (error.message || error));
+                            mostrarToast('Error al aprobar final: ' + error, 'error');
+                            btn.textContent = '✅ Procesar Todo';
+                            btn.disabled = false;
+                        })
+                        .procesarValidacion(payloadMaster);
+                } else {
+                    // Hay correcciones
+                    mostrarProgreso('Enviando solicitud de corrección...', 'Preparando correo y actualizando estados');
+                    google.script.run
+                        .withSuccessHandler(function (result) {
+                            completarProgreso('📝 ¡Corrección enviada exitosamente!');
+                            setTimeout(() => {
+                                mostrarToast('📝 Se envió correo solicitando actualizaciones', 'warning');
+                                cerrarModal('modalValidacion');
+                                cargarDatos();
+                            }, 900);
+                        })
+                        .withFailureHandler(function (error) {
+                            ocultarProgreso();
+                            console.error('❌ Error enviando corrección:', error);
+                            alert('Error del Servidor: ' + (error.message || error));
+                            mostrarToast('Error al solicitar correcciones: ' + error, 'error');
+                            btn.textContent = '✅ Procesar Todo';
+                            btn.disabled = false;
+                        })
+                        .enviarCorrecciones(payloadMaster);
+                }
+            } catch (err) {
+                ocultarProgreso();
+                console.error("❌ Error en ejecutarAprobacionMaster:", err);
+                alert("Error Javascript (Procesar Todo): " + err.message);
             }
         }
 
         // Funciones auxiliares
+        // ─── MAPA: Nombre de archivo → BUZON del Cerebro ───
+        // Función que extrae la categoría BUZON de un nombre de archivo del Drive
+        function obtenerBuzonParaDoc(nombreArchivo) {
+            const n = nombreArchivo.toUpperCase();
+            if (n.includes('COMPROBANTE_PAGO') || n.includes('COMPROBANTE')) return 'BUZON COMPROBANTE DE PAGO';
+            if (n.includes('SOPORTES_INGRESO_COD')) {
+                const m = n.match(/COD_(\d+)/);
+                return m ? `BUZON SOPORTES INGRESO CODEUDOR ${m[1]}` : 'BUZON SOPORTES INGRESO CODEUDOR 1';
+            }
+            if (n.includes('SOPORTES_INGRESO_INQ') || n.includes('SOPORTES_INGRESO')) return 'BUZON SOPORTES INGRESO INQUILINO';
+            if (n.includes('COD_') && n.includes('FRONTAL')) {
+                const m = n.match(/COD_(\d+)/);
+                return m ? `BUZON CODEUDOR ${m[1]} FRONTAL` : 'BUZON CODEUDOR 1 FRONTAL';
+            }
+            if (n.includes('COD_') && n.includes('REVERSO')) {
+                const m = n.match(/COD_(\d+)/);
+                return m ? `BUZON CODEUDOR ${m[1]} REVERSO` : 'BUZON CODEUDOR 1 REVERSO';
+            }
+            if (n.includes('INQU') && n.includes('FRONTAL')) return 'BUZON INQUILINO FRONTAL';
+            if (n.includes('INQU') && n.includes('REVERSO')) return 'BUZON INQUILINO REVERSO';
+            return null; // Archivo no mapeado
+        }
+
         function descargarDocumento() {
             if (documentoActual && documentoActual.url) {
                 window.open(documentoActual.url, '_blank');

@@ -171,6 +171,7 @@
       border: 2px solid var(--border);
       border-radius: 12px;
       background: #fdfdfd;
+      color: var(--dark);
       transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
       cursor: pointer;
     }
@@ -694,8 +695,82 @@
         max: 5,
         archivos: {},
         servicios: [],
-        maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
+        maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024),
+        saveDelay: null
       };
+      // --------- Persistencia LocalStorage ----------
+      function guardarProgresoUsuario() {
+        if (state.modoCorreccion || !state.cdr) return; // No auto-guardar en correcciones
+
+        clearTimeout(state.saveDelay);
+        state.saveDelay = setTimeout(() => {
+          try {
+            const formData = {
+              tipoDocumento: el.tipoDocumento.value,
+              numeroDocumento: el.numeroDocumento.value,
+              confirmarDocumento: el.confirmarDocumento.value,
+              nombres: el.nombres.value,
+              apellidos: el.apellidos.value,
+              email: el.email.value,
+              confirmarEmail: el.confirmarEmail.value,
+              celular: el.celular.value,
+              confirmarCelular: el.confirmarCelular.value,
+              tipoCuenta: el.tipoCuenta.value,
+              numeroCuenta: el.numeroCuenta.value,
+              banco: el.banco.value,
+              titularCuenta: el.titularCuenta.value,
+              docTitular: el.docTitular.value
+            };
+
+            // Guardar checkboxes de servicios
+            const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+              formData[cb.id] = cb.checked;
+            });
+
+            localStorage.setItem(`efirma_prop_${state.cdr}`, JSON.stringify(formData));
+          } catch (e) { console.warn('No se pudo guardar progreso.', e); }
+        }, 800);
+      }
+
+      function cargarProgresoUsuario() {
+        if (state.modoCorreccion || !state.cdr) return;
+
+        try {
+          const saved = localStorage.getItem(`efirma_prop_${state.cdr}`);
+          if (!saved) return;
+
+          const formData = JSON.parse(saved);
+
+          if (formData.tipoDocumento) el.tipoDocumento.value = formData.tipoDocumento;
+          if (formData.numeroDocumento) el.numeroDocumento.value = formData.numeroDocumento;
+          if (formData.confirmarDocumento) el.confirmarDocumento.value = formData.confirmarDocumento;
+          if (formData.nombres) el.nombres.value = formData.nombres;
+          if (formData.apellidos) el.apellidos.value = formData.apellidos;
+          if (formData.email) el.email.value = formData.email;
+          if (formData.confirmarEmail) el.confirmarEmail.value = formData.confirmarEmail;
+          if (formData.celular) el.celular.value = formData.celular;
+          if (formData.confirmarCelular) el.confirmarCelular.value = formData.confirmarCelular;
+
+          if (formData.tipoCuenta) el.tipoCuenta.value = formData.tipoCuenta;
+          if (formData.numeroCuenta) el.numeroCuenta.value = formData.numeroCuenta;
+          if (formData.banco) el.banco.value = formData.banco;
+          if (formData.titularCuenta) el.titularCuenta.value = formData.titularCuenta;
+          if (formData.docTitular) el.docTitular.value = formData.docTitular;
+
+          // Restaurar checkboxes y disparar change para actualizar la UI
+          const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
+          checkboxes.forEach(cb => {
+            if (formData[cb.id] !== undefined) {
+              cb.checked = formData[cb.id];
+              cb.dispatchEvent(new Event('change'));
+            }
+          });
+
+        } catch (e) {
+          console.warn('No se pudo cargar el progreso.', e);
+        }
+      }
 
       // --------- Shortcuts ----------
       const $ = (id) => document.getElementById(id);
@@ -776,6 +851,9 @@
             state.docsCorreccion = docs ? JSON.parse(decodeURIComponent(docs)) : [];
           } catch (e) { state.docsCorreccion = []; }
           renderCorreccionBanner();
+        } else {
+          // Solo cargar progreso si no estamos en modo corrección
+          cargarProgresoUsuario();
         }
 
         renderSteps();
@@ -1266,8 +1344,8 @@
       function bindProgressValidators() {
         const inputs = document.querySelectorAll('.form-control, .input, .file-input, .servicio-checkbox');
         inputs.forEach(input => {
-          input.addEventListener('input', evaluateProgress);
-          input.addEventListener('change', evaluateProgress);
+          input.addEventListener('input', () => { evaluateProgress(); guardarProgresoUsuario(); });
+          input.addEventListener('change', () => { evaluateProgress(); guardarProgresoUsuario(); });
         });
       }
 
@@ -1582,6 +1660,12 @@
           }
 
           const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
+
+          // Limpiar caché local al enviar exitosamente
+          if (!state.modoCorreccion && state.cdr) {
+            localStorage.removeItem(`efirma_prop_${state.cdr}`);
+          }
+
           location.href = `pagina-exito.html?status=success&msg=${msg}`;
 
         } catch (err) {

@@ -28,6 +28,7 @@ function onOpen() {
     .addItem('📋 Panel de Validación', 'abrirPanelValidacion')
     .addSeparator()
     .addItem('📧 Enviar Email a Inquilino', 'mostrarPopupEmailInquilino')
+    .addItem('📧 Enviar Email a Propietario', 'mostrarPopupEmailPropietario')
     .addSeparator()
     .addItem('🔄 Actualizar Estados', 'actualizarTodosLosEstados')
     .addItem('📊 Ver Estadísticas', 'mostrarEstadisticas')
@@ -173,6 +174,115 @@ function mostrarPopupEmailInquilino(sheetParam, filaParam) {
     }
   }
 }
+
+/**
+ * Muestra el popup para enviar email al propietario
+ */
+function mostrarPopupEmailPropietario(sheetParam, filaParam) {
+  try {
+    const ui = SpreadsheetApp.getUi();
+
+    // PASO 1: Obtener la hoja de datos
+    let sheet;
+    if (sheetParam) {
+      sheet = sheetParam;
+    } else {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      if (!ss) {
+        ui.alert('❌ Error', 'No se pudo acceder a la hoja de cálculo activa.', ui.ButtonSet.OK);
+        return;
+      }
+      sheet = ss.getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+      if (!sheet) sheet = ss.getActiveSheet();
+    }
+
+    if (!sheet) {
+      ui.alert('❌ Error', 'No se encontró la hoja de datos.', ui.ButtonSet.OK);
+      return;
+    }
+
+    // PASO 2: Obtener la fila
+    let filaActiva;
+    if (filaParam) {
+      filaActiva = filaParam;
+    } else {
+      const activeRange = sheet.getActiveRange();
+      if (!activeRange) {
+        ui.alert('⚠️ Sin selección', 'Por favor seleccione una fila con un registro de inmueble antes de usar esta opción.', ui.ButtonSet.OK);
+        return;
+      }
+      filaActiva = activeRange.getRow();
+    }
+
+    if (filaActiva <= 1) {
+      ui.alert('⚠️ Seleccione un registro', 'Por favor seleccione una fila con un registro de inmueble (no el encabezado).', ui.ButtonSet.OK);
+      return;
+    }
+
+    // PASO 3: Obtener headers y CDR
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 1) {
+      ui.alert('❌ Error', 'La hoja de datos está vacía.', ui.ButtonSet.OK);
+      return;
+    }
+
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+
+    if (cdrCol < 1) {
+      ui.alert('❌ Error', 'No se encontró la columna "CODIGO DE REGISTRO".', ui.ButtonSet.OK);
+      return;
+    }
+
+    const cdr = sheet.getRange(filaActiva, cdrCol).getValue();
+    if (!cdr) {
+      ui.alert('⚠️ Sin Código de Registro', 'Esta fila no tiene un código de registro válido.', ui.ButtonSet.OK);
+      return;
+    }
+
+    // --- REGLAS DE NEGOCIO ---
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    const colEstadoDoc = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+
+    if (colDetalles > 0) {
+      const detalles = sheet.getRange(filaActiva, colDetalles).getValue().toString();
+      const estadoDoc = colEstadoDoc > 0 ? sheet.getRange(filaActiva, colEstadoDoc).getValue().toString() : '';
+
+      const inqAprobado = detalles.includes('Documentos del inquilino aprobados') || estadoDoc.includes('INQ_VALIDATED');
+      const propAprobado = detalles.includes('Documentos completos') || estadoDoc.includes('PROP_VALIDATED');
+
+      if (!inqAprobado && !propAprobado) {
+        ui.alert(
+          '⚠️ Inquilino No Validado',
+          'Para enviar el formulario al propietario, los documentos del inquilino deben estar aprobados previamente en el Panel de Validación.\n\nEstado actual:\n"' + detalles + '"',
+          ui.ButtonSet.OK
+        );
+        return;
+      }
+    }
+
+    // PASO 4: Guardar contexto en Properties para el popup
+    PropertiesService.getScriptProperties().setProperties({
+      'currentRow': filaActiva.toString(),
+      'currentCDR': cdr.toString()
+    });
+
+    // PASO 5: Mostrar el popup
+    const html = HtmlService.createHtmlOutputFromFile('backend/popup_email_propietario')
+      .setWidth(900)
+      .setHeight(600)
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+
+    ui.showModalDialog(html, '📧 Enviar Formulario al Propietario');
+
+  } catch (error) {
+    Logger.log('Error en mostrarPopupEmailPropietario: ' + error.toString());
+    try {
+      SpreadsheetApp.getUi().alert('❌ Error al mostrar popup', 'Detalle: ' + error.message, SpreadsheetApp.getUi().ButtonSet.OK);
+    } catch (e2) { }
+  }
+}
+
 
 /**
  * Actualiza todos los estados
@@ -877,14 +987,16 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
  */
 function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
   try {
+    Logger.log('verificarEstadoLink: cdr=' + cdr + ', tipo=' + tipo);
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
+    Logger.log('verificarEstadoLink: fila encontrada=' + fila);
 
     if (!fila) {
       return {
         success: false,
         activo: false,
-        mensaje: 'Código de registro no encontrado',
+        mensaje: 'Código de registro no encontrado: ' + cdr,
         status: 'diligenciado'
       };
     }
@@ -892,6 +1004,7 @@ function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     const detalles = sheet.getRange(fila, detallesCol).getValue().toString();
+    Logger.log('verificarEstadoLink: detalles=' + detalles);
 
     let status = 'pendiente';
     let mensaje = 'Formulario disponible';
@@ -2137,9 +2250,13 @@ function buscarFilaPorCDR(cdr) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
 
+    const cdrBusqueda = (cdr || '').toString().trim().toUpperCase();
+
     for (let i = 2; i <= lastRow; i++) {
-      const valorCDR = sheet.getRange(i, cdrCol).getValue();
-      if (valorCDR === cdr) {
+      const valorRegistro = sheet.getRange(i, cdrCol).getValue();
+      const valorCDR = (valorRegistro || '').toString().trim().toUpperCase();
+
+      if (valorCDR === cdrBusqueda && cdrBusqueda !== '') {
         return i;
       }
     }
@@ -2667,10 +2784,14 @@ function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
  */
 function enviarEmailPropietario(cdr) {
   try {
+    Logger.log('enviarEmailPropietario llamado con CDR: ' + cdr);
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
 
-    if (!fila) return;
+    if (!fila) {
+      Logger.log('enviarEmailPropietario: No se encontró fila para CDR: ' + cdr);
+      return;
+    }
 
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
@@ -2679,12 +2800,13 @@ function enviarEmailPropietario(cdr) {
     const nombreProp = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
 
     if (!emailProp) {
-      Logger.log('No se encontró email del propietario');
+      Logger.log('No se encontró email del propietario para CDR: ' + cdr);
       return;
     }
 
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
     const urlFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}`;
+    Logger.log('URL generada para propietario: ' + urlFormulario);
 
     const asunto = `Documentación requerida - Contrato de arrendamiento ${cdr}`;
 
@@ -3238,33 +3360,8 @@ function notificarFinalizacion(email) {
 // PROPIETARIO
 // ==========================================
 
-// ✉️ Propietario: inicio de formulario
-function enviarEmailPropietario(cdr) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
-  const fila = buscarFilaPorCDR(cdr);
-  if (!fila) return;
-
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const email = obtenerValorPorHeader(headers, row, 'Correo electrónico');
-  const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
-
-  const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-  const url = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${cdr}`;
-
-  const asunto = "Formulario Propietario - E-FirmaContrata";
-  const cuerpoHTML = `
-    <body style="background:#0F0F0F;padding:30px;color:#f4f4f4;font-family:Segoe UI,sans-serif;">
-      <div style="max-width:600px;margin:auto;background:#1e1e1e;padding:30px;border-radius:12px;">
-        <h2 style="color:#FFD700;text-align:center;">EFirmaContrata</h2>
-        <p>Hola <strong>${nombre}</strong>,</p>
-        <p>Por favor diligencia el formulario con tu documentación como propietario:</p>
-        <a href="${url}" style="display:inline-block;margin-top:20px;background:#FFD700;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;">Diligenciar Formulario</a>
-        <p style="margin-top:30px;font-size:12px;color:#aaa;">Real Estate • Gold Life System</p>
-      </div>
-    </body>`;
-  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
-}
+// === ELIMINADO: función duplicada enviarEmailPropietario ===
+// La versión principal con try-catch y encodeURIComponent está en línea ~2672
 
 // ✉️ Propietario: confirmación de recepción
 function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
@@ -3418,6 +3515,121 @@ function procesarEmailInquilino(email, nombre) {
 
   } catch (error) {
     Logger.log('Error en procesarEmailInquilino: ' + error.toString());
+    return {
+      success: false,
+      message: 'Error: ' + error.message
+    };
+  }
+}
+
+// ==========================================
+// FUNCIONES PARA EL POPUP DE EMAIL PROPIETARIO
+// ==========================================
+
+/**
+ * Obtener datos del registro actual para el popup del propietario
+ */
+function obtenerDatosRegistroPropietarioActual() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const currentRow = props.getProperty('currentRow');
+    const currentCDR = props.getProperty('currentCDR');
+
+    if (!currentRow || !currentCDR) {
+      throw new Error('No se encontró información del registro activo. Por favor cierre y vuelva a abrir el popup desde el menú.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    const fila = parseInt(currentRow);
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const rowData = sheet.getRange(fila, 1, 1, lastCol).getValues()[0];
+
+    // Obtener índices de columnas clave
+    const colDireccion = headers.indexOf('Dirección del inmueble');
+    const colTipo = headers.indexOf('TIPO DE NEGOCIO');
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
+
+    // Nombres y Correos (tanto inquilino para mostrar contexto, como propietario)
+    const colNombreProp = headers.indexOf('Ingrese Nombres y Apellidos');
+    const colEmailProp = headers.indexOf('Correo electrónico');
+
+    const direccion = colDireccion !== -1 ? rowData[colDireccion] : 'No especificada';
+    const tipoNegocio = colTipo !== -1 ? rowData[colTipo] : 'No especificado';
+    const detallesEstado = colDetalles !== -1 ? rowData[colDetalles] : '';
+
+    // Buscamos si ya hay un propietario pre-registrado
+    const nombrePropietario = colNombreProp !== -1 ? rowData[colNombreProp] : '';
+    const emailPropietario = colEmailProp !== -1 ? rowData[colEmailProp] : '';
+
+    // Si ya dice "Pendiente formulario propietario" significa que en el flujo normal ya se le envió al menos una vez al terminar al inquilino
+    const yaEnviado = detallesEstado.includes('Pendiente formulario propietario') || detallesEstado.includes('Propietario');
+
+    return {
+      cdr: currentCDR,
+      direccion: direccion,
+      tipoNegocio: tipoNegocio,
+      nombrePreCargado: nombrePropietario,
+      emailPreCargado: emailPropietario,
+      yaEnviado: yaEnviado
+    };
+
+  } catch (error) {
+    Logger.log('Error en obtenerDatosRegistroPropietarioActual: ' + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Procesar envío de email al propietario (Backend) desde el Popup Manual
+ */
+function procesarEmailPropietarioPopup(email, nombre) {
+  try {
+    // 1. Validaciones básicas
+    if (!email || !email.includes('@')) throw new Error('Email inválido');
+    if (!nombre || nombre.length < 2) throw new Error('Nombre inválido');
+
+    // 2. Recuperar contexto
+    const props = PropertiesService.getScriptProperties();
+    const currentRow = parseInt(props.getProperty('currentRow'));
+    const currentCDR = props.getProperty('currentCDR');
+
+    if (!currentRow || !currentCDR) {
+      throw new Error('Sesión del popup expirada. Por favor cierre y vuelva a intentar.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // 3. Escribir/Actualizar nombre y correo del propietario (si los cambió el admin en el popup)
+    const colEmailProp = headers.indexOf('Correo electrónico') + 1;
+    const colNombreProp = headers.indexOf('Ingrese Nombres y Apellidos') + 1;
+
+    if (colEmailProp > 0) sheet.getRange(currentRow, colEmailProp).setValue(email);
+    if (colNombreProp > 0) sheet.getRange(currentRow, colNombreProp).setValue(nombre);
+
+    // 4. Enviar Email llamando a la función principal
+    // Nota: enviarEmailPropietario internamente lee el correo y nombre desde la hoja (que acabamos de actualizar)
+    enviarEmailPropietario(currentCDR);
+
+    // 5. No modificamos el estado 'DETALLES DEL ESTADO DEL INMUEBLE' porque ya debería estar en "✅ Documentos del inquilino aprobados. Pendiente formulario propietario"
+    // Pero si quieren reiniciar forzosamente a ese estado, podríamos hacerlo:
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    if (colDetalles > 0) {
+      sheet.getRange(currentRow, colDetalles).setValue('✅ Documentos del inquilino aprobados. Pendiente formulario propietario');
+    }
+
+    return {
+      success: true,
+      message: '✅ Email enviado exitosamente al Propietario.'
+    };
+
+  } catch (error) {
+    Logger.log('Error en procesarEmailPropietarioPopup: ' + error.toString());
     return {
       success: false,
       message: 'Error: ' + error.message

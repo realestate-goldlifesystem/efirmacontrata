@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enviar Formulario al Propietario</title>
+  <style>
+    /* Variables del tema */
+    :root {
+      --bg-dark: #121212;
+      /* Negro puro suave */
+      --bg-card: #1E1E1E;
+      --bg-input: #2C2C2C;
+      --border: #333333;
+      --text: #f4f4f4;
+      --text-muted: #9ca3af;
+      --accent: #FFD700;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0;
+      margin: 0;
+      height: 100vh;
+      /* Altura fija */
+      overflow: hidden;
+      /* Eliminar scroll en body */
+      font-size: 15px;
+      /* Tamaño base legible */
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      /* Ocupar todo el alto */
+      overflow-y: auto;
+      /* Scroll interno elegante */
+      padding: 1.5rem;
+      /* Padding consistente */
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Scrollbar personalizado */
+    .container::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .container::-webkit-scrollbar-track {
+      background: var(--bg-dark);
+    }
+
+    .container::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 4px;
+    }
+
+    .container::-webkit-scrollbar-thumb:hover {
+      background: #444;
+    }
+
+    /* Header con gradiente */
+    .header {
+      background: linear-gradient(135deg, var(--accent) 0%, #FFA500 100%);
+      padding: clamp(1rem, 2vw, 1.5rem);
+      border-radius: clamp(10px, 1.5vw, 12px);
+      box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+    }
+
+    .header h1 {
+      color: var(--bg-dark);
+      font-size: clamp(1.25rem, 1rem + 1vw, 1.5rem);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: clamp(0.5rem, 1vw, 0.75rem);
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+
+    .header .subtitle {
+      color: rgba(0, 0, 0, 0.7);
+      font-size: clamp(0.8rem, 0.75rem + 0.3vw, 0.9rem);
+    }
+
+    /* Card unificada */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      height: 100%;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.75rem;
+    }
+
+    .info-grid {
+      display: grid;
+      gap: clamp(0.5rem, 1vw, 0.75rem);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: clamp(0.5rem, 1vw, 0.75rem);
+      background: var(--bg-input);
+      border-radius: clamp(4px, 0.8vw, 6px);
+      font-size: clamp(0.85rem, 0.8rem + 0.3vw, 0.9rem);
+      gap: clamp(0.5rem, 1vw, 1rem);
+    }
+
+    .info-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .info-value {
+      color: var(--text);
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .info-value.cdr {
+      color: var(--accent);
+      font-size: 1rem;
+    }
+
+    /* Estados */
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.025em;
+    }
+
+    .status-ready {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+      border: 1px solid var(--success);
+    }
+
+    .status-sent {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+    }
+
+    /* Formulario */
+    .form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: clamp(10px, 1.5vw, 12px);
+      padding: clamp(1.5rem, 2.5vw, 2rem);
+      /* Mismo padding que info-card */
+      flex: 1;
+      height: 100%;
+      /* Forzar altura completa */
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-card h2 {
+      font-size: clamp(1rem, 0.9rem + 0.5vw, 1.1rem);
+      color: var(--text);
+      margin-bottom: clamp(1rem, 2vw, 1.5rem);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: clamp(1rem, 2vw, 1.25rem);
+    }
+
+    label {
+      display: block;
+      margin-bottom: clamp(0.4rem, 1vw, 0.5rem);
+      color: var(--text);
+      font-weight: 500;
+      font-size: clamp(0.85rem, 0.8rem + 0.3vw, 0.9rem);
+    }
+
+    .required {
+      color: var(--danger);
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    input {
+      width: 100%;
+      padding: clamp(0.75rem, 1.5vw, 0.875rem) clamp(0.875rem, 2vw, 1rem);
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: clamp(6px, 1vw, 8px);
+      color: var(--text);
+      font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1rem);
+      transition: all 0.3s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+      background: rgba(255, 215, 0, 0.03);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .hint {
+      font-size: clamp(0.8rem, 0.75rem + 0.3vw, 0.875rem);
+      color: var(--text-muted);
+      margin-top: clamp(0.25rem, 0.5vw, 0.4rem);
+    }
+
+    /* Checkbox personalizado */
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: clamp(0.5rem, 1.2vw, 0.75rem);
+      margin: clamp(0.75rem, 1.5vw, 1rem) 0;
+      padding: clamp(0.75rem, 1.5vw, 1rem);
+      background: var(--bg-input);
+      border-radius: clamp(6px, 1vw, 8px);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .checkbox-group:hover {
+      background: rgba(255, 215, 0, 0.05);
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: clamp(18px, 3vw, 20px);
+      height: clamp(18px, 3vw, 20px);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .checkbox-group label {
+      margin: 0;
+      cursor: pointer;
+      user-select: none;
+      font-size: clamp(0.85rem, 0.8rem + 0.3vw, 0.95rem);
+    }
+
+    /* Botones */
+    .button-group {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: clamp(0.75rem, 1.5vw, 1rem);
+      margin-top: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    @media (min-width: 640px) {
+      .button-group {
+        flex-direction: row;
+        gap: 1rem;
+        margin-top: 1.5rem;
+      }
+    }
+
+    button {
+      flex: 1;
+      min-width: min(140px, 100%);
+      padding: clamp(0.75rem, 1.5vw, 0.875rem) clamp(1.25rem, 2.5vw, 1.5rem);
+      border: none;
+      border-radius: clamp(6px, 1vw, 8px);
+      font-size: clamp(0.9rem, 0.85rem + 0.4vw, 1rem);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.4rem, 0.8vw, 0.5rem);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg-dark);
+      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #FFA500;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+    }
+
+    .btn-secondary {
+      background: var(--bg-input);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Mensajes */
+    .alert {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .alert.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+
+    .alert.warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+    }
+
+    .alert.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .alert.info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid var(--info);
+      color: var(--info);
+    }
+
+    /* Loading */
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      margin-top: 1rem;
+    }
+
+    .loading.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--accent);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: auto;
+      padding-top: 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer .version {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      opacity: 0.5;
+    }
+
+    /* Warning box */
+    .warning-box {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid var(--warning);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .warning-box .icon {
+      font-size: 1.5rem;
+    }
+
+    .warning-box .text {
+      flex: 1;
+      color: var(--warning);
+      font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .header h1 {
+        font-size: 1.25rem;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+    }
+
+    /* Layout fluido simétrico */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      /* Simetría perfecta 50/50 */
+      gap: 1.5rem;
+      align-items: stretch;
+      /* Alturas iguales */
+      flex: 1;
+      /* Ocupar espacio vertical disponible */
+    }
+
+    /* En pantalla móvil, apilar */
+    @media (max-width: 700px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .container {
+        height: auto;
+        overflow-y: visible;
+      }
+
+      body {
+        height: auto;
+        overflow-y: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>📧 Enviar Formulario al Propietario</h1>
+      <p class="subtitle">Sistema E-FirmaContrata - Real Estate Gold Life System</p>
+    </div>
+
+    <!-- Warning si ya se envió -->
+    <div id="warningBox" class="warning-box" style="display: none;">
+      <span class="icon">⚠️</span>
+      <div class="text">
+        <strong>Atención:</strong> Ya se envió un formulario a este Propietario.
+        Si continúa, se enviará un nuevo enlace y se invalidará el anterior.
+      </div>
+    </div>
+
+    <!-- Grid de contenido: Info + Formulario -->
+    <div class="content-grid">
+      <!-- Información del Registro -->
+      <div class="card">
+        <h2>📋 Información del Registro</h2>
+        <div class="info-grid">
+          <div class="info-row">
+            <span class="info-label">CDR:</span>
+            <span class="info-value cdr" id="cdrDisplay">Cargando...</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Estado Actual:</span>
+            <span class="info-value" id="estadoActual">
+              <span class="status-badge status-ready">ESTUDIO APROBADO</span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Dirección:</span>
+            <span class="info-value" id="direccionInmueble">Cargando...</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Tipo Negocio:</span>
+            <span class="info-value" id="tipoNegocio">Cargando...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario -->
+      <div class="card">
+        <h2>👤 Datos del Propietario</h2>
+
+        <form id="emailForm" novalidate>
+          <div class="form-group">
+            <label for="nombrePropietario">
+              Nombre Completo <span class="required">*</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="text" id="nombrePropietario" name="nombrePropietario" placeholder="Ej: Juan Carlos Pérez García"
+                required minlength="3" maxlength="150" autocomplete="name">
+            </div>
+            <div class="hint">Nombre completo tal como aparece en el documento de identidad</div>
+          </div>
+
+          <div class="form-group">
+            <label for="emailPropietario">
+              Correo Electrónico <span class="required">*</span>
+            </label>
+            <div class="input-wrapper">
+              <input type="email" id="emailPropietario" name="emailPropietario" placeholder="ejemplo@correo.com" required
+                maxlength="200" autocomplete="email">
+            </div>
+            <div class="hint">Asegúrese de que el correo sea correcto. Aquí se enviará el enlace del formulario.</div>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="confirmarEnvio" name="confirmarEnvio">
+            <label for="confirmarEnvio">
+              Confirmo que los datos son correctos y deseo enviar el formulario al Propietario
+            </label>
+          </div>
+
+          <!-- Botones -->
+          <div class="button-group">
+            <button type="button" class="btn-secondary" id="btnCancelar">
+              ❌ Cancelar
+            </button>
+            <button type="submit" class="btn-primary" id="btnEnviar">
+              📤 Enviar Formulario
+            </button>
+          </div>
+
+          <!-- Mensajes -->
+          <div id="alertSuccess" class="alert success">
+            ✅ Email enviado exitosamente al Propietario
+          </div>
+          <div id="alertError" class="alert error">
+            Error al enviar el email
+          </div>
+          <div id="alertWarning" class="alert warning">
+            Por favor complete todos los campos requeridos
+          </div>
+          <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <span>Enviando formulario al Propietario...</span>
+          </div>
+        </form>
+      </div>
+    </div> <!-- Cierre de content-grid -->
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>E-FirmaContrata - Sistema de Gestión de Contratos</p>
+      <p class="version">Versión 3.0 - Producción</p>
+    </div>
+  </div>
+
+  <script>
+    // Estado de la aplicación
+    let enviando = false;
+    let datosRegistro = {};
+
+    // Elementos del DOM
+    const form = document.getElementById('emailForm');
+    const nombreEl = document.getElementById('nombrePropietario');
+    const emailEl = document.getElementById('emailPropietario');
+    const confirmarEl = document.getElementById('confirmarEnvio');
+    const btnEnviar = document.getElementById('btnEnviar');
+    const btnCancelar = document.getElementById('btnCancelar');
+    const loading = document.getElementById('loading');
+    const alertSuccess = document.getElementById('alertSuccess');
+    const alertError = document.getElementById('alertError');
+    const alertWarning = document.getElementById('alertWarning');
+    const warningBox = document.getElementById('warningBox');
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function () {
+      cargarDatosRegistro();
+      configurarEventListeners();
+      nombreEl.focus();
+    });
+
+    // Cargar datos del registro actual
+    function cargarDatosRegistro() {
+      // Obtener datos del registro desde Google Apps Script
+      google.script.run
+        .withSuccessHandler(function (datos) {
+          datosRegistro = datos;
+          mostrarDatosRegistro(datos);
+        })
+        .withFailureHandler(function (error) {
+          console.error('Error cargando datos:', error);
+          document.getElementById('cdrDisplay').textContent = 'Error al cargar';
+        })
+        .obtenerDatosRegistroPropietarioActual();
+    }
+
+    // Mostrar datos del registro
+    function mostrarDatosRegistro(datos) {
+      if (!datos) return;
+
+      document.getElementById('cdrDisplay').textContent = datos.cdr || 'No disponible';
+      document.getElementById('direccionInmueble').textContent = datos.direccion || 'No disponible';
+      document.getElementById('tipoNegocio').textContent = datos.tipoNegocio || 'No disponible';
+
+      if (datos.nombrePreCargado) document.getElementById('nombrePropietario').value = datos.nombrePreCargado;
+      if (datos.emailPreCargado) document.getElementById('emailPropietario').value = datos.emailPreCargado;
+
+      // Mostrar warning si ya se envió
+      if (datos.yaEnviado) {
+        warningBox.style.display = 'flex';
+        document.getElementById('estadoActual').innerHTML =
+          '<span class="status-badge status-sent">FORMULARIO ENVIADO</span>';
+      }
+    }
+
+    // Configurar event listeners
+    function configurarEventListeners() {
+      // Submit del formulario
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!enviando) {
+          enviarFormulario();
+        }
+      });
+
+      // Botón cancelar
+      btnCancelar.addEventListener('click', function () {
+        if (confirm('¿Está seguro de cancelar el envío?')) {
+          google.script.host.close();
+        }
+      });
+
+      // Validación en tiempo real del email
+      emailEl.addEventListener('blur', function () {
+        const email = emailEl.value.trim();
+        if (email && !validarEmail(email)) {
+          mostrarAlerta('warning', 'El correo electrónico no es válido');
+        }
+      });
+
+      // Validación en tiempo real del nombre
+      nombreEl.addEventListener('blur', function () {
+        const nombre = nombreEl.value.trim();
+        if (nombre && nombre.length < 3) {
+          mostrarAlerta('warning', 'El nombre debe tener al menos 3 caracteres');
+        }
+      });
+
+      // Prevenir espacios al inicio
+      [nombreEl, emailEl].forEach(input => {
+        input.addEventListener('input', function () {
+          if (input.value.startsWith(' ')) {
+            input.value = input.value.trimStart();
+          }
+        });
+      });
+    }
+
+    // Enviar formulario
+    function enviarFormulario() {
+      resetearAlertas();
+
+      // Validaciones
+      const nombre = nombreEl.value.trim();
+      const email = emailEl.value.trim();
+      const confirmado = confirmarEl.checked;
+
+      if (!nombre || nombre.length < 3) {
+        mostrarAlerta('warning', 'Por favor ingrese un nombre válido (mínimo 3 caracteres)');
+        nombreEl.focus();
+        return;
+      }
+
+      if (!email || !validarEmail(email)) {
+        mostrarAlerta('warning', 'Por favor ingrese un correo electrónico válido');
+        emailEl.focus();
+        return;
+      }
+
+      if (!confirmado) {
+        mostrarAlerta('warning', 'Por favor confirme que los datos son correctos');
+        confirmarEl.focus();
+        return;
+      }
+
+      // Confirmación adicional si ya se envió antes
+      if (datosRegistro.yaEnviado) {
+        if (!confirm('Ya se envió un formulario a un Propietario anteriormente. ¿Desea enviar uno nuevo?')) {
+          return;
+        }
+      }
+
+      // Mostrar loading
+      setLoading(true);
+      enviando = true;
+
+      // Enviar a Google Apps Script
+      google.script.run
+        .withSuccessHandler(function (resultado) {
+          if (resultado.success) {
+            mostrarAlerta('success', resultado.message || 'Email enviado exitosamente');
+
+            // Deshabilitar formulario después del éxito
+            nombreEl.disabled = true;
+            emailEl.disabled = true;
+            btnEnviar.disabled = true;
+
+            // Cerrar después de 3 segundos
+            setTimeout(function () {
+              google.script.host.close();
+            }, 3000);
+          } else {
+            mostrarAlerta('error', resultado.message || 'Error al enviar el email');
+            enviando = false;
+            setLoading(false);
+          }
+        })
+        .withFailureHandler(function (error) {
+          console.error('Error:', error);
+          mostrarAlerta('error', 'Error al procesar la solicitud: ' + error.toString());
+          enviando = false;
+          setLoading(false);
+        })
+        .procesarEmailPropietarioPopup(email, nombre);
+    }
+
+    // Validar email
+    function validarEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    // Mostrar/ocultar loading
+    function setLoading(show) {
+      if (show) {
+        loading.classList.add('show');
+        btnEnviar.disabled = true;
+        btnEnviar.textContent = 'Enviando...';
+        btnCancelar.disabled = true;
+      } else {
+        loading.classList.remove('show');
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = '📤 Enviar Formulario';
+        btnCancelar.disabled = false;
+      }
+    }
+
+    // Mostrar alerta
+    function mostrarAlerta(tipo, mensaje) {
+      resetearAlertas();
+
+      let alertEl;
+      switch (tipo) {
+        case 'success':
+          alertEl = alertSuccess;
+          break;
+        case 'error':
+          alertEl = alertError;
+          break;
+        case 'warning':
+          alertEl = alertWarning;
+          break;
+      }
+
+      if (alertEl) {
+        if (mensaje) {
+          alertEl.textContent = mensaje;
+        }
+        alertEl.classList.add('show');
+      }
+    }
+
+    // Resetear todas las alertas
+    function resetearAlertas() {
+      [alertSuccess, alertError, alertWarning].forEach(alert => {
+        alert.classList.remove('show');
+      });
+    }
+
+    // Mock para obtener datos del registro (será reemplazado por Google Apps Script)
+    if (typeof google === 'undefined' || !google.script) {
+      // Modo desarrollo - crear mock
+      window.google = {
+        script: {
+          run: {
+            withSuccessHandler: function (fn) {
+              setTimeout(() => {
+                fn({
+                  cdr: 'REG_15-01-2025-A1_(Calle 123)',
+                  direccion: 'Calle 123 #45-67, Bogotá',
+                  tipoNegocio: 'Administración',
+                  yaEnviado: false
+                });
+              }, 500);
+              return this;
+            },
+            withFailureHandler: function (fn) {
+              return this;
+            },
+            obtenerDatosRegistroPropietarioActual: function () { },
+            procesarEmailPropietarioPopup: function () { }
+          },
+          host: {
+            close: function () {
+              console.log('Cerrando popup...');
+            }
+          }
+        }
+      };
+      cargarDatosRegistro();
+    }
+  </script>
+</body>
+
+</html>
