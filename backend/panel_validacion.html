@@ -1807,28 +1807,36 @@
 
             // ─── Pre-populamos documentos aprobados si hay corrección previa ───
             const registro = getRegistroData();
-            if (registro && registro.estadoDocumental && registro.estadoDocumental.includes('CORRECTION|')) {
+            console.log('📋 Registro estadoDocumental:', registro ? registro.estadoDocumental : 'NO ENCONTRADO');
+            if (registro && registro.estadoDocumental && registro.estadoDocumental.includes('CORRECTION')) {
                 const parts = registro.estadoDocumental.split('|');
-                const correctionDocNames = (parts[1] || '').split(',').filter(n => n.trim());
+                const correctionDocNames = parts.length > 1 ? parts[1].split(',').filter(n => n.trim()) : [];
+
+                console.log('📋 Docs en corrección:', correctionDocNames);
 
                 // Si hay nombres de docs en corrección, marcar TODOS los demás como aprobados
                 if (correctionDocNames.length > 0) {
                     for (const personKey in documentosData) {
                         const docsList = documentosData[personKey] || [];
                         docsList.forEach(doc => {
-                            // Verificar si el nombre del archivo coincide con alguno de los que necesitan corrección
-                            const isCorrection = correctionDocNames.some(corrName =>
-                                doc.nombre && doc.nombre.toUpperCase().includes(corrName.replace(/\[.*?\]/g, '').replace(/_/g, ' ').trim().toUpperCase().replace(/\s+/g, ' '))
-                                || corrName.toUpperCase().includes(doc.nombre.replace(/\[.*?\]/g, '').replace(/_/g, ' ').trim().toUpperCase().replace(/\s+/g, ' '))
-                            );
+                            // Comparación directa: ambos lados usan el nombre del archivo tal cual
+                            const isCorrection = correctionDocNames.some(corrName => {
+                                // Comparar nombres completos directamente
+                                if (doc.nombre === corrName) return true;
+                                // Fallback: comparar sin extensión ni brackets del CDR
+                                const cleanDoc = doc.nombre.replace(/\.[^.]+$/, '').replace(/_\[.*?\]/, '').toUpperCase();
+                                const cleanCorr = corrName.replace(/\.[^.]+$/, '').replace(/_\[.*?\]/, '').toUpperCase();
+                                return cleanDoc === cleanCorr || cleanDoc.includes(cleanCorr) || cleanCorr.includes(cleanDoc);
+                            });
+
+                            console.log(`   ${doc.nombre} → ${isCorrection ? '⚠️ CORRECCIÓN' : '✅ APROBADO'}`);
 
                             if (!isCorrection) {
-                                // Este doc NO fue enviado a corrección → ya estaba aprobado
                                 validacionEstado[doc.fileId] = 'aprobado';
                             }
                         });
                     }
-                    console.log('📋 Pre-populated approved docs:', Object.keys(validacionEstado).length, 'of', Object.values(documentosData).flat().length);
+                    console.log('📋 Total pre-aprobados:', Object.keys(validacionEstado).length);
                 }
             }
 
@@ -2379,11 +2387,23 @@
         }
 
         function cerrarModal(modalId) {
-            document.getElementById(modalId).classList.remove('show');
-            // Limpiar formularios
-            document.getElementById('selectCorrecciones').selectedIndex = -1;
-            document.getElementById('observacionesCorrecciones').value = '';
-            document.getElementById('correctionsList').innerHTML = '';
+            try {
+                const modal = document.getElementById(modalId);
+                if (modal) modal.classList.remove('show');
+            } catch (e) {
+                console.warn('Error cerrando modal ' + modalId + ':', e);
+            }
+            // Limpiar formularios (defensivo: no crashear si no existen)
+            try {
+                const sel = document.getElementById('selectCorrecciones');
+                if (sel) sel.selectedIndex = -1;
+                const obs = document.getElementById('observacionesCorrecciones');
+                if (obs) obs.value = '';
+                const list = document.getElementById('correctionsList');
+                if (list) list.innerHTML = '';
+            } catch (e) {
+                console.warn('Error limpiando formularios:', e);
+            }
         }
 
         function mostrarToast(mensaje, tipo = 'info') {
