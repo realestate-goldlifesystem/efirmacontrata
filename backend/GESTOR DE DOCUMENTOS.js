@@ -971,9 +971,12 @@ function obtenerRegistrosInquilinos() {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
         const cdrValue = obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO');
 
+        const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';
+
         registros.push({
           cdr: cdrValue,
           detalles: detalles,
+          estadoDocumental: estadoDocumental,
           inquilino: {
             nombre: obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO'),
             documento: obtenerValorPorHeader(headers, row, 'NUMERO DOCUMENTO INQUILINO'),
@@ -1010,9 +1013,12 @@ function obtenerRegistrosPropietarios() {
       if (detalles.includes('Formulario del propietario')) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
 
+        const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';
+
         registros.push({
           cdr: obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO'),
           detalles: detalles,
+          estadoDocumental: estadoDocumental,
           propietario: {
             nombre: obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos'),
             documento: obtenerValorPorHeader(headers, row, 'Número de documento'),
@@ -2233,10 +2239,11 @@ function procesarValidacionInquilino(datos) {
       };
 
     } else if (estado === 'correccion') {
-      // Actualizar estado
+      // Actualizar estado — almacenar nombres de docs a corregir para referencia futura
       sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
       if (estadoDocCol > 0) {
-        sheet.getRange(fila, estadoDocCol).setValue('INQ_CORRECTION');
+        const docsStr = (datos.documentosCorregir || []).join(',');
+        sheet.getRange(fila, estadoDocCol).setValue('INQ_CORRECTION|' + docsStr);
       }
 
       // Enviar email de corrección
@@ -2292,10 +2299,11 @@ function procesarValidacionPropietario(datos) {
       };
 
     } else if (estado === 'correccion') {
-      // Actualizar estado
+      // Actualizar estado — almacenar nombres de docs a corregir para referencia futura
       sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
       if (estadoDocCol > 0) {
-        sheet.getRange(fila, estadoDocCol).setValue('PROP_CORRECTION');
+        const docsStr = (datos.documentosCorregir || []).join(',');
+        sheet.getRange(fila, estadoDocCol).setValue('PROP_CORRECTION|' + docsStr);
       }
 
       // Enviar email de corrección

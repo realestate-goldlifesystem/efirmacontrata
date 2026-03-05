@@ -1805,6 +1805,33 @@
             documentoActual = null;
             personaActivaKey = tipo; // Ej: 'inquilino' o 'propietario'
 
+            // ─── Pre-populamos documentos aprobados si hay corrección previa ───
+            const registro = getRegistroData();
+            if (registro && registro.estadoDocumental && registro.estadoDocumental.includes('CORRECTION|')) {
+                const parts = registro.estadoDocumental.split('|');
+                const correctionDocNames = (parts[1] || '').split(',').filter(n => n.trim());
+
+                // Si hay nombres de docs en corrección, marcar TODOS los demás como aprobados
+                if (correctionDocNames.length > 0) {
+                    for (const personKey in documentosData) {
+                        const docsList = documentosData[personKey] || [];
+                        docsList.forEach(doc => {
+                            // Verificar si el nombre del archivo coincide con alguno de los que necesitan corrección
+                            const isCorrection = correctionDocNames.some(corrName =>
+                                doc.nombre && doc.nombre.toUpperCase().includes(corrName.replace(/\[.*?\]/g, '').replace(/_/g, ' ').trim().toUpperCase().replace(/\s+/g, ' '))
+                                || corrName.toUpperCase().includes(doc.nombre.replace(/\[.*?\]/g, '').replace(/_/g, ' ').trim().toUpperCase().replace(/\s+/g, ' '))
+                            );
+
+                            if (!isCorrection) {
+                                // Este doc NO fue enviado a corrección → ya estaba aprobado
+                                validacionEstado[doc.fileId] = 'aprobado';
+                            }
+                        });
+                    }
+                    console.log('📋 Pre-populated approved docs:', Object.keys(validacionEstado).length, 'of', Object.values(documentosData).flat().length);
+                }
+            }
+
             // Actualizar título
             document.getElementById('modalTitle').textContent = `📋 Validación de Registro - ${cdr}`;
 
