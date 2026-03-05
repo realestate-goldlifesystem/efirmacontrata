@@ -722,14 +722,91 @@
         maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024),
         saveDelay: null
       };
-      // --------- Persistencia LocalStorage ----------
+      // --------- Persistencia: Texto en localStorage, Archivos en IndexedDB ----------
+      const DB_NAME = 'efirma_propietario_db';
+      const DB_VERSION = 1;
+      const DB_STORE = 'archivos';
+
+      function abrirDB() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e) => { e.target.result.createObjectStore(DB_STORE); };
+          req.onsuccess = (e) => resolve(e.target.result);
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+
+      async function guardarArchivosEnDB() {
+        if (!state.cdr || state.modoCorreccion) return;
+        try {
+          const db = await abrirDB();
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          const store = tx.objectStore(DB_STORE);
+          store.put(JSON.parse(JSON.stringify(state.archivos)), `files_${state.cdr}`);
+          store.put(state.servicios, `servicios_${state.cdr}`);
+        } catch (e) { console.warn('No se pudieron guardar archivos en IndexedDB.', e); }
+      }
+
+      async function cargarArchivosDeDB() {
+        if (!state.cdr || state.modoCorreccion) return;
+        try {
+          const db = await abrirDB();
+          const tx = db.transaction(DB_STORE, 'readonly');
+          const store = tx.objectStore(DB_STORE);
+
+          const archivos = await new Promise((res, rej) => {
+            const r = store.get(`files_${state.cdr}`);
+            r.onsuccess = () => res(r.result);
+            r.onerror = () => rej(r.error);
+          });
+
+          if (archivos && typeof archivos === 'object') {
+            state.archivos = archivos;
+            // Restaurar la UI para cada archivo guardado
+            const nameMap = {
+              docFront: 'docFrontName', docBack: 'docBackName',
+              certTradicion: 'certTradicionName', sarlaft: 'sarlaftName',
+              certBancario: 'certBancarioName',
+              facturaAgua: 'facturaAguaName', facturaLuz: 'facturaLuzName',
+              facturaGas: 'facturaGasName', facturaTelefono: 'facturaTelefonoName',
+              facturaInternet: 'facturaInternetName'
+            };
+            for (const [key, archivo] of Object.entries(archivos)) {
+              if (archivo && archivo.nombre) {
+                const nameElId = nameMap[key];
+                if (nameElId) {
+                  const nameElement = document.getElementById(nameElId);
+                  if (nameElement) nameElement.textContent = '✅ ' + archivo.nombre;
+                }
+                const container = document.getElementById(key);
+                if (container) {
+                  const wrapper = container.closest('.file-upload');
+                  if (wrapper) wrapper.classList.add('has-file');
+                }
+              }
+            }
+          }
+        } catch (e) { console.warn('No se pudieron cargar archivos de IndexedDB.', e); }
+      }
+
+      async function limpiarDB() {
+        try {
+          const db = await abrirDB();
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          const store = tx.objectStore(DB_STORE);
+          store.delete(`files_${state.cdr}`);
+          store.delete(`servicios_${state.cdr}`);
+        } catch (e) { /* silencioso */ }
+      }
+
       function guardarProgresoUsuario() {
-        if (state.modoCorreccion || !state.cdr) return; // No auto-guardar en correcciones
+        if (state.modoCorreccion || !state.cdr) return;
 
         clearTimeout(state.saveDelay);
         state.saveDelay = setTimeout(() => {
           try {
             const formData = {
+              step: state.step,
               tipoDocumento: el.tipoDocumento.value,
               numeroDocumento: el.numeroDocumento.value,
               confirmarDocumento: el.confirmarDocumento.value,
@@ -746,50 +823,59 @@
               docTitular: el.docTitular.value
             };
 
-            // Guardar checkboxes de servicios
             const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
-            checkboxes.forEach(cb => {
-              formData[cb.id] = cb.checked;
-            });
+            checkboxes.forEach(cb => { formData[cb.id] = cb.checked; });
 
             localStorage.setItem(`efirma_prop_${state.cdr}`, JSON.stringify(formData));
+
+            // Guardar archivos en IndexedDB (sin límite de tamaño)
+            guardarArchivosEnDB();
           } catch (e) { console.warn('No se pudo guardar progreso.', e); }
         }, 800);
       }
 
-      function cargarProgresoUsuario() {
+      async function cargarProgresoUsuario() {
         if (state.modoCorreccion || !state.cdr) return;
 
         try {
+          // 1. Restaurar campos de texto desde localStorage
           const saved = localStorage.getItem(`efirma_prop_${state.cdr}`);
-          if (!saved) return;
+          if (saved) {
+            const formData = JSON.parse(saved);
 
-          const formData = JSON.parse(saved);
+            if (formData.tipoDocumento) el.tipoDocumento.value = formData.tipoDocumento;
+            if (formData.numeroDocumento) el.numeroDocumento.value = formData.numeroDocumento;
+            if (formData.confirmarDocumento) el.confirmarDocumento.value = formData.confirmarDocumento;
+            if (formData.nombres) el.nombres.value = formData.nombres;
+            if (formData.apellidos) el.apellidos.value = formData.apellidos;
+            if (formData.email) el.email.value = formData.email;
+            if (formData.confirmarEmail) el.confirmarEmail.value = formData.confirmarEmail;
+            if (formData.celular) el.celular.value = formData.celular;
+            if (formData.confirmarCelular) el.confirmarCelular.value = formData.confirmarCelular;
 
-          if (formData.tipoDocumento) el.tipoDocumento.value = formData.tipoDocumento;
-          if (formData.numeroDocumento) el.numeroDocumento.value = formData.numeroDocumento;
-          if (formData.confirmarDocumento) el.confirmarDocumento.value = formData.confirmarDocumento;
-          if (formData.nombres) el.nombres.value = formData.nombres;
-          if (formData.apellidos) el.apellidos.value = formData.apellidos;
-          if (formData.email) el.email.value = formData.email;
-          if (formData.confirmarEmail) el.confirmarEmail.value = formData.confirmarEmail;
-          if (formData.celular) el.celular.value = formData.celular;
-          if (formData.confirmarCelular) el.confirmarCelular.value = formData.confirmarCelular;
+            if (formData.tipoCuenta) el.tipoCuenta.value = formData.tipoCuenta;
+            if (formData.numeroCuenta) el.numeroCuenta.value = formData.numeroCuenta;
+            if (formData.banco) el.banco.value = formData.banco;
+            if (formData.titularCuenta) el.titularCuenta.value = formData.titularCuenta;
+            if (formData.docTitular) el.docTitular.value = formData.docTitular;
 
-          if (formData.tipoCuenta) el.tipoCuenta.value = formData.tipoCuenta;
-          if (formData.numeroCuenta) el.numeroCuenta.value = formData.numeroCuenta;
-          if (formData.banco) el.banco.value = formData.banco;
-          if (formData.titularCuenta) el.titularCuenta.value = formData.titularCuenta;
-          if (formData.docTitular) el.docTitular.value = formData.docTitular;
+            // Restaurar checkboxes
+            const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+              if (formData[cb.id] !== undefined) {
+                cb.checked = formData[cb.id];
+                cb.dispatchEvent(new Event('change'));
+              }
+            });
 
-          // Restaurar checkboxes y disparar change para actualizar la UI
-          const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
-          checkboxes.forEach(cb => {
-            if (formData[cb.id] !== undefined) {
-              cb.checked = formData[cb.id];
-              cb.dispatchEvent(new Event('change'));
+            // Restaurar paso del wizard
+            if (typeof formData.step === 'number' && formData.step > 0) {
+              setTimeout(() => gotoStep(formData.step, true), 100);
             }
-          });
+          }
+
+          // 2. Restaurar archivos desde IndexedDB
+          await cargarArchivosDeDB();
 
         } catch (e) {
           console.warn('No se pudo cargar el progreso.', e);
@@ -1050,7 +1136,10 @@
         el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
 
         if (state.step === state.max) buildSummary();
-        if (!first) window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (!first) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          guardarProgresoUsuario();
+        }
       }
 
       // --------- Files ----------
@@ -1091,6 +1180,7 @@
             if (wrapper) wrapper.classList.add('has-file');
           }
           evaluateProgress();
+          guardarArchivosEnDB();
         };
         reader.readAsDataURL(file);
       }
@@ -1691,6 +1781,7 @@
           // Limpiar caché local al enviar exitosamente
           if (!state.modoCorreccion && state.cdr) {
             localStorage.removeItem(`efirma_prop_${state.cdr}`);
+            limpiarDB();
           }
 
           location.href = `pagina-exito.html?status=success&msg=${msg}`;
