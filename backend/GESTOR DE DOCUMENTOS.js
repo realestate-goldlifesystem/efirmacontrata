@@ -1089,7 +1089,26 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
       });
     }
 
-    // 5. Enviar correos
+    // 5. Si es corrección, actualizar buzones ACTUALIZANDO → RECIBIDO (CORRECCIÓN) en el Cerebro
+    if (datosFormulario.modoCorreccion) {
+      try {
+        const estadosActuales = obtenerEstadosValidacionDesdeCerebro(codigoRegistro);
+        const estadosActualizar = {};
+        for (const [buzon, estado] of Object.entries(estadosActuales)) {
+          if (estado === 'ACTUALIZANDO') {
+            estadosActualizar[buzon] = 'RECIBIDO (CORRECCIÓN)';
+          }
+        }
+        if (Object.keys(estadosActualizar).length > 0) {
+          actualizarEstadosValidacionEnCerebro(codigoRegistro, estadosActualizar);
+          Logger.log('✅ Buzones ACTUALIZANDO → RECIBIDO (CORRECCIÓN) en Cerebro');
+        }
+      } catch (e) {
+        Logger.log('⚠️ Error actualizando buzones post-corrección: ' + e.message);
+      }
+    }
+
+    // 6. Enviar correos
     if (datosFormulario.inquilino.email) {
       enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario);
     }
@@ -1374,11 +1393,155 @@ function escribirDatosContratoDocNivel7(cedulaFolder, datosFormulario, cdr) {
       });
     }
 
+    // --- BUZONES DE DOCUMENTACIÓN ---
+    body.appendParagraph('');
+    body.appendParagraph('ESTADO DOCUMENTAL:');
+
+    // Buzones del inquilino
+    body.appendParagraph('BUZON INQUILINO FRONTAL:: RECIBIDO');
+    body.appendParagraph('BUZON INQUILINO REVERSO:: RECIBIDO');
+    body.appendParagraph('BUZON SOPORTES INGRESO INQUILINO:: RECIBIDO');
+
+    // Buzones de codeudores (dinámico)
+    if (codeudores.length > 0) {
+      codeudores.forEach((c, i) => {
+        body.appendParagraph(`BUZON CODEUDOR ${i + 1} FRONTAL:: RECIBIDO`);
+        body.appendParagraph(`BUZON CODEUDOR ${i + 1} REVERSO:: RECIBIDO`);
+        body.appendParagraph(`BUZON SOPORTES INGRESO CODEUDOR ${i + 1}:: RECIBIDO`);
+      });
+    }
+
+    // Buzón de pago
+    body.appendParagraph('BUZON COMPROBANTE DE PAGO:: RECIBIDO');
+
     body.appendParagraph('[FIN]');
     doc.saveAndClose();
     Logger.log('✅ Datos de contrato escritos en DATOS DE ELABORACION DE CONTRATO.');
   } catch (e) {
     Logger.log('⚠️ Error escribiendo DATOS DE ELABORACION DE CONTRATO: ' + e.message);
+  }
+}
+
+// ==========================================
+// FUNCIONES DE CEREBRO - MEMORIA DE VALIDACIÓN
+// ==========================================
+
+/**
+ * Helper: Abrir el documento Cerebro (DATOS DE ELABORACION DE CONTRATO) dado un CDR
+ * Retorna el DocumentApp.Document o null
+ */
+function abrirDocCerebro(cdr) {
+  try {
+    const cdrEscaped = cdr.replace(/'/g, "\\'");
+    let inmuebleFolder = null;
+    const searchRoot = DriveApp.searchFolders(`title contains '${cdrEscaped}' and trashed = false`);
+    while (searchRoot.hasNext()) {
+      const f = searchRoot.next();
+      const fName = f.getName();
+      if (fName === cdr || fName.startsWith(cdr + ' -') || fName.startsWith(cdr + '_')) {
+        inmuebleFolder = f; break;
+      }
+    }
+    if (!inmuebleFolder) return null;
+
+    let entregasFolder = getFolderByNameHelper(inmuebleFolder, 'ENTREGAS DEL INMUEBLE');
+    if (!entregasFolder) return null;
+    let anioFolder = obtenerCarpetaAnioMasRecienteLocal(entregasFolder);
+    if (!anioFolder) return null;
+    let docsEntregaInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+    if (!docsEntregaInqFolder) return null;
+
+    let variosFolder = null;
+    const subF = docsEntregaInqFolder.getFolders();
+    while (subF.hasNext()) {
+      const sf = subF.next();
+      if (sf.getName().includes('VARIOS') || sf.getName().startsWith('4-')) {
+        variosFolder = sf; break;
+      }
+    }
+    if (!variosFolder) return null;
+
+    // Buscar el documento Cerebro
+    const searchFiles = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${variosFolder.getId()}' in parents and trashed = false`);
+    if (searchFiles.hasNext()) {
+      const docFile = searchFiles.next();
+      return DocumentApp.openById(docFile.getId());
+    }
+    return null;
+  } catch (e) {
+    Logger.log('⚠️ Error abriendo Cerebro: ' + e.message);
+    return null;
+  }
+}
+
+/**
+ * Leer estados de validación desde el Cerebro
+ * Retorna objeto tipo: { 'BUZON INQUILINO FRONTAL': 'RECIBIDO', 'BUZON COMPROBANTE DE PAGO': 'APROBADO', ... }
+ */
+function obtenerEstadosValidacionDesdeCerebro(cdr) {
+  try {
+    const doc = abrirDocCerebro(cdr);
+    if (!doc) return {};
+
+    const text = doc.getBody().getText();
+    const estados = {};
+    const lines = text.split('\n');
+
+    for (const line of lines) {
+      if (line.trim().startsWith('BUZON ')) {
+        const parts = line.split('::');
+        if (parts.length === 2) {
+          const clave = parts[0].trim();
+          const valor = parts[1].trim();
+          estados[clave] = valor;
+        }
+      }
+    }
+
+    Logger.log('📋 Estados del Cerebro para ' + cdr + ': ' + JSON.stringify(estados));
+    return estados;
+  } catch (e) {
+    Logger.log('⚠️ Error leyendo estados del Cerebro: ' + e.message);
+    return {};
+  }
+}
+
+/**
+ * Actualizar estados de validación en el Cerebro
+ * @param {string} cdr - Código de registro
+ * @param {Object} estadosMap - Mapa clave-valor (ej: {'BUZON INQUILINO FRONTAL': 'APROBADO', ...})
+ */
+function actualizarEstadosValidacionEnCerebro(cdr, estadosMap) {
+  try {
+    const doc = abrirDocCerebro(cdr);
+    if (!doc) {
+      Logger.log('⚠️ No se encontró el Cerebro para CDR: ' + cdr);
+      return false;
+    }
+
+    const body = doc.getBody();
+    const text = body.getText();
+    let modificado = false;
+
+    for (const [buzon, nuevoEstado] of Object.entries(estadosMap)) {
+      // Buscar la línea existente y reemplazarla
+      const regex = new RegExp(buzon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '::\\s*\\S+.*');
+      const match = text.match(regex);
+      if (match) {
+        body.replaceText(regex.source, buzon + ':: ' + nuevoEstado);
+        modificado = true;
+      }
+    }
+
+    if (modificado) {
+      doc.saveAndClose();
+      Logger.log('✅ Estados actualizados en Cerebro para CDR: ' + cdr);
+    }
+
+    return true;
+  } catch (e) {
+    Logger.log('⚠️ Error actualizando estados en Cerebro: ' + e.message);
+    return false;
   }
 }
 
@@ -1944,6 +2107,14 @@ function obtenerDocumentosDelCDR(cdr) {
       }
     }
 
+    // --- LEER ESTADOS DE VALIDACIÓN DESDE EL CEREBRO ---
+    try {
+      documentos.estadosBuzon = obtenerEstadosValidacionDesdeCerebro(cdr);
+    } catch (e) {
+      Logger.log('⚠️ No se pudieron leer estados del Cerebro: ' + e.message);
+      documentos.estadosBuzon = {};
+    }
+
     return documentos;
 
   } catch (error) {
@@ -2262,6 +2433,11 @@ function procesarValidacionInquilino(datos) {
         sheet.getRange(fila, estadoDocCol).setValue('INQ_VALIDATED');
       }
 
+      // Actualizar Cerebro con todos los buzones como APROBADO
+      if (datos.estadosBuzon) {
+        actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
+      }
+
       // Enviar email al propietario
       enviarEmailPropietario(cdr);
 
@@ -2271,11 +2447,16 @@ function procesarValidacionInquilino(datos) {
       };
 
     } else if (estado === 'correccion') {
-      // Actualizar estado — almacenar nombres de docs a corregir para referencia futura
+      // Actualizar estado en Sheet
       sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
       if (estadoDocCol > 0) {
         const docsStr = (datos.documentosCorregir || []).join(',');
         sheet.getRange(fila, estadoDocCol).setValue('INQ_CORRECTION|' + docsStr);
+      }
+
+      // Actualizar Cerebro con buzones APROBADO/ACTUALIZANDO
+      if (datos.estadosBuzon) {
+        actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
       }
 
       // Enviar email de corrección
@@ -2916,12 +3097,17 @@ function enviarCorreccionInquilino(datos) {
     const { cdr, observaciones, documentosCorregir } = datos;
     enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir || []);
 
-    // Actualizar estado
+    // Actualizar estado en Sheet
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
+
+    // Actualizar Cerebro con buzones APROBADO/ACTUALIZANDO
+    if (datos.estadosBuzon) {
+      actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
+    }
 
     return {
       success: true,
@@ -2942,12 +3128,17 @@ function enviarCorreccionPropietario(datos) {
     const { cdr, observaciones, documentosCorregir } = datos;
     enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir || []);
 
-    // Actualizar estado
+    // Actualizar estado en Sheet
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const fila = buscarFilaPorCDR(cdr);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
+
+    // Actualizar Cerebro con buzones APROBADO/ACTUALIZANDO
+    if (datos.estadosBuzon) {
+      actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
+    }
 
     return {
       success: true,

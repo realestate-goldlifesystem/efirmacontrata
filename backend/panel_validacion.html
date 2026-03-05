@@ -1805,45 +1805,50 @@
             documentoActual = null;
             personaActivaKey = tipo; // Ej: 'inquilino' o 'propietario'
 
-            // ─── Pre-populamos documentos aprobados si hay corrección previa ───
-            const registro = getRegistroData();
-            console.log('📋 Registro estadoDocumental:', registro ? registro.estadoDocumental : 'NO ENCONTRADO');
-            // Funciona tanto para INQ_CORRECTION|docs como para INQ_SUBMITTED|docs
-            if (registro && registro.estadoDocumental && registro.estadoDocumental.includes('|')) {
-                const parts = registro.estadoDocumental.split('|');
-                const correctionDocNames = parts.length > 1 ? parts[1].split(',').filter(n => n.trim()) : [];
-
-                console.log('📋 Docs en corrección:', correctionDocNames);
-
-                // Si hay nombres de docs en corrección, marcar TODOS los demás como aprobados
-                if (correctionDocNames.length > 0) {
-                    for (const personKey in documentosData) {
-                        const docsList = documentosData[personKey] || [];
-                        docsList.forEach(doc => {
-                            // Comparación robusta
-                            const isCorrection = correctionDocNames.some(corrName => {
-                                // Remover prefijos visuales del doc.nombre generados por el backend (ej: "🪪 [Inquilino] CEDULA_INQU_FRONTAL_[123].jpg")
-                                let cleanDoc = doc.nombre.replace(/^[^\w\s]*\s*\[.*?\]\s*/, ''); // Remueve emoji y [Texto] al inicio
-                                cleanDoc = cleanDoc.replace(/\.[^.]+$/, '').replace(/_\[.*?\]/, '').toUpperCase().trim();
-
-                                let cleanCorr = corrName.replace(/^[^\w\s]*\s*\[.*?\]\s*/, '');
-                                cleanCorr = cleanCorr.replace(/\.[^.]+$/, '').replace(/_\[.*?\]/, '').toUpperCase().trim();
-
-                                // Comparar limpia
-                                if (cleanDoc === cleanCorr) return true;
-                                if (cleanDoc.includes(cleanCorr) || cleanCorr.includes(cleanDoc)) return true;
-                                return false;
-                            });
-
-                            console.log(`   [${doc.nombre}] vs [${correctionDocNames.join(', ')}] → ${isCorrection ? '⚠️ CORRECCIÓN' : '✅ APROBADO'}`);
-
-                            if (!isCorrection) {
-                                validacionEstado[doc.fileId] = 'aprobado';
-                            }
-                        });
-                    }
-                    console.log('📋 Total pre-aprobados:', Object.keys(validacionEstado).length);
+            // ─── MAPA: Nombre de archivo → BUZON del Cerebro ───
+            // Función que extrae la categoría BUZON de un nombre de archivo del Drive
+            function obtenerBuzonParaDoc(nombreArchivo) {
+                const n = nombreArchivo.toUpperCase();
+                if (n.includes('COMPROBANTE_PAGO') || n.includes('COMPROBANTE')) return 'BUZON COMPROBANTE DE PAGO';
+                if (n.includes('SOPORTES_INGRESO_COD')) {
+                    const m = n.match(/COD_(\d+)/);
+                    return m ? `BUZON SOPORTES INGRESO CODEUDOR ${m[1]}` : 'BUZON SOPORTES INGRESO CODEUDOR 1';
                 }
+                if (n.includes('SOPORTES_INGRESO_INQ') || n.includes('SOPORTES_INGRESO')) return 'BUZON SOPORTES INGRESO INQUILINO';
+                if (n.includes('COD_') && n.includes('FRONTAL')) {
+                    const m = n.match(/COD_(\d+)/);
+                    return m ? `BUZON CODEUDOR ${m[1]} FRONTAL` : 'BUZON CODEUDOR 1 FRONTAL';
+                }
+                if (n.includes('COD_') && n.includes('REVERSO')) {
+                    const m = n.match(/COD_(\d+)/);
+                    return m ? `BUZON CODEUDOR ${m[1]} REVERSO` : 'BUZON CODEUDOR 1 REVERSO';
+                }
+                if (n.includes('INQU') && n.includes('FRONTAL')) return 'BUZON INQUILINO FRONTAL';
+                if (n.includes('INQU') && n.includes('REVERSO')) return 'BUZON INQUILINO REVERSO';
+                return null; // Archivo no mapeado
+            }
+
+            // ─── Pre-aprobación basada en el Cerebro ───
+            const estadosBuzon = documentosData.estadosBuzon || {};
+            console.log('📋 Estados del Cerebro:', JSON.stringify(estadosBuzon));
+
+            if (Object.keys(estadosBuzon).length > 0) {
+                for (const personKey in documentosData) {
+                    if (personKey === 'estadosBuzon') continue; // Saltar el mapa de estados
+                    const docsList = documentosData[personKey] || [];
+                    docsList.forEach(doc => {
+                        const buzonKey = obtenerBuzonParaDoc(doc.nombre);
+                        const estadoCerebro = buzonKey ? estadosBuzon[buzonKey] : null;
+
+                        console.log(`   [${doc.nombre}] → Buzón: ${buzonKey || 'NO MAPEADO'} → Estado: ${estadoCerebro || 'SIN ESTADO'}`);
+
+                        if (estadoCerebro === 'APROBADO') {
+                            validacionEstado[doc.fileId] = 'aprobado';
+                        }
+                        // RECIBIDO, ACTUALIZANDO, RECIBIDO (CORRECCIÓN) → quedan pendientes para el admin
+                    });
+                }
+                console.log('📋 Total pre-aprobados:', Object.keys(validacionEstado).length);
             }
 
             // Actualizar título
@@ -2269,13 +2274,22 @@
             let docIdsConCorreccion = [];
             let detalleMotivos = "";
 
+            // Construir mapa de estados BUZON para el Cerebro
+            const estadosBuzonMap = {};
+
             for (let person in documentosData) {
+                if (person === 'estadosBuzon') continue; // Saltar el mapa de estados
                 const docsObj = documentosData[person] || [];
                 docsObj.forEach(doc => {
                     const id = doc.fileId;
+                    const buzonKey = obtenerBuzonParaDoc(doc.nombre);
+
                     if (validacionEstado[id] === 'correccion') {
                         docIdsConCorreccion.push(doc.nombre);
                         detalleMotivos += `${doc.nombre.replace(/_\[REG_.*?\]/, '').replace(/_/g, ' ')}:\n${motivosCorreccion[id]}\n\n`;
+                        if (buzonKey) estadosBuzonMap[buzonKey] = 'ACTUALIZANDO';
+                    } else if (validacionEstado[id] === 'aprobado') {
+                        if (buzonKey) estadosBuzonMap[buzonKey] = 'APROBADO';
                     }
                 });
             }
@@ -2285,7 +2299,8 @@
                 tipo: tipoActual,
                 estado: docIdsConCorreccion.length === 0 ? 'aprobado' : 'correccion',
                 documentosCorregir: docIdsConCorreccion, // Empty if all approved
-                observaciones: detalleMotivos.trim()
+                observaciones: detalleMotivos.trim(),
+                estadosBuzon: estadosBuzonMap // Mapa de buzones para el Cerebro
             };
 
             const btn = document.getElementById('btnEjecutarAprobacionMaster');
