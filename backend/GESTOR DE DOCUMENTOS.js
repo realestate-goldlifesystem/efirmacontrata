@@ -1324,13 +1324,10 @@ function escribirDatosContratoDocNivel7(cedulaFolder, datosFormulario, cdr) {
       }
     }
 
-    // Si definitivamente no existe, crearlo
+    // Si definitivamente no existe, NO crear uno nuevo (ya lo crea el registro de inmueble desde plantilla)
     if (!docFile) {
-      Logger.log('⚠️ No se encontró DATOS DE ELABORACION DE CONTRATO, creando nuevo...');
-      const docNuevo = DocumentApp.create(`DATOS DE ELABORACION DE CONTRATO`);
-      const newFile = DriveApp.getFileById(docNuevo.getId());
-      newFile.moveTo(cedulaFolder);
-      docFile = newFile;
+      Logger.log('⚠️ No se encontró DATOS DE ELABORACION DE CONTRATO en la carpeta. Se omite escritura (el doc debe existir desde el registro).');
+      return;
     }
 
     const doc = DocumentApp.openById(docFile.getId());
