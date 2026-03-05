@@ -1067,6 +1067,19 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
         sheet.getRange(fila, detallesCol).setValue('✅ Documentación de inquilino recibida y guardada');
       }
 
+      // Actualizar ESTADO DOCUMENTAL preservando la lista de docs a corregir
+      const estadoDocCol = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+      if (estadoDocCol > 0) {
+        let nuevoEstado = 'INQ_SUBMITTED';
+        if (datosFormulario.modoCorreccion) {
+          const estadoActual = sheet.getRange(fila, estadoDocCol).getValue().toString();
+          if (estadoActual.includes('|')) {
+            nuevoEstado = 'INQ_SUBMITTED|' + estadoActual.split('|')[1];
+          }
+        }
+        sheet.getRange(fila, estadoDocCol).setValue(nuevoEstado);
+      }
+
       // Actualizar datos del inquilino si vienen en el formulario
       actualizarCamposInquilino(fila, {
         nombre: datosFormulario.inquilino.nombre,
