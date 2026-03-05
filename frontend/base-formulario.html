@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario Template - E-FirmaContrata</title>
+
+    <!-- Estilos Globales (Debería existir un style.css o se pueden poner aquí si es independiente) -->
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* =========================================
+       PREMIUM FORM CONTAINER (Glassmorphism)
+       ========================================= */
+        .form-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 15px 35px rgba(24, 7, 43, 0.1);
+            margin-top: 20px;
+        }
+
+        .form-title {
+            color: var(--primary);
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .form-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-weight: 400;
+        }
+
+        /* =========================================
+       WIZARD PROGRESS BAR (Connected & Animated)
+       ========================================= */
+        .progress {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            position: relative;
+            padding: 0 10px;
+        }
+
+        .progress::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 30px;
+            right: 30px;
+            height: 4px;
+            background: #e5e7eb;
+            transform: translateY(-50%);
+            z-index: 0;
+            border-radius: 2px;
+        }
+
+        .progress-line {
+            position: absolute;
+            top: 50%;
+            left: 30px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+            transform: translateY(-50%);
+            z-index: 0;
+            border-radius: 2px;
+            transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .progress .step {
+            background: #fff;
+            border: 3px solid #e5e7eb;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 1;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .progress .step.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            transform: scale(1.15);
+            box-shadow: 0 8px 15px rgba(86, 18, 162, 0.25);
+        }
+
+        .progress .step.completed {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            color: #fff;
+        }
+
+        /* Panel Transitions */
+        .step-pane {
+            display: none;
+            opacity: 0;
+            transform: translateY(15px);
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .step-pane.show {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* =========================================
+       FILE UPLOAD
+       ========================================= */
+        .file-upload {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: #f9fafb;
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        .file-label:hover {
+            border-color: var(--secondary);
+            background: #fffdf5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 181, 60, 0.1);
+        }
+
+        .file-name {
+            margin-left: 12px;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* Form Utilities */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.95rem;
+        }
+
+        .input,
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            background: #fff;
+            transition: all 0.3s ease;
+            color: var(--dark);
+            font-family: inherit;
+        }
+
+        .input:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(86, 18, 162, 0.1);
+            outline: none;
+        }
+
+        .error-msg {
+            display: none;
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        .error-msg.show {
+            display: block;
+            animation: shake 0.4s;
+        }
+
+        .input.invalid {
+            border-color: var(--danger) !important;
+            background-color: #fef2f2 !important;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-4px);
+            }
+
+            75% {
+                transform: translateX(4px);
+            }
+        }
+
+        /* Progressive Disclosure */
+        .progressive-hidden {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            margin-bottom: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .progressive-visible {
+            max-height: 800px;
+            opacity: 1;
+            overflow: hidden;
+            margin-bottom: 25px !important;
+            transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Layout / Util */
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media(max-width:640px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Nav Buttons */
+        .form-navigation {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: var(--dark);
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(86, 18, 162, 0.3);
+        }
+
+        .btn-success {
+            background: var(--secondary);
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        .btn-success:hover {
+            background: var(--secondary-dark);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Modal / Loader / Toast */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .elegant-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(86, 18, 162, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(24, 7, 43, 0.2);
+            transition: bottom 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 9999;
+        }
+
+        .toast.show {
+            bottom: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header General -->
+    <header class="header-main" style="text-align:center; padding: 20px 0; color: white;">
+        <div class="container">
+            <h1 class="logo">🏠 E-FirmaContrata</h1>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <div class="container" style="max-width: 800px; margin: 0 auto;">
+
+            <!-- Banner Corrección (Opcional si aplica) -->
+            <div id="bannerCorreccion" class="alert alert-warning hidden"
+                style="background:#fff3cd; color:#856404; padding:15px; border-radius:10px; margin-bottom:20px;">
+                <strong>⚠️ Correcciones Requeridas</strong>
+                <p>Por favor, revisa la información solicitada.</p>
+                <div id="correccionDocs"></div>
+            </div>
+
+            <!-- Notificaciones en línea -->
+            <div id="alertBox" class="alert hidden" role="alert"
+                style="padding:15px; border-radius:10px; margin-bottom:20px;"></div>
+
+            <!-- Contenedor del Formulario -->
+            <div class="form-container">
+                <h2 class="form-title">🏠 Título del Formulario</h2>
+                <p class="form-subtitle">Subtítulo o descripción breve del formulario.</p>
+
+                <!-- Barra de Progreso del Wizard (ajustar cantidad de pasos) -->
+                <div class="progress">
+                    <div class="progress-line" id="progressLine" style="width: 0%;"></div>
+                    <div class="step active" data-step="0">1</div>
+                    <div class="step" data-step="1">2</div>
+                    <div class="step" data-step="2">3</div>
+                    <div class="step" data-step="3">✓</div>
+                </div>
+
+                <!-- PASO 1 -->
+                <div class="step-pane show" data-pane="0">
+                    <h3>Paso 1: Información Básica</h3>
+                    <p class="muted">Ingresa los datos correspondientes.</p>
+
+                    <div class="form-group">
+                        <label for="campoUnico">Campo de Ejemplo <span class="required">*</span></label>
+                        <input type="text" id="campoUnico" class="input" required>
+                    </div>
+
+                    <!-- Si usas revelación progresiva usa ID "prog-..." y clase "progressive-hidden" -->
+                    <div class="grid-2col progressive-hidden" id="prog-paso0-1">
+                        <div class="form-group">
+                            <label for="campoDos">Campo Requerido 2</label>
+                            <input type="text" id="campoDos" class="input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="campoTres">Campo Requerido 3</label>
+                            <input type="text" id="campoTres" class="input" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 2: Archivos -->
+                <div class="step-pane" data-pane="1">
+                    <h3>Paso 2: Subida de Archivos</h3>
+
+                    <div class="file-upload">
+                        <input type="file" id="archivoEjemplo" class="file-input" accept=".pdf,.png,.jpg">
+                        <label for="archivoEjemplo" class="file-label">
+                            <span>📄 Adjuntar Documento Ejemplo *</span>
+                            <span id="archivoEjemploName" class="file-name"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- PASO 3: Resumen -->
+                <div class="step-pane" data-pane="2">
+                    <h3>Resumen Final</h3>
+                    <div id="resumen">
+                        <!-- El resumen de información se inyecta aquí desde JS -->
+                    </div>
+                </div>
+
+                <!-- Controles de Navegación -->
+                <div class="form-navigation">
+                    <button id="btnPrev" class="btn btn-secondary hidden">← Atrás</button>
+                    <div style="flex:1"></div>
+                    <button id="btnNext" class="btn btn-primary">Continuar →</button>
+                    <button id="btnEnviar" class="btn btn-success hidden">✓ Enviar Formulario</button>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Elementos Flotantes -->
+    <div id="toast" class="toast">Notificación</div>
+    <div id="loader" class="loading-overlay">
+        <div style="text-align: center;">
+            <div class="elegant-spinner"></div>
+            <h3 style="color:var(--primary); margin-top: 20px;">Procesando...</h3>
+        </div>
+    </div>
+
+    <!-- Lógica JavaScript (Template) -->
+    <script>
+        (function () {
+            // ----------------------------------------------------
+            // 1. VARIABLES DE ESTADO ESTÁNDAR
+            // ----------------------------------------------------
+            const FORM_NAME = 'formulario_base'; // <- CAMBIAR NOMBRE ÚNICO PARA LOCALSTORAGE
+            const state = {
+                cdr: '',
+                modoCorreccion: false,
+                docsCorreccion: [],
+                step: 0,
+                max: 2, // <- CAMBIAR: Número máximo de pasos (n-1)
+                archivos: {},
+                maxFileSize: 10 * 1024 * 1024, // 10MB default
+                saveDelay: null
+            };
+
+            // Expresiones regulares comunes (Personalizar si es necesario)
+            const rx = {
+                email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                num: /^[0-9]+$/,
+                phone: /^[0-9]{10}$/
+            };
+
+            // Utilidades Rápidas
+            const $ = (id) => document.getElementById(id);
+            const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+
+            // Referencias DOM Estándar
+            const el = {
+                bannerCorreccion: $('bannerCorreccion'),
+                correccionDocs: $('correccionDocs'),
+                alertBox: $('alertBox'),
+                loader: $('loader'),
+                btnPrev: $('btnPrev'),
+                btnNext: $('btnNext'),
+                btnEnviar: $('btnEnviar'),
+                resumen: $('resumen'),
+                toast: $('toast'),
+
+                // Elementos de tu formulario...
+                campoUnico: $('campoUnico'),
+                campoDos: $('campoDos'),
+                campoTres: $('campoTres'),
+                // Archivos
+                archivoEjemplo: $('archivoEjemplo'),
+                archivoEjemploName: $('archivoEjemploName')
+            };
+
+            // ----------------------------------------------------
+            // 2. PERSISTENCIA HÍBRIDA (LocalStorage + IndexedDB)
+            // ----------------------------------------------------
+            const DB_NAME = `db_${FORM_NAME}`;
+            const DB_VERSION = 1;
+            const DB_STORE = 'archivos';
+
+            function abrirDB() {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(DB_NAME, DB_VERSION);
+                    req.onupgradeneeded = (e) => { e.target.result.createObjectStore(DB_STORE); };
+                    req.onsuccess = (e) => resolve(e.target.result);
+                    req.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async function guardarArchivosEnDB() {
+                if (!state.cdr || state.modoCorreccion) return;
+                try {
+                    const db = await abrirDB();
+                    const tx = db.transaction(DB_STORE, 'readwrite');
+                    const store = tx.objectStore(DB_STORE);
+                    store.put(JSON.parse(JSON.stringify(state.archivos)), `files_${state.cdr}`);
+                } catch (e) { console.warn('No se pudieron guardar archivos en IndexedDB.', e); }
+            }
+
+            async function cargarArchivosDeDB() {
+                if (!state.cdr || state.modoCorreccion) return;
+                try {
+                    const db = await abrirDB();
+                    const tx = db.transaction(DB_STORE, 'readonly');
+                    const store = tx.objectStore(DB_STORE);
+                    const archivos = await new Promise((res, rej) => {
+                        const r = store.get(`files_${state.cdr}`);
+                        r.onsuccess = () => res(r.result);
+                        r.onerror = () => rej(r.error);
+                    });
+
+                    if (archivos && typeof archivos === 'object') {
+                        state.archivos = archivos;
+                        // Restaurar visualmente archivos
+                        const nameMap = {
+                            archivoEjemplo: 'archivoEjemploName' // <- MAPEAR TUS ARCHIVOS AQUÍ (id_input: id_name)
+                        };
+                        for (const [key, archivo] of Object.entries(archivos)) {
+                            if (archivo && archivo.nombre) {
+                                const nameElId = nameMap[key];
+                                if (nameElId && $(nameElId)) {
+                                    $(nameElId).textContent = '✅ ' + archivo.nombre;
+                                }
+                                const container = $(key);
+                                if (container) {
+                                    const wrapper = container.closest('.file-upload');
+                                    if (wrapper) wrapper.classList.add('has-file');
+                                }
+                            }
+                        }
+                    }
+                } catch (e) { console.warn('No se pudieron cargar archivos de IndexedDB.', e); }
+            }
+
+            async function limpiarDB() {
+                try {
+                    const db = await abrirDB();
+                    const tx = db.transaction(DB_STORE, 'readwrite');
+                    const store = tx.objectStore(DB_STORE);
+                    store.delete(`files_${state.cdr}`);
+                } catch (e) { }
+            }
+
+            function guardarProgresoUsuario() {
+                if (state.modoCorreccion || !state.cdr) return;
+                clearTimeout(state.saveDelay);
+                state.saveDelay = setTimeout(() => {
+                    try {
+                        const formData = {
+                            step: state.step,
+                            // <- LISTAR TODOS LOS CAMPOS DE TEXTO/SELECT AQUÍ
+                            campoUnico: el.campoUnico?.value,
+                            campoDos: el.campoDos?.value,
+                            campoTres: el.campoTres?.value
+                        };
+                        // Guardar checkboxes dinámicamente si los hay
+                        // qsa('input[type="checkbox"]').forEach(cb => { formData[cb.id] = cb.checked; });
+
+                        localStorage.setItem(`${FORM_NAME}_${state.cdr}`, JSON.stringify(formData));
+                        guardarArchivosEnDB(); // Archivos grandes a la DB
+                    } catch (e) { console.warn('No se pudo guardar progreso.', e); }
+                }, 800);
+            }
+
+            async function cargarProgresoUsuario() {
+                if (state.modoCorreccion || !state.cdr) return;
+                let savedStep = 0;
+                try {
+                    const saved = localStorage.getItem(`${FORM_NAME}_${state.cdr}`);
+                    if (saved) {
+                        const formData = JSON.parse(saved);
+
+                        // <- LISTAR TODOS LOS CAMPOS DE TEXTO/SELECT A RESTAURAR AQUÍ
+                        if (formData.campoUnico && el.campoUnico) el.campoUnico.value = formData.campoUnico;
+                        if (formData.campoDos && el.campoDos) el.campoDos.value = formData.campoDos;
+                        if (formData.campoTres && el.campoTres) el.campoTres.value = formData.campoTres;
+
+                        // if (typeof formData.step === 'number') savedStep = formData.step;
+                    }
+                    await cargarArchivosDeDB();
+                    evaluateProgress();
+                    if (savedStep > 0) setTimeout(() => gotoStep(savedStep, true), 50);
+                } catch (e) { console.warn('No se pudo cargar progreso.', e); }
+            }
+
+            // ----------------------------------------------------
+            // 3. NAVEGACIÓN Y WIZARD
+            // ----------------------------------------------------
+            function bindWizard() {
+                el.btnNext.addEventListener('click', () => {
+                    if (!validateStep(state.step)) return;
+                    gotoStep(state.step + 1);
+                });
+                el.btnPrev.addEventListener('click', () => gotoStep(state.step - 1));
+                el.btnEnviar.addEventListener('click', onSubmit);
+
+                qsa('.progress .step').forEach(s => {
+                    s.addEventListener('click', () => {
+                        const ts = Number(s.dataset.step);
+                        // Solo permitir clic a pasos anteriores o el actual completado
+                        if (ts < state.step) gotoStep(ts);
+                    });
+                });
+            }
+
+            function gotoStep(idx, first = false) {
+                if (idx < 0 || idx > state.max) return;
+                state.step = idx;
+
+                qsa('.step-pane').forEach(p => p.classList.toggle('show', Number(p.dataset.pane) === state.step));
+                qsa('.progress .step').forEach(s => {
+                    const sNum = Number(s.dataset.step);
+                    s.classList.toggle('active', sNum === state.step);
+                    s.classList.toggle('completed', sNum < state.step);
+                });
+
+                const line = $('progressLine');
+                if (line) line.style.width = (state.step / state.max) * 100 + '%';
+
+                el.btnPrev.classList.toggle('hidden', state.step === 0);
+                el.btnNext.classList.toggle('hidden', state.step === state.max);
+                el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
+
+                if (state.step === state.max) buildSummary();
+                if (!first) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    guardarProgresoUsuario();
+                }
+            }
+
+            // ----------------------------------------------------
+            // 4. ARCHIVOS
+            // ----------------------------------------------------
+            function bindFiles() {
+                // <- BINDEAR ARCHIVOS INPUT AQUÍ
+                bindFile(el.archivoEjemplo, 'archivoEjemplo', el.archivoEjemploName);
+            }
+
+            function bindFile(input, key, nameEl) {
+                if (!input) return;
+                input.addEventListener('change', () => handleFile(input.files?.[0], key, nameEl));
+            }
+
+            function handleFile(file, key, nameEl) {
+                if (!file) return;
+                if (file.size > state.maxFileSize) {
+                    showAlert('danger', `El archivo es muy pesado (Max ${(state.maxFileSize / 1024 / 1024).toFixed(0)}MB).`);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.archivos[key] = { nombre: file.name, tipo: file.type, contenido: e.target.result };
+                    if (nameEl) nameEl.textContent = file.name;
+                    const container = $(key);
+                    if (container) {
+                        const wrapper = container.closest('.file-upload');
+                        if (wrapper) wrapper.classList.add('has-file');
+                    }
+                    evaluateProgress();
+                    guardarArchivosEnDB();
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // ----------------------------------------------------
+            // 5. VALIDACIÓN Y PROGRESIÓN DINÁMICA
+            // ----------------------------------------------------
+            function bindProgressValidators() {
+                const inputs = qsa('input, select, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('input', () => { evaluateProgress(); guardarProgresoUsuario(); });
+                    input.addEventListener('change', () => { evaluateProgress(); guardarProgresoUsuario(); });
+                });
+            }
+
+            function validateStep(step) {
+                hideInlineErrors();
+                // <- APLICAR REGLAS Y ALERTAS (`showAlert()`) SEGÚN EL PASO
+                switch (step) {
+                    case 0:
+                        if (!el.campoUnico?.value.trim()) {
+                            showAlert('warning', 'Completa el Campo Ejemplo.');
+                            el.campoUnico?.focus(); return false;
+                        }
+                        return true;
+                    case 1:
+                        if (!state.archivos.archivoEjemplo) {
+                            showAlert('warning', 'Falta el archivo ejemplo.');
+                            return false;
+                        }
+                        return true;
+                    default:
+                        return true;
+                }
+            }
+
+            function evaluateProgress() {
+                // Revelación de Progreso - Ejemplo de Paso 0
+                const vUnico = el.campoUnico?.value.trim() || '';
+                const prog1 = $('prog-paso0-1');
+                if (prog1) {
+                    if (vUnico) {
+                        prog1.classList.add('progressive-visible'); prog1.classList.remove('progressive-hidden');
+                    } else {
+                        prog1.classList.remove('progressive-visible'); prog1.classList.add('progressive-hidden');
+                    }
+                }
+
+                // La validación interna `validateStepRaw` solo determina si el botón next está activo
+                el.btnNext.disabled = false; // O usar una validación silenciosa similar a validateStep
+            }
+
+            function buildSummary() {
+                // <- ARMAR HTML PARA REVISIÓN FINAL
+                el.resumen.innerHTML = `
+          <div class="summary-container">
+            <h4>Verifica tus Datos</h4>
+            <p>Ejemplo: ${escapeHTML(el.campoUnico?.value)}</p>
+          </div>
+        `;
+            }
+
+            // ----------------------------------------------------
+            // 6. ENVÍO (SUBMIT)
+            // ----------------------------------------------------
+            async function onSubmit() {
+                // Re-validar 
+                for (let i = 0; i < state.max; i++) {
+                    if (!validateStep(i)) { gotoStep(i); return; }
+                }
+
+                toggleLoading(true);
+
+                const payload = {
+                    accion: 'tu_accion_en_apps_script',
+                    codigoRegistro: state.cdr,
+                    datos: { /* Tus datos */ },
+                    archivos: state.archivos
+                };
+
+                try {
+                    // const url = new URL(CONFIG.API_URL);
+                    // const res = await fetch(url.toString(), { ... });
+                    // const data = await res.json();
+                    // if (!data.success) throw new Error(data.message);
+
+                    // Simulación de respuesta exitosa
+                    await new Promise(r => setTimeout(r, 1500));
+
+                    // Al terminar ok! Limpiar DB y LS
+                    if (!state.modoCorreccion && state.cdr) {
+                        localStorage.removeItem(`${FORM_NAME}_${state.cdr}`);
+                        limpiarDB();
+                    }
+
+                    toast('Simulación de guardado exitoso');
+                    // location.href = `pagina-exito.html...`;
+                } catch (err) {
+                    showAlert('danger', err.message || 'Error inesperado.');
+                } finally {
+                    toggleLoading(false);
+                }
+            }
+
+            // ----------------------------------------------------
+            // START / INIT
+            // ----------------------------------------------------
+            async function init() {
+                const params = new URLSearchParams(location.search);
+                state.cdr = params.get('cdr') || 'DEMO123'; // Default para pruebas locales
+                state.modoCorreccion = (params.get('modo') === 'correccion');
+
+                if (!state.cdr) {
+                    showAlert('danger', 'Error de Seguridad: Enlace inválido.');
+                    qsa('input, button, select').forEach(n => n.disabled = true);
+                    return;
+                }
+
+                gotoStep(0, true);
+                bindWizard();
+                bindFiles();
+                bindProgressValidators();
+
+                if (!state.modoCorreccion) {
+                    await cargarProgresoUsuario();
+                }
+            }
+
+            // Helpers
+            function hideInlineErrors() {
+                qsa('.error-msg').forEach(e => e.classList.remove('show'));
+                qsa('.invalid').forEach(e => e.classList.remove('invalid'));
+                el.alertBox.classList.add('hidden');
+            }
+            function showAlert(type, text) {
+                el.alertBox.className = `alert alert-${type}`;
+                el.alertBox.innerHTML = escapeHTML(text);
+                el.alertBox.classList.remove('hidden');
+            }
+            function toggleLoading(show) {
+                el.loader.classList.toggle('active', show);
+            }
+            function toast(text) {
+                el.toast.textContent = text;
+                el.toast.classList.add('show');
+                setTimeout(() => el.toast.classList.remove('show'), 3000);
+            }
+            function escapeHTML(str) {
+                const d = document.createElement('div');
+                d.textContent = str || '';
+                return d.innerHTML;
+            }
+
+            // EXECUTE INIT
+            init();
+        })();
+    </script>
+</body>
+
+</html>
