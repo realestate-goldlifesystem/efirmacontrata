@@ -1066,7 +1066,9 @@
         } else if (state.step === 1) {
           const prog2 = document.getElementById('prog-inq-1-2');
           if (prog2) {
-            if (state.archivos['docFront']) {
+            // En modo corrección, mostrar el reverso si está en la lista de corrección
+            // aunque el frontal no se haya subido (ya fue aprobado antes)
+            if (state.archivos['docFront'] || (state.modoCorreccion && state.docsCorreccion.includes('docBack'))) {
               prog2.classList.remove('progressive-hidden'); prog2.classList.add('progressive-visible');
             } else {
               prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
@@ -1145,7 +1147,8 @@
           // Documentos del codeudor: revelación progresiva
           const prog32 = document.getElementById('prog-inq-3-2');
           if (prog32) {
-            if (state.archivos['coDocFront']) {
+            // En modo corrección, mostrar el reverso si está en la lista de corrección
+            if (state.archivos['coDocFront'] || (state.modoCorreccion && state.docsCorreccion.includes('coDocBack'))) {
               prog32.classList.remove('progressive-hidden'); prog32.classList.add('progressive-visible');
             } else {
               prog32.classList.add('progressive-hidden'); prog32.classList.remove('progressive-visible');
