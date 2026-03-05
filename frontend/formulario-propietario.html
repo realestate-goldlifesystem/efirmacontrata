@@ -837,6 +837,8 @@
       async function cargarProgresoUsuario() {
         if (state.modoCorreccion || !state.cdr) return;
 
+        let savedStep = 0;
+
         try {
           // 1. Restaurar campos de texto desde localStorage
           const saved = localStorage.getItem(`efirma_prop_${state.cdr}`);
@@ -868,17 +870,22 @@
               }
             });
 
-            // Restaurar paso del wizard
+            // Guardar paso para restaurar DESPUÉS de evaluar
             if (typeof formData.step === 'number' && formData.step > 0) {
-              setTimeout(() => gotoStep(formData.step, true), 100);
+              savedStep = formData.step;
             }
-
-            // Forzar evaluación de revelación progresiva
-            evaluateProgress();
           }
 
-          // 2. Restaurar archivos desde IndexedDB
+          // 2. Restaurar archivos desde IndexedDB (ANTES de evaluar disclosure)
           await cargarArchivosDeDB();
+
+          // 3. AHORA que todo está restaurado, revelar campos progresivos
+          evaluateProgress();
+
+          // 4. Navegar al paso guardado (después de que todo esté visible)
+          if (savedStep > 0) {
+            setTimeout(() => gotoStep(savedStep, true), 50);
+          }
 
         } catch (e) {
           console.warn('No se pudo cargar el progreso.', e);
@@ -948,7 +955,7 @@
       // --------- Init ----------
       init();
 
-      function init() {
+      async function init() {
         const params = new URLSearchParams(location.search);
         state.cdr = params.get('cdr') || '';
         state.modoCorreccion = (params.get('modo') === 'correccion');
@@ -964,9 +971,6 @@
             state.docsCorreccion = docs ? JSON.parse(decodeURIComponent(docs)) : [];
           } catch (e) { state.docsCorreccion = []; }
           renderCorreccionBanner();
-        } else {
-          // Solo cargar progreso si no estamos en modo corrección
-          cargarProgresoUsuario();
         }
 
         renderSteps();
@@ -976,7 +980,10 @@
         bindPagos();
         bindProgressValidators();
 
-
+        // Cargar progreso DESPUÉS de que todo esté bindado
+        if (!state.modoCorreccion) {
+          await cargarProgresoUsuario();
+        }
       }
 
       // --------- Corrección ----------
