@@ -1234,7 +1234,12 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
     }
 
     // 9. Escribir datos del formulario en "DATOS DE ELABORACION DE CONTRATO" (Nivel 7 - VARIOS)
-    escribirDatosContratoDocNivel7(variosFolder, datosFormulario, codigoRegistro);
+    // SOLO si NO es modo corrección (en corrección solo se suben archivos, los datos ya existen)
+    if (!datosFormulario.modoCorreccion) {
+      escribirDatosContratoDocNivel7(variosFolder, datosFormulario, codigoRegistro);
+    } else {
+      Logger.log('ℹ️ Modo corrección: se omite escritura de datos en DATOS DE ELABORACION (ya existen).');
+    }
 
     return {
       carpetaPrincipal: inmuebleFolder.getUrl(),
@@ -1544,11 +1549,16 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
 
     // ==============================
     // 6. Escribir datos del propietario en DATOS DE ELABORACION DE CONTRATO
+    // SOLO si NO es modo corrección (en corrección solo se suben archivos, los datos ya existen)
     // ==============================
-    try {
-      escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, codigoRegistro);
-    } catch (e) {
-      Logger.log('⚠️ Error escribiendo datos propietario en doc: ' + e.message);
+    if (!datosFormulario.modoCorreccion) {
+      try {
+        escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, codigoRegistro);
+      } catch (e) {
+        Logger.log('⚠️ Error escribiendo datos propietario en doc: ' + e.message);
+      }
+    } else {
+      Logger.log('ℹ️ Modo corrección: se omite escritura de datos propietario en DATOS DE ELABORACION (ya existen).');
     }
 
     return {
