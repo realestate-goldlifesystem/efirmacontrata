@@ -1772,20 +1772,47 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
     }
 
     // ==============================
-    // 3. Función helper para obtener carpeta de servicio público
+    // 3. Función helper para obtener o crear dinámicamente carpeta de servicio público
     // ==============================
-    function obtenerCarpetaServicio(nombreServicio) {
+    function buscarOCrearCarpetaServicio(nombreServicioKey) {
       if (!serviciosFolder) return null;
-      let carpetaServicio = getFolderByNameHelper(serviciosFolder, nombreServicio);
-      // Crear si no existe (para 4. TELEFONO y 5. INTERNET)
-      if (!carpetaServicio) {
-        carpetaServicio = serviciosFolder.createFolder(nombreServicio);
-        Logger.log('📂 Carpeta de servicio creada: ' + nombreServicio);
+
+      let carpetaEncontrada = null;
+      let maxNum = 0;
+
+      const subcarpetas = serviciosFolder.getFolders();
+      while (subcarpetas.hasNext()) {
+        const folder = subcarpetas.next();
+        const nombre = folder.getName();
+
+        const match = nombre.match(/^(\d+)\.\s+(.*)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          const servicio = match[2];
+
+          if (num > maxNum) maxNum = num;
+
+          if (servicio.toUpperCase() === nombreServicioKey.toUpperCase()) {
+            carpetaEncontrada = folder;
+          }
+        } else {
+          if (nombre.toUpperCase().includes(nombreServicioKey.toUpperCase())) {
+            carpetaEncontrada = folder;
+          }
+        }
       }
-      let ultimoRecibo = getFolderByNameHelper(carpetaServicio, '1. ULTIMO RECIBO PAGO');
+
+      if (!carpetaEncontrada) {
+        const nuevoNum = maxNum + 1;
+        const nuevoNombre = `${nuevoNum}. ${nombreServicioKey.toUpperCase()}`;
+        carpetaEncontrada = serviciosFolder.createFolder(nuevoNombre);
+        Logger.log('📂 Carpeta de servicio creada dinámicamente: ' + nuevoNombre);
+      }
+
+      let ultimoRecibo = getFolderByNameHelper(carpetaEncontrada, '1. ULTIMO RECIBO PAGO');
       if (!ultimoRecibo) {
-        ultimoRecibo = carpetaServicio.createFolder('1. ULTIMO RECIBO PAGO');
-        Logger.log('📂 Subcarpeta creada: 1. ULTIMO RECIBO PAGO en ' + nombreServicio);
+        ultimoRecibo = carpetaEncontrada.createFolder('1. ULTIMO RECIBO PAGO');
+        Logger.log('📂 Subcarpeta creada: 1. ULTIMO RECIBO PAGO en ' + carpetaEncontrada.getName());
       }
       return ultimoRecibo;
     }
@@ -1799,11 +1826,11 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
       'certTradicion': { carpeta: certTradicionFolder, nombre: `CERT_TRADICION_[${codigoRegistro}]` },
       'sarlaft': { carpeta: sarlaftFolder, nombre: `SARLAFT_[${codigoRegistro}]` },
       'certBancario': { carpeta: certBancarioFolder, nombre: `CERT_BANCARIO_[${codigoRegistro}]` },
-      'facturaAgua': { carpeta: obtenerCarpetaServicio('1. AGUA'), nombre: `FACTURA_AGUA_[${codigoRegistro}]` },
-      'facturaLuz': { carpeta: obtenerCarpetaServicio('2. LUZ'), nombre: `FACTURA_LUZ_[${codigoRegistro}]` },
-      'facturaGas': { carpeta: obtenerCarpetaServicio('3. GAS'), nombre: `FACTURA_GAS_[${codigoRegistro}]` },
-      'facturaTelefono': { carpeta: obtenerCarpetaServicio('4. TELEFONO'), nombre: `FACTURA_TELEFONO_[${codigoRegistro}]` },
-      'facturaInternet': { carpeta: obtenerCarpetaServicio('5. INTERNET'), nombre: `FACTURA_INTERNET_[${codigoRegistro}]` },
+      'facturaAgua': { carpeta: buscarOCrearCarpetaServicio('AGUA'), nombre: `FACTURA_AGUA_[${codigoRegistro}]` },
+      'facturaLuz': { carpeta: buscarOCrearCarpetaServicio('LUZ'), nombre: `FACTURA_LUZ_[${codigoRegistro}]` },
+      'facturaGas': { carpeta: buscarOCrearCarpetaServicio('GAS'), nombre: `FACTURA_GAS_[${codigoRegistro}]` },
+      'facturaTelefono': { carpeta: buscarOCrearCarpetaServicio('TELEFONO'), nombre: `FACTURA_TELEFONO_[${codigoRegistro}]` },
+      'facturaInternet': { carpeta: buscarOCrearCarpetaServicio('INTERNET'), nombre: `FACTURA_INTERNET_[${codigoRegistro}]` },
     };
 
     // ==============================
