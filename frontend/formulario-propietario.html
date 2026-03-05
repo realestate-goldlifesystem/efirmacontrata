@@ -872,6 +872,9 @@
             if (typeof formData.step === 'number' && formData.step > 0) {
               setTimeout(() => gotoStep(formData.step, true), 100);
             }
+
+            // Forzar evaluación de revelación progresiva
+            evaluateProgress();
           }
 
           // 2. Restaurar archivos desde IndexedDB
