@@ -1518,7 +1518,7 @@
             inquilino: {
               tipoDocumento: el.tipoDocumento.value.trim(),
               numeroDocumento: el.numeroDocumento.value.trim(),
-              nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`,
+              nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`.toUpperCase(),
               email: el.email.value.trim(),
               celular: el.celular.value.trim(),
               ocupacion: 'Por definir'  // Campo requerido por el backend
@@ -1526,7 +1526,7 @@
             codeudor: el.coNumero.value.trim() ? {
               tipoDocumento: el.coTipo.value.trim(),
               numeroDocumento: el.coNumero.value.trim(),
-              nombre: `${el.coNombres.value.trim()} ${el.coApellidos.value.trim()}`,
+              nombre: `${el.coNombres.value.trim()} ${el.coApellidos.value.trim()}`.toUpperCase(),
               email: el.coEmail.value.trim(),
               celular: el.coCelular.value.trim()
             } : null,

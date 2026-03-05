@@ -1543,7 +1543,7 @@
             propietario: {
               tipoDocumento: el.tipoDocumento.value.trim(),
               numeroDocumento: el.numeroDocumento.value.trim(),
-              nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`,
+              nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`.toUpperCase(),
               email: el.email.value.trim(),
               celular: el.celular.value.trim()
             },
