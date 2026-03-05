@@ -195,6 +195,20 @@
       accent-color: var(--secondary);
     }
 
+    .servicio-upload {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease, margin-top 0.3s ease;
+      margin-top: 0;
+    }
+
+    .servicio-upload.visible {
+      max-height: 120px;
+      opacity: 1;
+      margin-top: 0.75rem;
+    }
+
     /* =========================================
        INLINE ERRORS & VALIDATION
        ========================================= */
@@ -536,11 +550,13 @@
                   💧 Agua/Acueducto
                 </label>
               </div>
-              <input type="file" id="facturaAgua" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-              <label for="facturaAgua" class="btn btn-sm btn-outline" style="cursor:pointer">
-                📎 Adjuntar Factura
-              </label>
-              <span id="facturaAguaName" class="file-name"></span>
+              <div class="servicio-upload">
+                <input type="file" id="facturaAgua" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+                <label for="facturaAgua" class="btn btn-sm btn-outline" style="cursor:pointer">
+                  📎 Adjuntar Factura
+                </label>
+                <span id="facturaAguaName" class="file-name"></span>
+              </div>
             </div>
 
             <div class="servicio-item" data-servicio="luz">
@@ -550,11 +566,13 @@
                   💡 Energía/Luz
                 </label>
               </div>
-              <input type="file" id="facturaLuz" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-              <label for="facturaLuz" class="btn btn-sm btn-outline" style="cursor:pointer">
-                📎 Adjuntar Factura
-              </label>
-              <span id="facturaLuzName" class="file-name"></span>
+              <div class="servicio-upload">
+                <input type="file" id="facturaLuz" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+                <label for="facturaLuz" class="btn btn-sm btn-outline" style="cursor:pointer">
+                  📎 Adjuntar Factura
+                </label>
+                <span id="facturaLuzName" class="file-name"></span>
+              </div>
             </div>
 
             <div class="servicio-item" data-servicio="gas">
@@ -564,11 +582,13 @@
                   🔥 Gas
                 </label>
               </div>
-              <input type="file" id="facturaGas" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-              <label for="facturaGas" class="btn btn-sm btn-outline" style="cursor:pointer">
-                📎 Adjuntar Factura
-              </label>
-              <span id="facturaGasName" class="file-name"></span>
+              <div class="servicio-upload">
+                <input type="file" id="facturaGas" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+                <label for="facturaGas" class="btn btn-sm btn-outline" style="cursor:pointer">
+                  📎 Adjuntar Factura
+                </label>
+                <span id="facturaGasName" class="file-name"></span>
+              </div>
             </div>
 
             <div class="servicio-item" data-servicio="telefono">
@@ -578,11 +598,13 @@
                   📞 Teléfono
                 </label>
               </div>
-              <input type="file" id="facturaTelefono" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-              <label for="facturaTelefono" class="btn btn-sm btn-outline" style="cursor:pointer">
-                📎 Adjuntar Factura
-              </label>
-              <span id="facturaTelefonoName" class="file-name"></span>
+              <div class="servicio-upload">
+                <input type="file" id="facturaTelefono" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+                <label for="facturaTelefono" class="btn btn-sm btn-outline" style="cursor:pointer">
+                  📎 Adjuntar Factura
+                </label>
+                <span id="facturaTelefonoName" class="file-name"></span>
+              </div>
             </div>
 
             <div class="servicio-item" data-servicio="internet">
@@ -592,11 +614,13 @@
                   🌐 Internet
                 </label>
               </div>
-              <input type="file" id="facturaInternet" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-              <label for="facturaInternet" class="btn btn-sm btn-outline" style="cursor:pointer">
-                📎 Adjuntar Factura
-              </label>
-              <span id="facturaInternetName" class="file-name"></span>
+              <div class="servicio-upload">
+                <input type="file" id="facturaInternet" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+                <label for="facturaInternet" class="btn btn-sm btn-outline" style="cursor:pointer">
+                  📎 Adjuntar Factura
+                </label>
+                <span id="facturaInternetName" class="file-name"></span>
+              </div>
             </div>
           </div>
         </div>
@@ -1076,13 +1100,16 @@
         ['agua', 'luz', 'gas', 'telefono', 'internet'].forEach(tipo => {
           const checkbox = $(`servicio${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
           const item = document.querySelector(`.servicio-item[data-servicio="${tipo}"]`);
+          const uploadDiv = item?.querySelector('.servicio-upload');
 
           checkbox?.addEventListener('change', () => {
             if (checkbox.checked) {
               item?.classList.add('selected');
+              uploadDiv?.classList.add('visible');
               if (!state.servicios.includes(tipo)) state.servicios.push(tipo);
             } else {
               item?.classList.remove('selected');
+              uploadDiv?.classList.remove('visible');
               state.servicios = state.servicios.filter(s => s !== tipo);
             }
           });
