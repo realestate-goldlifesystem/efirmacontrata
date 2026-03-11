@@ -708,6 +708,13 @@
                 }
                 const reader = new FileReader();
                 reader.onload = (e) => {
+                    // ── Intercepción Dinámica para OCR ──
+                    if (key === 'certTradicion' && typeof window.validarCertificadoOCR === 'function') {
+                        window.validarCertificadoOCR(e.target.result, file.name, nameEl);
+                        return; // Detiene el guardado normal, OCR lo maneja
+                    }
+
+                    // Flujo normal
                     state.archivos[key] = { nombre: file.name, tipo: file.type, contenido: e.target.result };
                     if (nameEl) nameEl.textContent = file.name;
                     const container = $(key);
