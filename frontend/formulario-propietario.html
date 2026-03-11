@@ -1973,16 +1973,16 @@
             modoCorreccion: state.modoCorreccion
           },
           archivosBase64: {
-            docFront: state.archivos.docFront,
-            docBack: state.archivos.docBack,
-            certTradicion: state.archivos.certTradicion,
-            sarlaft: state.archivos.sarlaft,
-            certBancario: state.archivos.certBancario,
-            facturaAgua: state.archivos.facturaAgua,
-            facturaLuz: state.archivos.facturaLuz,
-            facturaGas: state.archivos.facturaGas,
-            facturaTelefono: state.archivos.facturaTelefono,
-            facturaInternet: state.archivos.facturaInternet
+            docFront: state.archivos.docFront?.contenido,
+            docBack: state.archivos.docBack?.contenido,
+            certTradicion: state.archivos.certTradicion?.contenido,
+            sarlaft: state.archivos.sarlaft?.contenido,
+            certBancario: state.archivos.certBancario?.contenido,
+            facturaAgua: state.archivos.facturaAgua?.contenido,
+            facturaLuz: state.archivos.facturaLuz?.contenido,
+            facturaGas: state.archivos.facturaGas?.contenido,
+            facturaTelefono: state.archivos.facturaTelefono?.contenido,
+            facturaInternet: state.archivos.facturaInternet?.contenido
           }
         };
 
