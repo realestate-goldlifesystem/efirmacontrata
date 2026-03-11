@@ -1239,6 +1239,29 @@
                                 </div>
                                 <!-- Sección: Datos Inmueble (para futuro) -->
                                 <div id="seccionDatosInmueble" data-section="inmueble" style="display:none;">
+                                    <div style="background: var(--light); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid #e2e8f0; text-align: center;">
+                                         <h4 style="margin: 0 0 0.5rem 0; color: var(--dark);">Análisis Inteligente de Documento</h4>
+                                         <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 1rem;">Extrae y cruza la información del Certificado con los datos del Propietario usando Inteligencia Artificial.</p>
+                                         <button id="btnAnalizarOCR" class="btn btn-primary" onclick="analizarCertificadoOCR()" style="width: 100%; justify-content: center; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);">
+                                             🔍 Analizar Certificado con OCR
+                                         </button>
+                                         <div id="ocrBadgesContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-top: 1rem; display: none;">
+                                             <!-- Se llenan por JS -->
+                                         </div>
+                                    </div>
+                                    
+                                    <div class="cerebro-field">
+                                        <label>Nro. Matrícula Inmobiliaria</label>
+                                        <input type="text" id="cerebro_matricula" value="" placeholder="Generado por OCR..." readonly style="background: #f1f5f9; cursor: not-allowed;">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Dirección del Inmueble</label>
+                                        <input type="text" id="cerebro_direccion" value="" placeholder="Generado por OCR..." readonly style="background: #f1f5f9; cursor: not-allowed;">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Ciudad</label>
+                                        <input type="text" id="cerebro_ciudadInmueble" value="" placeholder="Generado por OCR..." readonly style="background: #f1f5f9; cursor: not-allowed;">
+                                    </div>
                                     <div class="cerebro-field">
                                         <label>Certificado de Tradición</label>
                                         <input type="text" id="cerebro_certTradicion" value="Pendiente" disabled>
@@ -2712,6 +2735,110 @@
         function verDocumentosPropietario(cdr) {
             validarPropietario(cdr);
         }
+        // Funcionalidad OCR para el Panel de Validación
+        function analizarCertificadoOCR() {
+            // Validar que estemos en propietario
+            if (tipoActual !== 'propietario' || personaActivaKey !== 'inmueble') {
+                mostrarToast('El análisis OCR solo está disponible en la pestaña Inf. Inmueble del Propietario.', 'warning');
+                return;
+            }
+
+            // Buscar el documento Certificado de Tradición
+            const docsPropietario = documentosData['propietario'] || [];
+            const certDoc = docsPropietario.find(doc => doc.nombre.toUpperCase().includes('CERT_TRADICION'));
+
+            if (!certDoc || !certDoc.fileId) {
+                mostrarToast('No se encontró el archivo del Certificado de Tradición subido por el propietario.', 'error');
+                return;
+            }
+
+            // Extraer datos del propietario actual del registro cargado
+            const registroActualData = getRegistroData();
+            if (!registroActualData || !registroActualData.propietario) {
+                mostrarToast('Error cargando los datos del propietario para el cruce OCR.', 'error');
+                return;
+            }
+
+            const datosPropietarioForm = {
+                documento: registroActualData.propietario.documento,
+                nombre: registroActualData.propietario.nombre
+            };
+
+            // UI: Pre-loading state
+            const btn = document.getElementById('btnAnalizarOCR');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Analizando documento... (Esto puede tomar hasta 20 segundos)';
+            btn.disabled = true;
+            mostrarLoading('Procesando Certificado con IA OCR...');
+
+            // Limpiar badges anteriores
+            const badgesContainer = document.getElementById('ocrBadgesContainer');
+            badgesContainer.innerHTML = '';
+            badgesContainer.style.display = 'none';
+
+            // Llamada al backend
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    ocultarLoading();
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    if (!response.success) {
+                        mostrarToast('Error OCR: ' + response.message, 'error');
+                        return;
+                    }
+
+                    const data = response.datos;
+                    mostrarToast('Análisis OCR completado correctamente.', 'success');
+
+                    // Rellenar Formularios
+                    document.getElementById('cerebro_matricula').value = data.matricula;
+                    document.getElementById('cerebro_direccion').value = data.direccion;
+                    document.getElementById('cerebro_ciudadInmueble').value = data.ciudad;
+
+                    // Mostrar Badges Visuales
+                    badgesContainer.style.display = 'flex';
+                    let badgesHtml = '';
+
+                    // 1. Badge Vigencia
+                    if (data.vigente) {
+                         badgesHtml += `<span class="badge badge-success" title="Expedido hace ${data.diasExpedido} días">✅ Edad: OK (${data.diasExpedido} d)</span>`;
+                    } else {
+                         badgesHtml += `<span class="badge badge-danger">❌ Vencido (+30 d)</span>`;
+                    }
+
+                    // 2. Badge Cédula
+                    if (data.cedulaMatch) {
+                         badgesHtml += `<span class="badge badge-success">✅ Cédula Coincide</span>`;
+                    } else {
+                         badgesHtml += `<span class="badge badge-danger">⚠️ Cédula NO Coincide</span>`;
+                    }
+
+                    // 3. Badge Nombre
+                    if (data.nombreMatch) {
+                         badgesHtml += `<span class="badge badge-success" title="Detectado: ${data.propietarioDetectado}">✅ Nombre Coincide</span>`;
+                    } else {
+                         badgesHtml += `<span class="badge badge-warning" title="Sigue revisando manualmente">⚠️ Titular Difiere</span>`;
+                    }
+
+                    // 4. Badge Embargos
+                    if (data.tieneEmbargo) {
+                         badgesHtml += `<span class="badge badge-danger" title="${data.alertasEmbargo.join(' - ')}">🚫 EMBARGO DETECTADO</span>`;
+                    } else {
+                         badgesHtml += `<span class="badge badge-success">✅ Cero Embargos Evidentes</span>`;
+                    }
+
+                    badgesContainer.innerHTML = badgesHtml;
+                })
+                .withFailureHandler(function(error) {
+                    ocultarLoading();
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    mostrarToast('Error de conexión con el Servidor OCR: ' + error.message, 'error');
+                })
+                .analizarCertificadoDesdePanel(certDoc.fileId, datosPropietarioForm);
+        }
+
     </script>
 </body>
 

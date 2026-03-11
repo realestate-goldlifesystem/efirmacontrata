@@ -431,6 +431,13 @@ function doGet(e) {
         };
         break;
 
+      case 'setCreds':
+        const props = PropertiesService.getScriptProperties();
+        props.setProperty('OCR_CLIENT_EMAIL', 'ocr-vision@real-estate-ocr-468904.iam.gserviceaccount.com');
+        props.setProperty('OCR_PRIVATE_KEY', '-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCzUR0SyBcGYgJD\\n8M/V9KORYzis/xcujzFCfzbbr3hHbbGD9zOV1z3PJjMnAo0Zku2dyS+Voy6wZAcv\\nPWL6LfdYLQ+ubZ0F6xQM+1VFCeMglPU9jT4OmlYplCiaj1mQsOFa4rvW+A9mzBct\\nC5TKMlJsqmlAfIf6n7+cHFuxbWVayZ4vZ2fodP4Msvdk34+YTWJlnpnyJI5UJc+1\\n+0oCjL1oyn/5Dc7vULtIzvOfCZQdnDj3M/NUY8QpK3rd123Ht/OaqqXwChtZWyHP\\nPox60TeHhraj//TKp9wOUz0TsjHJfwlxLCoKNXIV1c5j8ZrZY7CQXXL3RuPqS3ax\\n51TIHlPNAgMBAAECggEARvwDtdUmpDy1J98S72A2Rg4QuA8NRr2hovDILyQhyajn\\nXlXEAnuf+LpnAnjUkXyj+tPTNfnQuDwIyg8TePUsVqgT7plu0RJzsAXohfl5g4Lk\\nKDcbC13WYQRJJJI9wvT6aOebs2gkdK2zOP4+KuLL1T+KheAmVjTZ/bsOI0kql8rR\\n2mzs//H/n98DlP0F7cuwELB4u/Un3653+emE+QS0c6Yb4+QCjBiIzKL9ci2VxuIE\\nUQvm4DJfpFjUXs295CBJpf8eNii9RGWj5E08e4Ph8Dx5Qzv3mXIoavneWikfTvIw\\nm9tSsCI54/E3/Qv+CXyfMUd6irpcE47o6/QMLa9jQwKBgQDbJyL94/4/s2jaPFvq\\nRT0KGyDx8ALZG9A6A+ilwOQqp66xG3APC+ROesvGFPs3fjYq15d6x2yZ/ml2vB91\\nGp+DM3m/PDSEDa4vT1uXSE4j8qhTwcpIqdt9/NhW6pxuNIpHQhxeYc6rXw5jzYZe\\nvUqi/FAXWHvCvH0R09gOAJcEJwKBgQDRd1bO3ZShvnDdSkt//0ReRFuW0xlOqvAp\\n/fCcAwCfQ1De5UZCVkMGy/jOZO3QYTcQTvu/jU2vdhZfQLJk71Mz7T1cpao6g6F1\\nYkmVO4H2P7jZlXZPzEFQix14K8i31XSloGWLZUDZkb1oB3ynvGAsBpk2jjjJA0Rk\\nFFEkMjTc6wKBgEZgfRY3f1CJluRueb3z2jRCngPT5bY+/lGDK9T+6sbf7nOlsgjC\\n8uBZAtNrrXkWqOJ9NYISRMf3MXsV0qxSjmMdxr0o4lx94DAFNg6RA7b7mB69nu5S\\nzc/ZwMe4s9+YM8fKbT3J/wp9jitytvH5q9xHVpkIq0XQLgHpm/pzKgwFAoGAbGqp\\ner8DjEgm4NLwixqTx3r4MPOoeKhPUFzIleptD2r+4y3dZl4bQpeqLg4MOfT6z8N\\nkjzQBc5IPBsfetDIrurPROHWXxz8d+ZckapQVSWcRrpul1TwRYELysRWypfoHUYM\\n6P6Kd1JQx8SAR81ftcngiXVJfPl875P4f5Sg+esCgYEA0jNbUHnCOIV0uzGnkU0A\\nz3bk8jof/Sc1SU0tJ9nqG66mbu1iluoYNXZLRrs8jk5gwiQvsSXH5TE4AIX5F8Rn\\nihsIbqeBkEOnLx8b37Ooue1FPr0YRb1IxynBenZPNy3u+m5DHPjAgan521puZmxS\\nJkDqJOHGbt+vbiWxJrRSr48=\\n-----END PRIVATE KEY-----\\n');
+        result = { success: true, message: 'Credenciales de Google Cloud Vision guardadas exitosamente' };
+        break;
+
       default:
         result = {
           success: false,
@@ -498,6 +505,9 @@ function doPost(e) {
         // Llama a la función del OCR-HANDLER.js
         result = validarCertificadoDesdeFormulario(datos.base64);
         break;
+      case 'analizarCertificadoDesdePanel':
+        result = analizarCertificadoDesdePanel(datos.fileId, datos.datosPropietario);
+        break;
       default:
         result = {
           success: false,
@@ -542,6 +552,94 @@ function enviarCorrecciones(datos) {
 }
 
 function actualizarDatosCerebro(datos) {
+
+// ==========================================
+// Integración Directa OCR - Panel de Validación 
+// ==========================================
+
+function analizarCertificadoDesdePanel(fileId, datosPropietario) {
+  try {
+    if (!fileId) throw new Error("No se proporcionó el ID del archivo.");
+    if (!datosPropietario) throw new Error("No se enviaron los datos del propietario para cotejar.");
+
+    // 1. Obtener el archivo de Drive y convertir a base64
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob();
+    const contentType = blob.getContentType();
+    
+    // Necesitamos el MIME + Base64 puro
+    let base64Content = Utilities.base64Encode(blob.getBytes());
+    
+    if (contentType === 'application/pdf') {
+       // El handler ya sabe detectar 'JVBERi0' (prefijo base64 de PDF) 
+       // pero podemos asegurar el formato completo con data uri si es necesario
+    }
+    
+    // 2. Ejecutar OCR completo
+    const resultadoOCR = procesarCertificadoTradicionOCR(base64Content);
+    
+    if (!resultadoOCR.exito) {
+      return { success: false, message: resultadoOCR.mensaje };
+    }
+    
+    const datosDuros = resultadoOCR.datos;
+    
+    // 3. Cruce de Datos (Validaciones Inteligentes)
+    const cedulaPropietario = String(datosPropietario.documento).trim().replace(/\D/g, '');
+    const nombrePropietario = String(datosPropietario.nombre).toUpperCase().trim();
+    
+    // Verificar Matrícula
+    const cedulaMatch = datosDuros.cedulasEncontradas.some(ced => ced.includes(cedulaPropietario));
+    
+    // Verificar Nombre (búsqueda aproximada / substring)
+    // El OCR extrae los propietarios completos 'Nombres y Apellidos | CC'
+    let nombreMatch = false;
+    let propietarioDetectado = "";
+    
+    if (datosDuros.titularesInfo && datosDuros.titularesInfo.length > 0) {
+        datosDuros.titularesInfo.forEach(titular => {
+            const nomPlanoOCR = titular.nombre.toUpperCase().replace(/\s+/g, ' ');
+            // Una simple validación si al menos el nombre largo coincide sustancialmente
+            if(nomPlanoOCR.includes(nombrePropietario) || nombrePropietario.includes(nomPlanoOCR)) {
+                 nombreMatch = true;
+                 propietarioDetectado = nomPlanoOCR;
+            } else {
+                 // Intentar cruzar por palabras (Ej: Si es Juan Perez y el OCR dice Perez Juan)
+                 const palabras = nombrePropietario.split(' ').filter(p => p.length > 3);
+                 let aciertos = 0;
+                 palabras.forEach(palabra => {
+                     if (nomPlanoOCR.includes(palabra)) aciertos++;
+                 });
+                 if (aciertos >= 2) { // 2 palabras largas de match = aceptado
+                     nombreMatch = true;
+                     propietarioDetectado = nomPlanoOCR;
+                 }
+            }
+        });
+    }
+
+    // 4. Armar el payload para el frontend
+    return {
+        success: true,
+        datos: {
+            matricula: datosDuros.matricula || 'No detectada',
+            direccion: datosDuros.direccion || 'No detectada',
+            ciudad: datosDuros.ciudad || 'No detectada',
+            vigente: datosDuros.esVigente,
+            diasExpedido: datosDuros.diasExpedido,
+            tieneEmbargo: datosDuros.tieneEmbargo,
+            alertasEmbargo: datosDuros.alertasEmbargo,
+            cedulaMatch: cedulaMatch,
+            nombreMatch: nombreMatch,
+            propietarioDetectado: propietarioDetectado || 'No detectado/Sin Match'
+        }
+    };
+
+  } catch (error) {
+    Logger.log('Error en analizarCertificadoDesdePanel: ' + error.message);
+    return { success: false, message: error.message };
+  }
+}
   try {
     const conf = CONFIGURACION_BD;
     const sheetId = datos.tipo === 'inquilino' ? conf.IDS.SHEET_INQUILINOS : conf.IDS.SHEET_PROPIETARIOS;
