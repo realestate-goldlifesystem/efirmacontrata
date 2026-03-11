@@ -1972,18 +1972,7 @@
             serviciosPublicos: serviciosPublicos,
             modoCorreccion: state.modoCorreccion
           },
-          archivosBase64: {
-            docFront: state.archivos.docFront?.contenido,
-            docBack: state.archivos.docBack?.contenido,
-            certTradicion: state.archivos.certTradicion?.contenido,
-            sarlaft: state.archivos.sarlaft?.contenido,
-            certBancario: state.archivos.certBancario?.contenido,
-            facturaAgua: state.archivos.facturaAgua?.contenido,
-            facturaLuz: state.archivos.facturaLuz?.contenido,
-            facturaGas: state.archivos.facturaGas?.contenido,
-            facturaTelefono: state.archivos.facturaTelefono?.contenido,
-            facturaInternet: state.archivos.facturaInternet?.contenido
-          }
+          archivosBase64: state.archivos
         };
 
         try {
