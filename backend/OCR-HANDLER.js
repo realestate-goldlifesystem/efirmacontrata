@@ -164,42 +164,75 @@ function llamarVisionAPIConReintentos(base64Content, accessToken) {
 }
 
 function llamarVisionAPI(base64Content, accessToken) {
-  const request = {
-    requests: [{
-      image: {
-        content: base64Content
-      },
-      features: [{
-        type: 'TEXT_DETECTION',
-        maxResults: 1
-      }],
-      imageContext: {
-        languageHints: ['es']
-      }
-    }]
-  };
+  // Detectar si es PDF por su firma base64 (JVBERi0 = %PDF-)
+  const isPDF = base64Content.startsWith('JVBERi0');
   
+  let endPoint = OCR_CONFIG.VISION_API_URL; // Usualmente https://vision.googleapis.com/v1/images:annotate
+  let requestPayload;
+  
+  if (isPDF) {
+    // Para PDFs usar files:annotate
+    endPoint = 'https://vision.googleapis.com/v1/files:annotate';
+    requestPayload = {
+      requests: [{
+        inputConfig: {
+          content: base64Content,
+          mimeType: 'application/pdf'
+        },
+        features: [{
+          type: 'DOCUMENT_TEXT_DETECTION',
+          maxResults: 1
+        }],
+        pages: [1] // Solo analizamos la primera página para ahorrar costos y tiempo
+      }]
+    };
+  } else {
+    // Para imágenes estándar usar images:annotate
+    endPoint = 'https://vision.googleapis.com/v1/images:annotate';
+    requestPayload = {
+      requests: [{
+        image: {
+          content: base64Content
+        },
+        features: [{
+          type: 'TEXT_DETECTION',
+          maxResults: 1
+        }],
+        imageContext: {
+          languageHints: ['es']
+        }
+      }]
+    };
+  }
+
   const options = {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
     },
-    payload: JSON.stringify(request),
+    payload: JSON.stringify(requestPayload),
     muteHttpExceptions: true,
     timeout: OCR_CONFIG.TIMEOUT / 1000
   };
   
-  const response = UrlFetchApp.fetch(OCR_CONFIG.VISION_API_URL, options);
+  const response = UrlFetchApp.fetch(endPoint, options);
   
   if (response.getResponseCode() !== 200) {
-    throw new Error(`Vision API error: ${response.getResponseCode()}`);
+    throw new Error(`Vision API error ${response.getResponseCode()}: ${response.getContentText()}`);
   }
   
   const result = JSON.parse(response.getContentText());
   
-  if (result.responses && result.responses[0] && result.responses[0].fullTextAnnotation) {
-    return result.responses[0].fullTextAnnotation.text;
+  // Analizar respuesta dependiendo del endpoint usado
+  if (isPDF) {
+    if (result.responses && result.responses[0] && result.responses[0].responses && result.responses[0].responses[0] && result.responses[0].responses[0].fullTextAnnotation) {
+      return result.responses[0].responses[0].fullTextAnnotation.text;
+    }
+  } else {
+    if (result.responses && result.responses[0] && result.responses[0].fullTextAnnotation) {
+      return result.responses[0].fullTextAnnotation.text;
+    }
   }
   
   return null;
