@@ -221,7 +221,10 @@ function extraerDatosOptimizado(texto) {
     estrato: extraerEstratoOpt(textoUpper),
     departamento: extraerDepartamentoOpt(textoUpper),
     municipio: extraerMunicipioOpt(textoUpper),
-    vereda: extraerVeredaOpt(textoUpper)
+    vereda: extraerVeredaOpt(textoUpper),
+    fechaExpedicion: extraerFechaExpedicionOpt(texto),
+    embargo: detectarEmbargosOpt(textoUpper),
+    cedulas: extraerCedulasOpt(texto)
   };
 }
 
@@ -423,9 +426,245 @@ function limpiarCacheToken() {
 }
 
 // ==========================================
+// NUEVAS FUNCIONES DE EXTRACCIÓN
+// ==========================================
+
+/**
+ * Extrae la fecha de expedición del certificado.
+ * Busca patrones como "FECHA: 15 de febrero de 2026" o "Expedido el 15/02/2026"
+ */
+function extraerFechaExpedicionOpt(texto) {
+  const meses = {
+    'enero': 0, 'febrero': 1, 'marzo': 2, 'abril': 3, 'mayo': 4, 'junio': 5,
+    'julio': 6, 'agosto': 7, 'septiembre': 8, 'octubre': 9, 'noviembre': 10, 'diciembre': 11
+  };
+
+  // Patrón 1: "15 de febrero de 2026"
+  const patternTexto = /(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+(?:de(?:l)?\s+)?(\d{4})/gi;
+  const matches = [];
+  let m;
+  while ((m = patternTexto.exec(texto)) !== null) {
+    const dia = parseInt(m[1]);
+    const mes = meses[m[2].toLowerCase()];
+    const anio = parseInt(m[3]);
+    if (anio >= 2020 && dia >= 1 && dia <= 31) {
+      matches.push(new Date(anio, mes, dia));
+    }
+  }
+
+  // Patrón 2: "15/02/2026" o "15-02-2026"
+  const patternNumerico = /(\d{1,2})[/-](\d{1,2})[/-](\d{4})/g;
+  while ((m = patternNumerico.exec(texto)) !== null) {
+    const dia = parseInt(m[1]);
+    const mes = parseInt(m[2]) - 1;
+    const anio = parseInt(m[3]);
+    if (anio >= 2020 && dia >= 1 && dia <= 31 && mes >= 0 && mes <= 11) {
+      matches.push(new Date(anio, mes, dia));
+    }
+  }
+
+  // Patrón 3: "2026-02-15" (ISO)
+  const patternISO = /(\d{4})[/-](\d{1,2})[/-](\d{1,2})/g;
+  while ((m = patternISO.exec(texto)) !== null) {
+    const anio = parseInt(m[1]);
+    const mes = parseInt(m[2]) - 1;
+    const dia = parseInt(m[3]);
+    if (anio >= 2020 && dia >= 1 && dia <= 31 && mes >= 0 && mes <= 11) {
+      matches.push(new Date(anio, mes, dia));
+    }
+  }
+
+  if (matches.length === 0) return null;
+
+  // Retornar la fecha más reciente (probablemente la de expedición)
+  matches.sort((a, b) => b.getTime() - a.getTime());
+  return matches[0].toISOString().split('T')[0]; // "2026-02-15"
+}
+
+/**
+ * Detecta si el inmueble tiene embargos, medidas cautelares o demandas.
+ */
+function detectarEmbargosOpt(textoUpper) {
+  const keywords = [
+    'EMBARGO', 'EMBARGADO', 'MEDIDA CAUTELAR', 'MEDIDAS CAUTELARES',
+    'DEMANDA', 'DEMANDADO', 'HIPOTECA', 'GRAVAMEN',
+    'LIMITACION', 'LIMITACIONES AL DOMINIO',
+    'AFECTACION A VIVIENDA FAMILIAR'
+  ];
+
+  const alertas = [];
+  for (const kw of keywords) {
+    if (textoUpper.includes(kw)) {
+      alertas.push(kw);
+    }
+  }
+
+  return {
+    tieneEmbargo: alertas.length > 0,
+    alertas: alertas
+  };
+}
+
+/**
+ * Extrae números de cédula encontrados en el certificado.
+ */
+function extraerCedulasOpt(texto) {
+  const cedulas = [];
+  const patterns = [
+    /C[ÉE]DULA[\s\w]*?N[°oO.]?\s*([\d.,]+)/gi,
+    /C\.?\s*C\.?\s*(?:N[°oO.]?)?\s*([\d.,]+)/gi,
+    /IDENTIFICAD[OA]?\s+(?:CON)?\s+(?:C[ÉE]DULA)?\s*(?:DE CIUDADAN[ÍI]A)?\s*(?:N[°oO.]?)?\s*([\d.,]+)/gi,
+    /(?:CC|C\.C\.)\s*([\d.,]+)/gi
+  ];
+
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(texto)) !== null) {
+      const num = match[1].replace(/[.,]/g, '').trim();
+      if (num.length >= 5 && num.length <= 12 && !cedulas.includes(num)) {
+        cedulas.push(num);
+      }
+    }
+  }
+
+  return cedulas;
+}
+
+// ==========================================
 // INTEGRACIÓN CON FORMULARIOS
 // ==========================================
 
+/**
+ * Validación rápida para el formulario del propietario.
+ * Solo valida vigencia (<30 días). Retorna resultado rápido.
+ */
+function validarCertificadoDesdeFormulario(archivoBase64) {
+  try {
+    const resultado = procesarCertificadoTradicionOCR(archivoBase64);
+
+    if (!resultado.exito || !resultado.datos) {
+      return {
+        success: false,
+        vigente: false,
+        mensaje: resultado.mensaje || 'No se pudo leer el documento. Verifica que sea un Certificado de Tradición legible.'
+      };
+    }
+
+    const datos = resultado.datos;
+    let vigente = true;
+    let diasAntiguedad = 0;
+    let fechaExpedicion = datos.fechaExpedicion || null;
+
+    if (fechaExpedicion) {
+      const fechaCert = new Date(fechaExpedicion + 'T12:00:00');
+      const hoy = new Date();
+      const diffMs = hoy.getTime() - fechaCert.getTime();
+      diasAntiguedad = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      vigente = diasAntiguedad <= 30;
+    } else {
+      // Si no se pudo extraer la fecha, permitir la carga pero advertir
+      vigente = true;
+      diasAntiguedad = -1; // Indicar que no se detectó
+    }
+
+    return {
+      success: true,
+      vigente: vigente,
+      diasAntiguedad: diasAntiguedad,
+      fechaExpedicion: fechaExpedicion,
+      matricula: datos.matricula || '',
+      direccion: datos.direccion || '',
+      tiempoProcesamiento: resultado.tiempoProcesamiento
+    };
+
+  } catch (error) {
+    Logger.log('Error en validarCertificadoDesdeFormulario: ' + error.message);
+    return {
+      success: false,
+      vigente: false,
+      mensaje: 'Error al procesar el documento: ' + error.message
+    };
+  }
+}
+
+/**
+ * Validación completa para el panel de validación (admin).
+ * Incluye: vigencia, embargo, cédula match, nombre match, datos completos.
+ */
+function validarCertificadoCompletoDesdePanel(archivoBase64, datosPropietario) {
+  try {
+    const resultado = procesarCertificadoTradicionOCR(archivoBase64);
+
+    if (!resultado.exito || !resultado.datos) {
+      return {
+        success: false,
+        mensaje: resultado.mensaje || 'No se pudo leer el documento'
+      };
+    }
+
+    const datos = resultado.datos;
+
+    // Validar vigencia
+    let vigente = true;
+    let diasAntiguedad = 0;
+    if (datos.fechaExpedicion) {
+      const fechaCert = new Date(datos.fechaExpedicion + 'T12:00:00');
+      const hoy = new Date();
+      diasAntiguedad = Math.floor((hoy.getTime() - fechaCert.getTime()) / (1000 * 60 * 60 * 24));
+      vigente = diasAntiguedad <= 30;
+    }
+
+    // Validar cédula
+    let cedulaCoincide = false;
+    const cedulaProp = (datosPropietario.documento || '').replace(/[.,\s]/g, '');
+    if (cedulaProp && datos.cedulas && datos.cedulas.length > 0) {
+      cedulaCoincide = datos.cedulas.some(c => c === cedulaProp);
+    }
+
+    // Validar nombre (fuzzy: al menos 2 palabras del nombre coinciden)
+    let nombreCoincide = false;
+    const nombreProp = (datosPropietario.nombre || '').toUpperCase().trim();
+    const propietariosFolio = (datos.propietarios || '').toUpperCase().trim();
+    if (nombreProp && propietariosFolio) {
+      const palabrasNombre = nombreProp.split(/\s+/).filter(p => p.length > 2);
+      const coincidencias = palabrasNombre.filter(p => propietariosFolio.includes(p));
+      nombreCoincide = coincidencias.length >= 2;
+    }
+
+    return {
+      success: true,
+      // Datos extraídos
+      matricula: datos.matricula || 'No detectado',
+      direccion: datos.direccion || 'No detectado',
+      area: datos.area || '',
+      propietariosFolio: datos.propietarios || '',
+      chip: datos.chip || '',
+      ciudad: datos.ciudad || 'BOGOTÁ',
+      estrato: datos.estrato || '',
+      // Validaciones
+      vigente: vigente,
+      diasAntiguedad: diasAntiguedad,
+      fechaExpedicion: datos.fechaExpedicion || null,
+      tieneEmbargo: datos.embargo.tieneEmbargo,
+      alertasEmbargo: datos.embargo.alertas,
+      cedulaCoincide: cedulaCoincide,
+      cedulasEnFolio: datos.cedulas,
+      nombreCoincide: nombreCoincide,
+      tiempoProcesamiento: resultado.tiempoProcesamiento
+    };
+
+  } catch (error) {
+    Logger.log('Error en validarCertificadoCompletoDesdePanel: ' + error.message);
+    return {
+      success: false,
+      mensaje: 'Error al procesar: ' + error.message
+    };
+  }
+}
+
+/**
+ * Función legacy — mantener compatibilidad.
+ */
 function procesarCertificadoDesdeFormulario(archivoBase64) {
   try {
     const resultado = procesarCertificadoTradicionOCR(archivoBase64);

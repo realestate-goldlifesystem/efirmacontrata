@@ -396,7 +396,7 @@
         .documents-container {
             display: grid;
             grid-template-columns: 25% 75%;
-            gap: 1.5rem;
+            gap: 0.75rem;
             height: auto;
             align-items: start;
         }
@@ -485,11 +485,11 @@
         .preview-area {
             background: #f8f9fa;
             border-radius: var(--radius);
-            padding: 1rem;
+            padding: 0.5rem;
             display: flex;
             flex-direction: column;
-            height: 380px;
-            /* Ajustado para caber mejor con los botones de acción en una sola pantalla */
+            height: 260px;
+            /* Compacto: botones de evaluación visibles sin scroll */
             border: 1px solid #e2e8f0;
         }
 
@@ -1195,21 +1195,54 @@
                                     title="Editar Datos">✏️</button>
                             </div>
                             <div id="cerebroContent" class="cerebro-content readonly">
-                                <div class="cerebro-field">
-                                    <label>Nombre Completo</label>
-                                    <input type="text" id="cerebro_nombre" value="Cargando...">
+                                <!-- Sección: Datos Personales -->
+                                <div id="seccionDatosPersonales" data-section="personal">
+                                    <div class="cerebro-field">
+                                        <label>Nombre Completo</label>
+                                        <input type="text" id="cerebro_nombre" value="Cargando...">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Documento de Identidad</label>
+                                        <input type="text" id="cerebro_documento" value="Cargando...">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Correo Electrónico</label>
+                                        <input type="email" id="cerebro_email" value="Cargando...">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Teléfono Celular</label>
+                                        <input type="text" id="cerebro_celular" value="Cargando...">
+                                    </div>
                                 </div>
-                                <div class="cerebro-field">
-                                    <label>Documento de Identidad</label>
-                                    <input type="text" id="cerebro_documento" value="Cargando...">
+                                <!-- Sección: Datos Bancarios (oculta por defecto) -->
+                                <div id="seccionDatosBancarios" data-section="bancaria" style="display:none;">
+                                    <div class="cerebro-field">
+                                        <label>Tipo de Cuenta</label>
+                                        <input type="text" id="cerebro_tipoCuenta" value="">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Número de Cuenta</label>
+                                        <input type="text" id="cerebro_numeroCuenta" value="">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Banco</label>
+                                        <input type="text" id="cerebro_banco" value="">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Titular de la Cuenta</label>
+                                        <input type="text" id="cerebro_titularCuenta" value="">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Documento del Titular</label>
+                                        <input type="text" id="cerebro_docTitular" value="">
+                                    </div>
                                 </div>
-                                <div class="cerebro-field">
-                                    <label>Correo Electrónico</label>
-                                    <input type="email" id="cerebro_email" value="Cargando...">
-                                </div>
-                                <div class="cerebro-field">
-                                    <label>Teléfono Celular</label>
-                                    <input type="text" id="cerebro_celular" value="Cargando...">
+                                <!-- Sección: Datos Inmueble (para futuro) -->
+                                <div id="seccionDatosInmueble" data-section="inmueble" style="display:none;">
+                                    <div class="cerebro-field">
+                                        <label>Certificado de Tradición</label>
+                                        <input type="text" id="cerebro_certTradicion" value="Pendiente" disabled>
+                                    </div>
                                 </div>
                             </div>
                             <div id="cerebroActions" class="cerebro-actions" style="display:none;">
@@ -1256,7 +1289,7 @@
                         <div class="preview-area"
                             style="flex: 1; display: flex; flex-direction: column; padding: 0.5rem; background: var(--white); border-radius: var(--radius); border: 1px solid #e2e8f0; overflow: hidden;">
 
-                            <div class="preview-content" id="previewContent" style="flex: 1; min-height: 250px;">
+                            <div class="preview-content" id="previewContent" style="flex: 1; min-height: 160px;">
                                 <div class="preview-placeholder">
                                     <p>👈 Selecciona un documento de las pestañas de arriba</p>
                                 </div>
@@ -1862,7 +1895,7 @@
 
             if (Object.keys(estadosBuzon).length > 0) {
                 for (const personKey in documentosData) {
-                    if (personKey === 'estadosBuzon') continue; // Saltar el mapa de estados
+                    if (personKey === 'estadosBuzon' || personKey === 'datosBancarios') continue; // Saltar mapas no-doc
                     const docsList = documentosData[personKey] || [];
                     docsList.forEach(doc => {
                         const buzonKey = obtenerBuzonParaDoc(doc.nombre);
@@ -1877,6 +1910,15 @@
                     });
                 }
                 console.log('📋 Total pre-aprobados:', Object.keys(validacionEstado).length);
+            }
+
+            // Merge banking data from Cerebro into registro.propietario
+            if (tipo === 'propietario' && documentosData.datosBancarios) {
+                const registro = (registrosData.propietarios || []).find(r => r.cdr === cdr);
+                if (registro && registro.propietario) {
+                    Object.assign(registro.propietario, documentosData.datosBancarios);
+                    console.log('🏦 Datos bancarios mergeados:', JSON.stringify(documentosData.datosBancarios));
+                }
             }
 
             // Actualizar título
@@ -1918,6 +1960,12 @@
                 });
             }
 
+            // Para propietario: agregar tabs de bancaria e inmueble
+            if (tipoActual === 'propietario') {
+                html += `<button class="person-tab" id="ptab_bancaria" onclick="cambiarPersona('bancaria')">🏦 INF. BANCARIA</button>`;
+                html += `<button class="person-tab" id="ptab_inmueble" onclick="cambiarPersona('inmueble')">🏠 Inf. Inmueble</button>`;
+            }
+
             document.getElementById('personTabs').innerHTML = html;
         }
 
@@ -1929,11 +1977,36 @@
             const activeTab = document.getElementById('ptab_' + personKey);
             if (activeTab) activeTab.classList.add('active');
 
-            // Cargar Datos en Formulario Izquierdo (Cerebro)
-            cargarDatosCerebroPorPersona(personKey);
+            // Toggle cerebro sections
+            const seccionPersonal = document.getElementById('seccionDatosPersonales');
+            const seccionBancaria = document.getElementById('seccionDatosBancarios');
+            const seccionInmueble = document.getElementById('seccionDatosInmueble');
+            if (seccionPersonal) seccionPersonal.style.display = 'none';
+            if (seccionBancaria) seccionBancaria.style.display = 'none';
+            if (seccionInmueble) seccionInmueble.style.display = 'none';
 
-            // Renderizar Pestañas de Documentos en la Derecha
-            renderDocumentTabs(personKey);
+            if (personKey === 'bancaria') {
+                // Mostrar sección bancaria
+                if (seccionBancaria) seccionBancaria.style.display = 'block';
+                // Cargar datos bancarios
+                cargarDatosCerebroPorPersona(personKey);
+                // Filtrar solo el cert bancario en los doc tabs
+                renderDocumentTabs('propietario', doc => doc.nombre.toUpperCase().includes('CERT_BANCARIO'));
+            } else if (personKey === 'inmueble') {
+                // Mostrar sección inmueble
+                if (seccionInmueble) seccionInmueble.style.display = 'block';
+                // Cargar datos inmueble (futuro)
+                cargarDatosCerebroPorPersona(personKey);
+                // Filtrar solo cert tradición en los doc tabs
+                renderDocumentTabs('propietario', doc => doc.nombre.toUpperCase().includes('CERT_TRADICION'));
+            } else {
+                // Mostrar sección personal
+                if (seccionPersonal) seccionPersonal.style.display = 'block';
+                // Cargar datos personales
+                cargarDatosCerebroPorPersona(personKey);
+                // Renderizar todos los doc tabs
+                renderDocumentTabs(personKey);
+            }
         }
 
         function cargarDatosCerebroPorPersona(personKey) {
@@ -1943,6 +2016,29 @@
             // Restablecer vista
             document.getElementById('cerebroContent').classList.add('readonly');
             document.getElementById('cerebroActions').style.display = 'none';
+
+            if (personKey === 'bancaria') {
+                // Llenar campos bancarios
+                const propData = registro.propietario || {};
+                document.getElementById('cerebro_tipoCuenta').value = propData.tipoCuenta || '';
+                document.getElementById('cerebro_numeroCuenta').value = propData.numeroCuenta || '';
+                document.getElementById('cerebro_banco').value = propData.banco || '';
+                document.getElementById('cerebro_titularCuenta').value = propData.titularCuenta || '';
+                document.getElementById('cerebro_docTitular').value = propData.documentoTitular || '';
+                datosCerebroAnteriores = {
+                    tipoCuenta: propData.tipoCuenta || '',
+                    numeroCuenta: propData.numeroCuenta || '',
+                    banco: propData.banco || '',
+                    titularCuenta: propData.titularCuenta || '',
+                    documentoTitular: propData.documentoTitular || ''
+                };
+                return;
+            }
+
+            if (personKey === 'inmueble') {
+                // Futuro: llenar datos del inmueble
+                return;
+            }
 
             let dataObj = null;
             if (personKey === 'inquilino') dataObj = registro.inquilino;
@@ -1976,20 +2072,37 @@
             let isCod = personaActivaKey.startsWith('codeudor_');
             let codIdx = isCod ? parseInt(personaActivaKey.split('_')[1], 10) : null;
 
-            const nuevosDatos = {
+            let nuevosDatos = {
                 cdr: registroActual,
                 tipo: tipoActual,
                 isCodeudor: isCod,
-                codeudorIndex: codIdx,
-                nombre: document.getElementById('cerebro_nombre').value,
-                documento: document.getElementById('cerebro_documento').value,
-                email: document.getElementById('cerebro_email').value,
-                celular: document.getElementById('cerebro_celular').value,
-                oldNombre: datosCerebroAnteriores.nombre || '',
-                oldDocumento: datosCerebroAnteriores.documento || '',
-                oldEmail: datosCerebroAnteriores.email || '',
-                oldCelular: datosCerebroAnteriores.celular || ''
+                codeudorIndex: codIdx
             };
+
+            if (personaActivaKey === 'bancaria') {
+                // Modo bancario
+                nuevosDatos.isBancaria = true;
+                nuevosDatos.tipoCuenta = document.getElementById('cerebro_tipoCuenta').value;
+                nuevosDatos.numeroCuenta = document.getElementById('cerebro_numeroCuenta').value;
+                nuevosDatos.banco = document.getElementById('cerebro_banco').value;
+                nuevosDatos.titularCuenta = document.getElementById('cerebro_titularCuenta').value;
+                nuevosDatos.documentoTitular = document.getElementById('cerebro_docTitular').value;
+                nuevosDatos.oldTipoCuenta = datosCerebroAnteriores.tipoCuenta || '';
+                nuevosDatos.oldNumeroCuenta = datosCerebroAnteriores.numeroCuenta || '';
+                nuevosDatos.oldBanco = datosCerebroAnteriores.banco || '';
+                nuevosDatos.oldTitularCuenta = datosCerebroAnteriores.titularCuenta || '';
+                nuevosDatos.oldDocumentoTitular = datosCerebroAnteriores.documentoTitular || '';
+            } else {
+                // Modo personal (original)
+                nuevosDatos.nombre = document.getElementById('cerebro_nombre').value;
+                nuevosDatos.documento = document.getElementById('cerebro_documento').value;
+                nuevosDatos.email = document.getElementById('cerebro_email').value;
+                nuevosDatos.celular = document.getElementById('cerebro_celular').value;
+                nuevosDatos.oldNombre = datosCerebroAnteriores.nombre || '';
+                nuevosDatos.oldDocumento = datosCerebroAnteriores.documento || '';
+                nuevosDatos.oldEmail = datosCerebroAnteriores.email || '';
+                nuevosDatos.oldCelular = datosCerebroAnteriores.celular || '';
+            }
 
             const btn = document.querySelector('#cerebroActions .btn-primary');
             const originalText = btn.textContent;
@@ -2029,8 +2142,12 @@
         // --- MANEJO DE DOCUMENTOS Y EVALUACION ---
 
         // Renderizar Document Tabs para la persona activa
-        function renderDocumentTabs(personKey) {
-            const docsList = documentosData[personKey] || [];
+        // filterFn: función opcional para filtrar docs (ej: bancaria solo muestra CERT_BANCARIO)
+        function renderDocumentTabs(personKey, filterFn) {
+            let docsList = documentosData[personKey] || [];
+            if (typeof filterFn === 'function') {
+                docsList = docsList.filter(filterFn);
+            }
             let html = '';
 
             if (docsList.length === 0) {
@@ -2203,7 +2320,7 @@
 
             for (let i = 1; i < personKeys.length; i++) {
                 const nextPersonKey = personKeys[(currentIdx + i) % personKeys.length];
-                if (nextPersonKey === 'estadosBuzon') continue; // Ignorar el mapa de estados
+                if (nextPersonKey === 'estadosBuzon' || nextPersonKey === 'datosBancarios') continue; // Ignorar mapas no-doc
 
                 const nextPersonDocs = documentosData[nextPersonKey] || [];
                 const pendingDoc = nextPersonDocs.find(doc => !validacionEstado[doc.fileId]);
@@ -2233,7 +2350,7 @@
             let correcciones = 0;
 
             for (let person in documentosData) {
-                if (person === 'estadosBuzon') continue; // Ignorar el mapa de estados
+                if (person === 'estadosBuzon' || person === 'datosBancarios') continue; // Ignorar mapas no-doc
                 const docsObj = documentosData[person] || [];
                 totalDocsCount += docsObj.length;
                 docsObj.forEach(doc => {
@@ -2264,7 +2381,7 @@
             // Conta cuantas keys hay en total en documentosData
             let totalDocsCount = 0;
             for (let person in documentosData) {
-                if (person === 'estadosBuzon') continue; // Ignorar el mapa de estados
+                if (person === 'estadosBuzon' || person === 'datosBancarios') continue; // Ignorar mapas no-doc
                 totalDocsCount += (documentosData[person] || []).length;
             }
 

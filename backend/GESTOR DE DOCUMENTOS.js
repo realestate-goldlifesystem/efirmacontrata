@@ -612,7 +612,14 @@ function actualizarDatosCerebro(datos) {
       const cerebroDoc = DocumentApp.openById(docFileId);
       const body = cerebroDoc.getBody();
 
-      if (!datos.isCodeudor) {
+      if (datos.isBancaria) {
+        // Reemplazar campos bancarios en el Cerebro
+        if (datos.oldTipoCuenta) body.replaceText(datos.oldTipoCuenta, datos.tipoCuenta || '');
+        if (datos.oldNumeroCuenta) body.replaceText(datos.oldNumeroCuenta, datos.numeroCuenta || '');
+        if (datos.oldBanco) body.replaceText(datos.oldBanco, datos.banco || '');
+        if (datos.oldTitularCuenta) body.replaceText(datos.oldTitularCuenta, datos.titularCuenta || '');
+        if (datos.oldDocumentoTitular) body.replaceText(datos.oldDocumentoTitular, datos.documentoTitular || '');
+      } else if (!datos.isCodeudor) {
         // Reemplazar campos del inquilino/propietario
         if (datos.tipo === 'inquilino') {
           body.replaceText("«N_INQ»", datos.nombre);
@@ -1620,6 +1627,47 @@ function obtenerEstadosValidacionDesdeCerebro(cdr) {
 }
 
 /**
+ * Obtener datos bancarios del propietario desde el Cerebro
+ * Parsea las líneas con formato "TIPO DE CUENTA:: valor", "NÚMERO DE CUENTA:: valor", etc.
+ */
+function obtenerDatosBancariosDesdeCerebro(cdr) {
+  try {
+    const doc = abrirDocCerebro(cdr);
+    if (!doc) return {};
+
+    const text = doc.getBody().getText();
+    const datos = {};
+    const lines = text.split('\n');
+
+    // Mapa de claves del Cerebro -> claves JS
+    const claveMap = {
+      'TIPO DE CUENTA': 'tipoCuenta',
+      'NÚMERO DE CUENTA': 'numeroCuenta',
+      'BANCO': 'banco',
+      'TITULAR': 'titularCuenta',
+      'DOC TITULAR': 'documentoTitular'
+    };
+
+    for (const line of lines) {
+      const parts = line.split('::');
+      if (parts.length === 2) {
+        const clave = parts[0].trim();
+        const valor = parts[1].trim();
+        if (claveMap[clave]) {
+          datos[claveMap[clave]] = valor;
+        }
+      }
+    }
+
+    Logger.log('🏦 Datos bancarios del Cerebro para ' + cdr + ': ' + JSON.stringify(datos));
+    return datos;
+  } catch (e) {
+    Logger.log('⚠️ Error leyendo datos bancarios del Cerebro: ' + e.message);
+    return {};
+  }
+}
+
+/**
  * Actualizar estados de validación en el Cerebro
  * @param {string} cdr - Código de registro
  * @param {Object} estadosMap - Mapa clave-valor (ej: {'BUZON INQUILINO FRONTAL': 'APROBADO', ...})
@@ -2416,6 +2464,14 @@ function obtenerDocumentosDelCDR(cdr) {
     } catch (e) {
       Logger.log('⚠️ No se pudieron leer estados del Cerebro: ' + e.message);
       documentos.estadosBuzon = {};
+    }
+
+    // --- LEER DATOS BANCARIOS DESDE EL CEREBRO ---
+    try {
+      documentos.datosBancarios = obtenerDatosBancariosDesdeCerebro(cdr);
+    } catch (e) {
+      Logger.log('⚠️ No se pudieron leer datos bancarios del Cerebro: ' + e.message);
+      documentos.datosBancarios = {};
     }
 
     return documentos;

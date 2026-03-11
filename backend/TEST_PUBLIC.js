@@ -31,3 +31,24 @@ function testEstadoDoc() {
 
     Logger.log(JSON.stringify(lastRows, null, 2));
 }
+
+function testObtenerDocsCerebro() {
+    // Tomar un CDR reciente (necesito buscar uno en el log anterior o usar uno genérico)
+    // Para simplificar, obtenemos el primer CDR de la hoja
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("1- REGISTROS PRINCIPALES");
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const cdrCol = headers.indexOf('NÚMERO DE RADICADO (CDR)');
+
+    // Buscar un registro de hoy (última fila)
+    const ultimoCdr = data[data.length - 1][cdrCol];
+    Logger.log("Probando con CDR: " + ultimoCdr);
+
+    try {
+        const result = obtenerDocumentosDelCDR(ultimoCdr);
+        Logger.log("✅ ÉXITO: " + JSON.stringify(result).substring(0, 500) + "...");
+    } catch (e) {
+        Logger.log("❌ ERROR en obtenerDocumentosDelCDR: " + e.message);
+        Logger.log(e.stack);
+    }
+}
