@@ -106,7 +106,7 @@ function obtenerTokenConCache() {
     });
     
     if (response.getResponseCode() !== 200) {
-      throw new Error(`Error obteniendo token: ${response.getContentText()}`);
+      throw new Error(`Google OAuth API Error: ${response.getContentText()}`);
     }
     
     const tokenData = JSON.parse(response.getContentText());
@@ -117,7 +117,8 @@ function obtenerTokenConCache() {
     return TOKEN_CACHE.token;
     
   } catch (error) {
-    return null;
+    Logger.log('Auth Error in obtenerTokenConCache: ' + error.message);
+    throw new Error('Fallo al obtener token: ' + error.message);
   }
 }
 
