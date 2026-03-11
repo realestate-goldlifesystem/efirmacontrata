@@ -494,6 +494,10 @@ function doPost(e) {
       case 'subirContratoFirmado':
         result = handleSubirContratoFirmado(datos);
         break;
+      case 'validarCertificadoOCR':
+        // Llama a la función del OCR-HANDLER.js
+        result = validarCertificadoDesdeFormulario(datos.base64);
+        break;
       default:
         result = {
           success: false,
