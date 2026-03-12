@@ -256,9 +256,9 @@ function enviarSolicitudPropietario(cdr, row) {
       return;
     }
     
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+    const linkFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}`;
     const asunto = `Solicitud de documentos - ${cdr}`;
-    const linkFormulario = `https://realestate-goldlifesystem.github.io/efirmacontrata/formulario_propietario.html?cdr=${encodeURIComponent(cdr)}`;
-    
     const cuerpoHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -308,10 +308,8 @@ function enviarCorreoCorreccion(cdr, tipo, opts) {
     const email = safeGetValueDocumental(sheet, row, columnaEmail);
     if (!email) return;
     
-    const asunto = `Corrección requerida - ${cdr}`;
-    const linkCorreccion = `https://realestate-goldlifesystem.github.io/efirmacontrata/formulario_${tipo}.html?cdr=${encodeURIComponent(cdr)}&modo=correccion`;
-    
-    const documentos = opts.documentos || [];
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+    const linkCorreccion = `${baseUrl}/validador.html?action=formulario-${tipo}&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
     const observaciones = opts.observaciones || '';
     
     const listaDocumentos = documentos.map(doc => `• ${doc}`).join('\n');

@@ -1267,6 +1267,27 @@
                                         <input type="text" id="cerebro_certTradicion" value="Pendiente" disabled>
                                     </div>
                                 </div>
+                                
+                                <!-- Sección: Datos Servicios (Recibos Públicos) -->
+                                <div id="seccionDatosServicios" data-section="servicios" style="display:none;">
+                                    <div style="background: #f0fdf4; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid #bbf7d0; text-align: center;">
+                                         <h4 style="margin: 0 0 0.5rem 0; color: #166534;">Análisis de Recibos Públicos</h4>
+                                         <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 1rem;">Extrae el número de referencia, cuenta contrato o cliente del recibo de servicio seleccionado.</p>
+                                         <button id="btnAnalizarReciboOCR" class="btn" style="width: 100%; justify-content: center; background-color: #22c55e; color: white;" onclick="analizarReciboOCR()">
+                                             🔍 Analizar Recibo con OCR
+                                         </button>
+                                    </div>
+                                    
+                                    <div class="cerebro-field">
+                                        <label>Servicio Detectado</label>
+                                        <input type="text" id="cerebro_tipoServicio" value="" placeholder="Esperando análisis..." readonly style="background: #f1f5f9; cursor: not-allowed;">
+                                    </div>
+                                    <div class="cerebro-field">
+                                        <label>Nro. Cuenta / Referencia de Pago</label>
+                                        <!-- Editable para permitir corrección manual de fallos del OCR -->
+                                        <input type="text" id="cerebro_refServicio" value="" placeholder="Generado por OCR...">
+                                    </div>
+                                </div>
                             </div>
                             <div id="cerebroActions" class="cerebro-actions" style="display:none;">
                                 <button class="btn btn-secondary btn-sm"
@@ -1906,6 +1927,32 @@
         function mostrarModalValidacion(cdr, tipo, documentos) {
             documentosData = documentos;
 
+            // ─── LÓGICA DE SEPARACIÓN DE PESTAÑAS (VIRTUALES A REALES) ───
+            if (tipo === 'propietario' && documentosData.propietario) {
+                const docsPropietario = [];
+                const docsBancaria = [];
+                const docsInmueble = [];
+                const docsServicios = [];
+
+                documentosData.propietario.forEach(doc => {
+                    const nameUpper = doc.nombre.toUpperCase();
+                    if (nameUpper.includes('CERT_BANCARIO')) {
+                        docsBancaria.push(doc);
+                    } else if (nameUpper.includes('CERT_TRADICION')) {
+                        docsInmueble.push(doc);
+                    } else if (nameUpper.includes('FACTURA_') || nameUpper.includes('SERVICIO_') || nameUpper.includes('RECIBO_')) {
+                        docsServicios.push(doc);
+                    } else {
+                        docsPropietario.push(doc);
+                    }
+                });
+
+                documentosData.propietario = docsPropietario;
+                documentosData.bancaria = docsBancaria;
+                documentosData.inmueble = docsInmueble;
+                documentosData.servicios = docsServicios;
+            }
+
             // Reiniciar estado
             validacionEstado = {};
             motivosCorreccion = {};
@@ -1918,7 +1965,7 @@
 
             if (Object.keys(estadosBuzon).length > 0) {
                 for (const personKey in documentosData) {
-                    if (personKey === 'estadosBuzon' || personKey === 'datosBancarios') continue; // Saltar mapas no-doc
+                    if (!Array.isArray(documentosData[personKey])) continue; // Saltar mapas o metadatos no-doc
                     const docsList = documentosData[personKey] || [];
                     docsList.forEach(doc => {
                         const buzonKey = obtenerBuzonParaDoc(doc.nombre);
@@ -1983,10 +2030,11 @@
                 });
             }
 
-            // Para propietario: agregar tabs de bancaria e inmueble
+            // Para propietario: agregar tabs de bancaria, inmueble y servicios
             if (tipoActual === 'propietario') {
-                html += `<button class="person-tab" id="ptab_bancaria" onclick="cambiarPersona('bancaria')">🏦 INF. BANCARIA</button>`;
+                html += `<button class="person-tab" id="ptab_bancaria" onclick="cambiarPersona('bancaria')">🏦 Inf. Bancaria</button>`;
                 html += `<button class="person-tab" id="ptab_inmueble" onclick="cambiarPersona('inmueble')">🏠 Inf. Inmueble</button>`;
+                html += `<button class="person-tab" id="ptab_servicios" onclick="cambiarPersona('servicios')">💧 Servs. Inmueble</button>`;
             }
 
             document.getElementById('personTabs').innerHTML = html;
@@ -2004,30 +2052,40 @@
             const seccionPersonal = document.getElementById('seccionDatosPersonales');
             const seccionBancaria = document.getElementById('seccionDatosBancarios');
             const seccionInmueble = document.getElementById('seccionDatosInmueble');
+            const seccionServicios = document.getElementById('seccionDatosServicios');
+            
             if (seccionPersonal) seccionPersonal.style.display = 'none';
             if (seccionBancaria) seccionBancaria.style.display = 'none';
             if (seccionInmueble) seccionInmueble.style.display = 'none';
+            if (seccionServicios) seccionServicios.style.display = 'none';
 
             if (personKey === 'bancaria') {
                 // Mostrar sección bancaria
                 if (seccionBancaria) seccionBancaria.style.display = 'block';
                 // Cargar datos bancarios
                 cargarDatosCerebroPorPersona(personKey);
-                // Filtrar solo el cert bancario en los doc tabs
-                renderDocumentTabs('propietario', doc => doc.nombre.toUpperCase().includes('CERT_BANCARIO'));
+                // Renderizar docs de esta pestaña
+                renderDocumentTabs(personKey);
             } else if (personKey === 'inmueble') {
                 // Mostrar sección inmueble
                 if (seccionInmueble) seccionInmueble.style.display = 'block';
-                // Cargar datos inmueble (futuro)
+                // Cargar datos inmueble
                 cargarDatosCerebroPorPersona(personKey);
-                // Filtrar solo cert tradición en los doc tabs
-                renderDocumentTabs('propietario', doc => doc.nombre.toUpperCase().includes('CERT_TRADICION'));
+                // Renderizar docs de esta pestaña
+                renderDocumentTabs(personKey);
+            } else if (personKey === 'servicios') {
+                // Mostrar sección servicios
+                if (seccionServicios) seccionServicios.style.display = 'block';
+                // Cargar datos servicios
+                cargarDatosCerebroPorPersona(personKey);
+                // Renderizar docs de esta pestaña
+                renderDocumentTabs(personKey);
             } else {
-                // Mostrar sección personal
+                // Mostrar sección personal (propietario, inquilino, codeudores)
                 if (seccionPersonal) seccionPersonal.style.display = 'block';
                 // Cargar datos personales
                 cargarDatosCerebroPorPersona(personKey);
-                // Renderizar todos los doc tabs
+                // Renderizar docs de esta pestaña
                 renderDocumentTabs(personKey);
             }
         }
@@ -2058,8 +2116,8 @@
                 return;
             }
 
-            if (personKey === 'inmueble') {
-                // Futuro: llenar datos del inmueble
+            if (personKey === 'inmueble' || personKey === 'servicios') {
+                // Futuro: llenar datos del inmueble o recibos de ser necesario si se quieren guardar
                 return;
             }
 
@@ -2265,6 +2323,45 @@
             }
         }
 
+        // ==========================================
+        // OCR DE RECIBOS DE SERVICIOS
+        // ==========================================
+        function analizarReciboOCR() {
+            if (!documentoActual || !documentoActual.id) {
+                alert('Selecciona un recibo válido de la lista arriba.');
+                return;
+            }
+
+            const btn = document.getElementById('btnAnalizarReciboOCR');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Analizando Recibo...';
+            btn.disabled = true;
+
+            const fileId = documentoActual.id;
+
+            google.script.run
+                .withSuccessHandler(function (res) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+
+                    if (res.success) {
+                        // Llenar campos del Cerebro
+                        document.getElementById('cerebro_tipoServicio').value = res.datos.empresa || 'Desconocida';
+                        document.getElementById('cerebro_refServicio').value = res.datos.referenciaPago || 'No detectada';
+                        
+                        mostrarToast('Análisis OCR de recibo completado', 'success');
+                    } else {
+                        alert('❌ Error OCR: ' + res.message);
+                    }
+                })
+                .withFailureHandler(function (err) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    alert('❌ Error de comunicación con el servidor: ' + err.message);
+                })
+                .analizarReciboServicio(fileId);
+        }
+
         // Evaluaciones Individuales
         function aprobarDocumentoActual() {
             if (!documentoActual || !documentoActual.id) return;
@@ -2343,7 +2440,7 @@
 
             for (let i = 1; i < personKeys.length; i++) {
                 const nextPersonKey = personKeys[(currentIdx + i) % personKeys.length];
-                if (nextPersonKey === 'estadosBuzon' || nextPersonKey === 'datosBancarios') continue; // Ignorar mapas no-doc
+                if (!Array.isArray(documentosData[nextPersonKey])) continue; // Ignorar mapas no-doc
 
                 const nextPersonDocs = documentosData[nextPersonKey] || [];
                 const pendingDoc = nextPersonDocs.find(doc => !validacionEstado[doc.fileId]);
@@ -2373,7 +2470,7 @@
             let correcciones = 0;
 
             for (let person in documentosData) {
-                if (person === 'estadosBuzon' || person === 'datosBancarios') continue; // Ignorar mapas no-doc
+                if (!Array.isArray(documentosData[person])) continue; // Ignorar mapas no-doc
                 const docsObj = documentosData[person] || [];
                 totalDocsCount += docsObj.length;
                 docsObj.forEach(doc => {
@@ -2404,7 +2501,7 @@
             // Conta cuantas keys hay en total en documentosData
             let totalDocsCount = 0;
             for (let person in documentosData) {
-                if (person === 'estadosBuzon' || person === 'datosBancarios') continue; // Ignorar mapas no-doc
+                if (!Array.isArray(documentosData[person])) continue; // Ignorar mapas no-doc
                 totalDocsCount += (documentosData[person] || []).length;
             }
 
@@ -2497,7 +2594,7 @@
                 const estadosBuzonMap = {};
 
                 for (let person in documentosData) {
-                    if (person === 'estadosBuzon') continue; // Saltar el mapa de estados
+                    if (!Array.isArray(documentosData[person])) continue; // Saltar el mapa de estados y otros metadatos
                     const docsObj = documentosData[person] || [];
                     docsObj.forEach(doc => {
                         const id = doc.fileId;

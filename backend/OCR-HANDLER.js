@@ -264,15 +264,18 @@ function extraerDatosOptimizado(texto) {
 
 function extraerMatriculaOpt(textoUpper) {
   const patterns = [
-    /MATR[ÍI]CULA\s*INMOBILIARIA[\s:]*([0-9A-Z\-]+)/,
-    /MATR[ÍI]CULA[\s:]*([0-9A-Z\-]+)/,
-    /FOLIO DE MATR[ÍI]CULA[\s:]*([0-9A-Z\-]+)/,
-    /N[ÚU]MERO DE MATR[ÍI]CULA[\s:]*([0-9A-Z\-]+)/
+    // Patrón específico para el formato "Nro Matrícula: 50N-20822533" incluso con errores de OCR
+    /NRO\s*MATR[^:]*:\s*([0-9A-Z\-]+)/,
+    /MATR[ÍI\]CULA\s*INMOBILIARIA[\s:]*([0-9A-Z\-]+)/,
+    /MATR[ÍI\]CULA[\s:]*([0-9A-Z\-]+)/,
+    /FOLIO DE MATR[ÍI\]CULA[\s:]*([0-9A-Z\-]+)/,
+    /N[ÚU]MERO DE MATR[ÍI\]CULA[\s:]*([0-9A-Z\-]+)/
   ];
   
   for (const pattern of patterns) {
     const match = textoUpper.match(pattern);
-    if (match && match[1]) {
+    // Filtrar falsos positivos como 'ERTIFICADO'
+    if (match && match[1] && match[1].length > 3 && !match[1].includes('ERTIFICADO')) {
       return match[1].trim();
     }
   }
@@ -281,10 +284,11 @@ function extraerMatriculaOpt(textoUpper) {
 
 function extraerDireccionOpt(texto) {
   const patterns = [
-    /DIRECCI[ÓO]N[\s:]+([^\n]+)/i,
-    /UBICACI[ÓO]N[\s:]+([^\n]+)/i,
+    /DIRECCI[ÓO\]N DEL INMUEBLE[\s\S]*?1\)\s*([^\n]+)/i,
+    /DIRECCI[ÓO\]N[\s:]+([^\n]+)/i,
+    /UBICACI[ÓO\]N[\s:]+([^\n]+)/i,
     /INMUEBLE UBICADO EN[\s:]+([^\n]+)/i,
-    /(?:CARRERA|CALLE|AVENIDA|TRANSVERSAL|DIAGONAL)\s+[\d\w\s#\-]+/i
+    /(?:CARRERA|CALLE|AVENIDA|TRANSVERSAL|DIAGONAL|CRA|CL)\s+[\d\w\s#\-]+/i
   ];
   
   for (const pattern of patterns) {
@@ -731,4 +735,89 @@ function procesarCertificadoDesdeFormulario(archivoBase64) {
       mensaje: 'Error al procesar el documento'
     };
   }
+}
+
+// ==========================================
+// PROCESAMIENTO OCR PARA RECIBOS DE SERVICIOS
+// ==========================================
+
+function procesarReciboOCR(base64Content) {
+  const inicio = new Date();
+  
+  try {
+    const accessToken = obtenerTokenConCache();
+    const textoDetectado = llamarVisionAPIConReintentos(base64Content, accessToken);
+    
+    if (!textoDetectado) {
+      return {
+        exito: false,
+        mensaje: 'La API de Vision no detectó texto en el recibo.',
+        tiempoProcesamiento: new Date() - inicio
+      };
+    }
+
+    const datosExtraidos = extraerDatosRecibo(textoDetectado);
+    
+    return {
+      exito: true,
+      datos: datosExtraidos,
+      textoCompleto: textoDetectado.substring(0, 500) + '...', // Guardar parte para debug
+      tiempoProcesamiento: new Date() - inicio
+    };
+    
+  } catch (error) {
+    Logger.log('Error en procesarReciboOCR: ' + error.message);
+    return {
+      exito: false,
+      mensaje: 'Fallo al procesar el recibo OCR: ' + error.message,
+      tiempoProcesamiento: new Date() - inicio
+    };
+  }
+}
+
+function extraerDatosRecibo(texto) {
+  const textoUpper = texto.toUpperCase();
+  
+  // Buscar palabras clave de empresas conocidas
+  let empresa = 'Desconocida';
+  if (textoUpper.includes('ENEL') || textoUpper.includes('CODENSA')) empresa = 'Energía (Enel)';
+  else if (textoUpper.includes('ACUEDUCTO') || textoUpper.includes('ALCANTARILLADO')) empresa = 'Acueducto (EAAB)';
+  else if (textoUpper.includes('VANTI') || textoUpper.includes('GAS NATURAL')) empresa = 'Gas (Vanti)';
+  
+  // Extracción de Referencia de Pago / Cuenta (Heurística multicompañía)
+  let referencia = '';
+  
+  const patternsReferencia = [
+    // Cuenta Enel / Codensa: "No Cuenta: 12345" o "Cuenta No: 1234567" o "Cliente"
+    /CUENTA\s*N[OÓ°]?[\s\S]{0,30}?\b([0-9\-]{5,15})\b/i,
+    /N[OÓ°]?\s*CUENTA[\s\S]{0,30}?\b([0-9\-]{5,15})\b/i,
+    /CLIENTE[\s\S]{0,40}?\b([0-9\-]{5,15})\b/i,
+
+    // Cuenta Acueducto: "Cuenta Contrato: 123456"
+    /CUENTA[\s\S]{0,10}?CONTRATO[\s\S]{0,40}?\b([0-9\-]{4,15})\b/i,
+    /CONTRATO[\s\S]{0,30}?\b([0-9\-]{4,15})\b/i,
+
+    // Vanti o General: "Referencia de Pago: 12345" o "Cuenta o referencia de pago"
+    /REFERENCIA[\s\S]{0,10}?(?:DE PAGO)?[\s\S]{0,30}?\b([0-9\-]{4,20})\b/i,
+    /REF\.?[\s\S]{0,10}?(?:DE PAGO)?[\s\S]{0,30}?\b([0-9\-]{4,20})\b/i,
+    
+    // Captura para gas "Referencia de pago / cuenta"
+    /CUENTA[\s\S]{0,30}?PAGO[\s\S]{0,30}?\b([0-9\-]{4,20})\b/i,
+
+    // Último recurso: un numerotote aislado posicionado después de la palabra REFERENCIA o PAGO
+    /PAGO[\s\S]{0,40}?\b([0-9\-]{5,20})\b/i
+  ];
+  
+  for (const pattern of patternsReferencia) {
+    const match = textoUpper.match(pattern);
+    if (match && match[1]) {
+      referencia = match[1].trim();
+      break;
+    }
+  }
+  
+  return {
+    empresa: empresa,
+    referenciaPago: referencia || 'No detectada'
+  };
 }

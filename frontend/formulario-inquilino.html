@@ -819,19 +819,43 @@
           return `<span class="chip">${escapeHTML(label)}</span>`;
         }).join('');
 
-        // Marcar archivos no requeridos como Aprobados
+        // Marcar archivos no requeridos como ocultos
         const allFileKeys = ['docFront', 'docBack', 'ingresos', 'coDocFront', 'coDocBack', 'coIngresos', 'comprobantePago'];
         allFileKeys.forEach(key => {
           if (!state.docsCorreccion.includes(key)) {
             const input = document.getElementById(key);
             if (input) {
-              const wrapper = input.closest('.file-upload');
+              const wrapper = input.closest('.file-upload') || input.closest('.form-group');
               if (wrapper) {
-                wrapper.innerHTML = `<div style="padding: 15px; border: 2px dashed #10b981; border-radius: 8px; background: #ecfdf5; color: #047857; text-align: center; font-weight: bold;">✅ Documento Previamente Aprobado</div>`;
+                wrapper.style.display = 'none';
               }
             }
           }
         });
+        
+        // Ocultar paso 0 (Datos personales inq) completamente
+        const step0Pane = document.querySelector('.step-pane[data-pane="0"]');
+        if (step0Pane) {
+            step0Pane.style.display = 'none';
+        }
+        // Ocultar paso 2 (Datos personales codeudor)
+        const step2Pane = document.querySelector('.step-pane[data-pane="2"]');
+        if (step2Pane) {
+            step2Pane.style.display = 'none';
+        }
+        
+        // Encontrar el primer paso que necesita corrección y saltar a él
+        setTimeout(() => {
+             for(let s = 1; s <= 4; s++) {
+                 if(isStepNeededInCorrection(s)) {
+                     const stepIndicator = document.querySelector(`.step-indicator[data-step="${s}"]`);
+                     if(stepIndicator) {
+                         stepIndicator.click();
+                         break;
+                     }
+                 }
+             }
+        }, 300);
       }
 
       // --------- Wizard ----------

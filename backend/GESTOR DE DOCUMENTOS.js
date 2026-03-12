@@ -551,8 +551,6 @@ function enviarCorrecciones(datos) {
   }
 }
 
-function actualizarDatosCerebro(datos) {
-
 // ==========================================
 // Integración Directa OCR - Panel de Validación 
 // ==========================================
@@ -589,33 +587,31 @@ function analizarCertificadoDesdePanel(fileId, datosPropietario) {
     const nombrePropietario = String(datosPropietario.nombre).toUpperCase().trim();
     
     // Verificar Matrícula
-    const cedulaMatch = datosDuros.cedulasEncontradas.some(ced => ced.includes(cedulaPropietario));
+    // IMPORTANTE: Asegurarnos de que cedulas exista antes de hacer .some()
+    const cedulaMatch = datosDuros.cedulas && Array.isArray(datosDuros.cedulas) 
+        ? datosDuros.cedulas.some(ced => ced.includes(cedulaPropietario))
+        : false;
     
     // Verificar Nombre (búsqueda aproximada / substring)
-    // El OCR extrae los propietarios completos 'Nombres y Apellidos | CC'
+    // El OCR extrae los propietarios como un solo string en datosDuros.propietarios
     let nombreMatch = false;
-    let propietarioDetectado = "";
+    let propietarioDetectado = datosDuros.propietarios ? datosDuros.propietarios.toUpperCase().trim() : "";
     
-    if (datosDuros.titularesInfo && datosDuros.titularesInfo.length > 0) {
-        datosDuros.titularesInfo.forEach(titular => {
-            const nomPlanoOCR = titular.nombre.toUpperCase().replace(/\s+/g, ' ');
-            // Una simple validación si al menos el nombre largo coincide sustancialmente
-            if(nomPlanoOCR.includes(nombrePropietario) || nombrePropietario.includes(nomPlanoOCR)) {
+    if (propietarioDetectado) {
+        // Una simple validación si al menos el nombre largo coincide sustancialmente
+        if(propietarioDetectado.includes(nombrePropietario) || nombrePropietario.includes(propietarioDetectado)) {
+             nombreMatch = true;
+        } else {
+             // Intentar cruzar por palabras (Ej: Si es Juan Perez y el OCR dice Perez Juan)
+             const palabras = nombrePropietario.split(' ').filter(p => p.length > 3);
+             let aciertos = 0;
+             palabras.forEach(palabra => {
+                 if (propietarioDetectado.includes(palabra)) aciertos++;
+             });
+             if (aciertos >= 2) { // 2 palabras largas de match = aceptado
                  nombreMatch = true;
-                 propietarioDetectado = nomPlanoOCR;
-            } else {
-                 // Intentar cruzar por palabras (Ej: Si es Juan Perez y el OCR dice Perez Juan)
-                 const palabras = nombrePropietario.split(' ').filter(p => p.length > 3);
-                 let aciertos = 0;
-                 palabras.forEach(palabra => {
-                     if (nomPlanoOCR.includes(palabra)) aciertos++;
-                 });
-                 if (aciertos >= 2) { // 2 palabras largas de match = aceptado
-                     nombreMatch = true;
-                     propietarioDetectado = nomPlanoOCR;
-                 }
-            }
-        });
+             }
+        }
     }
 
     // 4. Armar el payload para el frontend
@@ -625,10 +621,10 @@ function analizarCertificadoDesdePanel(fileId, datosPropietario) {
             matricula: datosDuros.matricula || 'No detectada',
             direccion: datosDuros.direccion || 'No detectada',
             ciudad: datosDuros.ciudad || 'No detectada',
-            vigente: datosDuros.esVigente,
-            diasExpedido: datosDuros.diasExpedido,
-            tieneEmbargo: datosDuros.tieneEmbargo,
-            alertasEmbargo: datosDuros.alertasEmbargo,
+            vigente: datosDuros.fechaExpedicion ? (Math.floor((new Date().getTime() - new Date(datosDuros.fechaExpedicion + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24)) <= 30) : false,
+            diasExpedido: datosDuros.fechaExpedicion ? Math.floor((new Date().getTime() - new Date(datosDuros.fechaExpedicion + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24)) : 'Desconocido',
+            tieneEmbargo: datosDuros.embargo ? datosDuros.embargo.tieneEmbargo : false,
+            alertasEmbargo: datosDuros.embargo ? datosDuros.embargo.alertas : [],
             cedulaMatch: cedulaMatch,
             nombreMatch: nombreMatch,
             propietarioDetectado: propietarioDetectado || 'No detectado/Sin Match'
@@ -640,6 +636,38 @@ function analizarCertificadoDesdePanel(fileId, datosPropietario) {
     return { success: false, message: error.message };
   }
 }
+
+function analizarReciboServicio(fileId) {
+  try {
+    if (!fileId) throw new Error("No se proporcionó el ID del recibo.");
+
+    // 1. Obtener el archivo de Drive y convertir a base64
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob();
+    
+    // Convertir a Base64 puro para enviarlo a GCP Vision API
+    let base64Content = Utilities.base64Encode(blob.getBytes());
+    
+    // 2. Ejecutar OCR completo para Recibos
+    const resultadoOCR = procesarReciboOCR(base64Content);
+    
+    if (!resultadoOCR.exito) {
+      return { success: false, message: resultadoOCR.mensaje };
+    }
+    
+    // 3. Armar el payload para el frontend
+    return {
+        success: true,
+        datos: resultadoOCR.datos
+    };
+
+  } catch (error) {
+    Logger.log('Error en analizarReciboServicio: ' + error.message);
+    return { success: false, message: error.message };
+  }
+}
+
+function actualizarDatosCerebro(datos) {
   try {
     const conf = CONFIGURACION_BD;
     const sheetId = datos.tipo === 'inquilino' ? conf.IDS.SHEET_INQUILINOS : conf.IDS.SHEET_PROPIETARIOS;

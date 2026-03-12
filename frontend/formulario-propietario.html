@@ -1110,28 +1110,24 @@
           return `<span class="chip">${escapeHTML(label)}</span>`;
         }).join('');
 
-        // Marcar archivos no requeridos como Aprobados
+        // Marcar archivos no requeridos como ocultos
         const allFileKeys = [
           'docFront', 'docBack', 'certTradicion', 'sarlaft', 'certBancario',
-          'facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'
+          'facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet', 'comprobantePago'
         ];
         allFileKeys.forEach(key => {
           if (!state.docsCorreccion.includes(key)) {
             const input = document.getElementById(key);
             if (input) {
-              const wrapper = input.closest('.file-upload') || input.closest('.servicio-item');
+              const wrapper = input.closest('.file-upload') || input.closest('.servicio-item') || input.closest('.form-group');
               if (wrapper) {
-                if (wrapper.classList.contains('servicio-item')) {
-                  wrapper.innerHTML = `<div style="padding: 10px; border: 1px dashed #10b981; border-radius: 8px; background: #ecfdf5; color: #047857; text-align: center; font-size: 0.9em; font-weight: bold;">✅ S. Público Aprobado</div>`;
-                } else {
-                  wrapper.innerHTML = `<div style="padding: 15px; border: 2px dashed #10b981; border-radius: 8px; background: #ecfdf5; color: #047857; text-align: center; font-weight: bold;">✅ Documento Previamente Aprobado</div>`;
-                }
+                wrapper.style.display = 'none';
               }
             }
           }
         });
 
-        // En modo corrección, ocultar campos de texto del paso bancario (Step 2)
+        // Ocultar campos de texto que no sean de archivo
         const step2Pane = document.querySelector('.step-pane[data-pane="2"]');
         if (step2Pane) {
           step2Pane.querySelectorAll('.form-group').forEach(fg => {
@@ -1140,6 +1136,18 @@
             }
           });
         }
+        
+        // Ocultar paso 0 (Datos personales) completamente
+        const step0Pane = document.querySelector('.step-pane[data-pane="0"]');
+        if (step0Pane) {
+            step0Pane.style.display = 'none';
+        }
+        
+        // Simular clic en el paso 1 para saltar datos personales
+        setTimeout(() => {
+             const step1 = document.querySelector('.step-indicator[data-step="1"]');
+             if(step1) step1.click();
+        }, 300);
       }
 
       // --------- Wizard ----------
