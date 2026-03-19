@@ -2282,8 +2282,10 @@
             document.querySelectorAll('.doc-tab').forEach(t => t.classList.remove('active'));
             if (btnRef) {
                 btnRef.classList.add('active');
-                // Scroll the tab into view automatically
-                btnRef.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                // Scroll the tab into view automatically (delayed to ensure modal is visible)
+                setTimeout(() => {
+                    btnRef.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }, 300);
             }
 
             // Load Preview IFRAME
