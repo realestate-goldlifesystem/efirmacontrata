@@ -2633,6 +2633,14 @@
                     mostrarProgreso('Procesando aprobación...', 'Actualizando estados y registros en el sistema');
                     google.script.run
                         .withSuccessHandler(function (result) {
+                            if (!result || !result.success) {
+                                ocultarProgreso();
+                                console.error('Error desde backend:', result);
+                                alert('⚠️ No se pudo procesar la aprobación:\n' + (result ? result.message : 'Error desconocido del servidor.'));
+                                const b = document.getElementById('btnEjecutarAprobacionMaster');
+                                if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
+                                return;
+                            }
                             completarProgreso('✅ ¡Todo Aprobado Exitosamente!');
                             setTimeout(() => {
                                 mostrarToast('✅ Todo Aprobado Exitosamente', 'success');
@@ -2645,8 +2653,8 @@
                             console.error('❌ Error enviando aprobación:', error);
                             alert('Error del Servidor: ' + (error.message || error));
                             mostrarToast('Error al aprobar final: ' + error, 'error');
-                            btn.textContent = '✅ Procesar Todo';
-                            btn.disabled = false;
+                            const b = document.getElementById('btnEjecutarAprobacionMaster');
+                            if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
                         })
                         .procesarValidacion(payloadMaster);
                 } else {
@@ -2654,6 +2662,14 @@
                     mostrarProgreso('Enviando solicitud de corrección...', 'Preparando correo y actualizando estados');
                     google.script.run
                         .withSuccessHandler(function (result) {
+                            if (!result || !result.success) {
+                                ocultarProgreso();
+                                console.error('Error desde backend:', result);
+                                alert('⚠️ No se pudo enviar correcciones:\n' + (result ? result.message : 'Error desconocido del servidor.'));
+                                const b = document.getElementById('btnEjecutarAprobacionMaster');
+                                if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
+                                return;
+                            }
                             completarProgreso('📝 ¡Corrección enviada exitosamente!');
                             setTimeout(() => {
                                 mostrarToast('📝 Se envió correo solicitando actualizaciones', 'warning');
@@ -2666,8 +2682,8 @@
                             console.error('❌ Error enviando corrección:', error);
                             alert('Error del Servidor: ' + (error.message || error));
                             mostrarToast('Error al solicitar correcciones: ' + error, 'error');
-                            btn.textContent = '✅ Procesar Todo';
-                            btn.disabled = false;
+                            const b = document.getElementById('btnEjecutarAprobacionMaster');
+                            if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
                         })
                         .enviarCorrecciones(payloadMaster);
                 }

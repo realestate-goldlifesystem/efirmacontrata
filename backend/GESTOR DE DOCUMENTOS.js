@@ -3013,7 +3013,15 @@ function procesarValidacionPropietario(datos) {
       }
 
       // Enviar email de corrección
-      enviarEmailCorreccionPropietario(cdr, observaciones, datos.documentosCorregir);
+      try {
+        if (typeof enviarCorreoCorreccion === 'function') {
+          enviarCorreoCorreccion(cdr, 'propietario', { observaciones: observaciones, documentos: datos.documentosCorregir || [] });
+        } else {
+          Logger.log('Advertencia: enviarCorreoCorreccion no está definida en este ámbito global.');
+        }
+      } catch (e) {
+        Logger.log('Error enviando correo de corrección: ' + e);
+      }
 
       return {
         success: true,
