@@ -1,0 +1,1 @@
+function debugContratos() { var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS'); var data = sheet.getDataRange().getValues(); var count = 0; data.forEach(r => { if(r[0].toString().includes('REG')) Logger.log(r[0] + ' | ESTADO:' + r[1] + ' | DOC:' + r[48]); }); }

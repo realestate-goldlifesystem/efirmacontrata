@@ -312,7 +312,8 @@ function enviarCorreoCorreccion(cdr, tipo, opts) {
     const linkCorreccion = `${baseUrl}/validador.html?action=formulario-${tipo}&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
     const observaciones = opts.observaciones || '';
     
-    const listaDocumentos = documentos.map(doc => `• ${doc}`).join('\n');
+    const listaDocumentos = (opts.documentos || []).map(doc => `• ${doc}`).join('\n');
+    const asunto = `Acción Requerida: Corrección de Documentos - ${cdr}`;
     
     const cuerpoHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

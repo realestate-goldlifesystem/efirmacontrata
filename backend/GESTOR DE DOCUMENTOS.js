@@ -924,9 +924,9 @@ function handleGenerarContrato(datos) {
  */
 function handleRegistrarAprobacionContrato(datos) {
   try {
-    const { cdr, tipo, accion, comentarios } = datos;
+    const { cdr, tipo, estadoAprobacion, comentarios } = datos;
 
-    if (!cdr || !tipo || !accion) {
+    if (!cdr || !tipo || !estadoAprobacion) {
       return {
         success: false,
         message: 'Faltan datos requeridos'
@@ -934,7 +934,7 @@ function handleRegistrarAprobacionContrato(datos) {
     }
 
     // Registrar aprobación usando función de GESTOR_CONTRATOS.gs
-    const resultado = registrarAprobacionContrato(cdr, tipo, accion, comentarios);
+    const resultado = registrarAprobacionContrato(cdr, tipo, estadoAprobacion, comentarios);
 
     return resultado;
 
@@ -1335,7 +1335,8 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
         nombre: datosFormulario.inquilino.nombre,
         documento: datosFormulario.inquilino.numeroDocumento,
         email: datosFormulario.inquilino.email,
-        celular: datosFormulario.inquilino.celular
+        celular: datosFormulario.inquilino.celular,
+        fechaInicio: datosFormulario.fechaInicio
       });
     }
 
@@ -2067,7 +2068,7 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
     // ==============================
     if (!datosFormulario.modoCorreccion) {
       try {
-        escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, codigoRegistro);
+        escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, codigoRegistro, archivosBase64);
       } catch (e) {
         Logger.log('⚠️ Error escribiendo datos propietario en doc: ' + e.message);
       }
@@ -2087,7 +2088,7 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
 }
 
 // Helper: escribir datos del propietario en el mismo doc DATOS DE ELABORACION DE CONTRATO
-function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr) {
+function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr, archivosBase64 = {}) {
   const doc = abrirDocCerebro(cdr);
   if (!doc) {
     Logger.log('⚠️ No se encontró el Cerebro para CDR: ' + cdr);
@@ -2125,13 +2126,14 @@ function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr) {
   body.appendParagraph('BUZON CERTIFICADO BANCARIO:: RECIBIDO');
   body.appendParagraph('BUZON SARLAFT:: RECIBIDO');
 
-  // Agregar buzones dinámicos de facturas si el formulario indica que las subió
-  if (datosFormulario?.serviciosPublicos && Array.isArray(datosFormulario.serviciosPublicos)) {
-    datosFormulario.serviciosPublicos.forEach(s => {
-      // s.tipo es 'agua', 'luz', etc.
-      body.appendParagraph(`BUZON FACTURA ${s.tipo.toUpperCase()}:: RECIBIDO`);
-    });
-  }
+  // Agregar buzones dinámicos de facturas extraídos directamente de los archivos recabados
+  const keysFacturas = ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'];
+  keysFacturas.forEach(key => {
+    if (archivosBase64 && archivosBase64[key] && archivosBase64[key].contenido) {
+      const nombreServicio = key.replace('factura', '').toUpperCase();
+      body.appendParagraph(`BUZON FACTURA ${nombreServicio}:: RECIBIDO`);
+    }
+  });
 
   body.appendParagraph('[FIN PROPIETARIO]');
   doc.saveAndClose();
@@ -2661,6 +2663,20 @@ function actualizarCamposInquilino(fila, datos) {
       'CORREO INQUILINO': datos.email,
       'CELULAR INQUILINO': datos.celular
     };
+
+    if (datos.fechaInicio) {
+      const arr = datos.fechaInicio.split('-'); // YYYY-MM-DD
+      if (arr.length === 3) {
+        const y = parseInt(arr[0], 10);
+        const m = parseInt(arr[1], 10) - 1;
+        const d = parseInt(arr[2], 10);
+        const dInit = new Date(y, m, d);
+        const dEnd = new Date(y + 1, m, d - 1);
+        
+        mapCampos['FECHA INICIO DEL CONTRATO'] = Utilities.formatDate(dInit, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+        mapCampos['FECHA FINAL DEL CONTRATO'] = Utilities.formatDate(dEnd, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+      }
+    }
 
     Object.entries(mapCampos).forEach(([header, valor]) => {
       const colIndex = headers.indexOf(header) + 1;

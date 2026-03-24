@@ -640,8 +640,8 @@
           const payload = {
             accion: 'registrarAprobacionContrato',
             cdr: state.cdr,
-            parte: parte,
-            estado: 'APROBADO',
+            tipo: parte,
+            estadoAprobacion: 'APROBADO',
             comentarios: observaciones || null
           };
 
@@ -698,8 +698,8 @@
           const payload = {
             accion: 'registrarAprobacionContrato',
             cdr: state.cdr,
-            parte: parte,
-            estado: 'RECHAZADO',
+            tipo: parte,
+            estadoAprobacion: 'RECHAZADO',
             comentarios: observaciones
           };
 

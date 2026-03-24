@@ -391,6 +391,14 @@
               <span id="celError" class="error-msg">Los celulares no coinciden</span>
             </div>
           </div>
+
+          <div class="hr progressive-hidden" id="hr-inq-0-6"></div>
+          <div class="grid-2col progressive-hidden" id="prog-inq-0-6">
+            <div class="form-group">
+              <label for="fechaInicioContrato">Fecha de Inicio del Contrato <span class="required">*</span></label>
+              <input type="date" id="fechaInicioContrato" class="input" required>
+            </div>
+          </div>
         </div>
 
         <!-- Step 2: Documentos -->
@@ -633,6 +641,7 @@
         confirmarEmail: $("confirmarEmail"),
         celular: $("celular"),
         confirmarCelular: $("confirmarCelular"),
+        fechaInicioContrato: $("fechaInicioContrato"),
         docError: $("docError"),
         emailError: $("emailError"),
         celError: $("celError"),
@@ -710,6 +719,7 @@
         const TEXT_FIELDS = [
           'tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
           'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
+          'fechaInicioContrato',
           'coTipo', 'coNumero', 'coConfirmarDocumento', 'coNombres', 'coApellidos',
           'coEmail', 'coConfirmarEmail', 'coCelular', 'coConfirmarCelular'
         ];
@@ -758,6 +768,7 @@
       // Auto-guardar en cada cambio de campo de texto
       const textFieldsList = ['tipoDocumento', 'numeroDocumento', 'confirmarDocumento',
         'nombres', 'apellidos', 'email', 'confirmarEmail', 'celular', 'confirmarCelular',
+        'fechaInicioContrato',
         'coTipo', 'coNumero', 'coConfirmarDocumento', 'coNombres', 'coApellidos',
         'coEmail', 'coConfirmarEmail', 'coCelular', 'coConfirmarCelular'];
 
@@ -1554,7 +1565,7 @@
               email: el.coEmail.value.trim(),
               celular: el.coCelular.value.trim()
             } : null,
-            fechaInicio: new Date().toISOString().split('T')[0],
+            fechaInicio: el.fechaInicioContrato.value.trim() || new Date().toISOString().split('T')[0],
             modoCorreccion: state.modoCorreccion
           },
           archivosBase64: state.archivos  // Cambio: archivos → archivosBase64

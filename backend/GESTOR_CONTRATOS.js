@@ -8,7 +8,8 @@
 // CONFIGURACION
 const CONTRATO_CONFIG = {
   // Plantillas de Contrato
-  PLANTILLA_CORRETAJE_ID: '1MZpzfQAkhHXf5ku6utOvT3QmfpPiEHIW-r1uFSaipAs',
+  PLANTILLA_CORRETAJE_ID: '1MZpzfQAkhHXf5ku6utOvT3QmfpPiEHIW-r1uFSaipAs', // ORIGINAL
+  PLANTILLA_CORRETAJE_BORRADOR_ID: '1AwBLUjnF2TsSYUfSJmwDmw5eqk7OB3yjdX186uoB4Bo', // BORRADOR
   PLANTILLA_ADMINISTRACION_ID: '', // Pendiente
   PLANTILLA_VENTA_ID: '', // Pendiente
 
@@ -29,10 +30,12 @@ const CONTRATO_CONFIG = {
 
 /**
  * Generar contrato desde plantilla
+ * @param {string} cdr - Codigo de registro
+ * @param {string} version - 'Borrador' o 'Original'
  */
-function generarContrato(cdr) {
+function generarContrato(cdr, version = 'Borrador') {
   try {
-    console.log(`Iniciando generacion de contrato para CDR: ${cdr}`);
+    console.log(`Iniciando generacion de contrato para CDR: ${cdr} | Version: ${version}`);
 
     // 1. Recopilar todos los datos necesarios
     const datosRecopilados = recopilarDatosContrato(cdr);
@@ -42,24 +45,24 @@ function generarContrato(cdr) {
     }
 
     const datos = datosRecopilados.data;
-    const tipoNegocio = datos.tipoNegocio; // Asegurar que recopilarDatosContrato devuelva esto
+    const tipoNegocio = datos.tipoNegocio; 
 
-    // 2. Seleccionar Plantilla según Tipo de Negocio
+    // 2. Seleccionar Plantilla según Tipo de Negocio y Versión
     let plantillaId = '';
     let nombreTipoContrato = '';
 
     if (tipoNegocio === 'Corretaje') {
-      plantillaId = CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID;
+      plantillaId = version === 'Borrador' ? CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID : CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID;
       nombreTipoContrato = 'Corretaje';
-    } else if (tipoNegocio === 'Administración') {
-      plantillaId = CONTRATO_CONFIG.PLANTILLA_ADMINISTRACION_ID;
+    } else if (tipoNegocio === 'Administracion' || tipoNegocio === 'Administración') {
+      plantillaId = CONTRATO_CONFIG.PLANTILLA_ADMINISTRACION_ID || (version === 'Borrador' ? CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID : CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID);
       nombreTipoContrato = 'Administracion';
     } else if (tipoNegocio === 'Venta') {
-      plantillaId = CONTRATO_CONFIG.PLANTILLA_VENTA_ID;
+      plantillaId = CONTRATO_CONFIG.PLANTILLA_VENTA_ID || (version === 'Borrador' ? CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID : CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID);
       nombreTipoContrato = 'Venta';
     } else {
-      // Default o Arriendo (quizás usar Corretaje como base o definir otro)
-      plantillaId = CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID;
+      // Default
+      plantillaId = version === 'Borrador' ? CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID : CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID;
       nombreTipoContrato = 'Arrendamiento';
     }
 
@@ -119,6 +122,7 @@ function generarContrato(cdr) {
       url: urlContrato,
       urlPdf: urlPdf,
       carpeta: carpetaContratoDestino.getUrl(),
+      datos: datos,
       message: 'Contrato generado exitosamente'
     };
 
@@ -142,77 +146,88 @@ function buscarCarpetaContratoDinamica(datos) {
     const tipoNegocio = datos.tipoNegocio;
     console.log(`Buscando carpeta dinámica para CDR: ${cdr}, Tipo: ${tipoNegocio}`);
 
+    if (!CONTRATO_CONFIG.INMUEBLES_ROOT_ID) throw new Error("INMUEBLES_ROOT_ID está vacío o indefinido");
+
     // 1. Obtener carpeta raíz de INMUEBLES
     const rootFolder = DriveApp.getFolderById(CONTRATO_CONFIG.INMUEBLES_ROOT_ID);
 
     // 2. Buscar carpeta del inmueble que empiece con el CDR
-    // Formato esperado: "CDR - DIRECCION - BARRIO"
-    const folders = rootFolder.getFolders();
+    // Formato esperado: "CDR - DIRECCION - BARRIO" o dentro de subcarpetas de Tipo Negocio
+    // Vamos a buscar en todos los lugares posibles como hace el inquilino
     let inmuebleFolder = null;
+    
+    // Primero, búsqueda directa en raíz
+    const directFolders = rootFolder.getFoldersByName(cdr);
+    if (directFolders.hasNext()) inmuebleFolder = directFolders.next();
 
-    while (folders.hasNext()) {
-      const folder = folders.next();
-      if (folder.getName().startsWith(cdr + ' -') || folder.getName() === cdr) {
-        inmuebleFolder = folder;
-        break;
+    // Segundo, buscar dentro de las subcarpetas (TIPO_NEGOCIO)
+    if (!inmuebleFolder) {
+      const tipoFolders = rootFolder.getFolders();
+      while (tipoFolders.hasNext() && !inmuebleFolder) {
+        const tipoF = tipoFolders.next();
+        const sub = tipoF.getFoldersByName(cdr);
+        if (sub.hasNext()) {
+          inmuebleFolder = sub.next();
+        }
       }
     }
 
+    // Tercero, Fallback global en Drive
     if (!inmuebleFolder) {
-      console.warn(`No se encontró carpeta para CDR: ${cdr} en raíz. Buscando por nombre exacto...`);
-      // Fallback: búsqueda exacta si el formato cambió
-      const exactFolders = rootFolder.getFoldersByName(cdr);
-      if (exactFolders.hasNext()) inmuebleFolder = exactFolders.next();
+      const cdrEscaped = cdr.replace(/'/g, "\\'");
+      const globalSearch = DriveApp.searchFolders(`title = '${cdrEscaped}' and trashed = false`);
+      if (globalSearch.hasNext()) inmuebleFolder = globalSearch.next();
     }
 
     if (!inmuebleFolder) {
-      throw new Error(`No se encontró la carpeta del inmueble para CDR: ${cdr}`);
+      throw new Error(`No se encontró la carpeta del inmueble para CDR: ${cdr} en Drive.`);
     }
 
-    // 3. Buscar subcarpeta según el tipo de negocio
-    // Estructura: "3. DOCUMENTACION LEGAL" -> "Contrato de Arrendamiento" ?
-    // O directamente "Contrato de Arrendamiento" en la raíz del inmueble?
-    // REVISAR JERARQUÍA: Según jerarquia_carpetas.md, es:
-    // [CDR] ... > 3- DOCUMENTACION LEGAL > Contrato de Arrendamiento
+    // 3. Buscar "ENTREGAS DEL INMUEBLE"
+    let entregasFolder = getFolderByName(inmuebleFolder, 'ENTREGAS DEL INMUEBLE');
 
-    // Intentar buscar "3- DOCUMENTACION LEGAL" primero
-    let legalFolder = getFolderByName(inmuebleFolder, '3- DOCUMENTACION LEGAL');
-
-    if (!legalFolder) {
-      // Si no existe, intentar buscar directamente en la raíz del inmueble
-      // O crearla si es necesario (mejor no crear estructura aquí para evitar desorden)
-      console.warn('No se encontró "3- DOCUMENTACION LEGAL", buscando en raíz del inmueble');
-      legalFolder = inmuebleFolder;
+    if (!entregasFolder) {
+      console.warn('No se encontró "ENTREGAS DEL INMUEBLE", buscandoFallback...');
+      entregasFolder = inmuebleFolder;
     }
 
-    // 4. Buscar carpeta específica de Contratos
-    // Nombre estándar: "Contrato de Arrendamiento" / "Contrato de Corretaje"
-    let targetFolderName = 'Contrato de Arrendamiento';
+    // 4. Buscar Subcarpeta de Año (ej: 2024, 2026) u otra directa
+    // Si ENTREGAS DEL INMUEBLE tiene carpetas adentro, entramos
+    let yearFolder = entregasFolder;
+    const yearSubFolders = entregasFolder.getFolders();
+    if (yearSubFolders.hasNext() && entregasFolder.getName() === 'ENTREGAS DEL INMUEBLE') {
+      // Tomar la primera carpeta de año que encontremos (normalmente solo hay 1)
+      yearFolder = yearSubFolders.next();
+    }
 
+    // 5. Buscar "DOCUMENTOS DE ENTREGA - INQUILINO"
+    let docEntregaFolder = getFolderByName(yearFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+    if (!docEntregaFolder) {
+       console.log('No se encontró "DOCUMENTOS DE ENTREGA - INQUILINO", se usará la carpeta padre.');
+       docEntregaFolder = yearFolder;
+    }
+
+    // 6. Buscar o crear carpeta específica de Contratos dentro de DOC ENTREGA
+    // Por jerarquía estricta debe ser: "2- CONTRATO DE ARRENDAMIENTO"
+    let targetFolderName = '2- CONTRATO DE ARRENDAMIENTO';
     if (tipoNegocio === 'Corretaje') {
-      targetFolderName = 'Contrato de Corretaje';
+      targetFolderName = '2- CONTRATO DE CORRETAJE';
     } else if (tipoNegocio === 'Venta') {
-      targetFolderName = 'Promesa de Compraventa'; // O similar
+      targetFolderName = '2- PROMESA DE COMPRAVENTA'; 
     }
 
-    let contratoFolder = getFolderByName(legalFolder, targetFolderName);
-
-    // Si no existe, intentar una búsqueda más laxa o crearla
-    if (!contratoFolder) {
-      // Intentar "Contratos" genérico
-      contratoFolder = getFolderByName(legalFolder, 'Contratos');
-    }
+    let contratoFolder = getFolderByName(docEntregaFolder, targetFolderName) || getFolderByName(docEntregaFolder, '2- CONTRATO DE ARRENDAMIENTO');
 
     if (!contratoFolder) {
-      console.log(`Carpeta "${targetFolderName}" no encontrada. Creándola en ${legalFolder.getName()}...`);
-      contratoFolder = legalFolder.createFolder(targetFolderName);
+      console.log(`Carpeta "${targetFolderName}" no encontrada. Creándola en ${docEntregaFolder.getName()}...`);
+      contratoFolder = docEntregaFolder.createFolder(targetFolderName);
     }
 
     return contratoFolder;
 
   } catch (e) {
     console.error(`Error crítico buscando carpeta dinámica: ${e.toString()}`);
-    // Fallback de emergencia: Carpeta global de contratos
+    if (!CONTRATO_CONFIG.CARPETA_CONTRATOS_ID) throw new Error("CARPETA_CONTRATOS_ID (fallback) indefinido");
     return DriveApp.getFolderById(CONTRATO_CONFIG.CARPETA_CONTRATOS_ID);
   }
 }
@@ -284,7 +299,7 @@ function recopilarDatosContrato(cdr) {
 
     // Recopilar datos del inmueble
     const inmueble = {
-      direccion: obtenerValor('Direccion del inmueble'),
+      direccion: obtenerValor('Ingrese la Dirección del inmueble'),
       matricula: obtenerValor('MATRICULA_INMOBILIARIA'),
       chip: obtenerValor('Chip'),
       estrato: obtenerValor('Estrato'),
@@ -296,14 +311,15 @@ function recopilarDatosContrato(cdr) {
       banos: obtenerValor('No. de banos'),
       garajes: obtenerValor('PARQUEADEROS INMUEBLE'),
       depositos: obtenerValor('Deposito'),
-      administracion: obtenerValor('Valor de la administracion')
+      administracion: obtenerValor('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)')
     };
 
     // Recopilar datos del contrato
     const contrato = {
-      canon: obtenerValor('Canon de arrendamiento'),
+      canon: obtenerValor('PRECIO DE PROMOCION GENERAL'),
       fechaInicio: obtenerValor('FECHA INICIO DEL CONTRATO'),
-      duracion: obtenerValor('Duracion del contrato') || '12 meses',
+      fechaFinal: obtenerValor('FECHA FINAL DEL CONTRATO'),
+      duracion: '12 meses', // Por defecto; se podría calcular entre fechaInicio y fechaFinal si fuera necesario
       incremento: obtenerValor('Incremento anual') || 'IPC',
       destinacion: 'Vivienda urbana'
     };
@@ -326,7 +342,7 @@ function recopilarDatosContrato(cdr) {
 
     const datosCompletos = {
       cdr: cdr,
-      fechaGeneracion: new Date(),
+      fechaGeneracion: new Date().toISOString(),
       inquilino: inquilino,
       propietario: propietario,
       inmueble: inmueble,
@@ -338,7 +354,7 @@ function recopilarDatosContrato(cdr) {
 
     return {
       success: true,
-      data: datosCompletos
+      data: JSON.parse(JSON.stringify(datosCompletos))
     };
 
   } catch (error) {
@@ -381,37 +397,61 @@ function reemplazarVariablesContrato(body, datos) {
     const reemplazos = {
       // Datos del contrato
       '{{CDR}}': datos.cdr || '',
+      '{{numero-de-solicitud-del-aprobado}}': datos.cdr || '',
       '{{FECHA_HOY}}': `${diaActual} de ${mesActual} de ${anoActual}`,
       '{{DIA_ACTUAL}}': diaActual,
+      '{{DIA-VIGENTE}}': diaActual,
       '{{MES_ACTUAL}}': mesActual,
+      '{{MES-VIGENTE}}': mesActual,
       '{{ANO_ACTUAL}}': anoActual,
+      '{{AÑO-VIGENTE}}': anoActual,
+      '{{AÑO VIGENTE}}': anoActual,
+      '{{últimos dos digitos del año vigente}}': anoActual.toString().slice(-2),
 
       // Datos del propietario
       '{{NOMBRE_PROPIETARIO}}': datos.propietario.nombre || '',
+      '{{NOMBRE-PROPIETARIO}}': datos.propietario.nombre || '',
       '{{TIPO_DOC_PROPIETARIO}}': datos.propietario.tipoDocumento || 'CC',
       '{{DOCUMENTO_PROPIETARIO}}': datos.propietario.numeroDocumento || '',
+      '{{NUMERO-DE-DOCUMENTO-PROPIETARIO}}': datos.propietario.numeroDocumento || '',
       '{{DIRECCION_PROPIETARIO}}': datos.propietario.direccion || '',
       '{{CELULAR_PROPIETARIO}}': datos.propietario.celular || '',
+      '{{CELULAR-PROPIETARIO}}': datos.propietario.celular || '',
       '{{EMAIL_PROPIETARIO}}': datos.propietario.email || '',
+      '{{CORREO-PROPIETARIO}}': datos.propietario.email || '',
       '{{BANCO_PROPIETARIO}}': datos.propietario.banco || '',
+      '{{NOMBRE-DEL-BANCO}}': datos.propietario.banco || '',
       '{{TIPO_CUENTA_PROPIETARIO}}': datos.propietario.tipoCuenta || '',
+      '{{TIPO-DE-CUENTA-BANCARIA}}': datos.propietario.tipoCuenta || '',
       '{{NUMERO_CUENTA_PROPIETARIO}}': datos.propietario.numeroCuenta || '',
+      '{{NUMERO-DE-CUENTA-BANCARIA}}': datos.propietario.numeroCuenta || '',
+      '{{NOMBRE-DEL-DUEÑO-DE-LA-CUENTA-BANCARIA}}': datos.propietario.nombre || '',
+      '{{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE LA CUENTA}}': datos.propietario.numeroDocumento || '',
 
       // Datos del inquilino
       '{{NOMBRE_INQUILINO}}': datos.inquilino.nombre || '',
+      '{{NOMBRE-INQUILINO}}': datos.inquilino.nombre || '',
       '{{TIPO_DOC_INQUILINO}}': datos.inquilino.tipoDocumento || 'CC',
       '{{DOCUMENTO_INQUILINO}}': datos.inquilino.numeroDocumento || '',
+      '{{NUMERO-DE-DOCUMENTO-INQUILINO}}': datos.inquilino.numeroDocumento || '',
       '{{CELULAR_INQUILINO}}': datos.inquilino.celular || '',
+      '{{CELULAR-INQUILINO}}': datos.inquilino.celular || '',
       '{{EMAIL_INQUILINO}}': datos.inquilino.email || '',
+      '{{CORREO-INQUILINO}}': datos.inquilino.email || '',
       '{{OCUPACION_INQUILINO}}': datos.inquilino.ocupacion || '',
 
       // Datos del inmueble
       '{{DIRECCION_INMUEBLE}}': datos.inmueble.direccion || '',
+      '{{DIRECCION-DEL-INMUEBLE-DEL-FOLIO-DE-MATRICULA}}': datos.inmueble.direccion || '',
       '{{MATRICULA_INMUEBLE}}': datos.inmueble.matricula || '',
+      '{{NUMERO-DE-MATRICULA}}': datos.inmueble.matricula || '',
       '{{CHIP_INMUEBLE}}': datos.inmueble.chip || '',
       '{{ESTRATO_INMUEBLE}}': datos.inmueble.estrato || '',
       '{{BARRIO_INMUEBLE}}': datos.inmueble.barrio || '',
-      '{{CIUDAD_INMUEBLE}}': datos.inmueble.ciudad || 'Bogota D.C.',
+      '{{ejemplo:USAQUEN}}': datos.inmueble.barrio || '',
+      '{{CIUDAD_INMUEBLE}}': datos.inmueble.ciudad || 'Bogotá D.C.',
+      '{{ejemplo:BOGOTA-D.C.}}': datos.inmueble.ciudad || 'Bogotá D.C.',
+      '{{OFICINA-DE-REGISTRO-PUBLICO}}': datos.inmueble.ciudad || 'Bogotá D.C.',
       '{{TIPO_INMUEBLE}}': datos.inmueble.tipoInmueble || 'Apartamento',
       '{{AREA_INMUEBLE}}': datos.inmueble.area || '',
       '{{HABITACIONES}}': datos.inmueble.habitaciones || '',
@@ -419,14 +459,25 @@ function reemplazarVariablesContrato(body, datos) {
       '{{GARAJES}}': datos.inmueble.garajes || '0',
       '{{DEPOSITOS}}': datos.inmueble.depositos || '0',
       '{{ADMINISTRACION}}': formatearMoneda(datos.inmueble.administracion) || '$0',
+      '{{PRECIO-DE-ADMIN-EN-NUMERO}}': formatearMoneda(datos.inmueble.administracion) || '$0',
 
       // Datos economicos del contrato
       '{{CANON_NUMERO}}': formatearMoneda(datos.contrato.canon),
+      '{{PRECIO-DEL-CANON-EN-NUMERO}}': formatearMoneda(datos.contrato.canon),
       '{{CANON_LETRAS}}': canonTexto,
       '{{FECHA_INICIO}}': fechaInicioFormateada,
       '{{DURACION_CONTRATO}}': datos.contrato.duracion || '12 meses',
+      '{{numero-de-meses-del-contrato-en-numero}}': '12',
+      '{{numero-de-meses-del-contrato-en-letra}}': 'DOCE',
       '{{INCREMENTO_ANUAL}}': datos.contrato.incremento || 'IPC',
-      '{{DESTINACION}}': datos.contrato.destinacion || 'Vivienda urbana'
+      '{{DESTINACION}}': datos.contrato.destinacion || 'Vivienda urbana',
+      
+      // Servicios Públicos genéricos en la plantilla
+      '{{Acueducto}}': 'Acueducto',
+      '{{gas}}': 'Gas',
+      '{{Energía Eléctrica}}': 'Energía Eléctrica',
+      '{{telefono}}': 'Teléfono',
+      '{{caldera}}': 'Caldera'
     };
 
     // Realizar reemplazos
@@ -439,53 +490,97 @@ function reemplazarVariablesContrato(body, datos) {
       // Reemplazar datos del primer codeudor
       if (datos.codeudores[0]) {
         body.replaceText('{{NOMBRE_CODEUDOR1}}', datos.codeudores[0].nombre || '');
+        body.replaceText('{{NOMBRE-CODEUDOR}}', datos.codeudores[0].nombre || '');
         body.replaceText('{{DOCUMENTO_CODEUDOR1}}', datos.codeudores[0].documento || '');
+        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR}}', datos.codeudores[0].documento || '');
+        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR}}', 'Colombia');
         body.replaceText('{{CELULAR_CODEUDOR1}}', datos.codeudores[0].celular || '');
+        body.replaceText('{{CELULAR-CODEUDOR}}', datos.codeudores[0].celular || '');
         body.replaceText('{{EMAIL_CODEUDOR1}}', datos.codeudores[0].email || '');
+        body.replaceText('{{CORREO-CODEUDOR}}', datos.codeudores[0].email || '');
       }
 
       // Reemplazar datos del segundo codeudor si existe
       if (datos.codeudores[1]) {
         body.replaceText('{{NOMBRE_CODEUDOR2}}', datos.codeudores[1].nombre || '');
+        body.replaceText('{{NOMBRE-CODEUDOR 2}}', datos.codeudores[1].nombre || '');
         body.replaceText('{{DOCUMENTO_CODEUDOR2}}', datos.codeudores[1].documento || '');
+        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', datos.codeudores[1].documento || '');
+        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'Colombia');
         body.replaceText('{{CELULAR_CODEUDOR2}}', datos.codeudores[1].celular || '');
+        body.replaceText('{{CELULAR-CODEUDOR-2}}', datos.codeudores[1].celular || '');
         body.replaceText('{{EMAIL_CODEUDOR2}}', datos.codeudores[1].email || '');
+        body.replaceText('{{CORREO-CODEUDOR-2}}', datos.codeudores[1].email || '');
       } else {
         // Limpiar variables del segundo codeudor
         body.replaceText('{{NOMBRE_CODEUDOR2}}', 'N/A');
+        body.replaceText('{{NOMBRE-CODEUDOR 2}}', 'N/A');
         body.replaceText('{{DOCUMENTO_CODEUDOR2}}', 'N/A');
+        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', 'N/A');
+        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'N/A');
         body.replaceText('{{CELULAR_CODEUDOR2}}', 'N/A');
+        body.replaceText('{{CELULAR-CODEUDOR-2}}', 'N/A');
         body.replaceText('{{EMAIL_CODEUDOR2}}', 'N/A');
+        body.replaceText('{{CORREO-CODEUDOR-2}}', 'N/A');
       }
 
       // Reemplazar datos del tercer codeudor si existe
       if (datos.codeudores[2]) {
         body.replaceText('{{NOMBRE_CODEUDOR3}}', datos.codeudores[2].nombre || '');
+        body.replaceText('{{NOMBRE-CODEUDOR 3}}', datos.codeudores[2].nombre || '');
         body.replaceText('{{DOCUMENTO_CODEUDOR3}}', datos.codeudores[2].documento || '');
+        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', datos.codeudores[2].documento || '');
+        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'Colombia');
         body.replaceText('{{CELULAR_CODEUDOR3}}', datos.codeudores[2].celular || '');
+        body.replaceText('{{CELULAR-CODEUDOR-3}}', datos.codeudores[2].celular || '');
         body.replaceText('{{EMAIL_CODEUDOR3}}', datos.codeudores[2].email || '');
+        body.replaceText('{{CORREO-CODEUDOR-3}}', datos.codeudores[2].email || '');
       } else {
         // Limpiar variables del tercer codeudor
         body.replaceText('{{NOMBRE_CODEUDOR3}}', 'N/A');
+        body.replaceText('{{NOMBRE-CODEUDOR 3}}', 'N/A');
         body.replaceText('{{DOCUMENTO_CODEUDOR3}}', 'N/A');
+        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'N/A');
         body.replaceText('{{CELULAR_CODEUDOR3}}', 'N/A');
+        body.replaceText('{{CELULAR-CODEUDOR-3}}', 'N/A');
         body.replaceText('{{EMAIL_CODEUDOR3}}', 'N/A');
+        body.replaceText('{{CORREO-CODEUDOR-3}}', 'N/A');
       }
     } else {
       // Si no hay codeudores, limpiar todas las variables
       body.replaceText('{{NOMBRE_CODEUDOR1}}', 'N/A');
+      body.replaceText('{{NOMBRE-CODEUDOR}}', 'N/A');
       body.replaceText('{{DOCUMENTO_CODEUDOR1}}', 'N/A');
+      body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR}}', 'N/A');
+      body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR}}', 'N/A');
       body.replaceText('{{CELULAR_CODEUDOR1}}', 'N/A');
+      body.replaceText('{{CELULAR-CODEUDOR}}', 'N/A');
       body.replaceText('{{EMAIL_CODEUDOR1}}', 'N/A');
+      body.replaceText('{{CORREO-CODEUDOR}}', 'N/A');
       body.replaceText('{{NOMBRE_CODEUDOR2}}', 'N/A');
+      body.replaceText('{{NOMBRE-CODEUDOR 2}}', 'N/A');
       body.replaceText('{{DOCUMENTO_CODEUDOR2}}', 'N/A');
+      body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', 'N/A');
+      body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'N/A');
       body.replaceText('{{CELULAR_CODEUDOR2}}', 'N/A');
+      body.replaceText('{{CELULAR-CODEUDOR-2}}', 'N/A');
       body.replaceText('{{EMAIL_CODEUDOR2}}', 'N/A');
+      body.replaceText('{{CORREO-CODEUDOR-2}}', 'N/A');
       body.replaceText('{{NOMBRE_CODEUDOR3}}', 'N/A');
+      body.replaceText('{{NOMBRE-CODEUDOR 3}}', 'N/A');
       body.replaceText('{{DOCUMENTO_CODEUDOR3}}', 'N/A');
+      body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+      body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'N/A');
       body.replaceText('{{CELULAR_CODEUDOR3}}', 'N/A');
+      body.replaceText('{{CELULAR-CODEUDOR-3}}', 'N/A');
       body.replaceText('{{EMAIL_CODEUDOR3}}', 'N/A');
+      body.replaceText('{{CORREO-CODEUDOR-3}}', 'N/A');
     }
+    
+    // Adicionales que están fuera de {{}} o irregulares en tu plantilla:
+    body.replaceText('\\(fecha de inicio de contrato\\)', fechaInicioFormateada);
+    body.replaceText('20\\(00\\)', anoActual.toString());
 
     console.log('Variables reemplazadas exitosamente');
 
@@ -1290,29 +1385,42 @@ function obtenerContratosPendientes() {
     // Ajustar según tu hoja real:
     const COL_CDR = 0;
     const COL_ESTADO = 1;
-    // ... Necesitamos mapear columnas reales.
-    // VERIFICAR: En GESTOR DE ESTADOS.js se usa 'ESTADO DEL INMUEBLE'
-
-    // Mejor estrategia: Leer cabeceras
-    const headers = data[0];
-    const idxCdr = headers.indexOf('CDR');
+    // Mejor estrategia: Leer cabeceras normalizadas
+    const headers = data[0].map(h => String(h).trim().toUpperCase());
+    const idxCdr = headers.indexOf('CODIGO DE REGISTRO');
     const idxEstado = headers.indexOf('ESTADO DEL INMUEBLE');
     const idxTipo = headers.indexOf('TIPO DE NEGOCIO');
-    const idxCanon = headers.indexOf('CANON DE ARRENDAMIENTO');
-    const idxInquilino = headers.indexOf('NOMBRE DE ARRENDATARIO'); // O similar
+    const idxCanon = headers.indexOf('PRECIO DE PROMOCION GENERAL');
+    const idxInquilino = headers.indexOf('NOMBRE COMPLETO INQUILINO');
+    const idxDoc = headers.indexOf('ESTADO DOCUMENTAL');
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      const estado = row[idxEstado];
+      
+      // Obtener valores de manera segura
+      const cdrValue = idxCdr > -1 ? row[idxCdr] : '';
+      const estado = idxEstado > -1 ? String(row[idxEstado]).trim().toUpperCase() : '';
+      const estadoDoc = idxDoc > -1 ? String(row[idxDoc]).trim().toUpperCase() : '';
 
-      // Criterio: ESTUDIO APROBADO o equivalente
-      if (estado === 'ESTUDIO APROBADO') {
-        contratos.push({
-          cdr: row[idxCdr],
-          tipoNegocio: row[idxTipo] || 'N/A',
-          canon: row[idxCanon] || '0',
-          inquilino: row[idxInquilino] || 'Pendiente'
-        });
+      // Criterio: ESTUDIO APROBADO, READY_CONTRACT o si el documental ya dice PROP_VALIDATED
+      if (
+        estado === 'ESTUDIO APROBADO' || 
+        estado === 'READY_CONTRACT' ||
+        estado === 'CONTRATO GENERADO' ||
+        estado === 'BORRADOR ENVIADO' ||
+        estado === 'EN REVISION' ||
+        estadoDoc.includes('VALIDATED') ||
+        estadoDoc.includes('READY_CONTRACT')
+      ) {
+        if (cdrValue) {
+          contratos.push({
+            cdr: cdrValue,
+            tipoNegocio: idxTipo > -1 ? row[idxTipo] || 'N/A' : 'N/A',
+            canon: idxCanon > -1 ? row[idxCanon] || '0' : '0',
+            inquilino: idxInquilino > -1 ? row[idxInquilino] || 'Pendiente' : 'Pendiente',
+            estadoBadge: estado || estadoDoc
+          });
+        }
       }
     }
 
@@ -1321,5 +1429,122 @@ function obtenerContratosPendientes() {
   } catch (error) {
     console.error('Error obteniendo contratos pendientes:', error);
     throw new Error('No se pudo cargar la lista de contratos.');
+  }
+}
+
+/**
+ * Función para enviar correos de validación a Inquilino y Propietario
+ */
+function enviarBorradorAValidar(cdr) {
+  try {
+    const datosRecopilados = recopilarDatosContrato(cdr);
+    if (!datosRecopilados.success) throw new Error(datosRecopilados.message);
+    const datos = datosRecopilados.data;
+
+    const emailInquilino = datos.inquilino.email;
+    const emailPropietario = datos.propietario.email;
+
+    if (!emailInquilino || !emailPropietario) {
+      throw new Error(`Correos faltantes. Inq: ${emailInquilino}, Prop: ${emailPropietario}`);
+    }
+
+    const baseURL = CONTRATO_CONFIG.BASE_URL || 'https://realestate-goldlifesystem.github.io/efirmacontrata';
+
+    const enviarCorreoParte = (email, nombre, rol) => {
+      const enlace = `${baseURL}/validacion-contrato.html?cdr=${cdr}&parte=${rol}`;
+      const asunto = `📝 Acción Requerida: Revisar Borrador de Contrato - ${cdr}`;
+      const cuerpo = `Hola ${nombre},\n\nEl borrador de su contrato de arrendamiento está listo para revisión.\n\nPor favor ingrese al siguiente enlace para leerlo, y aprobarlo o dejar comentarios de corrección:\n${enlace}\n\nGracias,\nGold Life System.`;
+      
+      try {
+        MailApp.sendEmail({
+          to: email,
+          subject: asunto,
+          body: cuerpo
+        });
+      } catch (err) {
+        console.error(`Error enviando correo a ${rol} (${email}):`, err);
+        throw new Error(`Error enviando email a ${rol}`);
+      }
+    };
+
+    enviarCorreoParte(emailInquilino, datos.inquilino.nombre, 'inquilino');
+    enviarCorreoParte(emailPropietario, datos.propietario.nombre, 'propietario');
+
+    // Cambiar estado global a BORRADOR ENVIADO
+    actualizarEstadoContrato(cdr, 'BORRADOR ENVIADO', 'Los correos de validación se enviaron exitosamente.');
+
+    return {
+      success: true,
+      message: 'Correos enviados. Estado actualizado a BORRADOR ENVIADO.'
+    };
+  } catch(error) {
+    return {
+      success: false,
+      message: error.message
+    }
+  }
+}
+
+
+
+/**
+ * Obtiene el consolidado de las firmas/aprobaciones para el panel
+ */
+function obtenerEstadoAprobacionesContrato(cdr) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONTRATO_CONFIG.HOJA_APROBACIONES);
+    if (!sheet) return { success: true, estados: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const estados = [];
+    
+    for (let i = 1; i < data.length; i++) {
+        if (data[i][1] === cdr) {
+           estados.push({
+               parte: String(data[i][2]).toUpperCase(),
+               estado: data[i][3],
+               comentarios: data[i][4]
+           });
+        }
+    }
+
+    return { success: true, estados: estados };
+  } catch(err) {
+    return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Obtiene el contexto de un contrato ya generado (URL y datos) sin volver a crearlo
+ */
+function obtenerContextoContrato(cdr) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONTRATO_CONFIG.HOJA_LOG_CONTRATOS);
+    if (!sheet) throw new Error("No hay registros de contratos");
+
+    const data = sheet.getDataRange().getValues();
+    let url = '';
+    
+    // Buscar el más reciente
+    for (let i = data.length - 1; i > 0; i--) {
+      if (data[i][1] === cdr) {
+        url = data[i][3]; // URL está en la columna D
+        break;
+      }
+    }
+
+    if (!url) throw new Error("No se encontró URL de borrador para este CDR");
+
+    const datosReq = recopilarDatosContrato(cdr);
+    let datos = null;
+    if (datosReq.success) datos = datosReq.data;
+
+    return {
+      success: true,
+      url: url,
+      datos: datos
+    };
+  } catch (err) {
+    return { success: false, message: err.message };
   }
 }

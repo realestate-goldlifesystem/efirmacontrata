@@ -1077,6 +1077,123 @@
         </div>
     </div>
 
+    <!-- Modal de Contratos (Flujo de Elaboración y Validación) -->
+    <style>
+        .contrato-modal-content {
+            width: 95vw;
+            height: 90vh;
+            max-width: 1600px;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            overflow: hidden;
+        }
+        .contrato-modal-body {
+            flex: 1;
+            display: flex;
+            background: #f8fafc;
+            overflow: hidden;
+        }
+        .panel-datos {
+            width: 30%;
+            border-right: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: white;
+            transition: width 0.3s ease;
+        }
+        .panel-editor {
+            width: 70%;
+            padding: 0;
+            background: #eaeaea;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        .panel-editor iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .panel-comentarios {
+            width: 0;
+            display: none;
+            border-left: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: white;
+            transition: width 0.3s ease;
+        }
+        /* Modo 20/60/20 */
+        .layout-validacion .panel-datos { width: 20%; }
+        .layout-validacion .panel-editor { width: 60%; }
+        .layout-validacion .panel-comentarios { width: 20%; display: block; }
+        
+        .dato-maestro-card {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        .dato-maestro-card h4 { margin: 0 0 0.5rem 0; color: #334155; font-size: 0.9rem; }
+        .dato-maestro-card p { margin: 0; color: #0f172a; font-weight: 500; }
+    </style>
+    <div id="modalContrato" class="modal">
+        <div class="modal-content contrato-modal-content">
+            <div class="modal-header">
+                <h2>📝 Elaboración de Contrato - <span id="modalContratoCdr"></span></h2>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <span id="badgeEstadoContrato" class="badge" style="background:var(--warning); color:black;">Borrador</span>
+                    <button class="close-modal" onclick="cerrarModalContrato()">&times;</button>
+                </div>
+            </div>
+            <div class="contrato-modal-body" id="contratoModalBody">
+                <!-- Panel Izquierdo: Datos Maestros -->
+                <div class="panel-datos">
+                    <h3 style="margin-top:0; margin-bottom: 1rem;">Datos Aprobados</h3>
+                    <div id="contenedorDatosContrato">
+                        <!-- Se llena dinámico -->
+                    </div>
+                    
+                    <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #e2e8f0;">
+                    
+                    <div id="accionesBorrador">
+                        <p class="text-sm text-gray" style="margin-bottom: 1rem;">Verifique que el contrato generado en la derecha corresponda a los datos aprobados.</p>
+                        <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="enviarOriginalValidar()" id="btnEnviarValidar">
+                            ✉️ Enviar Borrador a Validar
+                        </button>
+                    </div>
+
+                    <div id="accionesOriginal" style="display: none;">
+                        <div class="alert alert-success" style="margin-bottom: 1rem;">
+                            ✅ Todas las partes han aprobado el borrador.
+                        </div>
+                        <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="generarOriginalDefinitivo()" id="btnGenerarOriginal">
+                            📥 Generar y Descargar Original
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel Central: Editor -->
+                <div class="panel-editor">
+                    <div id="loaderContrato" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 1rem; color: #666;">Cargando documento...</p>
+                    </div>
+                    <iframe id="iframeContrato" onload="document.getElementById('loaderContrato').style.display='none'"></iframe>
+                </div>
+
+                <!-- Panel Derecho: Comentarios / Aprobaciones -->
+                <div class="panel-comentarios">
+                    <h3 style="margin-top:0; margin-bottom: 1rem;">Validación Externa</h3>
+                    <div id="contenedorEstadosAprobacion">
+                        <!-- Se llena dinámico -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Validación -->
     <div id="modalValidacion" class="modal">
         <div class="modal-content modal-lg">
@@ -1606,11 +1723,23 @@
 
             let html = '';
             contratos.forEach(c => {
+                let badgeClass = 'badge-ready';
+                let btnText = '📄 Generar Contrato';
+                let btnAction = `generarContrato('${c.cdr}')`;
+                let badgeText = 'LISTO PARA GENERAR';
+
+                if (c.estadoBadge === 'BORRADOR ENVIADO' || c.estadoBadge === 'EN REVISION' || c.estadoBadge === 'CONTRATO GENERADO') {
+                    badgeClass = 'badge-warning';
+                    badgeText = 'BORRADOR ACTIVO';
+                    btnText = '🔍 Abrir Borrador';
+                    btnAction = `abrirBorrador('${c.cdr}')`;
+                }
+
                 html += `
                     <div class="registro-card contrato-card">
                         <div class="registro-header">
                             <h3>🏠 ${c.cdr}</h3>
-                            <span class="badge badge-ready">LISTO PARA GENERAR</span>
+                            <span class="badge ${badgeClass}" style="${badgeClass === 'badge-warning' ? 'background:var(--warning); color:black;' : 'background:var(--success); color:white;'}">${badgeText}</span>
                         </div>
                         <div class="registro-info">
                             <div class="info-row">
@@ -1627,8 +1756,8 @@
                             </div>
                         </div>
                         <div class="registro-actions">
-                            <button class="btn btn-primary" onclick="generarContrato('${c.cdr}')">
-                                📄 Generar Contrato
+                            <button class="btn btn-primary" onclick="${btnAction}">
+                                ${btnText}
                             </button>
                         </div>
                     </div>
@@ -1637,32 +1766,238 @@
             lista.innerHTML = html;
         }
 
-        function generarContrato(cdr) {
-            if (!confirm(`¿Estás seguro de generar el contrato para ${cdr}? Esto creará el PDF y notificará a las partes.`)) return;
+        // Variable global para mantener el contexto del contrato actual
+        let contratoActualContext = null;
 
-            // Mostrar estado de carga (bloqueo simple)
+        function generarContrato(cdr) {
+            Swal.fire({
+                title: '¿Generar Borrador?',
+                text: `Se generará el borrador del contrato para ${cdr}.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, generar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const btn = event.target;
+                    const originalText = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '⏳ Generando...';
+
+                    google.script.run
+                        .withSuccessHandler(function (res) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                            if (res.success) {
+                                abrirModalContrato(cdr, res);
+                            } else {
+                                Swal.fire('Error', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(function (err) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                            Swal.fire('Error de red', err.message, 'error');
+                        })
+                        .generarContrato(cdr, 'Borrador');
+                }
+            });
+        }
+
+        function abrirBorrador(cdr) {
             const btn = event.target;
             const originalText = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '⏳ Generando...';
+            btn.innerHTML = '⏳ Cargando...';
 
             google.script.run
                 .withSuccessHandler(function (res) {
-                    if (res.success) {
-                        alert('✅ Contrato generado exitosamente!\nURL PDF: ' + res.urlPdf);
-                        cargarContratos(); // Recargar lista
-                    } else {
-                        alert('❌ Error: ' + res.message);
+                    try {
                         btn.disabled = false;
                         btn.innerHTML = originalText;
+                        if (res.success) {
+                            abrirModalContrato(cdr, res);
+                            // Como ya existe, abrimos la vista de aprobación por defecto
+                            cambiarModoValidacionExterna();
+                        } else {
+                            Swal.fire('Error', res.message, 'error');
+                        }
+                    } catch (e) {
+                        alert("Error JS Local: " + e.message + "\n" + e.stack);
                     }
                 })
                 .withFailureHandler(function (err) {
-                    alert('❌ Error de red: ' + err.message);
                     btn.disabled = false;
                     btn.innerHTML = originalText;
+                    Swal.fire('Error de red', err.message, 'error');
                 })
-                .generarContrato(cdr);
+                .obtenerContextoContrato(cdr);
+        }
+
+        function abrirModalContrato(cdr, resData) {
+            contratoActualContext = { cdr: cdr, url: resData.url, datos: resData.datos };
+            
+            document.getElementById('modalContratoCdr').textContent = cdr;
+            document.getElementById('badgeEstadoContrato').textContent = "Borrador Editable";
+            document.getElementById('badgeEstadoContrato').style.background = "var(--warning)";
+            
+            // Llenar panel izquierdo (Datos de la hoja procesados)
+            let htmlDatos = '';
+            if(resData.datos) {
+                htmlDatos += `<div class="dato-maestro-card">
+                    <h4>Inquilino</h4>
+                    <p>${resData.datos.inquilino?.nombre || 'N/A'}</p>
+                    <p style="font-size:0.85em; color:#64748b;">${resData.datos.inquilino?.numeroDocumento || ''}</p>
+                </div>`;
+                htmlDatos += `<div class="dato-maestro-card">
+                    <h4>Propietario</h4>
+                    <p>${resData.datos.propietario?.nombre || 'N/A'}</p>
+                    <p style="font-size:0.85em; color:#64748b;">${resData.datos.propietario?.numeroDocumento || ''}</p>
+                </div>`;
+                htmlDatos += `<div class="dato-maestro-card">
+                    <h4>Inmueble</h4>
+                    <p>${resData.datos.inmueble?.direccion || 'N/A'}</p>
+                </div>`;
+            } else {
+                htmlDatos = '<p>No se encontraron datos tabulados.</p>';
+            }
+            document.getElementById('contenedorDatosContrato').innerHTML = htmlDatos;
+
+            // Mostrar el iframe
+            document.getElementById('loaderContrato').style.display = 'block';
+            document.getElementById('iframeContrato').src = resData.url + '?rm=embedded';
+
+            // Resetear layout
+            document.getElementById('contratoModalBody').classList.remove('layout-validacion');
+            document.getElementById('accionesBorrador').style.display = 'block';
+            document.getElementById('accionesOriginal').style.display = 'none';
+
+            // Mostrar Modal
+            document.getElementById('modalContrato').classList.add('show');
+        }
+
+        function cerrarModalContrato() {
+            document.getElementById('modalContrato').classList.remove('show');
+            document.getElementById('iframeContrato').src = '';
+            contratoActualContext = null;
+        }
+
+        function enviarOriginalValidar() {
+            if(!contratoActualContext) return;
+            const cdr = contratoActualContext.cdr;
+
+            Swal.fire({
+                title: '¿Enviar a Validar?',
+                text: 'Se enviarán correos al inquilino, deudor y propietario para revisión virtual.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, enviar correos'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    const btn = document.getElementById('btnEnviarValidar');
+                    btn.disabled = true;
+                    btn.innerHTML = '✉️ Enviando...';
+
+                    // Aqui se conectará con el Backend
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            btn.innerHTML = '✉️ Enviar Borrador a Validar';
+                            btn.disabled = false;
+                            if(res.success) {
+                                Swal.fire('Enviado', 'Mails enviados correctamente', 'success');
+                                cambiarModoValidacionExterna();
+                            } else {
+                                Swal.fire('Error', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(function(err){
+                            btn.innerHTML = '✉️ Enviar Borrador a Validar';
+                            btn.disabled = false;
+                            Swal.fire('Error de red', err.message, 'error');
+                        })
+                        .enviarBorradorAValidar(cdr);
+                }
+            });
+        }
+
+        function cambiarModoValidacionExterna() {
+            document.getElementById('contratoModalBody').classList.add('layout-validacion');
+            document.getElementById('accionesBorrador').style.display = 'none';
+            document.getElementById('accionesOriginal').style.display = 'block';
+            document.getElementById('badgeEstadoContrato').textContent = "En Validación Externa";
+            document.getElementById('badgeEstadoContrato').style.background = "#3b82f6";
+            document.getElementById('badgeEstadoContrato').style.color = "white";
+            
+            // Cargar estado de firmas desde el backend
+            cargarEstadosAprobacion(contratoActualContext.cdr);
+        }
+
+        function cargarEstadosAprobacion(cdr) {
+            document.getElementById('contenedorEstadosAprobacion').innerHTML = '<p>⏳ Cargando estados...</p>';
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if(res.success) {
+                        let divInfo = '';
+                        let checks = 0;
+                        res.estados.forEach(e => {
+                            let badge = e.estado === 'APROBADO' ? '<span style="color: green;">✅ Aprobado</span>' : 
+                                       (e.estado === 'RECHAZADO' ? '<span style="color: red;">❌ Requiere Corrección</span>' : '⏳ Pendiente');
+                            divInfo += `<div class="dato-maestro-card">
+                                <h4>${e.parte}</h4>
+                                <p>${badge}</p>
+                                ${e.comentarios ? `<p style="font-size: 0.8em; margin-top:5px; color:#666;">💬 "${e.comentarios}"</p>` : ''}
+                            </div>`;
+                            if(e.estado === 'APROBADO') checks++;
+                        });
+                        document.getElementById('contenedorEstadosAprobacion').innerHTML = divInfo;
+
+                        // Si todos aprobaron (ejemplo 2 partes: inq y prop), habilitar generar original
+                        if(res.estados.length > 0 && checks === res.estados.length) {
+                             document.getElementById('btnGenerarOriginal').disabled = false;
+                        } else {
+                             document.getElementById('btnGenerarOriginal').disabled = true;
+                        }
+                    } else {
+                        document.getElementById('contenedorEstadosAprobacion').innerHTML = '<p>No hay firmas registradas aún.</p>';
+                    }
+                })
+                .obtenerEstadoAprobacionesContrato(cdr);
+        }
+
+        function generarOriginalDefinitivo() {
+            if(!contratoActualContext) return;
+            const cdr = contratoActualContext.cdr;
+
+            Swal.fire({
+                title: '¿Generar Original?',
+                text: 'Se fusionarán los datos en la Plantilla Original sin marca de agua.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, generar'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    const btn = document.getElementById('btnGenerarOriginal');
+                    btn.disabled = true;
+                    btn.innerHTML = '📥 Generando...';
+
+                    google.script.run
+                        .withSuccessHandler(function(res) {
+                            btn.disabled = false;
+                            btn.innerHTML = '📥 Generar y Descargar Original';
+                            if(res.success) {
+                                Swal.fire('Original Listo', 'El contrato original se ha generado.', 'success');
+                                window.open(res.urlPdf, '_blank');
+                            } else {
+                                Swal.fire('Error', res.message, 'error');
+                            }
+                        })
+                        .withFailureHandler(function(err){
+                            btn.disabled = false;
+                            btn.innerHTML = '📥 Generar y Descargar Original';
+                            Swal.fire('Error de red', err.message, 'error');
+                        })
+                        .generarContrato(cdr, 'Original');
+                }
+            });
         }
 
         function actualizarContadoresContratos(contratos) {
@@ -2859,8 +3194,8 @@
             }
 
             // Buscar el documento Certificado de Tradición
-            const docsPropietario = documentosData['propietario'] || [];
-            const certDoc = docsPropietario.find(doc => doc.nombre.toUpperCase().includes('CERT_TRADICION'));
+            const docsInmueble = documentosData['inmueble'] || [];
+            const certDoc = docsInmueble.find(doc => doc.nombre.toUpperCase().includes('CERT_TRADICION'));
 
             if (!certDoc || !certDoc.fileId) {
                 mostrarToast('No se encontró el archivo del Certificado de Tradición subido por el propietario.', 'error');
