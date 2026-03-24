@@ -1098,6 +1098,23 @@
             el.confirmarCelular.classList.remove('invalid');
             el.celError.classList.remove('show');
           }
+
+          // Unhide Fecha Contrato section
+          const prog6 = document.getElementById('prog-inq-0-6');
+          const hr6 = document.getElementById('hr-inq-0-6');
+          if (prog6 && hr6) {
+            if (vCel && vConfCel && vCel === vConfCel) {
+              prog6.classList.remove('progressive-hidden');
+              prog6.classList.add('progressive-visible');
+              hr6.classList.remove('progressive-hidden');
+              hr6.classList.add('progressive-visible');
+            } else {
+              prog6.classList.add('progressive-hidden');
+              prog6.classList.remove('progressive-visible');
+              hr6.classList.add('progressive-hidden');
+              hr6.classList.remove('progressive-visible');
+            }
+          }
         } else if (state.step === 1) {
           const prog2 = document.getElementById('prog-inq-1-2');
           if (prog2) {
