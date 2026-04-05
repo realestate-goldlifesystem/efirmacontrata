@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Validación - E-FirmaContrata</title>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* Variables de diseño */
         :root {
@@ -1725,14 +1727,14 @@
             contratos.forEach(c => {
                 let badgeClass = 'badge-ready';
                 let btnText = '📄 Generar Contrato';
-                let btnAction = `generarContrato('${c.cdr}')`;
+                let btnAction = `generarContrato('${c.cdr}', this)`;
                 let badgeText = 'LISTO PARA GENERAR';
 
                 if (c.estadoBadge === 'BORRADOR ENVIADO' || c.estadoBadge === 'EN REVISION' || c.estadoBadge === 'CONTRATO GENERADO') {
                     badgeClass = 'badge-warning';
                     badgeText = 'BORRADOR ACTIVO';
                     btnText = '🔍 Abrir Borrador';
-                    btnAction = `abrirBorrador('${c.cdr}')`;
+                    btnAction = `abrirBorrador('${c.cdr}', this)`;
                 }
 
                 html += `
@@ -1769,8 +1771,8 @@
         // Variable global para mantener el contexto del contrato actual
         let contratoActualContext = null;
 
-        function generarContrato(cdr) {
-            const btn = event.currentTarget || event.target; // Capturar ANTES del Swal
+        function generarContrato(cdr, btnEl) {
+            const btn = btnEl || null;
             const originalText = btn ? btn.innerHTML : '';
 
             Swal.fire({
@@ -1778,7 +1780,10 @@
                 text: `Se generará el borrador del contrato para ${cdr}.`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, generar'
+                confirmButtonColor: '#FFD700',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Sí, generar',
+                cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
                     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Generando...'; }
@@ -1801,17 +1806,15 @@
             });
         }
 
-        function abrirBorrador(cdr) {
-            const btn = event.target;
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '⏳ Cargando...';
+        function abrirBorrador(cdr, btnEl) {
+            const btn = btnEl || null;
+            const originalText = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Cargando...'; }
 
             google.script.run
                 .withSuccessHandler(function (res) {
                     try {
-                        btn.disabled = false;
-                        btn.innerHTML = originalText;
+                        if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
                         if (res.success) {
                             abrirModalContrato(cdr, res);
                             // Como ya existe, abrimos la vista de aprobación por defecto
@@ -1824,8 +1827,7 @@
                     }
                 })
                 .withFailureHandler(function (err) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
+                    if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
                     Swal.fire('Error de red', err.message, 'error');
                 })
                 .obtenerContextoContrato(cdr);
