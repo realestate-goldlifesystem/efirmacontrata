@@ -669,39 +669,38 @@ function analizarReciboServicio(fileId) {
 
 function actualizarDatosCerebro(datos) {
   try {
-    const conf = CONFIGURACION_BD;
-    const sheetId = datos.tipo === 'inquilino' ? conf.IDS.SHEET_INQUILINOS : conf.IDS.SHEET_PROPIETARIOS;
-    const sheet = SpreadsheetApp.openById(sheetId).getActiveSheet();
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    const data = sheet.getDataRange().getValues();
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    if (!sheet) throw new Error("Hoja 1.1 - INMUEBLES REGISTRADOS no encontrada");
 
     // Encontrar fila por CDR
-    let rowIdx = -1;
-    const cdrColIdx = headers.findIndex(h => h && h.toString().toUpperCase() === 'CDR');
-
-    if (cdrColIdx === -1) throw new Error("Columna CDR no encontrada");
-
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][cdrColIdx] === datos.cdr) {
-        rowIdx = i + 1; // Apps Script es base 1
-        break;
-      }
-    }
-
+    let rowIdx = buscarFilaPorCDR(datos.cdr);
     if (rowIdx === -1) throw new Error("No se encontró el registro con CDR: " + datos.cdr);
 
-    // Actualizar Google Sheet (Sólo para el Inquilino/Propietario principal)
-    if (!datos.isCodeudor) {
-      // Encontrar y actualizar cada columna
-      const nomColIdx = headers.findIndex(h => h && (h.toString().toUpperCase().includes('NOMBRE') || h.toString().toUpperCase().includes('NOMBRES')));
-      const docColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('DOCUMENTO'));
-      const mailColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('CORREO'));
-      const celColIdx = headers.findIndex(h => h && h.toString().toUpperCase().includes('CELULAR'));
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
-      if (nomColIdx > -1) sheet.getRange(rowIdx, nomColIdx + 1).setValue(datos.nombre);
-      if (docColIdx > -1) sheet.getRange(rowIdx, docColIdx + 1).setValue(datos.documento);
-      if (mailColIdx > -1) sheet.getRange(rowIdx, mailColIdx + 1).setValue(datos.email);
-      if (celColIdx > -1) sheet.getRange(rowIdx, celColIdx + 1).setValue(datos.celular);
+    // Actualizar Google Sheet (Sólo para el Inquilino/Propietario principal y si no es Bancaria)
+    if (!datos.isCodeudor && !datos.isBancaria) {
+      let nomColPrefix = 'NOMBRE COMPLETO INQUILINO';
+      let docColPrefix = 'NUMERO DOCUMENTO INQUILINO';
+      let mailColPrefix = 'CORREO INQUILINO';
+      let celColPrefix = 'CELULAR INQUILINO';
+
+      if (datos.tipo === 'propietario') {
+         nomColPrefix = 'Ingrese Nombres y Apellidos';
+         docColPrefix = 'Número de documento';
+         mailColPrefix = 'Correo electrónico';
+         celColPrefix = 'Celular';
+      }
+
+      const nomColIdx = headers.findIndex(h => h && h.toString().toUpperCase().trim() === nomColPrefix.toUpperCase());
+      const docColIdx = headers.findIndex(h => h && h.toString().toUpperCase().trim() === docColPrefix.toUpperCase());
+      const mailColIdx = headers.findIndex(h => h && h.toString().toUpperCase().trim() === mailColPrefix.toUpperCase());
+      const celColIdx = headers.findIndex(h => h && h.toString().toUpperCase().trim() === celColPrefix.toUpperCase());
+
+      if (nomColIdx > -1 && datos.nombre) sheet.getRange(rowIdx, nomColIdx + 1).setValue(datos.nombre);
+      if (docColIdx > -1 && datos.documento) sheet.getRange(rowIdx, docColIdx + 1).setValue(datos.documento);
+      if (mailColIdx > -1 && datos.email) sheet.getRange(rowIdx, mailColIdx + 1).setValue(datos.email);
+      if (celColIdx > -1 && datos.celular) sheet.getRange(rowIdx, celColIdx + 1).setValue(datos.celular);
     }
 
     // Actualizar Documento Cerebro (DATOS DE ELABORACION) usando Reemplazo de Texto
