@@ -2549,6 +2549,34 @@
 
             google.script.run
                 .withSuccessHandler(function () {
+                    // Update the local data cache immediately to prevent blank flickering
+                    const registro = getRegistroData();
+                    if (registro) {
+                        if (nuevosDatos.isBancaria && registro.propietario) {
+                            registro.propietario.tipoCuenta = nuevosDatos.tipoCuenta;
+                            registro.propietario.numeroCuenta = nuevosDatos.numeroCuenta;
+                            registro.propietario.banco = nuevosDatos.banco;
+                            registro.propietario.titularCuenta = nuevosDatos.titularCuenta;
+                            registro.propietario.documentoTitular = nuevosDatos.documentoTitular;
+                        } else if (!nuevosDatos.isCodeudor) {
+                            const dataObj = nuevosDatos.tipo === 'inquilino' ? registro.inquilino : registro.propietario;
+                            if (dataObj) {
+                                dataObj.nombre = nuevosDatos.nombre;
+                                dataObj.documento = nuevosDatos.documento;
+                                dataObj.email = nuevosDatos.email;
+                                dataObj.celular = nuevosDatos.celular;
+                            }
+                        } else if (nuevosDatos.codeudorIndex !== null && registro.codeudores) {
+                            const dataObj = registro.codeudores[nuevosDatos.codeudorIndex];
+                            if (dataObj) {
+                                dataObj.nombre = nuevosDatos.nombre;
+                                dataObj.documento = nuevosDatos.documento;
+                                dataObj.email = nuevosDatos.email;
+                                dataObj.celular = nuevosDatos.celular;
+                            }
+                        }
+                    }
+
                     mostrarToast('✅ Datos actualizados correctamente', 'success');
                     cargarDatosCerebroPorPersona(personaActivaKey);
                     btn.textContent = originalText;

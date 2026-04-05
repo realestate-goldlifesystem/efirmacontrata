@@ -742,12 +742,12 @@ function actualizarDatosCerebro(datos) {
       const body = cerebroDoc.getBody();
 
       if (datos.isBancaria) {
-        // Reemplazar campos bancarios en el Cerebro
-        if (datos.oldTipoCuenta) body.replaceText(datos.oldTipoCuenta, datos.tipoCuenta || '');
-        if (datos.oldNumeroCuenta) body.replaceText(datos.oldNumeroCuenta, datos.numeroCuenta || '');
-        if (datos.oldBanco) body.replaceText(datos.oldBanco, datos.banco || '');
-        if (datos.oldTitularCuenta) body.replaceText(datos.oldTitularCuenta, datos.titularCuenta || '');
-        if (datos.oldDocumentoTitular) body.replaceText(datos.oldDocumentoTitular, datos.documentoTitular || '');
+        // Reemplazar campos bancarios en el Cerebro usando un patrón seguro por línea completa
+        body.replaceText('TIPO DE CUENTA::.*', 'TIPO DE CUENTA:: ' + (datos.tipoCuenta || ''));
+        body.replaceText('NÚMERO DE CUENTA::.*', 'NÚMERO DE CUENTA:: ' + (datos.numeroCuenta || ''));
+        body.replaceText('BANCO::.*', 'BANCO:: ' + (datos.banco || ''));
+        body.replaceText('TITULAR::.*', 'TITULAR:: ' + (datos.titularCuenta || ''));
+        body.replaceText('DOC TITULAR::.*', 'DOC TITULAR:: ' + (datos.documentoTitular || ''));
       } else if (!datos.isCodeudor) {
         // Reemplazar campos del inquilino/propietario
         if (datos.tipo === 'inquilino') {
