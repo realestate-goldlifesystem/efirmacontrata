@@ -2777,6 +2777,33 @@
             } else {
                 badge.style.display = 'none';
             }
+
+            // Si estamos en la pestaña Servicios: cada pestaña de documento
+            // muestra sus propios datos (pre-carga lo guardado o inferido del nombre)
+            if (personaActivaKey === 'servicios') {
+                const nombreUpper = (nombre || '').toUpperCase();
+                let tipoInferido = '';
+                if (nombreUpper.includes('AGUA') || nombreUpper.includes('ACUEDUCTO')) tipoInferido = 'ACUEDUCTO';
+                else if (nombreUpper.includes('LUZ') || nombreUpper.includes('ENERGIA') || nombreUpper.includes('ENEL') || nombreUpper.includes('CODENSA')) tipoInferido = 'ENERGÍA';
+                else if (nombreUpper.includes('GAS')) tipoInferido = 'GAS';
+                else if (nombreUpper.includes('TELEFONO') || nombreUpper.includes('INTERNET') || nombreUpper.includes('CLARO') || nombreUpper.includes('MOVISTAR') || nombreUpper.includes('ETB')) tipoInferido = 'TELÉFONO/INTERNET';
+
+                // Si ya hay datos guardados para este tipo de servicio, mostrarlos
+                const reg = getRegistroData();
+                const servicioGuardado = reg && reg.servicios
+                    ? reg.servicios.find(s => tipoInferido && s.servicio.toUpperCase().includes(tipoInferido.split('/')[0]))
+                    : null;
+
+                if (servicioGuardado) {
+                    // Pre-cargar con datos ya guardados para este recibo específico
+                    document.getElementById('cerebro_tipoServicio').value = servicioGuardado.servicio;
+                    document.getElementById('cerebro_refServicio').value = servicioGuardado.referencia;
+                } else {
+                    // Recibo nuevo: pre-inferir el tipo pero dejar referencia vacía para el OCR
+                    document.getElementById('cerebro_tipoServicio').value = tipoInferido;
+                    document.getElementById('cerebro_refServicio').value = '';
+                }
+            }
         }
 
         // ==========================================
