@@ -2339,6 +2339,28 @@
             // Construir Person Tabs (Inquilino, Codeudor 1...)
             renderPersonTabs();
 
+            // Auto-find first person with a pending document
+            let targetPersonKey = tipoActual;
+            for (const personKey of ['inquilino', 'propietario', 'bancaria', 'inmueble', 'servicios']) {
+                const docsList = documentosData[personKey] || [];
+                if (docsList.some(doc => !validacionEstado[doc.fileId])) {
+                    targetPersonKey = personKey;
+                    break;
+                }
+            }
+            // Check codeudores if no pending doc found yet and it's an inquilino
+            if (targetPersonKey === tipoActual && tipo === 'inquilino') {
+                for (let i = 0; i < 5; i++) {
+                    const codKey = 'codeudor_' + i;
+                    if (documentosData[codKey] && documentosData[codKey].some(doc => !validacionEstado[doc.fileId])) {
+                        targetPersonKey = codKey;
+                        break;
+                    }
+                }
+            }
+
+            personaActivaKey = targetPersonKey;
+
             // Cargar datos a la UI por primera vez
             cambiarPersona(personaActivaKey);
 
@@ -2564,6 +2586,16 @@
             if (typeof filterFn === 'function') {
                 docsList = docsList.filter(filterFn);
             }
+
+            // Ordenamiento visual: Frontal antes que Reverso
+            docsList.sort((a, b) => {
+                const aName = a.nombre.toLowerCase();
+                const bName = b.nombre.toLowerCase();
+                if (aName.includes('frontal') && bName.includes('reverso')) return -1;
+                if (aName.includes('reverso') && bName.includes('frontal')) return 1;
+                return aName.localeCompare(bName);
+            });
+
             let html = '';
 
             if (docsList.length === 0) {

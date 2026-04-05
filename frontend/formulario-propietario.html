@@ -578,7 +578,32 @@
 
           <div class="form-group progressive-hidden" id="prog-prop-2-3">
             <label for="banco">Banco <span class="required">*</span></label>
-            <input type="text" id="banco" class="input" placeholder="Ej: Bancolombia, Davivienda..." required>
+            <select id="banco" class="input" required>
+              <option value="">Seleccione un banco...</option>
+              <option value="Bancolombia">Bancolombia</option>
+              <option value="Nequi">Nequi</option>
+              <option value="Daviplata">Daviplata</option>
+              <option value="Davivienda">Banco Davivienda</option>
+              <option value="Banco de Bogotá">Banco de Bogotá</option>
+              <option value="Banco Caja Social">Banco Caja Social</option>
+              <option value="BBVA Colombia">BBVA Colombia</option>
+              <option value="Banco Agrario">Banco Agrario</option>
+              <option value="Banco AV Villas">Banco AV Villas</option>
+              <option value="Banco Popular">Banco Popular</option>
+              <option value="Banco de Occidente">Banco de Occidente</option>
+              <option value="Scotiabank Colpatria">Scotiabank Colpatria</option>
+              <option value="Banco Falabella">Banco Falabella</option>
+              <option value="Bancoomeva">Bancoomeva</option>
+              <option value="Itaú">Itaú</option>
+              <option value="Lulo Bank">Lulo Bank</option>
+              <option value="RappiPay">RappiPay</option>
+              <option value="Mibanco">Mibanco</option>
+              <option value="Finandina">Banco Finandina</option>
+              <option value="Banco Pichincha">Banco Pichincha</option>
+              <option value="Banco Serfinanza">Banco Serfinanza</option>
+              <option value="Coofinep">Coofinep</option>
+              <option value="Confiar">Confiar Cooperativa Financiera</option>
+            </select>
           </div>
 
           <div class="form-group progressive-hidden" id="prog-prop-2-4">
@@ -2044,6 +2069,36 @@
         div.textContent = str || '';
         return div.innerHTML;
       }
+
+      // Funcionalidad Mixta API Bancos (Actualización Silenciosa con Caché del Backend)
+      function actualizarBancosMixtoAPI() {
+          // Consultamos a nuestro propio servidor (muy rápido, sin riesgo de CORS ni bloqueo de internet)
+          google.script.run
+            .withSuccessHandler(function(bancosApi) {
+                if (bancosApi && bancosApi.length > 5) {
+                    const selectBanco = document.getElementById('banco');
+                    const valorSeleccionadoOGuardado = selectBanco.value;
+                    let html = '<option value="">Seleccione un banco...</option>';
+                    bancosApi.forEach(b => {
+                        html += `<option value="${b.nombre}">${b.nombre}</option>`;
+                    });
+                    
+                    selectBanco.innerHTML = html;
+                    
+                    if (valorSeleccionadoOGuardado) {
+                        selectBanco.value = valorSeleccionadoOGuardado;
+                    }
+                    console.log('✅ Bancos actualizados desde la caché maestra del servidor.');
+                }
+            })
+            .withFailureHandler(function(err) {
+                console.log('🔄 Modo Mixto: Caché no disponible, usando lista estática local.');
+            })
+            .obtenerBancosDesdeCaché();
+      }
+      
+      // Lanzamos la actualización silenciosa 1 segundo después de que todo el entorno haya cargado
+      setTimeout(actualizarBancosMixtoAPI, 1000);
 
     })();
 

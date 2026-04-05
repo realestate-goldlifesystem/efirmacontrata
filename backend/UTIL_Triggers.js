@@ -65,3 +65,77 @@ function desinstalarTriggerAutoRename() {
         console.log('No se encontraron triggers de AutoRename para borrar.');
     }
 }
+
+/**
+ * Instala el Cron Job Diario para actualizar bancos en caché
+ */
+function instalarTriggerCacheBancos() {
+    const fnName = 'cronJobActualizarBancos';
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(t => {
+        if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
+    });
+
+    // Se ejecutará todos los días a las 3:00 AM (Aprox)
+    ScriptApp.newTrigger(fnName)
+        .timeBased()
+        .everyDays(1)
+        .atHour(3)
+        .create();
+
+    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Bancos activado (Ejecución Diaria 3:00 AM).');
+}
+
+/**
+ * Este es el "Robot" que se ejecuta oculto cada día.
+ * Descarga de la API y lo salva en PropertiesService para velocidad luz.
+ */
+function cronJobActualizarBancos() {
+    try {
+        const URL_API_BANCOS = 'https://ejemplo.com/api/bancos-colombia'; // Reemplazar con endpoint Wompi/PayZen
+        
+        // --- SIMULACIÓN SI NO HAY API OFICIAL CONFIGURADA AUN ---
+        // (Aquí harías const res = UrlFetchApp.fetch(URL_API_BANCOS); const bancosApi = JSON.parse(res.getContentText());)
+        
+        // Simulación: La API retornó una lista fresca que incluye "Banco Nuevo Colombia"
+        const bancosSimuladosDesdeAPI = [
+            { nombre: "Bancolombia" },
+            { nombre: "Nequi" },
+            { nombre: "Daviplata" },
+            { nombre: "Banco Davivienda" },
+            { nombre: "Banco de Bogotá" },
+            { nombre: "BBVA Colombia" },
+            { nombre: "Itaú" },
+            { nombre: "Lulo Bank" },
+            { nombre: "RappiPay" },
+            { nombre: "Banco Falabella" },
+            { nombre: "Mibanco" },
+            { nombre: "Banco Nuevo Colombia (Test API)" } // <-- Dato Nuevo
+        ];
+        
+        const jsonBancos = JSON.stringify(bancosSimuladosDesdeAPI);
+        
+        // GUARDAMOS EN MEMORIA ULTRA-RAPIDA (Caché duradera)
+        PropertiesService.getScriptProperties().setProperty('CACHE_BANCOS_COLOMBIA', jsonBancos);
+        Logger.log('✅ CronJob: Bancos actualizados con éxito a las 3:00 AM');
+        
+    } catch (e) {
+        Logger.log('❌ Error en CronJob Bancos: ' + e.message);
+    }
+}
+
+/**
+ * Lee la caché instantánea desde el Frontend
+ * @returns {Array} Lista de Bancos (o null si está vacío)
+ */
+function obtenerBancosDesdeCaché() {
+    try {
+        const str = PropertiesService.getScriptProperties().getProperty('CACHE_BANCOS_COLOMBIA');
+        if (str) {
+            return JSON.parse(str);
+        }
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
