@@ -2821,7 +2821,7 @@
                         google.script.run
                             .withSuccessHandler(function() {
                                 mostrarToast('✅ Servicio guardado en el Cerebro: ' + empresa, 'success');
-                                // Actualizar caché local para que aparezca en la lista de Servicios
+                                // Actualizar caché local
                                 const reg = getRegistroData();
                                 if (reg) {
                                     if (!reg.servicios) reg.servicios = [];
@@ -2831,8 +2831,15 @@
                                     } else {
                                         reg.servicios.push({ servicio: empresa, referencia: referencia });
                                     }
+                                    // Actualizar SOLO la lista visual, sin tocar los campos ni resetear el panel
+                                    const container = document.getElementById('serviciosGuardadosContainer');
+                                    if (container && reg.servicios.length > 0) {
+                                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;">📋 Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
+                                        reg.servicios.forEach(s => { html += `<li style="font-size:0.85rem;">${s.servicio}: <strong>${s.referencia}</strong></li>`; });
+                                        html += '</ul></div>';
+                                        container.innerHTML = html;
+                                    }
                                 }
-                                cargarDatosCerebroPorPersona('servicios');
                             })
                             .withFailureHandler(function(err) {
                                 mostrarToast('⚠️ OCR extrajo datos pero falló al guardar: ' + err.message, 'error');
