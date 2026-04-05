@@ -1770,6 +1770,9 @@
         let contratoActualContext = null;
 
         function generarContrato(cdr) {
+            const btn = event.currentTarget || event.target; // Capturar ANTES del Swal
+            const originalText = btn ? btn.innerHTML : '';
+
             Swal.fire({
                 title: '¿Generar Borrador?',
                 text: `Se generará el borrador del contrato para ${cdr}.`,
@@ -1778,15 +1781,11 @@
                 confirmButtonText: 'Sí, generar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const btn = event.target;
-                    const originalText = btn.innerHTML;
-                    btn.disabled = true;
-                    btn.innerHTML = '⏳ Generando...';
+                    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Generando...'; }
 
                     google.script.run
                         .withSuccessHandler(function (res) {
-                            btn.disabled = false;
-                            btn.innerHTML = originalText;
+                            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
                             if (res.success) {
                                 abrirModalContrato(cdr, res);
                             } else {
@@ -1794,8 +1793,7 @@
                             }
                         })
                         .withFailureHandler(function (err) {
-                            btn.disabled = false;
-                            btn.innerHTML = originalText;
+                            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
                             Swal.fire('Error de red', err.message, 'error');
                         })
                         .generarContrato(cdr, 'Borrador');
