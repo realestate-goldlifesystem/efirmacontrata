@@ -2805,6 +2805,9 @@
                         document.getElementById('cerebro_tipoServicio').value = res.datos.empresa || 'Desconocida';
                         document.getElementById('cerebro_refServicio').value = res.datos.referenciaPago || 'No detectada';
                         
+                        // Mostrar botones de Guardar/Cancelar automáticamente
+                        toggleEditCerebro();
+
                         mostrarToast('Análisis OCR de recibo completado', 'success');
                     } else {
                         alert('❌ Error OCR: ' + res.message);
@@ -3364,6 +3367,9 @@
                     document.getElementById('cerebro_matricula').value = data.matricula;
                     document.getElementById('cerebro_direccion').value = data.direccion;
                     document.getElementById('cerebro_ciudadInmueble').value = data.ciudad;
+
+                    // Mostrar botones de Guardar/Cancelar automáticamente
+                    toggleEditCerebro();
 
                     // Mostrar Badges Visuales
                     badgesContainer.style.display = 'flex';
