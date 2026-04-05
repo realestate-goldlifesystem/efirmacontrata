@@ -443,8 +443,7 @@
           <div class="step" data-step="1">2</div>
           <div class="step" data-step="2">3</div>
           <div class="step" data-step="3">4</div>
-          <div class="step" data-step="4">5</div>
-          <div class="step" data-step="5">✓</div>
+          <div class="step" data-step="4">✓</div>
         </div>
 
         <!-- Step 1: Datos Personales -->
@@ -713,32 +712,8 @@
           </div>
         </div>
 
-        <!-- Step 5: Pago -->
+        <!-- Step 5: Resumen -->
         <div class="step-pane" data-pane="4">
-          <h3>💳 Pago del Estudio</h3>
-          <div class="card">
-            <div class="card-body">
-              <h4>Valor: $60.000 COP</h4>
-              <p>Seleccione su método de pago preferido:</p>
-
-              <div class="payment-options">
-                <button id="btnPayBreb" class="btn btn-secondary btn-lg btn-block">
-                  📱 Pagar con Nequi/Daviplata
-                </button>
-                <button id="btnPayWompi" class="btn btn-primary btn-lg btn-block">
-                  💳 Pagar con Tarjeta
-                </button>
-              </div>
-
-              <div class="alert alert-info" style="margin-top:1rem">
-                <small>Una vez realizado el pago, puede continuar con el envío del formulario.</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 6: Resumen -->
-        <div class="step-pane" data-pane="5">
           <h3>📄 Resumen de Información</h3>
           <div id="resumen"></div>
         </div>
@@ -842,7 +817,7 @@
         modoCorreccion: false,
         docsCorreccion: [],
         step: 0,
-        max: 5,
+        max: 4,
         archivos: {},
         servicios: [],
         maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024),
@@ -1178,13 +1153,12 @@
       // --------- Wizard ----------
 
       // Propietario: Step 0=datos, Step 1=docs(docFront,docBack,certTradicion,sarlaft),
-      // Step 2=bancario(certBancario), Step 3=servicios(facturas), Step 4=pago, Step 5=resumen
+      // Step 2=bancario(certBancario), Step 3=servicios(facturas), Step 4=resumen
       function getStepFileKeys(step) {
         if (step === 1) return ['docFront', 'docBack', 'certTradicion', 'sarlaft'];
         if (step === 2) return ['certBancario'];
         if (step === 3) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'];
-        if (step === 4) return []; // Pago - sin archivos de corrección relevantes aquí
-        return []; // Step 0 y 5 no tienen archivos
+        return []; // Step 0 y 4 no tienen archivos
       }
 
       function isStepNeededInCorrection(step) {
@@ -1705,9 +1679,6 @@
           { id: 'docTitular', isType: 'input', el: el.docTitular },
           { id: 'certBancario', isType: 'file' }
         ];
-        if (step === 4) return [
-          { id: 'comprobantePago', isType: 'file' }
-        ];
         return [];
       }
 
@@ -1751,10 +1722,6 @@
           case 3: {
             if (state.modoCorreccion) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
             return true;
-          }
-          case 4: {
-            if (state.modoCorreccion) return !state.docsCorreccion.includes('comprobantePago') || !!state.archivos['comprobantePago'];
-            return !!state.archivos['comprobantePago'];
           }
           default: return true;
         }
@@ -1856,16 +1823,6 @@
                   showAlert('warning', 'Falta adjuntar factura de servicio público para corrección.');
                   return false;
                 }
-              }
-              return true;
-            }
-            return true;
-
-          case 4: // Pago - opcional
-            if (state.modoCorreccion) {
-              if (state.docsCorreccion.includes('comprobantePago') && !state.archivos['comprobantePago']) {
-                showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar con la corrección.');
-                return false;
               }
               return true;
             }
