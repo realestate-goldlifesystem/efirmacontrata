@@ -748,6 +748,52 @@ function actualizarDatosCerebro(datos) {
         body.replaceText('BANCO::.*', 'BANCO:: ' + (datos.banco || ''));
         body.replaceText('TITULAR::.*', 'TITULAR:: ' + (datos.titularCuenta || ''));
         body.replaceText('DOC TITULAR::.*', 'DOC TITULAR:: ' + (datos.documentoTitular || ''));
+
+      } else if (datos.isInmueble) {
+        // Reemplazar o agregar datos del inmueble en el Cerebro
+        const matricula = datos.matricula || '';
+        const direccionInm = datos.direccionInmueble || '';
+        const ciudadInm = datos.ciudadInmueble || '';
+        const certTrad = datos.certTradicion || '';
+
+        const bodyText = body.getText();
+        if (bodyText.includes('MATRICULA_INMOBILIARIA::')) {
+          body.replaceText('MATRICULA_INMOBILIARIA::.*', 'MATRICULA_INMOBILIARIA:: ' + matricula);
+        } else {
+          body.appendParagraph('MATRICULA_INMOBILIARIA:: ' + matricula);
+        }
+        if (bodyText.includes('DIRECCION_INMUEBLE::')) {
+          body.replaceText('DIRECCION_INMUEBLE::.*', 'DIRECCION_INMUEBLE:: ' + direccionInm);
+        } else {
+          body.appendParagraph('DIRECCION_INMUEBLE:: ' + direccionInm);
+        }
+        if (bodyText.includes('CIUDAD_INMUEBLE::')) {
+          body.replaceText('CIUDAD_INMUEBLE::.*', 'CIUDAD_INMUEBLE:: ' + ciudadInm);
+        } else {
+          body.appendParagraph('CIUDAD_INMUEBLE:: ' + ciudadInm);
+        }
+        if (bodyText.includes('CERT_TRADICION_ESTADO::')) {
+          body.replaceText('CERT_TRADICION_ESTADO::.*', 'CERT_TRADICION_ESTADO:: ' + certTrad);
+        } else {
+          body.appendParagraph('CERT_TRADICION_ESTADO:: ' + certTrad);
+        }
+
+        // También actualizar la hoja principal con la matrícula y dirección
+        const headers2 = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        const matriculaCol = headers2.findIndex(h => h && h.toString().toUpperCase().includes('MATRICULA_INMOBILIARIA'));
+        const ciudadCol    = headers2.findIndex(h => h && h.toString().toUpperCase().trim() === 'CIUDAD');
+        if (matriculaCol > -1 && matricula) sheet.getRange(rowIdx, matriculaCol + 1).setValue(matricula);
+        if (ciudadCol > -1 && ciudadInm) sheet.getRange(rowIdx, ciudadCol + 1).setValue(ciudadInm);
+
+      } else if (datos.isServicio) {
+        // Agregar o actualizar línea de servicio en el Cerebro
+        const claveServicio = 'SERVICIO ' + datos.servicio.toUpperCase() + '::';
+        if (body.getText().includes(claveServicio)) {
+          body.replaceText(claveServicio + '.*', claveServicio + ' ' + datos.referencia);
+        } else {
+          body.appendParagraph(claveServicio + ' ' + datos.referencia);
+        }
+
       } else if (!datos.isCodeudor) {
         // Reemplazar campos del inquilino/propietario
         if (datos.tipo === 'inquilino') {
@@ -1264,6 +1310,35 @@ function obtenerRegistrosPropietarios() {
 
         const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';
 
+        // Datos del inmueble desde la hoja
+        const matricula = obtenerValorPorHeader(headers, row, 'MATRICULA_INMOBILIARIA') || '';
+        const direccionInm = obtenerValorPorHeader(headers, row, 'Ingrese la Dirección del inmueble') || '';
+        const ciudadInm = obtenerValorPorHeader(headers, row, 'Ciudad') || '';
+
+        // Datos bancarios
+        const tipoCuenta = obtenerValorPorHeader(headers, row, 'Tipo de cuenta') || '';
+        const numeroCuenta = obtenerValorPorHeader(headers, row, 'Numero de cuenta') || '';
+        const banco = obtenerValorPorHeader(headers, row, 'Banco') || '';
+        const titularCuenta = obtenerValorPorHeader(headers, row, 'Titular de la cuenta') || '';
+        const documentoTitular = obtenerValorPorHeader(headers, row, 'Número de documento del titular') || '';
+
+        // Servicios: leer del Cerebro
+        let servicios = [];
+        let certTradicion = '';
+        try {
+          const cdrVal = obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO');
+          const cerebroDoc = abrirDocCerebro(cdrVal);
+          if (cerebroDoc) {
+            const lines = cerebroDoc.getBody().getText().split('\n');
+            lines.forEach(line => {
+              const match = line.match(/^SERVICIO\s+(.+?)::\s+(.+)$/i);
+              if (match) servicios.push({ servicio: match[1].trim(), referencia: match[2].trim() });
+              const certMatch = line.match(/^CERT_TRADICION_ESTADO::\s+(.+)$/i);
+              if (certMatch) certTradicion = certMatch[1].trim();
+            });
+          }
+        } catch(e) { /* Cerebro no disponible: continuar sin servicios */ }
+
         registros.push({
           cdr: obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO'),
           detalles: detalles,
@@ -1272,8 +1347,20 @@ function obtenerRegistrosPropietarios() {
             nombre: obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos'),
             documento: obtenerValorPorHeader(headers, row, 'Número de documento'),
             email: obtenerValorPorHeader(headers, row, 'Correo electrónico'),
-            celular: obtenerValorPorHeader(headers, row, 'Celular')
-          }
+            celular: obtenerValorPorHeader(headers, row, 'Celular'),
+            tipoCuenta: tipoCuenta,
+            numeroCuenta: numeroCuenta,
+            banco: banco,
+            titularCuenta: titularCuenta,
+            documentoTitular: documentoTitular
+          },
+          inmueble: {
+            matricula: matricula,
+            direccion: direccionInm,
+            ciudad: ciudadInm,
+            certTradicion: certTradicion
+          },
+          servicios: servicios
         });
       }
     }

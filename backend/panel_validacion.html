@@ -1354,11 +1354,11 @@
                                         <input type="text" id="cerebro_docTitular" value="">
                                     </div>
                                 </div>
-                                <!-- Sección: Datos Inmueble (para futuro) -->
+                                <!-- Sección: Datos Inmueble -->
                                 <div id="seccionDatosInmueble" data-section="inmueble" style="display:none;">
                                     <div style="background: var(--light); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid #e2e8f0; text-align: center;">
                                          <h4 style="margin: 0 0 0.5rem 0; color: var(--dark);">Análisis Inteligente de Documento</h4>
-                                         <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 1rem;">Extrae y cruza la información del Certificado con los datos del Propietario usando Inteligencia Artificial.</p>
+                                         <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 1rem;">Extrae la información del Certificado con OCR, o edita manualmente los datos del inmueble.</p>
                                          <button id="btnAnalizarOCR" class="btn btn-primary" onclick="analizarCertificadoOCR()" style="width: 100%; justify-content: center; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);">
                                              🔍 Analizar Certificado con OCR
                                          </button>
@@ -1369,19 +1369,19 @@
                                     
                                     <div class="cerebro-field">
                                         <label>Nro. Matrícula Inmobiliaria</label>
-                                        <input type="text" id="cerebro_matricula" value="" placeholder="Generado por OCR..." readonly style="background: #f1f5f9; cursor: not-allowed;">
+                                        <input type="text" id="cerebro_matricula" value="" placeholder="Ej: 050-12345">
                                     </div>
                                     <div class="cerebro-field">
                                         <label>Dirección del Inmueble</label>
-                                        <input type="text" id="cerebro_direccion" value="" placeholder="Generado por OCR..." readonly style="background: #f1f5f9; cursor: not-allowed;">
+                                        <input type="text" id="cerebro_direccion" value="" placeholder="Ej: CRA 8 # 170-52 APTO 305">
                                     </div>
                                     <div class="cerebro-field">
                                         <label>Ciudad</label>
-                                        <input type="text" id="cerebro_ciudadInmueble" value="" placeholder="Generado por OCR..." readonly style="background: #f1f5f9; cursor: not-allowed;">
+                                        <input type="text" id="cerebro_ciudadInmueble" value="" placeholder="Ej: Bogotá D.C.">
                                     </div>
                                     <div class="cerebro-field">
                                         <label>Certificado de Tradición</label>
-                                        <input type="text" id="cerebro_certTradicion" value="Pendiente" disabled>
+                                        <input type="text" id="cerebro_certTradicion" value="" placeholder="APROBADO / PENDIENTE">
                                     </div>
                                 </div>
                                 
@@ -1389,21 +1389,21 @@
                                 <div id="seccionDatosServicios" data-section="servicios" style="display:none;">
                                     <div style="background: #f0fdf4; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid #bbf7d0; text-align: center;">
                                          <h4 style="margin: 0 0 0.5rem 0; color: #166534;">Análisis de Recibos Públicos</h4>
-                                         <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 1rem;">Extrae el número de referencia, cuenta contrato o cliente del recibo de servicio seleccionado.</p>
+                                         <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 1rem;">Extrae el número de referencia del recibo con OCR, o escríbelo manualmente y guarda.</p>
                                          <button id="btnAnalizarReciboOCR" class="btn" style="width: 100%; justify-content: center; background-color: #22c55e; color: white;" onclick="analizarReciboOCR()">
                                              🔍 Analizar Recibo con OCR
                                          </button>
                                     </div>
                                     
                                     <div class="cerebro-field">
-                                        <label>Servicio Detectado</label>
-                                        <input type="text" id="cerebro_tipoServicio" value="" placeholder="Esperando análisis..." readonly style="background: #f1f5f9; cursor: not-allowed;">
+                                        <label>Servicio (Ej: Agua, Luz, Gas...)</label>
+                                        <input type="text" id="cerebro_tipoServicio" value="" placeholder="Ej: ACUEDUCTO, ENEL, GAS NATURAL">
                                     </div>
                                     <div class="cerebro-field">
                                         <label>Nro. Cuenta / Referencia de Pago</label>
-                                        <!-- Editable para permitir corrección manual de fallos del OCR -->
-                                        <input type="text" id="cerebro_refServicio" value="" placeholder="Generado por OCR...">
+                                        <input type="text" id="cerebro_refServicio" value="" placeholder="Número de cuenta o referencia">
                                     </div>
+                                    <div id="serviciosGuardadosContainer" style="margin-top:1rem;"></div>
                                 </div>
                             </div>
                             <div id="cerebroActions" class="cerebro-actions" style="display:none;">
@@ -2473,8 +2473,37 @@
                 return;
             }
 
-            if (personKey === 'inmueble' || personKey === 'servicios') {
-                // Futuro: llenar datos del inmueble o recibos de ser necesario si se quieren guardar
+            if (personKey === 'inmueble') {
+                const registro = getRegistroData();
+                if (!registro) return;
+                const inm = registro.inmueble || {};
+                document.getElementById('cerebro_matricula').value = inm.matricula || '';
+                document.getElementById('cerebro_direccion').value = inm.direccion || '';
+                document.getElementById('cerebro_ciudadInmueble').value = inm.ciudad || '';
+                document.getElementById('cerebro_certTradicion').value = inm.certTradicion || '';
+                datosCerebroAnteriores = { ...inm };
+                return;
+            }
+
+            if (personKey === 'servicios') {
+                const registro = getRegistroData();
+                if (!registro) return;
+                // Renderizar servicios guardados
+                const servs = registro.servicios || [];
+                const container = document.getElementById('serviciosGuardadosContainer');
+                if (container) {
+                    if (servs.length > 0) {
+                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;">📋 Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
+                        servs.forEach(s => { html += `<li style="font-size:0.85rem;">${s.servicio}: <strong>${s.referencia}</strong></li>`; });
+                        html += '</ul></div>';
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p style="font-size:0.8rem; color:#6b7280; margin-top:0.5rem;">Ningún servicio guardado aún.</p>';
+                    }
+                }
+                document.getElementById('cerebro_tipoServicio').value = '';
+                document.getElementById('cerebro_refServicio').value = '';
+                datosCerebroAnteriores = {};
                 return;
             }
 
@@ -2530,6 +2559,21 @@
                 nuevosDatos.oldBanco = datosCerebroAnteriores.banco || '';
                 nuevosDatos.oldTitularCuenta = datosCerebroAnteriores.titularCuenta || '';
                 nuevosDatos.oldDocumentoTitular = datosCerebroAnteriores.documentoTitular || '';
+            } else if (personaActivaKey === 'inmueble') {
+                nuevosDatos.isInmueble = true;
+                nuevosDatos.matricula = document.getElementById('cerebro_matricula').value;
+                nuevosDatos.direccionInmueble = document.getElementById('cerebro_direccion').value;
+                nuevosDatos.ciudadInmueble = document.getElementById('cerebro_ciudadInmueble').value;
+                nuevosDatos.certTradicion = document.getElementById('cerebro_certTradicion').value;
+            } else if (personaActivaKey === 'servicios') {
+                nuevosDatos.isServicio = true;
+                nuevosDatos.servicio = document.getElementById('cerebro_tipoServicio').value.trim();
+                nuevosDatos.referencia = document.getElementById('cerebro_refServicio').value.trim();
+                if (!nuevosDatos.servicio || !nuevosDatos.referencia) {
+                    mostrarToast('⚠️ Ingresa el servicio y la referencia antes de guardar.', 'error');
+                    btn.textContent = originalText; btn.disabled = false;
+                    return;
+                }
             } else {
                 // Modo personal (original)
                 nuevosDatos.nombre = document.getElementById('cerebro_nombre').value;
@@ -2558,6 +2602,21 @@
                             registro.propietario.banco = nuevosDatos.banco;
                             registro.propietario.titularCuenta = nuevosDatos.titularCuenta;
                             registro.propietario.documentoTitular = nuevosDatos.documentoTitular;
+                        } else if (nuevosDatos.isInmueble) {
+                            if (!registro.inmueble) registro.inmueble = {};
+                            registro.inmueble.matricula = nuevosDatos.matricula;
+                            registro.inmueble.direccion = nuevosDatos.direccionInmueble;
+                            registro.inmueble.ciudad = nuevosDatos.ciudadInmueble;
+                            registro.inmueble.certTradicion = nuevosDatos.certTradicion;
+                        } else if (nuevosDatos.isServicio) {
+                            if (!registro.servicios) registro.servicios = [];
+                            // Evitar duplicados del mismo servicio
+                            const idx = registro.servicios.findIndex(s => s.servicio.toUpperCase() === nuevosDatos.servicio.toUpperCase());
+                            if (idx > -1) {
+                                registro.servicios[idx].referencia = nuevosDatos.referencia;
+                            } else {
+                                registro.servicios.push({ servicio: nuevosDatos.servicio, referencia: nuevosDatos.referencia });
+                            }
                         } else if (!nuevosDatos.isCodeudor) {
                             const dataObj = nuevosDatos.tipo === 'inquilino' ? registro.inquilino : registro.propietario;
                             if (dataObj) {
