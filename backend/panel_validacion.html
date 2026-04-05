@@ -2993,10 +2993,10 @@
             let correcciones = 0;
 
             for (let person in documentosData) {
-                if (!Array.isArray(documentosData[person])) continue; // Ignorar mapas no-doc
-                const docsObj = documentosData[person] || [];
-                totalDocsCount += docsObj.length;
-                docsObj.forEach(doc => {
+                if (!Array.isArray(documentosData[person])) continue;
+                documentosData[person].forEach(doc => {
+                    if (!doc || !doc.fileId) return; // Ignorar docs sin fileId
+                    totalDocsCount++;
                     const id = doc.fileId;
                     if (validacionEstado[id] === 'aprobado') aprobados++;
                     if (validacionEstado[id] === 'correccion') correcciones++;
@@ -3021,14 +3021,19 @@
         }
 
         function verificarAprobacionGlobal() {
-            // Conta cuantas keys hay en total en documentosData
+            // Solo contar docs que tienen fileId válido (pueden ser evaluados)
             let totalDocsCount = 0;
+            let evalCount = 0;
+
             for (let person in documentosData) {
-                if (!Array.isArray(documentosData[person])) continue; // Ignorar mapas no-doc
-                totalDocsCount += (documentosData[person] || []).length;
+                if (!Array.isArray(documentosData[person])) continue;
+                documentosData[person].forEach(doc => {
+                    if (!doc || !doc.fileId) return; // Ignorar docs sin fileId
+                    totalDocsCount++;
+                    if (validacionEstado[doc.fileId]) evalCount++; // aprobado o correccion
+                });
             }
 
-            const evalCount = Object.keys(validacionEstado).length;
             const btnGlobalContainer = document.getElementById('boxAccionesGlobales');
 
             if (evalCount === totalDocsCount && totalDocsCount > 0) {
