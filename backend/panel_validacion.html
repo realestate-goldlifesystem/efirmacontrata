@@ -2801,14 +2801,44 @@
                     btn.disabled = false;
 
                     if (res.success) {
-                        // Llenar campos del Cerebro
-                        document.getElementById('cerebro_tipoServicio').value = res.datos.empresa || 'Desconocida';
-                        document.getElementById('cerebro_refServicio').value = res.datos.referenciaPago || 'No detectada';
-                        
-                        // Mostrar botones de Guardar/Cancelar automáticamente
-                        toggleEditCerebro();
+                        const empresa = res.datos.empresa || 'Desconocida';
+                        const referencia = res.datos.referenciaPago || 'No detectada';
 
-                        mostrarToast('Análisis OCR de recibo completado', 'success');
+                        // Llenar campos visualmente
+                        document.getElementById('cerebro_tipoServicio').value = empresa;
+                        document.getElementById('cerebro_refServicio').value = referencia;
+
+                        // AUTOGUARDAR en el Cerebro sin necesidad de botón
+                        const autoGuardado = {
+                            cdr: registroActual,
+                            tipo: tipoActual,
+                            isCodeudor: false,
+                            isServicio: true,
+                            servicio: empresa,
+                            referencia: referencia
+                        };
+
+                        google.script.run
+                            .withSuccessHandler(function() {
+                                mostrarToast('✅ Servicio guardado en el Cerebro: ' + empresa, 'success');
+                                // Actualizar caché local para que aparezca en la lista de Servicios
+                                const reg = getRegistroData();
+                                if (reg) {
+                                    if (!reg.servicios) reg.servicios = [];
+                                    const idx = reg.servicios.findIndex(s => s.servicio.toUpperCase() === empresa.toUpperCase());
+                                    if (idx > -1) {
+                                        reg.servicios[idx].referencia = referencia;
+                                    } else {
+                                        reg.servicios.push({ servicio: empresa, referencia: referencia });
+                                    }
+                                }
+                                cargarDatosCerebroPorPersona('servicios');
+                            })
+                            .withFailureHandler(function(err) {
+                                mostrarToast('⚠️ OCR extrajo datos pero falló al guardar: ' + err.message, 'error');
+                            })
+                            .actualizarDatosCerebro(autoGuardado);
+
                     } else {
                         alert('❌ Error OCR: ' + res.message);
                     }
@@ -3361,15 +3391,43 @@
                     }
 
                     const data = response.datos;
-                    mostrarToast('Análisis OCR completado correctamente.', 'success');
+                    mostrarToast('⏳ OCR completado. Guardando en el Cerebro...', 'success');
 
                     // Rellenar Formularios
-                    document.getElementById('cerebro_matricula').value = data.matricula;
-                    document.getElementById('cerebro_direccion').value = data.direccion;
-                    document.getElementById('cerebro_ciudadInmueble').value = data.ciudad;
+                    document.getElementById('cerebro_matricula').value = data.matricula || '';
+                    document.getElementById('cerebro_direccion').value = data.direccion || '';
+                    document.getElementById('cerebro_ciudadInmueble').value = data.ciudad || '';
 
-                    // Mostrar botones de Guardar/Cancelar automáticamente
-                    toggleEditCerebro();
+                    // AUTOGUARDAR en el Cerebro sin necesidad de botón
+                    const autoGuardado = {
+                        cdr: registroActual,
+                        tipo: tipoActual,
+                        isCodeudor: false,
+                        isInmueble: true,
+                        matricula: data.matricula || '',
+                        direccionInmueble: data.direccion || '',
+                        ciudadInmueble: data.ciudad || '',
+                        certTradicion: 'RECIBIDO'
+                    };
+
+                    google.script.run
+                        .withSuccessHandler(function() {
+                            mostrarToast('✅ Datos del Certificado guardados en el Cerebro.', 'success');
+                            // Actualizar caché local para que se vean en Datos Formulario
+                            const reg = getRegistroData();
+                            if (reg) {
+                                if (!reg.inmueble) reg.inmueble = {};
+                                reg.inmueble.matricula = autoGuardado.matricula;
+                                reg.inmueble.direccion = autoGuardado.direccionInmueble;
+                                reg.inmueble.ciudad = autoGuardado.ciudadInmueble;
+                                reg.inmueble.certTradicion = autoGuardado.certTradicion;
+                            }
+                            cargarDatosCerebroPorPersona('inmueble');
+                        })
+                        .withFailureHandler(function(err) {
+                            mostrarToast('⚠️ OCR extrajo datos pero falló al guardar: ' + err.message, 'error');
+                        })
+                        .actualizarDatosCerebro(autoGuardado);
 
                     // Mostrar Badges Visuales
                     badgesContainer.style.display = 'flex';
