@@ -1146,6 +1146,7 @@
                 <h2>📝 Elaboración de Contrato - <span id="modalContratoCdr"></span></h2>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <span id="badgeEstadoContrato" class="badge" style="background:var(--warning); color:black;">Borrador</span>
+                    <a id="linkAbrirDocNueva" href="#" target="_blank" style="font-size:0.85rem; color:#3b82f6; text-decoration:none; white-space:nowrap;">🔗 Abrir en nueva pestaña</a>
                     <button class="close-modal" onclick="cerrarModalContrato()">&times;</button>
                 </div>
             </div>
@@ -1862,9 +1863,16 @@
             }
             document.getElementById('contenedorDatosContrato').innerHTML = htmlDatos;
 
-            // Mostrar el iframe
+            // Mostrar el iframe — usar /preview para embeber correctamente
             document.getElementById('loaderContrato').style.display = 'block';
-            document.getElementById('iframeContrato').src = resData.url + '?rm=embedded';
+            const embedUrl = resData.docId
+                ? `https://docs.google.com/document/d/${resData.docId}/preview`
+                : (resData.url ? resData.url.replace('/edit', '/preview').replace(/[?&].*$/, '') : '');
+            document.getElementById('iframeContrato').src = embedUrl;
+
+            // Mostrar enlace para abrir en pestaña nueva
+            const linkAbrirDoc = document.getElementById('linkAbrirDocNueva');
+            if (linkAbrirDoc) linkAbrirDoc.href = resData.url || '#';
 
             // Resetear layout
             document.getElementById('contratoModalBody').classList.remove('layout-validacion');
