@@ -5,8 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Validación - E-FirmaContrata</title>
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* Variables de diseño */
         :root {
@@ -3521,6 +3519,25 @@
                 .analizarCertificadoDesdePanel(certDoc.fileId, datosPropietarioForm);
         }
 
+    </script>
+
+    <!-- Swal shim: reemplaza SweetAlert2 con confirm/alert nativo para compatibilidad con Apps Script -->
+    <script>
+        var Swal = {
+            fire: function(titleOrOpts, msg, icon) {
+                // Soporte para Swal.fire(opts) y Swal.fire(title, msg, icon)
+                var opts = (typeof titleOrOpts === 'object' && titleOrOpts !== null) ? titleOrOpts : { title: titleOrOpts, text: msg, icon: icon };
+                var hasCancel = opts.showCancelButton;
+                var message = (opts.title ? opts.title + '\n' : '') + (opts.text || '');
+                if (hasCancel) {
+                    var confirmed = window.confirm(message);
+                    return Promise.resolve({ isConfirmed: confirmed, isDismissed: !confirmed });
+                } else {
+                    if (message) window.alert(message);
+                    return Promise.resolve({ isConfirmed: true, isDismissed: false });
+                }
+            }
+        };
     </script>
 </body>
 
