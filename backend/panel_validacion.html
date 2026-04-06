@@ -1606,6 +1606,14 @@
     </div>
 
     <script>
+        // === DIAGNÓSTICO: capturar CUALQUIER error JS global ===
+        window.onerror = function(msg, src, line, col, err) {
+            var div = document.createElement('div');
+            div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:white;padding:8px 12px;font-size:13px;z-index:99999;font-family:monospace;';
+            div.textContent = '🐛 JS Error: ' + msg + ' (línea ' + line + ')';
+            document.body && document.body.appendChild(div);
+            return false;
+        };
         // Configuración
         const API_URL = google.script.run;
         let registroActual = null;
