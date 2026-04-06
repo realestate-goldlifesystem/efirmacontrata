@@ -1541,7 +1541,7 @@
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay"
-        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; display:none; align-items:center; justify-content:center;">
+        style="display:none; pointer-events:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
         <div
             style="background:white; padding:2rem 3rem; border-radius:16px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
             <div class="spinner"
@@ -1556,7 +1556,7 @@
 
     <!-- ═══ PROGRESS OVERLAY (0-100%) ═══ -->
     <div id="progressOverlay"
-        style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:20000; align-items:center; justify-content:center;">
+        style="display:none; pointer-events:none; position:fixed; inset:0; background:rgba(15,23,42,0.85); z-index:20000; align-items:center; justify-content:center;">
         <div
             style="background:white; padding:2.5rem 3rem; border-radius:20px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.4); min-width:320px;">
             <div class="progress-ring-container"
@@ -1593,10 +1593,12 @@
 
         #loadingOverlay.show {
             display: flex !important;
+            pointer-events: all !important;
         }
 
         #progressOverlay.show {
             display: flex !important;
+            pointer-events: all !important;
         }
     </style>
 
