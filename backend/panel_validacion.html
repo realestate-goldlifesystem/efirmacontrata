@@ -111,6 +111,36 @@
             display: block;
         }
 
+        /* MAGIC CSS-ONLY TABS (Fase 2) */
+        .css-tab-radio {
+            display: none !important;
+        }
+
+        /* Ocultar todos por defecto mediante CSS estricto */
+        .tab-content {
+            display: none !important;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Mostrar el tab correcto cuando su radio este marcado */
+        #rdInquilinos:checked ~ #tabInquilinos,
+        #rdPropietarios:checked ~ #tabPropietarios,
+        #rdContratos:checked ~ #tabContratos,
+        #rdConfiguracion:checked ~ #tabConfiguracion {
+            display: block !important;
+        }
+
+        /* Colorear el label correspondiente en la navbar */
+        #rdInquilinos:checked ~ .tabs-nav #lblInquilinos,
+        #rdPropietarios:checked ~ .tabs-nav #lblPropietarios,
+        #rdContratos:checked ~ .tabs-nav #lblContratos,
+        #rdConfiguracion:checked ~ .tabs-nav #lblConfiguracion {
+            background-color: var(--primary);
+            color: #1e293b;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -459,6 +489,16 @@
             color: var(--dark);
             border-color: var(--primary);
             transform: translateY(-2px);
+        }
+
+        .tab-btn:hover {
+            color: var(--dark);
+            transform: translateY(-2px);
+            background: #e2e8f0;
+        }
+
+        .tab-btn * {
+            pointer-events: none;
         }
 
         .doc-item.active {
@@ -919,34 +959,66 @@
 </head>
 
 <body>
-    <div class="container">
+        <div class="container">
+        <!-- SECRET HACK PARA TABS 100% CSS (No requiere JS) -->
+        <input type="radio" name="main-tabs" id="rdInquilinos" class="css-tab-radio" checked>
+        <input type="radio" name="main-tabs" id="rdPropietarios" class="css-tab-radio">
+        <input type="radio" name="main-tabs" id="rdContratos" class="css-tab-radio">
+        <input type="radio" name="main-tabs" id="rdConfiguracion" class="css-tab-radio">
         <!-- Header Principal -->
         <div class="main-header">
-            <h1>🔍 Panel de Validación - E-FirmaContrata</h1>
+            <h1>&#128269; Panel de Validación - E-FirmaContrata</h1>
             <p>Sistema de validación de documentos y generación de contratos</p>
         </div>
 
-        <!-- Tabs Navigation -->
-        <div class="tabs-nav">
-            <button class="tab-btn active" onclick="cambiarTab('inquilinos', this)">
-                📋 Inquilinos
-            </button>
-            <button class="tab-btn" onclick="cambiarTab('propietarios', this)">
-                🏠 Propietarios
-            </button>
-            <button class="tab-btn" onclick="cambiarTab('contratos', this)">
-                📄 Contratos
-            </button>
-            <button class="tab-btn" onclick="cambiarTab('configuracion', this)">
-                ⚙️ Configuración
-            </button>
+        <!-- DEBUG TRACE VISUAL (TEMPORAL) -->
+        <div id="visualDebug" style="background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; max-height:100px; overflow-y:auto; margin-bottom:10px;">
+            > INICIO DEBUG<br>
+        </div>
+
+        <script>
+            function pushDebug(msg) {
+                var d = document.getElementById('visualDebug');
+                if (d) {
+                    d.innerHTML += '> ' + msg + '<br>';
+                    d.scrollTop = d.scrollHeight;
+                }
+            }
+            window.onerror = function(msg, src, line, col, err) {
+                pushDebug('<span style="color:red">ERROR GLOBAL: ' + msg + ' (Línea ' + line + ')</span>');
+                return false;
+            };
+            window.addEventListener('error', function(e) {
+                if (e.message) {
+                    pushDebug('<span style="color:red">EVENT ERROR: ' + e.message + '</span>');
+                }
+            }, true);
+        </script>
+
+                <!-- Tabs Navigation (100% CSS Driven) -->
+        <div class="tabs-nav" id="mainTabsNav">
+            <label for="rdInquilinos" class="tab-btn" id="lblInquilinos">
+                <span class="icon">&#128203;</span> Inquilinos
+            </label>
+            <label for="rdPropietarios" class="tab-btn" id="lblPropietarios">
+                <span class="icon">&#127968;</span> Propietarios
+            </label>
+            <label for="rdContratos" class="tab-btn" id="lblContratos">
+                <span class="icon">&#128196;</span> Contratos
+            </label>
+            <label for="rdConfiguracion" class="tab-btn" id="lblConfiguracion">
+                <span class="icon">⚙️</span> Configuración
+            </label>
         </div>
 
         <!-- Tab Inquilinos -->
         <div id="tabInquilinos" class="tab-content active">
+            <h2 style="font-size:1.1rem; color:#475569; margin: 0 0 1rem 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; width: 100%;">
+                &#128203; Sección Activa: Inquilinos
+            </h2>
             <div class="stats-container">
                 <div class="stat-card">
-                    <div class="stat-icon">📊</div>
+                    <div class="stat-icon">&#128202;</div>
                     <div class="stat-info">
                         <div class="stat-value" id="totalInquilinos">0</div>
                         <div class="stat-label">Total Pendientes</div>
@@ -971,7 +1043,7 @@
             <div id="listaInquilinos" class="registros-grid">
                 <!-- Se llena dinámicamente -->
                 <div class="empty-state">
-                    <div class="empty-icon">📭</div>
+                    <div class="empty-icon">&#128237;</div>
                     <h3>No hay registros pendientes</h3>
                     <p>Los registros aparecerán aquí cuando los inquilinos completen sus formularios</p>
                 </div>
@@ -980,9 +1052,12 @@
 
         <!-- Tab Propietarios -->
         <div id="tabPropietarios" class="tab-content">
+            <h2 style="font-size:1.1rem; color:#475569; margin: 0 0 1rem 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; width: 100%;">
+                &#127968; Sección Activa: Propietarios
+            </h2>
             <div class="stats-container">
                 <div class="stat-card">
-                    <div class="stat-icon">📊</div>
+                    <div class="stat-icon">&#128202;</div>
                     <div class="stat-info">
                         <div class="stat-value" id="totalPropietarios">0</div>
                         <div class="stat-label">Total Pendientes</div>
@@ -1007,7 +1082,7 @@
             <div id="listaPropietarios" class="registros-grid">
                 <!-- Se llena dinámicamente -->
                 <div class="empty-state">
-                    <div class="empty-icon">📭</div>
+                    <div class="empty-icon">&#128237;</div>
                     <h3>No hay registros pendientes</h3>
                     <p>Los registros aparecerán aquí cuando los propietarios completen sus formularios</p>
                 </div>
@@ -1015,17 +1090,18 @@
         </div>
 
         <!-- Tab Contratos -->
-        <div id="tabContratos" class="tab-content">
-            <div class="stats-container">
+                <div id="tabContratos" class="tab-content">
+            <div class="stats-container" style="position: relative;">
+                
                 <div class="stat-card">
-                    <div class="stat-icon">📝</div>
+                    <div class="stat-icon">&#128221;</div>
                     <div class="stat-info">
                         <div class="stat-value" id="totalContratos">0</div>
                         <div class="stat-label">Listos para Generar</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">📄</div>
+                    <div class="stat-icon">&#128196;</div>
                     <div class="stat-info">
                         <div class="stat-value" id="generadosContratos">0</div>
                         <div class="stat-label">Contratos Generados</div>
@@ -1067,10 +1143,10 @@
                 </div>
                 <div class="registro-actions">
                     <button class="btn btn-primary" onclick="actualizarTodo()">
-                        🔄 Actualizar Todo
+                        &#128260; Actualizar Todo
                     </button>
                     <button class="btn btn-secondary" onclick="limpiarCache()">
-                        🧹 Limpiar Caché
+                        &#129529; Limpiar Caché
                     </button>
                 </div>
             </div>
@@ -1141,10 +1217,10 @@
     <div id="modalContrato" class="modal">
         <div class="modal-content contrato-modal-content">
             <div class="modal-header">
-                <h2>📝 Elaboración de Contrato - <span id="modalContratoCdr"></span></h2>
+                <h2>&#128221; Elaboración de Contrato - <span id="modalContratoCdr"></span></h2>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <span id="badgeEstadoContrato" class="badge" style="background:var(--warning); color:black;">Borrador</span>
-                    <a id="linkAbrirDocNueva" href="#" target="_blank" style="font-size:0.85rem; color:#3b82f6; text-decoration:none; white-space:nowrap;">🔗 Abrir en nueva pestaña</a>
+                    <a id="linkAbrirDocNueva" href="#" target="_blank" style="font-size:0.85rem; color:#3b82f6; text-decoration:none; white-space:nowrap;">&#128279; Abrir en nueva pestaña</a>
                     <button class="close-modal" onclick="cerrarModalContrato()">&times;</button>
                 </div>
             </div>
@@ -1170,7 +1246,7 @@
                             ✅ Todas las partes han aprobado el borrador.
                         </div>
                         <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="generarOriginalDefinitivo()" id="btnGenerarOriginal">
-                            📥 Generar y Descargar Original
+                            &#128229; Generar y Descargar Original
                         </button>
                     </div>
                 </div>
@@ -1199,14 +1275,14 @@
     <div id="modalValidacion" class="modal">
         <div class="modal-content modal-lg">
             <div class="modal-header">
-                <h2 id="modalTitle">📋 Validación de Documentos</h2>
+                <h2 id="modalTitle">&#128203; Validación de Documentos</h2>
                 <button class="close-modal" onclick="cerrarModal('modalValidacion')">&times;</button>
             </div>
             <div class="modal-body">
                 <!-- Información del Registro -->
                 <div class="data-display"
                     style="padding: 0.5rem 1rem; margin-bottom: 0.5rem; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: var(--radius);">
-                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--dark);">📌 Información del Registro
+                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--dark);">&#128204; Información del Registro
                     </h3>
                     <div class="data-grid" id="infoRegistro"
                         style="display: flex; gap: 1.5rem; align-items: center; justify-content: flex-start;">
@@ -1308,7 +1384,7 @@
                                 }
                             </style>
                             <div class="cerebro-header" style="justify-content: space-between; align-items: center;">
-                                <h3 style="margin: 0; font-size: 1.1em;">🧠 Datos Formulario</h3>
+                                <h3 style="margin: 0; font-size: 1.1em;">&#129504; Datos Formulario</h3>
                                 <button class="btn-icon-hover" onclick="toggleEditCerebro()"
                                     title="Editar Datos">✏️</button>
                             </div>
@@ -1361,7 +1437,7 @@
                                          <h4 style="margin: 0 0 0.5rem 0; color: var(--dark);">Análisis Inteligente de Documento</h4>
                                          <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 1rem;">Extrae la información del Certificado con OCR, o edita manualmente los datos del inmueble.</p>
                                          <button id="btnAnalizarOCR" class="btn btn-primary" onclick="analizarCertificadoOCR()" style="width: 100%; justify-content: center; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);">
-                                             🔍 Analizar Certificado con OCR
+                                             &#128269; Analizar Certificado con OCR
                                          </button>
                                          <div id="ocrBadgesContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-top: 1rem; display: none;">
                                              <!-- Se llenan por JS -->
@@ -1392,7 +1468,7 @@
                                          <h4 style="margin: 0 0 0.5rem 0; color: #166534;">Análisis de Recibos Públicos</h4>
                                          <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 1rem;">Extrae el número de referencia del recibo con OCR, o escríbelo manualmente y guarda.</p>
                                          <button id="btnAnalizarReciboOCR" class="btn" style="width: 100%; justify-content: center; background-color: #22c55e; color: white;" onclick="analizarReciboOCR()">
-                                             🔍 Analizar Recibo con OCR
+                                             &#128269; Analizar Recibo con OCR
                                          </button>
                                     </div>
                                     
@@ -1410,7 +1486,7 @@
                             <div id="cerebroActions" class="cerebro-actions" style="display:none;">
                                 <button class="btn btn-secondary btn-sm"
                                     onclick="cancelarEditCerebro()">Cancelar</button>
-                                <button class="btn btn-primary btn-sm" onclick="guardarCerebro()">💾 Guardar
+                                <button class="btn btn-primary btn-sm" onclick="guardarCerebro()">&#128190; Guardar
                                     Corrección</button>
                             </div>
                         </div>
@@ -1453,7 +1529,7 @@
 
                             <div class="preview-content" id="previewContent" style="flex: 1; min-height: 160px;">
                                 <div class="preview-placeholder">
-                                    <p>👈 Selecciona un documento de las pestañas de arriba</p>
+                                    <p>&#128072; Selecciona un documento de las pestañas de arriba</p>
                                 </div>
                             </div>
 
@@ -1500,7 +1576,7 @@
                 <div id="boxAccionesGlobales"
                     style="display:none; margin-top: 1.5rem; text-align: right; border-top: 2px solid #e2e8f0; padding-top: 1rem;">
                     <button class="btn btn-primary" onclick="mostrarConfirmacionFinal()"
-                        style="font-size: 1.1rem; padding: 0.8rem 2.5rem; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);">🚀
+                        style="font-size: 1.1rem; padding: 0.8rem 2.5rem; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);">&#128640;
                         Aprobados Todos (Finalizar Validación)</button>
                 </div>
 
@@ -1610,12 +1686,19 @@
         window.onerror = function(msg, src, line, col, err) {
             var div = document.createElement('div');
             div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:white;padding:8px 12px;font-size:13px;z-index:99999;font-family:monospace;';
-            div.textContent = '🐛 JS Error: ' + msg + ' (línea ' + line + ')';
+            div.innerHTML = '&#128027; JS Error: ' + msg + ' (línea ' + line + ')';
             document.body && document.body.appendChild(div);
             return false;
         };
+
         // Configuración
-        const API_URL = google.script.run;
+        let API_URL;
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            API_URL = google.script.run;
+        } else {
+            console.warn('Ejecución local: google.script.run no disponible.');
+            API_URL = {}; // Para evitar errores al acceder a sus métodos
+        }
         let registroActual = null;
         let tipoActual = null;
         let documentoActual = null; // { id, url, tipo, nombre }
@@ -1628,33 +1711,65 @@
         let motivosCorreccion = {}; // { 'fileId2': 'Cédula borrosa' }
         let datosCerebroAnteriores = {};
 
-        // Inicialización
-        document.addEventListener('DOMContentLoaded', function () {
-            cargarDatos();
-            configurarEventListeners();
+        // Global Error Catcher - Para diagnóstico visible sin F12 (100% IE8 Safe)
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            var errorDiv = document.createElement('div');
+            errorDiv.style.cssText = "background:red; color:white; padding:20px; position:fixed; top:0; left:0; right:0; z-index:99999; font-size:16px; font-weight:bold;";
+            errorDiv.innerHTML = "&#128680; AUTO-DIAGNÓSTICO: <br> Mensaje: " + msg + "<br>Línea: " + lineNo + "<br>Columna: " + columnNo;
+            if (document.body) document.body.appendChild(errorDiv); // prepend no es universal, appendChild sí
+            return false;
+        };
+
+        // Inicialización Forzada
+        function arrancarApp() {
+            try {
+                if(typeof pushDebug !== 'undefined') pushDebug('Iniciando arrancarApp...');
+                configurarEventListeners(); // Primero los eventos
+                cargarDatos();
+                console.log("✅ App inicializada correctamente.");
+                if(typeof pushDebug !== 'undefined') pushDebug('arrancarApp completado');
+            } catch(e) {
+                console.error("Error inicializando app: ", e);
+                if(typeof pushDebug !== 'undefined') pushDebug('ERROR arrancarApp: ' + e.message);
+                window.onerror(e.message, null, 0, 0, e);
+            }
+        }
+        
+        // Ejecutar apenas el script se evalúa (ya estamos al final del body)
+        if(typeof pushDebug !== 'undefined') pushDebug('Registrando listeners y ejecutando arrancarApp...');
+        
+        // 1. Intentar ejecución síncrona
+        try {
+            arrancarApp();
+        } catch(e) {
+            if(typeof pushDebug !== 'undefined') pushDebug('Fallo sync arrancarApp: ' + e.message);
+        }
+
+        // 2. Fallbacks tradicionales por si el DOM no estaba listo
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof pushDebug !== 'undefined') pushDebug('Fired DOMContentLoaded');
+            // arrancarApp(); // Ya se llamó, pero por si acaso
         });
+        window.onload = function() {
+            if(typeof pushDebug !== 'undefined') pushDebug('Fired window.onload');
+        };
 
         // Cargar datos iniciales
         function cargarDatos() {
+            if(typeof pushDebug !== 'undefined') pushDebug('Llamando cargarDatos()...');
             cargarRegistrosInquilinos();
             cargarRegistrosPropietarios();
             cargarContratos();
         }
 
-        // Event Listeners
+                                                // Event Listeners (Estandar Apps Script Moderno con Loops Compatibles)
         function configurarEventListeners() {
-            // Sin listeners legacy
+            console.log("&#128640; Tabs gobrnados 100% por CSS Native. JS inhabilitado deliberadamente.");
         }
 
-        // Cambiar Tab
-        function cambiarTab(tab, btn) {
-            // Ocultar todos los tabs
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-
-            // Mostrar tab seleccionado
-            document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
-            btn.classList.add('active');
+        // Cambiar Tab (Inhabilitado)
+        function cambiarTab(targetId, btnId) {
+            // Ya no hace nada, CSS gobierna
         }
 
         // Cargar Registros de Inquilinos
@@ -1689,6 +1804,7 @@
 
         // Cargar Contratos
         function cargarContratos() {
+            if(typeof pushDebug !== 'undefined') pushDebug('Entrando a cargarContratos()...');
             console.log('Cargando contratos...');
             const lista = document.getElementById('listaContratos');
 
@@ -1699,14 +1815,18 @@
                     <p>Buscando inmuebles aprobados...</p>
                 </div>
             `;
+            if(typeof pushDebug !== 'undefined') pushDebug('Loading spinner inyectado en DOM');
 
             // Llamada al backend
+            if(typeof pushDebug !== 'undefined') pushDebug('Ejecutando google.script.run.obtenerContratosPendientes()...');
             google.script.run
                 .withSuccessHandler(function (contratos) {
+                    if(typeof pushDebug !== 'undefined') pushDebug('SuccessHandler recibido! Elementos: ' + (contratos ? contratos.length : 'null'));
                     mostrarListaContratos(contratos);
                     actualizarContadoresContratos(contratos);
                 })
                 .withFailureHandler(function (error) {
+                    if(typeof pushDebug !== 'undefined') pushDebug('FailureHandler: ' + error.message);
                     lista.innerHTML = `
                         <div class="error-state">
                             <span class="error-icon">❌</span>
@@ -1721,60 +1841,66 @@
         function mostrarListaContratos(contratos) {
             const lista = document.getElementById('listaContratos');
 
-            if (!contratos || contratos.length === 0) {
-                lista.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">📝</div>
-                        <h3>No hay contratos pendientes</h3>
-                        <p>Los inmuebles con "ESTUDIO APROBADO" aparecerán aquí.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            contratos.forEach(c => {
-                let badgeClass = 'badge-ready';
-                let btnText = '📄 Generar Contrato';
-                let btnAction = `generarContrato('${c.cdr}', this)`;
-                let badgeText = 'LISTO PARA GENERAR';
-
-                if (c.estadoBadge === 'BORRADOR ENVIADO' || c.estadoBadge === 'EN REVISION' || c.estadoBadge === 'CONTRATO GENERADO') {
-                    badgeClass = 'badge-warning';
-                    badgeText = 'BORRADOR ACTIVO';
-                    btnText = '🔍 Abrir Borrador';
-                    btnAction = `abrirBorrador('${c.cdr}', this)`;
+            try {
+                if (!contratos || contratos.length === 0) {
+                    lista.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">&#128221;</div>
+                            <h3>No hay contratos pendientes</h3>
+                            <p>Los inmuebles con "ESTUDIO APROBADO" aparecerán aquí.</p>
+                        </div>
+                    `;
+                    return;
                 }
 
-                html += `
-                    <div class="registro-card contrato-card">
-                        <div class="registro-header">
-                            <h3>🏠 ${c.cdr}</h3>
-                            <span class="badge ${badgeClass}" style="${badgeClass === 'badge-warning' ? 'background:var(--warning); color:black;' : 'background:var(--success); color:white;'}">${badgeText}</span>
-                        </div>
-                        <div class="registro-info">
-                            <div class="info-row">
-                                <span class="info-label">Inquilino:</span>
-                                <span class="info-value">${c.inquilino}</span>
+                let html = '';
+                for (let i = 0; i < contratos.length; i++) {
+                    const c = contratos[i];
+                    let badgeClass = 'badge-ready';
+                    let btnText = '&#128196; Generar Contrato';
+                    let btnAction = `generarContrato('${c.cdr}', this)`;
+                    let badgeText = 'LISTO PARA GENERAR';
+
+                    let estadoMayus = (c.estadoBadge || '').toUpperCase();
+                    if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CONTRATO GENERADO')) {
+                        badgeClass = 'badge-warning';
+                        badgeText = 'BORRADOR ACTIVO';
+                        btnText = '&#128269; Abrir Borrador';
+                        btnAction = `abrirBorrador('${c.cdr}', this)`;
+                    }
+
+                    html += `
+                        <div class="registro-card contrato-card">
+                            <div class="registro-header">
+                                <h3>&#127968; ${c.cdr}</h3>
+                                <span class="badge ${badgeClass}" style="${badgeClass === 'badge-warning' ? 'background:var(--warning); color:black;' : 'background:var(--success); color:white;'}">${badgeText}</span>
                             </div>
-                            <div class="info-row">
-                                <span class="info-label">Tipo Negocio:</span>
-                                <span class="info-value">${c.tipoNegocio}</span>
+                            <div class="registro-info">
+                                <div class="info-row">
+                                    <span class="info-label">Inquilino:</span>
+                                    <span class="info-value">${c.inquilino}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Tipo Negocio:</span>
+                                    <span class="info-value">${c.tipoNegocio}</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Canon:</span>
+                                    <span class="info-value">${c.canon}</span>
+                                </div>
                             </div>
-                            <div class="info-row">
-                                <span class="info-label">Canon:</span>
-                                <span class="info-value">${c.canon}</span>
+                            <div class="registro-actions">
+                                <button class="btn btn-primary" onclick="${btnAction}">
+                                    ${btnText}
+                                </button>
                             </div>
                         </div>
-                        <div class="registro-actions">
-                            <button class="btn btn-primary" onclick="${btnAction}">
-                                ${btnText}
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-            lista.innerHTML = html;
+                    `;
+                }
+                lista.innerHTML = html;
+            } catch (err) {
+                lista.innerHTML = `<div class="error-state" style="background:red; color:white; padding:20px;">&#128680; ERROR DE RENDER: ${err.message} <br> ${err.stack}</div>`;
+            }
         }
 
         // Variable global para mantener el contexto del contrato actual
@@ -1951,19 +2077,24 @@
             document.getElementById('contenedorEstadosAprobacion').innerHTML = '<p>⏳ Cargando estados...</p>';
             google.script.run
                 .withSuccessHandler(function(res) {
-                    if(res.success) {
-                        let divInfo = '';
-                        let checks = 0;
-                        res.estados.forEach(e => {
-                            let badge = e.estado === 'APROBADO' ? '<span style="color: green;">✅ Aprobado</span>' : 
-                                       (e.estado === 'RECHAZADO' ? '<span style="color: red;">❌ Requiere Corrección</span>' : '⏳ Pendiente');
-                            divInfo += `<div class="dato-maestro-card">
-                                <h4>${e.parte}</h4>
-                                <p>${badge}</p>
-                                ${e.comentarios ? `<p style="font-size: 0.8em; margin-top:5px; color:#666;">💬 "${e.comentarios}"</p>` : ''}
-                            </div>`;
-                            if(e.estado === 'APROBADO') checks++;
-                        });
+                    if(res && res.success) {
+                        var divInfo = '';
+                        var checks = 0;
+                        if (res.estados && res.estados.length > 0) {
+                            for (var i = 0; i < res.estados.length; i++) {
+                                var e = res.estados[i];
+                                var badge = e.estado === 'APROBADO' ? '<span style="color: green;">✅ Aprobado</span>' : 
+                                           (e.estado === 'RECHAZADO' ? '<span style="color: red;">❌ Requiere Corrección</span>' : '⏳ Pendiente');
+                                divInfo += '<div class="dato-maestro-card">';
+                                divInfo += '    <h4>' + e.parte + '</h4>';
+                                divInfo += '    <p>' + badge + '</p>';
+                                if (e.comentarios) {
+                                    divInfo += '    <p style="font-size: 0.8em; margin-top:5px; color:#666;">&#128172; "' + e.comentarios + '"</p>';
+                                }
+                                divInfo += '</div>';
+                                if (e.estado === 'APROBADO') checks++;
+                            }
+                        }
                         document.getElementById('contenedorEstadosAprobacion').innerHTML = divInfo;
 
                         // Si todos aprobaron (ejemplo 2 partes: inq y prop), habilitar generar original
@@ -1993,12 +2124,12 @@
                 if(result.isConfirmed) {
                     const btn = document.getElementById('btnGenerarOriginal');
                     btn.disabled = true;
-                    btn.innerHTML = '📥 Generando...';
+                    btn.innerHTML = '&#128229; Generando...';
 
                     google.script.run
                         .withSuccessHandler(function(res) {
                             btn.disabled = false;
-                            btn.innerHTML = '📥 Generar y Descargar Original';
+                            btn.innerHTML = '&#128229; Generar y Descargar Original';
                             if(res.success) {
                                 Swal.fire('Original Listo', 'El contrato original se ha generado.', 'success');
                                 window.open(res.urlPdf, '_blank');
@@ -2008,7 +2139,7 @@
                         })
                         .withFailureHandler(function(err){
                             btn.disabled = false;
-                            btn.innerHTML = '📥 Generar y Descargar Original';
+                            btn.innerHTML = '&#128229; Generar y Descargar Original';
                             Swal.fire('Error de red', err.message, 'error');
                         })
                         .generarContrato(cdr, 'Original');
@@ -2028,7 +2159,7 @@
             if (!registros || registros.length === 0) {
                 lista.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-icon">📭</div>
+                        <div class="empty-icon">&#128237;</div>
                         <h3>No hay registros pendientes</h3>
                         <p>Los registros aparecerán aquí cuando los inquilinos completen sus formularios</p>
                     </div>
@@ -2037,12 +2168,13 @@
             }
 
             let html = '';
-            registros.forEach(registro => {
+            for (let i = 0; i < registros.length; i++) {
+                const registro = registros[i];
                 const estado = obtenerEstadoRegistro(registro.detalles);
                 html += `
                     <div class="registro-card">
                         <div class="registro-header">
-                            <h3>📋 ${registro.cdr}</h3>
+                            <h3>&#128203; ${registro.cdr}</h3>
                             <span class="badge badge-${estado.clase}">${estado.texto}</span>
                         </div>
                         <div class="registro-info">
@@ -2051,7 +2183,7 @@
                                 <span class="info-value">
                                     ${registro.inquilino.nombre}
                                     <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.nombre}', this)">
-                                        📋 Copiar
+                                        &#128203; Copiar
                                     </button>
                                 </span>
                             </div>
@@ -2060,7 +2192,7 @@
                                 <span class="info-value">
                                     ${registro.inquilino.documento}
                                     <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.documento}', this)">
-                                        📋 Copiar
+                                        &#128203; Copiar
                                     </button>
                                 </span>
                             </div>
@@ -2069,7 +2201,7 @@
                                 <span class="info-value">
                                     ${registro.inquilino.email}
                                     <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.email}', this)">
-                                        📋 Copiar
+                                        &#128203; Copiar
                                     </button>
                                 </span>
                             </div>
@@ -2078,7 +2210,7 @@
                                 <span class="info-value">
                                     ${registro.inquilino.celular}
                                     <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.celular}', this)">
-                                        📋 Copiar
+                                        &#128203; Copiar
                                     </button>
                                 </span>
                             </div>
@@ -2091,12 +2223,12 @@
                         </div>
                         <div class="registro-actions" style="justify-content: flex-end;">
                             <button class="btn btn-primary" onclick="validarInquilino('${registro.cdr}')">
-                                🔍 Validar
+                                &#128269; Validar
                             </button>
                         </div>
                     </div>
                 `;
-            });
+            }
 
             lista.innerHTML = html;
         }
@@ -2108,7 +2240,7 @@
             if (!registros || registros.length === 0) {
                 lista.innerHTML = `
                     <div class="empty-state">
-                        <div class="empty-icon">📭</div>
+                        <div class="empty-icon">&#128237;</div>
                         <h3>No hay registros pendientes</h3>
                         <p>Los registros aparecerán aquí cuando los propietarios completen sus formularios</p>
                     </div>
@@ -2117,12 +2249,13 @@
             }
 
             let html = '';
-            registros.forEach(registro => {
+            for (let i = 0; i < registros.length; i++) {
+                const registro = registros[i];
                 const estado = obtenerEstadoRegistro(registro.detalles);
                 html += `
                     <div class="registro-card">
                         <div class="registro-header">
-                            <h3>🏠 ${registro.cdr}</h3>
+                            <h3>&#127968; ${registro.cdr}</h3>
                             <span class="badge badge-${estado.clase}">${estado.texto}</span>
                         </div>
                         <div class="registro-info">
@@ -2131,7 +2264,7 @@
                                 <span class="info-value">
                                     ${registro.propietario.nombre}
                                     <button class="btn-copy" onclick="copiarTexto('${registro.propietario.nombre}', this)">
-                                        📋 Copiar
+                                        &#128203; Copiar
                                     </button>
                                 </span>
                             </div>
@@ -2140,7 +2273,7 @@
                                 <span class="info-value">
                                     ${registro.propietario.documento}
                                     <button class="btn-copy" onclick="copiarTexto('${registro.propietario.documento}', this)">
-                                        📋 Copiar
+                                        &#128203; Copiar
                                     </button>
                                 </span>
                             </div>
@@ -2149,7 +2282,7 @@
                                 <span class="info-value">
                                     ${registro.propietario.email}
                                     <button class="btn-copy" onclick="copiarTexto('${registro.propietario.email}', this)">
-                                        📋 Copiar
+                                        &#128203; Copiar
                                     </button>
                                 </span>
                             </div>
@@ -2158,19 +2291,19 @@
                                 <span class="info-value">
                                     ${registro.propietario.celular}
                                     <button class="btn-copy" onclick="copiarTexto('${registro.propietario.celular}', this)">
-                                        📋 Copiar
+                                        &#128203; Copiar
                                     </button>
                                 </span>
                             </div>
                         </div>
                         <div class="registro-actions" style="justify-content: flex-end;">
                             <button class="btn btn-primary" onclick="validarPropietario('${registro.cdr}')">
-                                🔍 Validar
+                                &#128269; Validar
                             </button>
                         </div>
                     </div>
                 `;
-            });
+            }
 
             lista.innerHTML = html;
         }
@@ -2312,7 +2445,7 @@
 
             // ─── Pre-aprobación basada en el Cerebro ───
             const estadosBuzon = documentosData.estadosBuzon || {};
-            console.log('📋 Estados del Cerebro:', JSON.stringify(estadosBuzon));
+            console.log('&#128203; Estados del Cerebro:', JSON.stringify(estadosBuzon));
 
             if (Object.keys(estadosBuzon).length > 0) {
                 for (const personKey in documentosData) {
@@ -2330,7 +2463,7 @@
                         // RECIBIDO, ACTUALIZANDO, RECIBIDO (CORRECCIÓN) → quedan pendientes para el admin
                     });
                 }
-                console.log('📋 Total pre-aprobados:', Object.keys(validacionEstado).length);
+                console.log('&#128203; Total pre-aprobados:', Object.keys(validacionEstado).length);
             }
 
             // Merge banking data from Cerebro into registro.propietario
@@ -2338,12 +2471,12 @@
                 const registro = (registrosData.propietarios || []).find(r => r.cdr === cdr);
                 if (registro && registro.propietario) {
                     Object.assign(registro.propietario, documentosData.datosBancarios);
-                    console.log('🏦 Datos bancarios mergeados:', JSON.stringify(documentosData.datosBancarios));
+                    console.log('&#127974; Datos bancarios mergeados:', JSON.stringify(documentosData.datosBancarios));
                 }
             }
 
             // Actualizar título
-            document.getElementById('modalTitle').textContent = `📋 Validación de Registro - ${cdr}`;
+            document.getElementById('modalTitle').innerHTML = `&#128203; Validación de Registro - ${cdr}`;
 
             // Mostrar información básica arriba
             mostrarInfoRegistro(cdr, tipo);
@@ -2405,9 +2538,9 @@
 
             // Para propietario: agregar tabs de bancaria, inmueble y servicios
             if (tipoActual === 'propietario') {
-                html += `<button class="person-tab" id="ptab_bancaria" onclick="cambiarPersona('bancaria')">🏦 Inf. Bancaria</button>`;
-                html += `<button class="person-tab" id="ptab_inmueble" onclick="cambiarPersona('inmueble')">🏠 Inf. Inmueble</button>`;
-                html += `<button class="person-tab" id="ptab_servicios" onclick="cambiarPersona('servicios')">💧 Servs. Inmueble</button>`;
+                html += `<button class="person-tab" id="ptab_bancaria" onclick="cambiarPersona('bancaria')">&#127974; Inf. Bancaria</button>`;
+                html += `<button class="person-tab" id="ptab_inmueble" onclick="cambiarPersona('inmueble')">&#127968; Inf. Inmueble</button>`;
+                html += `<button class="person-tab" id="ptab_servicios" onclick="cambiarPersona('servicios')">&#128167; Servs. Inmueble</button>`;
             }
 
             document.getElementById('personTabs').innerHTML = html;
@@ -2509,7 +2642,7 @@
                 const container = document.getElementById('serviciosGuardadosContainer');
                 if (container) {
                     if (servs.length > 0) {
-                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;">📋 Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
+                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;">&#128203; Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
                         servs.forEach(s => { html += `<li style="font-size:0.85rem;">${s.servicio}: <strong>${s.referencia}</strong></li>`; });
                         html += '</ul></div>';
                         container.innerHTML = html;
@@ -2671,7 +2804,7 @@
             const infoHtml = `
                 <div style="display:flex; gap:2rem; flex-wrap:wrap; padding:0.5rem 0;">
                     <div><strong>CDR:</strong> <span>${cdr}</span>
-                        <button class="btn-copy" onclick="copiarTexto('${cdr}', this)" style="margin-left:4px;">📋</button>
+                        <button class="btn-copy" onclick="copiarTexto('${cdr}', this)" style="margin-left:4px;">&#128203;</button>
                     </div>
                     <div><strong>Tipo:</strong> ${tipo.toUpperCase()}</div>
                     <div><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</div>
@@ -2767,7 +2900,7 @@
                 previewContent.innerHTML = `
                     <div class="preview-placeholder">
                         <p>⚠️ No se puede previsualizar este archivo</p>
-                        <button class="btn btn-primary" onclick="window.open('${url}', '_blank')">🔗 Abrir en Google Drive</button>
+                        <button class="btn btn-primary" onclick="window.open('${url}', '_blank')">&#128279; Abrir en Google Drive</button>
                     </div>`;
             }
 
@@ -2877,7 +3010,7 @@
                                     // Actualizar SOLO la lista visual, sin tocar los campos ni resetear el panel
                                     const container = document.getElementById('serviciosGuardadosContainer');
                                     if (container && reg.servicios.length > 0) {
-                                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;">📋 Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
+                                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;">&#128203; Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
                                         reg.servicios.forEach(s => { html += `<li style="font-size:0.85rem;">${s.servicio}: <strong>${s.referencia}</strong></li>`; });
                                         html += '</ul></div>';
                                         container.innerHTML = html;
@@ -3212,9 +3345,9 @@
                                 if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
                                 return;
                             }
-                            completarProgreso('📝 ¡Corrección enviada exitosamente!');
+                            completarProgreso('&#128221; ¡Corrección enviada exitosamente!');
                             setTimeout(() => {
-                                mostrarToast('📝 Se envió correo solicitando actualizaciones', 'warning');
+                                mostrarToast('&#128221; Se envió correo solicitando actualizaciones', 'warning');
                                 cerrarModal('modalValidacion');
                                 cargarDatos();
                             }, 900);
@@ -3286,10 +3419,10 @@
         }
 
         function obtenerIconoDocumento(tipo) {
-            if (tipo.includes('pdf')) return '📄';
-            if (tipo.includes('image')) return '🖼️';
-            if (tipo.includes('doc')) return '📝';
-            return '📎';
+            if (tipo.includes('pdf')) return '&#128196;';
+            if (tipo.includes('image')) return '&#128444;️';
+            if (tipo.includes('doc')) return '&#128221;';
+            return '&#128206;';
         }
 
         function formatearTamaño(bytes) {
@@ -3511,7 +3644,7 @@
 
                     // 4. Badge Embargos
                     if (data.tieneEmbargo) {
-                         badgesHtml += `<span class="badge badge-danger" title="${data.alertasEmbargo.join(' - ')}">🚫 EMBARGO DETECTADO</span>`;
+                         badgesHtml += `<span class="badge badge-danger" title="${data.alertasEmbargo.join(' - ')}">&#128683; EMBARGO DETECTADO</span>`;
                     } else {
                          badgesHtml += `<span class="badge badge-success">✅ Cero Embargos Evidentes</span>`;
                     }
@@ -3546,7 +3679,21 @@
                 }
             }
         };
-    </script>
+        </script>
 </body>
 
 </html>
+<!-- Sync Force -->
+
+
+
+
+
+
+
+
+
+
+
+
+

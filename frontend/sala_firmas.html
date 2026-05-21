@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sala de Firmas - Gold Life System</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #d4af37;
+            --primary-dark: #b5952f;
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --success: #2e7d32;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .header {
+            width: 100%;
+            background-color: var(--bg-card);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .header h1 strong {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        /* PASO 1: VISUALIZADOR */
+        #step1 {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .document-container {
+            width: 100%;
+            height: 65vh;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid #333;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .info-box {
+            background: rgba(212, 175, 55, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        /* PASO 2: PIZARRÓN DE FIRMA */
+        #step2 {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .canvas-container {
+            width: 100%;
+            max-width: 500px;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        canvas {
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            width: 100%;
+            height: 250px;
+            cursor: crosshair;
+            touch-action: none; /* Evita que la pantalla haga scroll al dibujar en celular */
+        }
+
+        .canvas-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .btn-clear {
+            background: none;
+            border: none;
+            color: #ff5252;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        /* PASO 3: GRACIAS */
+        #step3 {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 60vh;
+            gap: 20px;
+        }
+
+        .check-icon {
+            font-size: 80px;
+            color: var(--primary);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* BOTONES GLOBALES */
+        .btn {
+            background-color: var(--primary);
+            color: #000;
+            border: none;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 30px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .btn:disabled {
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loader {
+            display: none;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* LEGAL TEXT */
+        .legal-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 15px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>REAL ESTATE <strong>GOLD LIFE</strong></h1>
+    </div>
+
+    <div class="container">
+        
+        <!-- PASO 1: LECTURA DEL DOCUMENTO -->
+        <div id="step1">
+            <div class="info-box">
+                <p><strong>Paso 1 de 2:</strong> Por favor, revise el documento completo a continuación. Una vez verificado, presione el botón inferior para proceder a la firma electrónica legal (Ley 527 de 1999).</p>
+            </div>
+            
+            <div class="document-container" id="docFrameContainer">
+                <div style="padding: 20px; text-align: center;">Cargando documento...</div>
+            </div>
+
+            <button class="btn" onclick="goToStep2()">He leído el documento y procedo a firmar</button>
+        </div>
+
+        <!-- PASO 2: PIZARRÓN DE FIRMA -->
+        <div id="step2">
+            <h2>Firma Electrónica</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 15px;">
+                Por favor, dibuje su firma en el recuadro blanco usando su dedo o el mouse.
+            </p>
+
+            <div class="canvas-container">
+                <canvas id="signaturePad"></canvas>
+                <div class="canvas-actions">
+                    <button class="btn-clear" onclick="clearCanvas()">Borrar y empezar de nuevo</button>
+                </div>
+            </div>
+
+            <p class="legal-text">
+                Al hacer clic en "Aceptar y Guardar Firma", usted acepta expresamente el contenido del documento, y autoriza el registro de su Dirección IP y huella digital del dispositivo como medio de prueba legal de validación.
+            </p>
+
+            <button class="btn" id="btnSubmit" onclick="submitSignature()">Aceptar y Guardar Firma</button>
+            <div class="loader" id="loader"></div>
+        </div>
+
+        <!-- PASO 3: GRACIAS -->
+        <div id="step3">
+            <div class="check-icon">✓</div>
+            <h2>¡Firma Registrada con Éxito!</h2>
+            <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto; line-height: 1.6;">
+                Su documento ha sido sellado criptográficamente con su firma y rastro de auditoría. En unos instantes recibirá una copia final certificada en su correo electrónico.
+            </p>
+            <br>
+            <p style="color: var(--primary); font-weight: 600;">Ya puede cerrar esta ventana.</p>
+        </div>
+
+    </div>
+
+    <!-- Importar Configuración -->
+    <script src="config.js"></script>
+    <script>
+        // --- EXTRAER VARIABLES DE LA URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const docId = urlParams.get('docId');
+        const cdr = urlParams.get('cdr');
+        
+        let clientIP = "Obteniendo IP...";
+        let signatureData = null;
+
+        // --- INICIALIZAR VISOR ---
+        window.onload = function() {
+            if (!docId) {
+                document.getElementById('docFrameContainer').innerHTML = "<div style='padding: 20px; text-align: center; color: red;'>Error: No se proporcionó el ID del documento en la URL.</div>";
+            } else {
+                document.getElementById('docFrameContainer').innerHTML = `<iframe src="https://docs.google.com/document/d/${docId}/preview" allow="autoplay"></iframe>`;
+            }
+        };
+
+        // --- INICIALIZAR CANVAS DE FIRMA ---
+        const canvas = document.getElementById('signaturePad');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            ctx.strokeStyle = "#000080"; 
+            ctx.lineWidth = 3;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            if(e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function startDrawing(e) { e.preventDefault(); isDrawing = true; const pos = getMousePos(e); [lastX, lastY] = [pos.x, pos.y]; }
+        function draw(e) { if (!isDrawing) return; e.preventDefault(); const pos = getMousePos(e); ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(pos.x, pos.y); ctx.stroke(); [lastX, lastY] = [pos.x, pos.y]; }
+        function stopDrawing() { isDrawing = false; }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing, {passive: false});
+        canvas.addEventListener('touchmove', draw, {passive: false});
+        canvas.addEventListener('touchend', stopDrawing);
+
+        function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        function isCanvasBlank() { const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height; return canvas.toDataURL() === blank.toDataURL(); }
+
+        function goToStep2() {
+            if (!docId) { alert("Documento no válido."); return; }
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'flex';
+            resizeCanvas(); 
+            
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => clientIP = data.ip)
+                .catch(() => clientIP = "No disponible (Bloqueado por navegador)");
+        }
+
+        async function submitSignature() {
+            if (isCanvasBlank()) { alert("Por favor, dibuje su firma antes de continuar."); return; }
+
+            const btn = document.getElementById('btnSubmit');
+            const loader = document.getElementById('loader');
+            btn.style.display = 'none';
+            loader.style.display = 'block';
+
+            const base64Signature = canvas.toDataURL("image/png");
+            const userAgent = navigator.userAgent;
+            
+            // Usar API_URL de config.js
+            const payload = {
+                accion: 'procesarFirmaElectronica',
+                docId: docId,
+                cdr: cdr,
+                base64: base64Signature,
+                ip: clientIP,
+                userAgent: userAgent
+            };
+
+            try {
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('step2').style.display = 'none';
+                    document.getElementById('step3').style.display = 'flex';
+                } else {
+                    alert("Ocurrió un error guardando la firma: " + result.message);
+                    btn.style.display = 'block';
+                    loader.style.display = 'none';
+                }
+            } catch (error) {
+                alert("Error de conexión: " + error.message);
+                btn.style.display = 'block';
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

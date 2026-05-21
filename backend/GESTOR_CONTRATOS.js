@@ -1373,62 +1373,54 @@ function numeroALetras(numero) {
 function obtenerContratosPendientes() {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONTRATO_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) return [{cdr: "DEBUG-ERROR", estadoBadge: "HOJA_PRINCIPAL NO EXISTE"}];
+    
     const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return [{cdr: "DEBUG-ERROR", estadoBadge: "HOJA SIN DATOS"}];
+    
     const contratos = [];
-
-    // Asumimos estructura de columnas (Ajustar índices según hoja real)
-    // CDR (0), Estado (1), Tipo Negocio (4), Canon (5), Inquilino (Variable)
-    // Buscamos dinámicamente indices si es posible, o usamos configuración
-    // Por simplicidad en este paso, usaremos búsqueda por nombre de cabecera si es posible, o hardcode
-
-    // Indices basados en GESTOR DE ESTADOS.js (aprox)
-    // Ajustar según tu hoja real:
-    const COL_CDR = 0;
-    const COL_ESTADO = 1;
-    // Mejor estrategia: Leer cabeceras normalizadas
     const headers = data[0].map(h => String(h).trim().toUpperCase());
+    
     const idxCdr = headers.indexOf('CODIGO DE REGISTRO');
     const idxEstado = headers.indexOf('ESTADO DEL INMUEBLE');
-    const idxTipo = headers.indexOf('TIPO DE NEGOCIO');
-    const idxCanon = headers.indexOf('PRECIO DE PROMOCION GENERAL');
-    const idxInquilino = headers.indexOf('NOMBRE COMPLETO INQUILINO');
     const idxDoc = headers.indexOf('ESTADO DOCUMENTAL');
-
+    const idxDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
+    const idxTipo = headers.indexOf('TIPO DE INMUEBLE');
+    const idxCanon = headers.indexOf('CANON MENSUAL');
+    const idxInquilino = headers.indexOf('NOMBRES - INQUILINO');
+    
     for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      
-      // Obtener valores de manera segura
-      const cdrValue = idxCdr > -1 ? row[idxCdr] : '';
-      const estado = idxEstado > -1 ? String(row[idxEstado]).trim().toUpperCase() : '';
-      const estadoDoc = idxDoc > -1 ? String(row[idxDoc]).trim().toUpperCase() : '';
+        const row = data[i];
+        const cdrValue = idxCdr > -1 ? row[idxCdr] : '';
+        const estado = idxEstado > -1 ? String(row[idxEstado]).trim().toUpperCase() : '';
+        const estadoDoc = idxDoc > -1 ? String(row[idxDoc]).trim().toUpperCase() : '';
+        const detalles = idxDetalles > -1 ? String(row[idxDetalles]).trim().toUpperCase() : '';
 
-      // Criterio: ESTUDIO APROBADO, READY_CONTRACT o si el documental ya dice PROP_VALIDATED
-      if (
-        estado === 'ESTUDIO APROBADO' || 
-        estado === 'READY_CONTRACT' ||
-        estado === 'CONTRATO GENERADO' ||
-        estado === 'BORRADOR ENVIADO' ||
-        estado === 'EN REVISION' ||
-        estadoDoc.includes('VALIDATED') ||
-        estadoDoc.includes('READY_CONTRACT')
-      ) {
-        if (cdrValue) {
-          contratos.push({
-            cdr: cdrValue,
-            tipoNegocio: idxTipo > -1 ? row[idxTipo] || 'N/A' : 'N/A',
-            canon: idxCanon > -1 ? row[idxCanon] || '0' : '0',
-            inquilino: idxInquilino > -1 ? row[idxInquilino] || 'Pendiente' : 'Pendiente',
-            estadoBadge: estado || estadoDoc
-          });
+        if (
+            estado.includes('ESTUDIO APROBADO') || 
+            estado.includes('READY_CONTRACT') ||
+            estado.includes('CONTRATO GENERADO') ||
+            estado.includes('BORRADOR ENVIADO') ||
+            estado.includes('EN REVISION') ||
+            estadoDoc.includes('VALIDATED') ||
+            estadoDoc.includes('READY_CONTRACT') ||
+            detalles.includes('CONTRATO GENERADO') ||
+            detalles.includes('BORRADOR ENVIADO')
+        ) {
+            if (cdrValue) {
+                contratos.push({
+                    cdr: cdrValue,
+                    tipoNegocio: idxTipo > -1 ? row[idxTipo] : 'N/A',
+                    canon: idxCanon > -1 ? row[idxCanon] : '0',
+                    inquilino: idxInquilino > -1 ? row[idxInquilino] : 'Pendiente',
+                    estadoBadge: estado || detalles || estadoDoc
+                });
+            }
         }
-      }
     }
-
     return contratos;
-
-  } catch (error) {
-    console.error('Error obteniendo contratos pendientes:', error);
-    throw new Error('No se pudo cargar la lista de contratos.');
+  } catch (err) {
+      return [{cdr: "DEBUG-ERROR CRITICO", estadoBadge: err.message}];
   }
 }
 
@@ -1546,5 +1538,102 @@ function obtenerContextoContrato(cdr) {
     };
   } catch (err) {
     return { success: false, message: err.message };
+  }
+}
+
+/**
+ * Procesa la firma electrónica enviada desde la Sala de Firmas web
+ */
+function handleProcesarFirmaElectronica(datos) {
+  try {
+    console.log("Procesando firma electrónica para DocID: " + datos.docId);
+    if (!datos.docId || !datos.base64) {
+      throw new Error("Datos incompletos para procesar la firma.");
+    }
+
+    const docId = datos.docId;
+    const base64Data = datos.base64.split(',')[1]; // Remover prefijo "data:image/png;base64,"
+    const decodedImage = Utilities.base64Decode(base64Data);
+    const blob = Utilities.newBlob(decodedImage, MimeType.PNG, "Firma.png");
+
+    // 1. Abrir el Documento de Google
+    const doc = DocumentApp.openById(docId);
+    const body = doc.getBody();
+
+    // 2. Agregar Sello de Auditoría al final del documento
+    body.appendPageBreak();
+    
+    const titulo = body.appendParagraph("CERTIFICADO DE FIRMA ELECTRÓNICA");
+    titulo.setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    titulo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    
+    body.appendParagraph("Documento firmado electrónicamente al amparo de la Ley 527 de 1999 (Ley de Comercio Electrónico de Colombia). La siguiente firma, junto con el rastro de red, constituyen plena prueba de aceptación expresa del acuerdo precedente.\n");
+
+    // Insertar la imagen de la firma centrada
+    const paragraphImg = body.appendParagraph("");
+    paragraphImg.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    const image = paragraphImg.appendImage(blob);
+    
+    // Escalar la imagen si es muy grande (max width 300)
+    const originalWidth = image.getWidth();
+    const originalHeight = image.getHeight();
+    if (originalWidth > 300) {
+      const ratio = 300 / originalWidth;
+      image.setWidth(300);
+      image.setHeight(originalHeight * ratio);
+    }
+
+    // Agregar datos de auditoría
+    const fechaActual = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss");
+    
+    body.appendParagraph("\n--- DATOS DE AUDITORÍA ---").setAttributes({ [DocumentApp.Attribute.BOLD]: true });
+    body.appendParagraph(`Fecha y Hora: ${fechaActual}`);
+    body.appendParagraph(`Dirección IP: ${datos.ip || "No disponible"}`);
+    body.appendParagraph(`Dispositivo/Navegador: ${datos.userAgent || "No disponible"}`);
+    body.appendParagraph(`Hash de Integridad (DocID): ${docId}`);
+    
+    doc.saveAndClose();
+
+    // 3. (Opcional) Generar PDF Final y Guardarlo
+    const pdfBlob = doc.getAs('application/pdf');
+    const folder = DriveApp.getFileById(docId).getParents().next();
+    const pdfName = doc.getName() + " - FIRMADO.pdf";
+    
+    // Buscar si ya existe para reemplazar o crear uno nuevo
+    const files = folder.searchFiles(`title = '${pdfName}'`);
+    if (files.hasNext()) {
+      files.next().setTrashed(true);
+    }
+    const finalPdf = folder.createFile(pdfBlob).setName(pdfName);
+
+    // 4. Actualizar estado en el Sheet si hay CDR
+    if (datos.cdr) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+      if (sheet) {
+        const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+        const estadoCol = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
+        
+        if (cdrCol > 0 && estadoCol > 0) {
+          const lastRow = sheet.getLastRow();
+          for (let i = 2; i <= lastRow; i++) {
+            if (sheet.getRange(i, cdrCol).getValue() === datos.cdr) {
+              sheet.getRange(i, estadoCol).setValue('ACTIVO'); // O FIRMADO, ajustar según preferencia
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: "Firma registrada y documento certificado exitosamente.",
+      pdfUrl: finalPdf.getUrl()
+    };
+
+  } catch (err) {
+    console.error("Error en handleProcesarFirmaElectronica:", err);
+    return { success: false, message: err.toString() };
   }
 }

@@ -459,4 +459,4 @@ function initEstados() {
 }
 
 // Ejecutar al cargar
-initEstados();
+// initEstados(); // REMOVIDO: NUNCA ejecutar SpreadsheetApp en el top-level scope

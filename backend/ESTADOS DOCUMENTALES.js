@@ -605,4 +605,4 @@ function initEstadosDocumentales() {
 }
 
 // Ejecutar al cargar
-initEstadosDocumentales();
+// initEstadosDocumentales(); // REMOVIDO: NUNCA ejecutar SpreadsheetApp en el top-level scope

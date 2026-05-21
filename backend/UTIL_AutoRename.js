@@ -1,29 +1,34 @@
 /**
  * ==========================================
- * UTILITY: AUTO-RENAME DNG TO JPG (CLOUD)
+ * UTILITY: AUTO-RENAME MEDIA TO JPG (CLOUD)
  * ==========================================
  * 
  * Reemplaza la funcionalidad del script local de PowerShell.
- * Busca archivos .DNG en una carpeta específica (y subcarpetas)
- * y les cambia la extensión a .JPG para que sean visibles en ciertos visores.
+ * Busca archivos con extensiones específicas (.DNG, .HEIC, etc.)
+ * en una carpeta específica (y subcarpetas) y les cambia la 
+ * extensión a .JPG para que sean visibles en ciertos visores 
+ * que requieren esa extensión.
  * 
- * NOTA: SOLO CAMBIA EL NOMBRE, NO CONVIERTE EL FORMATO.
+ * NOTA: SOLO CAMBIA EL NOMBRE DE LA EXTENSIÓN, NO CONVIERTE 
+ * EL FORMATO INTERNO DEL ARCHIVO.
  */
 
 const CONFIG_AUTORENAME = {
     // Carpeta Raíz: '2- DOCUMENTOS DE PROPIETARIOS y CIERRES'
     TARGET_FOLDER_ID: '1mBbFORjuddMN8nwU1zY27_wLa9iZWfvX',
-    EXTENSION_TARGET: '.DNG',
+    EXTENSIONS_TARGET: ['.DNG', '.HEIC'],
     EXTENSION_NEW: '.JPG',
     MAX_EXECUTION_TIME_MS: 4.5 * 60 * 1000 // 4.5 minutos (límite seguro de Apps Script)
 };
 
 /**
  * Función Principal: Ejecutada por el Trigger de Tiempo
+ * Nota: Mantiene el nombre 'autoRenameDNGtoJPG' para no 
+ * romper los triggers ya creados en el servidor de Apps Script.
  */
 function autoRenameDNGtoJPG() {
     const startTime = new Date().getTime();
-    console.log('🔄 Iniciando AutoRename DNG -> JPG...');
+    console.log(`🔄 Iniciando AutoRename Multimedia (${CONFIG_AUTORENAME.EXTENSIONS_TARGET.join(', ')}) -> JPG...`);
 
     try {
         const rootFolder = DriveApp.getFolderById(CONFIG_AUTORENAME.TARGET_FOLDER_ID);
@@ -35,7 +40,7 @@ function autoRenameDNGtoJPG() {
         if (processedCount > 0) {
             console.log(`✅ Proceso completado. Archivos renombrados: ${processedCount}`);
         } else {
-            console.log('ℹ️ No se encontraron archivos nuevos .DNG para renombrar.');
+            console.log('ℹ️ No se encontraron archivos nuevos para renombrar.');
         }
 
     } catch (e) {
@@ -56,17 +61,20 @@ function processFolderRecursively(folder, startTime) {
     }
 
     // 2. Procesar archivos en la carpeta actual
-    // OPTIMIZACIÓN: Usamos searchFiles para obtener SOLO los .DNG y no iterar miles de .JPG
-    // Note: 'title contains' is case-insensitive in Drive API query
-    const files = folder.searchFiles(`title contains '${CONFIG_AUTORENAME.EXTENSION_TARGET}' and trashed = false`);
+    // Construir la consulta dinámica ('title contains '.DNG' or title contains '.HEIC'')
+    const queryParts = CONFIG_AUTORENAME.EXTENSIONS_TARGET.map(ext => `title contains '${ext}'`);
+    const query = `(${queryParts.join(' or ')}) and trashed = false`;
+    const files = folder.searchFiles(query);
 
     while (files.hasNext()) {
         const file = files.next();
         const name = file.getName();
+        const upperName = name.toUpperCase();
 
-        // Verificar extensión (Case Insensitive)
-        if (name.toUpperCase().endsWith(CONFIG_AUTORENAME.EXTENSION_TARGET)) {
-            const newName = name.slice(0, -4) + CONFIG_AUTORENAME.EXTENSION_NEW;
+        // Verificar cuál extensión coincidió (Case Insensitive)
+        const matchedExt = CONFIG_AUTORENAME.EXTENSIONS_TARGET.find(ext => upperName.endsWith(ext));
+        if (matchedExt) {
+            const newName = name.slice(0, -matchedExt.length) + CONFIG_AUTORENAME.EXTENSION_NEW;
 
             try {
                 file.setName(newName);

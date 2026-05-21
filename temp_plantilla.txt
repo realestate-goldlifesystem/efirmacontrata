@@ -1,0 +1,135 @@
+﻿CONTRATO DE ARRENDAMIENTO DE INMUEBLE DESTINADO PARA VIVIENDA URBANA - (NOMBRE DEL PROPIETARIO) 
+
+
+LUGAR Y FECHA DEL CONTRATO:  {{ejemplo:BOGOTA-D.C.}} , {{DIA-VIGENTE}}  de {{MES-VIGENTE}} de {{AÑO VIGENTE}})
+ARRENDADOR:
+	{{NOMBRE-PROPIETARIO}} con C.C. No.  {{NUMERO-DE-DOCUMENTO-PROPIETARIO}}
+	ARRENDATARIO:
+	{{NOMBRE-INQUILINO}}  con C.C. No.  {{NUMERO-DE-DOCUMENTO-INQUILINO}}
+	
+
+
+
+CONDICIONES GENERALES
+PRIMERA: OBJETO DEL CONTRATO: Mediante el presente contrato el arrendador concede al  arrendatario el goce del inmueble que adelante se identifica por su dirección, de acuerdo con el inventario que las partes firman por separado y que forma parte integral de este contrato.
+
+
+SEGUNDA: DIRECCION DEL INMUEBLE: {{DIRECCION-DEL-INMUEBLE-DEL-FOLIO-DE-MATRICULA}} en el DEPTO: {{ejemplo:BOGOTA-D.C.}} MUNICIPIO: {{ejemplo:USAQUEN}} VEREDA: {{ejemplo:USAQUEN}};  Este inmueble está identificado en la Oficina de Registro de Instrumentos Públicos de {{OFICINA-DE-REGISTRO-PUBLICO}} con la Matrícula Inmobiliaria número {{NUMERO-DE-MATRICULA}}
+TERCERA: LINDEROS DEL INMUEBLE ARRENDADO: Los linderos se relacionan en hoja anexa, que hace parte integral de este contrato. PARAGRAFO: No obstante el área y linderos, dicho inmueble se entrega como cuerpo cierto y no por cabida.
+CUARTA: DESTINACION: El arrendatario se compromete a destinar este inmueble exclusivamente para vivienda y no puede darle un uso distinto. 
+QUINTA: PRECIO DEL ARRENDAMIENTO: ${{PRECIO-DEL-CANON-EN-NUMERO}} pesos m/cte. que el Arrendatario pagará en su totalidad, mensualmente, dentro de los cinco (5) primeros días calendario de cada periodo mensual, por Anticipado, al arrendador o a su orden.
+SEXTA: INCREMENTOS DEL PRECIO: Vencido el primer año de vigencia de este contrato y así sucesivamente cada doce (12) mensualidades, en caso de prórroga tácita o expresa, en forma automática y sin necesidad de requerimiento alguno entre las partes, el precio mensual del arrendamiento se incrementará en una proporción igual al 100% del incremento que haya tenido el índice de precios al consumidor en el año calendario inmediatamente anterior a aquél en que se efectúe el incremento. Al suscribir este contrato el arrendatario y los deudores solidarios quedan plenamente notificados de todos los reajustes automáticos pactados en este contrato y que han de operar durante la vigencia del mismo.
+SEPTIMA: CUOTAS DE ADMINISTRACIÓN: Se obliga también el arrendatario a pagar al arrendador o a su orden la suma de ${{PRECIO-DE-ADMIN-EN-NUMERO}} pesos m/cte. pagaderos por concepto de cuota mensual de administración, en forma anticipada, dentro de los cinco (5) primeros días de cada mes calendario. Este valor se reajustará automáticamente en la fecha y proporción que decida la asamblea de la copropiedad. El arrendatario y los deudores solidarios renuncian expresamente a los requerimientos para constitución en mora respecto de esta obligación pecuniaria.  PARAGRAFO 1: El arrendatario conoce, acepta y se obliga a cumplir el respectivo Reglamento de Propiedad Horizontal y/o Manual de Convivencia, del cual recibe una copia a la firma de este contrato. PARAGRAFO 2: Las cuotas extraordinarias de administración serán responsabilidad del Arrendador. PARAGRAFO 3:Las sanciones administrativas por incumplimento al manual de convivencia estarán a cargo del inquilino en los pagos de la administración y/o pagos por adquisición de parqueadero.
+
+OCTAVA: LUGAR PARA EL PAGO: El arrendatario pagará el precio del arrendamiento y las cuotas de administración al arrendador en la CUENTA {{TIPO-DE-CUENTA-BANCARIA}} No.{{NUMERO-DE-CUENTA-BANCARIA}} del Banco {{NOMBRE-DEL-BANCO}} a nombre del señor(a)  {{NOMBRE-DEL-DUEÑO-DE-LA-CUENTA-BANCARIA}}  con CC: {{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE LA CUENTA}} Para efectos de cumplimiento del pago, EL ARRENDATARIO se obliga a enviar a la dirección de notificación de EL ARRENDADOR dentro de los primeros 5 días de cada período mensual, la consignación original con sello de caja del respectivo Banco. Queda establecido que los períodos mensuales son indivisibles, y por lo tanto EL ARRENDATARIO debe  pagar el canon pactado en su totalidad, cualquiera que sea el número de días que ocupe el inmueble durante el período respectivo. PARAGRAFO: Si EL ARRENDADOR ha efectuado la correspondiente reclamación a SEGUROS COMERCIALES BOLIVAR S.A., por incumplimiento del contrato, El Arrendatario o cualquiera de los deudores solidarios deberán pagar directamente en la cuenta y en los términos que le indique la Compañía Aseguradora o a su delegada.
+NOVENA: VIGENCIA DEL CONTRATO: {{numero-de-meses-del-contrato-en-letra}} {{numero-de-meses-del-contrato-en-numero}} meses, que comienzan a contarse el día (fecha de inicio de contrato) de 20(00) 
+DECIMA: PRÓRROGAS: Este contrato se entenderá prorrogado en iguales condiciones y por el mismo término inicial, siempre que cada una de las partes haya cumplido con las obligaciones a su cargo y, que el arrendatario, se avenga a los reajustes de la renta pactados en la cláusula quinta que antecede, autorizados en la Ley 820 de 2003. 
+DÉCIMA PRIMERA: SERVICIOS: Estarán a cargo del arrendatario los servicios públicos domiciliarios: {{Acueducto}}, {{gas}}, {{Energía Eléctrica}}, {{telefono}}, {{caldera}}. Los servicios de carácter privado, tales como antena parabólica, televisión satelital o por cable, Internet, Banda Ancha, avisos en páginas amarillas o cualquier otro, serán responsabilidad directa y exclusiva del arrendatario sobre lo cual EL ARRENDADOR no confiere autorización ni solidaridad alguna para su instalación y costos de servicio. EL ARRENDADOR no autoriza a EL ARRENDATARIO para adquirir créditos, pólizas fúnebres, periódicos, revistas y/o periódicos, electrodomésticos y demás mediante las facturas de los servicios públicos. El presente documento, junto con los recibos cancelados por el arrendador, constituye título ejecutivo para cobrar judicialmente al arrendatario y sus garantes los servicios que dejaren de pagar siempre que tales montos correspondan al período en el que estos tuvieron en su poder el inmueble. 
+
+
+DÉCIMA SEGUNDA: COSAS O USOS CONEXOS: Además del inmueble identificado y descrito anteriormente, tendrá el ARRENDATARIO derecho de goce sobre los siguientes bienes y usos: de todas las zonas comunes existentes, de acuerdo a lo estipulado en el Reglamento de Propiedad Horizontal, el cual declara conocer y se obliga a cumplir.
+DÉCIMA TERCERA: CLAUSULA PENAL: El incumplimiento por parte del arrendatario o del arrendador de cualquiera de las cláusulas de este contrato, lo constituirá en deudor de la parte cumplida, en una suma equivalente a dos (2) mensualidades del arrendamiento que se encuentre vigente o en ejecución al momento del incumplimiento.  El pago de la pena no extingue la obligación principal y podrá iniciarse a la vez el cobro de la pena, de la obligación principal y de los daños  y  perjuicios a que hubiere lugar. Ante el incumplimiento del pago del canon de arrendamiento en los términos pactados o de cualquier obligación pecuniaria a cargo del Arrendatario, será exigible la cláusula penal aquí pactada a favor del Arrendador. Las partes renuncian expresamente a los requerimientos para ser constituidos en mora del pago de cualquiera de sus obligaciones legales y las que aquí expresamente se han acordado. 
+DÉCIMA CUARTA: ESPACIOS EN BLANCO: El arrendatario faculta expresamente al arrendador para llenar en documentos  adjuntos a este contrato, los espacios en blanco referentes a los linderos, inventario, actualización de nomenclatura y recibo del inmueble.
+DÉCIMA QUINTA: REQUERIMIENTOS: El arrendatario y los deudores solidarios que suscriben este contrato renuncian expresamente a los requerimientos de que trata el artículo 2007 del Código Civil  y en general a los que consagre cualquier norma sustancial o procesal para efectos de la constitución en mora.
+DÉCIMA SEXTA: PREAVISOS PARA LA ENTREGA: Las partes podrán dar por terminado unilateralmente el contrato de arrendamiento a la fecha de vencimiento del término inicial o de sus prórrogas, siempre y cuando dé previo aviso por escrito a través del servicio postal autorizado, con una antelación no menor a tres (3) meses a la referida fecha de vencimiento. La terminación unilateral por parte del arrendatario en cualquier otro momento solo se aceptará previo el pago de una indemnización equivalente al precio de tres (3) meses de arrendamiento que esté vigente en el momento de entrega del inmueble.
+DÉCIMA SEPTIMA: CAUSALES DE TERMINACIÓN: A favor del arrendador serán las siguientes: a) La cesión o subarriendo. b) El cambio de destinación del inmueble, c) El no pago del precio del canon y de las cuotas de administración dentro del término previsto en este contrato. d) La incursión reiterada del arrendatario en procederes que afecten la tranquilidad ciudadana de los vecinos, o la destinación del inmueble para actos delictivos, o contrarios a las buenas costumbres, o que impliquen contravención, o que representen peligro para el inmueble o la salubridad de sus habitantes. e) La realización de mejoras, cambios o ampliaciones del inmueble, sin expresa autorización del arrendador. f) La no cancelación oportuna de los servicios públicos a cargo del arrendatario. g) Las demás causales previstas en la ley.  A favor del arrendatario serán las siguientes: a) La suspensión de la prestación de los servicios públicos al inmueble, por acción premeditada del arrendador o porque incurra en mora en pagos que estuvieran a su cargo. En estos casos del arrendatario podrá optar por asumir el costo del restablecimiento del servicio y descontarlo de los pagos que le corresponda hacer como arrendatario. b) La incursión reiterada del arrendador en procederes que afecten gravemente el disfrute cabal por el arrendatario del inmueble arrendado, debidamente comprobada ante la autoridad policiva.  c) El desconocimiento por parte del arrendador de derechos reconocidos al  arrendatario por la Ley o contractualmente. 
+DÉCIMA OCTAVA: CESIÓN DE LOS DERECHOS: El Arrendatario no podrá ceder ni subarrendar el inmueble, ni ninguna porción del mismo sin que medie el consentimiento previo, expreso y por escrito del Arrendador.  PARAGRAFO: Podrá el arrendador ceder libremente los derechos que emanan de este contrato y tal cesión producirá efectos respecto del arrendatario y de los deudores solidarios a partir de la fecha de la comunicación certificada en que a ellos se notifique tal cesión.
+DÉCIMA NOVENA: RECIBO Y ESTADO: El arrendatario declara que ha recibido el inmueble objeto de este contrato en buen estado, conforme al inventario que hace parte del mismo, y que en el mismo estado lo restituirá al arrendador a la terminación del arrendamiento, o cuando éste haya de cesar por alguna de las causales previstas, salvo el deterioro proveniente del tiempo y del uso legítimo. 
+VIGÉSIMA: MEJORAS: No podrá el arrendatario ejecutar en el inmueble mejoras de ninguna especie, excepto las reparaciones locativas, sin el permiso escrito del arrendador. Si se ejecutaren accederán al propietario del inmueble sin indemnización para quien las efectuó. El arrendatario renuncia expresamente a descontar de la renta el valor de las reparaciones indispensables, a que se refiere el artículo 27 de la Ley 820 de 2003. PARAGRAFO: Las reparaciones locativas son aquellas que están a la vista del inmueble y en uso por el arrendatario, ejemplo: tomas, bombillos, llaves, puertas, chapas, botones de estufa, etc. (cuando se hace entrega del inmueble al arrendatario según inventario, están funcionando, pero por el uso, se dañan), están a cargo del Arrendatario por Ley  y este las debe reparar con su propio gasto, no se pueden descontar del canon de arrendamiento. Las reparaciones indispensables por el contrario, sí le corresponden al Arrendador.  Se entiende por reparaciones indispensables, los daños al inmueble de las cosas que están adheridas al inmueble y que se entregaron al arrendatario en el momento de celebrar el contrato de arrendamiento, ejemplo: las instalaciones eléctricas, los calentadores de agua, cambio de tubería, tejas rotas, las humedades, goteras, etc.  El arrendatario las debe informar al arrendador para que este las repare.
+VIGÉSIMA PRIMERA: DEUDORES SOLIDARIOS.-   Los suscritos: 
+{{NOMBRE-CODEUDOR}} con C.C. N° {{NUMERO-DE-DOCUMENTO-CODEUDOR}} de {{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR}}
+{{NOMBRE-CODEUDOR 2}} (EN EL CASO QUE LO HAYA O SINO SE BORRA ESTE TEXTO) con C.C. N° {{NUMERO-DE-DOCUMENTO-CODEUDOR-2}} de {{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}
+{{NOMBRE-CODEUDOR 3}} (EN EL CASO QUE LO HAYA O SINO SE BORRA ESTE TEXTO) con C.C. N° {{NUMERO-DE-DOCUMENTO-CODEUDOR-3}} de {{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}
+
+Por medio del presente documento nos declaramos deudores del ARRENDADOR en forma solidaria e indivisible junto con el Arrendatario {{NOMBRE-INQUILINO}} de todas las cargas y obligaciones contenidas en el presente contrato,  durante el término inicialmente pactado y durante sus prórrogas o renovaciones expresas o tácitas y hasta la restitución real del inmueble al arrendador, por concepto de: Arrendamientos, servicios públicos, indemnizaciones, daños en el inmueble, cuotas de administración, cláusulas penales, costas procesales y cualquier otra derivada del contrato, las cuales podrán ser exigidas por el arrendador a cualquiera de las obligados, por la vía ejecutiva, sin necesidad de requerimientos privados o judiciales a los cuales renunciamos expresamente, sin que por razón de esta solidaridad asumamos el carácter de fiadores, ni arrendatarios del inmueble objeto del presente contrato, pues tal calidad la asume exclusivamente el arrendatario {{NOMBRE-INQUILINO}} y sus respectivos causahabientes. Todo lo anterior sin perjuicio de que en caso de abandono del inmueble cualquiera de los deudores solidarios pueda hacer entrega válidamente del inmueble al arrendador o a quien éste señale, bien sea judicial o extrajudicialmente. Para este exclusivo efecto el arrendatario otorga poder amplio y suficiente a los deudores solidarios en este mismo acto y al suscribirse el presente contrato. PARAGRAFO: Los deudores solidarios aceptan expresamente desde ahora cualquier cesión que el ARRENDADOR haga respecto del presente contrato y ratifican su voluntad de que la notificación de que trata el artículo 1960 del Código Civil se surta con el solo envío de la nota de cesión, a la dirección que aparece registrada en este contrato al pie de sus respectivas firmas.
+
+
+VIGÉSIMA SEGUNDA: TRATAMIENTO DE DATOS PERSONALES Y AUTORIZACIÓN.-  En cumplimiento de lo dispuesto en la Ley 1581 de 2012, los datos personales suministrados por el ARRENDATARIO y los DEUDORES SOLIDARIOS serán objeto de tratamiento por parte del ARRENDADOR, {{NOMBRE-PROPIETARIO}}, en calidad de responsable del tratamiento, con el fin de ejecutar y administrar el presente contrato de arrendamiento en todas sus etapas, en especial para: a) El desarrollo de la relación contractual. b) La actualización y verificación de datos. c) El reporte y consulta ante centrales de riesgo. d) El ofrecimiento de servicios relacionados. e) Encuestas de satisfacción y campañas comerciales. f) La validación de referencias. g) El envío de comunicaciones relacionadas con el contrato por medios físicos o electrónicos. Adicionalmente, el ARRENDATARIO, {{NOMBRE-PROPIETARIO}}, en calidad de encargada de tratamiento limitada, podrá tratar los datos personales del ARRENDADOR y de los DEUDORES SOLIDARIOS exclusivamente con fines contractuales y de contacto directo relacionados con la ejecución del presente contrato, garantizando en todo momento la confidencialidad, seguridad y uso exclusivo de la información conforme a la normatividad vigente. Ambas partes se comprometen a cumplir con los principios y deberes previstos en la Ley 1581 de 2012 y la Ley 1266 de 2008. Los titulares de los datos podrán ejercer sus derechos de acceso, rectificación, cancelación y oposición (ARCO), mediante comunicación escrita dirigida a la dirección física o electrónica de la parte correspondiente, según el rol que desempeñe como responsable o encargada del tratamiento. Al firmar este contrato, EL ARRENDATARIO y LOS DEUDORES SOLIDARIOS manifiestan su autorización expresa y voluntaria para el tratamiento de sus datos personales en los términos aquí establecidos.
+
+VIGÉSIMA TERCERA: ABANDONO DEL INMUEBLE: El ARRENDATARIO autoriza expresamente al ARRENDADOR para ingresar al inmueble arrendado, únicamente en caso de abandono evidente, y con el exclusivo fin de proteger la integridad del bien, bajo las siguientes condiciones: 1. Que el inmueble permanezca desocupado o en evidente estado de abandono por un término igual o superior a un (1) mes, sin que el ARRENDADOR haya recibido el pago correspondiente al canon de arrendamiento y/o cuota de administración, y sin que haya existido respuesta o justificación razonable por parte del ARRENDATARIO ante requerimientos previos. 2. Que existan razones objetivas y fundadas para considerar que la integridad del inmueble está en riesgo de deterioro grave, desmantelamiento, o que su uso represente una amenaza comprobable para la seguridad del vecindario. 3. El ingreso deberá realizarse siempre en presencia de al menos dos (2) testigos, y se dejará constancia escrita y fotográfica del estado del inmueble al momento de la diligencia. 4. No se considerará abandono la ausencia temporal del ARRENDATARIO por razones justificadas como vacaciones, trabajo u otras circunstancias similares, siempre que se mantenga la comunicación con el ARRENDADOR y los pagos se encuentren al día. Esta autorización no sustituye los mecanismos legales para la restitución del inmueble, pero sí faculta al ARRENDADOR para actuar preventivamente en caso de abandono probado, en protección del bien y del entorno.
+
+
+VIGÉSIMA CUARTA: EXENCION DE RESPONSABILIDAD: EL ARRENDATARIO asume la responsabilidad por los daños que se puedan causar al inmueble o a los enseres y dotaciones del mismo, o a los inmuebles y enseres y dotaciones de los vecinos y de los terceros, cuando estos provengan o sean causados por EL ARRENDATARIO, por sus empleados o por descuido o negligencia de cualquiera de los mismos, tales como dejar abiertas llaves del agua o las luces prendidas etc., en cualquier de los casos se compromete a controlar los daños hasta tanto se le dé solución definitiva por quien corresponda.  EL ARRENDADOR NO ASUME responsabilidad alguna por los daños o perjuicios que EL ARRENDATARIO pueda sufrir por causas atribuibles a terceros, por robos, ni por siniestros causados por incendio o inundación. Serán de cargo, costo y obligaciones de El ARRENDATARIO las medidas de seguridad del inmueble objeto de este contrato.
+        
+VIGÉSIMA QUINTA: OBLIGACIONES DEL ARRENDADOR: Son obligaciones del arrendador: a) Entregar al arrendatario en la fecha convenida, o en el momento de la celebración del contrato, el inmueble dado en arrendamiento en buen estado de servicio, seguridad y sanidad y poner a su disposición los servicios, cosas o usos conexos y los adicionales convenidos.   b)  Mantener en el inmueble los servicios, las cosas y los usos conexos y adicionales en buen estado de servir para el fin convenido en el contrato.  
+
+
+VIGÉSIMA SEXTA: MERITO EJECUTIVO DEL CONTRATO.- Las partes acuerdan que el documento que contiene el contrato, presta merito ejecutivo para efectos extrajudiciales y judiciales, con relación a todas las obligaciones que de éste se deriven, sin importar que la exigibilidad de las mismas, se haga con posterioridad a la restitución del inmueble.  Los efectos del título ejecutivo se extenderán aún después de la restitución y hasta el cumplimiento total de las obligaciones a cargo del Arrendatario y Deudores Solidarios.
+
+
+VIGÉSIMA SEPTIMA: VISITAS DE INSPECCION: El ARRENDADOR, o su representante debidamente autorizado, podrá realizar hasta dos (2) visitas al inmueble por cada año calendario, con el fin exclusivo de verificar el uso adecuado del bien, su estado de conservación y demás condiciones directamente relacionadas con el cumplimiento del contrato de arrendamiento. Estas visitas deberán ser coordinadas previamente con el ARRENDATARIO, con al menos cinco (5) días hábiles de antelación, informando el motivo, la fecha y la hora estimada de la visita. Las visitas se efectuarán en horarios razonables, y en presencia del ARRENDATARIO o de la persona que este autorice. Adicionalmente, el ARRENDADOR podrá realizar una (1) visita durante el período de preaviso legal para la terminación del contrato, bajo los mismos criterios de coordinación, aviso y respeto a la intimidad del ARRENDATARIO. En ningún caso estas visitas autorizan el ingreso arbitrario al inmueble, el cual requiere consentimiento expreso del ARRENDATARIO, salvo que concurra una de las causales excepcionales de ingreso previstas expresamente en este contrato, como abandono o riesgo grave para el inmueble.
+VIGÉSIMA OCTAVA: ENTREGA DE COPIAS: A la firma de este documento el Arrendatario certifica haber recibido una copia de este contrato con firmas originales y una copia simple de la parte normativa del Reglamento de Propiedad Horizontal (Sólo si el inmueble arrendado pertenece a este régimen) y los deudores solidarios certifican haber recibido una copia con firmas originales de este contrato, conforme lo prevé los numerales 3 y  4 del Art. 8 de la ley  820 de 2003. 
+VIGÉSIMA NOVENA: NOTIFICACIONES JUDICIALES: Para efectos de notificaciones judiciales y extrajudiciales, relacionadas directa e indirectamente con el contrato de arrendamiento las partes acuerdan que  serán las que se registren debajo de sus firmas y se obligan a informar por escrito a la otra parte, a  través de servicio postal autorizado cualquier cambio de dirección. (Art. 12 ley 820 de 2003).
+
+CLÁUSULAS ADICIONALES: El arrendatario declara que recibe en buen estado los bienes muebles del inmueble (como electrodomésticos, muebles y accesorios), según el inventario firmado por ambas partes, que hace parte de este contrato. Si alguno de estos bienes sufre daños que no sean por uso normal y adecuado, el arrendatario deberá pagar el 100% del valor de la reparación o reposición. Esto también aplica si el daño lo causa alguien bajo su responsabilidad (familiares, visitantes, etc.). Si no paga estos costos en un plazo de treinta (30) días después de ser notificado por escrito y/o por algún medio electrónico, deberá pagar una penalización equivalente a tres (03) meses de arriendo. Además, si es necesario contratar un abogado o iniciar un proceso legal para cobrar estos valores, el arrendatario deberá asumir también los gastos legales y honorarios del abogado. conforme el artículo 1985 del Código Civil y el artículo 10 de la Ley 820 de 2003.
+
+
+Para constancia se firma por las partes Hoy, {{DIA-VIGENTE}} de {{MES-VIGENTE}} de {{AÑO-VIGENTE}}
+
+
+ARRENDADOR
+
+
+
+____________________________________________          
+NOMBRE: {{NOMBRE-PROPIETARIO}}                        
+C.C. No. _____________  de
+Dirección de Notificaciones:
+____________________________________________
+Teléfono: {{CELULAR-PROPIETARIO}}
+Correo Electrónico: {{CORREO-PROPIETARIO}}                                
+______________________________________________                                
+
+
+
+
+
+ARRENDATARIO
+
+
+
+
+____________________________________________          
+NOMBRE: {{NOMBRE-INQUILINO}}                              
+C.C. No. _____________  de
+Dirección de Notificaciones:
+____________________________________________
+Teléfono: {{CELULAR-INQUILINO}}
+Correo Electrónico: {{CORREO-INQUILINO}}                                
+______________________________________________                                
+
+
+
+
+
+DEUDORES  SOLIDARIOS 
+
+
+
+
+____________________________________________          
+NOMBRE: {{NOMBRE-CODEUDOR}}
+{{NOMBRE-CODEUDOR 2}}
+{{NOMBRE-CODEUDOR 3}}                                
+C.C. No. _____________  de 
+Dirección de Notificaciones:
+____________________________________________
+Teléfono:{{CELULAR-CODEUDOR}}
+{{CELULAR-CODEUDOR-2}}
+{{CELULAR-CODEUDOR-3}}
+Correo Electrónico: {{CORREO-CODEUDOR}}
+{{CORREO-CODEUDOR-2}}
+{{CORREO-CODEUDOR-3}}
+                                
+______________________________________________                                
+
+
+
+
+
+
+                          
+
+
+Esta hoja hace parte integral del contrato de arrendamiento firmado entre el arrendador {{NOMBRE-PROPIETARIO}}  y el arrendatario {{NOMBRE-INQUILINO}}
+Solicitud {{numero-de-solicitud-del-aprobado}} - {{últimos dos digitos del año vigente}}

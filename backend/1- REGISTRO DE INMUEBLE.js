@@ -24,10 +24,25 @@ function onFormSubmitInmueble(e) {
   Logger.log('🔵 ARCHIVO 1 - INICIO DEL PROCESAMIENTO');
   Logger.log('🔵 ═══════════════════════════════════════════════════');
 
+  var backupFiltro = null;
+  var sheet = null;
+
   try {
-    // PASO 1: Obtener hoja y validar
-    var sheet = getSheet();
-    var row = sheet.getLastRow();
+    // PASO 1: Obtener hoja y validar fila exacta
+    sheet = getSheet();
+
+    // Respaldar y eliminar filtros temporalmente
+    backupFiltro = removerYRespaldarFiltros(sheet);
+
+    var row;
+    
+    if (e && e.range) {
+      row = e.range.getRow();
+      Logger.log(`🎯 Fila detectada por evento: ${row}`);
+    } else {
+      row = sheet.getLastRow();
+      Logger.log(`⚠️ Evento no detectado, usando última fila: ${row}`);
+    }
 
     if (row <= 1) {
       Logger.log('⚠️ No hay suficientes filas de datos');
@@ -108,12 +123,64 @@ function onFormSubmitInmueble(e) {
     } catch (e) {
       Logger.log('❌ No se pudo marcar error en la hoja: ' + e.message);
     }
+  } finally {
+    // Siempre intentar restaurar los filtros, incluso si hubo error
+    if (sheet && backupFiltro) {
+      restaurarFiltros(sheet, backupFiltro);
+    }
   }
 }
 
 // ==========================================
 // FUNCIONES DE UTILIDAD BÁSICAS
 // ==========================================
+
+function removerYRespaldarFiltros(sheet) {
+  var originalFilter = sheet.getFilter();
+  if (!originalFilter) return null;
+
+  var filterRange = originalFilter.getRange();
+  var filterCriteriaMap = {};
+  var startCol = filterRange.getColumn();
+  var numCols = filterRange.getNumColumns();
+
+  for (var i = 0; i < numCols; i++) {
+    var colIndex = startCol + i;
+    var criteria = originalFilter.getColumnFilterCriteria(colIndex);
+    if (criteria) {
+      filterCriteriaMap[colIndex] = criteria;
+    }
+  }
+
+  var a1Notation = filterRange.getA1Notation();
+  originalFilter.remove();
+  SpreadsheetApp.flush();
+  Logger.log('🧹 Filtros respaldados y eliminados temporalmente.');
+  
+  return {
+    rangeA1: a1Notation,
+    criteriaMap: filterCriteriaMap
+  };
+}
+
+function restaurarFiltros(sheet, backupInfo) {
+  if (!backupInfo) return;
+  try {
+    // Si alguien más creó un filtro mientras tanto, lo quitamos
+    if (sheet.getFilter()) sheet.getFilter().remove();
+    
+    var range = sheet.getRange(backupInfo.rangeA1);
+    var newFilter = range.createFilter();
+    
+    for (var colIndex in backupInfo.criteriaMap) {
+      newFilter.setColumnFilterCriteria(parseInt(colIndex), backupInfo.criteriaMap[colIndex]);
+    }
+    SpreadsheetApp.flush();
+    Logger.log('🔄 Filtros restaurados a su estado original.');
+  } catch(e) {
+    Logger.log('⚠️ No se pudieron restaurar los filtros: ' + e.message);
+  }
+}
 
 function getSheet() {
   return SpreadsheetApp.getActiveSpreadsheet()

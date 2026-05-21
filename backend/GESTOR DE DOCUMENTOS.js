@@ -21,7 +21,7 @@ const DOCS_CONFIG = {
 /**
  * Crea el menú personalizado cuando se abre la hoja
  */
-function onOpen() {
+function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
 
   ui.createMenu('🏠 E-FirmaContrata')
@@ -44,6 +44,11 @@ function onOpen() {
     .addSeparator()
     .addItem('📂 Reporte Jerarquía', 'mostrarEstructuraCarpetasPlantilla')
     .addToUi();
+}
+
+function construirMenuManualmente() {
+  onOpen(null);
+  SpreadsheetApp.getUi().alert("✅ Menú forzado e instalado correctamente. Revisa la barra superior (al lado de Ayuda).");
 }
 
 /**
@@ -507,6 +512,9 @@ function doPost(e) {
         break;
       case 'analizarCertificadoDesdePanel':
         result = analizarCertificadoDesdePanel(datos.fileId, datos.datosPropietario);
+        break;
+      case 'procesarFirmaElectronica':
+        result = handleProcesarFirmaElectronica(datos);
         break;
       default:
         result = {

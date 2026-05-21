@@ -73,9 +73,14 @@ function continuarRegistroInmuebleParte2() {
 function procesarRegistroParte2(datos) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet()
     .getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+
+  var backupFiltro = null;
   var row = datos.fila;
 
   try {
+    // Respaldar y eliminar filtros en Archivo 2
+    backupFiltro = removerYRespaldarFiltros(sheet);
+
     // Procesar según tipo detectado
     switch (datos.tipoRegistro.tipo) {
       case 'TIPO_3': // Anteriormente TIPO_1_1
@@ -109,6 +114,11 @@ function procesarRegistroParte2(datos) {
     Logger.log(`❌ ERROR en fila ${row}: ${error.message}`);
     Logger.log('📍 Stack: ' + error.stack);
     marcarErrorEnFila(sheet, row, error.message);
+  } finally {
+    // Restaurar filtros siempre
+    if (sheet && backupFiltro) {
+      restaurarFiltros(sheet, backupFiltro);
+    }
   }
 }
 
