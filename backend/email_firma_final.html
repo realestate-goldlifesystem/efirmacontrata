@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firma de Acta de Promoción</title>
+    <title>Firma Exitosa - Copia Certificada</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -45,8 +45,8 @@
             font-size: 16px;
         }
         .highlight-box {
-            background-color: #fcf9f2;
-            border-left: 4px solid #d4af37;
+            background-color: #f4fdf4;
+            border-left: 4px solid #28a745;
             padding: 15px 20px;
             margin: 25px 0;
             border-radius: 0 4px 4px 0;
@@ -54,28 +54,7 @@
         .highlight-box p {
             margin: 0;
             font-size: 15px;
-            color: #555;
-        }
-        .btn-container {
-            text-align: center;
-            margin: 35px 0;
-        }
-        .btn {
-            display: inline-block;
-            background-color: #d4af37;
-            color: #ffffff !important;
-            text-decoration: none;
-            padding: 16px 32px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);
-            transition: background-color 0.3s;
-        }
-        .btn:hover {
-            background-color: #c19b2e;
+            color: #155724;
         }
         .footer {
             background-color: #1a1a1a;
@@ -91,6 +70,12 @@
             color: #d4af37;
             font-weight: bold;
         }
+        .icon-success {
+            font-size: 48px;
+            text-align: center;
+            display: block;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -100,27 +85,21 @@
         </div>
         
         <div class="content">
+            <span class="icon-success">✅</span>
             <p>Estimado/a <strong><?= NOMBRE_CLIENTE ?></strong>,</p>
             
-            <p>Espero que se encuentre muy bien.</p>
+            <p>El proceso de firma electrónica se ha completado exitosamente.</p>
             
-            <p>Nos complace adjuntar a este correo el <strong><?= TIPO_ACTA ?></strong> de su inmueble, gestionada con la colaboración de nuestro Agente Inmobiliario, David Leonardo Gutiérrez Salinas.</p>
+            <p>Adjunto a este correo encontrará la copia final certificada de su <strong><?= TIPO_ACTA ?></strong>, la cual incluye su firma electrónica y el anexo legal de auditoría (Ley 527 de 1999).</p>
             
             <div class="highlight-box">
-                <p>Para brindarle total seguridad jurídica y cumplir con la <strong>Ley 527 de 1999</strong> (Ley de Comercio Electrónico), hemos habilitado un portal seguro para que usted pueda registrar su firma digital con pleno valor probatorio.</p>
+                <p><strong>Confirmación Legal:</strong> El documento adjunto tiene plena validez jurídica e inalterabilidad comprobada, resguardado con su rastro de red (IP, Dispositivo y Fecha).</p>
             </div>
             
-            <p>Por favor, revise el documento adjunto y haga clic en el siguiente botón para proceder con la firma electrónica desde su celular o computador:</p>
+            <p>Agradecemos su confianza en nosotros. Si tiene alguna inquietud adicional, no dude en contactarnos.</p>
             
-            <div class="btn-container">
-                <a href="<?= URL_FIRMA ?>" class="btn">Revisar y Firmar Acta</a>
-            </div>
-            
-            <p>Una vez completado el proceso, el sistema estampará su firma junto con un sello de auditoría (Fecha, IP y Dispositivo) para garantizar la inalterabilidad del acuerdo, y le enviaremos automáticamente la copia final certificada.</p>
-            
-            <p>Si tiene alguna duda o comentario sobre el documento, por favor comuníquese con nosotros antes de firmar.</p>
-            
-            <p>Agradecemos de antemano su confianza en nosotros.</p>
+            <p>Cordialmente,</p>
+            <p class="gold-text">Real Estate - Gold Life System</p>
         </div>
         
         <div class="footer">

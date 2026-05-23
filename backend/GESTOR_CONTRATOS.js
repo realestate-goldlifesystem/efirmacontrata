@@ -1665,16 +1665,53 @@ function handleProcesarFirmaElectronica(datos) {
           try {
             const emailCol = getCol('Correo electrónico');
             const nameCol = getCol('Ingrese Nombres y Apellidos');
+            const tipoNegocioCol = getCol('TIPO DE NEGOCIO');
             
             if (emailCol > 0 && nameCol > 0) {
               const emailCliente = sheet.getRange(i, emailCol).getValue();
               const nombreCliente = sheet.getRange(i, nameCol).getValue();
+              const tipoNegocio = tipoNegocioCol > 0 ? sheet.getRange(i, tipoNegocioCol).getValue() : 'Corretaje';
               
               if (emailCliente) {
+                let subject = '';
+                let tipoActaTexto = '';
+
+                switch(tipoNegocio) {
+                  case 'Administración':
+                    subject = 'ACTA DE PROMOCION Y ADMINISTRACION DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    tipoActaTexto = 'Acta de administración';
+                    break;
+                  case 'Venta':
+                    subject = 'ACTA DE PROMOCION DE VENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    tipoActaTexto = 'Acta para la promoción en venta';
+                    break;
+                  case 'Admi-Venta':
+                    subject = 'ACTA DE PROMOCION DE ADMI-VENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    tipoActaTexto = 'Acta de promoción de Admi-Venta';
+                    break;
+                  case 'Vendi-Renta':
+                    subject = 'ACTA DE PROMOCION DE VENDI-RENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    tipoActaTexto = 'Acta de promoción de Vendi-Renta';
+                    break;
+                  case 'Corretaje':
+                  default:
+                    subject = 'ACTA DE PROMOCIÓN DE ARRENDAMIENTO DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    tipoActaTexto = 'Acta de Promoción en Arriendo';
+                    break;
+                }
+
+                subject = subject.replace('<<nombre>>', nombreCliente);
+
+                var template = HtmlService.createTemplateFromFile('backend/email_firma_final');
+                template.NOMBRE_CLIENTE = nombreCliente;
+                template.TIPO_ACTA = tipoActaTexto;
+                template.ANIO = new Date().getFullYear();
+                var htmlBody = template.evaluate().getContent();
+
                 MailApp.sendEmail({
                   to: emailCliente,
-                  subject: "Copia Certificada de Acta de Promoción - Gold Life System",
-                  htmlBody: `Estimado/a <b>${nombreCliente}</b>,<br><br>El proceso de firma se ha completado exitosamente.<br><br>Adjunto a este correo encontrará la copia final certificada de su Acta de Promoción, la cual incluye su firma electrónica y el anexo legal de auditoría (Ley 527 de 1999).<br><br>Agradecemos su confianza en nosotros.<br><br>Cordialmente,<br><b>Real Estate - Gold Life System</b>`,
+                  subject: subject,
+                  htmlBody: htmlBody,
                   attachments: [finalPdf.getAs(MimeType.PDF)]
                 });
                 console.log("Copia final enviada a: " + emailCliente);

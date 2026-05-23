@@ -110,7 +110,7 @@ function procesarRegistroParte2(datos) {
 
     // --- NUEVO: Enviar correo de firma para Corretaje ---
     try {
-      enviarCorreoFirmaCorretaje(sheet, row, datos.cdr, datos.datosInmueble.tipoNegocio);
+      enviarCorreoFirmaInicial(sheet, row, datos.cdr, datos.datosInmueble.tipoNegocio);
     } catch(err) {
       Logger.log('⚠️ Error no bloqueante al enviar correo de firma: ' + err.message);
     }
@@ -728,19 +728,51 @@ function moverArchivosDesdeFilaADestino(sheet, row, destinoFolder) {
 // ENVÍO DE CORREO SALA DE FIRMAS
 // ==========================================
 
-function enviarCorreoFirmaCorretaje(sheet, row, cdr, tipoNegocio) {
-  if (tipoNegocio !== 'Corretaje') {
-    Logger.log('ℹ️ Omitiendo correo de firma (Tipo de negocio no es Corretaje: ' + tipoNegocio + ')');
-    return;
-  }
-  
+function enviarCorreoFirmaInicial(sheet, row, cdr, tipoNegocio) {
   var emailCol = getColumnByName(sheet, 'Correo electrónico');
   var nombreCol = getColumnByName(sheet, 'Ingrese Nombres y Apellidos');
-  var docIdCol = getColumnByName(sheet, 'Merged Doc ID - CORRETAJE');
+  
+  if (!emailCol || !nombreCol) {
+    Logger.log('⚠️ No se puede enviar correo: Falta columna email o nombre');
+    return;
+  }
 
-  // PREVENCIÓN DEL ERROR (number, null)
-  if (!emailCol || !nombreCol || !docIdCol) {
-    Logger.log('⚠️ No se puede enviar correo: Falta alguna columna en el Google Sheet (emailCol=' + emailCol + ', nombreCol=' + nombreCol + ', docIdCol=' + docIdCol + ')');
+  var docIdColName = '';
+  var subject = '';
+  var tipoActaTexto = '';
+
+  switch(tipoNegocio) {
+    case 'Administración':
+      docIdColName = 'Merged Doc ID - ADMINISTRACIÓN';
+      subject = 'ACTA DE PROMOCION Y ADMINISTRACION DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+      tipoActaTexto = 'Acta de administración';
+      break;
+    case 'Venta':
+      docIdColName = 'Merged Doc ID - VENTA';
+      subject = 'ACTA DE PROMOCION DE VENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+      tipoActaTexto = 'Acta para la promoción en venta';
+      break;
+    case 'Admi-Venta':
+      docIdColName = 'Merged Doc ID - ADMI-VENTA';
+      subject = 'ACTA DE PROMOCION DE ADMI-VENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+      tipoActaTexto = 'Acta de promoción de Admi-Venta';
+      break;
+    case 'Vendi-Renta':
+      docIdColName = 'Merged Doc ID - VENDI-RENTA';
+      subject = 'ACTA DE PROMOCION DE VENDI-RENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+      tipoActaTexto = 'Acta de promoción de Vendi-Renta';
+      break;
+    case 'Corretaje':
+    default:
+      docIdColName = 'Merged Doc ID - CORRETAJE';
+      subject = 'ACTA DE PROMOCIÓN DE ARRENDAMIENTO DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+      tipoActaTexto = 'Acta de Promoción en Arriendo';
+      break;
+  }
+
+  var docIdCol = getColumnByName(sheet, docIdColName);
+  if (!docIdCol) {
+    Logger.log('⚠️ No se puede enviar correo: Falta la columna ' + docIdColName);
     return;
   }
 
@@ -749,20 +781,21 @@ function enviarCorreoFirmaCorretaje(sheet, row, cdr, tipoNegocio) {
   var docId = sheet.getRange(row, docIdCol).getValue();
 
   if (!email || !docId) {
-    Logger.log('⚠️ No se puede enviar correo: Falta email o Doc ID de Autocrat');
+    Logger.log('⚠️ No se puede enviar correo: Falta email o Doc ID de Autocrat para ' + tipoNegocio);
     return;
   }
 
-  Logger.log('📧 Preparando envío de correo de firma para: ' + email);
+  subject = subject.replace('<<nombre>>', nombre);
 
-  var subject = 'ACTA DE PROMOCIÓN DE ARRENDAMIENTO DEL INMUEBLE DE ' + nombre + ' - REAL ESTATE Gold Life System';
+  Logger.log('📧 Preparando envío de correo de firma (' + tipoNegocio + ') para: ' + email);
+
   var urlFirma = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/sala_firmas.html?docId=' + docId + '&cdr=' + cdr;
 
   try {
-    // Nota: clasp mapea los archivos con la ruta "backend/email_firma_corretaje"
     var template = HtmlService.createTemplateFromFile('backend/email_firma_corretaje');
     template.NOMBRE_CLIENTE = nombre;
     template.URL_FIRMA = urlFirma;
+    template.TIPO_ACTA = tipoActaTexto;
     template.ANIO = new Date().getFullYear();
     var htmlBody = template.evaluate().getContent();
 
