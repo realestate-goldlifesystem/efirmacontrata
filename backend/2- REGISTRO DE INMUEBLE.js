@@ -108,6 +108,13 @@ function procesarRegistroParte2(datos) {
         break;
     }
 
+    // --- NUEVO: Enviar correo de firma para Corretaje ---
+    try {
+      enviarCorreoFirmaCorretaje(sheet, row, datos.cdr, datos.datosInmueble.tipoNegocio);
+    } catch(err) {
+      Logger.log('⚠️ Error no bloqueante al enviar correo de firma: ' + err.message);
+    }
+
     Logger.log(`✅ Fila ${row} procesada correctamente`);
 
   } catch (error) {
@@ -716,6 +723,54 @@ function moverArchivosDesdeFilaADestino(sheet, row, destinoFolder) {
 
   Logger.log(`📦 Total archivos movidos: ${archivosMovidos}`);
 }
+
+// ==========================================
+// ENVÍO DE CORREO SALA DE FIRMAS
+// ==========================================
+
+function enviarCorreoFirmaCorretaje(sheet, row, cdr, tipoNegocio) {
+  if (tipoNegocio !== 'Corretaje') {
+    Logger.log('ℹ️ Omitiendo correo de firma (Tipo de negocio no es Corretaje: ' + tipoNegocio + ')');
+    return;
+  }
+  
+  var emailCol = getColumnByName(sheet, 'Correo electronico');
+  var email = sheet.getRange(row, emailCol).getValue();
+  
+  var nombreCol = getColumnByName(sheet, 'Ingrese Nombres y Apellidos');
+  var nombre = sheet.getRange(row, nombreCol).getValue();
+
+  var docIdCol = getColumnByName(sheet, 'Merged Doc ID - CORRETAJE');
+  var docId = sheet.getRange(row, docIdCol).getValue();
+
+  if (!email || !docId) {
+    Logger.log('⚠️ No se puede enviar correo: Falta email o Doc ID de Autocrat');
+    return;
+  }
+
+  Logger.log('📧 Preparando envío de correo de firma para: ' + email);
+
+  var subject = 'ACTA DE PROMOCIÓN DE ARRENDAMIENTO DEL INMUEBLE DE ' + nombre + ' - REAL ESTATE Gold Life System';
+  var urlFirma = 'https://realestate-goldlifesystem.github.io/efirmacontrata/sala_firmas.html?docId=' + docId + '&cdr=' + cdr;
+
+  try {
+    // Nota: clasp mapea los archivos con la ruta "backend/email_firma_corretaje"
+    var template = HtmlService.createTemplateFromFile('backend/email_firma_corretaje');
+    template.nombrePropietario = nombre;
+    template.urlFirma = urlFirma;
+    var htmlBody = template.evaluate().getContent();
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: htmlBody
+    });
+    Logger.log('✅ Correo de Sala de Firmas enviado a: ' + email);
+  } catch(e) {
+    Logger.log('❌ Error enviando correo de firma: ' + e.message);
+  }
+}
+
 
 // ==========================================
 // ACTUALIZACIÓN DE LINKS
