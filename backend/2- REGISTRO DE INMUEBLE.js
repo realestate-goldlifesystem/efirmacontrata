@@ -735,12 +735,17 @@ function enviarCorreoFirmaCorretaje(sheet, row, cdr, tipoNegocio) {
   }
   
   var emailCol = getColumnByName(sheet, 'Correo electronico');
-  var email = sheet.getRange(row, emailCol).getValue();
-  
   var nombreCol = getColumnByName(sheet, 'Ingrese Nombres y Apellidos');
-  var nombre = sheet.getRange(row, nombreCol).getValue();
-
   var docIdCol = getColumnByName(sheet, 'Merged Doc ID - CORRETAJE');
+
+  // PREVENCIÓN DEL ERROR (number, null)
+  if (!emailCol || !nombreCol || !docIdCol) {
+    Logger.log('⚠️ No se puede enviar correo: Falta alguna columna en el Google Sheet (emailCol=' + emailCol + ', nombreCol=' + nombreCol + ', docIdCol=' + docIdCol + ')');
+    return;
+  }
+
+  var email = sheet.getRange(row, emailCol).getValue();
+  var nombre = sheet.getRange(row, nombreCol).getValue();
   var docId = sheet.getRange(row, docIdCol).getValue();
 
   if (!email || !docId) {
