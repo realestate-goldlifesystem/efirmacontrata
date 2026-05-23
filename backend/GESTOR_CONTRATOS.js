@@ -1658,7 +1658,7 @@ function handleProcesarFirmaElectronica(datos) {
           // --- NUEVO: Añadir Link en "DOCUMENTO FIRMADO" ---
           const docFirmadoCol = getCol('DOCUMENTO FIRMADO');
           if (docFirmadoCol > 0) {
-            sheet.getRange(i, docFirmadoCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}", "📄✅ FIRMADO")`);
+            sheet.getRange(i, docFirmadoCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}"; "📄✅ FIRMADO")`);
           }
           
           // --- NUEVO: Enviar copia del PDF al cliente ---
