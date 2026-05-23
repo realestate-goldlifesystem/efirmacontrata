@@ -734,7 +734,7 @@ function enviarCorreoFirmaCorretaje(sheet, row, cdr, tipoNegocio) {
     return;
   }
   
-  var emailCol = getColumnByName(sheet, 'Correo electronico');
+  var emailCol = getColumnByName(sheet, 'Correo electrónico');
   var nombreCol = getColumnByName(sheet, 'Ingrese Nombres y Apellidos');
   var docIdCol = getColumnByName(sheet, 'Merged Doc ID - CORRETAJE');
 
