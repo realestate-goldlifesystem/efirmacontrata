@@ -1619,6 +1619,31 @@ function handleProcesarFirmaElectronica(datos) {
           for (let i = 2; i <= lastRow; i++) {
             if (sheet.getRange(i, cdrCol).getValue() === datos.cdr) {
               sheet.getRange(i, estadoCol).setValue('ACTIVO'); // O FIRMADO, ajustar según preferencia
+              
+              // --- NUEVO: Enviar copia del PDF al cliente ---
+              try {
+                const emailCol = headers.indexOf('Correo electrónico') + 1;
+                const nameCol = headers.indexOf('Ingrese Nombres y Apellidos') + 1;
+                
+                if (emailCol > 0 && nameCol > 0) {
+                  const emailCliente = sheet.getRange(i, emailCol).getValue();
+                  const nombreCliente = sheet.getRange(i, nameCol).getValue();
+                  
+                  if (emailCliente) {
+                    MailApp.sendEmail({
+                      to: emailCliente,
+                      subject: "Copia Certificada de Acta de Promoción - Gold Life System",
+                      htmlBody: `Estimado/a <b>${nombreCliente}</b>,<br><br>El proceso de firma se ha completado exitosamente.<br><br>Adjunto a este correo encontrará la copia final certificada de su Acta de Promoción, la cual incluye su firma electrónica y el anexo legal de auditoría (Ley 527 de 1999).<br><br>Agradecemos su confianza en nosotros.<br><br>Cordialmente,<br><b>Real Estate - Gold Life System</b>`,
+                      attachments: [finalPdf.getAs(MimeType.PDF)]
+                    });
+                    console.log("Copia final enviada a: " + emailCliente);
+                  }
+                }
+              } catch(e) {
+                console.error("Error enviando copia final del PDF:", e);
+              }
+              // ----------------------------------------------
+              
               break;
             }
           }
