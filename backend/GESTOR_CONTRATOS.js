@@ -1572,7 +1572,7 @@ function handleProcesarFirmaElectronica(datos) {
     // Insertar la imagen de la firma centrada
     const paragraphImg = body.appendParagraph("");
     paragraphImg.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    const image = paragraphImg.appendImage(blob);
+    const image = paragraphImg.appendInlineImage(blob);
     
     // Escalar la imagen si es muy grande (max width 300)
     const originalWidth = image.getWidth();
