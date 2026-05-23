@@ -262,12 +262,14 @@
         <!-- PASO 3: GRACIAS -->
         <div id="step3">
             <div class="check-icon">✓</div>
-            <h2>¡Firma Registrada con Éxito!</h2>
-            <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto; line-height: 1.6;">
+            <h2 id="step3-title">¡Firma Registrada con Éxito!</h2>
+            <p id="step3-desc" style="color: var(--text-muted); max-width: 500px; margin: 0 auto; line-height: 1.6;">
                 Su documento ha sido sellado criptográficamente con su firma y rastro de auditoría. En unos instantes recibirá una copia final certificada en su correo electrónico.
             </p>
             <br>
-            <p style="color: var(--primary); font-weight: 600;">Ya puede cerrar esta ventana.</p>
+            <div id="step3-actions">
+                <p style="color: var(--primary); font-weight: 600;">Ya puede cerrar esta ventana.</p>
+            </div>
         </div>
 
     </div>
@@ -284,10 +286,38 @@
         let signatureData = null;
 
         // --- INICIALIZAR VISOR ---
-        window.onload = function() {
+        window.onload = async function() {
             if (!docId) {
                 document.getElementById('docFrameContainer').innerHTML = "<div style='padding: 20px; text-align: center; color: red;'>Error: No se proporcionó el ID del documento en la URL.</div>";
-            } else {
+                return;
+            }
+            
+            // Mostrar cargando mientras verifica
+            document.getElementById('docFrameContainer').innerHTML = "<div style='padding: 20px; text-align: center;'>Verificando estado del documento...</div>";
+            
+            try {
+                // Verificar si ya está firmado
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ accion: 'verificarEstadoFirma', docId: docId })
+                });
+                const result = await response.json();
+                
+                if (result.success && result.firmado) {
+                    // Documento YA firmado
+                    document.getElementById('step1').style.display = 'none';
+                    document.getElementById('step3').style.display = 'flex';
+                    
+                    document.getElementById('step3-title').innerText = "Documento ya firmado";
+                    document.getElementById('step3-desc').innerText = "Este documento ya ha sido revisado y firmado anteriormente con pleno valor legal.";
+                    document.getElementById('step3-actions').innerHTML = `<a href="${result.pdfUrl}" target="_blank" class="btn" style="text-decoration: none; display: inline-block;">Ver Documento Firmado</a>`;
+                } else {
+                    // Cargar iFrame normal para lectura
+                    document.getElementById('docFrameContainer').innerHTML = `<iframe src="https://docs.google.com/document/d/${docId}/preview" allow="autoplay"></iframe>`;
+                }
+            } catch (err) {
+                console.error(err);
+                // Si falla la verificación, igual cargar el documento por defecto
                 document.getElementById('docFrameContainer').innerHTML = `<iframe src="https://docs.google.com/document/d/${docId}/preview" allow="autoplay"></iframe>`;
             }
         };

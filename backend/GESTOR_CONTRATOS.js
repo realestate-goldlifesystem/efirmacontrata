@@ -1620,6 +1620,12 @@ function handleProcesarFirmaElectronica(datos) {
             if (sheet.getRange(i, cdrCol).getValue() === datos.cdr) {
               sheet.getRange(i, estadoCol).setValue('ACTIVO'); // O FIRMADO, ajustar según preferencia
               
+              // --- NUEVO: Añadir Link en "DOCUMENTO FIRMADO" ---
+              const docFirmadoCol = headers.indexOf('DOCUMENTO FIRMADO') + 1;
+              if (docFirmadoCol > 0) {
+                sheet.getRange(i, docFirmadoCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}", "📄✅ FIRMADO")`);
+              }
+              
               // --- NUEVO: Enviar copia del PDF al cliente ---
               try {
                 const emailCol = headers.indexOf('Correo electrónico') + 1;
@@ -1659,6 +1665,33 @@ function handleProcesarFirmaElectronica(datos) {
 
   } catch (err) {
     console.error("Error en handleProcesarFirmaElectronica:", err);
+    return { success: false, message: err.toString() };
+  }
+}
+
+/**
+ * Función para verificar si un documento ya fue firmado
+ */
+function handleVerificarEstadoFirma(datos) {
+  try {
+    const docId = datos.docId;
+    if (!docId) return { success: false, message: "No docId provided" };
+    
+    const docFile = DriveApp.getFileById(docId);
+    const folder = docFile.getParents().next();
+    
+    // Buscar si existe la versión en PDF firmada
+    const pdfName = docFile.getName() + " - FIRMADO.pdf";
+    const files = folder.searchFiles(`title = '${pdfName}'`);
+    
+    if (files.hasNext()) {
+      const finalPdf = files.next();
+      return { success: true, firmado: true, pdfUrl: finalPdf.getUrl() };
+    } else {
+      return { success: true, firmado: false };
+    }
+  } catch (err) {
+    console.error("Error en handleVerificarEstadoFirma:", err);
     return { success: false, message: err.toString() };
   }
 }

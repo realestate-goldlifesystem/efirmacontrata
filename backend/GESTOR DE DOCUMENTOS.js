@@ -516,6 +516,9 @@ function doPost(e) {
       case 'procesarFirmaElectronica':
         result = handleProcesarFirmaElectronica(datos);
         break;
+      case 'verificarEstadoFirma':
+        result = handleVerificarEstadoFirma(datos);
+        break;
       default:
         result = {
           success: false,
