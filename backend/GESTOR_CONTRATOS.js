@@ -1629,8 +1629,12 @@ function handleProcesarFirmaElectronica(datos) {
 
       const cdrCol = getCol('CODIGO DE REGISTRO');
       const estadoCol = getCol('ESTADO DEL INMUEBLE');
+      
       const docIdColCorretaje = getCol('Merged Doc ID - CORRETAJE');
-      const docIdColCaptacion = getCol('Merged Doc ID - CAPTACION'); // Por si acaso
+      const docIdColAdmin = getCol('Merged Doc ID - ADMINISTRACIÓN');
+      const docIdColVenta = getCol('Merged Doc ID - VENTA');
+      const docIdColAdmiVenta = getCol('Merged Doc ID - ADMI-VENTA');
+      const docIdColVendiRenta = getCol('Merged Doc ID - VENDI-RENTA');
       
       if (estadoCol > 0) {
         const lastRow = sheet.getLastRow();
@@ -1641,11 +1645,16 @@ function handleProcesarFirmaElectronica(datos) {
           // Condición 1: Coincide el CDR
           const cdrMatch = datos.cdr && cdrCol > 0 && String(sheet.getRange(i, cdrCol).getValue()).trim() === String(datos.cdr).trim();
           
-          // Condición 2: Coincide el docId en corretaje o captación (FALLBACK SEGURO)
-          const docIdMatchCorretaje = docIdColCorretaje > 0 && String(sheet.getRange(i, docIdColCorretaje).getValue()).trim() === String(docId).trim();
-          const docIdMatchCaptacion = docIdColCaptacion > 0 && String(sheet.getRange(i, docIdColCaptacion).getValue()).trim() === String(docId).trim();
+          // Condición 2: Coincide el docId en CUALQUIER columna de negocio (FALLBACK SEGURO)
+          const matchDocId = (col) => col > 0 && String(sheet.getRange(i, col).getValue()).trim() === String(docId).trim();
+          
+          const docIdMatch = matchDocId(docIdColCorretaje) || 
+                             matchDocId(docIdColAdmin) || 
+                             matchDocId(docIdColVenta) || 
+                             matchDocId(docIdColAdmiVenta) || 
+                             matchDocId(docIdColVendiRenta);
 
-          if (cdrMatch || docIdMatchCorretaje || docIdMatchCaptacion) {
+          if (cdrMatch || docIdMatch) {
             targetRow = i;
             break;
           }
