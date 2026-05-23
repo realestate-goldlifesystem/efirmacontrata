@@ -1566,7 +1566,7 @@ function handleProcesarFirmaElectronica(datos) {
     title.setHeading(DocumentApp.ParagraphHeading.HEADING2);
     title.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
     
-    const aviso = body.appendParagraph("\nAVISO SOBRE ACEPTACIÓN ELECTRÓNICA:\nEl presente documento es enviado por medio electrónico y/o correo electrónico. Su recepción sin observaciones dentro de las veinticuatro (24) horas siguientes se entenderá como aceptación expresa de su contenido, con los mismos efectos legales de una firma manuscrita, conforme a lo establecido en la Ley 527 de 1999 (Ley de Comercio Electrónico de Colombia).\n\nLa siguiente firma, junto con el rastro de red, constituyen plena prueba de dicha aceptación.\n");
+    const aviso = body.appendParagraph("\nDECLARACIÓN DE FIRMA ELECTRÓNICA (Ley 527 de 1999):\nEl presente acuerdo ha sido suscrito mediante firma electrónica por las partes. La manifestación expresa de la voluntad, la captura de la dirección IP, el sello de tiempo (Timestamp) y el trazo gráfico del PROPIETARIO han sido registrados y unificados en este documento mediante la plataforma tecnológica del AGENTE, garantizando su autenticidad, integridad y no repudio, prestando pleno mérito ejecutivo.\n");
     aviso.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
 
     // Insertar la imagen de la firma centrada
@@ -1623,7 +1623,7 @@ function handleProcesarFirmaElectronica(datos) {
         if (cdrCol > 0 && estadoCol > 0) {
           const lastRow = sheet.getLastRow();
           for (let i = 2; i <= lastRow; i++) {
-            if (sheet.getRange(i, cdrCol).getValue() === datos.cdr) {
+            if (String(sheet.getRange(i, cdrCol).getValue()).trim() === String(datos.cdr).trim()) {
               sheet.getRange(i, estadoCol).setValue('ACTIVO'); // O FIRMADO, ajustar según preferencia
               
               // --- NUEVO: Añadir Link en "DOCUMENTO FIRMADO" ---
