@@ -1612,63 +1612,76 @@ function handleProcesarFirmaElectronica(datos) {
     }
     const finalPdf = folder.createFile(pdfBlob).setName(pdfName);
 
-    // 4. Actualizar estado en el Sheet si hay CDR
-    if (datos.cdr) {
-      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
-      if (sheet) {
-        const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-        
-        // Función auxiliar robusta
-        const getCol = (name) => {
-          for (let col = 0; col < headers.length; col++) {
-            if (headers[col] && headers[col].toString().trim() === name.trim()) {
-              return col + 1;
-            }
+    // 4. Actualizar estado en el Sheet usando CDR o docId
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    if (sheet) {
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      
+      // Función auxiliar robusta
+      const getCol = (name) => {
+        for (let col = 0; col < headers.length; col++) {
+          if (headers[col] && headers[col].toString().trim() === name.trim()) {
+            return col + 1;
           }
-          return 0;
-        };
+        }
+        return 0;
+      };
 
-        const cdrCol = getCol('CODIGO DE REGISTRO');
-        const estadoCol = getCol('ESTADO DEL INMUEBLE');
-        
-        if (cdrCol > 0 && estadoCol > 0) {
-          const lastRow = sheet.getLastRow();
-          for (let i = 2; i <= lastRow; i++) {
-            if (String(sheet.getRange(i, cdrCol).getValue()).trim() === String(datos.cdr).trim()) {
-              sheet.getRange(i, estadoCol).setValue('ACTIVO'); // O FIRMADO, ajustar según preferencia
+      const cdrCol = getCol('CODIGO DE REGISTRO');
+      const estadoCol = getCol('ESTADO DEL INMUEBLE');
+      const docIdColCorretaje = getCol('Merged Doc ID - CORRETAJE');
+      const docIdColCaptacion = getCol('Merged Doc ID - CAPTACION'); // Por si acaso
+      
+      if (estadoCol > 0) {
+        const lastRow = sheet.getLastRow();
+        let targetRow = -1;
+
+        // Intentar buscar la fila correcta
+        for (let i = 2; i <= lastRow; i++) {
+          // Condición 1: Coincide el CDR
+          const cdrMatch = datos.cdr && cdrCol > 0 && String(sheet.getRange(i, cdrCol).getValue()).trim() === String(datos.cdr).trim();
+          
+          // Condición 2: Coincide el docId en corretaje o captación (FALLBACK SEGURO)
+          const docIdMatchCorretaje = docIdColCorretaje > 0 && String(sheet.getRange(i, docIdColCorretaje).getValue()).trim() === String(docId).trim();
+          const docIdMatchCaptacion = docIdColCaptacion > 0 && String(sheet.getRange(i, docIdColCaptacion).getValue()).trim() === String(docId).trim();
+
+          if (cdrMatch || docIdMatchCorretaje || docIdMatchCaptacion) {
+            targetRow = i;
+            break;
+          }
+        }
+
+        if (targetRow > 0) {
+          const i = targetRow;
+          sheet.getRange(i, estadoCol).setValue('ACTIVO'); 
+          
+          // --- NUEVO: Añadir Link en "DOCUMENTO FIRMADO" ---
+          const docFirmadoCol = getCol('DOCUMENTO FIRMADO');
+          if (docFirmadoCol > 0) {
+            sheet.getRange(i, docFirmadoCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}", "📄✅ FIRMADO")`);
+          }
+          
+          // --- NUEVO: Enviar copia del PDF al cliente ---
+          try {
+            const emailCol = getCol('Correo electrónico');
+            const nameCol = getCol('Ingrese Nombres y Apellidos');
+            
+            if (emailCol > 0 && nameCol > 0) {
+              const emailCliente = sheet.getRange(i, emailCol).getValue();
+              const nombreCliente = sheet.getRange(i, nameCol).getValue();
               
-              // --- NUEVO: Añadir Link en "DOCUMENTO FIRMADO" ---
-              const docFirmadoCol = getCol('DOCUMENTO FIRMADO');
-              if (docFirmadoCol > 0) {
-                sheet.getRange(i, docFirmadoCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}", "📄✅ FIRMADO")`);
+              if (emailCliente) {
+                MailApp.sendEmail({
+                  to: emailCliente,
+                  subject: "Copia Certificada de Acta de Promoción - Gold Life System",
+                  htmlBody: `Estimado/a <b>${nombreCliente}</b>,<br><br>El proceso de firma se ha completado exitosamente.<br><br>Adjunto a este correo encontrará la copia final certificada de su Acta de Promoción, la cual incluye su firma electrónica y el anexo legal de auditoría (Ley 527 de 1999).<br><br>Agradecemos su confianza en nosotros.<br><br>Cordialmente,<br><b>Real Estate - Gold Life System</b>`,
+                  attachments: [finalPdf.getAs(MimeType.PDF)]
+                });
+                console.log("Copia final enviada a: " + emailCliente);
               }
-              
-              // --- NUEVO: Enviar copia del PDF al cliente ---
-              try {
-                const emailCol = getCol('Correo electrónico');
-                const nameCol = getCol('Ingrese Nombres y Apellidos');
-                
-                if (emailCol > 0 && nameCol > 0) {
-                  const emailCliente = sheet.getRange(i, emailCol).getValue();
-                  const nombreCliente = sheet.getRange(i, nameCol).getValue();
-                  
-                  if (emailCliente) {
-                    MailApp.sendEmail({
-                      to: emailCliente,
-                      subject: "Copia Certificada de Acta de Promoción - Gold Life System",
-                      htmlBody: `Estimado/a <b>${nombreCliente}</b>,<br><br>El proceso de firma se ha completado exitosamente.<br><br>Adjunto a este correo encontrará la copia final certificada de su Acta de Promoción, la cual incluye su firma electrónica y el anexo legal de auditoría (Ley 527 de 1999).<br><br>Agradecemos su confianza en nosotros.<br><br>Cordialmente,<br><b>Real Estate - Gold Life System</b>`,
-                      attachments: [finalPdf.getAs(MimeType.PDF)]
-                    });
-                    console.log("Copia final enviada a: " + emailCliente);
-                  }
-                }
-              } catch(e) {
-                console.error("Error enviando copia final del PDF:", e);
-              }
-              // ----------------------------------------------
-              
-              break;
             }
+          } catch(e) {
+            console.error("Error enviando copia final del PDF:", e);
           }
         }
       }
