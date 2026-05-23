@@ -761,8 +761,9 @@ function enviarCorreoFirmaCorretaje(sheet, row, cdr, tipoNegocio) {
   try {
     // Nota: clasp mapea los archivos con la ruta "backend/email_firma_corretaje"
     var template = HtmlService.createTemplateFromFile('backend/email_firma_corretaje');
-    template.nombrePropietario = nombre;
-    template.urlFirma = urlFirma;
+    template.NOMBRE_CLIENTE = nombre;
+    template.URL_FIRMA = urlFirma;
+    template.ANIO = new Date().getFullYear();
     var htmlBody = template.evaluate().getContent();
 
     MailApp.sendEmail({
