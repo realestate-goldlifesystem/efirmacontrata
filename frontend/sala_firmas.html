@@ -65,7 +65,7 @@
 
         /* PASO 1: VISUALIZADOR */
         #step1 {
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 20px;
         }
@@ -224,6 +224,13 @@
 
     <div class="container">
         
+        <!-- PANTALLA DE CARGA INICIAL -->
+        <div id="loading-step" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50vh; gap: 20px;">
+            <div class="loader" style="display: block; width: 40px; height: 40px; border-width: 5px;"></div>
+            <h2 style="color: var(--primary);">Validando Documento...</h2>
+            <p style="color: var(--text-muted);">Por favor espere un momento.</p>
+        </div>
+
         <!-- PASO 1: LECTURA DEL DOCUMENTO -->
         <div id="step1">
             <div class="info-box">
@@ -288,12 +295,11 @@
         // --- INICIALIZAR VISOR ---
         window.onload = async function() {
             if (!docId) {
+                document.getElementById('loading-step').style.display = 'none';
+                document.getElementById('step1').style.display = 'flex';
                 document.getElementById('docFrameContainer').innerHTML = "<div style='padding: 20px; text-align: center; color: red;'>Error: No se proporcionó el ID del documento en la URL.</div>";
                 return;
             }
-            
-            // Mostrar cargando mientras verifica
-            document.getElementById('docFrameContainer').innerHTML = "<div style='padding: 20px; text-align: center;'>Verificando estado del documento...</div>";
             
             try {
                 // Verificar si ya está firmado
@@ -305,19 +311,23 @@
                 
                 if (result.success && result.firmado) {
                     // Documento YA firmado
-                    document.getElementById('step1').style.display = 'none';
+                    document.getElementById('loading-step').style.display = 'none';
                     document.getElementById('step3').style.display = 'flex';
                     
                     document.getElementById('step3-title').innerText = "Documento ya firmado";
                     document.getElementById('step3-desc').innerText = "Este documento ya ha sido revisado y firmado anteriormente con pleno valor legal.";
                     document.getElementById('step3-actions').innerHTML = `<a href="${result.pdfUrl}" target="_blank" class="btn" style="text-decoration: none; display: inline-block;">Ver Documento Firmado</a>`;
                 } else {
-                    // Cargar iFrame normal para lectura
+                    // Documento NO firmado, mostrar lector
+                    document.getElementById('loading-step').style.display = 'none';
+                    document.getElementById('step1').style.display = 'flex';
                     document.getElementById('docFrameContainer').innerHTML = `<iframe src="https://docs.google.com/document/d/${docId}/preview" allow="autoplay"></iframe>`;
                 }
             } catch (err) {
                 console.error(err);
                 // Si falla la verificación, igual cargar el documento por defecto
+                document.getElementById('loading-step').style.display = 'none';
+                document.getElementById('step1').style.display = 'flex';
                 document.getElementById('docFrameContainer').innerHTML = `<iframe src="https://docs.google.com/document/d/${docId}/preview" allow="autoplay"></iframe>`;
             }
         };
