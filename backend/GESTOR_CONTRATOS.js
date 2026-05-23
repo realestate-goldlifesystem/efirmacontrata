@@ -1560,27 +1560,33 @@ function handleProcesarFirmaElectronica(datos) {
     const doc = DocumentApp.openById(docId);
     const body = doc.getBody();
 
-    // 2. Agregar Sello de Auditoría al final del documento
+    // Añadir salto de página y título
     body.appendPageBreak();
+    const title = body.appendParagraph("CERTIFICADO DE FIRMA ELECTRÓNICA");
+    title.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    title.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
     
-    const titulo = body.appendParagraph("CERTIFICADO DE FIRMA ELECTRÓNICA");
-    titulo.setHeading(DocumentApp.ParagraphHeading.HEADING1);
-    titulo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    
-    body.appendParagraph("Documento firmado electrónicamente al amparo de la Ley 527 de 1999 (Ley de Comercio Electrónico de Colombia). La siguiente firma, junto con el rastro de red, constituyen plena prueba de aceptación expresa del acuerdo precedente.\n");
+    const aviso = body.appendParagraph("\nAVISO SOBRE ACEPTACIÓN ELECTRÓNICA:\nEl presente documento es enviado por medio electrónico y/o correo electrónico. Su recepción sin observaciones dentro de las veinticuatro (24) horas siguientes se entenderá como aceptación expresa de su contenido, con los mismos efectos legales de una firma manuscrita, conforme a lo establecido en la Ley 527 de 1999 (Ley de Comercio Electrónico de Colombia).\n\nLa siguiente firma, junto con el rastro de red, constituyen plena prueba de dicha aceptación.\n");
+    aviso.setAlignment(DocumentApp.HorizontalAlignment.JUSTIFY);
 
     // Insertar la imagen de la firma centrada
     const paragraphImg = body.appendParagraph("");
     paragraphImg.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
     const image = paragraphImg.appendInlineImage(blob);
     
-    // Escalar la imagen si es muy grande (max width 300)
+    // Escalar la imagen para evitar que brinque a otra hoja (max width 250, max height 150)
     const originalWidth = image.getWidth();
     const originalHeight = image.getHeight();
-    if (originalWidth > 300) {
-      const ratio = 300 / originalWidth;
-      image.setWidth(300);
+    if (originalWidth > 250) {
+      const ratio = 250 / originalWidth;
+      image.setWidth(250);
       image.setHeight(originalHeight * ratio);
+    }
+    if (image.getHeight() > 150) {
+      const ratio = 150 / image.getHeight();
+      const currentWidth = image.getWidth();
+      image.setHeight(150);
+      image.setWidth(currentWidth * ratio);
     }
 
     // Agregar datos de auditoría
