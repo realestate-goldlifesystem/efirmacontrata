@@ -1617,8 +1617,19 @@ function handleProcesarFirmaElectronica(datos) {
       const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
       if (sheet) {
         const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-        const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
-        const estadoCol = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
+        
+        // Función auxiliar robusta
+        const getCol = (name) => {
+          for (let col = 0; col < headers.length; col++) {
+            if (headers[col] && headers[col].toString().trim() === name.trim()) {
+              return col + 1;
+            }
+          }
+          return 0;
+        };
+
+        const cdrCol = getCol('CODIGO DE REGISTRO');
+        const estadoCol = getCol('ESTADO DEL INMUEBLE');
         
         if (cdrCol > 0 && estadoCol > 0) {
           const lastRow = sheet.getLastRow();
@@ -1627,15 +1638,15 @@ function handleProcesarFirmaElectronica(datos) {
               sheet.getRange(i, estadoCol).setValue('ACTIVO'); // O FIRMADO, ajustar según preferencia
               
               // --- NUEVO: Añadir Link en "DOCUMENTO FIRMADO" ---
-              const docFirmadoCol = headers.indexOf('DOCUMENTO FIRMADO') + 1;
+              const docFirmadoCol = getCol('DOCUMENTO FIRMADO');
               if (docFirmadoCol > 0) {
                 sheet.getRange(i, docFirmadoCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}", "📄✅ FIRMADO")`);
               }
               
               // --- NUEVO: Enviar copia del PDF al cliente ---
               try {
-                const emailCol = headers.indexOf('Correo electrónico') + 1;
-                const nameCol = headers.indexOf('Ingrese Nombres y Apellidos') + 1;
+                const emailCol = getCol('Correo electrónico');
+                const nameCol = getCol('Ingrese Nombres y Apellidos');
                 
                 if (emailCol > 0 && nameCol > 0) {
                   const emailCliente = sheet.getRange(i, emailCol).getValue();
