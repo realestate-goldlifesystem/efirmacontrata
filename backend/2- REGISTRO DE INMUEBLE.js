@@ -756,7 +756,7 @@ function enviarCorreoFirmaCorretaje(sheet, row, cdr, tipoNegocio) {
   Logger.log('📧 Preparando envío de correo de firma para: ' + email);
 
   var subject = 'ACTA DE PROMOCIÓN DE ARRENDAMIENTO DEL INMUEBLE DE ' + nombre + ' - REAL ESTATE Gold Life System';
-  var urlFirma = 'https://realestate-goldlifesystem.github.io/efirmacontrata/sala_firmas.html?docId=' + docId + '&cdr=' + cdr;
+  var urlFirma = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/sala_firmas.html?docId=' + docId + '&cdr=' + cdr;
 
   try {
     // Nota: clasp mapea los archivos con la ruta "backend/email_firma_corretaje"
