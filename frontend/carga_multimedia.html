@@ -285,21 +285,9 @@
                 <div class="step-dot" id="dot-2">2</div>
             </div>
 
-            <!-- PASO 1: VIDEO -->
+            <!-- PASO 1: FOTOS -->
             <div id="step-1" class="step-section active">
-                <h2 class="section-title">Paso 1: Video Recorrido</h2>
-                <div class="drop-zone" id="video-drop-zone">
-                    <div class="icon">🎥</div>
-                    <p>Haz clic o arrastra tu video de YouTube aquí (Hasta 5GB)</p>
-                    <input type="file" id="video-input" accept="video/*" style="display: none;">
-                    <p id="video-filename" style="color: var(--primary); font-weight: bold; margin-top: 10px;"></p>
-                </div>
-                <button id="btn-next" class="btn-primary" disabled>Siguiente Paso 👉</button>
-            </div>
-
-            <!-- PASO 2: FOTOS -->
-            <div id="step-2" class="step-section">
-                <h2 class="section-title">Paso 2: Fotografías</h2>
+                <h2 class="section-title">Paso 1: Fotografías</h2>
                 <p style="font-size: clamp(13px, 2vw, 15px); color: var(--text-muted); margin-bottom: 15px;">
                     Arrastra para reordenar. La primera foto será la <strong>PORTADA</strong>.
                 </p>
@@ -312,6 +300,19 @@
 
                 <div id="photo-grid"></div>
 
+                <button id="btn-next" class="btn-primary" disabled>Siguiente Paso 👉</button>
+            </div>
+
+            <!-- PASO 2: VIDEO -->
+            <div id="step-2" class="step-section">
+                <h2 class="section-title">Paso 2: Video Recorrido</h2>
+                <div class="drop-zone" id="video-drop-zone">
+                    <div class="icon">🎥</div>
+                    <p>Haz clic o arrastra tu video aquí (Hasta 5GB)</p>
+                    <input type="file" id="video-input" accept="video/*" style="display: none;">
+                    <p id="video-filename" style="color: var(--primary); font-weight: bold; margin-top: 10px;"></p>
+                </div>
+                
                 <div class="btn-row">
                     <button id="btn-back" class="btn-secondary">👈 Volver</button>
                     <button id="btn-upload" class="btn-primary" disabled>🚀 PROCESAR Y SUBIR</button>
@@ -320,7 +321,7 @@
                 <!-- Progreso -->
                 <div class="progress-container" id="progress-container">
                     <div class="progress-text">
-                        <span id="progress-label">Subiendo Video...</span>
+                        <span id="progress-label">Subiendo contenido...</span>
                         <span id="progress-percentage">0%</span>
                     </div>
                     <div class="progress-bar">

@@ -74,7 +74,7 @@ btnBack.addEventListener('click', () => {
 // Lógica Video
 videoDropZone.addEventListener('click', () => videoInput.click());
 videoDropZone.addEventListener('dragover', (e) => { e.preventDefault(); videoDropZone.classList.add('dragover'); });
-videoDropZone.addEventListener('dragleave', () => videoDropZone.classList.remove('dragover'); );
+videoDropZone.addEventListener('dragleave', () => videoDropZone.classList.remove('dragover'));
 videoDropZone.addEventListener('drop', (e) => {
     e.preventDefault(); videoDropZone.classList.remove('dragover');
     if (e.dataTransfer.files.length) handleVideoSelect(e.dataTransfer.files[0]);
@@ -87,13 +87,13 @@ function handleVideoSelect(file) {
     if (!file.type.startsWith('video/')) return alert('Debe ser un video.');
     selectedVideo = file;
     videoFilename.textContent = `${file.name} (${(file.size / (1024*1024)).toFixed(2)} MB)`;
-    btnNext.disabled = false;
+    btnUpload.disabled = false; // Como el video es el último paso, habilita el botón final
 }
 
 // Lógica Fotos
 photoDropZone.addEventListener('click', () => photoInput.click());
 photoDropZone.addEventListener('dragover', (e) => { e.preventDefault(); photoDropZone.classList.add('dragover'); });
-photoDropZone.addEventListener('dragleave', () => photoDropZone.classList.remove('dragover'); );
+photoDropZone.addEventListener('dragleave', () => photoDropZone.classList.remove('dragover'));
 photoDropZone.addEventListener('drop', (e) => {
     e.preventDefault(); photoDropZone.classList.remove('dragover');
     if (e.dataTransfer.files.length) handlePhotosSelect(e.dataTransfer.files);
@@ -144,7 +144,8 @@ function renderPhotos() {
         };
         reader.readAsDataURL(file);
     });
-    btnUpload.disabled = selectedPhotos.length === 0;
+    // Como las fotos son el paso 1, habilita el botón Siguiente
+    btnNext.disabled = selectedPhotos.length === 0;
 }
 
 // Sortable
