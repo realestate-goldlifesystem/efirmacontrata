@@ -105,44 +105,43 @@ photoInput.addEventListener('change', (e) => {
 function handlePhotosSelect(files) {
     Array.from(files).forEach(file => {
         if (!file.type.startsWith('image/')) return;
-        selectedPhotos.push(file);
-        renderPhotos();
+        selectedPhotos.push({
+            file: file,
+            url: URL.createObjectURL(file)
+        });
     });
+    renderPhotos();
 }
 
 function renderPhotos() {
     photoGrid.innerHTML = '';
-    selectedPhotos.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const card = document.createElement('div');
-            card.className = 'photo-card';
-            
-            // Etiqueta numerada
-            const badge = document.createElement('div');
-            badge.className = 'photo-badge';
-            badge.textContent = index === 0 ? 'PORTADA' : `#${index + 1}`;
-            
-            // Botón eliminar
-            const btnDel = document.createElement('div');
-            btnDel.className = 'photo-delete';
-            btnDel.innerHTML = '🗑️';
-            btnDel.onclick = (event) => {
-                event.stopPropagation();
-                selectedPhotos.splice(index, 1);
-                renderPhotos();
-            };
-            
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            
-            card.appendChild(badge);
-            card.appendChild(btnDel);
-            card.appendChild(img);
-            
-            photoGrid.appendChild(card);
+    selectedPhotos.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        
+        // Etiqueta numerada
+        const badge = document.createElement('div');
+        badge.className = 'photo-badge';
+        badge.textContent = index === 0 ? 'PORTADA' : `#${index + 1}`;
+        
+        // Botón eliminar
+        const btnDel = document.createElement('div');
+        btnDel.className = 'photo-delete';
+        btnDel.innerHTML = '🗑️';
+        btnDel.onclick = (event) => {
+            event.stopPropagation();
+            selectedPhotos.splice(index, 1);
+            renderPhotos();
         };
-        reader.readAsDataURL(file);
+        
+        const img = document.createElement('img');
+        img.src = item.url;
+        
+        card.appendChild(badge);
+        card.appendChild(btnDel);
+        card.appendChild(img);
+        
+        photoGrid.appendChild(card);
     });
     // Como las fotos son el paso 1, habilita el botón Siguiente
     btnNext.disabled = selectedPhotos.length === 0;
