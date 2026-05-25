@@ -427,6 +427,14 @@ function doGet(e) {
         result = { success: true, message: 'Endpoint base activo' };
         break;
 
+      case 'getMultimediaData':
+        if (typeof handleGetMultimediaData === 'function') {
+           result = handleGetMultimediaData(e.parameter);
+        } else {
+           result = { success: false, message: 'Módulo multimedia no cargado' };
+        }
+        break;
+
       // ... otros casos ...
       case 'test':
         result = {
@@ -518,6 +526,13 @@ function doPost(e) {
         break;
       case 'verificarEstadoFirma':
         result = handleVerificarEstadoFirma(datos);
+        break;
+      case 'finalizeMultimedia':
+        if (typeof handleFinalizeMultimedia === 'function') {
+           result = handleFinalizeMultimedia(datos);
+        } else {
+           result = { success: false, message: 'Módulo multimedia no cargado' };
+        }
         break;
       default:
         result = {
