@@ -105,24 +105,14 @@ photoInput.addEventListener('change', (e) => {
 function handlePhotosSelect(files) {
     Array.from(files).forEach(file => {
         if (!file.type.startsWith('image/')) return;
-        selectedPhotos.push({
-            file: file,
-            url: URL.createObjectURL(file)
-        });
-    });
-    renderPhotos();
-}
-
-function renderPhotos() {
-    photoGrid.innerHTML = '';
-    selectedPhotos.forEach((item, index) => {
+        
         const card = document.createElement('div');
         card.className = 'photo-card';
+        card.fileRef = file; // Guardar referencia del archivo directamente en el nodo DOM
         
         // Etiqueta numerada
         const badge = document.createElement('div');
         badge.className = 'photo-badge';
-        badge.textContent = index === 0 ? 'PORTADA' : `#${index + 1}`;
         
         // Botón eliminar
         const btnDel = document.createElement('div');
@@ -130,12 +120,14 @@ function renderPhotos() {
         btnDel.innerHTML = '🗑️';
         btnDel.onclick = (event) => {
             event.stopPropagation();
-            selectedPhotos.splice(index, 1);
-            renderPhotos();
+            card.remove(); // Borra solo este elemento sin re-renderizar todo
+            updateBadges();
+            updateSelectedPhotosArray();
         };
         
         const img = document.createElement('img');
-        img.src = item.url;
+        img.src = URL.createObjectURL(file);
+        img.loading = "lazy"; // Magia para soportar 70+ fotos sin laggear el navegador
         
         card.appendChild(badge);
         card.appendChild(btnDel);
@@ -143,18 +135,39 @@ function renderPhotos() {
         
         photoGrid.appendChild(card);
     });
-    // Como las fotos son el paso 1, habilita el botón Siguiente
+    
+    updateBadges();
+    updateSelectedPhotosArray();
+}
+
+function updateBadges() {
+    Array.from(photoGrid.children).forEach((card, index) => {
+        const badge = card.querySelector('.photo-badge');
+        if (badge) {
+            badge.textContent = index === 0 ? 'PORTADA' : `#${index + 1}`;
+            if (index === 0) {
+                badge.style.background = 'var(--primary)';
+                badge.style.color = '#000';
+            } else {
+                badge.style.background = 'rgba(0,0,0,0.7)';
+                badge.style.color = 'white';
+            }
+        }
+    });
+}
+
+function updateSelectedPhotosArray() {
+    selectedPhotos = Array.from(photoGrid.children).map(card => card.fileRef);
     btnNext.disabled = selectedPhotos.length === 0;
 }
 
 // Sortable
 new Sortable(photoGrid, {
     animation: 150,
-    onEnd: function(evt) {
-        // Reordenar array original
-        const item = selectedPhotos.splice(evt.oldIndex, 1)[0];
-        selectedPhotos.splice(evt.newIndex, 0, item);
-        renderPhotos(); // Re-renderizar para actualizar los numeritos
+    onEnd: function() {
+        // Al soltar la foto, solo actualizamos los numeritos y el array final, NO re-renderizamos imágenes
+        updateBadges();
+        updateSelectedPhotosArray();
     }
 });
 
