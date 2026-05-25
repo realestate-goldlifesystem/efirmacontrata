@@ -237,7 +237,10 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
     if (!userToken) throw new Error("Sesión de Google expirada.");
 
     // YouTube requiere mínimo Título, Descripción y estado Privado
-    const title = `Inmueble ${currentCdr}`;
+    let title = `Inmueble ${currentCdr}`;
+    if (propertyData && propertyData.tituloText) {
+        title = propertyData.tituloText;
+    }
     const description = propertyData && propertyData.descripcionText ? propertyData.descripcionText : "Video Recorrido Inmueble";
 
     const metadata = {
