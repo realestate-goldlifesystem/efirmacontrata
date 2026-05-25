@@ -319,7 +319,7 @@ async function uploadPhotosToDrive(photosArray, labelEl, fillEl) {
         
         // Forma "multipart" de Google Drive API (Sube archivo y nombre al mismo tiempo)
         const metadata = {
-            name: idx === 1 ? `Portada_${currentCdr}` : `Foto_${idx}_${currentCdr}`,
+            name: idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`,
             parents: [propertyData.fotosFolderId]
         };
         
