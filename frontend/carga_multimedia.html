@@ -332,6 +332,23 @@
 
         </div>
 
+        <!-- Pantalla de Carga (Validando) -->
+        <div id="loading-screen" style="display:none; text-align:center; padding: 40px;">
+            <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+            <h3 style="color: var(--primary); font-family: 'Outfit', sans-serif;">Validando Inmueble...</h3>
+            <p style="color: var(--text-muted);">Por favor, espera un momento conectando al CRM.</p>
+        </div>
+
+        <!-- Pantalla de Bloqueo -->
+        <div id="block-screen" style="display:none; text-align:center; padding: 30px;">
+            <div style="font-size: 64px; color: var(--danger); margin-bottom: 15px;">🔒</div>
+            <h2 style="font-family: 'Outfit', sans-serif;">Acceso Bloqueado</h2>
+            <p id="block-message" style="color: var(--text-muted); margin-bottom: 30px; font-size: 16px;">
+                Error en la validación.
+            </p>
+            <button onclick="window.close()" class="btn-secondary" style="max-width: 200px; margin: 0 auto;">Cerrar Ventana</button>
+        </div>
+
         <!-- Pantalla de Éxito -->
         <div id="success-screen" style="display:none;">
             <div class="icon" style="font-size: 64px; color: var(--success);">✅</div>

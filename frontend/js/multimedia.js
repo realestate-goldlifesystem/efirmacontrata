@@ -13,6 +13,9 @@ let selectedPhotos = [];
 const loginSection = document.getElementById('login-section');
 const workspace = document.getElementById('upload-workspace');
 const successScreen = document.getElementById('success-screen');
+const loadingScreen = document.getElementById('loading-screen');
+const blockScreen = document.getElementById('block-screen');
+const blockMessage = document.getElementById('block-message');
 
 const step1 = document.getElementById('step-1');
 const step2 = document.getElementById('step-2');
@@ -49,7 +52,7 @@ window.handleCredentialResponse = function(response) {
             if (tokenResponse && tokenResponse.access_token) {
                 userToken = tokenResponse.access_token;
                 loginSection.style.display = 'none';
-                workspace.style.display = 'block';
+                loadingScreen.style.display = 'block';
                 loadPropertyData();
             }
         },
@@ -59,9 +62,10 @@ window.handleCredentialResponse = function(response) {
 
 async function loadPropertyData() {
     try {
-        propertyInfoCard.innerHTML = `<h3>Consultando CRM Inmueble (ID): ${currentCdr}...</h3>`;
         const response = await fetch(`${APPS_SCRIPT_URL}?accion=getMultimediaData&id=${currentCdr}`);
         const data = await response.json();
+        
+        loadingScreen.style.display = 'none';
         
         if (data && data.success) {
             propertyData = data;
@@ -69,12 +73,16 @@ async function loadPropertyData() {
                 <h3>Inmueble ID: ${currentCdr}</h3>
                 <p>✅ Datos cargados. Listo para procesar y subir contenido.</p>
             `;
+            workspace.style.display = 'block';
         } else {
-            propertyInfoCard.innerHTML = `<p style="color:var(--danger)">Error: ${data.message || 'No se encontró el CDR en la hoja 1.1'}</p>`;
+            blockMessage.innerHTML = data.message || 'No se encontró el registro en el CRM.';
+            blockScreen.style.display = 'block';
         }
     } catch (e) {
         console.error(e);
-        propertyInfoCard.innerHTML = `<p style="color:var(--danger)">Error de conexión con el CRM (Apps Script).</p>`;
+        loadingScreen.style.display = 'none';
+        blockMessage.innerHTML = 'Error de conexión con el CRM (Apps Script).';
+        blockScreen.style.display = 'block';
     }
 }
 
