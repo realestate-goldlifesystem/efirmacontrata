@@ -56,3 +56,11 @@ function testObtenerDocsCerebro() {
 // Force push
 
 // Force push 2
+
+function testVerHeaders() {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    const info = headers.map((h, i) => `Col ${i+1}: "${h}"`).join('\n');
+    Logger.log(info);
+}

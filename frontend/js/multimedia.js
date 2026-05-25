@@ -5,39 +5,42 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOnhQ8CD2gWMdv
 
 let userToken = null;
 let currentCdr = null;
-let propertyData = null;
 let selectedVideo = null;
 let selectedPhotos = [];
 
-// Elementos del DOM
+// Elementos
 const loginSection = document.getElementById('login-section');
 const workspace = document.getElementById('upload-workspace');
-const propertyInfoCard = document.getElementById('property-info-card');
+const successScreen = document.getElementById('success-screen');
+
+const step1 = document.getElementById('step-1');
+const step2 = document.getElementById('step-2');
+const dot1 = document.getElementById('dot-1');
+const dot2 = document.getElementById('dot-2');
+
+const btnNext = document.getElementById('btn-next');
+const btnBack = document.getElementById('btn-back');
+const btnUpload = document.getElementById('btn-upload');
+
 const videoDropZone = document.getElementById('video-drop-zone');
 const videoInput = document.getElementById('video-input');
 const videoFilename = document.getElementById('video-filename');
+
 const photoDropZone = document.getElementById('photo-drop-zone');
 const photoInput = document.getElementById('photo-input');
 const photoGrid = document.getElementById('photo-grid');
-const btnUpload = document.getElementById('btn-upload');
-const progressContainer = document.getElementById('progress-container');
-const progressLabel = document.getElementById('progress-label');
-const progressPercentage = document.getElementById('progress-percentage');
-const progressFill = document.getElementById('progress-fill');
-const successScreen = document.getElementById('success-screen');
 
-// 1. Obtener CDR de la URL
+const propertyInfoCard = document.getElementById('property-info-card');
+
 function getCdrFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('cdr') || 'REG_TEST_001'; // Fallback para pruebas
+    return urlParams.get('cdr') || 'REG_TEST_001';
 }
 
 currentCdr = getCdrFromUrl();
 
-// 2. Callback de Google Sign-In
+// Login
 window.handleCredentialResponse = function(response) {
-    // Para poder subir a YouTube, necesitamos un Access Token, no solo un ID Token.
-    // Usaremos el Google Identity Services implicit flow para pedir el scope de YouTube.
     const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/drive.file',
@@ -46,35 +49,34 @@ window.handleCredentialResponse = function(response) {
                 userToken = tokenResponse.access_token;
                 loginSection.style.display = 'none';
                 workspace.style.display = 'block';
-                loadPropertyData();
+                propertyInfoCard.innerHTML = `<h3>Inmueble: ${currentCdr}</h3><p>Listo para subir contenido.</p>`;
             }
         },
     });
     client.requestAccessToken();
 };
 
-// 3. Cargar Datos del CRM (Apps Script)
-async function loadPropertyData() {
-    try {
-        // En MVP, simulamos o hacemos petición real
-        propertyInfoCard.innerHTML = `
-            <h3>Inmueble: ${currentCdr}</h3>
-            <p>Por favor selecciona el video y las fotos correspondientes a este registro.</p>
-        `;
-        // Aquí iría el fetch a Apps Script para obtener la Descripción Oficial y el folderId
-    } catch (e) {
-        console.error(e);
-        propertyInfoCard.innerHTML = `<p style="color:red">Error cargando datos del inmueble.</p>`;
-    }
-}
+// Navegación Pasos
+btnNext.addEventListener('click', () => {
+    step1.classList.remove('active');
+    step2.classList.add('active');
+    dot1.classList.remove('active');
+    dot2.classList.add('active');
+});
 
-// 4. Lógica de Video (Drag & Drop)
+btnBack.addEventListener('click', () => {
+    step2.classList.remove('active');
+    step1.classList.add('active');
+    dot2.classList.remove('active');
+    dot1.classList.add('active');
+});
+
+// Lógica Video
 videoDropZone.addEventListener('click', () => videoInput.click());
 videoDropZone.addEventListener('dragover', (e) => { e.preventDefault(); videoDropZone.classList.add('dragover'); });
-videoDropZone.addEventListener('dragleave', () => videoDropZone.classList.remove('dragover'));
+videoDropZone.addEventListener('dragleave', () => videoDropZone.classList.remove('dragover'); );
 videoDropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    videoDropZone.classList.remove('dragover');
+    e.preventDefault(); videoDropZone.classList.remove('dragover');
     if (e.dataTransfer.files.length) handleVideoSelect(e.dataTransfer.files[0]);
 });
 videoInput.addEventListener('change', (e) => {
@@ -82,19 +84,18 @@ videoInput.addEventListener('change', (e) => {
 });
 
 function handleVideoSelect(file) {
-    if (!file.type.startsWith('video/')) return alert('Debe ser un archivo de video.');
+    if (!file.type.startsWith('video/')) return alert('Debe ser un video.');
     selectedVideo = file;
-    videoFilename.textContent = file.name + ` (${(file.size / (1024*1024)).toFixed(2)} MB)`;
-    checkReady();
+    videoFilename.textContent = `${file.name} (${(file.size / (1024*1024)).toFixed(2)} MB)`;
+    btnNext.disabled = false;
 }
 
-// 5. Lógica de Fotos (Drag & Drop y Sortable)
+// Lógica Fotos
 photoDropZone.addEventListener('click', () => photoInput.click());
 photoDropZone.addEventListener('dragover', (e) => { e.preventDefault(); photoDropZone.classList.add('dragover'); });
-photoDropZone.addEventListener('dragleave', () => photoDropZone.classList.remove('dragover'));
+photoDropZone.addEventListener('dragleave', () => photoDropZone.classList.remove('dragover'); );
 photoDropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    photoDropZone.classList.remove('dragover');
+    e.preventDefault(); photoDropZone.classList.remove('dragover');
     if (e.dataTransfer.files.length) handlePhotosSelect(e.dataTransfer.files);
 });
 photoInput.addEventListener('change', (e) => {
@@ -105,77 +106,66 @@ function handlePhotosSelect(files) {
     Array.from(files).forEach(file => {
         if (!file.type.startsWith('image/')) return;
         selectedPhotos.push(file);
-        
+        renderPhotos();
+    });
+}
+
+function renderPhotos() {
+    photoGrid.innerHTML = '';
+    selectedPhotos.forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const card = document.createElement('div');
             card.className = 'photo-card';
-            card.innerHTML = `<img src="${e.target.result}" alt="Foto">`;
-            card.fileRef = file; // Guardar referencia al archivo real
+            
+            // Etiqueta numerada
+            const badge = document.createElement('div');
+            badge.className = 'photo-badge';
+            badge.textContent = index === 0 ? 'PORTADA' : `#${index + 1}`;
+            
+            // Botón eliminar
+            const btnDel = document.createElement('div');
+            btnDel.className = 'photo-delete';
+            btnDel.innerHTML = '🗑️';
+            btnDel.onclick = (event) => {
+                event.stopPropagation();
+                selectedPhotos.splice(index, 1);
+                renderPhotos();
+            };
+            
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            
+            card.appendChild(badge);
+            card.appendChild(btnDel);
+            card.appendChild(img);
+            
             photoGrid.appendChild(card);
         };
         reader.readAsDataURL(file);
     });
-    checkReady();
+    btnUpload.disabled = selectedPhotos.length === 0;
 }
 
-// Inicializar SortableJS para arrastrar
+// Sortable
 new Sortable(photoGrid, {
     animation: 150,
-    ghostClass: 'sortable-ghost',
-    onEnd: function() {
-        // Reordenar array original basado en el DOM
-        const newArray = [];
-        Array.from(photoGrid.children).forEach(card => newArray.push(card.fileRef));
-        selectedPhotos = newArray;
+    onEnd: function(evt) {
+        // Reordenar array original
+        const item = selectedPhotos.splice(evt.oldIndex, 1)[0];
+        selectedPhotos.splice(evt.newIndex, 0, item);
+        renderPhotos(); // Re-renderizar para actualizar los numeritos
     }
 });
 
-function checkReady() {
-    btnUpload.disabled = !(selectedVideo && selectedPhotos.length > 0);
-}
-
-// 6. Proceso de Subida Principal
+// Subida
 btnUpload.addEventListener('click', async () => {
     btnUpload.style.display = 'none';
-    progressContainer.style.display = 'block';
+    btnBack.style.display = 'none';
+    document.getElementById('progress-container').style.display = 'block';
     
-    try {
-        // 1. Subir Video a YouTube (Resumable Upload)
-        progressLabel.textContent = 'Subiendo Video a YouTube...';
-        const youtubeId = await uploadVideoToYouTube(selectedVideo);
-        
-        // 2. Subir Fotos a Google Drive
-        progressLabel.textContent = 'Subiendo Fotografías a Drive...';
-        const photoIds = await uploadPhotosToDrive(selectedPhotos);
-        
-        // 3. Notificar a Apps Script para generar plantillas
-        progressLabel.textContent = 'Generando plantillas y notificando...';
-        await notifyBackend(youtubeId, photoIds);
-        
-        // 4. Éxito!
+    setTimeout(() => {
         workspace.style.display = 'none';
         successScreen.style.display = 'block';
-        
-    } catch (e) {
-        alert('Error durante la subida: ' + e.message);
-        btnUpload.style.display = 'block';
-        progressContainer.style.display = 'none';
-    }
+    }, 3000); // Simulado para visualizar éxito
 });
-
-async function uploadVideoToYouTube(file) {
-    // Implementación del chunking resumable upload...
-    // Retornamos un ID falso por ahora para el esqueleto
-    return new Promise(resolve => setTimeout(() => resolve('YOUTUBE_ID_TEST'), 2000));
-}
-
-async function uploadPhotosToDrive(files) {
-    // Implementación de subida múltiple a Drive...
-    return new Promise(resolve => setTimeout(() => resolve(['FILE_ID_1', 'FILE_ID_2']), 2000));
-}
-
-async function notifyBackend(youtubeId, photoIds) {
-    // Fetch POST a APPS_SCRIPT_URL
-    return new Promise(resolve => setTimeout(resolve, 1000));
-}
