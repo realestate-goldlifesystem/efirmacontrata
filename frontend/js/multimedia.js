@@ -35,7 +35,7 @@ const propertyInfoCard = document.getElementById('property-info-card');
 
 function getCdrFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('cdr') || 'REG_TEST_001';
+    return urlParams.get('id') || urlParams.get('cdr') || 'REG_TEST_001';
 }
 
 currentCdr = getCdrFromUrl();
@@ -59,14 +59,14 @@ window.handleCredentialResponse = function(response) {
 
 async function loadPropertyData() {
     try {
-        propertyInfoCard.innerHTML = `<h3>Consultando CRM Inmueble: ${currentCdr}...</h3>`;
-        const response = await fetch(`${APPS_SCRIPT_URL}?accion=getMultimediaData&cdr=${currentCdr}`);
+        propertyInfoCard.innerHTML = `<h3>Consultando CRM Inmueble (ID): ${currentCdr}...</h3>`;
+        const response = await fetch(`${APPS_SCRIPT_URL}?accion=getMultimediaData&id=${currentCdr}`);
         const data = await response.json();
         
         if (data && data.success) {
             propertyData = data;
             propertyInfoCard.innerHTML = `
-                <h3>Inmueble: ${currentCdr}</h3>
+                <h3>Inmueble ID: ${currentCdr}</h3>
                 <p>✅ Datos cargados. Listo para procesar y subir contenido.</p>
             `;
         } else {
@@ -337,7 +337,7 @@ async function uploadPhotosToDrive(photosArray, labelEl, fillEl) {
 async function notifyBackend(youtubeId, photoIds) {
     const payload = {
         accion: 'finalizeMultimedia',
-        cdr: currentCdr,
+        id: currentCdr,
         youtubeId: youtubeId,
         portadaId: photoIds.length > 0 ? photoIds[0] : null
     };
