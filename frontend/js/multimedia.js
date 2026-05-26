@@ -370,3 +370,75 @@ async function notifyBackend(youtubeId, photoIds) {
     const data = await res.json();
     if (!data.success) throw new Error(data.message || "Fallo en el motor del CRM");
 }
+
+async function addVideoToPlaylists(videoId) {
+    if (!propertyData) return;
+    
+    const tipo = propertyData.tipoNegocio || '';
+    const habs = propertyData.habitaciones || '';
+    
+    let targetPlaylists = [];
+    const isArriendo = tipo.includes('Arriendo') || tipo.includes('Administración') || tipo.includes('Corretaje') || tipo.includes('Admi-Venta') || tipo.includes('Vendi-Renta');
+    const isVenta = tipo.includes('Venta') || tipo.includes('Admi-Venta') || tipo.includes('Vendi-Renta');
+    
+    const buildPlaylistName = (prefix, isArriendoType) => {
+        if (!habs || habs === '') return `${prefix} Locales`;
+        let num = parseInt(habs);
+        if (isNaN(num)) return `${prefix} Locales`;
+        
+        let habsStr = num === 1 ? '1 habitacion' : `${num} habitaciones`;
+        if (!isArriendoType) {
+            habsStr = num === 1 ? '1 Habitacion' : `${num} Habitaciones`;
+        }
+        return `${prefix} ${habsStr}`;
+    };
+    
+    if (isArriendo) targetPlaylists.push(buildPlaylistName('🏢 ARRIENDO:', true));
+    if (isVenta) targetPlaylists.push(buildPlaylistName('🏠 VENTA:', false));
+    
+    if (targetPlaylists.length === 0) return;
+    
+    let existingPlaylists = [];
+    let nextPageToken = '';
+    do {
+        const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&mine=true&maxResults=50${nextPageToken ? '&pageToken='+nextPageToken : ''}`;
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${userToken}` } });
+        if (!res.ok) break;
+        const data = await res.json();
+        if (data.items) existingPlaylists = existingPlaylists.concat(data.items);
+        nextPageToken = data.nextPageToken || '';
+    } while (nextPageToken);
+    
+    for (const pName of targetPlaylists) {
+        let pId = null;
+        const found = existingPlaylists.find(p => p.snippet.title === pName);
+        if (found) {
+            pId = found.id;
+        } else {
+            const createRes = await fetch('https://www.googleapis.com/youtube/v3/playlists?part=snippet,status', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    snippet: { title: pName, description: `Inmuebles clasificados automáticamente como ${pName}` },
+                    status: { privacyStatus: 'unlisted' }
+                })
+            });
+            if (createRes.ok) {
+                const createData = await createRes.json();
+                pId = createData.id;
+            } else {
+                continue;
+            }
+        }
+        
+        if (pId) {
+            await fetch('https://www.googleapis.com/youtube/v3/playlistItems?part=snippet', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    snippet: { playlistId: pId, resourceId: { kind: 'youtube#video', videoId: videoId } }
+                })
+            });
+        }
+    }
+}
