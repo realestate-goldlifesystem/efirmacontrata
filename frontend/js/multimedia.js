@@ -47,7 +47,7 @@ currentCdr = getCdrFromUrl();
 window.handleCredentialResponse = function(response) {
     const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/drive.file',
+        scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/drive.file',
         callback: (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
                 userToken = tokenResponse.access_token;
@@ -296,6 +296,14 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
             percentText.textContent = '100%';
             fillBar.style.width = '100%';
             const videoData = await chunkRes.json();
+            
+            try {
+                percentText.textContent = 'Agregando a playlists...';
+                await addVideoToPlaylists(videoData.id);
+            } catch (err) {
+                console.error('Error en playlists:', err);
+            }
+            
             return videoData.id;
         } else {
             throw new Error('Falló la subida de un pedazo del video: ' + await chunkRes.text());
