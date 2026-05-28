@@ -164,8 +164,8 @@ function mostrarPopupEmailInquilino(sheetParam, filaParam) {
 
     // PASO 5: Mostrar el popup
     const html = HtmlService.createHtmlOutputFromFile('backend/popup_email_inquilino')
-      .setWidth(900)
-      .setHeight(600)
+      .setWidth(1000)
+      .setHeight(800)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
 
     ui.showModalDialog(html, '📧 Enviar Formulario al Inquilino');
@@ -274,8 +274,8 @@ function mostrarPopupEmailPropietario(sheetParam, filaParam) {
 
     // PASO 5: Mostrar el popup
     const html = HtmlService.createHtmlOutputFromFile('backend/popup_email_propietario')
-      .setWidth(900)
-      .setHeight(600)
+      .setWidth(1000)
+      .setHeight(800)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
 
     ui.showModalDialog(html, '📧 Enviar Formulario al Propietario');
@@ -2737,17 +2737,34 @@ function buscarFilaPorCDR(cdr) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return null;
+
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+    const cdrCol = headers.indexOf('CODIGO DE REGISTRO'); // base 0
+    const idRegCol = headers.indexOf('ID DE REGISTRO'); // base 0
 
     const cdrBusqueda = (cdr || '').toString().trim().toUpperCase();
+    if (cdrBusqueda === '') return null;
 
-    for (let i = 2; i <= lastRow; i++) {
-      const valorRegistro = sheet.getRange(i, cdrCol).getValue();
-      const valorCDR = (valorRegistro || '').toString().trim().toUpperCase();
+    // Obtener todos los datos a la vez para evitar límite de ejecución por getValue en bucle
+    const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
 
-      if (valorCDR === cdrBusqueda && cdrBusqueda !== '') {
-        return i;
+    for (let i = 0; i < data.length; i++) {
+      let match = false;
+      const row = data[i];
+
+      if (cdrCol !== -1) {
+        const valorCDR = (row[cdrCol] || '').toString().trim().toUpperCase();
+        if (valorCDR === cdrBusqueda) match = true;
+      }
+
+      if (!match && idRegCol !== -1) {
+        const valorIdReg = (row[idRegCol] || '').toString().trim().toUpperCase();
+        if (valorIdReg === cdrBusqueda) match = true;
+      }
+
+      if (match) {
+        return i + 2; // +2 porque los datos empiezan en la fila 2
       }
     }
 
@@ -3317,10 +3334,11 @@ function enviarEmailPropietario(cdr) {
     }
 
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}`;
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+    const urlFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(idRegistro)}`;
     Logger.log('URL generada para propietario: ' + urlFormulario);
 
-    const asunto = `Documentación requerida - Contrato de arrendamiento ${cdr}`;
+    const asunto = `Documentación requerida - Contrato de arrendamiento ${idRegistro}`;
 
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -3947,7 +3965,7 @@ function obtenerDatosRegistroActual() {
     const rowData = sheet.getRange(fila, 1, 1, lastCol).getValues()[0];
 
     // Obtener índices de columnas clave
-    const colDireccion = headers.indexOf('Dirección del inmueble');
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble');
     const colTipo = headers.indexOf('TIPO DE NEGOCIO');
     const colEstado = headers.indexOf('ESTADO DEL INMUEBLE');
     const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
@@ -3961,8 +3979,11 @@ function obtenerDatosRegistroActual() {
     const yaEnviado = (estadoActual && estadoActual.includes('ENVIADO')) ||
       (detallesEstado && detallesEstado.includes('Formulario enviado'));
 
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(currentCDR) : currentCDR;
+
     return {
       cdr: currentCDR,
+      idRegistro: idRegistro,
       direccion: direccion,
       tipoNegocio: tipoNegocio,
       yaEnviado: yaEnviado
@@ -4000,11 +4021,12 @@ function procesarEmailInquilino(email, nombre) {
     // Generar URL del formulario
     // CORRECCIÓN: El frontend está en /frontend/
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlFormulario = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(currentCDR)}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(currentCDR) : currentCDR;
+    const urlFormulario = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(idRegistro)}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
 
     // 4. Enviar Email
     // Usamos la función centralizada para mantener el diseño consistente
-    enviarEmailInquilinoInicial(email, nombre, currentCDR, urlFormulario);
+    enviarEmailInquilinoInicial(email, nombre, idRegistro, urlFormulario);
 
     // 5. Actualizar Estado en la Hoja
     const colEmail = headers.indexOf('CORREO INQUILINO') + 1;
@@ -4060,7 +4082,7 @@ function obtenerDatosRegistroPropietarioActual() {
     const rowData = sheet.getRange(fila, 1, 1, lastCol).getValues()[0];
 
     // Obtener índices de columnas clave
-    const colDireccion = headers.indexOf('Dirección del inmueble');
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble');
     const colTipo = headers.indexOf('TIPO DE NEGOCIO');
     const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
 
@@ -4146,6 +4168,106 @@ function procesarEmailPropietarioPopup(email, nombre) {
       success: false,
       message: 'Error: ' + error.message
     };
+  }
+}
+
+// ==========================================
+// FUNCIONES DE UTILIDAD (BITÁCORA E ID)
+// ==========================================
+
+/**
+ * Registra un mensaje en la bitácora del Cerebro (Tabla al final del documento)
+ */
+function handleRegistrarMensajeBitacora(datos) {
+  try {
+    const cdr = datos.cdr;
+    const mensaje = datos.mensaje;
+    const autor = datos.autor || 'Sistema';
+    if (!cdr || !mensaje) throw new Error('Faltan datos para la bitácora');
+
+    const cdrEscaped = cdr.replace(/'/g, "\\'");
+    let docFileId = null;
+
+    // Buscar el Cerebro
+    const cerebroSearch = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrEscaped}' and trashed = false`);
+    if (cerebroSearch.hasNext()) {
+      docFileId = cerebroSearch.next().getId();
+    } else {
+      throw new Error('Documento Cerebro no encontrado para el CDR: ' + cdr);
+    }
+
+    const doc = DocumentApp.openById(docFileId);
+    const body = doc.getBody();
+    
+    // Buscar la tabla de bitácora
+    let bitacoraTable = null;
+    const tables = body.getTables();
+    for (let i = 0; i < tables.length; i++) {
+      const table = tables[i];
+      if (table.getNumRows() > 0) {
+        const firstCellText = table.getRow(0).getCell(0).getText().toUpperCase();
+        if (firstCellText.includes('BITÁCORA') || firstCellText.includes('BITACORA')) {
+          bitacoraTable = table;
+          break;
+        }
+      }
+    }
+
+    // Si no existe la tabla, crearla al final
+    if (!bitacoraTable) {
+      body.appendParagraph('\n--- REGISTRO DE BITÁCORA ---').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+      bitacoraTable = body.appendTable([
+        ['FECHA', 'AUTOR', 'MENSAJE']
+      ]);
+      // Estilizar encabezado
+      const headerRow = bitacoraTable.getRow(0);
+      for(let c=0; c<3; c++) {
+         headerRow.getCell(c).setBackgroundColor('#d9d9d9');
+         headerRow.getCell(c).getChild(0).asParagraph().setAttributes({ [DocumentApp.Attribute.BOLD]: true });
+      }
+    }
+
+    // Añadir nueva fila
+    const fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    bitacoraTable.appendTableRow().autoAppend([fecha, autor, mensaje]);
+
+    doc.saveAndClose();
+
+    return { success: true, message: 'Mensaje registrado en la bitácora del Cerebro exitosamente.' };
+
+  } catch (error) {
+    Logger.log('Error en handleRegistrarMensajeBitacora: ' + error.message);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Obtiene el ID DE REGISTRO a partir del CDR
+ */
+function obtenerIdRegistro(cdr) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS') || 
+                  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1- REGISTROS PRINCIPALES');
+    if (!sheet) return cdr;
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return cdr;
+    
+    const headers = data[0].map(h => String(h).trim().toUpperCase());
+    const cdrCol = headers.indexOf('CODIGO DE REGISTRO');
+    const idCol = headers.indexOf('ID DE REGISTRO');
+    
+    if (cdrCol === -1 || idCol === -1) return cdr;
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][cdrCol] === cdr) {
+        const id = data[i][idCol];
+        return id ? id : cdr;
+      }
+    }
+    return cdr;
+  } catch (error) {
+    return cdr;
   }
 }
 
