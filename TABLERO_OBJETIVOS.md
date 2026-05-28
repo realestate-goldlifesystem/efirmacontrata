@@ -13,16 +13,16 @@
 
 ### 2. 🤝 Nuevo Ecosistema: "Subpanel de Negociación y Bitácora Transparente"
 *Objetivo: Empoderar al administrador y dar transparencia y seguridad a los clientes.*
-- [ ] **Migración a Fase Borrador:** Modificar la lógica para que la generación produzca un **Borrador en Google Docs** primero.
+- [x] **Migración a Fase Borrador:** Modificar la lógica para que la generación produzca un **Borrador en Google Docs** primero. (Completado)
 - [x] **Integración en Panel (Admin):** 
   - Añadir en el Panel de Validación una vista del borrador y edición rápida del Cerebro.
-  - Implementar una **Barra de Progreso / Semáforos** (🔴 Pendiente, 🟡 Con Observaciones, 🟢 Aprobado) en el subpanel lateral de contratos (`panel_validacion.html`).
-- [ ] **Portal de Revisión para Clientes (GitHub Pages):** 
-  - Crear un portal estático HTML/CSS/JS (`portal-firmantes/index.html`) para subir a GitHub Pages y evitar logins de Google.
-  - Opciones de validación: **"👍 Aprobar Contrato"** o **"✍️ Solicitar Cambios"**.
+  - Implementar una **Barra de Progreso / Semáforos** (🔴 Pendiente, 🟡 Con Observaciones, 🟢 Aprobado) en el subpanel lateral de contratos (`panel_validacion.html`). (Completado)
+- [x] **Portal de Revisión para Clientes (GitHub Pages):** 
+  - Crear un portal estático HTML/CSS/JS (`validacion-contrato.html`) para subir a GitHub Pages y evitar logins de Google.
+  - Opciones de validación: **"👍 Aprobar Contrato"** o **"✍️ Solicitar Cambios"**. (Completado)
 - [ ] **Bitácora Transparente (Tabla Segura):** 
   - Inyectar una tabla al final de la página del Documento Cerebro donde se registrarán los logs de la conversación de forma segura (sin depender de funciones experimentales de Pestañas).
-- [ ] **Cierre Definitivo:** Cuando todas las partes aprueban, se habilita la generación del PDF Final inmutable, notificando al administrador por correo.
+- [x] **Cierre Definitivo:** Cuando todas las partes aprueban, se habilita la generación del PDF Final inmutable, notificando al administrador por correo. (Completado)
 
 ### 3. 💌 Sistema de Correos Transaccionales (Estética Premium)
 *Objetivo: Profesionalizar la comunicación y notificar a los usuarios para mantener el flujo activo.*
