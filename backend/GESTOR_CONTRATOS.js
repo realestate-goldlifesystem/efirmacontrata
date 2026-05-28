@@ -1769,12 +1769,12 @@ function handleProcesarFirmaElectronica(datos) {
                     break;
                 }
 
-                subject = subject.replace('<<nombre>>', nombreCliente).replace('<<cdr>>', datos.cdr);
+                subject = subject.replace('<<nombre>>', nombreCliente).replace('<<cdr>>', idParaUrl);
 
                 var template = HtmlService.createTemplateFromFile('backend/email_firma_final');
                 template.NOMBRE_CLIENTE = nombreCliente;
                 template.TIPO_ACTA = tipoActaTexto;
-                template.CDR = datos.cdr;
+                template.CDR = idParaUrl;
                 template.ANIO = new Date().getFullYear();
                 var htmlBody = template.evaluate().getContent();
 
