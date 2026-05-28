@@ -274,27 +274,53 @@ function recopilarDatosContrato(cdr) {
       return index >= 0 ? rowData[index] : '';
     };
 
-    // Recopilar datos del inquilino
+    // Función auxiliar para extraer datos del Cerebro (Documento Google)
+    let datosCerebro = null;
+    try {
+      const cdrEscaped = cdr.replace(/'/g, "\\'");
+      // Buscar el documento globalmente por su título que incluye el CDR y "DATOS DE ELABORACION"
+      const searchDoc = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrEscaped}' and trashed = false`);
+      if (searchDoc.hasNext()) {
+        const docText = DocumentApp.openById(searchDoc.next().getId()).getBody().getText();
+        datosCerebro = docText;
+      }
+    } catch (e) {
+      console.error("No se pudo leer el Cerebro para el CDR " + cdr, e);
+    }
+
+    const extraerCampoCerebro = (bloque, etiqueta) => {
+      if (!bloque) return '';
+      // Escapa caracteres especiales en la etiqueta si los hay
+      const safeEtiqueta = etiqueta.replace(/([()[{*+.$^\\|?])/g, '\\$1');
+      const regex = new RegExp(safeEtiqueta + '\\s*(.+)');
+      const match = bloque.match(regex);
+      return match ? match[1].trim() : '';
+    };
+
+    let inquilinoText = datosCerebro ? datosCerebro.split('DATOS DEL PROPIETARIO:')[0] : '';
+    let propietarioText = (datosCerebro && datosCerebro.includes('DATOS DEL PROPIETARIO:')) ? datosCerebro.split('DATOS DEL PROPIETARIO:')[1] : '';
+
+    // Recopilar datos del inquilino (Prioridad: Cerebro > Hoja)
     const inquilino = {
-      nombre: obtenerValor('NOMBRE COMPLETO INQUILINO'),
-      tipoDocumento: obtenerValor('TIPO DOCUMENTO INQUILINO'),
-      numeroDocumento: obtenerValor('NUMERO DOCUMENTO INQUILINO'),
-      celular: obtenerValor('CELULAR INQUILINO'),
-      email: obtenerValor('CORREO INQUILINO'),
+      nombre: extraerCampoCerebro(inquilinoText, 'NOMBRES::') || obtenerValor('NOMBRE COMPLETO INQUILINO'),
+      tipoDocumento: extraerCampoCerebro(inquilinoText, 'TIPO DE IDENTIFICACIÓN::') || obtenerValor('TIPO DOCUMENTO INQUILINO'),
+      numeroDocumento: extraerCampoCerebro(inquilinoText, 'NÚMERO DE IDENTIFICACIÓN::') || obtenerValor('NUMERO DOCUMENTO INQUILINO'),
+      celular: extraerCampoCerebro(inquilinoText, 'CELULAR::') || obtenerValor('CELULAR INQUILINO'),
+      email: extraerCampoCerebro(inquilinoText, 'CORREO::') || obtenerValor('CORREO INQUILINO'),
       ocupacion: obtenerValor('OCUPACION INQUILINO')
     };
 
-    // Recopilar datos del propietario
+    // Recopilar datos del propietario (Prioridad: Cerebro > Hoja)
     const propietario = {
-      nombre: obtenerValor('Ingrese Nombres y Apellidos'),
-      tipoDocumento: obtenerValor('TIPO DOCUMENTO PROPIETARIO'),
-      numeroDocumento: obtenerValor('Numero de documento'),
-      celular: obtenerValor('Celular'),
-      email: obtenerValor('Correo electronico'),
+      nombre: extraerCampoCerebro(propietarioText, 'NOMBRES::') || obtenerValor('Ingrese Nombres y Apellidos'),
+      tipoDocumento: extraerCampoCerebro(propietarioText, 'TIPO DE IDENTIFICACIÓN::') || obtenerValor('TIPO DOCUMENTO PROPIETARIO'),
+      numeroDocumento: extraerCampoCerebro(propietarioText, 'NÚMERO DE IDENTIFICACIÓN::') || obtenerValor('Numero de documento'),
+      celular: extraerCampoCerebro(propietarioText, 'CELULAR::') || obtenerValor('Celular'),
+      email: extraerCampoCerebro(propietarioText, 'CORREO::') || obtenerValor('Correo electronico'),
       direccion: obtenerValor('Direccion de residencia'),
-      banco: obtenerValor('Banco'),
-      tipoCuenta: obtenerValor('Tipo de cuenta'),
-      numeroCuenta: obtenerValor('Numero de cuenta')
+      banco: extraerCampoCerebro(propietarioText, 'BANCO::') || obtenerValor('Banco'),
+      tipoCuenta: extraerCampoCerebro(propietarioText, 'TIPO DE CUENTA::') || obtenerValor('Tipo de cuenta'),
+      numeroCuenta: extraerCampoCerebro(propietarioText, 'NÚMERO DE CUENTA::') || obtenerValor('Numero de cuenta')
     };
 
     // Recopilar datos del inmueble
@@ -857,7 +883,8 @@ function obtenerEstadosAprobacion(cdr) {
  * Enviar email de revision al inquilino
  */
 function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAprobacion) {
-  const asunto = `?? Contrato de Arrendamiento para Revision - ${cdr}`;
+  const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+  const asunto = `?? Contrato de Arrendamiento para Revision - ${displayId}`;
 
   const cuerpoHtml = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -901,7 +928,7 @@ function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAproba
         
         <p style="color: #999; font-size: 14px; text-align: center;">
           E-firmaContrata ¡E Real Estate Gold Life System<br>
-          Codigo de registro: ${cdr}
+          Codigo de registro: ${displayId}
         </p>
       </div>
     </div>
@@ -920,7 +947,8 @@ function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAproba
  * Enviar email de revision al propietario
  */
 function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlAprobacion) {
-  const asunto = `?? Contrato de Arrendamiento para Revision - ${cdr}`;
+  const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+  const asunto = `?? Contrato de Arrendamiento para Revision - ${displayId}`;
 
   const cuerpoHtml = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -957,7 +985,7 @@ function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlApro
         
         <p style="color: #999; font-size: 14px; text-align: center;">
           E-firmaContrata ¡E Real Estate Gold Life System<br>
-          Codigo de registro: ${cdr}
+          Codigo de registro: ${displayId}
         </p>
       </div>
     </div>
@@ -976,7 +1004,8 @@ function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlApro
  * Enviar email de revision al codeudor
  */
 function enviarEmailRevisionCodeudor(email, nombre, cdr, urlContrato, urlAprobacion) {
-  const asunto = `?? Contrato de Arrendamiento - Codeudor - ${cdr}`;
+  const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+  const asunto = `?? Contrato de Arrendamiento - Codeudor - ${displayId}`;
 
   const cuerpoHtml = `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -1022,7 +1051,7 @@ function enviarEmailRevisionCodeudor(email, nombre, cdr, urlContrato, urlAprobac
         
         <p style="color: #999; font-size: 14px; text-align: center;">
           E-firmaContrata ¡E Real Estate Gold Life System<br>
-          Codigo de registro: ${cdr}
+          Codigo de registro: ${displayId}
         </p>
       </div>
     </div>
@@ -1042,11 +1071,12 @@ function enviarEmailRevisionCodeudor(email, nombre, cdr, urlContrato, urlAprobac
  */
 function enviarNotificacionContratoAprobado(cdr) {
   try {
+    const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
     const datos = recopilarDatosContrato(cdr);
 
     if (!datos.success) return;
 
-    const asunto = `? Contrato Aprobado - ${cdr}`;
+    const asunto = `? Contrato Aprobado - ${displayId}`;
 
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -1057,7 +1087,7 @@ function enviarNotificacionContratoAprobado(cdr) {
         <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
           <p style="font-size: 16px; color: #333;">
             Nos complace informarle que el contrato de arrendamiento con codigo 
-            <strong>${cdr}</strong> ha sido aprobado por todas las partes.
+            <strong>${displayId}</strong> ha sido aprobado por todas las partes.
           </p>
           
           <div style="background: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
@@ -1078,7 +1108,7 @@ function enviarNotificacionContratoAprobado(cdr) {
           
           <p style="color: #999; font-size: 14px; text-align: center;">
             E-firmaContrata ¡E Real Estate Gold Life System<br>
-            Codigo de registro: ${cdr}
+            Codigo de registro: ${displayId}
           </p>
         </div>
       </div>
@@ -1118,11 +1148,12 @@ function enviarNotificacionContratoAprobado(cdr) {
  */
 function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
   try {
+    const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
     const datos = recopilarDatosContrato(cdr);
 
     if (!datos.success) return;
 
-    const asunto = `?? Cambios Solicitados al Contrato - ${cdr}`;
+    const asunto = `?? Cambios Solicitados al Contrato - ${displayId}`;
 
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -1132,7 +1163,7 @@ function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
         
         <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
           <p style="font-size: 16px; color: #333;">
-            Se han solicitado cambios al contrato de arrendamiento con codigo <strong>${cdr}</strong>.
+            Se han solicitado cambios al contrato de arrendamiento con codigo <strong>${displayId}</strong>.
           </p>
           
           <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
@@ -1151,7 +1182,7 @@ function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
           
           <p style="color: #999; font-size: 14px; text-align: center;">
             E-firmaContrata ¡E Real Estate Gold Life System<br>
-            Codigo de registro: ${cdr}
+            Codigo de registro: ${displayId}
           </p>
         </div>
       </div>
@@ -1441,29 +1472,46 @@ function enviarBorradorAValidar(cdr) {
     }
 
     const baseURL = CONTRATO_CONFIG.BASE_URL || 'https://realestate-goldlifesystem.github.io/efirmacontrata';
+    
+    // Asumimos que docId ya está generado y lo podemos sacar del estado en Sheet o lo pasamos en blanco si solo usamos CDR
+    // En este flujo, validacion-contrato.html usará el CDR para obtener el borrador activo.
+    const urlContrato = '#'; // El link real al doc lo mostrará el frontend
+    
+    // Enviar al inquilino
+    enviarEmailRevisionInquilino(
+      emailInquilino,
+      datos.inquilino.nombre,
+      cdr,
+      urlContrato,
+      `${baseURL}/validacion-contrato.html?cdr=${cdr}&parte=inquilino`
+    );
 
-    const enviarCorreoParte = (email, nombre, rol) => {
-      const enlace = `${baseURL}/validacion-contrato.html?cdr=${cdr}&parte=${rol}`;
-      const asunto = `📝 Acción Requerida: Revisar Borrador de Contrato - ${cdr}`;
-      const cuerpo = `Hola ${nombre},\n\nEl borrador de su contrato de arrendamiento está listo para revisión.\n\nPor favor ingrese al siguiente enlace para leerlo, y aprobarlo o dejar comentarios de corrección:\n${enlace}\n\nGracias,\nGold Life System.`;
-      
-      try {
-        MailApp.sendEmail({
-          to: email,
-          subject: asunto,
-          body: cuerpo
-        });
-      } catch (err) {
-        console.error(`Error enviando correo a ${rol} (${email}):`, err);
-        throw new Error(`Error enviando email a ${rol}`);
-      }
-    };
+    // Enviar al propietario
+    enviarEmailRevisionPropietario(
+      emailPropietario,
+      datos.propietario.nombre,
+      cdr,
+      urlContrato,
+      `${baseURL}/validacion-contrato.html?cdr=${cdr}&parte=propietario`
+    );
 
-    enviarCorreoParte(emailInquilino, datos.inquilino.nombre, 'inquilino');
-    enviarCorreoParte(emailPropietario, datos.propietario.nombre, 'propietario');
+    // Enviar a codeudores si existen
+    if (datos.codeudores && datos.codeudores.length > 0) {
+      datos.codeudores.forEach((codeudor, index) => {
+        if (codeudor.email) {
+          enviarEmailRevisionCodeudor(
+            codeudor.email,
+            codeudor.nombre,
+            cdr,
+            urlContrato,
+            `${baseURL}/validacion-contrato.html?cdr=${cdr}&parte=codeudor${index + 1}`
+          );
+        }
+      });
+    }
 
     // Cambiar estado global a BORRADOR ENVIADO
-    actualizarEstadoContrato(cdr, 'BORRADOR ENVIADO', 'Los correos de validación se enviaron exitosamente.');
+    actualizarEstadoContrato(cdr, 'BORRADOR ENVIADO', 'Los correos de validación se enviaron exitosamente (incluyendo codeudores si aplica).');
 
     return {
       success: true,
@@ -1473,7 +1521,7 @@ function enviarBorradorAValidar(cdr) {
     return {
       success: false,
       message: error.message
-    }
+    };
   }
 }
 
@@ -1670,6 +1718,18 @@ function handleProcesarFirmaElectronica(datos) {
             sheet.getRange(i, docFirmadoCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}"; "📄✅ FIRMADO")`);
           }
           
+          // --- NUEVO: Añadir Botón Cargar Contenido ---
+          const cargarContenidoCol = getCol('CARGAR CONTENIDO');
+          const idRegistroCol = getCol('ID DE REGISTRO');
+          let idParaUrl = datos.cdr; // Fallback
+          if (idRegistroCol > 0) {
+            const idSheet = sheet.getRange(i, idRegistroCol).getValue();
+            if (idSheet) idParaUrl = idSheet;
+          }
+          if (cargarContenidoCol > 0) {
+            sheet.getRange(i, cargarContenidoCol).setFormula(`=HYPERLINK("https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/carga_multimedia.html?id=${encodeURIComponent(idParaUrl)}"; "📤📷 CARGAR")`);
+          }
+          
           // --- NUEVO: Enviar copia del PDF al cliente ---
           try {
             const emailCol = getCol('Correo electrónico');
@@ -1687,29 +1747,29 @@ function handleProcesarFirmaElectronica(datos) {
 
                 switch(tipoNegocio) {
                   case 'Administración':
-                    subject = 'ACTA DE PROMOCION Y ADMINISTRACION DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    subject = '✅ FIRMA COMPLETADA: Acta de Administración - <<nombre>> (ID: <<cdr>>) - REAL ESTATE Gold Life';
                     tipoActaTexto = 'Acta de administración';
                     break;
                   case 'Venta':
-                    subject = 'ACTA DE PROMOCION DE VENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    subject = '✅ FIRMA COMPLETADA: Acta de Venta - <<nombre>> (ID: <<cdr>>) - REAL ESTATE Gold Life';
                     tipoActaTexto = 'Acta para la promoción en venta';
                     break;
                   case 'Admi-Venta':
-                    subject = 'ACTA DE PROMOCION DE ADMI-VENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    subject = '✅ FIRMA COMPLETADA: Acta de Admi-Venta - <<nombre>> (ID: <<cdr>>) - REAL ESTATE Gold Life';
                     tipoActaTexto = 'Acta de promoción de Admi-Venta';
                     break;
                   case 'Vendi-Renta':
-                    subject = 'ACTA DE PROMOCION DE VENDI-RENTA DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    subject = '✅ FIRMA COMPLETADA: Acta de Vendi-Renta - <<nombre>> (ID: <<cdr>>) - REAL ESTATE Gold Life';
                     tipoActaTexto = 'Acta de promoción de Vendi-Renta';
                     break;
                   case 'Corretaje':
                   default:
-                    subject = 'ACTA DE PROMOCIÓN DE ARRENDAMIENTO DEL INMUEBLE DE <<nombre>> - REAL ESTATE Gold Life System';
+                    subject = '✅ FIRMA COMPLETADA: Acta de Arrendamiento - <<nombre>> (ID: <<cdr>>) - REAL ESTATE Gold Life';
                     tipoActaTexto = 'Acta de Promoción en Arriendo';
                     break;
                 }
 
-                subject = subject.replace('<<nombre>>', nombreCliente);
+                subject = subject.replace('<<nombre>>', nombreCliente).replace('<<cdr>>', datos.cdr);
 
                 var template = HtmlService.createTemplateFromFile('backend/email_firma_final');
                 template.NOMBRE_CLIENTE = nombreCliente;
@@ -1719,6 +1779,7 @@ function handleProcesarFirmaElectronica(datos) {
 
                 MailApp.sendEmail({
                   to: emailCliente,
+                  bcc: 'realestate.goldlifesystem@gmail.com',
                   subject: subject,
                   htmlBody: htmlBody,
                   attachments: [finalPdf.getAs(MimeType.PDF)]
@@ -1726,6 +1787,39 @@ function handleProcesarFirmaElectronica(datos) {
                 console.log("Copia final enviada a: " + emailCliente);
               }
             }
+            
+            // --- NUEVO: Correo al administrador (Sistema) para Cargar Multimedia ---
+            try {
+              if (datos.cdr) {
+                const idRegistroCol = getCol('ID DE REGISTRO');
+                let idParaUrl = datos.cdr; // Fallback
+                if (idRegistroCol > 0) {
+                  const idSheet = sheet.getRange(targetRow, idRegistroCol).getValue();
+                  if (idSheet) idParaUrl = idSheet;
+                }
+                const urlMultimedia = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/carga_multimedia.html?id=${encodeURIComponent(idParaUrl)}`;
+                const adminEmail = 'realestate.goldlifesystem@gmail.com'; // Correo fijo del sistema
+                MailApp.sendEmail({
+                  to: adminEmail,
+                  subject: `📤 LISTO PARA MULTIMEDIA: Contrato Firmado - ID: ${idParaUrl}`,
+                  htmlBody: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px;">
+                      <h2 style="color: #D4AF37; text-align: center;">¡Contrato Firmado Exitosamente!</h2>
+                      <p style="font-size: 16px; color: #333;">El propietario ha firmado el contrato del inmueble con ID <strong>${idParaUrl}</strong>.</p>
+                      <p style="font-size: 16px; color: #333;">Ya puedes proceder a cargar las fotografías y el video en el siguiente enlace:</p>
+                      <div style="text-align: center; margin: 30px 0;">
+                        <a href="${urlMultimedia}" style="background-color: #D4AF37; color: black; padding: 15px 30px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">📤 IR AL PORTAL MULTIMEDIA</a>
+                      </div>
+                      <p style="font-size: 14px; color: #777;">* El enlace también ha sido inyectado automáticamente en la columna "CARGAR CONTENIDO" de tu Excel.</p>
+                    </div>
+                  `
+                });
+                console.log("Correo de aviso multimedia enviado al admin: " + adminEmail);
+              }
+            } catch(e) {
+              console.error("Error enviando email de multimedia al admin:", e);
+            }
+            
           } catch(e) {
             console.error("Error enviando copia final del PDF:", e);
           }
