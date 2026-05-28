@@ -1,0 +1,50 @@
+# 🧠 CEREBRO DEL PROYECTO: GOLD LIFE SYSTEM (REAL ESTATE)
+
+> **ATENCIÓN AGENTES DE IA (Y NUEVOS DESARROLLADORES):**  
+> Este es tu documento principal de memoria, personalidad y contexto. Si estás leyendo esto, es porque has sido invocado para trabajar en este proyecto. Tu objetivo principal es mantener la coherencia con esta arquitectura, evitar dañar flujos de Google Apps Script y usar tus herramientas correctamente.
+
+## 🏢 1. ¿Qué es este proyecto en Global?
+Es un sistema integral de **Gestión Inmobiliaria** ("Real Estate") construido sobre la infraestructura de Google Workspace (Apps Script + Sheets + Drive) y Github Pages. 
+*Nota: "E-FirmaContrata" es solo uno de los módulos/marcas del sistema, no es el todo.*
+
+El ecosistema global administra:
+1. **Inmuebles:** Registro y perfilamiento de propiedades.
+2. **Documentación y OCR:** Carga, validación automática de documentos e integración con Google Cloud Vision para leer cédulas o documentos.
+3. **Contratos (E-FirmaContrata):** Generación dinámica de contratos a partir de Google Docs, manejo de versiones borrador, bitácora de negociación y semáforos de firma (Fase 1). 
+4. **Firmas y Pagos:** (Futura Fase 2) Integración con ViaFirma y pasarelas de pago.
+
+## 🧩 2. Estructura y Módulos
+El proyecto vive en dos repositorios/carpetas que se hablan mediante una API (JSONP/Fetch):
+
+### 2.1 Backend (`backend/`) -> Google Apps Script
+- **Motor de Datos:** Google Sheets (ej: hoja `1.1 - INMUEBLES REGISTRADOS`).
+- **Módulos Principales (JS):**
+  - `1- REGISTRO DE INMUEBLE.js` / `2-...`: Lógica de dar de alta propiedades.
+  - `GESTOR DE DOCUMENTOS.js` / `ESTADOS DOCUMENTALES.js`: Manejan creación de links únicos (CDR/ID de Registro), validaciones y ciclo de vida de la documentación.
+  - `GESTOR_CONTRATOS.js`: El motor maestro que extrae datos del Sheet hacia un Documento en Drive (El Cerebro) y luego genera el PDF final del contrato.
+  - `OCR-HANDLER.js`: Lógica de visión artificial.
+- **Frontend Interno:** El administrador usa `panel_validacion.html` (vía Web App de Google) para gobernar el sistema (ver semáforos, contratos, registros).
+
+### 2.2 Frontend (`frontend/`) -> GitHub Pages
+- Es la cara pública para clientes (Inquilinos, Propietarios).
+- Archivos clave: `formulario-inquilino.html`, `validador.html`, `validacion-contrato.html`, `sala_firmas.html`.
+- Usa el archivo `config.js` para comunicarse estrictamente con la **URL de Producción (`/exec`)** del backend de Apps Script.
+
+## 🚀 3. Reglas de Despliegue (CÓMO HACER TU TRABAJO)
+Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los despliegues de esta forma:
+
+1. **Modo Borrador / Desarrollo (`clasp push`):**
+   Si modificas un script en `backend/`, ejecuta en terminal `cmd /c npx clasp push`. Esto sube el código a Google. **OJO:** El frontend público no verá estos cambios aún, solo las URLs de prueba (`/dev`).
+2. **Modo Producción (`clasp deploy`):**
+   Si necesitas que tus cambios en el backend funcionen inmediatamente con el Frontend en GitHub, **TIENES** que crear una nueva versión de despliegue oficial.
+   Ejecuta: `cmd /c npx clasp deploy -i "AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW" -d "Parche IA"`
+3. **Frontend (GitHub):**
+   Si cambias algo en la carpeta `frontend/`, haz `git add .`, `git commit` y `git push origin main`. GitHub Pages se encargará del resto.
+
+## 🛠️ 4. Tus Superpoderes y Limitaciones (IA)
+1. **Despliegue Autónomo:** Eres capaz de usar la terminal (cmd/powershell) para hacer `push` y `deploy` de Clasp y Git. ¡Hazlo! No esperes a que el usuario lo haga a mano.
+2. **Conexión Directa:** Si no estás seguro de cómo se llama una columna en la hoja de cálculo, no adivines ni dañes el código. Ejecuta scripts de pruebas en la consola local para consultar los datos en vivo.
+3. **Privacidad Extrema:** Ciertas credenciales (como los `.json` del OCR de Google Cloud) NUNCA deben subir a GitHub. Verifica que tu `.gitignore` los esté bloqueando.
+4. **Cero Dependencias de Celdas:** Recuerda que la "fuente de la verdad" para crear contratos NO son las celdas en blanco de Google Sheets, sino el "Documento Cerebro" alojado en Drive. No intentes modificar la lógica para guardar variables del contrato en columnas de Excel.
+
+¡Actúa con seguridad y confianza, y siempre infórmale al usuario qué nivel de despliegue realizaste!
