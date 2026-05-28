@@ -971,29 +971,6 @@
             <p>Sistema de validación de documentos y generación de contratos</p>
         </div>
 
-        <!-- DEBUG TRACE VISUAL (TEMPORAL) -->
-        <div id="visualDebug" style="background:#000; color:#0f0; padding:10px; font-family:monospace; font-size:12px; max-height:100px; overflow-y:auto; margin-bottom:10px;">
-            > INICIO DEBUG<br>
-        </div>
-
-        <script>
-            function pushDebug(msg) {
-                var d = document.getElementById('visualDebug');
-                if (d) {
-                    d.innerHTML += '> ' + msg + '<br>';
-                    d.scrollTop = d.scrollHeight;
-                }
-            }
-            window.onerror = function(msg, src, line, col, err) {
-                pushDebug('<span style="color:red">ERROR GLOBAL: ' + msg + ' (Línea ' + line + ')</span>');
-                return false;
-            };
-            window.addEventListener('error', function(e) {
-                if (e.message) {
-                    pushDebug('<span style="color:red">EVENT ERROR: ' + e.message + '</span>');
-                }
-            }, true);
-        </script>
 
                 <!-- Tabs Navigation (100% CSS Driven) -->
         <div class="tabs-nav" id="mainTabsNav">
@@ -1013,9 +990,7 @@
 
         <!-- Tab Inquilinos -->
         <div id="tabInquilinos" class="tab-content active">
-            <h2 style="font-size:1.1rem; color:#475569; margin: 0 0 1rem 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; width: 100%;">
-                &#128203; Sección Activa: Inquilinos
-            </h2>
+
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-icon">&#128202;</div>
@@ -1052,9 +1027,7 @@
 
         <!-- Tab Propietarios -->
         <div id="tabPropietarios" class="tab-content">
-            <h2 style="font-size:1.1rem; color:#475569; margin: 0 0 1rem 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; width: 100%;">
-                &#127968; Sección Activa: Propietarios
-            </h2>
+
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-icon">&#128202;</div>
@@ -1262,9 +1235,50 @@
 
                 <!-- Panel Derecho: Comentarios / Aprobaciones -->
                 <div class="panel-comentarios">
-                    <h3 style="margin-top:0; margin-bottom: 1rem;">Validación Externa</h3>
-                    <div id="contenedorEstadosAprobacion">
-                        <!-- Se llena dinámico -->
+                    <h3 style="margin-top:0; margin-bottom: 1rem; color: var(--dark);">Validación Externa</h3>
+                    
+                    <!-- Semáforos de Aprobación -->
+                    <div style="background: var(--light); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid #e2e8f0;">
+                        <h4 style="margin: 0 0 0.75rem 0; font-size: 0.9rem; color: #475569;">Progreso de Firmas</h4>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.9rem; font-weight: 500;">🏠 Inquilino</span>
+                                <span id="semaforoInquilino" class="badge" style="background: #f1f5f9; color: #64748b;">No Enviado</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.9rem; font-weight: 500;">👤 Codeudor(es)</span>
+                                <span id="semaforoCodeudor" class="badge" style="background: #f1f5f9; color: #64748b;">No Enviado</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.9rem; font-weight: 500;">🔑 Propietario</span>
+                                <span id="semaforoPropietario" class="badge" style="background: #f1f5f9; color: #64748b;">No Enviado</span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; font-size: 0.95rem;">Estado Global:</span>
+                            <span id="semaforoGlobal" style="font-weight: bold; color: var(--warning);">Pendiente</span>
+                        </div>
+                    </div>
+
+                    <!-- Bitácora Transparente -->
+                    <div style="display: flex; flex-direction: column; flex: 1;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #475569;">Bitácora de Negociación</h4>
+                        <div id="contenedorBitacora" style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; min-height: 250px; max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <div class="empty-state" style="padding: 1.5rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">
+                                La bitácora está vacía. Aquí aparecerán los comentarios cuando envíes el borrador.
+                            </div>
+                            <!-- Los mensajes se inyectan aquí -->
+                        </div>
+                        
+                        <!-- Caja de Envío de Mensaje -->
+                        <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+                            <input type="text" id="inputMensajeBitacora" placeholder="Escribe una respuesta o confirmación..." style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 0.9rem;">
+                            <button class="btn btn-primary" onclick="enviarMensajeBitacora()" style="border-radius: 50%; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                🚀
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1686,7 +1700,7 @@
         window.onerror = function(msg, src, line, col, err) {
             var div = document.createElement('div');
             div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ef4444;color:white;padding:8px 12px;font-size:13px;z-index:99999;font-family:monospace;';
-            div.innerHTML = '&#128027; JS Error: ' + msg + ' (línea ' + line + ')';
+            div.innerHTML = ' JS Error: ' + msg + ' (línea ' + line + ')';
             document.body && document.body.appendChild(div);
             return false;
         };
@@ -1706,8 +1720,7 @@
         let registrosData = { inquilinos: [], propietarios: [] };
 
         // Estados Split Workspace
-        let personaActivaKey = ''; // 'inquilino', 'propietario', 'codeudor_0', 'codeudor_1'
-        let validacionEstado = {}; // { 'fileId1': 'aprobado', 'fileId2': 'correccion' }
+        let personaActivaKey = ''; // 'inquilino', 'propietario', 'codeudor_0', 'codeudor_1'        let validacionEstado = {}; // { 'fileId1': 'aprobado', 'fileId2': 'correccion' }
         let motivosCorreccion = {}; // { 'fileId2': 'Cédula borrosa' }
         let datosCerebroAnteriores = {};
 
@@ -1715,7 +1728,7 @@
         window.onerror = function(msg, url, lineNo, columnNo, error) {
             var errorDiv = document.createElement('div');
             errorDiv.style.cssText = "background:red; color:white; padding:20px; position:fixed; top:0; left:0; right:0; z-index:99999; font-size:16px; font-weight:bold;";
-            errorDiv.innerHTML = "&#128680; AUTO-DIAGNÓSTICO: <br> Mensaje: " + msg + "<br>Línea: " + lineNo + "<br>Columna: " + columnNo;
+            errorDiv.innerHTML = " AUTO-DIAGNÓSTICO: <br> Mensaje: " + msg + "<br>Línea: " + lineNo + "<br>Columna: " + columnNo;
             if (document.body) document.body.appendChild(errorDiv); // prepend no es universal, appendChild sí
             return false;
         };
@@ -1726,7 +1739,7 @@
                 if(typeof pushDebug !== 'undefined') pushDebug('Iniciando arrancarApp...');
                 configurarEventListeners(); // Primero los eventos
                 cargarDatos();
-                console.log("✅ App inicializada correctamente.");
+                console.log(" App inicializada correctamente.");
                 if(typeof pushDebug !== 'undefined') pushDebug('arrancarApp completado');
             } catch(e) {
                 console.error("Error inicializando app: ", e);
@@ -1764,7 +1777,7 @@
 
                                                 // Event Listeners (Estandar Apps Script Moderno con Loops Compatibles)
         function configurarEventListeners() {
-            console.log("&#128640; Tabs gobrnados 100% por CSS Native. JS inhabilitado deliberadamente.");
+            console.log(" Tabs gobrnados 100% por CSS Native. JS inhabilitado deliberadamente.");
         }
 
         // Cambiar Tab (Inhabilitado)
@@ -1809,12 +1822,12 @@
             const lista = document.getElementById('listaContratos');
 
             // Mostrar loading
-            lista.innerHTML = `
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p>Buscando inmuebles aprobados...</p>
-                </div>
-            `;
+            lista.innerHTML = '\n' +
+'                <div class="loading-state">\n' +
+'                    <div class="spinner"></div>\n' +
+'                    <p>Buscando inmuebles aprobados...</p>\n' +
+'                </div>\n' +
+'            ';
             if(typeof pushDebug !== 'undefined') pushDebug('Loading spinner inyectado en DOM');
 
             // Llamada al backend
@@ -1827,13 +1840,13 @@
                 })
                 .withFailureHandler(function (error) {
                     if(typeof pushDebug !== 'undefined') pushDebug('FailureHandler: ' + error.message);
-                    lista.innerHTML = `
-                        <div class="error-state">
-                            <span class="error-icon">❌</span>
-                            <p>Error cargando contratos: ${error.message}</p>
-                            <button onclick="cargarContratos()" class="btn-retry">Reintentar</button>
-                        </div>
-                    `;
+                    lista.innerHTML = '\n' +
+'                        <div class="error-state">\n' +
+'                            <span class="error-icon"></span>\n' +
+'                            <p>Error cargando contratos: ' + (error.message) + '</p>\n' +
+'                            <button onclick="cargarContratos()" class="btn-retry">Reintentar</button>\n' +
+'                        </div>\n' +
+'                    ';
                 })
                 .obtenerContratosPendientes(); // Necesitamos crear esta función en Backend
         }
@@ -1843,13 +1856,13 @@
 
             try {
                 if (!contratos || contratos.length === 0) {
-                    lista.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-icon">&#128221;</div>
-                            <h3>No hay contratos pendientes</h3>
-                            <p>Los inmuebles con "ESTUDIO APROBADO" aparecerán aquí.</p>
-                        </div>
-                    `;
+                    lista.innerHTML = '\n' +
+'                        <div class="empty-state">\n' +
+'                            <div class="empty-icon"></div>\n' +
+'                            <h3>No hay contratos pendientes</h3>\n' +
+'                            <p>Los inmuebles con "ESTUDIO APROBADO" aparecerán aquí.</p>\n' +
+'                        </div>\n' +
+'                    ';
                     return;
                 }
 
@@ -1857,49 +1870,49 @@
                 for (let i = 0; i < contratos.length; i++) {
                     const c = contratos[i];
                     let badgeClass = 'badge-ready';
-                    let btnText = '&#128196; Generar Contrato';
-                    let btnAction = `generarContrato('${c.cdr}', this)`;
+                    let btnText = ' Generar Contrato';
+                    let btnAction = 'generarContrato(\'' + (c.cdr) + '\', this)';
                     let badgeText = 'LISTO PARA GENERAR';
 
                     let estadoMayus = (c.estadoBadge || '').toUpperCase();
                     if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CONTRATO GENERADO')) {
                         badgeClass = 'badge-warning';
                         badgeText = 'BORRADOR ACTIVO';
-                        btnText = '&#128269; Abrir Borrador';
-                        btnAction = `abrirBorrador('${c.cdr}', this)`;
+                        btnText = ' Abrir Borrador';
+                        btnAction = 'abrirBorrador(\'' + (c.cdr) + '\', this)';
                     }
 
-                    html += `
-                        <div class="registro-card contrato-card">
-                            <div class="registro-header">
-                                <h3>&#127968; ${c.cdr}</h3>
-                                <span class="badge ${badgeClass}" style="${badgeClass === 'badge-warning' ? 'background:var(--warning); color:black;' : 'background:var(--success); color:white;'}">${badgeText}</span>
-                            </div>
-                            <div class="registro-info">
-                                <div class="info-row">
-                                    <span class="info-label">Inquilino:</span>
-                                    <span class="info-value">${c.inquilino}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Tipo Negocio:</span>
-                                    <span class="info-value">${c.tipoNegocio}</span>
-                                </div>
-                                <div class="info-row">
-                                    <span class="info-label">Canon:</span>
-                                    <span class="info-value">${c.canon}</span>
-                                </div>
-                            </div>
-                            <div class="registro-actions">
-                                <button class="btn btn-primary" onclick="${btnAction}">
-                                    ${btnText}
-                                </button>
-                            </div>
-                        </div>
-                    `;
+                    html += '\n' +
+'                        <div class="registro-card contrato-card">\n' +
+'                            <div class="registro-header">\n' +
+'                                <h3> ' + (c.cdr) + '</h3>\n' +
+'                                <span class="badge ' + (badgeClass) + '" style="' + (badgeClass === 'badge-warning' ? 'background:var(--warning); color:black;' : 'background:var(--success); color:white;') + '">' + (badgeText) + '</span>\n' +
+'                            </div>\n' +
+'                            <div class="registro-info">\n' +
+'                                <div class="info-row">\n' +
+'                                    <span class="info-label">Inquilino:</span>\n' +
+'                                    <span class="info-value">' + (c.inquilino) + '</span>\n' +
+'                                </div>\n' +
+'                                <div class="info-row">\n' +
+'                                    <span class="info-label">Tipo Negocio:</span>\n' +
+'                                    <span class="info-value">' + (c.tipoNegocio) + '</span>\n' +
+'                                </div>\n' +
+'                                <div class="info-row">\n' +
+'                                    <span class="info-label">Canon:</span>\n' +
+'                                    <span class="info-value">' + (c.canon) + '</span>\n' +
+'                                </div>\n' +
+'                            </div>\n' +
+'                            <div class="registro-actions">\n' +
+'                                <button class="btn btn-primary" onclick="' + (btnAction) + '">\n' +
+'                                    ' + (btnText) + '\n' +
+'                                </button>\n' +
+'                            </div>\n' +
+'                        </div>\n' +
+'                    ';
                 }
                 lista.innerHTML = html;
             } catch (err) {
-                lista.innerHTML = `<div class="error-state" style="background:red; color:white; padding:20px;">&#128680; ERROR DE RENDER: ${err.message} <br> ${err.stack}</div>`;
+                lista.innerHTML = '<div class="error-state" style="background:red; color:white; padding:20px;"> ERROR DE RENDER: ' + (err.message) + ' <br> ' + (err.stack) + '</div>';
             }
         }
 
@@ -1912,16 +1925,15 @@
 
             Swal.fire({
                 title: '¿Generar Borrador?',
-                text: `Se generará el borrador del contrato para ${cdr}.`,
+                text: 'Se generará el borrador del contrato para ' + (cdr) + '.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#FFD700',
                 cancelButtonColor: '#6b7280',
                 confirmButtonText: 'Sí, generar',
-                cancelButtonText: 'Cancelar'
-            }).then((result) => {
+                cancelButtonText: 'Cancelar'            }).then((result) => {
                 if (result.isConfirmed) {
-                    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Generando...'; }
+                    if (btn) { btn.disabled = true; btn.innerHTML = ' Generando...'; }
 
                     google.script.run
                         .withSuccessHandler(function (res) {
@@ -1944,7 +1956,7 @@
         function abrirBorrador(cdr, btnEl) {
             const btn = btnEl || null;
             const originalText = btn ? btn.innerHTML : '';
-            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Cargando...'; }
+            if (btn) { btn.disabled = true; btn.innerHTML = ' Cargando...'; }
 
             google.script.run
                 .withSuccessHandler(function (res) {
@@ -1978,30 +1990,29 @@
             // Llenar panel izquierdo (Datos de la hoja procesados)
             let htmlDatos = '';
             if(resData.datos) {
-                htmlDatos += `<div class="dato-maestro-card">
-                    <h4>Inquilino</h4>
-                    <p>${resData.datos.inquilino?.nombre || 'N/A'}</p>
-                    <p style="font-size:0.85em; color:#64748b;">${resData.datos.inquilino?.numeroDocumento || ''}</p>
-                </div>`;
-                htmlDatos += `<div class="dato-maestro-card">
-                    <h4>Propietario</h4>
-                    <p>${resData.datos.propietario?.nombre || 'N/A'}</p>
-                    <p style="font-size:0.85em; color:#64748b;">${resData.datos.propietario?.numeroDocumento || ''}</p>
-                </div>`;
-                htmlDatos += `<div class="dato-maestro-card">
-                    <h4>Inmueble</h4>
-                    <p>${resData.datos.inmueble?.direccion || 'N/A'}</p>
-                </div>`;
+                htmlDatos += '<div class="dato-maestro-card">\n' +
+'                    <h4>Inquilino</h4>\n' +
+'                    <p>' + (resData.datos.inquilino?.nombre || 'N/A') + '</p>\n' +
+'                    <p style="font-size:0.85em; color:#64748b;">' + (resData.datos.inquilino?.numeroDocumento || '') + '</p>\n' +
+'                </div>';
+                htmlDatos += '<div class="dato-maestro-card">\n' +
+'                    <h4>Propietario</h4>\n' +
+'                    <p>' + (resData.datos.propietario?.nombre || 'N/A') + '</p>\n' +
+'                    <p style="font-size:0.85em; color:#64748b;">' + (resData.datos.propietario?.numeroDocumento || '') + '</p>\n' +
+'                </div>';
+                htmlDatos += '<div class="dato-maestro-card">\n' +
+'                    <h4>Inmueble</h4>\n' +
+'                    <p>' + (resData.datos.inmueble?.direccion || 'N/A') + '</p>\n' +
+'                </div>';
             } else {
                 htmlDatos = '<p>No se encontraron datos tabulados.</p>';
             }
             document.getElementById('contenedorDatosContrato').innerHTML = htmlDatos;
 
-            // Mostrar el iframe — usar /preview para embeber correctamente
+            // Mostrar el iframe  usar /preview para embeber correctamente
             document.getElementById('loaderContrato').style.display = 'block';
             const embedUrl = resData.docId
-                ? `https://docs.google.com/document/d/${resData.docId}/preview`
-                : (resData.url ? resData.url.replace('/edit', '/preview').replace(/[?&].*$/, '') : '');
+                ? 'https://docs.google.com/document/d/' + (resData.docId) + '/preview'                : (resData.url ? resData.url.replace('/edit', '/preview').replace(/[?&].*$/, '') : '');
             document.getElementById('iframeContrato').src = embedUrl;
 
             // Mostrar enlace para abrir en pestaña nueva
@@ -2032,17 +2043,16 @@
                 text: 'Se enviarán correos al inquilino, deudor y propietario para revisión virtual.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, enviar correos'
-            }).then((result) => {
+                confirmButtonText: 'Sí, enviar correos'            }).then((result) => {
                 if(result.isConfirmed) {
                     const btn = document.getElementById('btnEnviarValidar');
                     btn.disabled = true;
-                    btn.innerHTML = '✉️ Enviando...';
+                    btn.innerHTML = ' Enviando...';
 
                     // Aqui se conectará con el Backend
                     google.script.run
                         .withSuccessHandler(function(res) {
-                            btn.innerHTML = '✉️ Enviar Borrador a Validar';
+                            btn.innerHTML = ' Enviar Borrador a Validar';
                             btn.disabled = false;
                             if(res.success) {
                                 Swal.fire('Enviado', 'Mails enviados correctamente', 'success');
@@ -2052,7 +2062,7 @@
                             }
                         })
                         .withFailureHandler(function(err){
-                            btn.innerHTML = '✉️ Enviar Borrador a Validar';
+                            btn.innerHTML = ' Enviar Borrador a Validar';
                             btn.disabled = false;
                             Swal.fire('Error de red', err.message, 'error');
                         })
@@ -2074,7 +2084,7 @@
         }
 
         function cargarEstadosAprobacion(cdr) {
-            document.getElementById('contenedorEstadosAprobacion').innerHTML = '<p>⏳ Cargando estados...</p>';
+            document.getElementById('contenedorEstadosAprobacion').innerHTML = '<p> Cargando estados...</p>';
             google.script.run
                 .withSuccessHandler(function(res) {
                     if(res && res.success) {
@@ -2083,13 +2093,13 @@
                         if (res.estados && res.estados.length > 0) {
                             for (var i = 0; i < res.estados.length; i++) {
                                 var e = res.estados[i];
-                                var badge = e.estado === 'APROBADO' ? '<span style="color: green;">✅ Aprobado</span>' : 
-                                           (e.estado === 'RECHAZADO' ? '<span style="color: red;">❌ Requiere Corrección</span>' : '⏳ Pendiente');
+                                var badge = e.estado === 'APROBADO' ? '<span style="color: green;"> Aprobado</span>' : 
+                                           (e.estado === 'RECHAZADO' ? '<span style="color: red;"> Requiere Corrección</span>' : ' Pendiente');
                                 divInfo += '<div class="dato-maestro-card">';
                                 divInfo += '    <h4>' + e.parte + '</h4>';
                                 divInfo += '    <p>' + badge + '</p>';
                                 if (e.comentarios) {
-                                    divInfo += '    <p style="font-size: 0.8em; margin-top:5px; color:#666;">&#128172; "' + e.comentarios + '"</p>';
+                                    divInfo += '    <p style="font-size: 0.8em; margin-top:5px; color:#666;"> "' + e.comentarios + '"</p>';
                                 }
                                 divInfo += '</div>';
                                 if (e.estado === 'APROBADO') checks++;
@@ -2119,17 +2129,16 @@
                 text: 'Se fusionarán los datos en la Plantilla Original sin marca de agua.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, generar'
-            }).then((result) => {
+                confirmButtonText: 'Sí, generar'            }).then((result) => {
                 if(result.isConfirmed) {
                     const btn = document.getElementById('btnGenerarOriginal');
                     btn.disabled = true;
-                    btn.innerHTML = '&#128229; Generando...';
+                    btn.innerHTML = ' Generando...';
 
                     google.script.run
                         .withSuccessHandler(function(res) {
                             btn.disabled = false;
-                            btn.innerHTML = '&#128229; Generar y Descargar Original';
+                            btn.innerHTML = ' Generar y Descargar Original';
                             if(res.success) {
                                 Swal.fire('Original Listo', 'El contrato original se ha generado.', 'success');
                                 window.open(res.urlPdf, '_blank');
@@ -2139,7 +2148,7 @@
                         })
                         .withFailureHandler(function(err){
                             btn.disabled = false;
-                            btn.innerHTML = '&#128229; Generar y Descargar Original';
+                            btn.innerHTML = ' Generar y Descargar Original';
                             Swal.fire('Error de red', err.message, 'error');
                         })
                         .generarContrato(cdr, 'Original');
@@ -2152,18 +2161,64 @@
             // Otros contadores se actualizarían si tuviéramos estados distintos (Firmados, etc)
         }
 
+        // Mostrar registros de contratos
+        function mostrarListaContratos(contratos) {
+            const lista = document.getElementById('listaContratos');
+
+            if (!contratos || contratos.length === 0) {
+                lista.innerHTML = '\n' +
+'                    <div class="empty-state">\n' +
+'                        <div class="empty-icon">&#128237;</div>\n' +
+'                        <h3>No hay contratos pendientes</h3>\n' +
+'                        <p>Los contratos aparecerán aquí cuando los documentos sean validados.</p>\n' +
+'                    </div>\n' +
+'                ';
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < contratos.length; i++) {
+                const c = contratos[i];
+                html += '\n' +
+'                    <div class="registro-card">\n' +
+'                        <div class="registro-header">\n' +
+'                            <h3>' + (c.cdr || c.id || 'Sin ID') + '</h3>\n' +
+'                            <span class="badge badge-warning" style="background:#fef08a; color:#854d0e;">En Negociación</span>\n' +
+'                        </div>\n' +
+'                        <div class="registro-info">\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Inquilino:</span>\n' +
+'                                <span class="info-value">' + (c.inquilino ? c.inquilino.nombre : 'Revisar datos') + '</span>\n' +
+'                            </div>\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Propietario:</span>\n' +
+'                                <span class="info-value">' + (c.propietario ? c.propietario.nombre : 'Revisar datos') + '</span>\n' +
+'                            </div>\n' +
+'                        </div>\n' +
+'                        <div class="registro-actions" style="justify-content: flex-end;">\n' +
+'                            <button class="btn btn-primary" onclick="abrirBorrador(\\'' + (c.cdr || c.id) + '\\')">\n' +
+'                                &#128221; Gestionar Borrador y Firmas\n' +
+'                            </button>\n' +
+'                        </div>\n' +
+'                    </div>\n' +
+'                ';
+            }
+
+            lista.innerHTML = html;
+        }
+
         // Mostrar registros de inquilinos
         function mostrarRegistrosInquilinos(registros) {
             const lista = document.getElementById('listaInquilinos');
 
             if (!registros || registros.length === 0) {
-                lista.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">&#128237;</div>
-                        <h3>No hay registros pendientes</h3>
-                        <p>Los registros aparecerán aquí cuando los inquilinos completen sus formularios</p>
-                    </div>
-                `;
+                lista.innerHTML = '\n' +
+'                    <div class="empty-state">\n' +
+'                        <div class="empty-icon"></div>\n' +
+'                        <h3>No hay registros pendientes</h3>\n' +
+'                        <p>Los registros aparecerán aquí cuando los inquilinos completen sus formularios</p>\n' +
+'                    </div>\n' +
+'                ';
                 return;
             }
 
@@ -2171,63 +2226,63 @@
             for (let i = 0; i < registros.length; i++) {
                 const registro = registros[i];
                 const estado = obtenerEstadoRegistro(registro.detalles);
-                html += `
-                    <div class="registro-card">
-                        <div class="registro-header">
-                            <h3>&#128203; ${registro.cdr}</h3>
-                            <span class="badge badge-${estado.clase}">${estado.texto}</span>
-                        </div>
-                        <div class="registro-info">
-                            <div class="info-row">
-                                <span class="info-label">Nombre:</span>
-                                <span class="info-value">
-                                    ${registro.inquilino.nombre}
-                                    <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.nombre}', this)">
-                                        &#128203; Copiar
-                                    </button>
-                                </span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Documento:</span>
-                                <span class="info-value">
-                                    ${registro.inquilino.documento}
-                                    <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.documento}', this)">
-                                        &#128203; Copiar
-                                    </button>
-                                </span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Email:</span>
-                                <span class="info-value">
-                                    ${registro.inquilino.email}
-                                    <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.email}', this)">
-                                        &#128203; Copiar
-                                    </button>
-                                </span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Celular:</span>
-                                <span class="info-value">
-                                    ${registro.inquilino.celular}
-                                    <button class="btn-copy" onclick="copiarTexto('${registro.inquilino.celular}', this)">
-                                        &#128203; Copiar
-                                    </button>
-                                </span>
-                            </div>
-                            ${registro.codeudores && registro.codeudores.length > 0 ? `
+                html += '\n' +
+'                    <div class="registro-card">\n' +
+'                        <div class="registro-header">\n' +
+'                            <h3> ' + (registro.cdr) + '</h3>\n' +
+'                            <span class="badge badge-' + (estado.clase) + '">' + (estado.texto) + '</span>\n' +
+'                        </div>\n' +
+'                        <div class="registro-info">\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Nombre:</span>\n' +
+'                                <span class="info-value">\n' +
+'                                    ' + (registro.inquilino.nombre) + '\n' +
+'                                    <button class="btn-copy" onclick="copiarTexto(\'' + (registro.inquilino.nombre) + '\', this)">\n' +
+'                                         Copiar\n' +
+'                                    </button>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Documento:</span>\n' +
+'                                <span class="info-value">\n' +
+'                                    ' + (registro.inquilino.documento) + '\n' +
+'                                    <button class="btn-copy" onclick="copiarTexto(\'' + (registro.inquilino.documento) + '\', this)">\n' +
+'                                         Copiar\n' +
+'                                    </button>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Email:</span>\n' +
+'                                <span class="info-value">\n' +
+'                                    ' + (registro.inquilino.email) + '\n' +
+'                                    <button class="btn-copy" onclick="copiarTexto(\'' + (registro.inquilino.email) + '\', this)">\n' +
+'                                         Copiar\n' +
+'                                    </button>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Celular:</span>\n' +
+'                                <span class="info-value">\n' +
+'                                    ' + (registro.inquilino.celular) + '\n' +
+'                                    <button class="btn-copy" onclick="copiarTexto(\'' + (registro.inquilino.celular) + '\', this)">\n' +
+'                                         Copiar\n' +
+'                                    </button>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
+'                            ' + (registro.codeudores && registro.codeudores.length > 0 ? `
                             <div class="info-row">
                                 <span class="info-label">Codeudores:</span>
                                 <span class="info-value">${registro.codeudores.length}</span>
                             </div>
-                            ` : ''}
-                        </div>
-                        <div class="registro-actions" style="justify-content: flex-end;">
-                            <button class="btn btn-primary" onclick="validarInquilino('${registro.cdr}')">
-                                &#128269; Validar
-                            </button>
-                        </div>
-                    </div>
-                `;
+                            ` : '') + '\n' +
+'                        </div>\n' +
+'                        <div class="registro-actions" style="justify-content: flex-end;">\n' +
+'                            <button class="btn btn-primary" onclick="validarInquilino(\'' + (registro.cdr) + '\')">\n' +
+'                                 Validar\n' +
+'                            </button>\n' +
+'                        </div>\n' +
+'                    </div>\n' +
+'                ';
             }
 
             lista.innerHTML = html;
@@ -2238,13 +2293,13 @@
             const lista = document.getElementById('listaPropietarios');
 
             if (!registros || registros.length === 0) {
-                lista.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">&#128237;</div>
-                        <h3>No hay registros pendientes</h3>
-                        <p>Los registros aparecerán aquí cuando los propietarios completen sus formularios</p>
-                    </div>
-                `;
+                lista.innerHTML = '\n' +
+'                    <div class="empty-state">\n' +
+'                        <div class="empty-icon"></div>\n' +
+'                        <h3>No hay registros pendientes</h3>\n' +
+'                        <p>Los registros aparecerán aquí cuando los propietarios completen sus formularios</p>\n' +
+'                    </div>\n' +
+'                ';
                 return;
             }
 
@@ -2252,57 +2307,57 @@
             for (let i = 0; i < registros.length; i++) {
                 const registro = registros[i];
                 const estado = obtenerEstadoRegistro(registro.detalles);
-                html += `
-                    <div class="registro-card">
-                        <div class="registro-header">
-                            <h3>&#127968; ${registro.cdr}</h3>
-                            <span class="badge badge-${estado.clase}">${estado.texto}</span>
-                        </div>
-                        <div class="registro-info">
-                            <div class="info-row">
-                                <span class="info-label">Nombre:</span>
-                                <span class="info-value">
-                                    ${registro.propietario.nombre}
-                                    <button class="btn-copy" onclick="copiarTexto('${registro.propietario.nombre}', this)">
-                                        &#128203; Copiar
-                                    </button>
-                                </span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Documento:</span>
-                                <span class="info-value">
-                                    ${registro.propietario.documento}
-                                    <button class="btn-copy" onclick="copiarTexto('${registro.propietario.documento}', this)">
-                                        &#128203; Copiar
-                                    </button>
-                                </span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Email:</span>
-                                <span class="info-value">
-                                    ${registro.propietario.email}
-                                    <button class="btn-copy" onclick="copiarTexto('${registro.propietario.email}', this)">
-                                        &#128203; Copiar
-                                    </button>
-                                </span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Celular:</span>
-                                <span class="info-value">
-                                    ${registro.propietario.celular}
-                                    <button class="btn-copy" onclick="copiarTexto('${registro.propietario.celular}', this)">
-                                        &#128203; Copiar
-                                    </button>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="registro-actions" style="justify-content: flex-end;">
-                            <button class="btn btn-primary" onclick="validarPropietario('${registro.cdr}')">
-                                &#128269; Validar
-                            </button>
-                        </div>
-                    </div>
-                `;
+                html += '\n' +
+'                    <div class="registro-card">\n' +
+'                        <div class="registro-header">\n' +
+'                            <h3> ' + (registro.cdr) + '</h3>\n' +
+'                            <span class="badge badge-' + (estado.clase) + '">' + (estado.texto) + '</span>\n' +
+'                        </div>\n' +
+'                        <div class="registro-info">\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Nombre:</span>\n' +
+'                                <span class="info-value">\n' +
+'                                    ' + (registro.propietario.nombre) + '\n' +
+'                                    <button class="btn-copy" onclick="copiarTexto(\'' + (registro.propietario.nombre) + '\', this)">\n' +
+'                                         Copiar\n' +
+'                                    </button>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Documento:</span>\n' +
+'                                <span class="info-value">\n' +
+'                                    ' + (registro.propietario.documento) + '\n' +
+'                                    <button class="btn-copy" onclick="copiarTexto(\'' + (registro.propietario.documento) + '\', this)">\n' +
+'                                         Copiar\n' +
+'                                    </button>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Email:</span>\n' +
+'                                <span class="info-value">\n' +
+'                                    ' + (registro.propietario.email) + '\n' +
+'                                    <button class="btn-copy" onclick="copiarTexto(\'' + (registro.propietario.email) + '\', this)">\n' +
+'                                         Copiar\n' +
+'                                    </button>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
+'                            <div class="info-row">\n' +
+'                                <span class="info-label">Celular:</span>\n' +
+'                                <span class="info-value">\n' +
+'                                    ' + (registro.propietario.celular) + '\n' +
+'                                    <button class="btn-copy" onclick="copiarTexto(\'' + (registro.propietario.celular) + '\', this)">\n' +
+'                                         Copiar\n' +
+'                                    </button>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
+'                        </div>\n' +
+'                        <div class="registro-actions" style="justify-content: flex-end;">\n' +
+'                            <button class="btn btn-primary" onclick="validarPropietario(\'' + (registro.cdr) + '\')">\n' +
+'                                 Validar\n' +
+'                            </button>\n' +
+'                        </div>\n' +
+'                    </div>\n' +
+'                ';
             }
 
             lista.innerHTML = html;
@@ -2313,7 +2368,7 @@
             navigator.clipboard.writeText(texto).then(function () {
                 // Cambiar el botón temporalmente
                 const textoOriginal = btn.innerHTML;
-                btn.innerHTML = '✅ Copiado';
+                btn.innerHTML = ' Copiado';
                 btn.classList.add('copied');
 
                 setTimeout(() => {
@@ -2321,7 +2376,7 @@
                     btn.classList.remove('copied');
                 }, 2000);
 
-                mostrarToast(`Copiado: ${texto}`, 'success');
+                mostrarToast('Copiado: ' + (texto) + '', 'success');
             }).catch(function (err) {
                 console.error('Error al copiar:', err);
                 mostrarToast('Error al copiar', 'error');
@@ -2343,7 +2398,7 @@
             // Guard: verificar si ya se envió una corrección pendiente
             const registro = registrosData.inquilinos.find(r => r.cdr === cdr);
             if (registro && registro.detalles && (registro.detalles.includes('Corrección solicitada') || registro.detalles.includes('corrección'))) {
-                if (!confirm('⚠️ Este registro ya tiene una corrección pendiente enviada al inquilino.\n\nSi abres y vuelves a procesar, se enviará otro correo duplicado.\n\n¿Deseas continuar de todas formas?')) {
+                if (!confirm(' Este registro ya tiene una corrección pendiente enviada al inquilino.\n\nSi abres y vuelves a procesar, se enviará otro correo duplicado.\n\n¿Deseas continuar de todas formas?')) {
                     return;
                 }
             }
@@ -2355,17 +2410,17 @@
             // Cargar documentos y mostrar modal
             google.script.run
                 .withSuccessHandler(function (data) {
-                    console.log('✅ Documentos cargados OK:', data);
+                    console.log(' Documentos cargados OK:', data);
                     ocultarLoading();
                     try {
                         mostrarModalValidacion(cdr, 'inquilino', data);
                     } catch (err) {
-                        console.error('❌ Error en mostrarModalValidacion:', err);
+                        console.error(' Error en mostrarModalValidacion:', err);
                         alert('Error al renderizar modal: ' + err.message);
                     }
                 })
                 .withFailureHandler(function (error) {
-                    console.error('❌ Error backend en obtenerDocumentosDelCDR:', error);
+                    console.error(' Error backend en obtenerDocumentosDelCDR:', error);
                     ocultarLoading();
                     alert('Error del Servidor: ' + error.message || error);
                     mostrarToast('Error al cargar documentos: ' + error, 'error');
@@ -2377,7 +2432,7 @@
             // Guard: verificar si ya se envió una corrección pendiente
             const registro = registrosData.propietarios.find(r => r.cdr === cdr);
             if (registro && registro.detalles && (registro.detalles.includes('Corrección solicitada') || registro.detalles.includes('corrección'))) {
-                if (!confirm('⚠️ Este registro ya tiene una corrección pendiente enviada al propietario.\n\nSi abres y vuelves a procesar, se enviará otro correo duplicado.\n\n¿Deseas continuar de todas formas?')) {
+                if (!confirm(' Este registro ya tiene una corrección pendiente enviada al propietario.\n\nSi abres y vuelves a procesar, se enviará otro correo duplicado.\n\n¿Deseas continuar de todas formas?')) {
                     return;
                 }
             }
@@ -2389,17 +2444,17 @@
             // Cargar documentos y mostrar modal
             google.script.run
                 .withSuccessHandler(function (data) {
-                    console.log('✅ Documentos propietario cargados OK:', data);
+                    console.log(' Documentos propietario cargados OK:', data);
                     ocultarLoading();
                     try {
                         mostrarModalValidacion(cdr, 'propietario', data);
                     } catch (err) {
-                        console.error('❌ Error en mostrarModalValidacion (Prop):', err);
+                        console.error(' Error en mostrarModalValidacion (Prop):', err);
                         alert('Error al renderizar modal Prop: ' + err.message);
                     }
                 })
                 .withFailureHandler(function (error) {
-                    console.error('❌ Error backend en obtenerDocumentosDelCDR (Prop):', error);
+                    console.error(' Error backend en obtenerDocumentosDelCDR (Prop):', error);
                     ocultarLoading();
                     alert('Error del Servidor: ' + error.message || error);
                     mostrarToast('Error al cargar documentos: ' + error, 'error');
@@ -2411,7 +2466,7 @@
         function mostrarModalValidacion(cdr, tipo, documentos) {
             documentosData = documentos;
 
-            // ─── LÓGICA DE SEPARACIÓN DE PESTAÑAS (VIRTUALES A REALES) ───
+            //  LÓGICA DE SEPARACIÓN DE PESTAÑAS (VIRTUALES A REALES) 
             if (tipo === 'propietario' && documentosData.propietario) {
                 const docsPropietario = [];
                 const docsBancaria = [];
@@ -2442,10 +2497,9 @@
             motivosCorreccion = {};
             documentoActual = null;
             personaActivaKey = tipo; // Ej: 'inquilino' o 'propietario'
-
-            // ─── Pre-aprobación basada en el Cerebro ───
+            //  Pre-aprobación basada en el Cerebro 
             const estadosBuzon = documentosData.estadosBuzon || {};
-            console.log('&#128203; Estados del Cerebro:', JSON.stringify(estadosBuzon));
+            console.log(' Estados del Cerebro:', JSON.stringify(estadosBuzon));
 
             if (Object.keys(estadosBuzon).length > 0) {
                 for (const personKey in documentosData) {
@@ -2455,15 +2509,15 @@
                         const buzonKey = obtenerBuzonParaDoc(doc.nombre);
                         const estadoCerebro = buzonKey ? estadosBuzon[buzonKey] : null;
 
-                        console.log(`   [${doc.nombre}] → Buzón: ${buzonKey || 'NO MAPEADO'} → Estado: ${estadoCerebro || 'SIN ESTADO'}`);
+                        console.log('   [' + (doc.nombre) + ']  Buzón: ' + (buzonKey || 'NO MAPEADO') + '  Estado: ' + (estadoCerebro || 'SIN ESTADO') + '');
 
                         if (estadoCerebro === 'APROBADO') {
                             validacionEstado[doc.fileId] = 'aprobado';
                         }
-                        // RECIBIDO, ACTUALIZANDO, RECIBIDO (CORRECCIÓN) → quedan pendientes para el admin
+                        // RECIBIDO, ACTUALIZANDO, RECIBIDO (CORRECCIÓN)  quedan pendientes para el admin
                     });
                 }
-                console.log('&#128203; Total pre-aprobados:', Object.keys(validacionEstado).length);
+                console.log(' Total pre-aprobados:', Object.keys(validacionEstado).length);
             }
 
             // Merge banking data from Cerebro into registro.propietario
@@ -2471,12 +2525,12 @@
                 const registro = (registrosData.propietarios || []).find(r => r.cdr === cdr);
                 if (registro && registro.propietario) {
                     Object.assign(registro.propietario, documentosData.datosBancarios);
-                    console.log('&#127974; Datos bancarios mergeados:', JSON.stringify(documentosData.datosBancarios));
+                    console.log(' Datos bancarios mergeados:', JSON.stringify(documentosData.datosBancarios));
                 }
             }
 
             // Actualizar título
-            document.getElementById('modalTitle').innerHTML = `&#128203; Validación de Registro - ${cdr}`;
+            document.getElementById('modalTitle').innerHTML = ' Validación de Registro - ' + (cdr) + '';
 
             // Mostrar información básica arriba
             mostrarInfoRegistro(cdr, tipo);
@@ -2538,9 +2592,9 @@
 
             // Para propietario: agregar tabs de bancaria, inmueble y servicios
             if (tipoActual === 'propietario') {
-                html += `<button class="person-tab" id="ptab_bancaria" onclick="cambiarPersona('bancaria')">&#127974; Inf. Bancaria</button>`;
-                html += `<button class="person-tab" id="ptab_inmueble" onclick="cambiarPersona('inmueble')">&#127968; Inf. Inmueble</button>`;
-                html += `<button class="person-tab" id="ptab_servicios" onclick="cambiarPersona('servicios')">&#128167; Servs. Inmueble</button>`;
+                html += `<button class="person-tab" id="ptab_bancaria" onclick="cambiarPersona('bancaria')"> Inf. Bancaria</button>`;
+                html += `<button class="person-tab" id="ptab_inmueble" onclick="cambiarPersona('inmueble')"> Inf. Inmueble</button>`;
+                html += `<button class="person-tab" id="ptab_servicios" onclick="cambiarPersona('servicios')"> Servs. Inmueble</button>`;
             }
 
             document.getElementById('personTabs').innerHTML = html;
@@ -2617,8 +2671,7 @@
                     numeroCuenta: propData.numeroCuenta || '',
                     banco: propData.banco || '',
                     titularCuenta: propData.titularCuenta || '',
-                    documentoTitular: propData.documentoTitular || ''
-                };
+                    documentoTitular: propData.documentoTitular || ''                };
                 return;
             }
 
@@ -2642,7 +2695,7 @@
                 const container = document.getElementById('serviciosGuardadosContainer');
                 if (container) {
                     if (servs.length > 0) {
-                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;">&#128203; Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
+                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;"> Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
                         servs.forEach(s => { html += `<li style="font-size:0.85rem;">${s.servicio}: <strong>${s.referencia}</strong></li>`; });
                         html += '</ul></div>';
                         container.innerHTML = html;
@@ -2719,7 +2772,7 @@
                 nuevosDatos.servicio = document.getElementById('cerebro_tipoServicio').value.trim();
                 nuevosDatos.referencia = document.getElementById('cerebro_refServicio').value.trim();
                 if (!nuevosDatos.servicio || !nuevosDatos.referencia) {
-                    mostrarToast('⚠️ Ingresa el servicio y la referencia antes de guardar.', 'error');
+                    mostrarToast(' Ingresa el servicio y la referencia antes de guardar.', 'error');
                     btn.textContent = originalText; btn.disabled = false;
                     return;
                 }
@@ -2737,7 +2790,7 @@
 
             const btn = document.querySelector('#cerebroActions .btn-primary');
             const originalText = btn.textContent;
-            btn.textContent = '⏳ Guardando...';
+            btn.textContent = ' Guardando...';
             btn.disabled = true;
 
             google.script.run
@@ -2785,7 +2838,7 @@
                         }
                     }
 
-                    mostrarToast('✅ Datos actualizados correctamente', 'success');
+                    mostrarToast(' Datos actualizados correctamente', 'success');
                     cargarDatosCerebroPorPersona(personaActivaKey);
                     btn.textContent = originalText;
                     btn.disabled = false;
@@ -2804,7 +2857,7 @@
             const infoHtml = `
                 <div style="display:flex; gap:2rem; flex-wrap:wrap; padding:0.5rem 0;">
                     <div><strong>CDR:</strong> <span>${cdr}</span>
-                        <button class="btn-copy" onclick="copiarTexto('${cdr}', this)" style="margin-left:4px;">&#128203;</button>
+                        <button class="btn-copy" onclick="copiarTexto('${cdr}', this)" style="margin-left:4px;"></button>
                     </div>
                     <div><strong>Tipo:</strong> ${tipo.toUpperCase()}</div>
                     <div><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</div>
@@ -2899,8 +2952,8 @@
             } else {
                 previewContent.innerHTML = `
                     <div class="preview-placeholder">
-                        <p>⚠️ No se puede previsualizar este archivo</p>
-                        <button class="btn btn-primary" onclick="window.open('${url}', '_blank')">&#128279; Abrir en Google Drive</button>
+                        <p> No se puede previsualizar este archivo</p>
+                        <button class="btn btn-primary" onclick="window.open('${url}', '_blank')"> Abrir en Google Drive</button>
                     </div>`;
             }
 
@@ -2914,12 +2967,12 @@
             const currentStatus = validacionEstado[fileId];
             const badge = document.getElementById('currentDocStatusBadge');
             if (currentStatus === 'aprobado') {
-                badge.textContent = '✅ APROBADO';
+                badge.textContent = ' APROBADO';
                 badge.style.backgroundColor = '#d1fae5';
                 badge.style.color = '#065f46';
                 badge.style.display = 'inline-block';
             } else if (currentStatus === 'correccion') {
-                badge.textContent = '⚠️ Requiere Actualizar';
+                badge.textContent = ' Requiere Actualizar';
                 badge.style.backgroundColor = '#fef3c7';
                 badge.style.color = '#92400e';
                 badge.style.display = 'inline-block';
@@ -2966,7 +3019,7 @@
 
             const btn = document.getElementById('btnAnalizarReciboOCR');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ Analizando Recibo...';
+            btn.innerHTML = ' Analizando Recibo...';
             btn.disabled = true;
 
             const fileId = documentoActual.id;
@@ -2996,7 +3049,7 @@
 
                         google.script.run
                             .withSuccessHandler(function() {
-                                mostrarToast('✅ Servicio guardado en el Cerebro: ' + empresa, 'success');
+                                mostrarToast(' Servicio guardado en el Cerebro: ' + empresa, 'success');
                                 // Actualizar caché local
                                 const reg = getRegistroData();
                                 if (reg) {
@@ -3010,7 +3063,7 @@
                                     // Actualizar SOLO la lista visual, sin tocar los campos ni resetear el panel
                                     const container = document.getElementById('serviciosGuardadosContainer');
                                     if (container && reg.servicios.length > 0) {
-                                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;">&#128203; Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
+                                        let html = '<div style="margin-top:0.5rem;"><strong style="font-size:0.85rem;color:#166534;"> Servicios registrados:</strong><ul style="margin:0.5rem 0 0 0; padding-left:1.2rem; list-style:disc;">';
                                         reg.servicios.forEach(s => { html += `<li style="font-size:0.85rem;">${s.servicio}: <strong>${s.referencia}</strong></li>`; });
                                         html += '</ul></div>';
                                         container.innerHTML = html;
@@ -3018,18 +3071,18 @@
                                 }
                             })
                             .withFailureHandler(function(err) {
-                                mostrarToast('⚠️ OCR extrajo datos pero falló al guardar: ' + err.message, 'error');
+                                mostrarToast(' OCR extrajo datos pero falló al guardar: ' + err.message, 'error');
                             })
                             .actualizarDatosCerebro(autoGuardado);
 
                     } else {
-                        alert('❌ Error OCR: ' + res.message);
+                        alert(' Error OCR: ' + res.message);
                     }
                 })
                 .withFailureHandler(function (err) {
                     btn.innerHTML = originalText;
                     btn.disabled = false;
-                    alert('❌ Error de comunicación con el servidor: ' + err.message);
+                    alert(' Error de comunicación con el servidor: ' + err.message);
                 })
                 .analizarReciboServicio(fileId);
         }
@@ -3090,7 +3143,7 @@
         /**
          * Auto-avanza al siguiente documento no evaluado.
          * Si todos los docs de la persona activa ya están evaluados,
-         * salta a la siguiente persona tab (ej: Inquilino → Codeudor 1).
+         * salta a la siguiente persona tab (ej: Inquilino  Codeudor 1).
          */
         function avanzarAlSiguienteDocumento() {
             const docsList = documentosData[personaActivaKey] || [];
@@ -3160,9 +3213,9 @@
                 counterDiv.innerHTML = `
                     <span style="font-weight: 700; color: var(--dark);">${evalCount} / ${totalDocsCount} Eval.</span>
                     <span style="margin: 0 0.5rem; color: #cbd5e1;">|</span>
-                    <span style="color: #10b981;">✅ ${aprobados}</span>
+                    <span style="color: #10b981;"> ${aprobados}</span>
                     <span style="margin: 0 0.5rem; color: #cbd5e1;">|</span>
-                    <span style="color: #f59e0b;">⚠️ ${correcciones}</span>
+                    <span style="color: #f59e0b;"> ${correcciones}</span>
                 `;
             } else {
                 counterDiv.style.display = 'none';
@@ -3207,8 +3260,8 @@
             const html = `
                 <div style="font-size: 1.05rem;">
                     <div><strong>Total Evaluados:</strong> ${aprobados + correcciones} documentos</div>
-                    <div style="color: #10b981; font-weight: 600;">✅ Listos / Aprobados: ${aprobados}</div>
-                    <div style="color: #f59e0b; font-weight: 600;">⚠️ Por Actualizar: ${correcciones}</div>
+                    <div style="color: #10b981; font-weight: 600;"> Listos / Aprobados: ${aprobados}</div>
+                    <div style="color: #f59e0b; font-weight: 600;"> Por Actualizar: ${correcciones}</div>
                 </div>
             `;
             document.getElementById('resumenValidacionFinal').innerHTML = html;
@@ -3216,7 +3269,7 @@
             document.getElementById('modalConfirmacionFinal').classList.add('show');
         }
 
-        // ═══ ANIMACIÓN DE PROGRESO 0-100% ═══
+        //  ANIMACIÓN DE PROGRESO 0-100% 
         let progressInterval = null;
 
         function mostrarProgreso(labelText, subText) {
@@ -3248,7 +3301,7 @@
             // Animar de donde esté hasta 100%
             document.getElementById('progressCircle').style.strokeDashoffset = '0';
             document.getElementById('progressPercent').textContent = '100%';
-            document.getElementById('progressLabel').textContent = successMsg || '✅ ¡Completado!';
+            document.getElementById('progressLabel').textContent = successMsg || ' ¡Completado!';
             document.getElementById('progressSubLabel').textContent = '';
 
             setTimeout(() => {
@@ -3311,25 +3364,25 @@
                             if (!result || !result.success) {
                                 ocultarProgreso();
                                 console.error('Error desde backend:', result);
-                                alert('⚠️ No se pudo procesar la aprobación:\n' + (result ? result.message : 'Error desconocido del servidor.'));
+                                alert(' No se pudo procesar la aprobación:\n' + (result ? result.message : 'Error desconocido del servidor.'));
                                 const b = document.getElementById('btnEjecutarAprobacionMaster');
-                                if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
+                                if (b) { b.textContent = ' Procesar Todo'; b.disabled = false; }
                                 return;
                             }
-                            completarProgreso('✅ ¡Todo Aprobado Exitosamente!');
+                            completarProgreso(' ¡Todo Aprobado Exitosamente!');
                             setTimeout(() => {
-                                mostrarToast('✅ Todo Aprobado Exitosamente', 'success');
+                                mostrarToast(' Todo Aprobado Exitosamente', 'success');
                                 cerrarModal('modalValidacion');
                                 cargarDatos();
                             }, 900);
                         })
                         .withFailureHandler(function (error) {
                             ocultarProgreso();
-                            console.error('❌ Error enviando aprobación:', error);
+                            console.error(' Error enviando aprobación:', error);
                             alert('Error del Servidor: ' + (error.message || error));
                             mostrarToast('Error al aprobar final: ' + error, 'error');
                             const b = document.getElementById('btnEjecutarAprobacionMaster');
-                            if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
+                            if (b) { b.textContent = ' Procesar Todo'; b.disabled = false; }
                         })
                         .procesarValidacion(payloadMaster);
                 } else {
@@ -3340,37 +3393,37 @@
                             if (!result || !result.success) {
                                 ocultarProgreso();
                                 console.error('Error desde backend:', result);
-                                alert('⚠️ No se pudo enviar correcciones:\n' + (result ? result.message : 'Error desconocido del servidor.'));
+                                alert(' No se pudo enviar correcciones:\n' + (result ? result.message : 'Error desconocido del servidor.'));
                                 const b = document.getElementById('btnEjecutarAprobacionMaster');
-                                if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
+                                if (b) { b.textContent = ' Procesar Todo'; b.disabled = false; }
                                 return;
                             }
-                            completarProgreso('&#128221; ¡Corrección enviada exitosamente!');
+                            completarProgreso(' ¡Corrección enviada exitosamente!');
                             setTimeout(() => {
-                                mostrarToast('&#128221; Se envió correo solicitando actualizaciones', 'warning');
+                                mostrarToast(' Se envió correo solicitando actualizaciones', 'warning');
                                 cerrarModal('modalValidacion');
                                 cargarDatos();
                             }, 900);
                         })
                         .withFailureHandler(function (error) {
                             ocultarProgreso();
-                            console.error('❌ Error enviando corrección:', error);
+                            console.error(' Error enviando corrección:', error);
                             alert('Error del Servidor: ' + (error.message || error));
                             mostrarToast('Error al solicitar correcciones: ' + error, 'error');
                             const b = document.getElementById('btnEjecutarAprobacionMaster');
-                            if (b) { b.textContent = '✅ Procesar Todo'; b.disabled = false; }
+                            if (b) { b.textContent = ' Procesar Todo'; b.disabled = false; }
                         })
                         .enviarCorrecciones(payloadMaster);
                 }
             } catch (err) {
                 ocultarProgreso();
-                console.error("❌ Error en ejecutarAprobacionMaster:", err);
+                console.error(" Error en ejecutarAprobacionMaster:", err);
                 alert("Error Javascript (Procesar Todo): " + err.message);
             }
         }
 
         // Funciones auxiliares
-        // ─── MAPA: Nombre de archivo → BUZON del Cerebro ───
+        //  MAPA: Nombre de archivo  BUZON del Cerebro 
         // Función que extrae la categoría BUZON de un nombre de archivo del Drive
         function obtenerBuzonParaDoc(nombreArchivo) {
             const n = nombreArchivo.toUpperCase();
@@ -3419,10 +3472,10 @@
         }
 
         function obtenerIconoDocumento(tipo) {
-            if (tipo.includes('pdf')) return '&#128196;';
-            if (tipo.includes('image')) return '&#128444;️';
-            if (tipo.includes('doc')) return '&#128221;';
-            return '&#128206;';
+            if (tipo.includes('pdf')) return '';
+            if (tipo.includes('image')) return '';
+            if (tipo.includes('doc')) return '';
+            return '';
         }
 
         function formatearTamaño(bytes) {
@@ -3557,7 +3610,7 @@
             // UI: Pre-loading state
             const btn = document.getElementById('btnAnalizarOCR');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ Analizando documento... (Esto puede tomar hasta 20 segundos)';
+            btn.innerHTML = ' Analizando documento... (Esto puede tomar hasta 20 segundos)';
             btn.disabled = true;
             mostrarLoading('Procesando Certificado con IA OCR...');
 
@@ -3579,7 +3632,7 @@
                     }
 
                     const data = response.datos;
-                    mostrarToast('⏳ OCR completado. Guardando en el Cerebro...', 'success');
+                    mostrarToast(' OCR completado. Guardando en el Cerebro...', 'success');
 
                     // Rellenar Formularios
                     document.getElementById('cerebro_matricula').value = data.matricula || '';
@@ -3595,12 +3648,11 @@
                         matricula: data.matricula || '',
                         direccionInmueble: data.direccion || '',
                         ciudadInmueble: data.ciudad || '',
-                        certTradicion: 'RECIBIDO'
-                    };
+                        certTradicion: 'RECIBIDO'                    };
 
                     google.script.run
                         .withSuccessHandler(function() {
-                            mostrarToast('✅ Datos del Certificado guardados en el Cerebro.', 'success');
+                            mostrarToast(' Datos del Certificado guardados en el Cerebro.', 'success');
                             // Actualizar caché local para que se vean en Datos Formulario
                             const reg = getRegistroData();
                             if (reg) {
@@ -3613,7 +3665,7 @@
                             cargarDatosCerebroPorPersona('inmueble');
                         })
                         .withFailureHandler(function(err) {
-                            mostrarToast('⚠️ OCR extrajo datos pero falló al guardar: ' + err.message, 'error');
+                            mostrarToast(' OCR extrajo datos pero falló al guardar: ' + err.message, 'error');
                         })
                         .actualizarDatosCerebro(autoGuardado);
 
@@ -3623,30 +3675,30 @@
 
                     // 1. Badge Vigencia
                     if (data.vigente) {
-                         badgesHtml += `<span class="badge badge-success" title="Expedido hace ${data.diasExpedido} días">✅ Edad: OK (${data.diasExpedido} d)</span>`;
+                         badgesHtml += `<span class="badge badge-success" title="Expedido hace ${data.diasExpedido} días"> Edad: OK (${data.diasExpedido} d)</span>`;
                     } else {
-                         badgesHtml += `<span class="badge badge-danger">❌ Vencido (+30 d)</span>`;
+                         badgesHtml += `<span class="badge badge-danger"> Vencido (+30 d)</span>`;
                     }
 
                     // 2. Badge Cédula
                     if (data.cedulaMatch) {
-                         badgesHtml += `<span class="badge badge-success">✅ Cédula Coincide</span>`;
+                         badgesHtml += `<span class="badge badge-success"> Cédula Coincide</span>`;
                     } else {
-                         badgesHtml += `<span class="badge badge-danger">⚠️ Cédula NO Coincide</span>`;
+                         badgesHtml += `<span class="badge badge-danger"> Cédula NO Coincide</span>`;
                     }
 
                     // 3. Badge Nombre
                     if (data.nombreMatch) {
-                         badgesHtml += `<span class="badge badge-success" title="Detectado: ${data.propietarioDetectado}">✅ Nombre Coincide</span>`;
+                         badgesHtml += `<span class="badge badge-success" title="Detectado: ${data.propietarioDetectado}"> Nombre Coincide</span>`;
                     } else {
-                         badgesHtml += `<span class="badge badge-warning" title="Sigue revisando manualmente">⚠️ Titular Difiere</span>`;
+                         badgesHtml += `<span class="badge badge-warning" title="Sigue revisando manualmente"> Titular Difiere</span>`;
                     }
 
                     // 4. Badge Embargos
                     if (data.tieneEmbargo) {
-                         badgesHtml += `<span class="badge badge-danger" title="${data.alertasEmbargo.join(' - ')}">&#128683; EMBARGO DETECTADO</span>`;
+                         badgesHtml += `<span class="badge badge-danger" title="${data.alertasEmbargo.join(' - ')}"> EMBARGO DETECTADO</span>`;
                     } else {
-                         badgesHtml += `<span class="badge badge-success">✅ Cero Embargos Evidentes</span>`;
+                         badgesHtml += `<span class="badge badge-success"> Cero Embargos Evidentes</span>`;
                     }
 
                     badgesContainer.innerHTML = badgesHtml;
@@ -3664,6 +3716,49 @@
 
     <!-- Swal shim: reemplaza SweetAlert2 con confirm/alert nativo para compatibilidad con Apps Script -->
     <script>
+        // ==========================================
+        // BITÁCORA TRANSPARENTE
+        // ==========================================
+        function enviarMensajeBitacora() {
+            const input = document.getElementById('inputMensajeBitacora');
+            const mensaje = input.value.trim();
+            const cdr = document.getElementById('modalContratoCdr').textContent;
+            
+            if (!mensaje || !cdr) return;
+            
+            // UI Update local
+            const contenedor = document.getElementById('contenedorBitacora');
+            const emptyState = contenedor.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+            
+            const msgDiv = document.createElement('div');
+            msgDiv.style.cssText = 'background: white; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.85rem;';
+            msgDiv.innerHTML = `<strong>Tú:</strong> ${mensaje}`;
+            contenedor.appendChild(msgDiv);
+            contenedor.scrollTop = contenedor.scrollHeight;
+            
+            input.value = '';
+            
+            // Backend call
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (!res.success) {
+                        mostrarToast('Error en bitácora: ' + res.message, 'error');
+                        msgDiv.style.border = '1px solid red';
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    mostrarToast('Error de conexión con la bitácora', 'error');
+                    msgDiv.style.border = '1px solid red';
+                })
+                .procesarPeticionDocumentos({
+                    action: 'registrarMensajeBitacora',
+                    cdr: cdr,
+                    mensaje: mensaje,
+                    autor: 'Admin (Validación)'
+                });
+        }
+
         var Swal = {
             fire: function(titleOrOpts, msg, icon) {
                 // Soporte para Swal.fire(opts) y Swal.fire(title, msg, icon)
