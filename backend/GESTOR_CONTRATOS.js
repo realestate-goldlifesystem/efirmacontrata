@@ -1774,6 +1774,7 @@ function handleProcesarFirmaElectronica(datos) {
                 var template = HtmlService.createTemplateFromFile('backend/email_firma_final');
                 template.NOMBRE_CLIENTE = nombreCliente;
                 template.TIPO_ACTA = tipoActaTexto;
+                template.CDR = datos.cdr;
                 template.ANIO = new Date().getFullYear();
                 var htmlBody = template.evaluate().getContent();
 
