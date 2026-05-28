@@ -32,12 +32,16 @@
   - Correo cuando el Administrador aplica un cambio: *"GoldLife ha realizado el ajuste solicitado, por favor revalida"*.
 - [ ] **Notificación Final al Admin:** Envío automático del PDF Final a `realestate.goldlifesystem@gmail.com` listo para subirse a la plataforma de firmas (Viafirma).
 
-### 4. 🧪 Pruebas de Estrés y Aseguramiento de Calidad (QA)
-- [ ] **Simulación End-to-End (E2E):** Ejecutar 3 casos de prueba:
-  - 1: Flujo perfecto (Sin rechazos).
-  - 2: Flujo con solicitud de cambios en la Bitácora por parte del inquilino.
-  - 3: Validación de correos y renderizado visual en móvil.
+### 4. 🧪 Pruebas de Estrés y Aseguramiento de Calidad (QA) - [EN PROCESO]
+- [x] **Depuración de Carga Multimedia:** Corrección de la lógica de búsqueda de carpetas maestras usando el "CDR Largo" a partir de IDs cortos (`RI...`) para los formularios de Inquilino y Propietario.
+- [ ] **Simulación End-to-End (E2E) - En curso:** El usuario está realizando la prueba maestra empezando desde el "Registro del Inmueble" hasta la generación del contrato.
+- [ ] **Validación de Correos y Estética:** Comprobar que todos los correos lleguen al buzón correcto con un renderizado visual perfecto.
+
+### 5. 🏗️ Escalado del Sistema: Módulo "Registro del Inmueble"
+*Objetivo: Una vez la elaboración de contratos (E-FirmaContrata) quede operativa, llevaremos la misma robustez y validación al módulo inicial del sistema.*
+- [ ] **Auditoría del Módulo de Registro:** Revisar la creación y enrutamiento inicial de carpetas en Google Drive (donde nacen los CDR largos).
+- [ ] **Optimización y Estandarización:** Aplicar las lecciones aprendidas de validación asíncrona y correos transaccionales al proceso en el que los asesores o clientes registran una nueva propiedad.
 
 ---
 
-*Nota Arquitectónica: Al completar esta Fase 1, E-FirmaContrata no será solo un generador de PDFs, sino un CRM legal especializado en arrendamientos, dejando la mesa servida para una integración "Plug & Play" con Viafirma en el futuro.*
+*Nota Arquitectónica: Al completar esta Fase 1, E-FirmaContrata no será solo un generador de PDFs, sino el motor de un CRM Inmobiliario unificado. La siguiente evolución (Fase 2) apuntará hacia arquitecturas de carga asíncrona (tipo Firebase) y automatización avanzada (VíaFirma).*
