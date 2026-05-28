@@ -731,7 +731,7 @@
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
-      <p>&copy; 2024 Real Estate - Gold Life System. Todos los derechos reservados.</p>
+      <p>&copy; <script>document.write(new Date().getFullYear())</script> Real Estate - Gold Life System. Todos los derechos reservados.</p>
     </div>
   </footer>
 
@@ -1720,7 +1720,12 @@
           }
           case 3: {
             if (state.modoCorreccion) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
-            return true;
+            // Requerir archivo si el servicio fue seleccionado
+            const check = state.servicios.every(tipo => {
+              const key = `factura${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
+              return !!state.archivos[key];
+            });
+            return check;
           }
           default: return true;
         }
@@ -1824,6 +1829,15 @@
                 }
               }
               return true;
+            }
+            
+            // Validar que se hayan adjuntado los archivos de los servicios marcados
+            for (const tipo of state.servicios) {
+              const key = `factura${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
+              if (!state.archivos[key]) {
+                showAlert('warning', `Marcaste el servicio de ${tipo}, por favor adjunta su factura.`);
+                return false;
+              }
             }
             return true;
 
