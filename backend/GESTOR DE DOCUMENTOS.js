@@ -1497,6 +1497,18 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
  */
 function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormulario) {
   try {
+    // RESOLVER EL CDR LARGO DESDE EL SHORT ID
+    const fila = buscarFilaPorCDR(codigoRegistro);
+    if (fila) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const colCdr = headers.indexOf('CODIGO DE REGISTRO') + 1;
+      if (colCdr > 0) {
+        const val = sheet.getRange(fila, colCdr).getValue();
+        if (val) codigoRegistro = val.toString().trim();
+      }
+    }
+
     Logger.log('Iniciando enrutamiento dinámico para CDR: ' + codigoRegistro);
     const ROOT_FOLDER_ID = '1ozAkjspgSj6m2fN4tqqCm-mjrsux6ULi'; // Carpeta INMUEBLES
     const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
@@ -1954,6 +1966,18 @@ function actualizarEstadosValidacionEnCerebro(cdr, estadosMap) {
  */
 function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormulario) {
   try {
+    // RESOLVER EL CDR LARGO DESDE EL SHORT ID
+    const fila = buscarFilaPorCDR(codigoRegistro);
+    if (fila) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const colCdr = headers.indexOf('CODIGO DE REGISTRO') + 1;
+      if (colCdr > 0) {
+        const val = sheet.getRange(fila, colCdr).getValue();
+        if (val) codigoRegistro = val.toString().trim();
+      }
+    }
+
     Logger.log('📂 Iniciando guardado de documentos propietario para CDR: ' + codigoRegistro);
 
     // ==============================
