@@ -3282,39 +3282,40 @@ function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
     const asunto = `Confirmación de recepción - Documentos de arrendamiento ${codigoRegistro}`;
 
     const cuerpoHtml = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: #1a1a1a; margin: 0; font-size: 24px; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">✅ Documentos Recibidos</h1>
-        </div>
-        
-        <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-          <p style="font-size: 16px; color: #333;">Estimado/a <strong>${inquilino.nombre}</strong>,</p>
-          
-          <p style="color: #666; line-height: 1.6;">
-            Confirmamos que hemos recibido exitosamente sus documentos para el proceso de arrendamiento 
-            con código de registro <strong>${codigoRegistro}</strong>.
-          </p>
-          
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #FFD700;">
-            <h3 style="color: #B8860B; margin-top: 0;">📋 Próximos pasos:</h3>
-            <ol style="color: #666; line-height: 1.8;">
-              <li>Validación de documentos (24-48 horas)</li>
-              <li>Revisión y aprobación final</li>
-              <li>Generación del contrato de arrendamiento</li>
-              <li>Coordinación de firma y entrega</li>
-            </ol>
-          </div>
-          
-          <p style="color: #666;">
-            Le notificaremos por este medio cualquier actualización sobre el estado de su solicitud.
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-          
-          <p style="color: #999; font-size: 14px; text-align: center;">
-            E-firmaContrata • Real Estate Gold Life System<br>
-            Este es un correo automático, por favor no responder.
-          </p>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+                <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+            </div>
+            
+            <div style="padding: 40px 30px; line-height: 1.6;">
+                <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${inquilino.nombre}</strong>,</p>
+                
+                <p style="margin-bottom: 20px; font-size: 16px;">
+                  Confirmamos que hemos recibido exitosamente sus documentos para el proceso de arrendamiento 
+                  con código de registro <strong>${codigoRegistro}</strong>.
+                </p>
+                
+                <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+                    <h3 style="margin-top: 0; color: #333; font-size: 16px;">📋 Próximos pasos:</h3>
+                    <ol style="color: #555; line-height: 1.8; margin-bottom: 0; font-size: 15px;">
+                      <li>Validación de documentos (24-48 horas)</li>
+                      <li>Revisión y aprobación final</li>
+                      <li>Generación del contrato de arrendamiento</li>
+                      <li>Coordinación de firma y entrega</li>
+                    </ol>
+                </div>
+                
+                <p style="margin-bottom: 20px; font-size: 16px;">
+                  Le notificaremos por este medio cualquier actualización sobre el estado de su solicitud.
+                </p>
+            </div>
+            
+            <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+                <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <span style="color: #d4af37; font-weight: bold;">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0;">Código de registro: ${codigoRegistro}</p>
+                <p style="margin: 5px 0;">Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
+            </div>
         </div>
       </div>
     `;
@@ -3365,44 +3366,44 @@ function enviarEmailPropietario(cdr) {
     const asunto = `Documentación requerida - Contrato de arrendamiento ${idRegistro}`;
 
     const cuerpoHtml = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: #1a1a1a; margin: 0; font-size: 24px; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">📋 Documentación del Propietario</h1>
-        </div>
-        
-        <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-          <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombreProp}</strong>,</p>
-          
-          <p style="color: #666; line-height: 1.6;">
-            Los documentos del inquilino han sido aprobados. Ahora necesitamos que complete 
-            su formulario con la documentación requerida para continuar con el proceso de arrendamiento.
-          </p>
-          
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #FFD700;">
-            <h3 style="color: #B8860B; margin-top: 0;">📄 Documentos requeridos:</h3>
-            <ul style="color: #666; line-height: 1.8;">
-              <li>Documento de identidad</li>
-              <li>Formulario SARLAFT</li>
-              <li>Certificado bancario</li>
-              <li>Certificado de tradición y libertad</li>
-              <li>Recibos de servicios públicos al día</li>
-            </ul>
-          </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${urlFormulario}" 
-               style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
-                      color: #1a1a1a; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              ➡️ COMPLETAR FORMULARIO
-            </a>
-          </div>
-          
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-          
-          <p style="color: #999; font-size: 14px; text-align: center;">
-            E-firmaContrata • Real Estate Gold Life System<br>
-            Código de registro: ${cdr}
-          </p>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+                <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+            </div>
+            
+            <div style="padding: 40px 30px; line-height: 1.6;">
+                <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombreProp}</strong>,</p>
+                
+                <p style="margin-bottom: 20px; font-size: 16px;">
+                  Los documentos del inquilino han sido aprobados. Ahora necesitamos que complete 
+                  su formulario con la documentación requerida para continuar con el proceso de arrendamiento.
+                </p>
+                
+                <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+                    <h3 style="margin-top: 0; color: #333; font-size: 16px;">📄 Documentos requeridos:</h3>
+                    <ul style="color: #555; line-height: 1.8; margin-bottom: 0; font-size: 15px;">
+                      <li>Documento de identidad</li>
+                      <li>Formulario SARLAFT</li>
+                      <li>Certificado bancario</li>
+                      <li>Certificado de tradición y libertad</li>
+                      <li>Recibos de servicios públicos al día</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 35px 0;">
+                    <a href="${urlFormulario}" 
+                       style="display: inline-block; background-color: #d4af37; color: #ffffff; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
+                      COMPLETAR FORMULARIO
+                    </a>
+                </div>
+            </div>
+            
+            <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+                <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <span style="color: #d4af37; font-weight: bold;">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0;">Código de registro: ${cdr}</p>
+                <p style="margin: 5px 0;">Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
+            </div>
         </div>
       </div>
     `;
@@ -3429,33 +3430,34 @@ function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
     const asunto = `Confirmación de recepción - Documentos del propietario ${codigoRegistro}`;
 
     const cuerpoHtml = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: #1a1a1a; margin: 0; font-size: 24px; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">✅ Documentos Recibidos</h1>
-        </div>
-        
-        <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-          <p style="font-size: 16px; color: #333;">Estimado/a <strong>${propietario.nombre}</strong>,</p>
-          
-          <p style="color: #666; line-height: 1.6;">
-            Confirmamos que hemos recibido exitosamente sus documentos como propietario 
-            para el proceso de arrendamiento con código de registro <strong>${codigoRegistro}</strong>.
-          </p>
-          
-          <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
-            <h3 style="color: #155724; margin-top: 0;">✅ Documentación completa</h3>
-            <p style="color: #155724;">
-              Todos los documentos han sido recibidos. Procederemos con la generación del contrato 
-              de arrendamiento.
-            </p>
-          </div>
-          
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-          
-          <p style="color: #999; font-size: 14px; text-align: center;">
-            E-firmaContrata • Real Estate Gold Life System<br>
-            Este es un correo automático, por favor no responder.
-          </p>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+                <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+            </div>
+            
+            <div style="padding: 40px 30px; line-height: 1.6;">
+                <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${propietario.nombre}</strong>,</p>
+                
+                <p style="margin-bottom: 20px; font-size: 16px;">
+                  Confirmamos que hemos recibido exitosamente sus documentos como propietario 
+                  para el proceso de arrendamiento con código de registro <strong>${codigoRegistro}</strong>.
+                </p>
+                
+                <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+                    <h3 style="margin-top: 0; color: #333; font-size: 16px;">✅ Documentación completa</h3>
+                    <p style="color: #555; line-height: 1.8; margin-bottom: 0; font-size: 15px;">
+                      Todos los documentos han sido recibidos. Procederemos con la generación del contrato 
+                      de arrendamiento.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+                <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <span style="color: #d4af37; font-weight: bold;">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0;">Código de registro: ${codigoRegistro}</p>
+                <p style="margin: 5px 0;">Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
+            </div>
         </div>
       </div>
     `;
