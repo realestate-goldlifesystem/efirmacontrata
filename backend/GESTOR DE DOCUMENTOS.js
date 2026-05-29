@@ -4177,19 +4177,10 @@ function handleRegistrarMensajeBitacora(datos) {
     if (!cdr || !mensaje) throw new Error('Faltan datos para la bitácora');
 
     const cdrEscaped = cdr.replace(/'/g, "\\'");
-    let docFileId = null;
-
-    // Buscar el Cerebro
-    const cdrPrefix = cdrEscaped.split('_(')[0];
-    const cerebroSearch = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrPrefix}' and trashed = false`);
-    while (cerebroSearch.hasNext()) {
-      const f = cerebroSearch.next();
-      if (f.getName().includes(cdr)) {
-        docFileId = f.getId();
-        break;
-      }
-    }
-    if (docFileId) {
+    // Buscar el Cerebro usando la función robusta
+    const docCerebro = abrirDocCerebro(cdr);
+    if (docCerebro) {
+      docFileId = docCerebro.getId();
     } else {
       throw new Error('Documento Cerebro no encontrado para el CDR: ' + cdr);
     }

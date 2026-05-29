@@ -277,21 +277,13 @@ function recopilarDatosContrato(cdr) {
     // Función auxiliar para extraer datos del Cerebro (Documento Google)
     let datosCerebro = null;
     try {
-      const cdrEscaped = cdr.replace(/'/g, "\\'");
-      // Usar solo la primera parte del CDR para la búsqueda en Drive para evitar problemas con símbolos como # o ()
-      const cdrPrefix = cdrEscaped.split('_(')[0];
-      const searchDoc = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrPrefix}' and trashed = false`);
-      let foundDocId = null;
-      while (searchDoc.hasNext()) {
-        const file = searchDoc.next();
-        if (file.getName().includes(cdr)) {
-          foundDocId = file.getId();
-          break;
+      if (typeof abrirDocCerebro === 'function') {
+        const doc = abrirDocCerebro(cdr);
+        if (doc) {
+          datosCerebro = doc.getBody().getText();
         }
-      }
-      if (foundDocId) {
-        const docText = DocumentApp.openById(foundDocId).getBody().getText();
-        datosCerebro = docText;
+      } else {
+        console.error("abrirDocCerebro no está definida.");
       }
     } catch (e) {
       console.error("No se pudo leer el Cerebro para el CDR " + cdr, e);
