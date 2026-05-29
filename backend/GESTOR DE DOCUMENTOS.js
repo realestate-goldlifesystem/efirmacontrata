@@ -2353,7 +2353,7 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
     // Actualizar campos
     for (const [header, valor] of Object.entries(campos)) {
       const colIndex = headers.indexOf(header) + 1;
-      if (colIndex > 0 && valor) {
+      if (colIndex > 0 && valor && valor.toString().trim() !== '') {
         sheet.getRange(fila, colIndex).setValue(valor);
       }
     }
@@ -2415,7 +2415,7 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
     // Actualizar campos
     for (const [header, valor] of Object.entries(campos)) {
       const colIndex = headers.indexOf(header) + 1;
-      if (colIndex > 0 && valor) {
+      if (colIndex > 0 && valor && valor.toString().trim() !== '') {
         sheet.getRange(fila, colIndex).setValue(valor);
       }
     }
