@@ -278,10 +278,19 @@ function recopilarDatosContrato(cdr) {
     let datosCerebro = null;
     try {
       const cdrEscaped = cdr.replace(/'/g, "\\'");
-      // Buscar el documento globalmente por su título que incluye el CDR y "DATOS DE ELABORACION"
-      const searchDoc = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrEscaped}' and trashed = false`);
-      if (searchDoc.hasNext()) {
-        const docText = DocumentApp.openById(searchDoc.next().getId()).getBody().getText();
+      // Usar solo la primera parte del CDR para la búsqueda en Drive para evitar problemas con símbolos como # o ()
+      const cdrPrefix = cdrEscaped.split('_(')[0];
+      const searchDoc = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrPrefix}' and trashed = false`);
+      let foundDocId = null;
+      while (searchDoc.hasNext()) {
+        const file = searchDoc.next();
+        if (file.getName().includes(cdr)) {
+          foundDocId = file.getId();
+          break;
+        }
+      }
+      if (foundDocId) {
+        const docText = DocumentApp.openById(foundDocId).getBody().getText();
         datosCerebro = docText;
       }
     } catch (e) {

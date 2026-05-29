@@ -4180,9 +4180,16 @@ function handleRegistrarMensajeBitacora(datos) {
     let docFileId = null;
 
     // Buscar el Cerebro
-    const cerebroSearch = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrEscaped}' and trashed = false`);
-    if (cerebroSearch.hasNext()) {
-      docFileId = cerebroSearch.next().getId();
+    const cdrPrefix = cdrEscaped.split('_(')[0];
+    const cerebroSearch = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrPrefix}' and trashed = false`);
+    while (cerebroSearch.hasNext()) {
+      const f = cerebroSearch.next();
+      if (f.getName().includes(cdr)) {
+        docFileId = f.getId();
+        break;
+      }
+    }
+    if (docFileId) {
     } else {
       throw new Error('Documento Cerebro no encontrado para el CDR: ' + cdr);
     }
