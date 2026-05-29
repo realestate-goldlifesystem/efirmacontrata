@@ -1151,6 +1151,16 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
       return { success: false, message: 'Código de registro no encontrado' };
     }
 
+    // Asegurar que tenemos el email del propietario en modo corrección
+    if (datosFormulario.modoCorreccion || !datosFormulario.propietario.email) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+      
+      datosFormulario.propietario.email = datosFormulario.propietario.email || obtenerValorPorHeader(headers, row, 'CORREO PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Correo electronico') || '';
+      datosFormulario.propietario.nombre = datosFormulario.propietario.nombre || obtenerValorPorHeader(headers, row, 'NOMBRE PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos') || '';
+    }
+
     // Procesar OCR si hay certificado de tradición
     if (archivosBase64.certTradicion) {
       const resultadoOCR = procesarCertificadoDesdeFormulario(archivosBase64.certTradicion.contenido);
@@ -1222,7 +1232,7 @@ function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
 
     if (tipo === 'inquilino') {
-      redirectUrl = `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr)}`;
+      redirectUrl = `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}`;
 
       if (detalles.includes('Formulario del inquilino diligenciado') || detalles.includes('Documentación de inquilino recibida')) {
         status = 'diligenciado';
@@ -1238,7 +1248,7 @@ function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
       }
 
     } else if (tipo === 'propietario') {
-      redirectUrl = `${baseUrl}/formulario-propietario.html?cdr=${encodeURIComponent(cdr)}`;
+      redirectUrl = `${baseUrl}/formulario-propietario.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}`;
 
       if (detalles.includes('Formulario del propietario diligenciado')) {
         status = 'diligenciado';
@@ -1339,9 +1349,14 @@ function obtenerRegistrosPropietarios() {
     const registros = [];
 
     for (let i = 2; i <= lastRow; i++) {
-      const detalles = sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue();
+      const detalles = (sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue() || '').toString();
+      const detallesLower = detalles.toLowerCase();
 
-      if (detalles.includes('Formulario del propietario')) {
+      const esDePropietario = detallesLower.includes('propietario');
+      const esPendiente = detallesLower.includes('recibida') || detallesLower.includes('diligenciado') || detallesLower.includes('correcci');
+      const esAprobado = detallesLower.includes('aprobado') || detallesLower.includes('firmado');
+
+      if (esDePropietario && esPendiente && !esAprobado) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
 
         const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';
@@ -1421,6 +1436,20 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
     // 1. Validar CDR
     if (!codigoRegistro) throw new Error('Código de registro no proporcionado');
 
+    // Buscar la fila correspondiente (la necesitamos temprano)
+    const fila = buscarFilaPorCDR(codigoRegistro);
+    if (!fila) throw new Error('Código de registro no encontrado');
+
+    // Asegurar que tenemos el email del inquilino en modo corrección
+    if (datosFormulario.modoCorreccion || !datosFormulario.inquilino.email) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+      
+      datosFormulario.inquilino.email = datosFormulario.inquilino.email || obtenerValorPorHeader(headers, row, 'CORREO INQUILINO') || '';
+      datosFormulario.inquilino.nombre = datosFormulario.inquilino.nombre || obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO') || '';
+    }
+
     // 2. Guardar documentos
     const urlsDoc = guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormulario);
 
@@ -1431,7 +1460,6 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     if (!sheet) throw new Error('Hoja principal no encontrada');
 
-    const fila = buscarFilaPorCDR(codigoRegistro);
     if (fila) {
       const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
       const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
@@ -3225,44 +3253,18 @@ function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulari
   const asunto = `Formulario de Arrendamiento - ${codigoRegistro}`;
 
   const cuerpoHtml = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-        <h1 style="color: #1a1a1a; margin: 0; font-size: 24px; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">📋 Gold Life - Formulario de Arrendamiento</h1>
-      </div>
-      
-      <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-        <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
-        
-        <p style="color: #666; line-height: 1.6;">
-          Su solicitud de arrendamiento ha sido aprobada. Para continuar con el proceso en <strong>Gold Life System</strong>, 
-          necesitamos que complete el formulario con sus datos y documentos.
-        </p>
-        
-        <div style="background: #fdfbf7; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #FFD700;">
-          <h3 style="color: #B8860B; margin-top: 0;">📄 Documentos requeridos:</h3>
-          <ul style="color: #666; line-height: 1.8;">
-            <li>Comprobante de pago del servicio</li>
-            <li>Estudio de arrendamiento aprobado</li>
-            <li>Documento de identidad</li>
-            <li>Documentos de codeudor(es) si aplica</li>
-          </ul>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+          <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
         </div>
         
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${urlFormulario}" 
-             style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
-                    color: #1a1a1a; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-            ➡️ COMPLETAR FORMULARIO
-          </a>
-        </div>
-        
-        <div style="background: #fff3cd; padding: 15px; border-left: 4px solid #FFA500; border-radius: 4px;">
-          <p style="color: #856404; margin: 0; font-size: 14px;">
-            ⚠️ <strong>Importante:</strong> Este enlace es único y personal. 
-            Una vez completado el formulario, no podrá volver a utilizarse.
+        <div style="padding: 40px 30px; line-height: 1.6; color: #333333;">
+          <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombre}</strong>,</p>
+          
+          <p style="margin-bottom: 20px; font-size: 16px;">
+            Su solicitud de arrendamiento ha sido aprobada. Para continuar con el proceso en <strong>Gold Life System</strong>, 
+            necesitamos que complete el formulario con sus datos y documentos.
           </p>
-        </div>
-        
         <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
         
         <p style="color: #999; font-size: 14px; text-align: center;">
@@ -3370,7 +3372,7 @@ function enviarEmailPropietario(cdr) {
 
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
     const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-    const urlFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(idRegistro)}`;
+    const urlFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}`;
     Logger.log('URL generada para propietario: ' + urlFormulario);
 
     const asunto = `Documentación requerida - Contrato de arrendamiento ${idRegistro}`;
@@ -3541,51 +3543,49 @@ function enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir =
     const nombre = obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO');
 
     const docsMapeados = mapearNombresAFrontendIds(documentosCorregir);
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
     const docsParam = docsMapeados.length > 0 ? `&docs=${encodeURIComponent(JSON.stringify(docsMapeados))}` : '';
 
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(cdr)}&modo=correccion${docsParam}`;
+    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}&modo=correccion${docsParam}`;
 
-    const asunto = `Corrección requerida - Documentos de arrendamiento ${cdr}`;
+    const asunto = `Corrección requerida - Documentos de arrendamiento ${idRegistro}`;
 
     const listDocsHtml = documentosCorregir && documentosCorregir.length > 0
       ? `<ul style="color: #666; font-weight: 500; margin-bottom: 20px;">${documentosCorregir.map(d => `<li>${d}</li>`).join('')}</ul>`
       : '';
 
     const cuerpoHtml = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">📝 Corrección Requerida</h1>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+          <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
         </div>
         
-        <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-          <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
+        <div style="padding: 40px 30px; line-height: 1.6; color: #333333;">
+          <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombre}</strong>,</p>
           
-          <p style="color: #666; line-height: 1.6;">
+          <p style="margin-bottom: 20px; font-size: 16px;">
             Hemos revisado sus documentos y necesitamos que vuelva a enviar los siguientes archivos para continuar con el proceso:
           </p>
 
           ${listDocsHtml}
           
-          <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <h3 style="color: #856404; margin-top: 0;">📋 Observaciones / Instrucciones:</h3>
-            <p style="color: #856404; white-space: pre-wrap;">${observaciones || 'Por favor revise los documentos enviados'}</p>
+          <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+            <p style="margin: 0; font-size: 15px; color: #555;"><strong>📋 Observaciones / Instrucciones:</strong><br><br>${observaciones || 'Por favor revise los documentos enviados'}</p>
           </div>
           
-          <div style="text-align: center; margin: 30px 0;">
+          <div style="text-align: center; margin: 35px 0;">
             <a href="${urlCorreccion}" 
-               style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); 
-                      color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
-              ✏️ REALIZAR CORRECCIONES
+               style="display: inline-block; background-color: #d4af37; color: #ffffff !important; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
+              REALIZAR CORRECCIONES
             </a>
           </div>
           
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-          
-          <p style="color: #999; font-size: 14px; text-align: center;">
-            E-firmaContrata • Real Estate Gold Life System<br>
-            Código de registro: ${cdr}
-          </p>
+        </div>
+        
+        <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+          <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <strong style="color: #d4af37;">Real Estate - Gold Life System</strong>. Todos los derechos reservados.</p>
+          <p style="margin: 5px 0;">Código de registro: ${cdr}</p>
         </div>
       </div>
     `;
@@ -3620,51 +3620,49 @@ function enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir
     const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
 
     const docsMapeados = mapearNombresAFrontendIds(documentosCorregir);
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
     const docsParam = docsMapeados.length > 0 ? `&docs=${encodeURIComponent(JSON.stringify(docsMapeados))}` : '';
 
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}&modo=correccion${docsParam}`;
+    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}&modo=correccion${docsParam}`;
 
-    const asunto = `Corrección requerida - Documentos del propietario ${cdr}`;
+    const asunto = `Corrección requerida - Documentos del propietario ${idRegistro}`;
 
     const listDocsHtml = documentosCorregir && documentosCorregir.length > 0
       ? `<ul style="color: #666; font-weight: 500; margin-bottom: 20px;">${documentosCorregir.map(d => `<li>${d}</li>`).join('')}</ul>`
       : '';
 
     const cuerpoHtml = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">📝 Corrección Requerida</h1>
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+          <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
         </div>
         
-        <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-          <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
+        <div style="padding: 40px 30px; line-height: 1.6; color: #333333;">
+          <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombre}</strong>,</p>
           
-          <p style="color: #666; line-height: 1.6;">
+          <p style="margin-bottom: 20px; font-size: 16px;">
             Hemos revisado sus documentos y necesitamos que vuelva a enviar los siguientes archivos para continuar con el proceso:
           </p>
 
           ${listDocsHtml}
           
-          <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <h3 style="color: #856404; margin-top: 0;">📋 Observaciones / Instrucciones:</h3>
-            <p style="color: #856404; white-space: pre-wrap;">${observaciones || 'Por favor revise los documentos enviados'}</p>
+          <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+            <p style="margin: 0; font-size: 15px; color: #555;"><strong>📋 Observaciones / Instrucciones:</strong><br><br>${observaciones || 'Por favor revise los documentos enviados'}</p>
           </div>
           
-          <div style="text-align: center; margin: 30px 0;">
+          <div style="text-align: center; margin: 35px 0;">
             <a href="${urlCorreccion}" 
-               style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); 
-                      color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
-              ✏️ REALIZAR CORRECCIONES
+               style="display: inline-block; background-color: #d4af37; color: #ffffff !important; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
+              REALIZAR CORRECCIONES
             </a>
           </div>
           
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-          
-          <p style="color: #999; font-size: 14px; text-align: center;">
-            E-firmaContrata • Real Estate Gold Life System<br>
-            Código de registro: ${cdr}
-          </p>
+        </div>
+        
+        <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+          <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <strong style="color: #d4af37;">Real Estate - Gold Life System</strong>. Todos los derechos reservados.</p>
+          <p style="margin: 5px 0;">Código de registro: ${cdr}</p>
         </div>
       </div>
     `;
@@ -3929,51 +3927,8 @@ function notificarFinalizacion(email) {
 // === ELIMINADO: función duplicada enviarEmailPropietario ===
 // La versión principal con try-catch y encodeURIComponent está en línea ~2672
 
-// ✉️ Propietario: confirmación de recepción
-function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
-  const propietario = datosFormulario.propietario;
-  const asunto = "Documentación Recibida - E-FirmaContrata";
-  const cuerpoHTML = `
-    <body style="background:#0F0F0F;padding:30px;color:#f4f4f4;font-family:Segoe UI,sans-serif;">
-      <div style="max-width:600px;margin:auto;background:#1e1e1e;padding:30px;border-radius:12px;">
-        <h2 style="color:#FFD700;text-align:center;">EFirmaContrata</h2>
-        <p>Hola <strong>${propietario.nombre}</strong>,</p>
-        <p>Confirmamos la recepción de tus documentos para el contrato con código <strong>${codigoRegistro}</strong>.</p>
-        <p>Gracias por utilizar E-FirmaContrata.</p>
-        <p style="margin-top:30px;font-size:12px;color:#aaa;">Real Estate • Gold Life System</p>
-      </div>
-    </body>`;
-  MailApp.sendEmail({ to: propietario.email, subject: asunto, htmlBody: cuerpoHTML });
-}
-
-// ✉️ Propietario: correo de corrección
-function enviarEmailCorreccionPropietario(cdr, observaciones) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
-  const fila = buscarFilaPorCDR(cdr);
-  if (!fila) return;
-
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const email = obtenerValorPorHeader(headers, row, 'Correo electrónico');
-  const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
-
-  const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-  const url = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${cdr}&modo=correccion`;
-
-  const asunto = "Corrección Requerida - E-FirmaContrata";
-  const cuerpoHTML = `
-    <body style="background:#0F0F0F;padding:30px;color:#f4f4f4;font-family:Segoe UI,sans-serif;">
-      <div style="max-width:600px;margin:auto;background:#1e1e1e;padding:30px;border-radius:12px;">
-        <h2 style="color:#FFD700;text-align:center;">EFirmaContrata</h2>
-        <p>Hola <strong>${nombre}</strong>,</p>
-        <p>Se requieren correcciones en la documentación enviada:</p>
-        <blockquote style="background:#2a2a2a;padding:15px;border-left:4px solid #FFD700;">${observaciones || 'Revisa tus archivos, por favor.'}</blockquote>
-        <a href="${url}" style="display:inline-block;margin-top:20px;background:#FFD700;color:#000;padding:12px 20px;border-radius:8px;text-decoration:none;">Corregir Documentos</a>
-        <p style="margin-top:30px;font-size:12px;color:#aaa;">Real Estate • Gold Life System</p>
-      </div>
-    </body>`;
-  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
-}
+// === ELIMINADAS: funciones duplicadas enviarEmailConfirmacionPropietario y enviarEmailCorreccionPropietario ===
+// Las versiones principales actualizadas están más arriba en el archivo
 
 // ==========================================
 // FUNCIONES PARA EL POPUP DE EMAIL INQUILINO
@@ -4058,7 +4013,7 @@ function procesarEmailInquilino(email, nombre) {
     // CORRECCIÓN: El frontend está en /frontend/
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
     const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(currentCDR) : currentCDR;
-    const urlFormulario = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(idRegistro)}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
+    const urlFormulario = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
 
     // 4. Enviar Email
     // Usamos la función centralizada para mantener el diseño consistente

@@ -20,6 +20,10 @@ function handleRemoteExecution(e) {
                 range: e.parameter.range
             };
             data = readRange(rangeConfig);
+        } else if (func === 'testSerialization') {
+            data = testSerialization();
+        } else if (func === 'testAllPending') {
+            data = testAllPending();
         } else {
             data = { message: 'Función no soportada', func: func };
         }

@@ -378,14 +378,14 @@
         .modal-content {
             background: var(--white);
             border-radius: var(--radius);
-            max-width: 95%;
-            max-height: 96vh;
+            max-width: 98vw;
+            max-height: 98vh;
             overflow: hidden;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
         }
 
         .modal-lg {
-            width: 1200px;
+            width: 1500px;
         }
 
         .modal-header {
@@ -427,8 +427,8 @@
             display: grid;
             grid-template-columns: 25% 75%;
             gap: 0.75rem;
-            height: auto;
-            align-items: start;
+            min-height: 50vh;
+            align-items: stretch;
         }
 
         .doc-left-col,
@@ -1789,6 +1789,7 @@
         function cargarRegistrosInquilinos() {
             google.script.run
                 .withSuccessHandler(function (registros) {
+                    mostrarToast('Cargado: ' + (registros ? registros.length : 'null') + ' registros', 'success');
                     registrosData.inquilinos = registros || [];
                     mostrarRegistrosInquilinos(registros);
                     actualizarEstadisticas('inquilinos', registros);
@@ -1804,6 +1805,7 @@
         function cargarRegistrosPropietarios() {
             google.script.run
                 .withSuccessHandler(function (registros) {
+                    mostrarToast('Cargado Prop: ' + (registros ? registros.length : 'null') + ' registros', 'success');
                     registrosData.propietarios = registros || [];
                     mostrarRegistrosPropietarios(registros);
                     actualizarEstadisticas('propietarios', registros);
@@ -2196,7 +2198,7 @@
 '                            </div>\n' +
 '                        </div>\n' +
 '                        <div class="registro-actions" style="justify-content: flex-end;">\n' +
-'                            <button class="btn btn-primary" onclick="abrirBorrador(\\'' + (c.cdr || c.id) + '\\')">\n' +
+'                            <button class="btn btn-primary" onclick="abrirBorrador(\'' + (c.cdr || c.id) + '\')">\n' +
 '                                &#128221; Gestionar Borrador y Firmas\n' +
 '                            </button>\n' +
 '                        </div>\n' +
@@ -2544,19 +2546,21 @@
 
             // Auto-find first person with a pending document
             let targetPersonKey = tipoActual;
-            for (const personKey of ['inquilino', 'propietario', 'bancaria', 'inmueble', 'servicios']) {
-                const docsList = documentosData[personKey] || [];
-                if (docsList.some(doc => !validacionEstado[doc.fileId])) {
-                    targetPersonKey = personKey;
-                    break;
-                }
-            }
-            // Check codeudores if no pending doc found yet and it's an inquilino
-            if (targetPersonKey === tipoActual && tipo === 'inquilino') {
-                for (let i = 0; i < 5; i++) {
-                    const codKey = 'codeudor_' + i;
-                    if (documentosData[codKey] && documentosData[codKey].some(doc => !validacionEstado[doc.fileId])) {
-                        targetPersonKey = codKey;
+            
+            // Primero verificamos si el tipoActual ya tiene pendientes
+            let tienePendienteActual = Array.isArray(documentosData[tipoActual]) && documentosData[tipoActual].some(doc => !validacionEstado[doc.fileId]);
+            
+            if (!tienePendienteActual) {
+                // Buscar otra persona que sí tenga pendientes (ej: codeudor)
+                // Ordenar para dar prioridad a codeudor_0, codeudor_1, etc. si existen
+                const sortedKeys = Object.keys(documentosData).sort();
+                for (const key of sortedKeys) {
+                    if (key === tipoActual) continue;
+                    if (!Array.isArray(documentosData[key])) continue;
+                    
+                    const hasPending = documentosData[key].some(doc => !validacionEstado[doc.fileId]);
+                    if (hasPending) {
+                        targetPersonKey = key;
                         break;
                     }
                 }
