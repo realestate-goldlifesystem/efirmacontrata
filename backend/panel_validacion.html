@@ -2163,51 +2163,7 @@
             // Otros contadores se actualizarían si tuviéramos estados distintos (Firmados, etc)
         }
 
-        // Mostrar registros de contratos
-        function mostrarListaContratos(contratos) {
-            const lista = document.getElementById('listaContratos');
 
-            if (!contratos || contratos.length === 0) {
-                lista.innerHTML = '\n' +
-'                    <div class="empty-state">\n' +
-'                        <div class="empty-icon">&#128237;</div>\n' +
-'                        <h3>No hay contratos pendientes</h3>\n' +
-'                        <p>Los contratos aparecerán aquí cuando los documentos sean validados.</p>\n' +
-'                    </div>\n' +
-'                ';
-                return;
-            }
-
-            let html = '';
-            for (let i = 0; i < contratos.length; i++) {
-                const c = contratos[i];
-                html += '\n' +
-'                    <div class="registro-card">\n' +
-'                        <div class="registro-header">\n' +
-'                            <h3>' + (c.cdr || c.id || 'Sin ID') + '</h3>\n' +
-'                            <span class="badge badge-warning" style="background:#fef08a; color:#854d0e;">En Negociación</span>\n' +
-'                        </div>\n' +
-'                        <div class="registro-info">\n' +
-'                            <div class="info-row">\n' +
-'                                <span class="info-label">Inquilino:</span>\n' +
-'                                <span class="info-value">' + (c.inquilino ? c.inquilino.nombre : 'Revisar datos') + '</span>\n' +
-'                            </div>\n' +
-'                            <div class="info-row">\n' +
-'                                <span class="info-label">Propietario:</span>\n' +
-'                                <span class="info-value">' + (c.propietario ? c.propietario.nombre : 'Revisar datos') + '</span>\n' +
-'                            </div>\n' +
-'                        </div>\n' +
-'                        <div class="registro-actions" style="justify-content: flex-end;">\n' +
-'                            <button class="btn btn-primary" onclick="abrirBorrador(\'' + (c.cdr || c.id) + '\')">\n' +
-'                                &#128221; Gestionar Borrador y Firmas\n' +
-'                            </button>\n' +
-'                        </div>\n' +
-'                    </div>\n' +
-'                ';
-            }
-
-            lista.innerHTML = html;
-        }
 
         // Mostrar registros de inquilinos
         function mostrarRegistrosInquilinos(registros) {
