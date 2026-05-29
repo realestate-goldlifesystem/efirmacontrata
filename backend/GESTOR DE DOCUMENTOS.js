@@ -3283,8 +3283,8 @@ function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
 
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">✅ Documentos Recibidos</h1>
+        <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+          <h1 style="color: #1a1a1a; margin: 0; font-size: 24px; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">✅ Documentos Recibidos</h1>
         </div>
         
         <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
@@ -3295,8 +3295,8 @@ function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
             con código de registro <strong>${codigoRegistro}</strong>.
           </p>
           
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #764ba2; margin-top: 0;">📋 Próximos pasos:</h3>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #FFD700;">
+            <h3 style="color: #B8860B; margin-top: 0;">📋 Próximos pasos:</h3>
             <ol style="color: #666; line-height: 1.8;">
               <li>Validación de documentos (24-48 horas)</li>
               <li>Revisión y aprobación final</li>
@@ -3366,8 +3366,8 @@ function enviarEmailPropietario(cdr) {
 
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">📋 Documentación del Propietario</h1>
+        <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+          <h1 style="color: #1a1a1a; margin: 0; font-size: 24px; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">📋 Documentación del Propietario</h1>
         </div>
         
         <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
@@ -3378,8 +3378,8 @@ function enviarEmailPropietario(cdr) {
             su formulario con la documentación requerida para continuar con el proceso de arrendamiento.
           </p>
           
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #764ba2; margin-top: 0;">📄 Documentos requeridos:</h3>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #FFD700;">
+            <h3 style="color: #B8860B; margin-top: 0;">📄 Documentos requeridos:</h3>
             <ul style="color: #666; line-height: 1.8;">
               <li>Documento de identidad</li>
               <li>Formulario SARLAFT</li>
@@ -3391,8 +3391,8 @@ function enviarEmailPropietario(cdr) {
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="${urlFormulario}" 
-               style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                      color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
+               style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
+                      color: #1a1a1a; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
               ➡️ COMPLETAR FORMULARIO
             </a>
           </div>
@@ -3430,8 +3430,8 @@ function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
 
     const cuerpoHtml = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">✅ Documentos Recibidos</h1>
+        <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+          <h1 style="color: #1a1a1a; margin: 0; font-size: 24px; text-shadow: 0 1px 2px rgba(255,255,255,0.3);">✅ Documentos Recibidos</h1>
         </div>
         
         <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
