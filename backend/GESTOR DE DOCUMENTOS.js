@@ -1157,7 +1157,7 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
       const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
       const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
       
-      datosFormulario.propietario.email = datosFormulario.propietario.email || obtenerValorPorHeader(headers, row, 'CORREO PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Correo electronico') || '';
+      datosFormulario.propietario.email = datosFormulario.propietario.email || obtenerValorPorHeader(headers, row, 'CORREO PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Correo electrónico') || '';
       datosFormulario.propietario.nombre = datosFormulario.propietario.nombre || obtenerValorPorHeader(headers, row, 'NOMBRE PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos') || '';
     }
 
