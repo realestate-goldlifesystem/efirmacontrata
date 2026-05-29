@@ -1874,12 +1874,32 @@ function abrirDocCerebro(cdr) {
     }
     if (!variosFolder) return null;
 
-    // Buscar el documento Cerebro
-    const searchFiles = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${variosFolder.getId()}' in parents and trashed = false`);
+    // Buscar el documento Cerebro directamente en variosFolder
+    let searchFiles = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${variosFolder.getId()}' in parents and trashed = false`);
     if (searchFiles.hasNext()) {
       const docFile = searchFiles.next();
       return DocumentApp.openById(docFile.getId());
     }
+
+    // Fallback: Buscar en la subcarpeta '2- CEDULA DEL INQUILINO'
+    const cedulaSubFolders = variosFolder.getFolders();
+    let cedulaFolder = null;
+    while (cedulaSubFolders.hasNext()) {
+      const sf = cedulaSubFolders.next();
+      if (sf.getName().includes('CEDULA DEL INQUILINO')) {
+        cedulaFolder = sf;
+        break;
+      }
+    }
+
+    if (cedulaFolder) {
+      searchFiles = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${cedulaFolder.getId()}' in parents and trashed = false`);
+      if (searchFiles.hasNext()) {
+        const docFile = searchFiles.next();
+        return DocumentApp.openById(docFile.getId());
+      }
+    }
+
     return null;
   } catch (e) {
     Logger.log('⚠️ Error abriendo Cerebro: ' + e.message);
