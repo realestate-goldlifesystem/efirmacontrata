@@ -6,11 +6,36 @@
 const API_SECRET = 'GoldLifeRemote2024'; // Token simple para seguridad
 
 function handleRemoteExecution(e) {
-    return ContentService.createTextOutput(JSON.stringify({
-        status: 'ok',
-        user: Session.getActiveUser().getEmail(),
-        timestamp: new Date().toString()
-    })).setMimeType(ContentService.MimeType.JSON);
+    try {
+        const func = e.parameter.func;
+        let data = null;
+
+        if (func === 'getSheetNames') {
+            data = getSheetNames();
+        } else if (func === 'testInquilinos') {
+            data = obtenerRegistrosInquilinos();
+        } else if (func === 'readRange') {
+            const rangeConfig = {
+                sheet: e.parameter.sheet,
+                range: e.parameter.range
+            };
+            data = readRange(rangeConfig);
+        } else {
+            data = { message: 'Función no soportada', func: func };
+        }
+
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'ok',
+            user: Session.getActiveUser().getEmail(),
+            timestamp: new Date().toString(),
+            data: data
+        })).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+        return ContentService.createTextOutput(JSON.stringify({
+            status: 'error',
+            message: err.message
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
 }
 
 function testConnection() {

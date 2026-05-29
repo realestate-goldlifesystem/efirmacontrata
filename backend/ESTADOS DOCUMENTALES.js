@@ -246,6 +246,7 @@ function inquilinoValidado(row) {
 // ==========================================
 
 function enviarSolicitudPropietario(cdr, row) {
+  const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
   try {
     const sheet = getSheetDocumental();
     const email = safeGetValueDocumental(sheet, row, CONFIG_DOCUMENTAL.COLUMNAS.EMAIL_PROPIETARIO);
@@ -257,28 +258,28 @@ function enviarSolicitudPropietario(cdr, row) {
     }
     
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const linkFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(cdr)}`;
-    const asunto = `Solicitud de documentos - ${cdr}`;
+    const linkFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(idRegistro)}`;
+    const asunto = `Solicitud de documentos - ${idRegistro}`;
     const cuerpoHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0;">Documentos Requeridos</h1>
+        <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: #1a1a1a; margin: 0;">Documentos Requeridos</h1>
         </div>
         
-        <div style="padding: 30px; background: #f8f9fa;">
+        <div style="padding: 30px; background: #1a1a1a; border: 1px solid #333; color: #ffffff;">
           <h3>Estimado Propietario,</h3>
           
           <p>El inquilino ha completado su documentación satisfactoriamente.</p>
           <p>Ahora necesitamos que usted complete su formulario para continuar con el proceso de contrato.</p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${linkFormulario}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
+            <a href="${linkFormulario}" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #1a1a1a; padding: 15px 40px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
               📋 COMPLETAR FORMULARIO
             </a>
           </div>
           
           <p style="color: #666; font-size: 14px;">
-            Código de registro: <strong>${cdr}</strong>
+            ID de Registro: <strong>${idRegistro}</strong>
           </p>
         </div>
       </div>
@@ -297,6 +298,7 @@ function enviarSolicitudPropietario(cdr, row) {
 }
 
 function enviarCorreoCorreccion(cdr, tipo, opts) {
+  const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
   try {
     const sheet = getSheetDocumental();
     const row = findRowByCDRDocumental(cdr);
@@ -309,11 +311,11 @@ function enviarCorreoCorreccion(cdr, tipo, opts) {
     if (!email) return;
     
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const linkCorreccion = `${baseUrl}/validador.html?action=formulario-${tipo}&cdr=${encodeURIComponent(cdr)}&modo=correccion`;
+    const linkCorreccion = `${baseUrl}/validador.html?action=formulario-${tipo}&cdr=${encodeURIComponent(idRegistro)}&modo=correccion`;
     const observaciones = opts.observaciones || '';
     
     const listaDocumentos = (opts.documentos || []).map(doc => `• ${doc}`).join('\n');
-    const asunto = `Acción Requerida: Corrección de Documentos - ${cdr}`;
+    const asunto = `Acción Requerida: Corrección de Documentos - ${idRegistro}`;
     
     const cuerpoHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -321,12 +323,12 @@ function enviarCorreoCorreccion(cdr, tipo, opts) {
           <h2 style="color: #856404; margin: 0;">⚠️ Corrección Requerida</h2>
         </div>
         
-        <div style="padding: 30px; background: #f8f9fa;">
+        <div style="padding: 30px; background: #1a1a1a; border: 1px solid #333; color: #ffffff;">
           <h3>Estimado/a,</h3>
           
           <p>Necesitamos que corrija los siguientes documentos:</p>
           
-          <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <div style="background: #2a2a2a; padding: 15px; color: #cccccc; border-radius: 8px; margin: 20px 0;">
             <pre style="font-family: Arial; margin: 0;">${listaDocumentos}</pre>
           </div>
           
@@ -359,23 +361,24 @@ function enviarCorreoCorreccion(cdr, tipo, opts) {
 }
 
 function enviarNotificacionContratoListo(cdr, row) {
+  const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
   try {
     const sheet = getSheetDocumental();
     const emailInq = safeGetValueDocumental(sheet, row, CONFIG_DOCUMENTAL.COLUMNAS.EMAIL_INQUILINO);
     const emailProp = safeGetValueDocumental(sheet, row, CONFIG_DOCUMENTAL.COLUMNAS.EMAIL_PROPIETARIO);
     
-    const asunto = `Documentación completa - ${cdr}`;
+    const asunto = `Documentación completa - ${idRegistro}`;
     const cuerpoHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #d4edda; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
           <h2 style="color: #155724; margin: 0;">✅ Documentación Completa</h2>
         </div>
         
-        <div style="padding: 30px; background: #f8f9fa;">
+        <div style="padding: 30px; background: #1a1a1a; border: 1px solid #333; color: #ffffff;">
           <p>La documentación de ambas partes ha sido validada exitosamente.</p>
           <p>En las próximas horas recibirán el borrador del contrato para su revisión.</p>
           
-          <div style="background: white; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <div style="background: #2a2a2a; padding: 15px; color: #cccccc; border-radius: 8px; margin: 20px 0;">
             <strong>Próximos pasos:</strong>
             <ol>
               <li>Generación del borrador de contrato</li>

@@ -1286,16 +1286,26 @@ function obtenerRegistrosInquilinos() {
     const registros = [];
 
     for (let i = 2; i <= lastRow; i++) {
-      const detalles = sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue().toString();
+      const detalles = (sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue() || '').toString();
+      const detallesLower = detalles.toLowerCase();
 
-      if (detalles.includes('Formulario del inquilino') || detalles.includes('Documentación de inquilino recibida') || detalles.includes('Corrección solicitada al inquilino')) {
+      // Hacemos el filtro más robusto para que no falle si hay problemas de codificación con la "ó"
+      const esDeInquilino = detallesLower.includes('inquilino');
+      const esPendiente = detallesLower.includes('recibida') || detallesLower.includes('diligenciado') || detallesLower.includes('correcci');
+      
+      // Asegurarse de no mostrar los ya aprobados o firmados
+      const esAprobado = detallesLower.includes('aprobado') || detallesLower.includes('firmado');
+
+      if (esDeInquilino && esPendiente && !esAprobado) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
         const cdrValue = obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO');
+        const idRegistroValue = obtenerValorPorHeader(headers, row, 'ID DE REGISTRO');
 
         const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';
 
         registros.push({
           cdr: cdrValue,
+          idRegistro: idRegistroValue,
           detalles: detalles,
           estadoDocumental: estadoDocumental,
           inquilino: {

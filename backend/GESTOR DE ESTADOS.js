@@ -133,14 +133,72 @@ function onEditEstados(e) {
   try {
     if (!e || !e.range) return;
 
-    const sheet = e.source.getSheetByName(ESTADOS_CONFIG.HOJA_PRINCIPAL);
-    if (!sheet) return;
+    const currentSheetName = e.range.getSheet().getName();
+    if (currentSheetName !== ESTADOS_CONFIG.HOJA_PRINCIPAL) return; // Solo actuar si es en la hoja correcta
 
+    const sheet = e.range.getSheet();
     const row = e.range.getRow();
     const col = e.range.getColumn();
 
+    // Para depuración de triggers:
+    const headerName = sheet.getRange(1, col).getValue();
+    if (headerName === 'CHECK YT') {
+        logAccion('SISTEMA', `Evento onEdit detectado en CHECK YT (Fila ${row}). Valor: ${e.value}`);
+    }
+
     const estadoColIndex = getColumnIndex(sheet, ESTADOS_CONFIG.COLUMNAS.ESTADO);
     const detallesColIndex = getColumnIndex(sheet, ESTADOS_CONFIG.COLUMNAS.DETALLES);
+    
+    // NUEVO: Manejo del CHECK YT para publicar el video (Pasar de Privado a No Listado)
+    const checkYtColIndex = getColumnIndex(sheet, 'CHECK YT');
+    if (checkYtColIndex !== -1 && col === checkYtColIndex) {
+        logAccion('SISTEMA', `Checkbox CHECK YT modificado a: ${e.value}`);
+        if (e.value === "TRUE" || e.value === true || e.value === "FALSE" || e.value === false) {
+            try {
+                // Obtener Link del Video
+                const linkYtColIndex = getColumnIndex(sheet, 'LINK DEL VIDEO DEL INMUEBLE');
+                if (linkYtColIndex !== -1) {
+                    const linkYt = sheet.getRange(row, linkYtColIndex).getValue();
+                    if (linkYt && linkYt.includes("youtu")) {
+                        // Extraer ID
+                        const match = linkYt.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/);
+                        if (match && match[1]) {
+                            const videoId = match[1];
+                            
+                            // 1. Obtener el video actual para no borrarle nada de su snippet original
+                            const vidList = YouTube.Videos.list('snippet,status', {id: videoId});
+                            if (vidList.items && vidList.items.length > 0) {
+                                const v = vidList.items[0];
+                                
+                                const esVerdadero = (e.value === "TRUE" || e.value === true);
+                                
+                                // Cambiar status
+                                v.status.privacyStatus = esVerdadero ? 'unlisted' : 'private';
+                                
+                                // Hacer Update enviando de nuevo snippet y status
+                                YouTube.Videos.update(v, 'id,snippet,status');
+                                
+                                // Cambiar color visual
+                                sheet.getRange(row, checkYtColIndex).setBackground(esVerdadero ? '#D9EAD3' : '#FFF2CC'); // Verde o Amarillo
+                                logAccion('SISTEMA', `Video ${videoId} actualizado a ${v.status.privacyStatus} con éxito.`);
+                            } else {
+                                logError('CHECK_YT', `No se encontró el video ${videoId} en YouTube`);
+                            }
+                        } else {
+                            logError('CHECK_YT', `No se pudo extraer ID de YT de: ${linkYt}`);
+                        }
+                    } else {
+                        logError('CHECK_YT', `El link no es válido de YouTube: ${linkYt}`);
+                    }
+                } else {
+                    logError('CHECK_YT', `No se encontró la columna de Link YT`);
+                }
+            } catch (err) {
+                logError('CHECK_YT', err.message);
+            }
+        }
+        return; // Terminar aquí para no afectar el estado principal
+    }
 
     if (col !== estadoColIndex) return;
 
@@ -341,7 +399,7 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
 // FUNCIONES BACKEND PARA EL POPUP
 // ==========================================
 
-function obtenerDatosRegistroActual() {
+function _obtenerDatosRegistroActual_deprecated() {
   try {
     const props = PropertiesService.getScriptProperties();
     const rowStr = props.getProperty('currentRow');
@@ -378,7 +436,7 @@ function obtenerDatosRegistroActual() {
     };
 
   } catch (e) {
-    logError('obtenerDatosRegistroActual', e.message);
+    logError('obtenerDatosRegistroActual_deprecated', e.message);
     return {
       success: false,
       message: e.message

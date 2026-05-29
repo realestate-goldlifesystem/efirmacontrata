@@ -51,10 +51,27 @@ function procesarYGuardarDescripcion(sheet, row, carpetaReg) {
         }
     }
 
-    var colCodigo = _lib_getColumnByName(sheet, 'CODIGO DE REGISTRO');
+    var colCodigo = _lib_getColumnByName(sheet, 'ID DE REGISTRO');
     var codigoRegistro = '';
     if (colCodigo > 0) {
         codigoRegistro = sheet.getRange(row, colCodigo).getValue();
+    }
+
+    // NUEVO: Obtener precio de venta y tipo de negocio para Mixtos
+    var colPrecioVenta = _lib_getColumnByName(sheet, 'PRECIO DE PROMOCION EN VENTA');
+    var colTipoNegocio = _lib_getColumnByName(sheet, 'TIPO DE NEGOCIO');
+    var precioVentaFormat = '';
+    if (colPrecioVenta > 0 && colTipoNegocio > 0) {
+        var tipoNeg = String(sheet.getRange(row, colTipoNegocio).getValue() || '');
+        if (tipoNeg.includes('Vendi-Renta') || tipoNeg.includes('Admi-Venta')) {
+            var precioCrudo = sheet.getRange(row, colPrecioVenta).getValue();
+            var numStr = String(precioCrudo).replace(/[^\d]/g, '');
+            if (numStr) {
+                var num = parseFloat(numStr);
+                var millones = num / 1000000;
+                precioVentaFormat = millones % 1 === 0 ? `$${millones}M` : `$${millones.toFixed(1)}M`;
+            }
+        }
     }
 
     // 2. Buscar en cada columna hasta encontrar descripción
@@ -67,7 +84,7 @@ function procesarYGuardarDescripcion(sheet, row, carpetaReg) {
             // Validar ID básico (longitud > 10 para evitar vacíos o errores)
             if (pdfId && String(pdfId).length > 10) {
                 Logger.log("🔎 Analizando PDF en columna '" + nombreCol + "' (ID: " + pdfId + ")...");
-                var texto = extraerDescripcionDelPDF(pdfId, numGarajes, tieneDeposito, codigoRegistro);
+                var texto = extraerDescripcionDelPDF(pdfId, numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat);
                 if (texto && texto.length > 20) { // Validar longitud mínima
                     Logger.log("✅ Descripción hallada en columna: " + nombreCol);
                     descripcionEncontrada = texto;
@@ -188,14 +205,14 @@ function _lib_getColumnByName(sheet, name) {
 /**
  * Extrae la descripción específica del inmueble basada en los marcadores conocidos.
  */
-function extraerDescripcionDelPDF(pdfFileId, numGarajes, tieneDeposito, codigoRegistro) {
+function extraerDescripcionDelPDF(pdfFileId, numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat) {
     var MARCADOR_INICIO = "DESCRIPCIÓN DEL INMUEBLE";
     var MARCADOR_FIN = "y vive en el apartamento de tus sueños";
 
     var textoCrudo = extraerTextoEntre(pdfFileId, MARCADOR_INICIO, MARCADOR_FIN);
 
     if (textoCrudo) {
-        return limpiarTexto(textoCrudo, numGarajes, tieneDeposito, codigoRegistro);
+        return limpiarTexto(textoCrudo, numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat);
     }
     return null;
 }
@@ -264,7 +281,7 @@ function extraerTextoEntre(fileId, inicioTexto, finTexto) {
  * Limpia y organiza el texto extraído para que se vea bonito en el Doc.
  * Reemplaza basura del PDF y restaura emojis y saltos de línea.
  */
-function limpiarTexto(texto, numGarajes, tieneDeposito, codigoRegistro) {
+function limpiarTexto(texto, numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat) {
     if (!texto) return "";
 
     // 1. Limpieza básica inicial
@@ -331,6 +348,12 @@ function limpiarTexto(texto, numGarajes, tieneDeposito, codigoRegistro) {
             // Busca Bañ/ (y opcionalmente Gar/ que acabamos de inyectar) y mete 1Dep/ después
             titulo = titulo.replace(/(\d+Bañ\/(?:\d+Gar\/)?)/i, '$11Dep/');
         }
+        
+        // 3b-2. Inyectar precio de Venta en Millones si aplica
+        if (precioVentaFormat && titulo.indexOf(precioVentaFormat) === -1) {
+            // Reemplaza algo como "$2.900.000" por "$425M/$2.900.000"
+            titulo = titulo.replace(/(\$\s*\d[\d.,]*)/, precioVentaFormat + '/$1');
+        }
 
         // 3c. Añadir salto de línea antes del tipo de inmueble (puede tener o no guion antes)
         titulo = titulo.replace(/\s+(APTO|CASA|LOCAL|OFICINA|LOTE|BODEGA|EDIFICIO|FINCA)\s+-/i, '\n$1 -');
@@ -339,17 +362,10 @@ function limpiarTexto(texto, numGarajes, tieneDeposito, codigoRegistro) {
         limpio = lineas.join('\n');
     }
 
-    // 4. Inyectar código de registro al final de todo
+    // 4. Inyectar ID de registro al final de todo
     if (codigoRegistro) {
-        // Extraer la parte corta del código (ej. "C44" de "REG_18-05-2026-C44_...")
-        var codigoCorto = codigoRegistro;
-        var match = codigoRegistro.match(/-([A-Z0-9]+)_/i);
-        if (match && match[1]) {
-            codigoCorto = match[1].toUpperCase();
-        }
-
         // Nos aseguramos de limpiar espacios al final antes de inyectar
-        limpio = limpio.trimRight() + '\n\nCODIGO:' + codigoCorto;
+        limpio = limpio.trimRight() + '\n\nCODIGO:' + codigoRegistro;
     }
 
     // 5. Limpieza final de espacios extra generados

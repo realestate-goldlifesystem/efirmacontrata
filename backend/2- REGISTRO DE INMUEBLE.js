@@ -789,7 +789,8 @@ function enviarCorreoFirmaInicial(sheet, row, cdr, tipoNegocio) {
 
   Logger.log('📧 Preparando envío de correo de firma (' + tipoNegocio + ') para: ' + email);
 
-  var urlFirma = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/sala_firmas.html?docId=' + docId + '&cdr=' + cdr;
+  var idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+  var urlFirma = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/sala_firmas.html?docId=' + docId + '&cdr=' + idRegistro;
 
   try {
     var template = HtmlService.createTemplateFromFile('backend/email_firma_corretaje');

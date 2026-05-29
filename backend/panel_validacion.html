@@ -2229,7 +2229,7 @@
                 html += '\n' +
 '                    <div class="registro-card">\n' +
 '                        <div class="registro-header">\n' +
-'                            <h3> ' + (registro.cdr) + '</h3>\n' +
+'                            <h3>' + (registro.idRegistro ? registro.idRegistro + ' - ' : '') + (registro.cdr) + '</h3>\n' +
 '                            <span class="badge badge-' + (estado.clase) + '">' + (estado.texto) + '</span>\n' +
 '                        </div>\n' +
 '                        <div class="registro-info">\n' +
@@ -2310,7 +2310,7 @@
                 html += '\n' +
 '                    <div class="registro-card">\n' +
 '                        <div class="registro-header">\n' +
-'                            <h3> ' + (registro.cdr) + '</h3>\n' +
+'                            <h3>' + (registro.idRegistro ? registro.idRegistro + ' - ' : '') + (registro.cdr) + '</h3>\n' +
 '                            <span class="badge badge-' + (estado.clase) + '">' + (estado.texto) + '</span>\n' +
 '                        </div>\n' +
 '                        <div class="registro-info">\n' +

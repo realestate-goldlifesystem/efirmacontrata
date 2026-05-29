@@ -139,3 +139,18 @@ function obtenerBancosDesdeCaché() {
         return null;
     }
 }
+
+/**
+ * Función de rescate para forzar la autorización de YouTube y reinstalar triggers
+ */
+function repararPermisos() {
+    try {
+        // Llamada dummy a YouTube para forzar la ventana de permisos
+        YouTube.Videos.list('snippet', {id: 'dQw4w9WgXcQ'});
+    } catch(e) {
+        // Ignoramos el error si el ID no existe, solo queremos el popup de Google
+    }
+    
+    // Reinstalamos los triggers para que queden con los permisos nuevos
+    instalarActivadores();
+}

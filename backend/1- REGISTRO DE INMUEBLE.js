@@ -60,6 +60,11 @@ function onFormSubmitInmueble(e) {
     var cdr = generarCodigoRegistro(sheet, row);
     Logger.log(`✅ CDR generado: ${cdr}`);
 
+    // PASO 3.5: Generar ID DE REGISTRO
+    Logger.log('🔢 Generando ID Único...');
+    var idInmueble = generarIdInmuebleUnico(sheet, row);
+    Logger.log(`✅ ID generado: ${idInmueble}`);
+
     // PASO 4: Asignar estado inicial "REGISTRANDO"
     Logger.log('📌 Asignando estado inicial...');
     asignarEstadoRegistrando(sheet, row);
@@ -87,6 +92,7 @@ function onFormSubmitInmueble(e) {
     var datosParaParte2 = {
       fila: row,
       cdr: cdr,
+      idInmueble: idInmueble,
       tipoRegistro: tipoRegistro,
       rprFolderId: resultadoRPR.folderId,
       rprCodigo: resultadoRPR.codigo,
@@ -301,6 +307,45 @@ function calcularSecuencia(sheet, currentRow, tipoNegocioCode) {
   secuencias[tipoNegocioCode] = (secuencias[tipoNegocioCode] || 0) + 1;
 
   return secuencias[tipoNegocioCode];
+}
+
+// ==========================================
+// GENERACIÓN DE ID ÚNICO
+// ==========================================
+
+function generarIdInmuebleUnico(sheet, row) {
+  var idCol = getColumnByName(sheet, 'ID DE REGISTRO');
+  if (!idCol) return null;
+
+  var lastRow = sheet.getLastRow();
+  var existingIds = [];
+  if (lastRow > 1) {
+    var values = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+    values.forEach(function(r) {
+      if(r[0]) existingIds.push(r[0].toString());
+    });
+  }
+
+  var letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  var nuevoId = "";
+  var maxIntentos = 10;
+  var intentos = 0;
+
+  while (intentos < maxIntentos) {
+    var numAleatorio = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    var letra1 = letras.charAt(Math.floor(Math.random() * letras.length));
+    var letra2 = letras.charAt(Math.floor(Math.random() * letras.length));
+    
+    nuevoId = letra1 + letra2 + numAleatorio;
+    
+    if (existingIds.indexOf(nuevoId) === -1) {
+      break; // Es único
+    }
+    intentos++;
+  }
+
+  sheet.getRange(row, idCol).setValue(nuevoId);
+  return nuevoId;
 }
 
 // ==========================================
