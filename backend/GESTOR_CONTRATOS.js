@@ -525,6 +525,8 @@ function reemplazarVariablesContrato(body, datos) {
         body.replaceText('{{CELULAR-CODEUDOR}}', datos.codeudores[0].celular || '');
         body.replaceText('{{EMAIL_CODEUDOR1}}', datos.codeudores[0].email || '');
         body.replaceText('{{CORREO-CODEUDOR}}', datos.codeudores[0].email || '');
+        const parrafoC1 = `${datos.codeudores[0].nombre || ''} con C.C. N° ${datos.codeudores[0].documento || ''} de Colombia`;
+        body.replaceText('{{PARRAFO-CODEUDOR-1}}', parrafoC1);
       }
 
       // Reemplazar datos del segundo codeudor si existe
@@ -538,6 +540,8 @@ function reemplazarVariablesContrato(body, datos) {
         body.replaceText('{{CELULAR-CODEUDOR-2}}', datos.codeudores[1].celular || '');
         body.replaceText('{{EMAIL_CODEUDOR2}}', datos.codeudores[1].email || '');
         body.replaceText('{{CORREO-CODEUDOR-2}}', datos.codeudores[1].email || '');
+        const parrafoC2 = `${datos.codeudores[1].nombre || ''} con C.C. N° ${datos.codeudores[1].documento || ''} de Colombia`;
+        body.replaceText('{{PARRAFO-CODEUDOR-2}}', parrafoC2);
       } else {
         // Limpiar variables del segundo codeudor
         body.replaceText('{{NOMBRE_CODEUDOR2}}', 'N/A');
@@ -549,6 +553,7 @@ function reemplazarVariablesContrato(body, datos) {
         body.replaceText('{{CELULAR-CODEUDOR-2}}', 'N/A');
         body.replaceText('{{EMAIL_CODEUDOR2}}', 'N/A');
         body.replaceText('{{CORREO-CODEUDOR-2}}', 'N/A');
+        body.replaceText('{{PARRAFO-CODEUDOR-2}}', '');
       }
 
       // Reemplazar datos del tercer codeudor si existe
@@ -562,6 +567,8 @@ function reemplazarVariablesContrato(body, datos) {
         body.replaceText('{{CELULAR-CODEUDOR-3}}', datos.codeudores[2].celular || '');
         body.replaceText('{{EMAIL_CODEUDOR3}}', datos.codeudores[2].email || '');
         body.replaceText('{{CORREO-CODEUDOR-3}}', datos.codeudores[2].email || '');
+        const parrafoC3 = `${datos.codeudores[2].nombre || ''} con C.C. N° ${datos.codeudores[2].documento || ''} de Colombia`;
+        body.replaceText('{{PARRAFO-CODEUDOR-3}}', parrafoC3);
       } else {
         // Limpiar variables del tercer codeudor
         body.replaceText('{{NOMBRE_CODEUDOR3}}', 'N/A');
@@ -573,6 +580,7 @@ function reemplazarVariablesContrato(body, datos) {
         body.replaceText('{{CELULAR-CODEUDOR-3}}', 'N/A');
         body.replaceText('{{EMAIL_CODEUDOR3}}', 'N/A');
         body.replaceText('{{CORREO-CODEUDOR-3}}', 'N/A');
+        body.replaceText('{{PARRAFO-CODEUDOR-3}}', '');
       }
     } else {
       // Si no hay codeudores, limpiar todas las variables
@@ -603,6 +611,9 @@ function reemplazarVariablesContrato(body, datos) {
       body.replaceText('{{CELULAR-CODEUDOR-3}}', 'N/A');
       body.replaceText('{{EMAIL_CODEUDOR3}}', 'N/A');
       body.replaceText('{{CORREO-CODEUDOR-3}}', 'N/A');
+      body.replaceText('{{PARRAFO-CODEUDOR-1}}', '');
+      body.replaceText('{{PARRAFO-CODEUDOR-2}}', '');
+      body.replaceText('{{PARRAFO-CODEUDOR-3}}', '');
     }
     
     // Adicionales que están fuera de {{}} o irregulares en tu plantilla:
