@@ -85,7 +85,7 @@
       background: #374151;
       border-right: clamp(0px, 100vw - 800px, 2px) solid #fbbf24;
       flex: 999 1 clamp(320px, 60%, 100%);
-      min-height: clamp(40vh, 50vh, 100%);
+      min-height: 40vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -329,14 +329,16 @@
       border-color: #fbbf24;
       box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
     }
-    
-    /* Remove responsive block and allow body to scroll naturally if wrapped */
+    /* Ensure full screen app layout */
     body {
-      overflow: auto;
-      min-height: 100vh;
-      height: auto;
+      overflow: hidden;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
     }
-
+    
     .loader-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0, 0, 0, 0.8);
