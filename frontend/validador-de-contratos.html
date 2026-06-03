@@ -856,19 +856,26 @@
             let chatHtml = '';
             estados.forEach(est => {
                 const isApproved = est.estado === 'APROBADO';
-                const isRejected = est.estado === 'RECHAZADO' || est.estado === 'CAMBIOS';
-                const bubbleClass = isApproved ? 'approved' : (isRejected ? 'rejected' : '');
+                const isRejected = est.estado === 'RECHAZADO' || est.estado === 'CAMBIOS' || est.estado === 'CAMBIOS_SOLICITADOS';
+                const isSystem = est.parte === 'ADMIN';
+                const bubbleClass = isApproved ? 'approved' : (isRejected ? 'rejected' : (isSystem ? 'system' : ''));
                 
                 const badgeClass = isApproved ? 'status-approved' : (isRejected ? 'status-rejected' : 'status-pending');
-                const badgeText = isApproved ? 'Aprobado' : (isRejected ? 'Solicitó Cambios' : 'Revisado');
+                let badgeText = isApproved ? 'Aprobado' : (isRejected ? 'Solicitó Cambios' : 'Revisado');
+                if (isSystem) badgeText = 'Actualización de Sistema';
                 
                 const fechaFormat = est.fecha + (est.hora ? ' a las ' + est.hora : '');
                 const comentarios = est.comentarios ? escapeHTML(est.comentarios) : '<i style="color:#9ca3af;">Sin comentarios adicionales</i>';
+                
+                // Formatear nombre de usuario
+                let displayParte = est.parte || 'Usuario';
+                if (displayParte.toUpperCase() === 'ADMIN') displayParte = 'Administrador';
+                else displayParte = displayParte.charAt(0).toUpperCase() + displayParte.slice(1).toLowerCase();
 
                 chatHtml += `
                   <div class="chat-bubble ${bubbleClass}">
                     <div class="chat-bubble-header">
-                      <span class="chat-bubble-name">${escapeHTML(est.parte || 'Usuario')}</span>
+                      <span class="chat-bubble-name">${escapeHTML(displayParte)}</span>
                       <span class="chat-bubble-time">${escapeHTML(fechaFormat)} <strong style="color:#fbbf24;">(v${est.version || 1})</strong></span>
                     </div>
                     <div class="chat-bubble-body">
@@ -903,12 +910,17 @@
             htmlBitacora += '<p style="color:#6b7280; font-size:0.9rem;">El historial de negociación aparecerá aquí.</p>';
         } else {
             estados.forEach(est => {
-                const colorParte = est.parte === 'ADMIN' ? '#3b82f6' : (est.estado === 'APROBADO' ? '#10b981' : (est.estado === 'RECHAZADO' || est.estado === 'CAMBIOS' ? '#ef4444' : '#6b7280'));
+                const isSystem = est.parte === 'ADMIN';
+                const colorParte = isSystem ? '#3b82f6' : (est.estado === 'APROBADO' ? '#10b981' : (est.estado === 'RECHAZADO' || est.estado === 'CAMBIOS' || est.estado === 'CAMBIOS_SOLICITADOS' ? '#ef4444' : '#6b7280'));
                 
+                let displayParte = est.parte || 'Usuario';
+                if (displayParte.toUpperCase() === 'ADMIN') displayParte = 'Administrador';
+                else displayParte = displayParte.charAt(0).toUpperCase() + displayParte.slice(1).toLowerCase();
+
                 htmlBitacora += `
                     <div style="border-left: 3px solid ${colorParte}; padding-left: 12px; margin-bottom: 12px; background: #f9fafb; padding-top: 8px; padding-bottom: 8px; padding-right: 8px; border-radius: 0 6px 6px 0;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                            <strong style="color: ${colorParte}; font-size: 0.9rem;">${escapeHTML(est.parte)}</strong>
+                            <strong style="color: ${colorParte}; font-size: 0.9rem;">${escapeHTML(displayParte)}</strong>
                             <span style="color: #9ca3af; font-size: 0.75rem;">${est.fecha} ${est.hora || ''} <strong style="color:#f59e0b;">(v${est.version || 1})</strong></span>
                         </div>
                         <div style="font-size: 0.8rem; font-weight: bold; color: #4b5563; margin-bottom: 4px;">${est.estado}</div>
