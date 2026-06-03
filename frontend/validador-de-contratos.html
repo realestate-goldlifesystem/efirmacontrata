@@ -60,7 +60,7 @@
       flex-shrink: 0;
     }
     
-    .validation-header h2 { margin: 0; font-size: clamp(1.2rem, 3vw, 1.5rem); }
+    .validation-header h2 { margin: 0; font-size: clamp(1.1rem, 3vw, 1.5rem); }
     .validation-header p { margin: 0; color: #fff; font-size: clamp(0.85rem, 2vw, 1rem); }
 
     .validation-body {
@@ -265,6 +265,36 @@
 
     /* Responsive Media Query para Móviles */
     @media (max-width: 850px) {
+      /* Header & Status Bar Móvil */
+      .validation-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+        padding: 1rem;
+      }
+      
+      .validation-header > div {
+        margin-top: 0 !important;
+      }
+
+      .status-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.8rem 1rem;
+        gap: 0.5rem;
+      }
+
+      .status-horizontal {
+        gap: 0.5rem;
+      }
+
+      .status-horizontal-item {
+        padding: 0.2rem 0.4rem;
+      }
+
+      .info-label { font-size: 0.75rem; }
+      .status-badge { font-size: 0.7rem; padding: 0.15rem 0.4rem; }
+
       .content-grid {
         flex-direction: column;
       }
