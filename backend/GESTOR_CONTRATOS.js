@@ -95,7 +95,7 @@ function generarContrato(cdr, version = 'Borrador') {
     const body = doc.getBody();
 
     // 5. Reemplazar variables en el contrato
-    reemplazarVariablesContrato(body, datos);
+    reemplazarVariablesContrato(doc, datos);
 
     // Guardar y cerrar
     doc.saveAndClose();
@@ -425,8 +425,18 @@ function recopilarDatosContrato(cdr) {
 /**
  * Reemplazar variables en el documento del contrato
  */
-function reemplazarVariablesContrato(body, datos) {
+function reemplazarVariablesContrato(doc, datos) {
   try {
+    const body = doc.getBody();
+    const header = doc.getHeader();
+    const footer = doc.getFooter();
+    
+    const replaceInAll = (search, replace) => {
+      body.replaceText(search, replace);
+      if (header) header.replaceText(search, replace);
+      if (footer) footer.replaceText(search, replace);
+    };
+
     // Formatear fecha actual
     const fechaHoy = new Date();
     const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -544,164 +554,164 @@ function reemplazarVariablesContrato(body, datos) {
 
     // Realizar reemplazos
     for (const [variable, valor] of Object.entries(reemplazos)) {
-      body.replaceText(variable, valor);
+      replaceInAll(variable, valor);
     }
 
     // Manejar codeudores
     if (datos.codeudores && datos.codeudores.length > 0) {
       // Reemplazar datos del primer codeudor
       if (datos.codeudores[0]) {
-        body.replaceText('{{NOMBRE_CODEUDOR1}}', datos.codeudores[0].nombre || '');
-        body.replaceText('{{NOMBRE-CODEUDOR}}', datos.codeudores[0].nombre || '');
-        body.replaceText('{{DOCUMENTO_CODEUDOR1}}', datos.codeudores[0].documento || '');
-        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR}}', datos.codeudores[0].documento || '');
-        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR}}', 'Colombia');
-        body.replaceText('{{CELULAR_CODEUDOR1}}', datos.codeudores[0].celular || '');
-        body.replaceText('{{CELULAR-CODEUDOR}}', datos.codeudores[0].celular || '');
-        body.replaceText('{{EMAIL_CODEUDOR1}}', datos.codeudores[0].email || '');
-        body.replaceText('{{CORREO-CODEUDOR}}', datos.codeudores[0].email || '');
+        replaceInAll('{{NOMBRE_CODEUDOR1}}', datos.codeudores[0].nombre || '');
+        replaceInAll('{{NOMBRE-CODEUDOR}}', datos.codeudores[0].nombre || '');
+        replaceInAll('{{DOCUMENTO_CODEUDOR1}}', datos.codeudores[0].documento || '');
+        replaceInAll('{{NUMERO-DE-DOCUMENTO-CODEUDOR}}', datos.codeudores[0].documento || '');
+        replaceInAll('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR}}', 'Colombia');
+        replaceInAll('{{CELULAR_CODEUDOR1}}', datos.codeudores[0].celular || '');
+        replaceInAll('{{CELULAR-CODEUDOR}}', datos.codeudores[0].celular || '');
+        replaceInAll('{{EMAIL_CODEUDOR1}}', datos.codeudores[0].email || '');
+        replaceInAll('{{CORREO-CODEUDOR}}', datos.codeudores[0].email || '');
         const parrafoC1 = `${datos.codeudores[0].nombre || ''} con C.C. N° ${datos.codeudores[0].documento || ''} de Colombia`;
-        body.replaceText('{{PARRAFO-CODEUDOR-1}}', parrafoC1);
+        replaceInAll('{{PARRAFO-CODEUDOR-1}}', parrafoC1);
         
         // Nuevas etiquetas
-        body.replaceText('{{NOMBRE-CODEUDOR-1}}', datos.codeudores[0].nombre || '');
-        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-1}}', datos.codeudores[0].documento || '');
-        body.replaceText('{{CELULAR-CODEUDOR-1}}', datos.codeudores[0].celular || '');
-        body.replaceText('{{CORREO-CODEUDOR-1}}', datos.codeudores[0].email || '');
+        replaceInAll('{{NOMBRE-CODEUDOR-1}}', datos.codeudores[0].nombre || '');
+        replaceInAll('{{NUMERO-DOCUMENTO-CODEUDOR-1}}', datos.codeudores[0].documento || '');
+        replaceInAll('{{CELULAR-CODEUDOR-1}}', datos.codeudores[0].celular || '');
+        replaceInAll('{{CORREO-CODEUDOR-1}}', datos.codeudores[0].email || '');
         
         const firmaC1 = `NOMBRE:${datos.codeudores[0].nombre || ''}\nC.C. No. ${datos.codeudores[0].documento || ''}\nDirección de Notificaciones ___________________\n\nTeléfono:${datos.codeudores[0].celular || ''}\nCorreo Electrónico: ${datos.codeudores[0].email || ''}\n`;
-        body.replaceText('{{FIRMA-CODEUDOR-1}}', firmaC1);
+        replaceInAll('{{FIRMA-CODEUDOR-1}}', firmaC1);
       }
 
       // Reemplazar datos del segundo codeudor si existe
       if (datos.codeudores[1]) {
-        body.replaceText('{{NOMBRE_CODEUDOR2}}', datos.codeudores[1].nombre || '');
-        body.replaceText('{{NOMBRE-CODEUDOR 2}}', datos.codeudores[1].nombre || '');
-        body.replaceText('{{DOCUMENTO_CODEUDOR2}}', datos.codeudores[1].documento || '');
-        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', datos.codeudores[1].documento || '');
-        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'Colombia');
-        body.replaceText('{{CELULAR_CODEUDOR2}}', datos.codeudores[1].celular || '');
-        body.replaceText('{{CELULAR-CODEUDOR-2}}', datos.codeudores[1].celular || '');
-        body.replaceText('{{EMAIL_CODEUDOR2}}', datos.codeudores[1].email || '');
-        body.replaceText('{{CORREO-CODEUDOR-2}}', datos.codeudores[1].email || '');
+        replaceInAll('{{NOMBRE_CODEUDOR2}}', datos.codeudores[1].nombre || '');
+        replaceInAll('{{NOMBRE-CODEUDOR 2}}', datos.codeudores[1].nombre || '');
+        replaceInAll('{{DOCUMENTO_CODEUDOR2}}', datos.codeudores[1].documento || '');
+        replaceInAll('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', datos.codeudores[1].documento || '');
+        replaceInAll('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'Colombia');
+        replaceInAll('{{CELULAR_CODEUDOR2}}', datos.codeudores[1].celular || '');
+        replaceInAll('{{CELULAR-CODEUDOR-2}}', datos.codeudores[1].celular || '');
+        replaceInAll('{{EMAIL_CODEUDOR2}}', datos.codeudores[1].email || '');
+        replaceInAll('{{CORREO-CODEUDOR-2}}', datos.codeudores[1].email || '');
         const parrafoC2 = `${datos.codeudores[1].nombre || ''} con C.C. N° ${datos.codeudores[1].documento || ''} de Colombia`;
-        body.replaceText('{{PARRAFO-CODEUDOR-2}}', parrafoC2);
+        replaceInAll('{{PARRAFO-CODEUDOR-2}}', parrafoC2);
         
         // Nuevas etiquetas
-        body.replaceText('{{NOMBRE-CODEUDOR-2}}', datos.codeudores[1].nombre || '');
-        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', datos.codeudores[1].documento || '');
+        replaceInAll('{{NOMBRE-CODEUDOR-2}}', datos.codeudores[1].nombre || '');
+        replaceInAll('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', datos.codeudores[1].documento || '');
         
         const firmaC2 = `NOMBRE:${datos.codeudores[1].nombre || ''}\nC.C. No. ${datos.codeudores[1].documento || ''}\nDirección de Notificaciones ___________________\n\nTeléfono:${datos.codeudores[1].celular || ''}\nCorreo Electrónico: ${datos.codeudores[1].email || ''}\n`;
-        body.replaceText('{{FIRMA-CODEUDOR-2}}', firmaC2);
+        replaceInAll('{{FIRMA-CODEUDOR-2}}', firmaC2);
       } else {
         // Limpiar variables del segundo codeudor
-        body.replaceText('{{NOMBRE_CODEUDOR2}}', 'N/A');
-        body.replaceText('{{NOMBRE-CODEUDOR 2}}', 'N/A');
-        body.replaceText('{{DOCUMENTO_CODEUDOR2}}', 'N/A');
-        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', 'N/A');
-        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'N/A');
-        body.replaceText('{{CELULAR_CODEUDOR2}}', 'N/A');
-        body.replaceText('{{CELULAR-CODEUDOR-2}}', 'N/A');
-        body.replaceText('{{EMAIL_CODEUDOR2}}', 'N/A');
-        body.replaceText('{{CORREO-CODEUDOR-2}}', 'N/A');
-        body.replaceText('{{PARRAFO-CODEUDOR-2}}', '');
+        replaceInAll('{{NOMBRE_CODEUDOR2}}', 'N/A');
+        replaceInAll('{{NOMBRE-CODEUDOR 2}}', 'N/A');
+        replaceInAll('{{DOCUMENTO_CODEUDOR2}}', 'N/A');
+        replaceInAll('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', 'N/A');
+        replaceInAll('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'N/A');
+        replaceInAll('{{CELULAR_CODEUDOR2}}', 'N/A');
+        replaceInAll('{{CELULAR-CODEUDOR-2}}', 'N/A');
+        replaceInAll('{{EMAIL_CODEUDOR2}}', 'N/A');
+        replaceInAll('{{CORREO-CODEUDOR-2}}', 'N/A');
+        replaceInAll('{{PARRAFO-CODEUDOR-2}}', '');
         
         // Nuevas etiquetas
-        body.replaceText('{{NOMBRE-CODEUDOR-2}}', '');
-        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', '');
-        body.replaceText('{{FIRMA-CODEUDOR-2}}', '');
+        replaceInAll('{{NOMBRE-CODEUDOR-2}}', '');
+        replaceInAll('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', '');
+        replaceInAll('{{FIRMA-CODEUDOR-2}}', '');
       }
 
       // Reemplazar datos del tercer codeudor si existe
       if (datos.codeudores[2]) {
-        body.replaceText('{{NOMBRE_CODEUDOR3}}', datos.codeudores[2].nombre || '');
-        body.replaceText('{{NOMBRE-CODEUDOR 3}}', datos.codeudores[2].nombre || '');
-        body.replaceText('{{DOCUMENTO_CODEUDOR3}}', datos.codeudores[2].documento || '');
-        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', datos.codeudores[2].documento || '');
-        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'Colombia');
-        body.replaceText('{{CELULAR_CODEUDOR3}}', datos.codeudores[2].celular || '');
-        body.replaceText('{{CELULAR-CODEUDOR-3}}', datos.codeudores[2].celular || '');
-        body.replaceText('{{EMAIL_CODEUDOR3}}', datos.codeudores[2].email || '');
-        body.replaceText('{{CORREO-CODEUDOR-3}}', datos.codeudores[2].email || '');
+        replaceInAll('{{NOMBRE_CODEUDOR3}}', datos.codeudores[2].nombre || '');
+        replaceInAll('{{NOMBRE-CODEUDOR 3}}', datos.codeudores[2].nombre || '');
+        replaceInAll('{{DOCUMENTO_CODEUDOR3}}', datos.codeudores[2].documento || '');
+        replaceInAll('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', datos.codeudores[2].documento || '');
+        replaceInAll('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'Colombia');
+        replaceInAll('{{CELULAR_CODEUDOR3}}', datos.codeudores[2].celular || '');
+        replaceInAll('{{CELULAR-CODEUDOR-3}}', datos.codeudores[2].celular || '');
+        replaceInAll('{{EMAIL_CODEUDOR3}}', datos.codeudores[2].email || '');
+        replaceInAll('{{CORREO-CODEUDOR-3}}', datos.codeudores[2].email || '');
         const parrafoC3 = `${datos.codeudores[2].nombre || ''} con C.C. N° ${datos.codeudores[2].documento || ''} de Colombia`;
-        body.replaceText('{{PARRAFO-CODEUDOR-3}}', parrafoC3);
+        replaceInAll('{{PARRAFO-CODEUDOR-3}}', parrafoC3);
         
         // Nuevas etiquetas
-        body.replaceText('{{NOMBRE-CODEUDOR-3}}', datos.codeudores[2].nombre || '');
-        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', datos.codeudores[2].documento || '');
+        replaceInAll('{{NOMBRE-CODEUDOR-3}}', datos.codeudores[2].nombre || '');
+        replaceInAll('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', datos.codeudores[2].documento || '');
         
         const firmaC3 = `NOMBRE:${datos.codeudores[2].nombre || ''}\nC.C. No. ${datos.codeudores[2].documento || ''}\nDirección de Notificaciones ___________________\n\nTeléfono:${datos.codeudores[2].celular || ''}\nCorreo Electrónico: ${datos.codeudores[2].email || ''}\n`;
-        body.replaceText('{{FIRMA-CODEUDOR-3}}', firmaC3);
+        replaceInAll('{{FIRMA-CODEUDOR-3}}', firmaC3);
       } else {
         // Limpiar variables del tercer codeudor
-        body.replaceText('{{NOMBRE_CODEUDOR3}}', 'N/A');
-        body.replaceText('{{NOMBRE-CODEUDOR 3}}', 'N/A');
-        body.replaceText('{{DOCUMENTO_CODEUDOR3}}', 'N/A');
-        body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', 'N/A');
-        body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'N/A');
-        body.replaceText('{{CELULAR_CODEUDOR3}}', 'N/A');
-        body.replaceText('{{CELULAR-CODEUDOR-3}}', 'N/A');
-        body.replaceText('{{EMAIL_CODEUDOR3}}', 'N/A');
-        body.replaceText('{{CORREO-CODEUDOR-3}}', 'N/A');
-        body.replaceText('{{PARRAFO-CODEUDOR-3}}', '');
+        replaceInAll('{{NOMBRE_CODEUDOR3}}', 'N/A');
+        replaceInAll('{{NOMBRE-CODEUDOR 3}}', 'N/A');
+        replaceInAll('{{DOCUMENTO_CODEUDOR3}}', 'N/A');
+        replaceInAll('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+        replaceInAll('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+        replaceInAll('{{CELULAR_CODEUDOR3}}', 'N/A');
+        replaceInAll('{{CELULAR-CODEUDOR-3}}', 'N/A');
+        replaceInAll('{{EMAIL_CODEUDOR3}}', 'N/A');
+        replaceInAll('{{CORREO-CODEUDOR-3}}', 'N/A');
+        replaceInAll('{{PARRAFO-CODEUDOR-3}}', '');
         
         // Nuevas etiquetas
-        body.replaceText('{{NOMBRE-CODEUDOR-3}}', '');
-        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', '');
-        body.replaceText('{{FIRMA-CODEUDOR-3}}', '');
+        replaceInAll('{{NOMBRE-CODEUDOR-3}}', '');
+        replaceInAll('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', '');
+        replaceInAll('{{FIRMA-CODEUDOR-3}}', '');
       }
     } else {
       // Si no hay codeudores, limpiar todas las variables
-      body.replaceText('{{NOMBRE_CODEUDOR1}}', 'N/A');
-      body.replaceText('{{NOMBRE-CODEUDOR}}', 'N/A');
-      body.replaceText('{{DOCUMENTO_CODEUDOR1}}', 'N/A');
-      body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR}}', 'N/A');
-      body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR}}', 'N/A');
-      body.replaceText('{{CELULAR_CODEUDOR1}}', 'N/A');
-      body.replaceText('{{CELULAR-CODEUDOR}}', 'N/A');
-      body.replaceText('{{EMAIL_CODEUDOR1}}', 'N/A');
-      body.replaceText('{{CORREO-CODEUDOR}}', 'N/A');
-      body.replaceText('{{NOMBRE_CODEUDOR2}}', 'N/A');
-      body.replaceText('{{NOMBRE-CODEUDOR 2}}', 'N/A');
-      body.replaceText('{{DOCUMENTO_CODEUDOR2}}', 'N/A');
-      body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', 'N/A');
-      body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'N/A');
-      body.replaceText('{{CELULAR_CODEUDOR2}}', 'N/A');
-      body.replaceText('{{CELULAR-CODEUDOR-2}}', 'N/A');
-      body.replaceText('{{EMAIL_CODEUDOR2}}', 'N/A');
-      body.replaceText('{{CORREO-CODEUDOR-2}}', 'N/A');
-      body.replaceText('{{NOMBRE_CODEUDOR3}}', 'N/A');
-      body.replaceText('{{NOMBRE-CODEUDOR 3}}', 'N/A');
-      body.replaceText('{{DOCUMENTO_CODEUDOR3}}', 'N/A');
-      body.replaceText('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', 'N/A');
-      body.replaceText('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'N/A');
-      body.replaceText('{{CELULAR_CODEUDOR3}}', 'N/A');
-      body.replaceText('{{CELULAR-CODEUDOR-3}}', 'N/A');
-      body.replaceText('{{EMAIL_CODEUDOR3}}', 'N/A');
-      body.replaceText('{{CORREO-CODEUDOR-3}}', 'N/A');
-      body.replaceText('{{PARRAFO-CODEUDOR-1}}', '');
-      body.replaceText('{{PARRAFO-CODEUDOR-2}}', '');
-      body.replaceText('{{PARRAFO-CODEUDOR-3}}', '');
+      replaceInAll('{{NOMBRE_CODEUDOR1}}', 'N/A');
+      replaceInAll('{{NOMBRE-CODEUDOR}}', 'N/A');
+      replaceInAll('{{DOCUMENTO_CODEUDOR1}}', 'N/A');
+      replaceInAll('{{NUMERO-DE-DOCUMENTO-CODEUDOR}}', 'N/A');
+      replaceInAll('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR}}', 'N/A');
+      replaceInAll('{{CELULAR_CODEUDOR1}}', 'N/A');
+      replaceInAll('{{CELULAR-CODEUDOR}}', 'N/A');
+      replaceInAll('{{EMAIL_CODEUDOR1}}', 'N/A');
+      replaceInAll('{{CORREO-CODEUDOR}}', 'N/A');
+      replaceInAll('{{NOMBRE_CODEUDOR2}}', 'N/A');
+      replaceInAll('{{NOMBRE-CODEUDOR 2}}', 'N/A');
+      replaceInAll('{{DOCUMENTO_CODEUDOR2}}', 'N/A');
+      replaceInAll('{{NUMERO-DE-DOCUMENTO-CODEUDOR-2}}', 'N/A');
+      replaceInAll('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-2}}', 'N/A');
+      replaceInAll('{{CELULAR_CODEUDOR2}}', 'N/A');
+      replaceInAll('{{CELULAR-CODEUDOR-2}}', 'N/A');
+      replaceInAll('{{EMAIL_CODEUDOR2}}', 'N/A');
+      replaceInAll('{{CORREO-CODEUDOR-2}}', 'N/A');
+      replaceInAll('{{NOMBRE_CODEUDOR3}}', 'N/A');
+      replaceInAll('{{NOMBRE-CODEUDOR 3}}', 'N/A');
+      replaceInAll('{{DOCUMENTO_CODEUDOR3}}', 'N/A');
+      replaceInAll('{{NUMERO-DE-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+      replaceInAll('{{PAIS-DE-EXPEDICION-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+      replaceInAll('{{CELULAR_CODEUDOR3}}', 'N/A');
+      replaceInAll('{{CELULAR-CODEUDOR-3}}', 'N/A');
+      replaceInAll('{{EMAIL_CODEUDOR3}}', 'N/A');
+      replaceInAll('{{CORREO-CODEUDOR-3}}', 'N/A');
+      replaceInAll('{{PARRAFO-CODEUDOR-1}}', '');
+      replaceInAll('{{PARRAFO-CODEUDOR-2}}', '');
+      replaceInAll('{{PARRAFO-CODEUDOR-3}}', '');
       
       // Nuevas etiquetas
-      body.replaceText('{{NOMBRE-CODEUDOR-1}}', '');
-      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-1}}', '');
-      body.replaceText('{{CELULAR-CODEUDOR-1}}', '');
-      body.replaceText('{{CORREO-CODEUDOR-1}}', '');
-      body.replaceText('{{NOMBRE-CODEUDOR-2}}', '');
-      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', '');
-      body.replaceText('{{NOMBRE-CODEUDOR-3}}', '');
-      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', '');
-      body.replaceText('{{FIRMA-CODEUDOR-1}}', '');
-      body.replaceText('{{FIRMA-CODEUDOR-2}}', '');
-      body.replaceText('{{FIRMA-CODEUDOR-3}}', '');
+      replaceInAll('{{NOMBRE-CODEUDOR-1}}', '');
+      replaceInAll('{{NUMERO-DOCUMENTO-CODEUDOR-1}}', '');
+      replaceInAll('{{CELULAR-CODEUDOR-1}}', '');
+      replaceInAll('{{CORREO-CODEUDOR-1}}', '');
+      replaceInAll('{{NOMBRE-CODEUDOR-2}}', '');
+      replaceInAll('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', '');
+      replaceInAll('{{NOMBRE-CODEUDOR-3}}', '');
+      replaceInAll('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', '');
+      replaceInAll('{{FIRMA-CODEUDOR-1}}', '');
+      replaceInAll('{{FIRMA-CODEUDOR-2}}', '');
+      replaceInAll('{{FIRMA-CODEUDOR-3}}', '');
     }
     
     // Adicionales que están fuera de {{}} o irregulares en tu plantilla:
-    body.replaceText('\\(fecha de inicio de contrato\\)', fechaInicioFormateada);
-    body.replaceText('20\\(00\\)', anoActual.toString());
-    body.replaceText('2\\(000\\)', anoActual.toString());
-    body.replaceText('\\{\\{20\\(00\\)\\}\\}', anoActual.toString());
+    replaceInAll('\\(fecha de inicio de contrato\\)', fechaInicioFormateada);
+    replaceInAll('20\\(00\\)', anoActual.toString());
+    replaceInAll('2\\(000\\)', anoActual.toString());
+    replaceInAll('\\{\\{20\\(00\\)\\}\\}', anoActual.toString());
 
     console.log('Variables reemplazadas exitosamente');
 
@@ -1961,3 +1971,5 @@ function handleVerificarEstadoFirma(datos) {
     return { success: false, message: err.toString() };
   }
 }
+
+
