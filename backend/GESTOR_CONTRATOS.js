@@ -698,6 +698,7 @@ function reemplazarVariablesContrato(body, datos) {
     // Adicionales que están fuera de {{}} o irregulares en tu plantilla:
     body.replaceText('\\(fecha de inicio de contrato\\)', fechaInicioFormateada);
     body.replaceText('20\\(00\\)', anoActual.toString());
+    body.replaceText('2\\(000\\)', anoActual.toString());
     body.replaceText('\\{\\{20\\(00\\)\\}\\}', anoActual.toString());
 
     console.log('Variables reemplazadas exitosamente');
