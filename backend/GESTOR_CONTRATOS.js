@@ -523,6 +523,9 @@ function reemplazarVariablesContrato(body, datos) {
       '{{PRECIO-DEL-CANON-EN-NUMERO}}': formatearMoneda(datos.contrato.canon),
       '{{CANON_LETRAS}}': canonTexto,
       '{{FECHA_INICIO}}': fechaInicioFormateada,
+      '{{fecha de inicio de contrato}}': fechaInicioFormateada,
+      '{{fecha-de-inicio-de-contrato}}': fechaInicioFormateada,
+      '{{FECHA_FINAL}}': datos.contrato.fechaFinal || '',
       '{{DURACION_CONTRATO}}': datos.contrato.duracion || '12 meses',
       '{{numero-de-meses-del-contrato-en-numero}}': '12',
       '{{numero-de-meses-del-contrato-en-letra}}': 'DOCE',
@@ -695,6 +698,7 @@ function reemplazarVariablesContrato(body, datos) {
     // Adicionales que están fuera de {{}} o irregulares en tu plantilla:
     body.replaceText('\\(fecha de inicio de contrato\\)', fechaInicioFormateada);
     body.replaceText('20\\(00\\)', anoActual.toString());
+    body.replaceText('\\{\\{20\\(00\\)\\}\\}', anoActual.toString());
 
     console.log('Variables reemplazadas exitosamente');
 
