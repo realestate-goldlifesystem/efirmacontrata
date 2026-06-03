@@ -361,6 +361,33 @@ function recopilarDatosContrato(cdr) {
         console.log('Error parseando codeudores:', e);
       }
     }
+    
+    // Si no hay codeudores en la hoja, intentar extraerlos directamente del Cerebro
+    if (codeudores.length === 0 && datosCerebro) {
+      const codeudoresLoc = datosCerebro.indexOf('CODEUDORES:');
+      if (codeudoresLoc !== -1) {
+        const codesStr = datosCerebro.substring(codeudoresLoc);
+        const blocks = codesStr.split(/\[CODEUDOR \d+\]/);
+        for (let i = 1; i < blocks.length; i++) {
+          const block = blocks[i];
+          const matchName = block.match(/NOMBRES::\s*(.+)/);
+          const matchType = block.match(/TIPO DE IDENTIFICACIÓN::\s*(.+)/);
+          const matchDoc = block.match(/NÚMERO DE IDENTIFICACIÓN::\s*(.+)/);
+          const matchPhone = block.match(/CELULAR::\s*(.+)/);
+          const matchEmail = block.match(/CORREO::\s*(.+)/);
+          
+          if (matchName || matchDoc) {
+            codeudores.push({
+              nombre: matchName ? matchName[1].trim() : '',
+              tipoDocumento: matchType ? matchType[1].trim() : '',
+              documento: matchDoc ? matchDoc[1].trim() : '',
+              celular: matchPhone ? matchPhone[1].trim() : '',
+              email: matchEmail ? matchEmail[1].trim() : ''
+            });
+          }
+        }
+      }
+    }
 
     // Verificar datos minimos requeridos
     if (!inquilino.nombre || !propietario.nombre || !inmueble.direccion) {
