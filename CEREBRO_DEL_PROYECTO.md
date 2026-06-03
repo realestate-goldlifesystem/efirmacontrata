@@ -46,5 +46,10 @@ Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los
 2. **Conexión Directa:** Si no estás seguro de cómo se llama una columna en la hoja de cálculo, no adivines ni dañes el código. Ejecuta scripts de pruebas en la consola local para consultar los datos en vivo.
 3. **Privacidad Extrema:** Ciertas credenciales (como los `.json` del OCR de Google Cloud) NUNCA deben subir a GitHub. Verifica que tu `.gitignore` los esté bloqueando.
 4. **Cero Dependencias de Celdas:** Recuerda que la "fuente de la verdad" para crear contratos NO son las celdas en blanco de Google Sheets, sino el "Documento Cerebro" alojado en Drive. No intentes modificar la lógica para guardar variables del contrato en columnas de Excel.
+5. **Cuidado con Clasp y Frontend:** Clasp subirá POR DEFECTO todos los archivos `.js` o `.html` al backend de Apps Script. Si subes código puro del frontend (como `frontend/js/multimedia.js`) al backend, al evaluar variables globales como `document` o `window` el script principal (`onOpen`) explotará con un `ReferenceError` y desaparecerán los menús personalizados en Sheets. **Regla de oro:** Mantén siempre `frontend/**` rigurosamente en tu `.claspignore` (cuidado con dejar espacios en blanco al final de la línea en Windows).
+6. **Manejo de Etiquetas del Contrato:** En `GESTOR_CONTRATOS.js`, ten en cuenta lo siguiente:
+   - Los reemplazos de `header` y `footer` DEBEN ir en un bloque `try/catch` porque Google Docs arroja excepciones y crashea el script si se aplica "Primera página diferente".
+   - Las fechas dobles (ej. `2026 de 2026`) suceden porque la plantilla suele tener `{{fecha}} de 2(000)`. Se deben absorber esas cadenas compuestas (junto con su año) ANTES del reemplazo del año suelto.
+   - La etiqueta de pie de página para identificar el contrato es `{{CDR}}`, pero el valor que el sistema inyecta allí debe ser preferiblemente la columna `ID DE REGISTRO` (usando el CDR bruto solo como plan B).
 
 ¡Actúa con seguridad y confianza, y siempre infórmale al usuario qué nivel de despliegue realizaste!

@@ -1,0 +1,182 @@
+Plan Maestro del Proyecto: Elaboración de Contratos de
+Arrendamiento Sistematizados
+1. Objetivo General
+Crear un sistema automatizado de recolección de datos y documentación para la elaboración
+de contratos de arrendamiento, validando pagos, generando contratos automáticos y
+notificando a las partes.
+
+2. Flujo General del Proyecto
+Formulario 1 - Inquilino
+●​ Recolectar datos personales:​
+○​ Nombres y Apellidos.​
+○​ Cédula (doble ingreso para validación).​
+○​ Adjuntar imagen de cédula (ambos lados) para lectura automática vía OCR:​
+■​ Campos extraídos automáticamente por OCR:​
+■​ Nombres y apellidos.​
+■​ Número de cédula.​
+■​ Fecha de expedición.​
+■​ Lugar de expedición.​
+○​ Correo electrónico (con validación).​
+○​ Número de celular (con validación).​
+○​ Fecha de inicio del contrato.​
+●​ Confirmación de datos previa visualización por el usuario.​
+
+●​ Una vez validados y confirmados los datos, habilitar link de pago vía Wompi.​
+●​ Si el pago es exitoso:​
+○​ Enviar notificación al propietario con enlace al Formulario 2.​
+
+Formulario 2 - Codeudor
+●​ Recolectar datos personales:​
+○​ Nombres y Apellidos.​
+○​ Cédula (doble ingreso para validación).​
+○​ Adjuntar imagen de cédula (ambos lados) para lectura automática vía OCR:​
+■​ Campos extraídos automáticamente por OCR:​
+■​ Nombres y apellidos.​
+■​ Número de cédula.​
+■​ Fecha de expedición.​
+■​ Lugar de expedición.​
+○​ Correo electrónico (con validación).​
+○​ Número de celular (con validación).​
+
+Formulario 3 - Propietario
+●​ Adjuntar imagen de cédula (ambos lados) para lectura automática vía OCR:​
+○​ Campos extraídos automáticamente por OCR:​
+■​ Nombres y apellidos.​
+■​ Número de cédula.​
+■​ Fecha de expedición.​
+
+■​ Lugar de expedición.​
+●​ Adjuntar Certificado de Tradición y Libertad:​
+○​ OCR obligatorio para extraer automáticamente:​
+■​ Dirección del inmueble.​
+■​ Número PIN del certificado.​
+■​ Nombres de los propietarios vigentes.​
+■​ Si detecta más de dos propietarios:​
+■​ Generar automáticamente un formulario adicional que permitirá
+descargar un documento especial. Este documento deberá ser
+firmado por el primer y segundo propietario (o lo que sean según
+el caso) y luego cargado nuevamente en el sistema a través de un
+buzón de documentos. Además, se notificará a cada propietario
+para que realice esta acción de forma escalonada.
+(Correspondería a un posible Formulario 4).​
+●​ Adjuntar: SARLAFT diligenciado (buzón documental, sin OCR).
+●​ Certificado bancario (buzón documental, sin OCR).​
+●​ Recibos públicos (buzón documental, sin OCR). El usuario seleccionará los tipos de
+recibos a cargar (agua, luz, gas, otros) y, según su elección, se desplegarán los campos
+correspondientes para adjuntar cada archivo.​
+●​ Comprobantes de los servicios públicos (buzón documental, sin OCR). El usuario al
+haber seleccionado los tipos de recibos a cargar (agua, luz, gas, otros) y, según su
+elección, se desplegarán los campos correspondientes para adjuntar cada archivo
+debajo del boton buzon anterior del recibo.​
+●​ Última CUENTA DE COBRO recibo de administración (buzón documental, sin OCR).​
+●​ Manual de convivencia (buzón documental, sin OCR).​
+
+Validación de pago
+●​ Integración con pasarela Wompi vía API/Webhook.​
+●​ Validación automática de la firma del pago recibido.​
+
+●​ Si no se completa el formulario del propietario en 72 horas:​
+○​ Opción de notificación por correo para devolución manual del dinero.​
+●​ Si todo está en orden:​
+○​ Generación automática del contrato en PDF.​
+○​ Envío de contrato al inquilino, propietario y codeudor, con copia al correo del
+administrador (Leo).​
+
+3. Integración de OCR (Google Vision API)
+Implementación vigente (no futura):
+Documento
+
+OCR
+Aplicado
+
+Campos
+Extraídos
+
+Observaciones
+
+Cédula Colombiana
+(Inquilino/codeudor/Propietario)
+
+Sí
+
+Nombres,
+Apellidos,
+Cédula,
+Fecha/Lugar
+Expedición
+
+Uso obligatorio
+
+Certificado de Tradición y Libertad
+
+Sí
+
+Dirección, PIN
+del Certificado,
+Propietarios
+vigentes
+
+Si detecta más de dos
+propietarios: generar
+formulario adicional
+para documento
+especial. Solo aplica
+Bogotá por ahora.
+
+Recibos Públicos / Administración /
+Manual Convivencia / SARLAFT /
+Certificado Bancario
+
+No
+
+N/A
+
+Solo buzón documental
+(adjuntar archivo)
+
+4. Observaciones Generales
+●​ La integración con Google Cloud Vision API se realizará mediante Apps Script.​
+
+●​ Se aprovechará el plan gratuito de hasta 1,000 documentos al mes (200 usos estimados
+mensuales sin costo).​
+●​ Costos adicionales sólo si se excede ese límite.​
+●​ El OCR se incorpora como funcionalidad vigente del proyecto, no como mejora futura.​
+●​ Los documentos no aptos para OCR serán tratados como simples archivos adjuntos
+para soporte documental.​
+
+5. Roadmap Técnico Sugerido
+Fase 1: Preparación del Entorno y Herramientas (Semana 1-2)
+●​ Configuración de entorno en Google Apps Script.​
+●​ Configuración de Google Cloud Vision API.​
+●​ Webhooks con Wompi.​
+●​ Estructuración de carpetas y hojas de cálculo.​
+
+Fase 2: Desarrollo de Formularios (Semana 3-4)
+●​ Desarrollo de Formulario Inquilino.​
+●​ Integración de pagos con Wompi.​
+●​ Desarrollo de Formulario Codeudor.​
+●​ Desarrollo de Formulario Propietario con OCR y carga de documentos.​
+
+Fase 3: Automatización del Contrato (Semana 5-6)
+●​ Generación de contrato en PDF.​
+●​ Envío automático de correos.​
+●​ Control de tiempo para devolución manual si es necesario.​
+
+Fase 4: Pruebas (Semana 7)
+●​ Pruebas unitarias y de integración.​
+●​ Pruebas de OCR y validación de pagos.​
+●​ Ajuste de errores detectados.​
+
+Fase 5: Puesta en Marcha (Semana 8)
+●​ Pruebas reales.​
+●​ Monitoreo y ajustes post-lanzamiento.​
+
+6. Consideraciones Finales
+●​ La devolución de dinero es manual por el momento.​
+●​ Validación automática de pagos mediante firma Wompi.​
+●​ Generación automática de contratos.​
+●​ Envío de notificaciones y copias a administrador.​
+
+Fin del Documento
+
+

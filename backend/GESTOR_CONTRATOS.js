@@ -398,6 +398,7 @@ function recopilarDatosContrato(cdr) {
 
     const datosCompletos = {
       cdr: cdr,
+      idRegistro: obtenerValor('ID DE REGISTRO') || cdr,
       fechaGeneracion: new Date().toISOString(),
       inquilino: inquilino,
       propietario: propietario,
@@ -432,9 +433,14 @@ function reemplazarVariablesContrato(doc, datos) {
     const footer = doc.getFooter();
     
     const replaceInAll = (search, replace) => {
-      body.replaceText(search, replace);
-      if (header) header.replaceText(search, replace);
-      if (footer) footer.replaceText(search, replace);
+      try { body.replaceText(search, replace); } catch(e) {}
+      try { if (header) header.replaceText(search, replace); } catch(e) { console.log('Error reemplazando en header:', e); }
+      try { if (footer) footer.replaceText(search, replace); } catch(e) { console.log('Error reemplazando en footer:', e); }
+      
+      // Intentar también en headers/footers de primera página si existen
+      try {
+        const firstPageHeader = doc.getHeader(); // Aunque getHeader da el por defecto, dejamos un try para el futuro
+      } catch(e) {}
     };
 
     // Formatear fecha actual
@@ -447,12 +453,35 @@ function reemplazarVariablesContrato(doc, datos) {
 
     // Formatear fecha de inicio
     let fechaInicioFormateada = datos.contrato.fechaInicio;
+    let fechaFinalFormateada = datos.contrato.fechaFinal || '';
+    
     if (datos.contrato.fechaInicio) {
-      const fechaInicio = new Date(datos.contrato.fechaInicio);
-      const diaInicio = fechaInicio.getDate();
-      const mesInicio = meses[fechaInicio.getMonth()];
-      const anoInicio = fechaInicio.getFullYear();
-      fechaInicioFormateada = `${diaInicio} de ${mesInicio} de ${anoInicio}`;
+      // Intentar parsear la fecha de inicio
+      // La fecha del sheet puede venir como objeto Date o como string YYYY-MM-DD
+      let fechaInicio;
+      if (datos.contrato.fechaInicio instanceof Date) {
+        fechaInicio = datos.contrato.fechaInicio;
+      } else {
+        // Asumiendo formato YYYY-MM-DD si es string, añadimos T12:00:00 para evitar desface horario
+        fechaInicio = new Date(datos.contrato.fechaInicio.toString().includes('T') ? datos.contrato.fechaInicio : datos.contrato.fechaInicio + 'T12:00:00');
+      }
+      
+      if (!isNaN(fechaInicio.getTime())) {
+        const diaInicio = fechaInicio.getDate();
+        const mesInicio = meses[fechaInicio.getMonth()];
+        const anoInicio = fechaInicio.getFullYear();
+        fechaInicioFormateada = `${diaInicio} de ${mesInicio} de ${anoInicio}`;
+        
+        // Calcular fecha final (sumar 12 meses menos 1 día)
+        const fechaFinal = new Date(fechaInicio.getTime());
+        fechaFinal.setFullYear(fechaFinal.getFullYear() + 1);
+        fechaFinal.setDate(fechaFinal.getDate() - 1);
+        
+        const diaFinal = fechaFinal.getDate();
+        const mesFinal = meses[fechaFinal.getMonth()];
+        const anoFinal = fechaFinal.getFullYear();
+        fechaFinalFormateada = `${diaFinal} de ${mesFinal} de ${anoFinal}`;
+      }
     }
 
     // Formatear canon en texto
@@ -462,7 +491,7 @@ function reemplazarVariablesContrato(doc, datos) {
     // Mapa de reemplazos
     const reemplazos = {
       // Datos del contrato
-      '{{CDR}}': datos.cdr || '',
+      '{{CDR}}': datos.idRegistro || datos.cdr || '',
       '{{numero-de-solicitud-del-aprobado}}': datos.cdr || '',
       '{{FECHA_HOY}}': `${diaActual} de ${mesActual} de ${anoActual}`,
       '{{DIA_ACTUAL}}': diaActual,
@@ -535,8 +564,9 @@ function reemplazarVariablesContrato(doc, datos) {
       '{{FECHA_INICIO}}': fechaInicioFormateada,
       '{{fecha de inicio de contrato}}': fechaInicioFormateada,
       '{{fecha-de-inicio-de-contrato}}': fechaInicioFormateada,
-      '{{FECHA_FINAL}}': datos.contrato.fechaFinal || '',
-      '{{LISTA-NOMBRES-CODEUDORES}}': (datos.codeudores || []).map(c => `${c.nombre || ''} ${c.documento || ''}`).join('\n').trim(),
+      '{{FECHA_FINAL}}': fechaFinalFormateada,
+      '{{fecha final del contrato}}': fechaFinalFormateada,
+      '{{LISTA-NOMBRES-CODEUDORES}}': (datos.codeudores || []).map(c => `${c.nombre || ''} - C.C. ${c.documento || ''}`).join('\n').trim(),
       '{{LISTA-FIRMAS-CODEUDORES}}': (datos.codeudores || []).map(c => `NOMBRE: ${c.nombre || ''}\nC.C. No. ${c.documento || ''}\nDirección de Notificaciones ___________________\n\nTeléfono: ${c.celular || ''}\nCorreo Electrónico: ${c.email || ''}`).join('\n\n\n'),
       '{{DURACION_CONTRATO}}': datos.contrato.duracion || '12 meses',
       '{{numero-de-meses-del-contrato-en-numero}}': '12',
@@ -708,6 +738,11 @@ function reemplazarVariablesContrato(doc, datos) {
     }
     
     // Adicionales que están fuera de {{}} o irregulares en tu plantilla:
+    
+    // Absorber casos dobles de año en la plantilla
+    replaceInAll('{{fecha de inicio de contrato}} de 2\\(000\\)', fechaInicioFormateada);
+    replaceInAll('{{fecha de inicio de contrato}} de 20\\(00\\)', fechaInicioFormateada);
+    
     replaceInAll('\\(fecha de inicio de contrato\\)', fechaInicioFormateada);
     replaceInAll('20\\(00\\)', anoActual.toString());
     replaceInAll('2\\(000\\)', anoActual.toString());

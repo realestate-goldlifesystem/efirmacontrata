@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Revisión - E-FirmaContrata</title>
+    <!-- TailwindCSS y Config -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="../config.js"></script>
+    <style>
+        :root {
+            --primary: #FFD700;
+            --primary-dark: #ccac00;
+            --dark: #0F0F0F;
+            --darker: #0a0a0a;
+            --light: #f4f4f4;
+            --gray: #888888;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--darker);
+            color: var(--light);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .header {
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            background-color: var(--dark);
+            border-bottom: 2px solid var(--primary);
+        }
+        .header h1 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 24px;
+        }
+        .container {
+            max-width: 800px;
+            width: 90%;
+            margin: 40px auto;
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #222;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(255, 215, 0, 0.2);
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+        }
+        .subtitle {
+            color: var(--gray);
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #e6c200 100%);
+            color: var(--darker);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+        .pdf-viewer {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--light);
+            border: 1px solid var(--gray);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--dark);
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid #333;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        textarea {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .loader {
+            display: none;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>E-FirmaContrata</h1>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <div class="status-badge" id="badgeEstado">Verificando...</div>
+        <h2 class="title">Contrato de Arrendamiento</h2>
+        <p class="subtitle" id="subtituloPortal">Por favor, espera mientras cargamos los detalles de tu contrato.</p>
+
+        <!-- Aquí cargaremos el PDF del contrato de forma pública -->
+        <div class="pdf-viewer" id="pdfViewer">
+            <div style="text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 15px;">⏳</div>
+                <div>Buscando documento...</div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 15px; display: none;" id="boxAcciones">
+            <button class="btn-secondary" id="btnCambios" onclick="abrirModal()">Solicitar Cambios</button>
+            <a href="#" class="btn-primary" id="btnFirmar">Proceder a Firmar</a>
+        </div>
+    </div>
+
+    <!-- Modal para Solicitar Cambios -->
+    <div class="modal-overlay" id="modalCambios">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; color: var(--primary);">Solicitud de Modificación</h3>
+            <p style="color: var(--gray); font-size: 14px; margin-bottom: 20px;">
+                Por favor, describe detalladamente qué sección o cláusula del contrato deseas que sea revisada. 
+                Esta observación quedará registrada en nuestra bitácora para transparencia de ambas partes.
+            </p>
+            <textarea id="txtObservaciones" rows="5" placeholder="Ej: Solicito que se ajuste la cláusula quinta sobre..."></textarea>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-primary" id="btnEnviarCambios" onclick="enviarObservaciones()">Enviar Solicitud</button>
+            </div>
+            <div id="modalLoading" class="loader"></div>
+            <div id="modalMessage" style="margin-top: 15px; font-size: 14px; text-align: center;"></div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const cdr = urlParams.get('cdr');
+        let currentDocId = '';
+        // Puedes agregar una validación de quién es el usuario si tienes ese parámetro
+        const actor = urlParams.get('actor') || 'Inquilino/Propietario'; 
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const viewer = document.getElementById('pdfViewer');
+            const badge = document.getElementById('badgeEstado');
+            const boxAcciones = document.getElementById('boxAcciones');
+            const btnFirmar = document.getElementById('btnFirmar');
+            
+            if (!cdr) {
+                viewer.innerHTML = '<div style="color: #ff4444;">Código de registro (CDR) no proporcionado.</div>';
+                badge.style.display = 'none';
+                return;
+            }
+
+            try {
+                // LLamar API pública de Apps Script
+                const url = CONFIG.API_URL + '?accion=obtenerContratoFirmante&cdr=' + encodeURIComponent(cdr);
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.success && data.previewUrl) {
+                    badge.textContent = 'Pendiente de Revisión';
+                    badge.style.background = 'rgba(255, 215, 0, 0.2)';
+                    badge.style.color = 'var(--primary)';
+                    
+                    // Extraer docId de previewUrl
+                    // Ejemplo: https://docs.google.com/document/d/1XyZ.../preview
+                    const match = data.previewUrl.match(/\/d\/([a-zA-Z0-9-_]+)\//);
+                    if (match && match[1]) {
+                        currentDocId = match[1];
+                        btnFirmar.href = `../sala_firmas.html?docId=${currentDocId}&cdr=${encodeURIComponent(cdr)}`;
+                    }
+
+                    // Mostrar iframe
+                    viewer.innerHTML = `<iframe src="${data.previewUrl}" width="100%" height="100%" style="border:none; border-radius:8px;"></iframe>`;
+                    boxAcciones.style.display = 'flex';
+                } else {
+                    badge.textContent = 'Error';
+                    badge.style.background = 'rgba(255, 0, 0, 0.2)';
+                    badge.style.color = '#ff4444';
+                    viewer.innerHTML = `<div style="color: #ff4444;">${data.message || 'No se pudo cargar el contrato. Verifica el CDR.'}</div>`;
+                }
+            } catch(e) {
+                viewer.innerHTML = `<div style="color: #ff4444;">Error de red al conectar con el servidor.</div>`;
+                console.error(e);
+            }
+        });
+
+        // Funciones del Modal
+        function abrirModal() {
+            document.getElementById('modalCambios').style.display = 'flex';
+            document.getElementById('txtObservaciones').value = '';
+            document.getElementById('modalMessage').innerHTML = '';
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalCambios').style.display = 'none';
+        }
+
+        async function enviarObservaciones() {
+            const obs = document.getElementById('txtObservaciones').value.trim();
+            if (!obs) {
+                alert("Por favor ingresa tu observación antes de enviar.");
+                return;
+            }
+
+            const btnEnviar = document.getElementById('btnEnviarCambios');
+            const loader = document.getElementById('modalLoading');
+            const msgBox = document.getElementById('modalMessage');
+
+            btnEnviar.style.display = 'none';
+            loader.style.display = 'block';
+            msgBox.innerHTML = '';
+
+            try {
+                const payload = {
+                    accion: 'registrarMensajeBitacora',
+                    cdr: cdr,
+                    autor: actor,
+                    mensaje: obs
+                };
+
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    msgBox.innerHTML = '<span style="color: var(--primary);">✅ Tu solicitud ha sido registrada en la bitácora de negociación. Nos pondremos en contacto contigo.</span>';
+                    setTimeout(() => {
+                        cerrarModal();
+                        document.getElementById('badgeEstado').textContent = 'Con Observaciones';
+                    }, 3000);
+                } else {
+                    msgBox.innerHTML = '<span style="color: #ff4444;">❌ Error: ' + result.message + '</span>';
+                    btnEnviar.style.display = 'block';
+                }
+            } catch (error) {
+                msgBox.innerHTML = '<span style="color: #ff4444;">❌ Error de conexión. Intenta de nuevo.</span>';
+                btnEnviar.style.display = 'block';
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
