@@ -803,11 +803,23 @@
 
         const container = $('estadoAprobaciones');
         
-        // 1. Calcular el estado final de cada parte
+        // 0. Encontrar la versión máxima actual
+        let currentVersion = 1;
+        estados.forEach(est => {
+            if (est.version && est.version > currentVersion) {
+                currentVersion = est.version;
+            }
+        });
+
+        // 1. Calcular el estado final de cada parte SOLO para la versión actual
         const estadosFinales = {};
         estados.forEach(est => {
            if(est.parte !== 'ADMIN') {
-              estadosFinales[est.parte] = est.estado;
+              // Si el voto no es de la versión actual, lo ignoramos para estados finales (queda pendiente)
+              const v = est.version || 1;
+              if (v === currentVersion) {
+                  estadosFinales[est.parte] = est.estado;
+              }
            }
         });
 
@@ -857,7 +869,7 @@
                   <div class="chat-bubble ${bubbleClass}">
                     <div class="chat-bubble-header">
                       <span class="chat-bubble-name">${escapeHTML(est.parte || 'Usuario')}</span>
-                      <span class="chat-bubble-time">${escapeHTML(fechaFormat)}</span>
+                      <span class="chat-bubble-time">${escapeHTML(fechaFormat)} <strong style="color:#fbbf24;">(v${est.version || 1})</strong></span>
                     </div>
                     <div class="chat-bubble-body">
                       ${comentarios}
@@ -897,7 +909,7 @@
                     <div style="border-left: 3px solid ${colorParte}; padding-left: 12px; margin-bottom: 12px; background: #f9fafb; padding-top: 8px; padding-bottom: 8px; padding-right: 8px; border-radius: 0 6px 6px 0;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
                             <strong style="color: ${colorParte}; font-size: 0.9rem;">${escapeHTML(est.parte)}</strong>
-                            <span style="color: #9ca3af; font-size: 0.75rem;">${est.fecha} ${est.hora || ''}</span>
+                            <span style="color: #9ca3af; font-size: 0.75rem;">${est.fecha} ${est.hora || ''} <strong style="color:#f59e0b;">(v${est.version || 1})</strong></span>
                         </div>
                         <div style="font-size: 0.8rem; font-weight: bold; color: #4b5563; margin-bottom: 4px;">${est.estado}</div>
                         ${est.comentarios ? `<div style="font-size: 0.85rem; color: #1f2937; font-style: italic; background: white; padding: 6px; border-radius: 4px; border: 1px solid #e5e7eb;">"${escapeHTML(est.comentarios)}"</div>` : ''}
