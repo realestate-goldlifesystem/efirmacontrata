@@ -1966,8 +1966,15 @@
                         if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
                         if (res.success) {
                             abrirModalContrato(cdr, res);
-                            // Como ya existe, abrimos la vista de aprobación por defecto
-                            cambiarModoValidacionExterna();
+                            const estadoStr = ((res.datos && res.datos.estado) ? res.datos.estado : '').toUpperCase();
+                            if (estadoStr.includes('BORRADOR ENVIADO') || estadoStr.includes('REVISION') || estadoStr.includes('APROBADO') || estadoStr.includes('OBSERVACIONES')) {
+                                cambiarModoValidacionExterna();
+                            } else {
+                                // Si está recién generado pero no enviado
+                                document.getElementById('contratoModalBody').classList.remove('layout-validacion');
+                                document.getElementById('accionesBorrador').style.display = 'block';
+                                document.getElementById('accionesOriginal').style.display = 'none';
+                            }
                         } else {
                             Swal.fire('Error', res.message, 'error');
                         }
@@ -1994,17 +2001,17 @@
             if(resData.datos) {
                 htmlDatos += '<div class="dato-maestro-card">\n' +
 '                    <h4>Inquilino</h4>\n' +
-'                    <p>' + (resData.datos.inquilino?.nombre || 'N/A') + '</p>\n' +
-'                    <p style="font-size:0.85em; color:#64748b;">' + (resData.datos.inquilino?.numeroDocumento || '') + '</p>\n' +
+'                    <p>' + (resData.datos.inquilino ? resData.datos.inquilino.nombre : 'N/A') + '</p>\n' +
+'                    <p style="font-size:0.85em; color:#64748b;">' + (resData.datos.inquilino ? resData.datos.inquilino.numeroDocumento : '') + '</p>\n' +
 '                </div>';
                 htmlDatos += '<div class="dato-maestro-card">\n' +
 '                    <h4>Propietario</h4>\n' +
-'                    <p>' + (resData.datos.propietario?.nombre || 'N/A') + '</p>\n' +
-'                    <p style="font-size:0.85em; color:#64748b;">' + (resData.datos.propietario?.numeroDocumento || '') + '</p>\n' +
+'                    <p>' + (resData.datos.propietario ? resData.datos.propietario.nombre : 'N/A') + '</p>\n' +
+'                    <p style="font-size:0.85em; color:#64748b;">' + (resData.datos.propietario ? resData.datos.propietario.numeroDocumento : '') + '</p>\n' +
 '                </div>';
                 htmlDatos += '<div class="dato-maestro-card">\n' +
 '                    <h4>Inmueble</h4>\n' +
-'                    <p>' + (resData.datos.inmueble?.direccion || 'N/A') + '</p>\n' +
+'                    <p>' + (resData.datos.inmueble ? resData.datos.inmueble.direccion : 'N/A') + '</p>\n' +
 '                </div>';
             } else {
                 htmlDatos = '<p>No se encontraron datos tabulados.</p>';
@@ -2013,8 +2020,17 @@
 
             // Mostrar el iframe  usar /preview para embeber correctamente
             document.getElementById('loaderContrato').style.display = 'block';
-            const embedUrl = resData.docId
-                ? 'https://docs.google.com/document/d/' + (resData.docId) + '/preview'                : (resData.url ? resData.url.replace('/edit', '/preview').replace(/[?&].*$/, '') : '');
+            let embedUrl = '';
+            if (resData.docId) {
+                embedUrl = 'https://docs.google.com/document/d/' + resData.docId + '/preview';
+            } else if (resData.url) {
+                const matchId = resData.url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                if (matchId && matchId[1]) {
+                    embedUrl = 'https://docs.google.com/document/d/' + matchId[1] + '/preview';
+                } else {
+                    embedUrl = resData.url;
+                }
+            }
             document.getElementById('iframeContrato').src = embedUrl;
 
             // Mostrar enlace para abrir en pestaña nueva
@@ -2086,40 +2102,112 @@
         }
 
         function cargarEstadosAprobacion(cdr) {
-            document.getElementById('contenedorEstadosAprobacion').innerHTML = '<p> Cargando estados...</p>';
+            document.getElementById('contenedorBitacora').innerHTML = '<p> Cargando estados...</p>';
             google.script.run
                 .withSuccessHandler(function(res) {
                     if(res && res.success) {
-                        var divInfo = '';
-                        var checks = 0;
+                        var historialHTML = '<div class="timeline">';
+                        var partesEstadoFinal = {};
+
                         if (res.estados && res.estados.length > 0) {
                             for (var i = 0; i < res.estados.length; i++) {
                                 var e = res.estados[i];
-                                var badge = e.estado === 'APROBADO' ? '<span style="color: green;"> Aprobado</span>' : 
-                                           (e.estado === 'RECHAZADO' ? '<span style="color: red;"> Requiere Corrección</span>' : ' Pendiente');
-                                divInfo += '<div class="dato-maestro-card">';
-                                divInfo += '    <h4>' + e.parte + '</h4>';
-                                divInfo += '    <p>' + badge + '</p>';
-                                if (e.comentarios) {
-                                    divInfo += '    <p style="font-size: 0.8em; margin-top:5px; color:#666;"> "' + e.comentarios + '"</p>';
+                                
+                                // Guardar el último estado reportado por cada parte (ignorar ADMIN para checks de firma)
+                                if (e.parte !== 'ADMIN') {
+                                    partesEstadoFinal[e.parte] = e.estado;
                                 }
-                                divInfo += '</div>';
-                                if (e.estado === 'APROBADO') checks++;
-                            }
-                        }
-                        document.getElementById('contenedorEstadosAprobacion').innerHTML = divInfo;
 
-                        // Si todos aprobaron (ejemplo 2 partes: inq y prop), habilitar generar original
-                        if(res.estados.length > 0 && checks === res.estados.length) {
-                             document.getElementById('btnGenerarOriginal').disabled = false;
+                                var badgeColor = e.estado === 'APROBADO' ? 'var(--success)' : 
+                                                (e.estado === 'RECHAZADO' || e.estado === 'CAMBIOS' ? 'var(--danger)' : '#64748b');
+                                if(e.parte === 'ADMIN') badgeColor = 'var(--primary)';
+
+                                historialHTML += `
+                                    <div class="timeline-item" style="border-left: 3px solid ${badgeColor}; padding-left: 15px; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 0 8px 8px 0;">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+                                            <strong style="color: ${badgeColor};">${e.parte}</strong>
+                                            <span style="font-size:0.75em; color:#94a3b8;">${e.fecha} ${e.hora || ''}</span>
+                                        </div>
+                                        <div style="font-size:0.85em; font-weight:bold; margin-bottom: 5px;">${e.estado}</div>
+                                        ${e.comentarios ? `<p style="font-size:0.9em; margin:0; color:#334155; font-style:italic;">"${e.comentarios}"</p>` : ''}
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            historialHTML += '<div class="empty-state" style="padding: 1.5rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">La bitácora está vacía. Esperando revisión virtual.</div>';
+                        }
+                        historialHTML += '</div>';
+
+                        document.getElementById('contenedorBitacora').innerHTML = historialHTML;
+
+                        // Actualizar semáforos
+                        const actualizarSemaforo = (id, parte) => {
+                            const badge = document.getElementById(id);
+                            if (!badge) return;
+                            const estado = partesEstadoFinal[parte] || 'ENVIADO';
+                            badge.textContent = estado;
+                            if (estado === 'APROBADO') {
+                                badge.style.background = '#dcfce7'; badge.style.color = '#166534';
+                            } else if (estado === 'RECHAZADO' || estado === 'CAMBIOS') {
+                                badge.style.background = '#fee2e2'; badge.style.color = '#991b1b';
+                            } else {
+                                badge.style.background = '#fef3c7'; badge.style.color = '#92400e';
+                            }
+                        };
+                        
+                        actualizarSemaforo('semaforoInquilino', 'INQUILINO');
+                        actualizarSemaforo('semaforoPropietario', 'PROPIETARIO');
+                        actualizarSemaforo('semaforoCodeudor', 'CODEUDOR');
+
+                        // Verificar si todas las partes que han interactuado (al menos Inquilino y Propietario) están en APROBADO
+                        var partesUnicas = Object.keys(partesEstadoFinal);
+                        var todosAprobados = partesUnicas.length > 0 && partesUnicas.every(p => partesEstadoFinal[p] === 'APROBADO');
+
+                        // Requisito mínimo: Inquilino y Propietario deben existir y estar aprobados
+                        var tienePrincipales = partesEstadoFinal['INQUILINO'] === 'APROBADO' && partesEstadoFinal['PROPIETARIO'] === 'APROBADO';
+
+                        if(todosAprobados && tienePrincipales) {
+                            document.getElementById('semaforoGlobal').textContent = 'Completado';
+                            document.getElementById('semaforoGlobal').style.color = 'var(--success)';
+                            document.getElementById('btnGenerarOriginal').disabled = false;
                         } else {
                              document.getElementById('btnGenerarOriginal').disabled = true;
                         }
-                    } else {
-                        document.getElementById('contenedorEstadosAprobacion').innerHTML = '<p>No hay firmas registradas aún.</p>';
                     }
                 })
                 .obtenerEstadoAprobacionesContrato(cdr);
+        }
+
+        function registrarComentarioAdmin(cdr) {
+            const txt = document.getElementById('adminComentarioTxt').value;
+            if(!txt.trim()) {
+                Swal.fire('Error', 'Debes escribir un comentario antes de registrarlo.', 'warning');
+                return;
+            }
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = 'Guardando...';
+            btn.disabled = true;
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    if(res.success) {
+                        Swal.fire('Guardado', 'Tu registro ha sido añadido a la bitácora.', 'success');
+                        document.getElementById('adminComentarioTxt').value = '';
+                        cargarEstadosAprobacion(cdr); // Recargar la línea de tiempo
+                    } else {
+                        Swal.fire('Error', res.message, 'error');
+                    }
+                })
+                .withFailureHandler(function(err){
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    Swal.fire('Error de red', err.message, 'error');
+                })
+                .registrarAprobacionContrato(cdr, 'ADMIN', 'COMENTARIO', txt);
         }
 
         function generarOriginalDefinitivo() {

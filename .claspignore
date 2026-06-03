@@ -1,4 +1,25 @@
-
-frontend/**
+node_modules/**
+**/node_modules/**
+.git/
+.gitignore
+.clasp.json
+.claspignore
+package.json
+package-lock.json
+README.md
+*.md
+*.zip
+backend_backup.zip
+backend_legacy_backup/
+content-download/
+temp*/
+remote*/
+backend_ready/
+deployment_fix/
+EfirmaContrata - Gold Life System.pdf
+_herramientas_locales/**
+apps-script.json
+_legacy/
 *.py
 combined_test.js
+frontend/**

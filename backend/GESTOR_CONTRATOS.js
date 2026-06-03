@@ -47,83 +47,116 @@ function generarContrato(cdr, version = 'Borrador') {
     const datos = datosRecopilados.data;
     const tipoNegocio = datos.tipoNegocio; 
 
-    // 2. Seleccionar Plantilla según Tipo de Negocio y Versión
+    // 2. Lógica separada: Si es Original, clonar el borrador existente
+    if (version === 'Original') {
+      const contexto = obtenerContextoContrato(cdr);
+      if (!contexto.success || !contexto.url) {
+        throw new Error('No se encontró un borrador previo para generar el original.');
+      }
+      
+      // Extraer ID del borrador desde la URL
+      const match = contexto.url.match(/document\/d\/([a-zA-Z0-9-_]+)/);
+      if (!match) throw new Error('No se pudo extraer el ID del borrador.');
+      const draftId = match[1];
+      
+      const carpetaContratoDestino = buscarCarpetaContratoDinamica(datos);
+      if (!carpetaContratoDestino) throw new Error('No se pudo localizar la carpeta.');
+      
+      const draftFile = DriveApp.getFileById(draftId);
+      
+      let nombreTipoContrato = datos.tipoNegocio === 'Corretaje' ? 'Corretaje' : 
+                               (datos.tipoNegocio === 'Administracion' || datos.tipoNegocio === 'Administración' ? 'Administracion' : 
+                               (datos.tipoNegocio === 'Venta' ? 'Venta' : 'Arrendamiento'));
+                               
+      const nombreContrato = `Contrato_${nombreTipoContrato}_${datos.propietario.nombre}_${datos.idRegistro}`;
+      
+      // Crear copia "Original"
+      const originalFile = draftFile.makeCopy(nombreContrato + " - FINAL", carpetaContratoDestino);
+      const docOriginal = DocumentApp.openById(originalFile.getId());
+      
+      // Quitar texto "BORRADOR" del encabezado y cambiarlo por ORIGINAL (simulando marca de agua dinámica)
+      const header = docOriginal.getHeader();
+      if (header) {
+        header.replaceText('(?i)BORRADOR', 'ORIGINAL'); // Case insensitive
+      }
+      docOriginal.saveAndClose();
+      
+      // Generar PDF
+      const pdfBlob = docOriginal.getAs(MimeType.PDF);
+      const pdfFile = carpetaContratoDestino.createFile(pdfBlob).setName(`${nombreContrato}.pdf`);
+      
+      actualizarEstadoContrato(cdr, 'CONTRATO ORIGINAL GENERADO', `✅ PDF Final generado. ID: ${originalFile.getId()}`);
+      
+      // Enviar correo final al administrador
+      enviarEmailFinalAdmin(cdr, nombreContrato, pdfFile.getUrl(), pdfBlob);
+
+      return {
+        success: true,
+        docId: originalFile.getId(),
+        url: docOriginal.getUrl(),
+        urlPdf: pdfFile.getUrl(),
+        carpeta: carpetaContratoDestino.getUrl(),
+        datos: datos,
+        message: 'Contrato Original generado exitosamente'
+      };
+    }
+
+    // 3. Lógica normal para 'Borrador': Crear desde plantilla
     let plantillaId = '';
     let nombreTipoContrato = '';
 
-    if (tipoNegocio === 'Corretaje') {
-      plantillaId = version === 'Borrador' ? CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID : CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID;
+    if (datos.tipoNegocio === 'Corretaje') {
+      plantillaId = CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID;
       nombreTipoContrato = 'Corretaje';
-    } else if (tipoNegocio === 'Administracion' || tipoNegocio === 'Administración') {
-      plantillaId = CONTRATO_CONFIG.PLANTILLA_ADMINISTRACION_ID || (version === 'Borrador' ? CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID : CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID);
+    } else if (datos.tipoNegocio === 'Administracion' || datos.tipoNegocio === 'Administración') {
+      plantillaId = CONTRATO_CONFIG.PLANTILLA_ADMINISTRACION_ID || CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID;
       nombreTipoContrato = 'Administracion';
-    } else if (tipoNegocio === 'Venta') {
-      plantillaId = CONTRATO_CONFIG.PLANTILLA_VENTA_ID || (version === 'Borrador' ? CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID : CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID);
+    } else if (datos.tipoNegocio === 'Venta') {
+      plantillaId = CONTRATO_CONFIG.PLANTILLA_VENTA_ID || CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID;
       nombreTipoContrato = 'Venta';
     } else {
-      // Default
-      plantillaId = version === 'Borrador' ? CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID : CONTRATO_CONFIG.PLANTILLA_CORRETAJE_ID;
+      plantillaId = CONTRATO_CONFIG.PLANTILLA_CORRETAJE_BORRADOR_ID;
       nombreTipoContrato = 'Arrendamiento';
     }
 
     if (!plantillaId) {
-      throw new Error(`No hay plantilla configurada para el tipo de negocio: ${tipoNegocio}`);
+      throw new Error(`No hay plantilla configurada para el tipo de negocio: ${datos.tipoNegocio}`);
     }
 
-    // 3. Localizar Carpeta Dinámica del Inmueble (Lógica de IDs Estáticos/Dinámicos)
-    // Usamos el Link REG o buscamos por CDR en la estructura
-    // IMPORTANTE: Aquí asumimos que ya existe la carpeta del inmueble creada en el registro
     const carpetaContratoDestino = buscarCarpetaContratoDinamica(datos);
-
     if (!carpetaContratoDestino) {
       throw new Error('No se pudo localizar la carpeta "Contrato de Arrendamiento" o equivalente.');
     }
 
-    // 4. Crear copia de la plantilla
     const plantilla = DriveApp.getFileById(plantillaId);
-
-    // Crear nombre unico para el contrato
-    const fecha = new Date();
-    const fechaFormato = Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmm');
-    // Ejemplo: Contrato_Corretaje_REG-123_2023-10-27
-    const nombreContrato = `Contrato_${nombreTipoContrato}_${cdr}_${fechaFormato}`;
+    const nombreContrato = `Contrato_${nombreTipoContrato}_${datos.propietario.nombre}_${datos.idRegistro}`;
 
     // Crear copia del documento en la carpeta destino
     const copiaContrato = plantilla.makeCopy(nombreContrato, carpetaContratoDestino);
     const docId = copiaContrato.getId();
     const doc = DocumentApp.openById(docId);
-    const body = doc.getBody();
-
-    // 5. Reemplazar variables en el contrato
+    
+    // Reemplazar variables en el contrato
     reemplazarVariablesContrato(doc, datos);
-
-    // Guardar y cerrar
     doc.saveAndClose();
 
-    // 6. Generar PDF (Opcional, pero recomendado para firma)
-    const pdfBlob = doc.getAs(MimeType.PDF);
-    const pdfFile = carpetaContratoDestino.createFile(pdfBlob).setName(`${nombreContrato}.pdf`);
-
-    // Obtener URL del documento y PDF
+    // Obtener URL del documento
     const urlContrato = doc.getUrl();
-    const urlPdf = pdfFile.getUrl();
 
-    // 7. Registrar en log
+    // Registrar en log
     registrarGeneracionContrato(cdr, docId, urlContrato);
+    actualizarEstadoContrato(cdr, 'CONTRATO GENERADO', `✅ Borrador generado (${nombreTipoContrato}). ID: ${docId}`);
 
-    // Actualizar estado en la hoja principal
-    actualizarEstadoContrato(cdr, 'CONTRATO GENERADO', `✅ Contrato generado (${nombreTipoContrato}). ID: ${docId}`);
-
-    console.log(`Contrato generado exitosamente. ID: ${docId}`);
+    console.log(`Borrador generado exitosamente. ID: ${docId}`);
 
     return {
       success: true,
       docId: docId,
       url: urlContrato,
-      urlPdf: urlPdf,
+      urlPdf: null,
       carpeta: carpetaContratoDestino.getUrl(),
       datos: datos,
-      message: 'Contrato generado exitosamente'
+      message: 'Borrador generado exitosamente'
     };
 
   } catch (error) {
@@ -133,6 +166,53 @@ function generarContrato(cdr, version = 'Borrador') {
       success: false,
       message: error.message
     };
+  }
+}
+
+/**
+ * Enviar el borrador del contrato a revisión (Inquilino, Propietario, Codeudores)
+ */
+function enviarBorradorAValidar(cdr) {
+  try {
+    const datosResult = recopilarDatosContrato(cdr);
+    if (!datosResult.success) throw new Error(datosResult.error);
+    const datos = datosResult.data;
+
+    // Actualizar estado a EN REVISION
+    actualizarEstadoContrato(cdr, 'CONTRATO EN REVISION', '📧 Enviado a las partes para revisión y aprobación.');
+
+    const docResult = buscarContratoGenerado(cdr);
+    const docId = docResult ? docResult.id : null;
+    let urlContrato = docId ? `https://docs.google.com/document/d/${docId}/edit` : '';
+
+    const urlBaseValidacion = `${CONTRATO_CONFIG.BASE_URL}/validador-de-contratos.html?cdr=${cdr}`;
+    
+    // Inquilino
+    if (datos.inquilino && datos.inquilino.email) {
+      const urlAprobacion = `${urlBaseValidacion}&rol=inquilino`;
+      enviarEmailRevisionInquilino(datos.inquilino.email, datos.inquilino.nombre, cdr, urlContrato, urlAprobacion);
+    }
+    
+    // Propietario
+    if (datos.propietario && datos.propietario.email) {
+      const urlAprobacion = `${urlBaseValidacion}&rol=propietario`;
+      enviarEmailRevisionPropietario(datos.propietario.email, datos.propietario.nombre, cdr, urlContrato, urlAprobacion);
+    }
+    
+    // Codeudores
+    if (datos.codeudores && datos.codeudores.length > 0) {
+      datos.codeudores.forEach((codeudor, index) => {
+        if (codeudor.email) {
+          const urlAprobacion = `${urlBaseValidacion}&rol=codeudor&idx=${index}`;
+          enviarEmailRevisionCodeudor(codeudor.email, codeudor.nombre, cdr, urlContrato, urlAprobacion);
+        }
+      });
+    }
+
+    return { success: true, message: 'Enviado a revisión correctamente' };
+  } catch (e) {
+    Logger.log('Error enviando contrato a revisión: ' + e);
+    return { success: false, message: e.toString() };
   }
 }
 
@@ -399,6 +479,7 @@ function recopilarDatosContrato(cdr) {
     const datosCompletos = {
       cdr: cdr,
       idRegistro: obtenerValor('ID DE REGISTRO') || cdr,
+      estado: obtenerValor('ESTADO DEL INMUEBLE'),
       fechaGeneracion: new Date().toISOString(),
       inquilino: inquilino,
       propietario: propietario,
@@ -780,7 +861,7 @@ function enviarContratosParaRevision(cdr, docId) {
       datos.data.inquilino.nombre,
       cdr,
       urlContrato,
-      `${baseUrl}/validacion-contrato.html?cdr=${cdr}&tipo=inquilino&docId=${docId}`
+      `${baseUrl}/validador-de-contratos.html?cdr=${cdr}&tipo=inquilino&docId=${docId}`
     );
 
     // Enviar al propietario
@@ -789,7 +870,7 @@ function enviarContratosParaRevision(cdr, docId) {
       datos.data.propietario.nombre,
       cdr,
       urlContrato,
-      `${baseUrl}/validacion-contrato.html?cdr=${cdr}&tipo=propietario&docId=${docId}`
+      `${baseUrl}/validador-de-contratos.html?cdr=${cdr}&tipo=propietario&docId=${docId}`
     );
 
     // Enviar a codeudores si existen
@@ -801,7 +882,7 @@ function enviarContratosParaRevision(cdr, docId) {
             codeudor.nombre,
             cdr,
             urlContrato,
-            `${baseUrl}/validacion-contrato.html?cdr=${cdr}&tipo=codeudor${index + 1}&docId=${docId}`
+            `${baseUrl}/validador-de-contratos.html?cdr=${cdr}&tipo=codeudor${index + 1}&docId=${docId}`
           );
         }
       });
@@ -1024,63 +1105,25 @@ function obtenerEstadosAprobacion(cdr) {
  */
 function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAprobacion) {
   const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-  const asunto = `?? Contrato de Arrendamiento para Revision - ${displayId}`;
+  const asunto = `Contrato de Arrendamiento para Revisión - ${displayId}`;
 
-  const cuerpoHtml = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-        <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">?? Contrato para Revision</h1>
-      </div>
-      
-      <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-        <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
-        
-        <p style="color: #666; line-height: 1.6;">
-          El contrato de arrendamiento esta listo para su revision. Por favor, lealo cuidadosamente 
-          y confirme si esta de acuerdo con todos los terminos.
-        </p>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #B8860B; margin-top: 0;">?? Documentos para revisar:</h3>
-          <p style="color: #666;">
-            <a href="${urlContrato}" style="color: #667eea; text-decoration: none;">
-              ?? Ver Contrato en Google Docs
-            </a>
-          </p>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${urlAprobacion}" 
-             style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
-                    color: #1a1a1a; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
-            ? REVISAR Y APROBAR CONTRATO
-          </a>
-        </div>
-        
-        <div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 4px;">
-          <p style="color: #856404; margin: 0; font-size: 14px;">
-            ?? <strong>Importante:</strong> Tiene 48 horas para revisar y aprobar el contrato. 
-            Si necesita cambios, podra solicitarlos en la plataforma.
-          </p>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-        
-        <p style="color: #999; font-size: 14px; text-align: center;">
-          E-firmaContrata ¡E Real Estate Gold Life System<br>
-          Codigo de registro: ${displayId}
-        </p>
-      </div>
-    </div>
-  `;
+  const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
+  tpl.TITULO = 'Contrato Listo para Revisión';
+  tpl.NOMBRE_CLIENTE = nombre;
+  tpl.MENSAJE_PRINCIPAL = 'El borrador de su contrato de arrendamiento está listo. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, aprobar el documento o solicitar cambios.';
+  tpl.MENSAJE_SECUNDARIO = 'Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas.';
+  tpl.URL_ACCION = urlAprobacion;
+  tpl.TEXTO_BOTON = 'Revisar y Validar Contrato';
+
+  const htmlBody = tpl.evaluate().getContent();
 
   MailApp.sendEmail({
     to: email,
     subject: asunto,
-    htmlBody: cuerpoHtml
+    htmlBody: htmlBody
   });
 
-  Logger.log(`Email de revision enviado a inquilino: ${email}`);
+  Logger.log(`Email de revisión enviado a inquilino: ${email}`);
 }
 
 /**
@@ -1088,53 +1131,22 @@ function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAproba
  */
 function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlAprobacion) {
   const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-  const asunto = `?? Contrato de Arrendamiento para Revision - ${displayId}`;
+  const asunto = `Contrato de Arrendamiento para Revisión - ${displayId}`;
 
-  const cuerpoHtml = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-        <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">?? Contrato para Revision</h1>
-      </div>
-      
-      <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-        <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
-        
-        <p style="color: #666; line-height: 1.6;">
-          El contrato de arrendamiento de su propiedad esta listo para revision. 
-          Por favor, verifique que todos los terminos sean correctos.
-        </p>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #B8860B; margin-top: 0;">?? Documentos para revisar:</h3>
-          <p style="color: #666;">
-            <a href="${urlContrato}" style="color: #667eea; text-decoration: none;">
-              ?? Ver Contrato en Google Docs
-            </a>
-          </p>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${urlAprobacion}" 
-             style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
-                    color: #1a1a1a; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
-            ? REVISAR Y APROBAR CONTRATO
-          </a>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-        
-        <p style="color: #999; font-size: 14px; text-align: center;">
-          E-firmaContrata ¡E Real Estate Gold Life System<br>
-          Codigo de registro: ${displayId}
-        </p>
-      </div>
-    </div>
-  `;
+  const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
+  tpl.TITULO = 'Contrato para Revisión';
+  tpl.NOMBRE_CLIENTE = nombre;
+  tpl.MENSAJE_PRINCIPAL = 'El contrato de arrendamiento de su propiedad está listo para revisión. Por favor, ingrese a nuestro portal de validación transparente y verifique que todos los términos sean correctos.';
+  tpl.MENSAJE_SECUNDARIO = 'Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas.';
+  tpl.URL_ACCION = urlAprobacion;
+  tpl.TEXTO_BOTON = 'Revisar y Validar Contrato';
+
+  const htmlBody = tpl.evaluate().getContent();
 
   MailApp.sendEmail({
     to: email,
     subject: asunto,
-    htmlBody: cuerpoHtml
+    htmlBody: htmlBody
   });
 
   Logger.log(`Email de revision enviado a propietario: ${email}`);
@@ -1145,62 +1157,22 @@ function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlApro
  */
 function enviarEmailRevisionCodeudor(email, nombre, cdr, urlContrato, urlAprobacion) {
   const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-  const asunto = `?? Contrato de Arrendamiento - Codeudor - ${displayId}`;
+  const asunto = `Contrato de Arrendamiento - Codeudor - ${displayId}`;
 
-  const cuerpoHtml = `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-        <h1 style="color: #1a1a1a; margin: 0; font-size: 24px;">?? Revision como Codeudor</h1>
-      </div>
-      
-      <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-        <p style="font-size: 16px; color: #333;">Estimado/a <strong>${nombre}</strong>,</p>
-        
-        <p style="color: #666; line-height: 1.6;">
-          Ha sido designado como codeudor en un contrato de arrendamiento. 
-          Por favor, revise los terminos y responsabilidades antes de aprobar.
-        </p>
-        
-        <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
-          <h3 style="color: #155724; margin-top: 0;">?? Responsabilidades del Codeudor:</h3>
-          <ul style="color: #155724; line-height: 1.8;">
-            <li>Responder solidariamente por el pago del canon</li>
-            <li>Garantizar el cumplimiento del contrato</li>
-            <li>Asumir obligaciones en caso de incumplimiento del inquilino</li>
-          </ul>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="color: #B8860B; margin-top: 0;">?? Documentos para revisar:</h3>
-          <p style="color: #666;">
-            <a href="${urlContrato}" style="color: #667eea; text-decoration: none;">
-              ?? Ver Contrato Completo
-            </a>
-          </p>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${urlAprobacion}" 
-             style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
-                    color: #1a1a1a; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 16px;">
-            ? REVISAR Y ACEPTAR CODEUDORIA
-          </a>
-        </div>
-        
-        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-        
-        <p style="color: #999; font-size: 14px; text-align: center;">
-          E-firmaContrata ¡E Real Estate Gold Life System<br>
-          Codigo de registro: ${displayId}
-        </p>
-      </div>
-    </div>
-  `;
+  const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
+  tpl.TITULO = 'Revisión como Codeudor';
+  tpl.NOMBRE_CLIENTE = nombre;
+  tpl.MENSAJE_PRINCIPAL = 'Ha sido designado como codeudor en un contrato de arrendamiento. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, sus responsabilidades y aprobar el documento.';
+  tpl.MENSAJE_SECUNDARIO = 'Como codeudor, usted responde solidariamente por el pago del canon y garantiza el cumplimiento del contrato. Nuestro sistema registrará su aprobación en la bitácora del contrato.';
+  tpl.URL_ACCION = urlAprobacion;
+  tpl.TEXTO_BOTON = 'Revisar y Aceptar Codeudoría';
+
+  const htmlBody = tpl.evaluate().getContent();
 
   MailApp.sendEmail({
     to: email,
     subject: asunto,
-    htmlBody: cuerpoHtml
+    htmlBody: htmlBody
   });
 
   Logger.log(`Email de revision enviado a codeudor: ${email}`);
@@ -1216,43 +1188,15 @@ function enviarNotificacionContratoAprobado(cdr) {
 
     if (!datos.success) return;
 
-    const asunto = `? Contrato Aprobado - ${displayId}`;
+    const asunto = `Contrato Aprobado - ${displayId}`;
 
-    const cuerpoHtml = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">? Contrato Aprobado por Todas las Partes</h1>
-        </div>
-        
-        <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-          <p style="font-size: 16px; color: #333;">
-            Nos complace informarle que el contrato de arrendamiento con codigo 
-            <strong>${displayId}</strong> ha sido aprobado por todas las partes.
-          </p>
-          
-          <div style="background: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-            <h3 style="color: #065f46; margin-top: 0;">? Aprobaciones Completadas:</h3>
-            <ul style="color: #065f46;">
-              <li>Inquilino: APROBADO</li>
-              <li>Propietario: APROBADO</li>
-              ${datos.data.codeudores?.map((c, i) => `<li>Codeudor ${i + 1}: APROBADO</li>`).join('') || ''}
-            </ul>
-          </div>
-          
-          <p style="color: #666;">
-            <strong>Proximos pasos:</strong><br>
-            El contrato sera preparado para firma. Recibira instrucciones adicionales proximamente.
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-          
-          <p style="color: #999; font-size: 14px; text-align: center;">
-            E-firmaContrata ¡E Real Estate Gold Life System<br>
-            Codigo de registro: ${displayId}
-          </p>
-        </div>
-      </div>
-    `;
+    const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
+    tpl.TITULO = 'Contrato Aprobado por Todas las Partes';
+    tpl.NOMBRE_CLIENTE = 'Cliente';
+    tpl.MENSAJE_PRINCIPAL = `Nos complace informarle que el contrato de arrendamiento con código <strong>${displayId}</strong> ha sido aprobado por todas las partes (Inquilino, Propietario y Codeudores).`;
+    tpl.MENSAJE_SECUNDARIO = 'Próximos pasos: El contrato será preparado para su firma electrónica final. Recibirá instrucciones adicionales próximamente.';
+    
+    const htmlBody = tpl.evaluate().getContent();
 
     // Enviar a todas las partes
     const emails = [
@@ -1271,7 +1215,7 @@ function enviarNotificacionContratoAprobado(cdr) {
         MailApp.sendEmail({
           to: email,
           subject: asunto,
-          htmlBody: cuerpoHtml
+          htmlBody: htmlBody
         });
       }
     });
@@ -1293,40 +1237,19 @@ function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
 
     if (!datos.success) return;
 
-    const asunto = `?? Cambios Solicitados al Contrato - ${displayId}`;
+    const asunto = `Cambios Solicitados al Contrato - ${displayId}`;
 
-    const cuerpoHtml = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">?? Cambios Solicitados al Contrato</h1>
-        </div>
-        
-        <div style="padding: 30px; background: white; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;">
-          <p style="font-size: 16px; color: #333;">
-            Se han solicitado cambios al contrato de arrendamiento con codigo <strong>${displayId}</strong>.
-          </p>
-          
-          <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-            <h3 style="color: #856404; margin-top: 0;">?? Observaciones:</h3>
-            <p style="color: #856404; white-space: pre-wrap;">${observaciones || 'Sin observaciones especificas'}</p>
-            <p style="color: #856404; margin-top: 10px;">
-              <strong>Solicitado por:</strong> ${solicitante}
-            </p>
-          </div>
-          
-          <p style="color: #666;">
-            Se realizaran las correcciones solicitadas y se enviara una nueva version del contrato para revision.
-          </p>
-          
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-          
-          <p style="color: #999; font-size: 14px; text-align: center;">
-            E-firmaContrata ¡E Real Estate Gold Life System<br>
-            Codigo de registro: ${displayId}
-          </p>
-        </div>
-      </div>
-    `;
+    const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
+    tpl.TITULO = 'Cambios Solicitados';
+    tpl.NOMBRE_CLIENTE = 'Cliente';
+    tpl.MENSAJE_PRINCIPAL = `Se han solicitado cambios al contrato de arrendamiento con código <strong>${displayId}</strong>.`;
+    tpl.MENSAJE_SECUNDARIO = `Observaciones (${solicitante}):\n${observaciones || 'Sin observaciones específicas'}`;
+    
+    // Podemos incluir un botón para que vayan a la bitácora a revisar
+    tpl.URL_ACCION = `${CONTRATO_CONFIG.BASE_URL}/validador-de-contratos.html?cdr=${cdr}`;
+    tpl.TEXTO_BOTON = 'Ver Bitácora del Contrato';
+
+    const htmlBody = tpl.evaluate().getContent();
 
     // Enviar a todas las partes
     const emails = [
@@ -1349,7 +1272,7 @@ function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
         MailApp.sendEmail({
           to: email,
           subject: asunto,
-          htmlBody: cuerpoHtml
+          htmlBody: htmlBody
         });
       }
     });
@@ -1358,6 +1281,54 @@ function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
 
   } catch (error) {
     Logger.log(`Error enviando notificacion de cambios: ${error.toString()}`);
+  }
+}
+
+/**
+ * Enviar el PDF original al correo del administrador y de las partes
+ */
+function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
+  try {
+    const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+    const asunto = `PDF FINAL LISTO - Contrato ${displayId}`;
+
+    const datosResult = recopilarDatosContrato(cdr);
+    const datos = datosResult.success ? datosResult.data : null;
+
+    const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
+    tpl.TITULO = 'Contrato Definitivo Generado';
+    tpl.NOMBRE_CLIENTE = 'Cliente / Equipo GoldLife';
+    tpl.MENSAJE_PRINCIPAL = `El contrato de arrendamiento <strong>${displayId}</strong> ha sido aprobado por todas las partes y el documento ORIGINAL en PDF ha sido generado exitosamente.`;
+    tpl.MENSAJE_SECUNDARIO = 'El documento adjunto está listo para ser subido a la plataforma de firmas electrónicas (VíaFirma).';
+    tpl.URL_ACCION = urlPdf;
+    tpl.TEXTO_BOTON = 'Ver PDF en Drive';
+
+    const htmlBody = tpl.evaluate().getContent();
+
+    const emails = ['realestate.goldlifesystem@gmail.com'];
+    
+    if (datos) {
+        if (datos.inquilino?.email) emails.push(datos.inquilino.email);
+        if (datos.propietario?.email) emails.push(datos.propietario.email);
+        if (datos.codeudores && datos.codeudores.length > 0) {
+            datos.codeudores.forEach(c => {
+                if (c.email) emails.push(c.email);
+            });
+        }
+    }
+
+    emails.forEach(email => {
+        MailApp.sendEmail({
+            to: email,
+            subject: asunto,
+            htmlBody: htmlBody,
+            attachments: [pdfBlob.setName(`${nombreContrato}.pdf`)]
+        });
+    });
+
+    Logger.log(`Email final enviado con el PDF del contrato ${cdr} a ${emails.length} destinatarios`);
+  } catch (error) {
+    Logger.log(`Error enviando PDF final al admin y partes: ${error.toString()}`);
   }
 }
 
@@ -1552,13 +1523,13 @@ function obtenerContratosPendientes() {
     const contratos = [];
     const headers = data[0].map(h => String(h).trim().toUpperCase());
     
-    const idxCdr = headers.indexOf('CODIGO DE REGISTRO');
-    const idxEstado = headers.indexOf('ESTADO DEL INMUEBLE');
-    const idxDoc = headers.indexOf('ESTADO DOCUMENTAL');
-    const idxDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
-    const idxTipo = headers.indexOf('TIPO DE INMUEBLE');
-    const idxCanon = headers.indexOf('CANON MENSUAL');
-    const idxInquilino = headers.indexOf('NOMBRES - INQUILINO');
+    const idxCdr = headers.findIndex(h => h === 'CODIGO DE REGISTRO' || h === 'CÓDIGO DE REGISTRO');
+    const idxEstado = headers.findIndex(h => h === 'ESTADO DEL INMUEBLE');
+    const idxDoc = headers.findIndex(h => h === 'ESTADO DOCUMENTAL');
+    const idxDetalles = headers.findIndex(h => h === 'DETALLES DEL ESTADO DEL INMUEBLE');
+    const idxTipo = headers.findIndex(h => h === 'TIPO DE INMUEBLE');
+    const idxCanon = headers.findIndex(h => h === 'CANON MENSUAL');
+    const idxInquilino = headers.findIndex(h => h === 'NOMBRES - INQUILINO');
     
     for (let i = 1; i < data.length; i++) {
         const row = data[i];
@@ -1589,6 +1560,13 @@ function obtenerContratosPendientes() {
             }
         }
     }
+    if (contratos.length === 0) {
+        let debugStr = `Idx: cdr=${idxCdr}, est=${idxEstado}, det=${idxDetalles}. `;
+        if (data.length > 1) {
+            debugStr += `Row1: est="${data[1][idxEstado]}", det="${data[1][idxDetalles]}"`;
+        }
+        return [{cdr: "DEBUG-EMPTY", estadoBadge: debugStr}];
+    }
     return contratos;
   } catch (err) {
       return [{cdr: "DEBUG-ERROR CRITICO", estadoBadge: err.message}];
@@ -1614,7 +1592,7 @@ function enviarBorradorAValidar(cdr) {
     const baseURL = CONTRATO_CONFIG.BASE_URL || 'https://realestate-goldlifesystem.github.io/efirmacontrata';
     
     // Asumimos que docId ya está generado y lo podemos sacar del estado en Sheet o lo pasamos en blanco si solo usamos CDR
-    // En este flujo, validacion-contrato.html usará el CDR para obtener el borrador activo.
+    // En este flujo, validador-de-contratos.html usará el CDR para obtener el borrador activo.
     const urlContrato = '#'; // El link real al doc lo mostrará el frontend
     
     // Enviar al inquilino
@@ -1623,7 +1601,7 @@ function enviarBorradorAValidar(cdr) {
       datos.inquilino.nombre,
       cdr,
       urlContrato,
-      `${baseURL}/validacion-contrato.html?cdr=${cdr}&parte=inquilino`
+      `${baseURL}/frontend/validador-de-contratos.html?id=${encodeURIComponent(datos.idRegistro)}&parte=inquilino`
     );
 
     // Enviar al propietario
@@ -1632,7 +1610,7 @@ function enviarBorradorAValidar(cdr) {
       datos.propietario.nombre,
       cdr,
       urlContrato,
-      `${baseURL}/validacion-contrato.html?cdr=${cdr}&parte=propietario`
+      `${baseURL}/frontend/validador-de-contratos.html?id=${encodeURIComponent(datos.idRegistro)}&parte=propietario`
     );
 
     // Enviar a codeudores si existen
@@ -1644,7 +1622,7 @@ function enviarBorradorAValidar(cdr) {
             codeudor.nombre,
             cdr,
             urlContrato,
-            `${baseURL}/validacion-contrato.html?cdr=${cdr}&parte=codeudor${index + 1}`
+            `${baseURL}/frontend/validador-de-contratos.html?id=${encodeURIComponent(datos.idRegistro)}&parte=codeudor${index + 1}`
           );
         }
       });
@@ -1679,11 +1657,14 @@ function obtenerEstadoAprobacionesContrato(cdr) {
     const estados = [];
     
     for (let i = 1; i < data.length; i++) {
-        if (data[i][1] === cdr) {
+        if (data[i][0] === cdr) {
            estados.push({
-               parte: String(data[i][2]).toUpperCase(),
-               estado: data[i][3],
-               comentarios: data[i][4]
+               parte: String(data[i][1]).toUpperCase(),
+               estado: data[i][2],
+               comentarios: data[i][3],
+               fecha: data[i][4] instanceof Date ? Utilities.formatDate(data[i][4], Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[i][4],
+               hora: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'HH:mm:ss') : data[i][5],
+               email: data[i][6]
            });
         }
     }

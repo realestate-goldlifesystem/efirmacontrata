@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= TITULO ?></title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .header {
+            background-color: #1a1a1a;
+            color: #d4af37;
+            text-align: center;
+            padding: 30px 20px;
+            border-bottom: 4px solid #d4af37;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 1px;
+            font-weight: 300;
+        }
+        .header h1 strong {
+            font-weight: 700;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: #1a1a1a;
+            margin-top: 0;
+            font-size: 20px;
+        }
+        .content p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .highlight-box {
+            background-color: #fcf9f2;
+            border-left: 4px solid #d4af37;
+            padding: 15px 20px;
+            margin: 25px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .highlight-box p {
+            margin: 0;
+            font-size: 15px;
+            color: #555;
+        }
+        .btn-container {
+            text-align: center;
+            margin: 35px 0;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #d4af37;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #c19b2e;
+        }
+        .footer {
+            background-color: #1a1a1a;
+            color: #888888;
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .gold-text {
+            color: #d4af37;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>REAL ESTATE <br><strong>GOLD LIFE SYSTEM</strong></h1>
+        </div>
+        
+        <div class="content">
+            <h2><?= TITULO ?></h2>
+            <p>Estimado/a <strong><?= NOMBRE_CLIENTE ?></strong>,</p>
+            
+            <p><?= MENSAJE_PRINCIPAL ?></p>
+            
+            <? if (typeof MENSAJE_SECUNDARIO !== 'undefined' && MENSAJE_SECUNDARIO) { ?>
+            <div class="highlight-box">
+                <p><?= MENSAJE_SECUNDARIO ?></p>
+            </div>
+            <? } ?>
+            
+            <? if (typeof URL_ACCION !== 'undefined' && URL_ACCION) { ?>
+            <div class="btn-container">
+                <a href="<?= URL_ACCION ?>" class="btn"><?= TEXTO_BOTON ?></a>
+            </div>
+            <? } ?>
+            
+            <p>Si tiene alguna duda o comentario, puede revisar la bitácora directamente en la plataforma.</p>
+            <p>Agradecemos de antemano su confianza en nosotros.</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; <?= new Date().getFullYear() ?> <span class="gold-text">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+            <p>Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
+        </div>
+    </div>
+</body>
+</html>

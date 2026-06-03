@@ -34,7 +34,7 @@ El sistema es una **tubería de 3 pasos** para cerrar un arriendo sin papeleo f�
 1.  **Generación:** Tú generas el borrador desde el Panel.
 2.  **Envío a Revisión:** El sistema envía un link único a Inquilino, Propietario y Codeudores.
 3.  **Validación Remota:**
-    *   Cada uno entra a una página web (`validacion-contrato.html`) donde ve el borrador.
+    *   Cada uno entra a una página web (`validador-de-contratos.html`) donde ve el borrador.
     *   **Opción A (Todo OK):** Dan clic en "Aprobar" -> El panel muestra un check verde para esa persona.
     *   **Opción B (Cambios):** Envían "Comentarios/Ajustes" -> Te llegan al Panel -> Tú ajustas el borrador -> Se reinicia la aprobación.
 4.  **Aprobación Total:** Cuando el Panel muestra que **TODOS** aprobaron (Inquilino + Propietario + Codeudores), el contrato pasa a estado "LISTO PARA FIRMA".

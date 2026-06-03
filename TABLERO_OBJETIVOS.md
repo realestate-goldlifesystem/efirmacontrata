@@ -17,20 +17,21 @@
 - [x] **Integración en Panel (Admin):** 
   - Añadir en el Panel de Validación una vista del borrador y edición rápida del Cerebro.
   - Implementar una **Barra de Progreso / Semáforos** (🔴 Pendiente, 🟡 Con Observaciones, 🟢 Aprobado) en el subpanel lateral de contratos (`panel_validacion.html`). (Completado)
-- [x] **Portal de Revisión para Clientes (GitHub Pages):** 
-  - Crear un portal estático HTML/CSS/JS (`validacion-contrato.html`) para subir a GitHub Pages y evitar logins de Google.
-  - Opciones de validación: **"👍 Aprobar Contrato"** o **"✍️ Solicitar Cambios"**. (Completado)
-- [ ] **Bitácora Transparente (Tabla Segura):** 
-  - Inyectar una tabla al final de la página del Documento Cerebro donde se registrarán los logs de la conversación de forma segura (sin depender de funciones experimentales de Pestañas).
-- [x] **Cierre Definitivo:** Cuando todas las partes aprueban, se habilita la generación del PDF Final inmutable, notificando al administrador por correo. (Completado)
+- [x] **Puesto de Control Central (Panel Admin):** 
+  - Permitir al administrador ver el historial de observaciones/cambios directamente desde el subpanel, para que pueda realizar las ediciones de forma manual desde esta consola central (sin entrar obligatoriamente a editar el "Cerebro" de Drive a mano).
+- [x] **Portal de Revisión para Clientes (GitHub Pages) con Transparencia:** 
+  - En `validador-de-contratos.html`, si una parte (ej. Inquilino) pide cambios, las demás partes podrán ver qué cambios se solicitaron, garantizando total transparencia. Así cada perfil revisa, y elige si aprobar o solicitar más cambios, hasta lograr consenso total.
+- [x] **Bitácora Transparente:** 
+  - Centralizar el registro de la conversación en una tabla estructurada (o base de datos interna) que alimente tanto el Panel del Administrador como el Frontend, en lugar de inyectar los logs en el Documento Cerebro.
+- [x] **Cierre Definitivo:** Cuando todas las partes aprueban, el sistema utiliza el mismo borrador negociado, le elimina las marcas de borrador, crea la versión definitiva FINAL en PDF y conserva intactas las modificaciones manuales.
 
 ### 3. 💌 Sistema de Correos Transaccionales (Estética Premium)
 *Objetivo: Profesionalizar la comunicación y notificar a los usuarios para mantener el flujo activo.*
-- [ ] **Diseño Visual:** Crear/Refinar plantillas HTML (`email_firma_corretaje.html`, `email_notificacion.html`) con colores corporativos (GoldLife), diseño responsivo, botones CTA (Call to Action) claros y tipografía moderna.
-- [ ] **Triggers (Disparadores) de Notificación:** 
+- [x] **Diseño Visual:** Crear/Refinar plantillas HTML (`email_firma_corretaje.html`, `email_notificacion.html`) con colores corporativos (GoldLife), diseño responsivo, botones CTA claros y tipografía moderna.
+- [x] **Triggers (Disparadores) de Notificación:** 
   - Correo al generar el borrador: *"Tu borrador está listo para revisión, entra aquí"*.
-  - Correo cuando el Administrador aplica un cambio: *"GoldLife ha realizado el ajuste solicitado, por favor revalida"*.
-- [ ] **Notificación Final al Admin:** Envío automático del PDF Final a `realestate.goldlifesystem@gmail.com` listo para subirse a la plataforma de firmas (Viafirma).
+  - Correo cuando una parte solicita un cambio o el Admin hace un ajuste: *"Se han solicitado/realizado cambios en el contrato, por favor revalida"*.
+- [x] **Notificación Final al Admin:** Envío automático del PDF Final a `realestate.goldlifesystem@gmail.com` listo para subirse a la plataforma de firmas (Viafirma).
 
 ### 4. 🧪 Pruebas de Estrés y Aseguramiento de Calidad (QA) - [EN PROCESO]
 - [x] **Depuración de Carga Multimedia:** Corrección de la lógica de búsqueda de carpetas maestras usando el "CDR Largo" a partir de IDs cortos (`RI...`) para los formularios de Inquilino y Propietario.

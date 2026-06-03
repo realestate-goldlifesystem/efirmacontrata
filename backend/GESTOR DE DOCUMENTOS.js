@@ -508,6 +508,9 @@ function doPost(e) {
       case 'generarContrato':
         result = handleGenerarContrato(datos);
         break;
+      case 'enviarContratoRevision':
+        result = { success: true, data: enviarContratoARevision(datos.cdr) };
+        break;
       case 'registrarAprobacionContrato':
         result = handleRegistrarAprobacionContrato(datos);
         break;
@@ -1088,7 +1091,7 @@ function handleSubirContratoFirmado(datos) {
 }
 
 /**
- * Obtener contrato para visualización (usado por validacion-contrato.html)
+ * Obtener contrato para visualización (usado por validador-de-contratos.html)
  */
 function handleObtenerContrato(e) {
   try {

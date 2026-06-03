@@ -27,8 +27,12 @@ El proyecto vive en dos repositorios/carpetas que se hablan mediante una API (JS
 
 ### 2.2 Frontend (`frontend/`) -> GitHub Pages
 - Es la cara pública para clientes (Inquilinos, Propietarios).
-- Archivos clave: `formulario-inquilino.html`, `validador.html`, `validacion-contrato.html`, `sala_firmas.html`.
+- Archivos clave: `formulario-inquilino.html`, `validador.html`, `validador-de-contratos.html`, `sala_firmas.html`.
 - Usa el archivo `config.js` para comunicarse estrictamente con la **URL de Producción (`/exec`)** del backend de Apps Script.
+
+### 2.3 Herramientas Locales IA (`_herramientas_locales/`)
+- Carpeta exclusiva para scripts y utilidades de Node.js o Python (ej. `sheets-helper.js`, `simple_auth_backup.js`) creados por la IA para soporte o consultas locales.
+- **Importante:** Todo lo que esté en esta carpeta NUNCA debe subir a Apps Script. Por ello, `_herramientas_locales/**` está estrictamente ignorado en `.claspignore`.
 
 ## 🚀 3. Reglas de Despliegue (CÓMO HACER TU TRABAJO)
 Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los despliegues de esta forma:
