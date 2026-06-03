@@ -646,6 +646,7 @@
           // VALIDACIÓN CORREGIDA
           if (!data || !data.success) {
             console.warn('No se pudo cargar el estado de aprobaciones');
+            displayApprovalStatus([]); // Limpiar estado de cargando
             return;
           }
 
