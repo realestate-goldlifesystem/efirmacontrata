@@ -301,6 +301,7 @@
 
       .content-grid {
         flex-direction: column;
+        padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px)); /* Espacio para la barra flotante */
       }
       
       .document-preview {
@@ -309,6 +310,10 @@
 
       .mobile-bottom-bar {
         display: flex; /* Mostrar barra inferior en móvil */
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
       }
 
       /* Sidebar se convierte en Bottom Sheet / Modal */
