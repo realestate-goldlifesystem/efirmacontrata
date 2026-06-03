@@ -328,12 +328,12 @@ function recopilarDatosContrato(cdr) {
 
     // Recopilar datos del inmueble
     const inmueble = {
-      direccion: obtenerValor('Ingrese la Dirección del inmueble'),
-      matricula: obtenerValor('MATRICULA_INMOBILIARIA'),
+      direccion: extraerCampoCerebro(datosCerebro, 'DIRECCION_INMUEBLE::') || obtenerValor('Ingrese la Dirección del inmueble') || obtenerValor('Direccion del inmueble'),
+      matricula: extraerCampoCerebro(datosCerebro, 'MATRICULA_INMOBILIARIA::') || obtenerValor('MATRICULA_INMOBILIARIA'),
       chip: obtenerValor('Chip'),
       estrato: obtenerValor('Estrato'),
       barrio: obtenerValor('Barrio'),
-      ciudad: obtenerValor('Ciudad'),
+      ciudad: extraerCampoCerebro(datosCerebro, 'CIUDAD_INMUEBLE::') || obtenerValor('Ciudad'),
       tipoInmueble: obtenerValor('Tipo de inmueble'),
       area: obtenerValor('AREA_M2'),
       habitaciones: obtenerValor('No. de habitaciones'),
