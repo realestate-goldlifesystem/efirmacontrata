@@ -5,10 +5,11 @@ Quiero que construyas esta interfaz bajo los siguientes estándares de diseño, 
 - Utiliza funciones matemáticas de CSS como `clamp()` y unidades relativas (`vw`, `vh`, `rem`) para las tipografías, espaciados y márgenes. El texto y los márgenes deben crecer o encogerse fluidamente sin saltos bruscos.
 - No dependas EXCLUSIVAMENTE de `clamp()`. Usa Media Queries estratégicas (`@media`) para cambiar radicalmente la estructura entre PC y Móvil cuando sea necesario (por ejemplo: cambiar una columna lateral en PC por un menú desplegable oculto en móvil para ahorrar espacio).
 
-2. EXPERIENCIA MÓVIL NATIVA (UX App-like):
-- NUNCA uses `height: 100vh;` para contenedores de pantalla completa. Usa SIEMPRE `height: 100dvh;` (Dynamic Viewport Height) para evitar que el navegador del móvil (Chrome/Safari) oculte elementos debajo de su barra de navegación.
-- Para elementos fijados en la parte inferior (como Bottom Bars o menús flotantes), agrega SIEMPRE el padding de seguridad de Apple/Android: `padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));`.
-- En móviles, prioriza que el contenido principal ocupe toda la pantalla y que las herramientas/acciones estén a la mano en la parte inferior, abriéndose como modales tipo 'Bottom Sheet' (que suben desde abajo).
+2. EXPERIENCIA MÓVIL NATIVA (UX App-like) - ¡CRÍTICO!:
+- NUNCA uses `height: 100vh;` para contenedores de pantalla completa. Usa SIEMPRE `height: 100dvh;` (Dynamic Viewport Height) para evitar problemas con la barra de navegación del navegador móvil.
+- Si creas una barra inferior (Bottom Bar) para acciones rápidas en móviles, usa SIEMPRE `position: fixed; bottom: 0; left: 0; right: 0;` para anclarla con seguridad absoluta, evitando que quede atrapada detrás de los botones físicos o digitales del sistema operativo (Android/iOS).
+- A esa Bottom Bar flotante, agrégale SIEMPRE el padding de seguridad de dispositivos modernos: `padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));`.
+- Asegúrate de dejarle espacio al Bottom Bar en el contenedor principal usando un `padding-bottom` generoso, para que el último bloque de contenido no quede oculto detrás de la barra.
 
 3. DISEÑO PREMIUM Y ESTÉTICA:
 - Crea una estética moderna, limpia y armónica (piensa en un diseño Dark Mode premium con contrastes sutiles, como grises oscuros #111827, toques dorados/primarios vibrantes #fbbf24 y textos legibles).
