@@ -329,21 +329,26 @@ function recopilarDatosContrato(cdr) {
     const lastRow = sheet.getLastRow();
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
-    // Buscar la fila del CDR
+    // Buscar la fila del CDR o del ID
     let filaEncontrada = null;
     const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+    const idCol = headers.indexOf('ID DE REGISTRO') + 1;
 
     for (let i = 2; i <= lastRow; i++) {
       const valorCDR = sheet.getRange(i, cdrCol).getValue();
-      if (valorCDR === cdr) {
+      const valorID = idCol > 0 ? sheet.getRange(i, idCol).getValue() : null;
+      if (valorCDR === cdr || valorID === cdr) {
         filaEncontrada = i;
         break;
       }
     }
 
     if (!filaEncontrada) {
-      throw new Error(`No se encontro el CDR: ${cdr}`);
+      throw new Error(`No se encontro el contrato con CDR o ID: ${cdr}`);
     }
+
+    // Usaremos el verdadero CDR de la fila por si nos pasaron el ID
+    const verdaderoCDR = sheet.getRange(filaEncontrada, cdrCol).getValue();
 
     // Obtener todos los datos de la fila
     const rowData = sheet.getRange(filaEncontrada, 1, 1, sheet.getLastColumn()).getValues()[0];
@@ -358,7 +363,7 @@ function recopilarDatosContrato(cdr) {
     let datosCerebro = null;
     try {
       if (typeof abrirDocCerebro === 'function') {
-        const doc = abrirDocCerebro(cdr);
+        const doc = abrirDocCerebro(verdaderoCDR);
         if (doc) {
           datosCerebro = doc.getBody().getText();
         }
@@ -366,7 +371,7 @@ function recopilarDatosContrato(cdr) {
         console.error("abrirDocCerebro no está definida.");
       }
     } catch (e) {
-      console.error("No se pudo leer el Cerebro para el CDR " + cdr, e);
+      console.error("No se pudo leer el Cerebro para el CDR " + verdaderoCDR, e);
     }
 
     const extraerCampoCerebro = (bloque, etiqueta) => {

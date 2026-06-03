@@ -1096,31 +1096,28 @@ function handleSubirContratoFirmado(datos) {
 function handleObtenerContrato(e) {
   try {
     const cdr = e.parameter.cdr;
-    const docId = e.parameter.docId;
 
-    if (!cdr || !docId) {
+    if (!cdr) {
       return ContentService
         .createTextOutput(JSON.stringify({
           success: false,
-          message: 'Faltan parámetros requeridos'
+          message: 'Faltan parámetros requeridos (cdr)'
         }))
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // Obtener el documento de Google Docs
-    const doc = DocumentApp.openById(docId);
-    const contenido = doc.getBody().getText();
-
-    // Obtener datos adicionales
-    const datos = recopilarDatosContrato(cdr);
+    // Obtener la URL del borrador y datos
+    const contexto = obtenerContextoContrato(cdr);
+    
+    if (!contexto.success) {
+      throw new Error(contexto.message || 'No se encontró el borrador para este CDR');
+    }
 
     return ContentService
       .createTextOutput(JSON.stringify({
         success: true,
-        contenido: contenido,
-        datos: datos.data,
-        docId: docId,
-        url: doc.getUrl()
+        url: contexto.url,
+        datos: contexto.datos
       }))
       .setMimeType(ContentService.MimeType.JSON);
 
