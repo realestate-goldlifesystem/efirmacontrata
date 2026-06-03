@@ -527,6 +527,7 @@ function reemplazarVariablesContrato(body, datos) {
       '{{fecha-de-inicio-de-contrato}}': fechaInicioFormateada,
       '{{FECHA_FINAL}}': datos.contrato.fechaFinal || '',
       '{{LISTA-NOMBRES-CODEUDORES}}': (datos.codeudores || []).map(c => `${c.nombre || ''} ${c.documento || ''}`).join('\n').trim(),
+      '{{LISTA-FIRMAS-CODEUDORES}}': (datos.codeudores || []).map(c => `NOMBRE: ${c.nombre || ''}\nC.C. No. ${c.documento || ''}\nDirección de Notificaciones ___________________\n\nTeléfono: ${c.celular || ''}\nCorreo Electrónico: ${c.email || ''}`).join('\n\n\n'),
       '{{DURACION_CONTRATO}}': datos.contrato.duracion || '12 meses',
       '{{numero-de-meses-del-contrato-en-numero}}': '12',
       '{{numero-de-meses-del-contrato-en-letra}}': 'DOCE',
