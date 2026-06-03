@@ -321,7 +321,9 @@ function recopilarDatosContrato(cdr) {
       direccion: obtenerValor('Direccion de residencia'),
       banco: extraerCampoCerebro(propietarioText, 'BANCO::') || obtenerValor('Banco'),
       tipoCuenta: extraerCampoCerebro(propietarioText, 'TIPO DE CUENTA::') || obtenerValor('Tipo de cuenta'),
-      numeroCuenta: extraerCampoCerebro(propietarioText, 'NÚMERO DE CUENTA::') || obtenerValor('Numero de cuenta')
+      numeroCuenta: extraerCampoCerebro(propietarioText, 'NÚMERO DE CUENTA::') || extraerCampoCerebro(propietarioText, 'NUMERO DE CUENTA::') || obtenerValor('Numero de cuenta'),
+      titularCuenta: extraerCampoCerebro(propietarioText, 'TITULAR::'),
+      docTitularCuenta: extraerCampoCerebro(propietarioText, 'DOC TITULAR::')
     };
 
     // Recopilar datos del inmueble
@@ -479,8 +481,9 @@ function reemplazarVariablesContrato(body, datos) {
       '{{TIPO-DE-CUENTA-BANCARIA}}': datos.propietario.tipoCuenta || '',
       '{{NUMERO_CUENTA_PROPIETARIO}}': datos.propietario.numeroCuenta || '',
       '{{NUMERO-DE-CUENTA-BANCARIA}}': datos.propietario.numeroCuenta || '',
-      '{{NOMBRE-DEL-DUEÑO-DE-LA-CUENTA-BANCARIA}}': datos.propietario.nombre || '',
-      '{{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE LA CUENTA}}': datos.propietario.numeroDocumento || '',
+      '{{NOMBRE-DEL-DUEÑO-DE-LA-CUENTA-BANCARIA}}': datos.propietario.titularCuenta || datos.propietario.nombre || '',
+      '{{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE LA CUENTA}}': datos.propietario.docTitularCuenta || datos.propietario.numeroDocumento || '',
+      '{{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE-LA-CUENTA}}': datos.propietario.docTitularCuenta || datos.propietario.numeroDocumento || '',
 
       // Datos del inquilino
       '{{NOMBRE_INQUILINO}}': datos.inquilino.nombre || '',
