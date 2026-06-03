@@ -137,6 +137,7 @@
       background: #111827;
       border-top: 2px solid #fbbf24;
       padding: 0.8rem;
+      padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0px));
       gap: 1rem;
       z-index: 900;
     }
@@ -420,7 +421,7 @@
     /* Ensure full screen app layout */
     body {
       overflow: hidden;
-      height: 100vh;
+      height: 100dvh; /* dvh prevents hiding behind mobile navigation bars */
       margin: 0;
       padding: 0;
       display: flex;
