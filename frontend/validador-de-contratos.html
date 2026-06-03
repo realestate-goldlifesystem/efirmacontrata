@@ -723,6 +723,8 @@
 
         $('selectParte').addEventListener('change', (e) => {
           state.parte = e.target.value;
+          // Re-evaluar bloqueo al cambiar de rol (útil si hay URL sin &parte=)
+          if(state.parte) loadApprovalStatus(); 
         });
       }
 
@@ -918,6 +920,48 @@
           badge.className = 'status-badge status-pending';
           badge.textContent = 'En Revisión Externa';
           state.estadoGlobal = 'PENDIENTE';
+        }
+
+        // 4. Bloqueo de UI por rondas (Lock UI si ya votó)
+        lockUIIfVoted(estadosFinales);
+      }
+
+      function lockUIIfVoted(estadosFinales) {
+        const accionContainer = document.querySelector('.action-buttons');
+        const obsContainer = document.querySelector('.observations-field');
+        const selectorContainer = $('selectorParte');
+        let lockedMsg = $('lockedMessageDiv');
+
+        // Determinar parte activa
+        const userParte = state.parte ? state.parte.toUpperCase() : null;
+        const miEstado = userParte ? estadosFinales[userParte] : null;
+
+        if (miEstado && miEstado !== 'PENDIENTE' && userParte !== 'ADMINISTRADOR') {
+          // Ya votó en esta ronda
+          if (accionContainer) accionContainer.style.display = 'none';
+          if (obsContainer) obsContainer.style.display = 'none';
+          if (selectorContainer) selectorContainer.style.display = 'none';
+          
+          if (!lockedMsg) {
+            lockedMsg = document.createElement('div');
+            lockedMsg.id = 'lockedMessageDiv';
+            lockedMsg.style.padding = '1.5rem';
+            lockedMsg.style.background = 'rgba(55, 65, 81, 0.5)';
+            lockedMsg.style.border = '1px solid #4b5563';
+            lockedMsg.style.borderRadius = '8px';
+            lockedMsg.style.textAlign = 'center';
+            lockedMsg.style.marginTop = '1rem';
+            
+            const actionsCard = document.querySelector('.actions-card');
+            actionsCard.appendChild(lockedMsg);
+          }
+          lockedMsg.innerHTML = `<h4 style="color:#fbbf24; margin:0 0 0.5rem 0;">⏳ Respuesta Registrada</h4><p style="color:#e5e7eb; margin:0; font-size:0.9rem;">Ya enviaste tu revisión (${miEstado}).<br>Por favor espera a que se genere la versión final o una nueva versión con correcciones.</p>`;
+          lockedMsg.style.display = 'block';
+        } else {
+          // No ha votado, mostrar controles
+          if (accionContainer) accionContainer.style.display = 'flex';
+          if (obsContainer) obsContainer.style.display = 'block';
+          if (lockedMsg) lockedMsg.style.display = 'none';
         }
       }
 

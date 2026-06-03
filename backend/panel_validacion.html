@@ -2173,6 +2173,30 @@
                         } else {
                              document.getElementById('btnGenerarOriginal').disabled = true;
                         }
+
+                        // Bloqueo de envío de nueva versión si alguien sigue pendiente en la ronda
+                        var algunoPendiente = partesUnicas.some(p => partesEstadoFinal[p] === 'PENDIENTE' || partesEstadoFinal[p] === 'REVISADO');
+                        const btnEnviarValidar = document.getElementById('btnEnviarValidar');
+                        
+                        // Si ya hay partes que han votado (es decir, ya estamos en una ronda activa)
+                        // y alguien falta por dar su veredicto, bloqueamos el botón de reenvío.
+                        if (partesUnicas.length > 0 && btnEnviarValidar) {
+                            if (algunoPendiente) {
+                                btnEnviarValidar.disabled = true;
+                                btnEnviarValidar.style.opacity = '0.5';
+                                btnEnviarValidar.title = 'Debes esperar a que todas las partes terminen de revisar esta ronda';
+                                if(btnEnviarValidar.innerHTML.includes('Nueva Versión')) {
+                                    btnEnviarValidar.innerHTML = '⏳ Esperando que completen la ronda...';
+                                }
+                            } else {
+                                btnEnviarValidar.disabled = false;
+                                btnEnviarValidar.style.opacity = '1';
+                                btnEnviarValidar.title = '';
+                                if(btnEnviarValidar.innerHTML.includes('Esperando')) {
+                                    btnEnviarValidar.innerHTML = '✉️ Enviar Nueva Versión Corregida';
+                                }
+                            }
+                        }
                     }
                 })
                 .obtenerEstadoAprobacionesContrato(cdr);
