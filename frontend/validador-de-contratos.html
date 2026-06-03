@@ -176,6 +176,93 @@
       cursor: pointer;
     }
 
+    /* Historial Chat */
+    .chat-history-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding-bottom: 1rem;
+    }
+
+    .chat-bubble {
+      background: #374151;
+      border-radius: 12px;
+      padding: clamp(0.6rem, 1.5vw, 0.8rem) clamp(0.8rem, 2vw, 1rem);
+      position: relative;
+      border-left: 3px solid #6b7280;
+    }
+
+    .chat-bubble.approved { border-left-color: #10b981; }
+    .chat-bubble.rejected { border-left-color: #ef4444; }
+
+    .chat-bubble-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      font-size: clamp(0.7rem, 1.5vw, 0.8rem);
+    }
+
+    .chat-bubble-name {
+      font-weight: 600;
+      color: #fbbf24;
+    }
+
+    .chat-bubble-time {
+      color: #9ca3af;
+    }
+
+    .chat-bubble-body {
+      color: #e5e7eb;
+      font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    /* Barra de Estados Horizontal */
+    .status-bar {
+      background: #1f2937;
+      border-bottom: 1px solid #374151;
+      padding: clamp(0.5rem, 1vw, 0.75rem) clamp(1rem, 2vw, 2rem);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .status-bar strong { color: #fbbf24; font-size: clamp(0.9rem, 1.5vw, 1rem); white-space: nowrap; }
+
+    .status-horizontal {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      flex: 1;
+    }
+
+    .status-horizontal-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(17, 24, 39, 0.5);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #374151;
+    }
+
+    /* Estados */
+    .status-badge {
+      display: inline-block;
+      padding: clamp(0.15rem, 0.5vw, 0.2rem) clamp(0.5rem, 1vw, 0.75rem);
+      border-radius: 20px;
+      font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+      font-weight: 500;
+    }
+
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-approved { background: #d1fae5; color: #065f46; }
+    .status-rejected { background: #fee2e2; color: #991b1b; }
+
     /* Responsive Media Query para Móviles */
     @media (max-width: 850px) {
       .content-grid {
