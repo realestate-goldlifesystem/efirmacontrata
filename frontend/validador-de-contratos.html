@@ -60,8 +60,8 @@
       flex-shrink: 0;
     }
     
-    .validation-header h2 { margin: 0; font-size: 1.5rem; }
-    .validation-header p { margin: 0; color: #fff; }
+    .validation-header h2 { margin: 0; font-size: clamp(1.2rem, 3vw, 1.5rem); }
+    .validation-header p { margin: 0; color: #fff; font-size: clamp(0.85rem, 2vw, 1rem); }
 
     .validation-body {
       background: #111827;
@@ -73,20 +73,22 @@
 
     /* Grid de contenido */
     .content-grid {
-      display: grid;
-      grid-template-columns: 1fr 400px;
+      display: flex;
+      flex-wrap: wrap;
       height: 100%;
       width: 100%;
+      overflow: hidden;
     }
 
     /* Documento preview */
     .document-preview {
       background: #374151;
-      border-right: 2px solid #fbbf24;
-      height: 100%;
-      overflow: hidden;
+      border-right: clamp(0px, 100vw - 800px, 2px) solid #fbbf24;
+      flex: 999 1 clamp(50%, 65vw, 100%);
+      min-height: clamp(50vh, 60vh, 100%);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     .document-content {
@@ -99,26 +101,34 @@
     .sidebar {
       display: flex;
       flex-direction: column;
+      flex: 1 1 clamp(300px, 35vw, 100%);
       height: 100%;
-      overflow-y: auto;
       background: #1f2937;
+      min-width: clamp(280px, 30vw, 400px);
+    }
+
+    .sidebar-scrollable {
+      overflow-y: auto;
+      flex: 1;
+      padding-bottom: clamp(150px, 40vh, 300px); /* Espacio para las acciones fijas */
     }
 
     .info-card {
       border-bottom: 1px solid #374151;
-      padding: 1.5rem;
+      padding: clamp(1rem, 2vw, 1.5rem);
     }
 
     .info-card h3 {
       color: #fbbf24;
       margin-top: 0;
-      margin-bottom: 1rem;
+      margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+      font-size: clamp(1.1rem, 2vw, 1.25rem);
     }
 
     .info-item {
       display: flex;
       justify-content: space-between;
-      padding: 0.5rem 0;
+      padding: clamp(0.3rem, 1vw, 0.5rem) 0;
       border-bottom: 1px solid #374151;
     }
 
@@ -126,15 +136,15 @@
       border-bottom: none;
     }
 
-    .info-label { color: #9ca3af; font-size: 0.9rem; }
-    .info-value { color: #fff; font-weight: 500; }
+    .info-label { color: #9ca3af; font-size: clamp(0.85rem, 1.5vw, 0.9rem); }
+    .info-value { color: #fff; font-weight: 500; font-size: clamp(0.9rem, 1.5vw, 1rem); }
 
     /* Estados */
     .status-badge {
       display: inline-block;
-      padding: 0.25rem 0.75rem;
+      padding: clamp(0.2rem, 0.5vw, 0.25rem) clamp(0.5rem, 1vw, 0.75rem);
       border-radius: 20px;
-      font-size: 0.875rem;
+      font-size: clamp(0.75rem, 1.5vw, 0.875rem);
       font-weight: 500;
     }
 
@@ -144,58 +154,121 @@
 
     /* Acciones */
     .actions-card {
-      padding: 1.5rem;
-      background: #111827;
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: clamp(280px, 100vw, 400px);
+      padding: clamp(1rem, 2vw, 1.5rem);
+      background: rgba(17, 24, 39, 0.95);
+      backdrop-filter: blur(10px);
       border-top: 2px solid #fbbf24;
-      margin-top: auto;
+      border-left: 2px solid #fbbf24;
+      border-top-left-radius: 12px;
+      box-shadow: -4px -4px 15px rgba(0,0,0,0.5);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      max-height: clamp(30vh, 50vh, 60vh);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .actions-card h3 { color: #fbbf24; margin-top: 0; margin-bottom: 1rem; }
+    .actions-card.expanded {
+      width: clamp(300px, 50vw, 800px);
+      max-height: 100vh;
+      height: 100vh;
+      border-top-left-radius: 0;
+      border-top: none;
+    }
+
+    .actions-card h3 { color: #fbbf24; margin-top: 0; margin-bottom: clamp(0.5rem, 1.5vw, 1rem); font-size: clamp(1.1rem, 2vw, 1.25rem); }
 
     .action-buttons {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: clamp(0.5rem, 1.5vw, 0.75rem);
     }
 
     .btn-action {
       width: 100%;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
+      padding: clamp(0.5rem, 1.5vw, 0.6rem) clamp(0.8rem, 2vw, 1rem);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: clamp(0.85rem, 1.5vw, 0.95rem);
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
     }
 
-    .btn-approve { background: #10b981; color: white; }
-    .btn-approve:hover { background: #059669; }
+    .btn-approve { 
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%); 
+      color: white; 
+      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+    }
+    .btn-approve:hover { 
+      box-shadow: 0 6px 8px -1px rgba(16, 185, 129, 0.3);
+      transform: translateY(-1px);
+    }
 
-    .btn-reject { background: #ef4444; color: white; }
-    .btn-reject:hover { background: #dc2626; }
+    .btn-reject { 
+      background: transparent; 
+      color: #ef4444; 
+      border-color: #ef4444;
+    }
+    .btn-reject:hover { 
+      background: rgba(239, 68, 68, 0.1);
+      transform: translateY(-1px);
+    }
 
-    .btn-download { background: #3b82f6; color: white; }
-    .btn-download:hover { background: #2563eb; }
+    .btn-download { 
+      background: rgba(55, 65, 81, 0.5); 
+      color: #e5e7eb; 
+      border-color: #4b5563;
+    }
+    .btn-download:hover { 
+      background: rgba(55, 65, 81, 0.8);
+      color: white;
+    }
 
-    .observations-field { margin-top: 1rem; }
-    .observations-field label { display: block; margin-bottom: 0.5rem; color: #fbbf24; font-size: 0.9rem; }
+    .observations-field { margin-top: clamp(0.8rem, 1.5vw, 1rem); flex: 1; display: flex; flex-direction: column; }
+    .observations-field label { display: block; margin-bottom: clamp(0.3rem, 1vw, 0.5rem); color: #9ca3af; font-size: clamp(0.75rem, 1.5vw, 0.85rem); font-weight: 500;}
     .observations-field textarea {
       width: 100%;
-      padding: 0.75rem;
+      flex: 1;
+      padding: clamp(0.5rem, 1.5vw, 0.75rem);
       border: 1px solid #374151;
-      border-radius: 6px;
+      border-radius: 8px;
       background: #1f2937;
       color: white;
-      resize: vertical;
-      min-height: 80px;
+      resize: none;
+      min-height: clamp(60px, 10vh, 120px);
       box-sizing: border-box;
+      transition: all 0.3s;
+      font-family: inherit;
+      font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+    }
+    .observations-field textarea:focus {
+      outline: none;
+      border-color: #fbbf24;
+      box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+    }
+    
+    .content-grid.expanded .document-preview {
+      flex: 1 1 clamp(40%, 50vw, 100%);
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .content-grid { grid-template-columns: 1fr; }
-      .document-preview { min-height: 60vh; border-right: none; border-bottom: 2px solid #fbbf24; }
-      body { overflow: auto; height: auto; }
+    .content-grid.expanded .sidebar {
+      flex: 1 1 clamp(40%, 50vw, 100%);
+    }
+
+    /* Remove responsive block and allow body to scroll naturally if wrapped */
+    body {
+      overflow: auto;
+      min-height: 100vh;
+      height: auto;
     }
 
     .loader-overlay {
@@ -260,62 +333,55 @@
 
           <!-- Sidebar -->
           <div class="sidebar">
-            <!-- Información del contrato -->
-            <div class="info-card">
-              <h3>📋 Información del Contrato</h3>
-              <div class="info-item">
-                <span class="info-label">Inquilino:</span>
-                <span id="nombreInquilino" class="info-value">-</span>
+            <div class="sidebar-scrollable">
+              <!-- Selector de parte (oculto, se muestra dinámicamente) -->
+              <div id="selectorParte" class="info-card hidden">
+                <h3>👤 Seleccione su rol</h3>
+                <select id="selectParte" class="input">
+                  <option value="">Seleccione...</option>
+                  <option value="inquilino">Inquilino</option>
+                  <option value="propietario">Propietario</option>
+                  <option value="administrador">Administrador</option>
+                </select>
               </div>
-              <div class="info-item">
-                <span class="info-label">Propietario:</span>
-                <span id="nombrePropietario" class="info-value">-</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Inmueble:</span>
-                <span id="direccionInmueble" class="info-value">-</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Canon:</span>
-                <span id="valorCanon" class="info-value">-</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Duración:</span>
-                <span id="duracionContrato" class="info-value">-</span>
-              </div>
-            </div>
 
-            <!-- Estado de aprobaciones -->
-            <div class="info-card">
-              <h3>✅ Estado de Aprobaciones</h3>
-              <div id="estadoAprobaciones">
-                <div class="info-item">
-                  <span class="info-label">Inquilino:</span>
-                  <span class="status-badge status-pending">Pendiente</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Propietario:</span>
-                  <span class="status-badge status-pending">Pendiente</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Administrador:</span>
-                  <span class="status-badge status-pending">Pendiente</span>
+              <!-- Estado de aprobaciones -->
+              <div class="info-card">
+                <h3>✅ Estado de Aprobaciones</h3>
+                <div id="estadoAprobaciones">
+                  <div class="info-item">
+                    <span class="info-label">Inquilino:</span>
+                    <span class="status-badge status-pending">Pendiente</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Propietario:</span>
+                    <span class="status-badge status-pending">Pendiente</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Administrador:</span>
+                    <span class="status-badge status-pending">Pendiente</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Acciones -->
-            <div class="actions-card">
-              <h3>🎯 Acciones Disponibles</h3>
-              <div class="action-buttons">
-                <button id="btnDownload" class="btn-action btn-download">
-                  📥 Descargar Borrador
+            <!-- Acciones (Fijas al fondo) -->
+            <div class="actions-card" style="display: flex; flex-direction: column; flex: 1; max-height: 50vh;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0;">🎯 Acciones</h3>
+                <button id="btnExpand" style="background: none; border: none; color: #9ca3af; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem;" title="Ampliar panel">
+                  ⛶ <span id="expandText">Ampliar</span>
                 </button>
+              </div>
+              <div class="action-buttons">
                 <button id="btnApprove" class="btn-action btn-approve">
                   ✓ Aprobar Contrato
                 </button>
                 <button id="btnReject" class="btn-action btn-reject">
                   ✗ Solicitar Corrección
+                </button>
+                <button id="btnDownload" class="btn-action btn-download">
+                  📥 Descargar Borrador
                 </button>
               </div>
 
@@ -446,6 +512,17 @@
         $('btnApprove').addEventListener('click', handleApprove);
         $('btnReject').addEventListener('click', handleReject);
         $('btnDownload').addEventListener('click', handleDownload);
+        
+        $('btnExpand').addEventListener('click', () => {
+          const actionsCard = document.querySelector('.actions-card');
+          actionsCard.classList.toggle('expanded');
+          if(actionsCard.classList.contains('expanded')) {
+            $('expandText').textContent = 'Reducir';
+          } else {
+            $('expandText').textContent = 'Ampliar';
+          }
+        });
+        
         $('selectParte').addEventListener('change', (e) => {
           state.parte = e.target.value;
         });
