@@ -533,6 +533,9 @@ function reemplazarVariablesContrato(body, datos) {
         body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-1}}', datos.codeudores[0].documento || '');
         body.replaceText('{{CELULAR-CODEUDOR-1}}', datos.codeudores[0].celular || '');
         body.replaceText('{{CORREO-CODEUDOR-1}}', datos.codeudores[0].email || '');
+        
+        const firmaC1 = `NOMBRE:${datos.codeudores[0].nombre || ''}\nC.C. No. ${datos.codeudores[0].documento || ''}\nDirección de Notificaciones ___________________\n\nTeléfono:${datos.codeudores[0].celular || ''}\nCorreo Electrónico: ${datos.codeudores[0].email || ''}\n`;
+        body.replaceText('{{FIRMA-CODEUDOR-1}}', firmaC1);
       }
 
       // Reemplazar datos del segundo codeudor si existe
@@ -552,6 +555,9 @@ function reemplazarVariablesContrato(body, datos) {
         // Nuevas etiquetas
         body.replaceText('{{NOMBRE-CODEUDOR-2}}', datos.codeudores[1].nombre || '');
         body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', datos.codeudores[1].documento || '');
+        
+        const firmaC2 = `NOMBRE:${datos.codeudores[1].nombre || ''}\nC.C. No. ${datos.codeudores[1].documento || ''}\nDirección de Notificaciones ___________________\n\nTeléfono:${datos.codeudores[1].celular || ''}\nCorreo Electrónico: ${datos.codeudores[1].email || ''}\n`;
+        body.replaceText('{{FIRMA-CODEUDOR-2}}', firmaC2);
       } else {
         // Limpiar variables del segundo codeudor
         body.replaceText('{{NOMBRE_CODEUDOR2}}', 'N/A');
@@ -568,6 +574,7 @@ function reemplazarVariablesContrato(body, datos) {
         // Nuevas etiquetas
         body.replaceText('{{NOMBRE-CODEUDOR-2}}', 'N/A');
         body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', 'N/A');
+        body.replaceText('{{FIRMA-CODEUDOR-2}}', '');
       }
 
       // Reemplazar datos del tercer codeudor si existe
@@ -587,6 +594,9 @@ function reemplazarVariablesContrato(body, datos) {
         // Nuevas etiquetas
         body.replaceText('{{NOMBRE-CODEUDOR-3}}', datos.codeudores[2].nombre || '');
         body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', datos.codeudores[2].documento || '');
+        
+        const firmaC3 = `NOMBRE:${datos.codeudores[2].nombre || ''}\nC.C. No. ${datos.codeudores[2].documento || ''}\nDirección de Notificaciones ___________________\n\nTeléfono:${datos.codeudores[2].celular || ''}\nCorreo Electrónico: ${datos.codeudores[2].email || ''}\n`;
+        body.replaceText('{{FIRMA-CODEUDOR-3}}', firmaC3);
       } else {
         // Limpiar variables del tercer codeudor
         body.replaceText('{{NOMBRE_CODEUDOR3}}', 'N/A');
@@ -603,6 +613,7 @@ function reemplazarVariablesContrato(body, datos) {
         // Nuevas etiquetas
         body.replaceText('{{NOMBRE-CODEUDOR-3}}', 'N/A');
         body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+        body.replaceText('{{FIRMA-CODEUDOR-3}}', '');
       }
     } else {
       // Si no hay codeudores, limpiar todas las variables
@@ -646,6 +657,9 @@ function reemplazarVariablesContrato(body, datos) {
       body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', 'N/A');
       body.replaceText('{{NOMBRE-CODEUDOR-3}}', 'N/A');
       body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+      body.replaceText('{{FIRMA-CODEUDOR-1}}', '');
+      body.replaceText('{{FIRMA-CODEUDOR-2}}', '');
+      body.replaceText('{{FIRMA-CODEUDOR-3}}', '');
     }
     
     // Adicionales que están fuera de {{}} o irregulares en tu plantilla:
