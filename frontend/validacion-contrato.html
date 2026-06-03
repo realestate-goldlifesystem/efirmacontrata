@@ -580,42 +580,93 @@
         if (!estados || !Array.isArray(estados)) return;
 
         const container = $('estadoAprobaciones');
-        let html = '';
-
+        
+        // 1. Calcular el estado final de cada parte
+        const estadosFinales = {};
         estados.forEach(est => {
-          const badgeClass = est.estado === 'APROBADO' ? 'status-approved' :
-            est.estado === 'RECHAZADO' ? 'status-rejected' :
-              'status-pending';
-          const badgeText = est.estado === 'APROBADO' ? 'Aprobado' :
-            est.estado === 'RECHAZADO' ? 'Rechazado' :
-              'Pendiente';
-
-          html += `
-          <div class="info-item">
-            <span class="info-label">${escapeHTML(est.parte)}:</span>
-            <span class="status-badge ${badgeClass}">${badgeText}</span>
-          </div>
-        `;
+           if(est.parte !== 'ADMIN') {
+              estadosFinales[est.parte] = est.estado;
+           }
         });
 
-        container.innerHTML = html;
+        // 2. Renderizar Badges de Estado Actual (Ignorando ADMIN para los badges)
+        let htmlBadges = '';
+        if(Object.keys(estadosFinales).length === 0) {
+            htmlBadges = '<p style="color:#6b7280; font-size:0.9rem;">No hay registros de validación aún.</p>';
+        } else {
+            Object.keys(estadosFinales).forEach(parte => {
+              const estado = estadosFinales[parte];
+              const badgeClass = estado === 'APROBADO' ? 'status-approved' :
+                estado === 'RECHAZADO' || estado === 'CAMBIOS' ? 'status-rejected' :
+                  'status-pending';
+              const badgeText = estado === 'APROBADO' ? 'Aprobado' :
+                estado === 'RECHAZADO' || estado === 'CAMBIOS' ? 'Solicitó Cambios' :
+                  'Pendiente';
+
+              htmlBadges += `
+              <div class="info-item">
+                <span class="info-label">${escapeHTML(parte)}:</span>
+                <span class="status-badge ${badgeClass}">${badgeText}</span>
+              </div>
+            `;
+            });
+        }
+        container.innerHTML = htmlBadges;
+
+        // 3. Renderizar Bitácora Transparente (Historial Completo)
+        // Buscamos si existe el contenedor, si no, lo creamos y lo insertamos antes de Actions
+        let bitacoraContainer = $('bitacoraObservaciones');
+        if(!bitacoraContainer) {
+            bitacoraContainer = document.createElement('div');
+            bitacoraContainer.id = 'bitacoraObservaciones';
+            bitacoraContainer.className = 'info-card';
+            bitacoraContainer.style.marginTop = '1.5rem';
+            bitacoraContainer.style.marginBottom = '1.5rem';
+            
+            // Insertar después del estado de aprobaciones y antes de las acciones
+            container.parentElement.after(bitacoraContainer);
+        }
+
+        let htmlBitacora = '<h3>💬 Bitácora del Contrato</h3><div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">';
+        
+        if (estados.length === 0) {
+            htmlBitacora += '<p style="color:#6b7280; font-size:0.9rem;">El historial de negociación aparecerá aquí.</p>';
+        } else {
+            estados.forEach(est => {
+                const colorParte = est.parte === 'ADMIN' ? '#3b82f6' : (est.estado === 'APROBADO' ? '#10b981' : (est.estado === 'RECHAZADO' || est.estado === 'CAMBIOS' ? '#ef4444' : '#6b7280'));
+                
+                htmlBitacora += `
+                    <div style="border-left: 3px solid ${colorParte}; padding-left: 12px; margin-bottom: 12px; background: #f9fafb; padding-top: 8px; padding-bottom: 8px; padding-right: 8px; border-radius: 0 6px 6px 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <strong style="color: ${colorParte}; font-size: 0.9rem;">${escapeHTML(est.parte)}</strong>
+                            <span style="color: #9ca3af; font-size: 0.75rem;">${est.fecha} ${est.hora || ''}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; font-weight: bold; color: #4b5563; margin-bottom: 4px;">${est.estado}</div>
+                        ${est.comentarios ? `<div style="font-size: 0.85rem; color: #1f2937; font-style: italic; background: white; padding: 6px; border-radius: 4px; border: 1px solid #e5e7eb;">"${escapeHTML(est.comentarios)}"</div>` : ''}
+                    </div>
+                `;
+            });
+        }
+        htmlBitacora += '</div>';
+        bitacoraContainer.innerHTML = htmlBitacora;
 
         // Actualizar badge global
-        const todosAprobados = estados.every(e => e.estado === 'APROBADO');
-        const hayRechazado = estados.some(e => e.estado === 'RECHAZADO');
+        const valuesFinales = Object.values(estadosFinales);
+        const todosAprobados = valuesFinales.length > 0 && valuesFinales.every(e => e === 'APROBADO');
+        const hayRechazado = valuesFinales.some(e => e === 'RECHAZADO' || e === 'CAMBIOS');
 
         const badge = $('estadoBadge');
         if (todosAprobados) {
           badge.className = 'status-badge status-approved';
-          badge.textContent = 'Contrato Aprobado';
+          badge.textContent = 'Aprobado por todas las partes';
           state.estadoGlobal = 'APROBADO';
         } else if (hayRechazado) {
           badge.className = 'status-badge status-rejected';
-          badge.textContent = 'Requiere Corrección';
+          badge.textContent = 'En Negociación (Requiere Ajustes)';
           state.estadoGlobal = 'CORRECCION';
         } else {
           badge.className = 'status-badge status-pending';
-          badge.textContent = 'Pendiente de Validación';
+          badge.textContent = 'En Revisión Externa';
           state.estadoGlobal = 'PENDIENTE';
         }
       }
