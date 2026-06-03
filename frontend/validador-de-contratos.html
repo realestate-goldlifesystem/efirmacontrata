@@ -105,7 +105,6 @@
       flex: 1 1 clamp(300px, 35%, 100%);
       height: 100%;
       background: #1f2937;
-      padding-bottom: clamp(200px, 40vh, 350px); /* Espacio extra para que el panel fijo no tape el contenido al hacer scroll */
     }
 
     .sidebar-scrollable {
@@ -140,12 +139,42 @@
     .info-label { color: #9ca3af; font-size: clamp(0.85rem, 1.5vw, 0.9rem); }
     .info-value { color: #fff; font-weight: 500; font-size: clamp(0.9rem, 1.5vw, 1rem); }
 
+    /* Barra de Estados Horizontal */
+    .status-bar {
+      background: #1f2937;
+      border-bottom: 1px solid #374151;
+      padding: clamp(0.5rem, 1vw, 0.75rem) clamp(1rem, 2vw, 2rem);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .status-bar strong { color: #fbbf24; font-size: clamp(0.9rem, 1.5vw, 1rem); white-space: nowrap; }
+
+    .status-horizontal {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      flex: 1;
+    }
+
+    .status-horizontal-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(17, 24, 39, 0.5);
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #374151;
+    }
+
     /* Estados */
     .status-badge {
       display: inline-block;
-      padding: clamp(0.2rem, 0.5vw, 0.25rem) clamp(0.5rem, 1vw, 0.75rem);
+      padding: clamp(0.15rem, 0.5vw, 0.2rem) clamp(0.5rem, 1vw, 0.75rem);
       border-radius: 20px;
-      font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+      font-size: clamp(0.75rem, 1.5vw, 0.85rem);
       font-weight: 500;
     }
 
@@ -310,6 +339,25 @@
         </div>
       </div>
 
+      <!-- Barra de Estados Horizontal -->
+      <div class="status-bar">
+        <strong>✅ Estado de Aprobaciones:</strong>
+        <div id="estadoAprobaciones" class="status-horizontal">
+          <div class="status-horizontal-item">
+            <span class="info-label">Inquilino:</span>
+            <span class="status-badge status-pending">Pendiente</span>
+          </div>
+          <div class="status-horizontal-item">
+            <span class="info-label">Propietario:</span>
+            <span class="status-badge status-pending">Pendiente</span>
+          </div>
+          <div class="status-horizontal-item">
+            <span class="info-label">Administrador:</span>
+            <span class="status-badge status-pending">Pendiente</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Body de validación -->
       <div class="validation-body">
         <!-- Alert Box -->
@@ -328,33 +376,14 @@
           <div class="sidebar">
             <div class="sidebar-scrollable">
               <!-- Selector de parte (oculto, se muestra dinámicamente) -->
-              <div id="selectorParte" class="info-card hidden">
-                <h3>👤 Seleccione su rol</h3>
-                <select id="selectParte" class="input">
+              <div id="selectorParte" class="info-card hidden" style="border-bottom: none; border-bottom: 2px solid #fbbf24;">
+                <h3 style="margin-bottom: 0.5rem;">👤 Seleccione su rol</h3>
+                <select id="selectParte" class="input" style="width: 100%; padding: 0.5rem; background: #111827; color: white; border: 1px solid #374151; border-radius: 6px;">
                   <option value="">Seleccione...</option>
                   <option value="inquilino">Inquilino</option>
                   <option value="propietario">Propietario</option>
                   <option value="administrador">Administrador</option>
                 </select>
-              </div>
-
-              <!-- Estado de aprobaciones -->
-              <div class="info-card">
-                <h3>✅ Estado de Aprobaciones</h3>
-                <div id="estadoAprobaciones">
-                  <div class="info-item">
-                    <span class="info-label">Inquilino:</span>
-                    <span class="status-badge status-pending">Pendiente</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Propietario:</span>
-                    <span class="status-badge status-pending">Pendiente</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">Administrador:</span>
-                    <span class="status-badge status-pending">Pendiente</span>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -612,8 +641,8 @@
                   'Pendiente';
 
               htmlBadges += `
-              <div class="info-item">
-                <span class="info-label">${escapeHTML(parte)}:</span>
+              <div class="status-horizontal-item">
+                <span class="info-label" style="font-weight:bold;">${escapeHTML(parte)}:</span>
                 <span class="status-badge ${badgeClass}">${badgeText}</span>
               </div>
             `;
