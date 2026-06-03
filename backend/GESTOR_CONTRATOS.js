@@ -605,8 +605,8 @@ function reemplazarVariablesContrato(body, datos) {
         body.replaceText('{{PARRAFO-CODEUDOR-2}}', '');
         
         // Nuevas etiquetas
-        body.replaceText('{{NOMBRE-CODEUDOR-2}}', 'N/A');
-        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', 'N/A');
+        body.replaceText('{{NOMBRE-CODEUDOR-2}}', '');
+        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', '');
         body.replaceText('{{FIRMA-CODEUDOR-2}}', '');
       }
 
@@ -644,8 +644,8 @@ function reemplazarVariablesContrato(body, datos) {
         body.replaceText('{{PARRAFO-CODEUDOR-3}}', '');
         
         // Nuevas etiquetas
-        body.replaceText('{{NOMBRE-CODEUDOR-3}}', 'N/A');
-        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+        body.replaceText('{{NOMBRE-CODEUDOR-3}}', '');
+        body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', '');
         body.replaceText('{{FIRMA-CODEUDOR-3}}', '');
       }
     } else {
@@ -682,14 +682,14 @@ function reemplazarVariablesContrato(body, datos) {
       body.replaceText('{{PARRAFO-CODEUDOR-3}}', '');
       
       // Nuevas etiquetas
-      body.replaceText('{{NOMBRE-CODEUDOR-1}}', 'N/A');
-      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-1}}', 'N/A');
-      body.replaceText('{{CELULAR-CODEUDOR-1}}', 'N/A');
-      body.replaceText('{{CORREO-CODEUDOR-1}}', 'N/A');
-      body.replaceText('{{NOMBRE-CODEUDOR-2}}', 'N/A');
-      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', 'N/A');
-      body.replaceText('{{NOMBRE-CODEUDOR-3}}', 'N/A');
-      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', 'N/A');
+      body.replaceText('{{NOMBRE-CODEUDOR-1}}', '');
+      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-1}}', '');
+      body.replaceText('{{CELULAR-CODEUDOR-1}}', '');
+      body.replaceText('{{CORREO-CODEUDOR-1}}', '');
+      body.replaceText('{{NOMBRE-CODEUDOR-2}}', '');
+      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-2}}', '');
+      body.replaceText('{{NOMBRE-CODEUDOR-3}}', '');
+      body.replaceText('{{NUMERO-DOCUMENTO-CODEUDOR-3}}', '');
       body.replaceText('{{FIRMA-CODEUDOR-1}}', '');
       body.replaceText('{{FIRMA-CODEUDOR-2}}', '');
       body.replaceText('{{FIRMA-CODEUDOR-3}}', '');
