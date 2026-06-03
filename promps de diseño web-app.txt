@@ -1,0 +1,19 @@
+"ACTÚA COMO UN EXPERTO EN UI/UX Y DESARROLLO FRONTEND PARA WEB-APPS PREMIUM.
+Quiero que construyas esta interfaz bajo los siguientes estándares de diseño, responsividad y experiencia de usuario (UX):
+
+1. RESPONSIVIDAD Y FLUIDEZ (El nuevo estándar):
+- Utiliza funciones matemáticas de CSS como `clamp()` y unidades relativas (`vw`, `vh`, `rem`) para las tipografías, espaciados y márgenes. El texto y los márgenes deben crecer o encogerse fluidamente sin saltos bruscos.
+- No dependas EXCLUSIVAMENTE de `clamp()`. Usa Media Queries estratégicas (`@media`) para cambiar radicalmente la estructura entre PC y Móvil cuando sea necesario (por ejemplo: cambiar una columna lateral en PC por un menú desplegable oculto en móvil para ahorrar espacio).
+
+2. EXPERIENCIA MÓVIL NATIVA (UX App-like):
+- NUNCA uses `height: 100vh;` para contenedores de pantalla completa. Usa SIEMPRE `height: 100dvh;` (Dynamic Viewport Height) para evitar que el navegador del móvil (Chrome/Safari) oculte elementos debajo de su barra de navegación.
+- Para elementos fijados en la parte inferior (como Bottom Bars o menús flotantes), agrega SIEMPRE el padding de seguridad de Apple/Android: `padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));`.
+- En móviles, prioriza que el contenido principal ocupe toda la pantalla y que las herramientas/acciones estén a la mano en la parte inferior, abriéndose como modales tipo 'Bottom Sheet' (que suben desde abajo).
+
+3. DISEÑO PREMIUM Y ESTÉTICA:
+- Crea una estética moderna, limpia y armónica (piensa en un diseño Dark Mode premium con contrastes sutiles, como grises oscuros #111827, toques dorados/primarios vibrantes #fbbf24 y textos legibles).
+- Evita el diseño aburrido. Usa bordes redondeados (`border-radius: 8px o 12px`), sombras sutiles (`box-shadow`), transiciones suaves en los botones (`transition: all 0.3s ease`) y efectos hover.
+- Mantén la armonía en la disposición de los elementos. Usa `display: flex` con `gap` en lugar de márgenes aleatorios para que las listas, badges y botones nunca se desalineen ni generen saltos de línea feos si la pantalla se achica.
+
+4. FLUJOS DE USUARIO LÓGICOS (Control de Rondas y Bloqueos):
+- Si hay un proceso de envío, validación o formulario, diseña lógicas de bloqueo (UI Locking). Cuando el usuario realiza una acción, OCULTA los botones de acción y muestra en su lugar un mensaje claro de '⏳ Acción registrada, esperando...', para evitar clics duplicados o alteraciones que rompan la lógica del backend."
