@@ -960,6 +960,7 @@
         const accionContainer = document.querySelector('.action-buttons');
         const obsContainer = document.querySelector('.observations-field');
         const selectorContainer = $('selectorParte');
+        const iframeContainer = document.querySelector('.pdf-container');
         let lockedMsg = $('lockedMessageDiv');
 
         // Determinar parte activa
@@ -971,26 +972,44 @@
           if (accionContainer) accionContainer.style.display = 'none';
           if (obsContainer) obsContainer.style.display = 'none';
           if (selectorContainer) selectorContainer.style.display = 'none';
+          if (iframeContainer) iframeContainer.style.display = 'none'; // Ocultar el documento
           
           if (!lockedMsg) {
             lockedMsg = document.createElement('div');
             lockedMsg.id = 'lockedMessageDiv';
-            lockedMsg.style.padding = '1.5rem';
-            lockedMsg.style.background = 'rgba(55, 65, 81, 0.5)';
-            lockedMsg.style.border = '1px solid #4b5563';
-            lockedMsg.style.borderRadius = '8px';
+            lockedMsg.style.padding = '3rem 1.5rem';
+            lockedMsg.style.background = 'rgba(17, 24, 39, 0.9)';
+            lockedMsg.style.border = '1px solid #374151';
+            lockedMsg.style.borderRadius = '12px';
             lockedMsg.style.textAlign = 'center';
-            lockedMsg.style.marginTop = '1rem';
+            lockedMsg.style.marginTop = '2rem';
+            lockedMsg.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.5)';
             
-            const actionsCard = document.querySelector('.actions-card');
-            actionsCard.appendChild(lockedMsg);
+            // Lo insertamos en el panel principal en lugar del de acciones para que sea más grande
+            const mainPanel = document.querySelector('.contract-panel');
+            mainPanel.insertBefore(lockedMsg, mainPanel.firstChild);
           }
-          lockedMsg.innerHTML = `<h4 style="color:#fbbf24; margin:0 0 0.5rem 0;">⏳ Respuesta Registrada</h4><p style="color:#e5e7eb; margin:0; font-size:0.9rem;">Ya enviaste tu revisión (${miEstado}).<br>Por favor espera a que se genere la versión final o una nueva versión con correcciones.</p>`;
+          
+          const icon = miEstado === 'APROBADO' ? '✅' : '⚠️';
+          const title = miEstado === 'APROBADO' ? '¡Contrato Aprobado por tu parte!' : '¡Correcciones Solicitadas!';
+          
+          lockedMsg.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 1rem;">${icon}</div>
+            <h2 style="color:#fbbf24; margin:0 0 1rem 0; font-size: 1.8rem;">${title}</h2>
+            <p style="color:#e5e7eb; margin:0 0 1.5rem 0; font-size:1.1rem; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+              Tu validación <strong>(${miEstado})</strong> ha sido registrada con éxito en la Bitácora.
+              <br><br>
+              Estamos a la espera de que el resto de las partes validen el documento o que el Administrador revise los comentarios y envíe una resolución final.
+            </p>
+            <p style="color: #9ca3af; font-size: 0.9rem;">(Puedes seguir leyendo la Bitácora en el panel derecho)</p>
+          `;
           lockedMsg.style.display = 'block';
         } else {
           // No ha votado, mostrar controles
           if (accionContainer) accionContainer.style.display = 'flex';
           if (obsContainer) obsContainer.style.display = 'block';
+          if (selectorContainer && !state.parte) selectorContainer.style.display = 'block';
+          if (iframeContainer) iframeContainer.style.display = 'flex'; // Volver a mostrar documento
           if (lockedMsg) lockedMsg.style.display = 'none';
         }
       }
