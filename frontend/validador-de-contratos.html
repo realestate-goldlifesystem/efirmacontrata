@@ -742,9 +742,10 @@
           const url = new URL(CONFIG.API_URL);
           url.searchParams.append('accion', 'obtenerContrato');
           url.searchParams.append('cdr', state.cdr);
+          url.searchParams.append('_t', new Date().getTime());
           if (state.docId) url.searchParams.append('docId', state.docId);
 
-          const res = await fetch(url.toString());
+          const res = await fetch(url.toString(), { cache: 'no-store' });
           const data = await res.json();
 
           // VALIDACIÓN CORREGIDA
@@ -769,8 +770,9 @@
           const url = new URL(CONFIG.API_URL);
           url.searchParams.append('accion', 'obtenerEstadoAprobaciones');
           url.searchParams.append('cdr', state.cdr);
+          url.searchParams.append('_t', new Date().getTime());
 
-          const res = await fetch(url.toString());
+          const res = await fetch(url.toString(), { cache: 'no-store' });
           const data = await res.json();
 
           // VALIDACIÓN CORREGIDA
@@ -831,10 +833,10 @@
             Object.keys(estadosFinales).forEach(parte => {
               const estado = estadosFinales[parte];
               const badgeClass = estado === 'APROBADO' ? 'status-approved' :
-                estado === 'RECHAZADO' || estado === 'CAMBIOS' ? 'status-rejected' :
+                estado === 'CORREGIR' || estado === 'CAMBIOS' ? 'status-rejected' :
                   'status-pending';
               const badgeText = estado === 'APROBADO' ? 'Aprobado' :
-                estado === 'RECHAZADO' || estado === 'CAMBIOS' ? 'Solicitó Cambios' :
+                estado === 'CORREGIR' || estado === 'CAMBIOS' ? 'Solicitó Corrección' :
                   'Pendiente';
 
               htmlBadges += `
@@ -856,7 +858,7 @@
             let chatHtml = '';
             estados.forEach(est => {
                 const isApproved = est.estado === 'APROBADO';
-                const isRejected = est.estado === 'RECHAZADO' || est.estado === 'CAMBIOS' || est.estado === 'CAMBIOS_SOLICITADOS';
+                const isRejected = est.estado === 'CORREGIR' || est.estado === 'CAMBIOS' || est.estado === 'CAMBIOS_SOLICITADOS';
                 const isSystem = est.parte === 'ADMIN';
                 const bubbleClass = isApproved ? 'approved' : (isRejected ? 'rejected' : (isSystem ? 'system' : ''));
                 
@@ -911,7 +913,7 @@
         } else {
             estados.forEach(est => {
                 const isSystem = est.parte === 'ADMIN';
-                const colorParte = isSystem ? '#3b82f6' : (est.estado === 'APROBADO' ? '#10b981' : (est.estado === 'RECHAZADO' || est.estado === 'CAMBIOS' || est.estado === 'CAMBIOS_SOLICITADOS' ? '#ef4444' : '#6b7280'));
+                const colorParte = isSystem ? '#3b82f6' : (est.estado === 'APROBADO' ? '#10b981' : (est.estado === 'CORREGIR' || est.estado === 'CAMBIOS' || est.estado === 'CAMBIOS_SOLICITADOS' ? '#ef4444' : '#6b7280'));
                 
                 let displayParte = est.parte || 'Usuario';
                 if (displayParte.toUpperCase() === 'ADMIN') displayParte = 'Administrador';
@@ -935,7 +937,7 @@
         // Actualizar badge global
         const valuesFinales = Object.values(estadosFinales);
         const todosAprobados = valuesFinales.length > 0 && valuesFinales.every(e => e === 'APROBADO');
-        const hayRechazado = valuesFinales.some(e => e === 'RECHAZADO' || e === 'CAMBIOS');
+        const hayRechazado = valuesFinales.some(e => e === 'CORREGIR' || e === 'CAMBIOS');
 
         const badge = $('estadoBadge');
         if (todosAprobados) {
@@ -1026,7 +1028,20 @@
         const parte = state.parte || $('selectParte').value;
         const observaciones = $('observaciones').value.trim();
 
-        if (!confirm('¿Está seguro de aprobar este contrato?')) return;
+        const result = await Swal.fire({
+            title: '¿Aprobar Contrato?',
+            text: '¿Está seguro de aprobar este contrato? Esta acción no se puede deshacer.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, Aprobar',
+            cancelButtonText: 'Cancelar',
+            background: '#1e293b',
+            color: '#f8fafc'
+        });
+
+        if (!result.isConfirmed) return;
 
         toggleLoading(true);
 
@@ -1084,7 +1099,20 @@
           return;
         }
 
-        if (!confirm('¿Está seguro de solicitar corrección en este contrato?')) return;
+        const result = await Swal.fire({
+            title: '¿Solicitar Corrección?',
+            text: '¿Está seguro de solicitar corrección en este contrato?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, Enviar Corrección',
+            cancelButtonText: 'Cancelar',
+            background: '#1e293b',
+            color: '#f8fafc'
+        });
+
+        if (!result.isConfirmed) return;
 
         toggleLoading(true);
 
@@ -1094,7 +1122,7 @@
             accion: 'registrarAprobacionContrato',
             cdr: state.cdr,
             tipo: parte,
-            estadoAprobacion: 'RECHAZADO',
+            estadoAprobacion: 'CORREGIR',
             comentarios: observaciones
           };
 
