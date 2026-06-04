@@ -814,11 +814,11 @@
         // 1. Calcular el estado final de cada parte SOLO para la versión actual
         const estadosFinales = {};
         estados.forEach(est => {
-           if(est.parte !== 'ADMIN') {
+           if(est.parte && est.parte.toUpperCase() !== 'ADMIN') {
               // Si el voto no es de la versión actual, lo ignoramos para estados finales (queda pendiente)
               const v = est.version || 1;
               if (v === currentVersion) {
-                  estadosFinales[est.parte] = est.estado;
+                  estadosFinales[est.parte.toUpperCase()] = est.estado;
               }
            }
         });
@@ -963,8 +963,9 @@
         const iframeContainer = document.querySelector('.pdf-container');
         let lockedMsg = $('lockedMessageDiv');
 
-        // Determinar parte activa
-        const userParte = state.parte ? state.parte.toUpperCase() : null;
+        // Determinar parte activa (normalizada a mayúsculas para evitar bugs)
+        const rawParte = state.parte || ($('selectParte') ? $('selectParte').value : '');
+        const userParte = rawParte ? rawParte.toUpperCase() : null;
         const miEstado = userParte ? estadosFinales[userParte] : null;
 
         if (miEstado && miEstado !== 'PENDIENTE' && userParte !== 'ADMINISTRADOR') {
