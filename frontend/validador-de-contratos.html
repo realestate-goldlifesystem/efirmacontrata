@@ -960,7 +960,7 @@
         const accionContainer = document.querySelector('.action-buttons');
         const obsContainer = document.querySelector('.observations-field');
         const selectorContainer = $('selectorParte');
-        const iframeContainer = document.querySelector('.pdf-container');
+        const iframeContainer = document.querySelector('.document-preview');
         let lockedMsg = $('lockedMessageDiv');
 
         // Determinar parte activa (normalizada a mayúsculas para evitar bugs)
@@ -986,9 +986,9 @@
             lockedMsg.style.marginTop = '2rem';
             lockedMsg.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.5)';
             
-            // Lo insertamos en el panel principal en lugar del de acciones para que sea más grande
-            const mainPanel = document.querySelector('.contract-panel');
-            mainPanel.insertBefore(lockedMsg, mainPanel.firstChild);
+            // Lo insertamos en el panel principal
+            const mainPanel = document.querySelector('.content-grid');
+            if (mainPanel) mainPanel.insertBefore(lockedMsg, mainPanel.firstChild);
           }
           
           const icon = miEstado === 'APROBADO' ? '✅' : '⚠️';
