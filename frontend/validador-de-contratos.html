@@ -401,6 +401,11 @@
       color: white;
     }
 
+    /* FIX para que SweetAlert quede por encima del sidebar en móviles (z-index 2000) */
+    .swal2-container {
+      z-index: 9999 !important;
+    }
+
     .observations-field { margin-top: clamp(0.8rem, 1.5vw, 1rem); flex: 1; display: flex; flex-direction: column; }
     .observations-field label { display: block; margin-bottom: clamp(0.3rem, 1vw, 0.5rem); color: #9ca3af; font-size: clamp(0.75rem, 1.5vw, 0.85rem); font-weight: 500;}
     .observations-field textarea {
