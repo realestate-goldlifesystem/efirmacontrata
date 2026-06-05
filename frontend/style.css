@@ -6,6 +6,7 @@
    ========================================== */
 
 :root {
+  color-scheme: dark;
   /* Paleta Gold Life System - Dark Luxury */
   --primary: #d4af37; /* Dorado Elegante */
   --primary-glow: rgba(212, 175, 55, 0.4);
@@ -35,6 +36,12 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+/* Fix native calendar icon visibility in dark mode */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(0.8) sepia(1) hue-rotate(5deg) saturate(3);
+  cursor: pointer;
 }
 
 body {
