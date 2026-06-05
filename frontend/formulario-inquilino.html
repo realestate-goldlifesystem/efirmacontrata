@@ -328,7 +328,7 @@
         </div>
 
         <p style="font-size: 0.95rem; line-height: 1.5; color: #a1a1aa; margin-bottom: 20px;">
-          Este sistema automatizado le guiará paso a paso en la elaboración de la solicitud de contrato de arrendamiento para el inmueble de su interés. <br>
+          Este sistema le guiará paso a paso en la elaboración de la solicitud de los documentos de contrato para el inmueble de su interés ubicado en: <br>
           <strong style="color: var(--primary); font-size: 1.1rem; letter-spacing: 0.5px; display: inline-block; margin-top: 5px;" id="displayDir"></strong>
         </p>
 
@@ -763,12 +763,12 @@
         const dir = params.get('dir') || '';
         if(document.getElementById('displayDir')) {
           if (dir) {
-            document.getElementById('displayDir').textContent = 'Ubicado en: ' + dir;
+            document.getElementById('displayDir').textContent = dir;
           } else if (state.cdr && typeof google !== 'undefined' && google.script) {
             google.script.run
               .withSuccessHandler(function(fetchedDir) {
                 if (fetchedDir) {
-                  document.getElementById('displayDir').textContent = 'Ubicado en: ' + fetchedDir;
+                  document.getElementById('displayDir').textContent = fetchedDir;
                 }
               })
               .handleObtenerDireccionInmueble(state.cdr);
