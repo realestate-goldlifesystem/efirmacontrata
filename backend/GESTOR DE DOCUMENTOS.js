@@ -423,6 +423,11 @@ function doGet(e) {
         // Si retorna objeto data, usamos corsResponse.
         return handleObtenerDocumentosPanel(e);
 
+      
+      case 'obtenerDireccion':
+        result = { success: true, direccion: handleObtenerDireccionInmueble(e.parameter.cdr) };
+        break;
+
       case 'base':
         result = { success: true, message: 'Endpoint base activo' };
         break;

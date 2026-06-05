@@ -1194,14 +1194,15 @@
         if(document.getElementById('displayDir')) {
           if (dir) {
             document.getElementById('displayDir').textContent = dir;
-          } else if (state.cdr && typeof google !== 'undefined' && google.script) {
-            google.script.run
-              .withSuccessHandler(function(fetchedDir) {
-                if (fetchedDir) {
-                  document.getElementById('displayDir').textContent = fetchedDir;
+          } else if (state.cdr && typeof CONFIG !== "undefined" && CONFIG.API_URL) {
+            fetch(CONFIG.API_URL + "?accion=obtenerDireccion&cdr=" + encodeURIComponent(state.cdr))
+              .then(res => res.json())
+              .then(data => {
+                if(data && data.direccion) {
+                  document.getElementById('displayDir').textContent = data.direccion;
                 }
               })
-              .handleObtenerDireccionInmueble(state.cdr);
+              .catch(err => console.error("Error fetching address:", err));
           }
         }
 
