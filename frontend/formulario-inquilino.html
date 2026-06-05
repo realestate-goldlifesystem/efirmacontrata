@@ -741,8 +741,10 @@
         
         const requiredFields = Array.from(activePane.querySelectorAll('input[required], select[required]'))
           .filter(el => {
-            const container = el.closest('.progressive-hidden');
-            if (container && container.classList.contains('progressive-hidden')) return false;
+            // No excluimos los 'progressive-hidden' para que el TOTAL sea constante
+            // y el porcentaje nunca baje al revelar nuevos campos.
+            const container = el.closest('.hidden');
+            if (container && container.classList.contains('hidden')) return false;
             return true;
           });
         
