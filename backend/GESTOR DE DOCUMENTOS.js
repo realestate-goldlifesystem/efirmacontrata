@@ -487,10 +487,24 @@ function doPost(e) {
   try {
     const datosJson = e.postData.contents;
     const datos = JSON.parse(datosJson);
-    const accion = datos.accion;
+    const accion = datos.accion || datos.type || datos.action;
     let result;
 
     switch (accion) {
+      case 'payment':
+        if (typeof handleMercadoPagoWebhook === 'function') {
+          result = handleMercadoPagoWebhook(datos);
+        } else {
+          result = { success: false, error: 'Webhook no implementado' };
+        }
+        break;
+      case 'crearPreferenciaPago':
+        if (typeof crearPreferenciaPago === 'function') {
+          result = crearPreferenciaPago(datos);
+        } else {
+          result = { success: false, error: 'API_MERCADOPAGO no cargada' };
+        }
+        break;
       case 'enviarFormularioInquilino':
         result = handleEnviarFormularioInquilino(datos);
         break;

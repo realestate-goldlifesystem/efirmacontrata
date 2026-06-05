@@ -2,6 +2,7 @@
 <html lang="es">
 
 <head>
+  <script src="https://sdk.mercadopago.com/js/v2"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Formulario Inquilino - E-FirmaContrata</title>
@@ -783,6 +784,18 @@
         if (!state.cdr) {
           showAlert('warning', 'CDR no presente.');
           return;
+        }
+
+        const mpStatus = params.get('status');
+        if (mpStatus === 'approved') {
+          // Si vino de MP con pago aprobado, pasarlo al wizard directamente
+          const welcome = document.getElementById('welcomeScreen');
+          const payment = document.getElementById('paymentScreen');
+          const mainWiz = document.getElementById('mainWizard');
+          if (welcome) welcome.style.display = 'none';
+          if (payment) payment.style.display = 'none';
+          if (mainWiz) mainWiz.style.display = 'block';
+          showAlert('success', '¡Pago procesado con éxito! Por favor continúa con el formulario.');
         }
 
         if (state.modoCorreccion) {
@@ -1812,12 +1825,53 @@
     })();
   
       
+      const mp = new MercadoPago('APP_USR-c8da1c51-a70c-418b-9365-033454ec347e', { locale: 'es-CO' });
       const btnGoToPayment = document.getElementById('btnGoToPayment');
+      
       if (btnGoToPayment) {
-        btnGoToPayment.addEventListener('click', () => {
-          document.getElementById('paymentScreen').style.display = 'none';
-          document.getElementById('paymentScreen').style.display = 'block';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+        btnGoToPayment.addEventListener('click', async () => {
+          btnGoToPayment.disabled = true;
+          btnGoToPayment.innerHTML = 'Generando pago... <span class="loader-spinner"></span>';
+          
+          try {
+            // Ask our backend for the preference
+            const urlParams = new URLSearchParams(window.location.search);
+            const cdr = urlParams.get('cdr') || 'TEST-CDR';
+            
+            // Re-enable if needed
+            document.getElementById('paymentScreen').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const req = await fetch(CONFIG.API_URL, {
+              method: 'POST',
+              body: JSON.stringify({ accion: 'crearPreferenciaPago', cdr: cdr })
+            });
+            
+            const res = await req.json();
+            if(res.success && res.preferenceId) {
+              const bricksBuilder = mp.bricks();
+              mp.bricks().create("wallet", "wallet_container", {
+                initialization: {
+                  preferenceId: res.preferenceId,
+                },
+                customization: {
+                  texts: {
+                    valueProp: 'security_details',
+                  },
+                },
+              });
+              btnGoToPayment.style.display = 'none';
+            } else {
+              alert('Error generando el pago: ' + (res.error || 'Desconocido'));
+              btnGoToPayment.disabled = false;
+              btnGoToPayment.innerHTML = 'Comenzar Ahora →';
+            }
+          } catch(e) {
+            console.error('Error MP:', e);
+            alert('Error de conexión con Mercado Pago.');
+            btnGoToPayment.disabled = false;
+            btnGoToPayment.innerHTML = 'Comenzar Ahora →';
+          }
         });
       }
       
