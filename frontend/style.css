@@ -176,6 +176,11 @@ textarea.input:focus {
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
 }
 
+select.input option {
+  background-color: var(--secondary);
+  color: var(--white);
+}
+
 .required {
   color: var(--danger);
   margin-left: 2px;

@@ -9,16 +9,16 @@
 
   <style>
     /* =========================================
-       PREMIUM FORM CONTAINER (Glassmorphism)
+       PREMIUM FORM CONTAINER (Apple Glassmorphism)
        ========================================= */
     .form-container {
-      background: linear-gradient(145deg, rgba(30, 30, 35, 0.8), rgba(20, 20, 24, 0.95));
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(212, 175, 55, 0.15);
+      background: linear-gradient(145deg, rgba(38, 38, 42, 0.85), rgba(28, 28, 32, 0.95));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
       border-radius: 20px;
       padding: 40px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.15);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 255, 255, 0.05);
       margin-top: 20px;
     }
 
@@ -1169,6 +1169,16 @@
             xpText.style.color = 'var(--primary)';
           }
         }
+
+        // Gamify main progress line
+        const line = document.getElementById('progressLine');
+        if (line && state.step < state.max) {
+            const baseProgress = (state.step / state.max) * 100;
+            const microAdd = (percentage / 100) * (100 / state.max) * 0.95; 
+            line.style.width = (baseProgress + microAdd) + '%';
+        } else if (line && state.step === state.max) {
+            line.style.width = '100%';
+        }
       }
 
       // Bind micro progress to inputs
@@ -1331,10 +1341,8 @@
           s.classList.toggle('completed', sNum < state.step);
         });
 
-        const line = document.getElementById('progressLine');
-        if (line) {
-          line.style.width = (state.step / state.max) * 100 + '%';
-        }
+        // La línea principal se actualiza via updateMicroProgress()
+        // por lo que no la sobreescribimos aquí para no perder la gamificación.
 
         const firstRelevant = state.modoCorreccion ? getFirstRelevantStep() : 0;
         el.btnPrev.classList.toggle('hidden', state.step === firstRelevant);
