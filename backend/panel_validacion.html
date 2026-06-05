@@ -6,21 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Validación - E-FirmaContrata</title>
     <style>
-        /* Variables de diseño */
+        /* Variables de diseño FinTech Luxury */
         :root {
-            --primary: #FFD700;
+            --primary: #d4af37; /* Dorado Elegante */
+            --primary-glow: rgba(212, 175, 55, 0.4);
             --secondary: #1e1e1e;
-            --dark: #0F0F0F;
-            --light: #f8f9fa;
+            --dark: #0a0a0a;
+            --surface: #171018; /* Dark Charcoal / Bento Background */
+            --surface-hover: #221824;
+            --light: #2a2a2a;
             --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
             --warning: #f59e0b;
             --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
             --info: #3b82f6;
             --white: #ffffff;
-            --gray: #6b7280;
-            --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
-            --radius: 12px;
+            --gray: #9ca3af;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --border-color: rgba(212, 175, 55, 0.2); /* Borde dorado sutil */
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.7);
+            --radius: 16px;
+            --radius-lg: 24px;
         }
 
         * {
@@ -30,9 +39,9 @@
         }
 
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
-            background: linear-gradient(135deg, #0F0F0F 0%, #1e1e1e 100%);
-            color: #333;
+            font-family: 'Cinzel', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            background: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--dark) 100%);
+            color: var(--text-main);
             line-height: 1.6;
             min-height: 100vh;
         }
@@ -46,59 +55,76 @@
 
         /* Header Principal */
         .main-header {
-            background: linear-gradient(135deg, var(--primary) 0%, #FFA500 100%);
-            padding: 2rem;
-            border-radius: var(--radius);
+            background: rgba(23, 16, 24, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            padding: 2.5rem;
+            border-radius: var(--radius-lg);
             margin-bottom: 2rem;
-            box-shadow: var(--shadow-lg);
-            color: var(--dark);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
 
         .main-header h1 {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 2.5rem;
+            font-weight: 700;
             margin-bottom: 0.5rem;
+            color: var(--primary);
+            text-shadow: 0 0 15px var(--primary-glow);
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
         }
 
         .main-header p {
-            color: rgba(0, 0, 0, 0.7);
+            color: var(--text-muted);
             font-size: 1.1rem;
+            letter-spacing: 0.5px;
         }
 
-        /* Tabs Navigation */
+        /* Tabs Navigation (Bento Grid Style) */
         .tabs-nav {
             display: flex;
             gap: 1rem;
-            background: var(--white);
-            padding: 0.5rem;
-            border-radius: var(--radius);
+            background: rgba(23, 16, 24, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem;
+            border-radius: var(--radius-lg);
             margin-bottom: 2rem;
-            box-shadow: var(--shadow);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(212, 175, 55, 0.1);
         }
 
         .tab-btn {
             flex: 1;
             padding: 1rem 1.5rem;
             background: transparent;
-            border: none;
-            border-radius: calc(var(--radius) / 2);
+            border: 1px solid transparent;
+            border-radius: var(--radius);
             cursor: pointer;
             font-size: 1rem;
             font-weight: 500;
-            color: var(--gray);
+            color: var(--text-muted);
             transition: all 0.3s ease;
             position: relative;
+            text-align: center;
         }
 
         .tab-btn:hover {
-            background: var(--light);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
         }
 
         .tab-btn.active {
-            background: var(--primary);
-            color: var(--dark);
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary);
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 15px var(--primary-glow) inset;
         }
 
         /* Tab Content */
@@ -153,97 +179,128 @@
             }
         }
 
-        /* Stats Container */
+        /* Stats Container (Bento Items) */
         .stats-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
         .stat-card {
-            background: var(--white);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.4);
             display: flex;
             align-items: center;
-            gap: 1rem;
-            transition: transform 0.3s ease;
+            gap: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at top right, rgba(212, 175, 55, 0.1), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
         }
 
         .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.15);
+            border-color: var(--primary);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
         }
 
         .stat-icon {
-            font-size: 2.5rem;
-            opacity: 0.8;
+            font-size: 3rem;
+            opacity: 0.9;
+            filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.3));
         }
 
         .stat-info {
             flex: 1;
+            z-index: 1;
         }
 
         .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 2.5rem;
+            font-weight: 700;
             color: var(--primary);
+            text-shadow: 0 2px 10px var(--primary-glow);
+            line-height: 1;
+            margin-bottom: 0.5rem;
         }
 
         .stat-label {
-            color: var(--gray);
-            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 1px;
+            font-weight: 500;
         }
 
         /* Registros Grid */
         .registros-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
         }
 
         .registro-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
             overflow: hidden;
             transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
         }
 
         .registro-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-6px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+            border-color: rgba(212, 175, 55, 0.4);
         }
 
         .registro-header {
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 1.5rem 2rem;
+            background: rgba(0, 0, 0, 0.2);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
         .registro-header h3 {
-            color: var(--dark);
+            color: var(--primary);
             font-size: 1.25rem;
             margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
 
         .registro-info {
-            padding: 1.5rem;
+            padding: 1.5rem 2rem;
+            flex: 1;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #f3f4f6;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
         .info-row:last-child {
@@ -251,78 +308,93 @@
         }
 
         .info-label {
-            font-weight: 600;
-            color: var(--gray);
+            font-weight: 500;
+            color: var(--text-muted);
+            font-size: 0.95rem;
         }
 
         .info-value {
-            color: var(--dark);
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-weight: 500;
         }
 
         /* Botón de copiar */
         .btn-copy {
-            background: var(--light);
-            border: none;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             transition: all 0.2s;
         }
 
         .btn-copy:hover {
             background: var(--primary);
             color: var(--dark);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
         }
 
         .btn-copy.copied {
             background: var(--success);
             color: white;
+            border-color: var(--success);
+            box-shadow: 0 0 10px var(--success-glow);
         }
 
         /* Registro Actions */
         .registro-actions {
-            padding: 1rem 1.5rem;
-            background: var(--light);
+            padding: 1.5rem 2rem;
+            background: rgba(0, 0, 0, 0.3);
             display: flex;
-            gap: 0.5rem;
+            gap: 0.75rem;
             flex-wrap: wrap;
+            border-top: 1px solid rgba(255,255,255,0.05);
         }
 
         /* Buttons */
         .btn {
-            padding: 0.625rem 1.25rem;
-            border: none;
-            border-radius: calc(var(--radius) / 2);
+            padding: 0.75rem 1.5rem;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
         }
 
         .btn-primary {
             background: var(--primary);
             color: var(--dark);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
 
         .btn-primary:hover {
-            background: #FFA500;
+            background: #f0c541;
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
         }
 
         .btn-secondary {
-            background: var(--secondary);
-            color: var(--white);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         .btn-secondary:hover {
-            background: #2d2d2d;
+            background: rgba(255,255,255,0.1);
             transform: translateY(-2px);
         }
 
@@ -364,7 +436,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(8px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -376,12 +449,13 @@
         }
 
         .modal-content {
-            background: var(--white);
-            border-radius: var(--radius);
+            background: var(--surface);
+            border-radius: var(--radius-lg);
             max-width: 98vw;
             max-height: 98vh;
             overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--border-color);
         }
 
         .modal-lg {
@@ -389,36 +463,44 @@
         }
 
         .modal-header {
-            background: linear-gradient(135deg, var(--primary) 0%, #FFA500 100%);
-            padding: 0.5rem 1.5rem;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
         }
 
         .modal-header h2 {
-            color: var(--dark);
+            color: var(--primary);
             margin: 0;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px var(--primary-glow);
         }
 
         .close-modal {
             background: none;
             border: none;
-            font-size: 2rem;
+            font-size: 2.5rem;
             cursor: pointer;
-            color: var(--dark);
+            color: var(--text-muted);
             opacity: 0.7;
-            transition: opacity 0.2s;
+            transition: all 0.2s;
+            line-height: 0.8;
         }
 
         .close-modal:hover {
             opacity: 1;
+            color: var(--danger);
+            text-shadow: 0 0 15px var(--danger-glow);
+            transform: scale(1.1);
         }
 
         .modal-body {
-            padding: 0.5rem 1.5rem 1rem 1.5rem;
-            max-height: calc(96vh - 50px);
+            padding: 1.5rem 2rem 2rem 2rem;
+            max-height: calc(96vh - 70px);
             overflow-y: auto;
         }
 
@@ -426,7 +508,7 @@
         .documents-container {
             display: grid;
             grid-template-columns: 25% 75%;
-            gap: 0.75rem;
+            gap: 1.5rem;
             min-height: 50vh;
             align-items: stretch;
         }
@@ -439,74 +521,62 @@
         }
 
         .documents-list {
-            background: var(--light);
-            border-radius: var(--radius);
+            background: rgba(0,0,0,0.2);
+            border-radius: var(--radius-lg);
             padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         .documents-list h3 {
             margin-bottom: 1rem;
-            color: var(--dark);
+            color: var(--primary);
             font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .lista-docs-scroll {
             max-height: 160px;
-            /* Muestra ~1.5 - 2 tarjetas máximo para dejar espacio al cerebro */
             overflow-y: auto;
             padding-right: 0.5rem;
         }
 
-        /* Estilo Scrollbar personalizado para lista */
         .lista-docs-scroll::-webkit-scrollbar {
             width: 6px;
         }
 
         .lista-docs-scroll::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
+            background-color: var(--primary);
             border-radius: 10px;
         }
 
         .doc-item {
-            background: var(--white);
-            padding: 0.5rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 20px;
-            /* Ovalado */
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: var(--radius);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-            font-size: 0.9rem;
-            line-height: 1.2;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 0.95rem;
         }
 
         .doc-item:hover {
-            background: var(--primary);
-            color: var(--dark);
-            border-color: var(--primary);
-            transform: translateY(-2px);
-        }
-
-        .tab-btn:hover {
-            color: var(--dark);
-            transform: translateY(-2px);
-            background: #e2e8f0;
-        }
-
-        .tab-btn * {
-            pointer-events: none;
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary);
+            border-color: rgba(212, 175, 55, 0.3);
+            transform: translateX(5px);
         }
 
         .doc-item.active {
-            background: var(--primary);
-            color: var(--dark);
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--primary);
             font-weight: 600;
             border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+            box-shadow: 0 0 15px var(--primary-glow) inset;
         }
 
         .doc-type {
@@ -523,30 +593,31 @@
 
         /* Preview Area */
         .preview-area {
-            background: #f8f9fa;
-            border-radius: var(--radius);
+            background: #000000;
+            border-radius: var(--radius-lg);
             padding: 0.5rem;
             display: flex;
             flex-direction: column;
-            height: 260px;
-            /* Compacto: botones de evaluación visibles sin scroll */
-            border: 1px solid #e2e8f0;
+            height: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
         }
 
         .preview-header {
             padding: 1rem;
-            background: var(--white);
-            border-radius: calc(var(--radius) / 2);
-            margin-bottom: 1rem;
+            background: rgba(23, 16, 24, 0.8);
+            border-radius: calc(var(--radius-lg) - 4px);
+            margin-bottom: 0.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .preview-content {
             flex: 1;
-            background: var(--white);
-            border-radius: calc(var(--radius) / 2);
+            background: #ffffff;
+            border-radius: calc(var(--radius-lg) - 4px);
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -567,200 +638,175 @@
 
         .preview-placeholder {
             text-align: center;
-            color: var(--gray);
+            color: #666;
             padding: 3rem;
         }
 
         /* Validation Checklist */
         .validation-checklist {
-            background: var(--light);
-            border-radius: var(--radius);
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius-lg);
             padding: 1.5rem;
-            margin-top: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .checklist-title {
             font-weight: 600;
-            color: var(--dark);
+            color: var(--primary);
             margin-bottom: 1rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 1.1rem;
         }
 
         .checklist-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1rem;
         }
 
         .checklist-item {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            background: var(--white);
-            border-radius: calc(var(--radius) / 2);
-            transition: all 0.2s;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--radius);
+            transition: all 0.3s;
+            border: 1px solid transparent;
         }
 
         .checklist-item:hover {
-            transform: translateX(5px);
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .checklist-checkbox {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             cursor: pointer;
+            accent-color: var(--primary);
         }
 
         .checklist-label {
             flex: 1;
             cursor: pointer;
             user-select: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
         }
 
         .checklist-item.checked {
-            background: #d1fae5;
-            color: #065f46;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
         }
 
-        /* Corrections Form */
-        .corrections-form {
-            background: #fef3c7;
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            margin-top: 1.5rem;
-        }
-
-        .corrections-title {
-            font-weight: 600;
-            color: #92400e;
-            margin-bottom: 1rem;
-        }
-
-        .correction-field {
-            margin-bottom: 1rem;
-        }
-
-        .correction-field label {
-            display: block;
-            margin-bottom: 0.5rem;
+        .checklist-item.checked .checklist-label {
+            color: var(--success);
             font-weight: 500;
-            color: #92400e;
-        }
-
-        .correction-field select,
-        .correction-field textarea {
-            width: 100%;
-            padding: 0.625rem;
-            border: 1px solid #fbbf24;
-            border-radius: calc(var(--radius) / 2);
-            background: var(--white);
-        }
-
-        .correction-field select:focus,
-        .correction-field textarea:focus {
-            outline: none;
-            border-color: var(--warning);
-            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
-        }
-
-        .corrections-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
-        .correction-tag {
-            background: var(--warning);
-            color: var(--white);
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        /* Validation Actions Box (Right Col) */
-        .validation-actions-box {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            padding: 1rem 0;
-            border-top: 1px solid #e2e8f0;
         }
 
         /* Cerebro Editor (Left Col) */
         .cerebro-editor {
-            background: #f8fafc;
-            border-radius: var(--radius);
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-lg);
             padding: 1.5rem;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .cerebro-editor::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at top right, rgba(212, 175, 55, 0.05), transparent 60%);
+            pointer-events: none;
+            border-radius: var(--radius-lg);
         }
 
         .cerebro-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 0.5rem;
         }
 
         .cerebro-header h3 {
-            font-size: 1.1rem;
-            color: var(--dark);
+            font-size: 1.2rem;
+            color: var(--primary);
             margin: 0;
+            font-weight: 600;
         }
 
         .btn-icon-hover {
-            background: none;
-            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
             cursor: pointer;
             font-size: 1.2rem;
-            opacity: 0.6;
-            transition: opacity 0.2s;
+            padding: 0.25rem 0.5rem;
+            color: var(--text-muted);
+            transition: all 0.3s;
         }
 
         .btn-icon-hover:hover {
-            opacity: 1;
+            color: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+            transform: scale(1.05);
         }
 
         .cerebro-content {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
         }
 
         .cerebro-field {
             display: flex;
             flex-direction: column;
-            gap: 0.25rem;
+            gap: 0.35rem;
         }
 
         .cerebro-field label {
             font-size: 0.85rem;
-            font-weight: 600;
-            color: #64748b;
+            font-weight: 500;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .cerebro-field input {
-            padding: 0.5rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: var(--white);
-            color: var(--dark);
-            transition: all 0.2s;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: rgba(0, 0, 0, 0.4);
+            color: var(--text-main);
+            transition: all 0.3s;
+        }
+
+        .cerebro-field input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
+            background: rgba(0, 0, 0, 0.6);
         }
 
         .cerebro-content.readonly .cerebro-field input {
             background: transparent;
             border-color: transparent;
-            padding: 0;
+            padding: 0.5rem 0;
             pointer-events: none;
-            font-size: 0.95rem;
-            font-weight: 500;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-main);
         }
 
         .cerebro-actions {
@@ -1192,6 +1238,7 @@
             <div class="modal-header">
                 <h2>&#128221; Elaboración de Contrato - <span id="modalContratoCdr"></span></h2>
                 <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button id="btnRefreshValidacion" onclick="refrescarPanelValidacion()" title="Actualizar Estado (Recargar Bitácora)" style="background:transparent; border:none; cursor:pointer; font-size:1.2rem; padding:0; display:none; transition: transform 0.3s ease;">🔄</button>
                     <span id="badgeEstadoContrato" class="badge" style="background:var(--warning); color:black;">Borrador</span>
                     <a id="linkAbrirDocNueva" href="#" target="_blank" style="font-size:0.85rem; color:#3b82f6; text-decoration:none; white-space:nowrap;">&#128279; Abrir en nueva pestaña</a>
                     <button class="close-modal" onclick="cerrarModalContrato()">&times;</button>
@@ -1207,20 +1254,23 @@
                     
                     <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #e2e8f0;">
                     
-                    <div id="accionesBorrador">
-                        <p class="text-sm text-gray" style="margin-bottom: 1rem;">Verifique que el contrato generado en la derecha corresponda a los datos aprobados.</p>
-                        <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="enviarOriginalValidar()" id="btnEnviarValidar">
+                    <div id="accionesContratoGenerales" style="margin-top: 1rem;">
+                        <p id="msgBorradorInicial" class="text-sm text-gray" style="margin-bottom: 1rem;">Verifique que el contrato generado en la derecha corresponda a los datos aprobados.</p>
+                        
+                        <!-- Botón para enviar borrador o nueva versión -->
+                        <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 0.5rem;" onclick="enviarOriginalValidar()" id="btnEnviarValidar">
                             ✉️ Enviar Borrador a Validar
                         </button>
-                    </div>
 
-                    <div id="accionesOriginal" style="display: none;">
-                        <div class="alert alert-success" style="margin-bottom: 1rem;">
-                            ✅ Todas las partes han aprobado el borrador.
+                        <!-- Mensaje de éxito y botón original -->
+                        <div id="accionesOriginal" style="display: none; margin-top: 1rem;">
+                            <div class="alert alert-success" style="margin-bottom: 1rem;">
+                                ✅ Todas las partes han aprobado el borrador.
+                            </div>
+                            <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="generarOriginalDefinitivo()" id="btnGenerarOriginal">
+                                &#128229; Generar y Descargar Original
+                            </button>
                         </div>
-                        <button class="btn btn-success" style="width: 100%; justify-content: center;" onclick="generarOriginalDefinitivo()" id="btnGenerarOriginal">
-                            &#128229; Generar y Descargar Original
-                        </button>
                     </div>
                 </div>
 
@@ -1877,7 +1927,14 @@
                     let badgeText = 'LISTO PARA GENERAR';
 
                     let estadoMayus = (c.estadoBadge || '').toUpperCase();
-                    if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CONTRATO GENERADO')) {
+                    
+                    if (estadoMayus.includes('APROBADO POR TODAS LAS PARTES') || estadoMayus.includes('CONTRATO APROBADO')) {
+                        badgeClass = 'badge-warning'; // Podría ser un verde brillante también
+                        badgeText = 'APROBADO FINAL';
+                        btnText = ' 🏆 Abrir para Finalizar';
+                        btnAction = 'abrirBorrador(\'' + (c.cdr) + '\', this)';
+                    }
+                    else if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CONTRATO GENERADO')) {
                         badgeClass = 'badge-warning';
                         badgeText = 'BORRADOR ACTIVO';
                         btnText = ' Abrir Borrador';
@@ -1997,36 +2054,143 @@
             document.getElementById('badgeEstadoContrato').style.background = "var(--warning)";
             
             // Llenar panel izquierdo (Datos de la hoja procesados)
-            let htmlDatos = '';
+            let htmlDatos = '<style>@keyframes pulseArrow { 0%, 100% { opacity: 1; transform: translateY(0); } 50% { opacity: 0.3; transform: translateY(3px); } } details.dato-accordion summary::-webkit-details-marker { display:none; }</style>';
             if(resData.datos) {
-                htmlDatos += '<div class="dato-maestro-card">\n' +
-'                    <h4>Inquilino</h4>\n' +
-'                    <p>' + (resData.datos.inquilino ? resData.datos.inquilino.nombre : 'N/A') + '</p>\n' +
-'                    <p style="font-size:0.85em; color:#64748b;">' + (resData.datos.inquilino ? resData.datos.inquilino.numeroDocumento : '') + '</p>\n' +
-'                </div>';
-                htmlDatos += '<div class="dato-maestro-card">\n' +
-'                    <h4>Propietario</h4>\n' +
-'                    <p>' + (resData.datos.propietario ? resData.datos.propietario.nombre : 'N/A') + '</p>\n' +
-'                    <p style="font-size:0.85em; color:#64748b;">' + (resData.datos.propietario ? resData.datos.propietario.numeroDocumento : '') + '</p>\n' +
-'                </div>';
-                htmlDatos += '<div class="dato-maestro-card">\n' +
-'                    <h4>Inmueble</h4>\n' +
-'                    <p>' + (resData.datos.inmueble ? resData.datos.inmueble.direccion : 'N/A') + '</p>\n' +
-'                </div>';
+                const copyBtn = (label, value) => {
+                    if(!value || value === 'N/A') return '';
+                    return `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #374151; padding: 4px 0;">
+                              <div style="display:flex; flex-direction:column;">
+                                <span style="font-size: 0.75rem; color: #9ca3af;">${label}</span>
+                                <span style="font-size: 0.9rem; color: #fff;">${value}</span>
+                              </div>
+                              <button onclick="navigator.clipboard.writeText('${value}'); this.textContent='✅'; setTimeout(()=>this.textContent='📋',1000);" style="background:transparent; border:none; cursor:pointer; font-size:1rem; padding:4px;" title="Copiar">📋</button>
+                            </div>`;
+                };
+
+                const createAccordion = (title, icon, contentHtml) => {
+                    if (!contentHtml.trim()) return '';
+                    return `
+                    <details class="dato-accordion" style="margin-bottom: 0.5rem; background: #1f2937; border-radius: 8px; border: 1px solid #374151;">
+                        <summary style="padding: 0.8rem 1rem; cursor: pointer; font-weight: 600; color: #fbbf24; list-style: none; display: flex; justify-content: space-between; align-items: center; outline: none;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                ${icon} ${title}
+                            </div>
+                            <span style="font-size: 0.8rem; animation: pulseArrow 1.5s infinite;">▼</span>
+                        </summary>
+                        <div style="padding: 0 1rem 1rem 1rem;">
+                            ${contentHtml}
+                        </div>
+                    </details>`;
+                };
+
+                // Propietario
+                let propHtml = '';
+                if(resData.datos.propietario) {
+                    const p = resData.datos.propietario;
+                    propHtml += copyBtn('Nombre Completo', p.nombre);
+                    propHtml += copyBtn('Documento', `${p.tipoDocumento || 'CC'} ${p.numeroDocumento || ''}`);
+                    propHtml += copyBtn('Celular', p.celular);
+                    propHtml += copyBtn('Email', p.email);
+                    propHtml += copyBtn('Dirección', p.direccion);
+                }
+                if(resData.datos.documentosRelacionados && resData.datos.documentosRelacionados.propietario.length > 0) {
+                    propHtml += '<div style="margin-top:0.8rem; display:flex; flex-wrap:wrap; gap:0.5rem;">';
+                    resData.datos.documentosRelacionados.propietario.forEach(doc => {
+                        propHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 Ver Doc</a>`;
+                    });
+                    propHtml += '</div>';
+                }
+                htmlDatos += createAccordion('Propietario', '👤', propHtml);
+
+                // Inquilino
+                let inqHtml = '';
+                if(resData.datos.inquilino) {
+                    const i = resData.datos.inquilino;
+                    inqHtml += copyBtn('Nombre Completo', i.nombre);
+                    inqHtml += copyBtn('Documento', `${i.tipoDocumento || 'CC'} ${i.numeroDocumento || ''}`);
+                    inqHtml += copyBtn('Celular', i.celular);
+                    inqHtml += copyBtn('Email', i.email);
+                    inqHtml += copyBtn('Ocupación', i.ocupacion);
+                }
+                if(resData.datos.documentosRelacionados && resData.datos.documentosRelacionados.inquilino.length > 0) {
+                    inqHtml += '<div style="margin-top:0.8rem; display:flex; flex-wrap:wrap; gap:0.5rem;">';
+                    resData.datos.documentosRelacionados.inquilino.forEach(doc => {
+                        inqHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 Ver Doc</a>`;
+                    });
+                    inqHtml += '</div>';
+                }
+                htmlDatos += createAccordion('Inquilino', '👥', inqHtml);
+
+                // Codeudores
+                let codHtml = '';
+                if(resData.datos.codeudores && resData.datos.codeudores.length > 0) {
+                    resData.datos.codeudores.forEach((c, idx) => {
+                        codHtml += `<h5 style="color:#fbbf24; margin-top:0.5rem; margin-bottom:0.2rem;">Codeudor ${idx+1}</h5>`;
+                        codHtml += copyBtn('Nombre Completo', c.nombre);
+                        codHtml += copyBtn('Documento', c.numeroDocumento);
+                        codHtml += copyBtn('Celular', c.celular);
+                        codHtml += copyBtn('Email', c.email);
+                    });
+                }
+                if(resData.datos.documentosRelacionados && resData.datos.documentosRelacionados.codeudores.length > 0) {
+                    codHtml += '<div style="margin-top:0.8rem; display:flex; flex-wrap:wrap; gap:0.5rem;">';
+                    resData.datos.documentosRelacionados.codeudores.forEach(doc => {
+                        codHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 Ver Doc</a>`;
+                    });
+                    codHtml += '</div>';
+                }
+                if (codHtml) {
+                    htmlDatos += createAccordion('Codeudores', '🤝', codHtml);
+                }
+
+                // Bancarios (Tomados del propietario)
+                let bancHtml = '';
+                if(resData.datos.propietario && resData.datos.propietario.banco) {
+                    const p = resData.datos.propietario;
+                    bancHtml += copyBtn('Banco', p.banco);
+                    bancHtml += copyBtn('Tipo de Cuenta', p.tipoCuenta);
+                    bancHtml += copyBtn('Número de Cuenta', p.numeroCuenta);
+                    bancHtml += copyBtn('Titular de Cuenta', p.titularCuenta);
+                    bancHtml += copyBtn('Documento Titular', p.docTitularCuenta);
+                }
+                if (bancHtml) {
+                    htmlDatos += createAccordion('Datos Bancarios', '🏦', bancHtml);
+                }
+
+                // Inmueble
+                let inmHtml = '';
+                if(resData.datos.inmueble) {
+                    const i = resData.datos.inmueble;
+                    inmHtml += copyBtn('Dirección', i.direccion);
+                    inmHtml += copyBtn('Ciudad/Barrio', `${i.ciudad || ''} - ${i.barrio || ''}`);
+                    inmHtml += copyBtn('Matrícula', i.matricula);
+                    inmHtml += copyBtn('Chip', i.chip);
+                    inmHtml += copyBtn('Estrato', i.estrato);
+                    inmHtml += copyBtn('Área', i.area);
+                }
+                if(resData.datos.documentosRelacionados && resData.datos.documentosRelacionados.otros.length > 0) {
+                    inmHtml += '<div style="margin-top:0.8rem; display:flex; flex-wrap:wrap; gap:0.5rem;">';
+                    resData.datos.documentosRelacionados.otros.forEach(doc => {
+                        inmHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 Ver Doc</a>`;
+                    });
+                    inmHtml += '</div>';
+                }
+                htmlDatos += createAccordion('Inmueble & Otros', '🏠', inmHtml);
+
             } else {
                 htmlDatos = '<p>No se encontraron datos tabulados.</p>';
             }
             document.getElementById('contenedorDatosContrato').innerHTML = htmlDatos;
 
-            // Mostrar el iframe  usar /preview para embeber correctamente
+            // Mostrar el iframe usando /edit?rm=minimal para permitir edición con UI reducida
             document.getElementById('loaderContrato').style.display = 'block';
             let embedUrl = '';
             if (resData.docId) {
-                embedUrl = 'https://docs.google.com/document/d/' + resData.docId + '/preview';
+                embedUrl = 'https://docs.google.com/document/d/' + resData.docId + '/edit?rm=minimal';
             } else if (resData.url) {
                 const matchId = resData.url.match(/\/d\/([a-zA-Z0-9-_]+)/);
                 if (matchId && matchId[1]) {
-                    embedUrl = 'https://docs.google.com/document/d/' + matchId[1] + '/preview';
+                    embedUrl = 'https://docs.google.com/document/d/' + matchId[1] + '/edit?rm=minimal';
                 } else {
                     embedUrl = resData.url;
                 }
@@ -2037,10 +2201,17 @@
             const linkAbrirDoc = document.getElementById('linkAbrirDocNueva');
             if (linkAbrirDoc) linkAbrirDoc.href = resData.url || '#';
 
-            // Resetear layout
-            document.getElementById('contratoModalBody').classList.remove('layout-validacion');
-            document.getElementById('accionesBorrador').style.display = 'block';
-            document.getElementById('accionesOriginal').style.display = 'none';
+            // Verificar estado para cambiar automáticamente de layout
+            const estadoActual = resData.datos.estado || '';
+            if (estadoActual.toUpperCase().includes('REVISION') || estadoActual.toUpperCase().includes('APROBADO')) {
+                cambiarModoValidacionExterna();
+            } else {
+                // Resetear layout si no ha sido enviado
+                document.getElementById('contratoModalBody').classList.remove('layout-validacion');
+                document.getElementById('msgBorradorInicial').style.display = 'block';
+                document.getElementById('btnEnviarValidar').style.display = 'flex';
+                document.getElementById('accionesOriginal').style.display = 'none';
+            }
 
             // Mostrar Modal
             document.getElementById('modalContrato').classList.add('show');
@@ -2054,15 +2225,20 @@
 
         function enviarOriginalValidar() {
             if(!contratoActualContext) return;
-            const cdr = contratoActualContext.cdr;
+            const cdrParaBackend = contratoActualContext.datos && contratoActualContext.datos.idRegistro ? contratoActualContext.datos.idRegistro : contratoActualContext.cdr;
 
             Swal.fire({
-                title: '¿Enviar a Validar?',
-                text: 'Se enviarán correos al inquilino, deudor y propietario para revisión virtual.',
-                icon: 'warning',
+                title: 'Enviar a Revisión',
+                html: '<p style="font-size: 0.9rem; color: #4b5563;">Agrega un mensaje para la bitácora explicando qué cambios hiciste (opcional):</p>',
+                input: 'textarea',
+                inputPlaceholder: 'Ej: Se corrigió el precio de acuerdo a la solicitud...',
                 showCancelButton: true,
-                confirmButtonText: 'Sí, enviar correos'            }).then((result) => {
+                confirmButtonText: 'Sí, enviar a revisión',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#3b82f6'
+            }).then((result) => {
                 if(result.isConfirmed) {
+                    const comentario = result.value || '';
                     const btn = document.getElementById('btnEnviarValidar');
                     btn.disabled = true;
                     btn.innerHTML = ' Enviando...';
@@ -2073,7 +2249,7 @@
                             btn.innerHTML = ' Enviar Borrador a Validar';
                             btn.disabled = false;
                             if(res.success) {
-                                Swal.fire('Enviado', 'Mails enviados correctamente', 'success');
+                                Swal.fire('Enviado', 'Contrato enviado a revisión y bitácora actualizada.', 'success');
                                 cambiarModoValidacionExterna();
                             } else {
                                 Swal.fire('Error', res.message, 'error');
@@ -2084,48 +2260,87 @@
                             btn.disabled = false;
                             Swal.fire('Error de red', err.message, 'error');
                         })
-                        .enviarBorradorAValidar(cdr);
+                        .enviarBorradorAValidar(cdrParaBackend, comentario);
                 }
             });
         }
 
         function cambiarModoValidacionExterna() {
             document.getElementById('contratoModalBody').classList.add('layout-validacion');
-            document.getElementById('accionesBorrador').style.display = 'none';
-            document.getElementById('accionesOriginal').style.display = 'block';
+            document.getElementById('msgBorradorInicial').style.display = 'none';
+            document.getElementById('btnEnviarValidar').style.display = 'none';
+            document.getElementById('accionesOriginal').style.display = 'none';
             document.getElementById('badgeEstadoContrato').textContent = "En Validación Externa";
             document.getElementById('badgeEstadoContrato').style.background = "#3b82f6";
             document.getElementById('badgeEstadoContrato').style.color = "white";
             
+            // Mostrar botón refresh
+            const btnRefresh = document.getElementById('btnRefreshValidacion');
+            if (btnRefresh) btnRefresh.style.display = 'block';
+            
             // Cargar estado de firmas desde el backend
-            cargarEstadosAprobacion(contratoActualContext.cdr);
+            const cdrParaBackend = contratoActualContext.datos && contratoActualContext.datos.idRegistro ? contratoActualContext.datos.idRegistro : contratoActualContext.cdr;
+            cargarEstadosAprobacion(cdrParaBackend);
+        }
+
+        function refrescarPanelValidacion() {
+            if (!contratoActualContext) return;
+            const btnRefresh = document.getElementById('btnRefreshValidacion');
+            if (btnRefresh) {
+                btnRefresh.style.transform = 'rotate(180deg)';
+                setTimeout(() => btnRefresh.style.transform = 'rotate(0deg)', 300);
+            }
+            const cdrParaBackend = contratoActualContext.datos && contratoActualContext.datos.idRegistro ? contratoActualContext.datos.idRegistro : contratoActualContext.cdr;
+            cargarEstadosAprobacion(cdrParaBackend);
         }
 
         function cargarEstadosAprobacion(cdr) {
             document.getElementById('contenedorBitacora').innerHTML = '<p> Cargando estados...</p>';
             google.script.run
+                .withFailureHandler(function(err) {
+                    document.getElementById('contenedorBitacora').innerHTML = '<div class="empty-state">Error cargando bitácora: ' + err.message + '</div>';
+                })
                 .withSuccessHandler(function(res) {
                     if(res && res.success) {
                         var historialHTML = '<div class="timeline">';
                         var partesEstadoFinal = {};
 
+                        // Determinar partes base desde el contrato
+                        var todasLasPartesInvolucradas = new Set();
+                        if (contratoActualContext && contratoActualContext.datos) {
+                            var d = contratoActualContext.datos;
+                            if (d.inquilino) todasLasPartesInvolucradas.add('INQUILINO');
+                            if (d.propietario) todasLasPartesInvolucradas.add('PROPIETARIO');
+                            if (d.codeudores && d.codeudores.length > 0) {
+                                d.codeudores.forEach((c, idx) => todasLasPartesInvolucradas.add('CODEUDOR' + (idx + 1)));
+                            }
+                        }
+
+                        var maxVersion = 1;
+
                         if (res.estados && res.estados.length > 0) {
+                            res.estados.forEach(e => {
+                                if (e.version && e.version > maxVersion) maxVersion = e.version;
+                            });
+
                             for (var i = 0; i < res.estados.length; i++) {
                                 var e = res.estados[i];
                                 
-                                // Guardar el último estado reportado por cada parte (ignorar ADMIN para checks de firma)
                                 if (e.parte !== 'ADMIN') {
-                                    partesEstadoFinal[e.parte] = e.estado;
+                                    todasLasPartesInvolucradas.add(e.parte);
+                                    if (e.version === maxVersion) {
+                                        partesEstadoFinal[e.parte] = e.estado;
+                                    }
                                 }
 
                                 var badgeColor = e.estado === 'APROBADO' ? 'var(--success)' : 
-                                                (e.estado === 'RECHAZADO' || e.estado === 'CAMBIOS' ? 'var(--danger)' : '#64748b');
+                                                (e.estado === 'RECHAZADO' || e.estado === 'CAMBIOS' || e.estado === 'CORREGIR' ? 'var(--danger)' : '#64748b');
                                 if(e.parte === 'ADMIN') badgeColor = 'var(--primary)';
 
                                 historialHTML += `
                                     <div class="timeline-item" style="border-left: 3px solid ${badgeColor}; padding-left: 15px; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 0 8px 8px 0;">
                                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
-                                            <strong style="color: ${badgeColor};">${e.parte}</strong>
+                                            <strong style="color: ${badgeColor};">${e.parte} ${e.version > 1 ? '(v' + e.version + ')' : ''}</strong>
                                             <span style="font-size:0.75em; color:#94a3b8;">${e.fecha} ${e.hora || ''}</span>
                                         </div>
                                         <div style="font-size:0.85em; font-weight:bold; margin-bottom: 5px;">${e.estado}</div>
@@ -2140,15 +2355,45 @@
 
                         document.getElementById('contenedorBitacora').innerHTML = historialHTML;
 
+                        // Rellenar partes que no han respondido en la última versión
+                        var partesPendientesMaxVersion = false;
+                        todasLasPartesInvolucradas.forEach(p => {
+                            if (!partesEstadoFinal[p]) {
+                                partesEstadoFinal[p] = 'ENVIADO v' + maxVersion;
+                                partesPendientesMaxVersion = true;
+                            } else if (partesEstadoFinal[p] === 'PENDIENTE' || partesEstadoFinal[p] === 'REVISADO') {
+                                partesPendientesMaxVersion = true;
+                            }
+                        });
+
                         // Actualizar semáforos
                         const actualizarSemaforo = (id, parte) => {
                             const badge = document.getElementById(id);
                             if (!badge) return;
-                            const estado = partesEstadoFinal[parte] || 'ENVIADO';
+                            
+                            let estado = 'ENVIADO';
+                            if (parte === 'CODEUDORES') {
+                                // Buscar todos los CODEUDOR1, CODEUDOR2, etc.
+                                const codeudoresKeys = Object.keys(partesEstadoFinal).filter(k => k.startsWith('CODEUDOR'));
+                                if (codeudoresKeys.length === 0) {
+                                    estado = 'NO APLICA';
+                                } else {
+                                    const allAprobado = codeudoresKeys.every(k => partesEstadoFinal[k] === 'APROBADO');
+                                    const anyRechazado = codeudoresKeys.some(k => partesEstadoFinal[k].includes('RECHAZADO') || partesEstadoFinal[k].includes('CAMBIOS') || partesEstadoFinal[k].includes('CORREGIR'));
+                                    if (anyRechazado) estado = 'RECHAZADO';
+                                    else if (allAprobado) estado = 'APROBADO';
+                                    else estado = 'PENDIENTE';
+                                }
+                            } else {
+                                estado = partesEstadoFinal[parte] || 'ENVIADO';
+                            }
+
                             badge.textContent = estado;
-                            if (estado === 'APROBADO') {
+                            if (estado === 'NO APLICA') {
+                                badge.style.background = '#f3f4f6'; badge.style.color = '#9ca3af';
+                            } else if (estado === 'APROBADO') {
                                 badge.style.background = '#dcfce7'; badge.style.color = '#166534';
-                            } else if (estado === 'RECHAZADO' || estado === 'CAMBIOS') {
+                            } else if (estado.includes('RECHAZADO') || estado.includes('CAMBIOS') || estado.includes('CORREGIR')) {
                                 badge.style.background = '#fee2e2'; badge.style.color = '#991b1b';
                             } else {
                                 badge.style.background = '#fef3c7'; badge.style.color = '#92400e';
@@ -2157,44 +2402,36 @@
                         
                         actualizarSemaforo('semaforoInquilino', 'INQUILINO');
                         actualizarSemaforo('semaforoPropietario', 'PROPIETARIO');
-                        actualizarSemaforo('semaforoCodeudor', 'CODEUDOR');
+                        actualizarSemaforo('semaforoCodeudor', 'CODEUDORES');
 
-                        // Verificar si todas las partes que han interactuado (al menos Inquilino y Propietario) están en APROBADO
-                        var partesUnicas = Object.keys(partesEstadoFinal);
+                        var partesUnicas = Array.from(todasLasPartesInvolucradas);
                         var todosAprobados = partesUnicas.length > 0 && partesUnicas.every(p => partesEstadoFinal[p] === 'APROBADO');
-
-                        // Requisito mínimo: Inquilino y Propietario deben existir y estar aprobados
                         var tienePrincipales = partesEstadoFinal['INQUILINO'] === 'APROBADO' && partesEstadoFinal['PROPIETARIO'] === 'APROBADO';
 
                         if(todosAprobados && tienePrincipales) {
                             document.getElementById('semaforoGlobal').textContent = 'Completado';
                             document.getElementById('semaforoGlobal').style.color = 'var(--success)';
                             document.getElementById('btnGenerarOriginal').disabled = false;
+                            document.getElementById('btnEnviarValidar').style.display = 'none';
+                            document.getElementById('accionesOriginal').style.display = 'block';
                         } else {
-                             document.getElementById('btnGenerarOriginal').disabled = true;
+                            document.getElementById('btnGenerarOriginal').disabled = true;
+                            document.getElementById('btnEnviarValidar').style.display = 'flex';
+                            document.getElementById('accionesOriginal').style.display = 'none';
                         }
 
-                        // Bloqueo de envío de nueva versión si alguien sigue pendiente en la ronda
-                        var algunoPendiente = partesUnicas.some(p => partesEstadoFinal[p] === 'PENDIENTE' || partesEstadoFinal[p] === 'REVISADO');
                         const btnEnviarValidar = document.getElementById('btnEnviarValidar');
-                        
-                        // Si ya hay partes que han votado (es decir, ya estamos en una ronda activa)
-                        // y alguien falta por dar su veredicto, bloqueamos el botón de reenvío.
-                        if (partesUnicas.length > 0 && btnEnviarValidar) {
-                            if (algunoPendiente) {
+                        if (btnEnviarValidar) {
+                            if (partesPendientesMaxVersion) {
                                 btnEnviarValidar.disabled = true;
                                 btnEnviarValidar.style.opacity = '0.5';
-                                btnEnviarValidar.title = 'Debes esperar a que todas las partes terminen de revisar esta ronda';
-                                if(btnEnviarValidar.innerHTML.includes('Nueva Versión')) {
-                                    btnEnviarValidar.innerHTML = '⏳ Esperando que completen la ronda...';
-                                }
+                                btnEnviarValidar.title = 'Debes esperar a que todas las partes terminen de revisar esta ronda (v' + maxVersion + ')';
+                                btnEnviarValidar.innerHTML = '⏳ Esperando (v' + maxVersion + ') que completen...';
                             } else {
                                 btnEnviarValidar.disabled = false;
                                 btnEnviarValidar.style.opacity = '1';
                                 btnEnviarValidar.title = '';
-                                if(btnEnviarValidar.innerHTML.includes('Esperando')) {
-                                    btnEnviarValidar.innerHTML = '✉️ Enviar Nueva Versión Corregida';
-                                }
+                                btnEnviarValidar.innerHTML = '✉️ Enviar Nueva Versión Corregida (v' + (maxVersion + 1) + ')';
                             }
                         }
                     }
@@ -2214,6 +2451,8 @@
             btn.innerHTML = 'Guardando...';
             btn.disabled = true;
 
+            const cdrParaBackend = contratoActualContext.datos && contratoActualContext.datos.idRegistro ? contratoActualContext.datos.idRegistro : contratoActualContext.cdr;
+
             google.script.run
                 .withSuccessHandler(function(res) {
                     btn.innerHTML = originalText;
@@ -2221,7 +2460,7 @@
                     if(res.success) {
                         Swal.fire('Guardado', 'Tu registro ha sido añadido a la bitácora.', 'success');
                         document.getElementById('adminComentarioTxt').value = '';
-                        cargarEstadosAprobacion(cdr); // Recargar la línea de tiempo
+                        cargarEstadosAprobacion(cdrParaBackend); // Recargar la línea de tiempo
                     } else {
                         Swal.fire('Error', res.message, 'error');
                     }
@@ -2231,12 +2470,12 @@
                     btn.disabled = false;
                     Swal.fire('Error de red', err.message, 'error');
                 })
-                .registrarAprobacionContrato(cdr, 'ADMIN', 'COMENTARIO', txt);
+                .registrarAprobacionContrato(cdrParaBackend, 'ADMIN', 'COMENTARIO', txt);
         }
 
         function generarOriginalDefinitivo() {
             if(!contratoActualContext) return;
-            const cdr = contratoActualContext.cdr;
+            const cdr = contratoActualContext.datos && contratoActualContext.datos.idRegistro ? contratoActualContext.datos.idRegistro : contratoActualContext.cdr;
 
             Swal.fire({
                 title: '¿Generar Original?',
@@ -2254,8 +2493,10 @@
                             btn.disabled = false;
                             btn.innerHTML = ' Generar y Descargar Original';
                             if(res.success) {
-                                Swal.fire('Original Listo', 'El contrato original se ha generado.', 'success');
-                                window.open(res.urlPdf, '_blank');
+                                Swal.fire('Original Listo', 'El contrato original se ha generado.', 'success').then(() => {
+                                    window.open(res.urlPdf, '_blank');
+                                    google.script.host.close();
+                                });
                             } else {
                                 Swal.fire('Error', res.message, 'error');
                             }
@@ -2464,13 +2705,19 @@
         }
 
         // Validar Inquilino
-        function validarInquilino(cdr) {
+        async function validarInquilino(cdr) {
             // Guard: verificar si ya se envió una corrección pendiente
             const registro = registrosData.inquilinos.find(r => r.cdr === cdr);
             if (registro && registro.detalles && (registro.detalles.includes('Corrección solicitada') || registro.detalles.includes('corrección'))) {
-                if (!confirm(' Este registro ya tiene una corrección pendiente enviada al inquilino.\n\nSi abres y vuelves a procesar, se enviará otro correo duplicado.\n\n¿Deseas continuar de todas formas?')) {
-                    return;
-                }
+                const conf = await Swal.fire({
+                    title: '¿Continuar?',
+                    text: 'Este registro ya tiene una corrección pendiente enviada al inquilino. Si abres y vuelves a procesar, se enviará otro correo duplicado. ¿Deseas continuar de todas formas?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, continuar',
+                    cancelButtonText: 'Cancelar'
+                });
+                if (!conf.isConfirmed) return;
             }
 
             registroActual = cdr;
@@ -2498,13 +2745,19 @@
                 .obtenerDocumentosDelCDR(cdr);
         }
 
-        function validarPropietario(cdr) {
+        async function validarPropietario(cdr) {
             // Guard: verificar si ya se envió una corrección pendiente
             const registro = registrosData.propietarios.find(r => r.cdr === cdr);
             if (registro && registro.detalles && (registro.detalles.includes('Corrección solicitada') || registro.detalles.includes('corrección'))) {
-                if (!confirm(' Este registro ya tiene una corrección pendiente enviada al propietario.\n\nSi abres y vuelves a procesar, se enviará otro correo duplicado.\n\n¿Deseas continuar de todas formas?')) {
-                    return;
-                }
+                const conf = await Swal.fire({
+                    title: '¿Continuar?',
+                    text: 'Este registro ya tiene una corrección pendiente enviada al propietario. Si abres y vuelves a procesar, se enviará otro correo duplicado. ¿Deseas continuar de todas formas?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, continuar',
+                    cancelButtonText: 'Cancelar'
+                });
+                if (!conf.isConfirmed) return;
             }
 
             registroActual = cdr;
@@ -2807,8 +3060,16 @@
             cargarDatosCerebroPorPersona(personaActivaKey);
         }
 
-        function guardarCerebro() {
-            if (!confirm('¿Seguro que deseas guardar estos cambios en el Cerebro/Sheet?')) return;
+        async function guardarCerebro() {
+            const conf = await Swal.fire({
+                title: '¿Guardar Cambios?',
+                text: '¿Seguro que deseas guardar estos cambios en el Cerebro/Sheet?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Guardar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!conf.isConfirmed) return;
 
             let isCod = personaActivaKey.startsWith('codeudor_');
             let codIdx = isCod ? parseInt(personaActivaKey.split('_')[1], 10) : null;
@@ -3633,8 +3894,15 @@
             cargarDatos();
         }
 
-        function limpiarCache() {
-            if (confirm('¿Limpiar caché del sistema?')) {
+        async function limpiarCache() {
+            const conf = await Swal.fire({
+                title: '¿Limpiar Caché?',
+                text: '¿Deseas limpiar la caché del sistema?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Limpiar'
+            });
+            if (conf.isConfirmed) {
                 localStorage.clear();
                 sessionStorage.clear();
                 mostrarToast('Caché limpiado exitosamente', 'success');
@@ -3786,7 +4054,8 @@
 
     </script>
 
-    <!-- Swal shim: reemplaza SweetAlert2 con confirm/alert nativo para compatibilidad con Apps Script -->
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // ==========================================
         // BITÁCORA TRANSPARENTE
@@ -3794,9 +4063,9 @@
         function enviarMensajeBitacora() {
             const input = document.getElementById('inputMensajeBitacora');
             const mensaje = input.value.trim();
-            const cdr = document.getElementById('modalContratoCdr').textContent;
-            
-            if (!mensaje || !cdr) return;
+            if (!mensaje || !contratoActualContext) return;
+
+            const cdrParaBackend = contratoActualContext.datos && contratoActualContext.datos.idRegistro ? contratoActualContext.datos.idRegistro : contratoActualContext.cdr;
             
             // UI Update local
             const contenedor = document.getElementById('contenedorBitacora');
@@ -3815,37 +4084,21 @@
             google.script.run
                 .withSuccessHandler(function(res) {
                     if (!res.success) {
-                        mostrarToast('Error en bitácora: ' + res.message, 'error');
+                        if(typeof mostrarToast === 'function') mostrarToast('Error en bitácora: ' + res.message, 'error');
+                        else Swal.fire('Error en bitácora', res.message, 'error');
                         msgDiv.style.border = '1px solid red';
+                    } else {
+                        // Recargar para que quede formateado oficial
+                        cargarEstadosAprobacion(cdrParaBackend);
                     }
                 })
                 .withFailureHandler(function(err) {
-                    mostrarToast('Error de conexión con la bitácora', 'error');
+                    if(typeof mostrarToast === 'function') mostrarToast('Error de conexión con la bitácora', 'error');
+                    else Swal.fire('Error de red', err.message, 'error');
                     msgDiv.style.border = '1px solid red';
                 })
-                .procesarPeticionDocumentos({
-                    action: 'registrarMensajeBitacora',
-                    cdr: cdr,
-                    mensaje: mensaje,
-                    autor: 'Admin (Validación)'
-                });
+                .registrarAprobacionContrato(cdrParaBackend, 'ADMIN', 'COMENTARIO', mensaje);
         }
-
-        var Swal = {
-            fire: function(titleOrOpts, msg, icon) {
-                // Soporte para Swal.fire(opts) y Swal.fire(title, msg, icon)
-                var opts = (typeof titleOrOpts === 'object' && titleOrOpts !== null) ? titleOrOpts : { title: titleOrOpts, text: msg, icon: icon };
-                var hasCancel = opts.showCancelButton;
-                var message = (opts.title ? opts.title + '\n' : '') + (opts.text || '');
-                if (hasCancel) {
-                    var confirmed = window.confirm(message);
-                    return Promise.resolve({ isConfirmed: confirmed, isDismissed: !confirmed });
-                } else {
-                    if (message) window.alert(message);
-                    return Promise.resolve({ isConfirmed: true, isDismissed: false });
-                }
-            }
-        };
         </script>
 </body>
 
