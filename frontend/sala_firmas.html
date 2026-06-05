@@ -275,7 +275,10 @@
             </p>
             <br>
             <div id="step3-actions">
-                <p style="color: var(--primary); font-weight: 600;">Ya puede cerrar esta ventana.</p>
+                <p style="color: var(--primary); font-weight: 600; margin-bottom: 10px;">Esta ventana se cerrará automáticamente en <span id="countdownText" style="font-size: 20px;">10</span> segundos.</p>
+                <div style="width: 100%; max-width: 300px; height: 4px; background: var(--bg-card); border-radius: 2px; overflow: hidden; margin: 0 auto;">
+                    <div id="countdownBar" style="width: 100%; height: 100%; background: var(--primary); transition: width 1s linear;"></div>
+                </div>
             </div>
         </div>
 
@@ -420,6 +423,25 @@
                 if (result.success) {
                     document.getElementById('step2').style.display = 'none';
                     document.getElementById('step3').style.display = 'flex';
+                    
+                    // Iniciar cuenta regresiva
+                    let timeLeft = 10;
+                    const countSpan = document.getElementById('countdownText');
+                    const countBar = document.getElementById('countdownBar');
+                    
+                    const interval = setInterval(() => {
+                        timeLeft--;
+                        countSpan.innerText = timeLeft;
+                        countBar.style.width = (timeLeft * 10) + '%';
+                        
+                        if (timeLeft <= 0) {
+                            clearInterval(interval);
+                            // Intentar cerrar la pestaña
+                            window.close();
+                            // Fallback si el navegador bloquea window.close()
+                            document.getElementById('step3-actions').innerHTML = '<p style="color: var(--primary); font-weight: 600;">Ya puede cerrar esta ventana manualmente.</p>';
+                        }
+                    }, 1000);
                 } else {
                     alert("Ocurrió un error guardando la firma: " + result.message);
                     btn.style.display = 'block';
