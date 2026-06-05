@@ -6,32 +6,29 @@
    ========================================== */
 
 :root {
-  /* Paleta Gold Life System */
-  --primary: #18072b;
-  /* Deep Premium Purple */
-  --primary-light: #5612a2;
-  /* Highlight Purple */
-  --secondary: #dcb53c;
-  /* Elegant Gold */
-  --secondary-dark: #b8860b;
+  /* Paleta Gold Life System - Dark Luxury */
+  --primary: #d4af37; /* Dorado Elegante */
+  --primary-glow: rgba(212, 175, 55, 0.4);
+  --secondary: #1e1e1e;
+  --secondary-dark: #0a0a0a;
 
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
 
-  --dark: #1f2937;
-  --text-muted: #6b7280;
-  --light: #f9fafb;
+  --dark: #0a0a0a;
+  --text-muted: #a1a1aa;
+  --light: #2a2a2a;
   --white: #ffffff;
-  --border: #e5e7eb;
+  --border: rgba(212, 175, 55, 0.2);
 
   /* Sombras Glass/Floating */
-  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 10px 25px rgba(24, 7, 43, 0.08);
-  --shadow-lg: 0 20px 40px rgba(24, 7, 43, 0.12);
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.8);
   --radius: 16px;
 
-  --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: 'Cinzel', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 * {
@@ -42,9 +39,7 @@
 
 body {
   font-family: var(--font-family);
-  background: var(--primary);
-  /* Deep Premium Purple */
-  background: radial-gradient(circle at top, #2a1148 0%, var(--primary) 100%);
+  background: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--dark) 100%);
   color: var(--white);
   min-height: 100vh;
   padding: 20px;
@@ -72,32 +67,26 @@ body {
 
 /* CARDS */
 .card {
-  background: rgba(255, 255, 255, 0.96);
+  background: linear-gradient(145deg, rgba(30, 30, 35, 0.8), rgba(20, 20, 24, 0.95));
   border-radius: var(--radius);
   /* Efecto Flotante Neón + 3D */
   box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.6),
-    /* Sombra de levitación profunda */
-    0 0 20px rgba(220, 181, 60, 0.35),
-    /* Glow neón dorado cercano */
-    0 0 50px rgba(220, 181, 60, 0.15);
-  /* Glow neón dorado extendido */
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid rgba(255, 255, 255, 0.9);
-  /* Luz superior 3D */
-  border-left: 1px solid rgba(255, 255, 255, 0.7);
-  /* Luz lateral 3D */
+    0 25px 50px -12px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.15);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
   margin-bottom: 25px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card-header {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  color: var(--white);
+  background: linear-gradient(to bottom, rgba(212, 175, 55, 0.08), transparent);
+  color: var(--primary);
   padding: 30px 20px;
   text-align: center;
+  border-bottom: 1px solid var(--border);
 }
 
 .card-header h1 {
@@ -150,7 +139,7 @@ body {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: var(--dark);
+  color: var(--white);
   font-size: 14px;
 }
 
@@ -160,13 +149,13 @@ select.input,
 textarea.input {
   width: 100%;
   padding: 14px 18px;
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 12px;
   font-size: 16px;
   font-family: var(--font-family);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  background: #fdfdfd;
-  color: var(--dark);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--white);
 }
 
 .form-control:focus,
@@ -174,9 +163,9 @@ textarea.input {
 select.input:focus,
 textarea.input:focus {
   outline: none;
-  border-color: var(--secondary);
-  background: var(--white);
-  box-shadow: 0 0 0 4px rgba(220, 181, 60, 0.15);
+  border-color: var(--primary);
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
 }
 
 .required {
@@ -202,27 +191,26 @@ textarea.input:focus {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--secondary) 100%);
-  color: var(--primary);
-  /* Deep Premium Purple on Gold */
-  box-shadow: 0 4px 15px rgba(220, 181, 60, 0.3);
+  background: linear-gradient(135deg, #d4af37, #f0c541);
+  color: #0f172a;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+  font-weight: 700;
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(220, 181, 60, 0.4);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.6);
 }
 
 .btn-secondary {
-  background: var(--white);
-  color: var(--text-muted);
-  border: 2px solid var(--border);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+  border: 1px solid var(--border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  border-color: var(--secondary);
-  color: var(--primary);
-  background: #fffdf5;
+  border-color: var(--primary);
+  background: rgba(212, 175, 55, 0.1);
 }
 
 .btn-success {
@@ -244,18 +232,18 @@ textarea.input:focus {
 
 /* FILE UPLOAD */
 .file-upload {
-  border: 2px dashed var(--primary);
+  border: 1px dashed var(--border);
   border-radius: var(--radius);
   padding: 30px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: var(--light);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .file-upload:hover {
-  background: #f0f4ff;
-  border-color: var(--secondary);
+  background: rgba(212, 175, 55, 0.05);
+  border-color: var(--primary);
 }
 
 .file-upload.has-file {
