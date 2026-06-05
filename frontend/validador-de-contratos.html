@@ -712,12 +712,36 @@
       const formatSafeDate = (fechaStr, horaStr) => {
         try {
           if (!fechaStr) return '';
-          // Si es un número serial largo o timestamp (ej. 17182928392)
+          
+          let dateObj = null;
+
+          // 1. Si es un número serial largo o timestamp (ej. 17182928392)
           if (!isNaN(fechaStr) && fechaStr.toString().length > 10) {
-            const d = new Date(Number(fechaStr));
-            return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+            dateObj = new Date(Number(fechaStr));
+          } 
+          // 2. Si es un string ISO que viene de Sheets (ej. "2026-06-04T05:00:00.000Z")
+          else if (typeof fechaStr === 'string' && fechaStr.includes('T')) {
+            dateObj = new Date(fechaStr);
           }
-          // Si es un string normal
+          
+          if (dateObj && !isNaN(dateObj.getTime())) {
+             const dia = dateObj.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+             
+             // Extraer la hora
+             let horaStrFinal = '';
+             if (horaStr && typeof horaStr === 'string' && horaStr.includes('T')) {
+                const hObj = new Date(horaStr);
+                if (!isNaN(hObj.getTime())) {
+                   horaStrFinal = hObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute:'2-digit' });
+                }
+             } else if (horaStr) {
+                horaStrFinal = horaStr;
+             }
+             
+             return horaStrFinal ? `${dia} a las ${horaStrFinal}` : dia;
+          }
+
+          // Si es un string normal (Fallback)
           let res = fechaStr;
           if (horaStr) res += ' a las ' + horaStr;
           return res;
