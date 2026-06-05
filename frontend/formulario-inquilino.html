@@ -349,6 +349,12 @@
           <div class="step" data-step="1">2</div>
           <div class="step" data-step="2">3</div>
           <div class="step" data-step="3">4</div>
+          <div class="step" data-step="4">✓</div>
+        </div>
+          <div class="step active" data-step="0">1</div>
+          <div class="step" data-step="1">2</div>
+          <div class="step" data-step="2">3</div>
+          <div class="step" data-step="3">4</div>
           <div class="step" data-step="4">5</div>
           <div class="step" data-step="5">✓</div>
         </div>
@@ -531,43 +537,8 @@
           </div>
         </div>
 
-        <!-- Step 5: Pago -->
-        <div class="step-pane" data-pane="4">
-          <h3>💳 Pago del Estudio</h3>
-          <div class="card">
-            <div class="card-body">
-              <h4>Valor: $60.000 COP</h4>
-              <p>Seleccione su método de pago preferido:</p>
-
-              <div class="payment-options">
-                <button id="btnPayBreb" class="btn btn-secondary btn-lg btn-block">
-                  📱 Pagar con Nequi/Daviplata
-                </button>
-                <button id="btnPayWompi" class="btn btn-primary btn-lg btn-block">
-                  💳 Pagar con Tarjeta
-                </button>
-              </div>
-
-              <div class="alert alert-info" style="margin-top:1rem">
-                <small>Una vez realizado el pago, puede continuar con el envío del formulario.</small>
-              </div>
-
-              <div class="hr"></div>
-              <h4>Soporte de Pago</h4>
-              <p class="muted" style="margin-bottom:1rem">Por favor, adjunte el comprobante de pago realizado.</p>
-              <div class="file-upload">
-                <input type="file" id="comprobantePago" class="file-input" accept=".pdf,.jpg,.jpeg,.png" required>
-                <label for="comprobantePago" class="file-label">
-                  <span>📄 Comprobante de Pago *</span>
-                  <span id="comprobantePagoName" class="file-name"></span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Step 6: Resumen -->
-        <div class="step-pane" data-pane="5">
+        <div class="step-pane" data-pane="4">
           <h3>📄 Resumen de Información</h3>
           <div id="resumen"></div>
         </div>
@@ -633,7 +604,7 @@
         modoCorreccion: false,
         docsCorreccion: [],
         step: 0,
-        max: 5,
+        max: 4,
         archivos: {},
         maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
       };
@@ -715,6 +686,14 @@
             state.docsCorreccion = docs ? JSON.parse(decodeURIComponent(docs)) : [];
           } catch (e) { state.docsCorreccion = []; }
           renderCorreccionBanner();
+          
+          // Bypass welcome screen in correction mode
+          const welcome = document.getElementById('welcomeScreen');
+          const mainWiz = document.getElementById('mainWizard');
+          if (welcome && mainWiz) {
+            welcome.style.display = 'none';
+            mainWiz.style.display = 'block';
+          }
         }
 
         // Wizard
