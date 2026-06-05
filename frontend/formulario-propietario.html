@@ -1191,8 +1191,18 @@
         const params = new URLSearchParams(location.search);
         state.cdr = params.get('cdr') || '';
         const dir = params.get('dir') || '';
-        if(document.getElementById('displayDir') && dir) {
-          document.getElementById('displayDir').textContent = 'Ubicado en: ' + dir;
+        if(document.getElementById('displayDir')) {
+          if (dir) {
+            document.getElementById('displayDir').textContent = 'Ubicado en: ' + dir;
+          } else if (state.cdr && typeof google !== 'undefined' && google.script) {
+            google.script.run
+              .withSuccessHandler(function(fetchedDir) {
+                if (fetchedDir) {
+                  document.getElementById('displayDir').textContent = 'Ubicado en: ' + fetchedDir;
+                }
+              })
+              .handleObtenerDireccionInmueble(state.cdr);
+          }
         }
 
         if (!state.cdr) {

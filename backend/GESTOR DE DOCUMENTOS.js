@@ -865,6 +865,21 @@ function actualizarDatosCerebro(datos) {
 // HANDLERS DE API EXISTENTES
 // ==========================================
 
+
+function handleObtenerDireccionInmueble(cdr) {
+  try {
+    const fila = buscarFilaPorCDR(cdr);
+    if (!fila) return '';
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const direccion = obtenerValorPorHeader(headers, row, 'Ingrese la Dirección del inmueble');
+    return direccion || '';
+  } catch (e) {
+    return '';
+  }
+}
+
 function handleVerificarLink(e) {
   const cdr = e.parameter.cdr;
   const tipo = e.parameter.tipo;
