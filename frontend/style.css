@@ -161,7 +161,8 @@ textarea.input {
   font-size: 16px;
   font-family: var(--font-family);
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
   color: var(--white);
 }
 
@@ -171,8 +172,8 @@ select.input:focus,
 textarea.input:focus {
   outline: none;
   border-color: var(--primary);
-  background: rgba(0, 0, 0, 0.5);
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
 }
 
 .required {

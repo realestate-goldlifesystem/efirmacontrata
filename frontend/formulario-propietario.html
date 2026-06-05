@@ -99,9 +99,10 @@
     }
 
     .progress .step.completed {
-      background: rgba(212, 175, 55, 0.2);
-      border-color: var(--primary);
-      color: var(--primary);
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
     }
 
     /* Panel Transitions */
@@ -440,6 +441,24 @@
       <div class="form-container">
         <h2 class="form-title">Formulario del Propietario</h2>
         <p class="form-subtitle">Complete la información requerida para el contrato de arrendamiento</p>
+
+        <!-- XP Progress Bar (Gamification) -->
+        <div class="xp-bar-container" style="margin-bottom: 30px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 15px 20px; border: 1px solid rgba(212,175,55,0.15); box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
+          <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; font-weight: 700; color: var(--primary); letter-spacing: 0.5px;">
+             <span>COMPLETADO DE LA SECCIÓN</span>
+             <span id="xpText">0%</span>
+          </div>
+          <div style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; position: relative;">
+             <div id="xpBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #d4af37, #f0c541); transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 0 15px rgba(212,175,55,0.6); position: relative;">
+                 <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transform: translateX(-100%); animation: shimmer 2s infinite;"></div>
+             </div>
+          </div>
+        </div>
+        <style>
+          @keyframes shimmer {
+            100% { transform: translateX(100%); }
+          }
+        </style>
 
         <!-- Progress -->
         <div class="progress">
@@ -1084,12 +1103,77 @@
         bindFiles();
         bindServicios();
         bindProgressValidators();
+        updateMicroProgress();
 
         // Cargar progreso DESPUÉS de que todo esté bindado
         if (!state.modoCorreccion) {
           await cargarProgresoUsuario();
         }
       }
+
+      // Update XP Bar dynamically
+      function updateMicroProgress() {
+        const activePane = document.querySelector('.step-pane.show');
+        if (!activePane) return;
+        
+        const requiredFields = Array.from(activePane.querySelectorAll('input[required], select[required]'))
+          .filter(el => {
+            const container = el.closest('.progressive-hidden');
+            if (container && container.classList.contains('progressive-hidden') && container.style.display === 'none') return false; 
+            if (container && container.classList.contains('hidden')) return false;
+            return true;
+          });
+        
+        let filled = 0;
+        requiredFields.forEach(field => {
+          if (field.type === 'file') {
+            if (field.files && field.files.length > 0) filled++;
+          } else {
+            if (field.value.trim() !== '') filled++;
+          }
+        });
+
+        // Sumar facturas de servicios si el checkbox está marcado
+        if (state.step === 3) {
+            let totalFacturasRequeridas = 0;
+            let facturasAdjuntadas = 0;
+            const servicios = ['Agua', 'Luz', 'Gas', 'Telefono', 'Internet'];
+            servicios.forEach(srv => {
+                const cb = document.getElementById('servicio' + srv);
+                if(cb && cb.checked) {
+                    totalFacturasRequeridas++;
+                    const fi = document.getElementById('factura' + srv);
+                    if(fi && fi.files && fi.files.length > 0) facturasAdjuntadas++;
+                }
+            });
+            filled += facturasAdjuntadas;
+            requiredFields.push(...Array(totalFacturasRequeridas).fill(null)); // Mock para sumar al total
+        }
+
+        const total = requiredFields.length || 1;
+        const percentage = Math.round((filled / total) * 100);
+        
+        const xpBar = document.getElementById('xpBar');
+        const xpText = document.getElementById('xpText');
+        if (xpBar && xpText) {
+          xpBar.style.width = percentage + '%';
+          xpText.textContent = percentage + '%';
+          
+          if (percentage >= 100) {
+            xpBar.style.background = 'linear-gradient(90deg, var(--success), #34d399)';
+            xpBar.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.6)';
+            xpText.style.color = 'var(--success)';
+          } else {
+            xpBar.style.background = 'linear-gradient(90deg, #d4af37, #f0c541)';
+            xpBar.style.boxShadow = '0 0 15px rgba(212,175,55,0.6)';
+            xpText.style.color = 'var(--primary)';
+          }
+        }
+      }
+
+      // Bind micro progress to inputs
+      document.addEventListener('input', updateMicroProgress);
+      document.addEventListener('change', updateMicroProgress);
 
       // --------- Corrección ----------
       function renderCorreccionBanner() {
@@ -1262,6 +1346,7 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
           guardarProgresoUsuario();
         }
+        updateMicroProgress();
       }
 
       // --------- Files ----------
@@ -1647,6 +1732,7 @@
 
         const isValid = validateStepRaw(state.step);
         el.btnNext.disabled = !isValid;
+        updateMicroProgress();
       }
 
       function getRequiredForStep(step) {

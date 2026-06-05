@@ -100,9 +100,10 @@
     }
 
     .progress .step.completed {
-      background: rgba(212, 175, 55, 0.2);
-      border-color: var(--primary);
-      color: var(--primary);
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
     }
 
     /* Panel Transitions */
@@ -323,6 +324,24 @@
         <h2 class="form-title">📋 Formulario del Inquilino</h2>
         <p class="form-subtitle">Complete la información requerida para el contrato de arrendamiento</p>
 
+        <!-- XP Progress Bar (Gamification) -->
+        <div class="xp-bar-container" style="margin-bottom: 30px; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 15px 20px; border: 1px solid rgba(212,175,55,0.15); box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
+          <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; font-weight: 700; color: var(--primary); letter-spacing: 0.5px;">
+             <span>COMPLETADO DE LA SECCIÓN</span>
+             <span id="xpText">0%</span>
+          </div>
+          <div style="height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; position: relative;">
+             <div id="xpBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #d4af37, #f0c541); transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1); box-shadow: 0 0 15px rgba(212,175,55,0.6); position: relative;">
+                 <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); transform: translateX(-100%); animation: shimmer 2s infinite;"></div>
+             </div>
+          </div>
+        </div>
+        <style>
+          @keyframes shimmer {
+            100% { transform: translateX(100%); }
+          }
+        </style>
+
         <!-- Progress -->
         <div class="progress">
           <div class="progress-line" id="progressLine" style="width: 0%;"></div>
@@ -410,7 +429,7 @@
           <p class="muted">Cargue los documentos requeridos en formato PDF o imagen</p>
 
           <div class="file-upload" id="prog-inq-1-1">
-            <input type="file" id="docFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <input type="file" id="docFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png" required>
             <label for="docFront" class="file-label">
               <span>📄 Documento de Identidad (Frontal) *</span>
               <span id="docFrontName" class="file-name"></span>
@@ -418,7 +437,7 @@
           </div>
 
           <div class="file-upload progressive-hidden" id="prog-inq-1-2">
-            <input type="file" id="docBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+            <input type="file" id="docBack" class="file-input" accept=".pdf,.jpg,.jpeg,.png" required>
             <label for="docBack" class="file-label">
               <span>📄 Documento de Identidad (Reverso) *</span>
               <span id="docBackName" class="file-name"></span>
@@ -537,7 +556,7 @@
               <h4>Soporte de Pago</h4>
               <p class="muted" style="margin-bottom:1rem">Por favor, adjunte el comprobante de pago realizado.</p>
               <div class="file-upload">
-                <input type="file" id="comprobantePago" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+                <input type="file" id="comprobantePago" class="file-input" accept=".pdf,.jpg,.jpeg,.png" required>
                 <label for="comprobantePago" class="file-label">
                   <span>📄 Comprobante de Pago *</span>
                   <span id="comprobantePagoName" class="file-name"></span>
@@ -710,9 +729,56 @@
         bindFile(el.comprobantePago, 'comprobantePago', el.comprobantePagoName);
 
         bindProgressValidators();
+        updateMicroProgress();
       }
 
       init();
+
+      // Update XP Bar dynamically
+      function updateMicroProgress() {
+        const activePane = document.querySelector('.step-pane.show');
+        if (!activePane) return;
+        
+        const requiredFields = Array.from(activePane.querySelectorAll('input[required], select[required]'))
+          .filter(el => {
+            const container = el.closest('.progressive-hidden');
+            if (container && container.classList.contains('progressive-hidden')) return false;
+            return true;
+          });
+        
+        let filled = 0;
+        requiredFields.forEach(field => {
+          if (field.type === 'file') {
+            if (field.files && field.files.length > 0) filled++;
+          } else {
+            if (field.value.trim() !== '') filled++;
+          }
+        });
+
+        const total = requiredFields.length || 1;
+        const percentage = Math.round((filled / total) * 100);
+        
+        const xpBar = document.getElementById('xpBar');
+        const xpText = document.getElementById('xpText');
+        if (xpBar && xpText) {
+          xpBar.style.width = percentage + '%';
+          xpText.textContent = percentage + '%';
+          
+          if (percentage === 100) {
+            xpBar.style.background = 'linear-gradient(90deg, var(--success), #34d399)';
+            xpBar.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.6)';
+            xpText.style.color = 'var(--success)';
+          } else {
+            xpBar.style.background = 'linear-gradient(90deg, #d4af37, #f0c541)';
+            xpBar.style.boxShadow = '0 0 15px rgba(212,175,55,0.6)';
+            xpText.style.color = 'var(--primary)';
+          }
+        }
+      }
+
+      // Bind micro progress to inputs
+      document.addEventListener('input', updateMicroProgress);
+      document.addEventListener('change', updateMicroProgress);
 
       // sessionStorage: guardar por CDR para no mezclar formularios
       const STORAGE_KEY = `inq_form_${state.cdr}`;
@@ -803,6 +869,7 @@
         }
         state.step = savedStep;
         evaluateProgress();
+        updateMicroProgress();
       }, 50);
 
       // Pago
@@ -862,7 +929,7 @@
         setTimeout(() => {
              for(let s = 1; s <= 4; s++) {
                  if(isStepNeededInCorrection(s)) {
-                     const stepIndicator = document.querySelector(`.step-indicator[data-step="${s}"]`);
+                     const stepIndicator = document.querySelector(`.step[data-step="${s}"]`);
                      if(stepIndicator) {
                          stepIndicator.click();
                          break;
@@ -964,6 +1031,8 @@
           const sNum = Number(s.dataset.step);
           s.classList.toggle('active', sNum === state.step);
           s.classList.toggle('completed', sNum < state.step);
+          if (sNum < state.step) s.textContent = '✓';
+          else s.textContent = sNum + 1;
         });
 
         const line = document.getElementById('progressLine');
@@ -978,6 +1047,7 @@
 
         if (state.step === state.max) buildSummary();
         if (!first) window.scrollTo({ top: 0, behavior: 'smooth' });
+        updateMicroProgress();
       }
 
       // --------- Files ----------
@@ -1007,7 +1077,6 @@
         reader.readAsDataURL(file);
       }
 
-      // --------- Progressive Validation ----------
       // --------- Progressive Validation ----------
       function evaluateProgress() {
         if (state.step === state.max) return;
