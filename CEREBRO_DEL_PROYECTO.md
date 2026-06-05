@@ -37,6 +37,16 @@ El proyecto vive en dos repositorios/carpetas que se hablan mediante una API (JS
 ## 🚀 3. Reglas de Despliegue (CÓMO HACER TU TRABAJO)
 Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los despliegues de esta forma:
 
+### 6. Flujo de Trabajo (Apps Script y Clasp)
+* El código se modifica localmente.
+* Para sincronizar con Google Scripts, se usa la terminal de VSCode (o la local): `clasp push`.
+* ⚠️ **OJO - TRAMPA MORTAL DE WEB APPS**: Si editas un archivo HTML o lógica del `doPost` que afecta al Web App (`/exec`), hacer `clasp push` **NO ES SUFICIENTE**. El Web App seguirá ejecutando el código viejo de la implementación anterior.
+  - Para actualizar la URL en vivo sin cambiar de ID, DEBES hacer: `clasp deploy -i [ID_DE_IMPLEMENTACION_ACTUAL] -d "Mensaje de actualizacion"`.
+  - El ID actual lo puedes encontrar en `frontend/config.js` en la variable `API_URL` (es la cadena larga entre `/s/` y `/exec`). 
+  - Si no haces esto, los cambios de backend nunca se reflejarán en el frontend y te volverás loco buscando el bug.
+  - **LÍMITE DE 200 VERSIONES:** Google Apps Script tiene un límite estricto de 200 versiones por proyecto. Si al hacer `clasp deploy` la consola arroja `Script has reached the limit of 200 versions`, **notifica inmediatamente al usuario (Leonardo)** para que entre al entorno visual de Apps Script (Historial del Proyecto) y borre implementaciones antiguas. No intentes forzarlo ni crear nuevos IDs.
+* IMPORTANTE: No modificar archivos locales sin un `clasp pull` previo si hay riesgo de cambios remotos. Pero nuestra política es **Source of Truth = Local**, así que todo cambio se hace local y se pushea.
+
 1. **Modo Borrador / Desarrollo (`clasp push`):**
    Si modificas un script en `backend/`, ejecuta en terminal `cmd /c npx clasp push`. Esto sube el código a Google. **OJO:** El frontend público no verá estos cambios aún, solo las URLs de prueba (`/dev`).
 2. **Modo Producción (`clasp deploy`):**
@@ -55,5 +65,18 @@ Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los
    - Los reemplazos de `header` y `footer` DEBEN ir en un bloque `try/catch` porque Google Docs arroja excepciones y crashea el script si se aplica "Primera página diferente".
    - Las fechas dobles (ej. `2026 de 2026`) suceden porque la plantilla suele tener `{{fecha}} de 2(000)`. Se deben absorber esas cadenas compuestas (junto con su año) ANTES del reemplazo del año suelto.
    - La etiqueta de pie de página para identificar el contrato es `{{CDR}}`, pero el valor que el sistema inyecta allí debe ser preferiblemente la columna `ID DE REGISTRO` (usando el CDR bruto solo como plan B).
+
+## 🔌 5. Túnel VIP (Service Account Local)
+El proyecto cuenta con un superpoder de acceso directo a la base de datos sin depender de `clasp run`.
+Existe un archivo local llamado `real-estate-ocr-468904-38d35bfd32d6.json` (Service Account) que tiene permisos de lectura/escritura sobre el Google Sheet `1.1 - INMUEBLES REGISTRADOS` (gracias a que el correo `ocr-vision@real-estate-ocr-468904.iam.gserviceaccount.com` fue agregado como editor).
+
+**¿Cómo usar este poder (Agente IA)?**
+1. Si necesitas leer datos en vivo o depurar, crea un script temporal usando la librería `googleapis` de npm.
+2. Inyecta la credencial JSON y usa los scopes necesarios:
+   - **Sheets:** `https://www.googleapis.com/auth/spreadsheets` (Leer/escribir registros).
+   - **Drive:** `https://www.googleapis.com/auth/drive` (Subir PDFs, leer actas, gestionar carpetas).
+   - **Docs:** `https://www.googleapis.com/auth/documents` (Leer/escribir en el "Cerebro" y contratos).
+3. El ID de la hoja principal es: `1jdPeOqQ2rRQNhlClAnFQFaNMxOl7HCI7oI1yG3_QRZc`.
+4. Ejecuta el script localmente con `node script_name.js`. ¡Es 100 veces más rápido que subir logs a Apps Script!
 
 ¡Actúa con seguridad y confianza, y siempre infórmale al usuario qué nivel de despliegue realizaste!

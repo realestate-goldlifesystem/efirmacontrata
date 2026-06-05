@@ -9,7 +9,7 @@
 ### 1. ⚙️ Motor de Generación de Contratos (GESTOR_CONTRATOS)
 *Objetivo: Lograr un cruce de datos perfecto y automatizado sin llaves vacías.*
 - [x] **Auditoría de Llaves (`GESTOR_CONTRATOS.js` / `GESTOR DE DOCUMENTOS.js`):** Solucionado el problema de inyección leyendo los datos directamente del **"Cerebro"** (Documento maestro `DATOS DE ELABORACION`) en Drive, en lugar de buscar en columnas de la hoja de cálculo.
-- [ ] **Sincronización Total:** Validar que el Cerebro capture correctamente campos adicionales como el correo y celular para todas las partes, garantizando que el contrato se rellene en su totalidad.
+- [x] **Sincronización Total:** Validar que el Cerebro capture correctamente campos adicionales como el correo y celular para todas las partes, garantizando que el contrato se rellene en su totalidad.
 
 ### 2. 🤝 Nuevo Ecosistema: "Subpanel de Negociación y Bitácora Transparente"
 *Objetivo: Empoderar al administrador y dar transparencia y seguridad a los clientes.*
@@ -33,16 +33,55 @@
   - Correo cuando una parte solicita un cambio o el Admin hace un ajuste: *"Se han solicitado/realizado cambios en el contrato, por favor revalida"*.
 - [x] **Notificación Final al Admin:** Envío automático del PDF Final a `realestate.goldlifesystem@gmail.com` listo para subirse a la plataforma de firmas (Viafirma).
 
-### 4. 🧪 Pruebas de Estrés y Aseguramiento de Calidad (QA) - [EN PROCESO]
+### 4. 🧪 Pruebas de Estrés y Aseguramiento de Calidad (QA) - [FINALIZADAS]
 - [x] **Depuración de Carga Multimedia:** Corrección de la lógica de búsqueda de carpetas maestras usando el "CDR Largo" a partir de IDs cortos (`RI...`) para los formularios de Inquilino y Propietario.
-- [ ] **Simulación End-to-End (E2E) - En curso:** El usuario está realizando la prueba maestra empezando desde el "Registro del Inmueble" hasta la generación del contrato.
-- [ ] **Validación de Correos y Estética:** Comprobar que todos los correos lleguen al buzón correcto con un renderizado visual perfecto.
+- [x] **Simulación End-to-End (E2E) - Completada:** El usuario realizó la prueba maestra empezando desde el "Registro del Inmueble" hasta la generación de contrato, validando el éxito total del sistema.
+- [x] **Validación de Correos y Estética:** Comprobado. Todos los correos llegan al buzón correcto con un renderizado visual perfecto y estético.
 
-### 5. 🏗️ Escalado del Sistema: Módulo "Registro del Inmueble"
-*Objetivo: Una vez la elaboración de contratos (E-FirmaContrata) quede operativa, llevaremos la misma robustez y validación al módulo inicial del sistema.*
+### 5. 💳 Integración Pasarela de Pagos y Reembolsos (Mercado Pago) - [PRÓXIMO PASO]
+*Objetivo: Monetizar el flujo bloqueando el avance hasta validar el pago, y ofrecer una "Garantía Automática de 48h" de reembolso.*
+- [ ] **Widget Frontend:** Incrustar el Checkout Pro/API de Mercado Pago en `formulario-inquilino.html`.
+- [ ] **Validación Webhook (doPost):** Escuchar eventos de Mercado Pago para asentar el "Sello de Pago Verificado" en Google Sheets.
+- [ ] **Sistema de Reembolso Automático (Garantía 48h):** Programar un *Time-driven Trigger* en Apps Script que escanee contratos en PENDING. Si pasan 48h sin respuesta del propietario, consumir la API de Reembolsos (`/v1/payments/{id}/refunds`) para devolver el dinero automáticamente.
+
+### 6. 👥 Escalabilidad de Múltiples Codeudores
+*Objetivo: Escalar el formulario y todo el ecosistema (paneles, bitácora y PDF) para que soporte 'N' cantidad de codeudores de forma dinámica.*
+- [ ] **Lógica Dinámica Frontend:** Adaptar el formulario de registro para permitir agregar codeudores adicionales dinámicamente.
+- [ ] **Sincronización en el Cerebro:** Modificar el esquema de `DATOS DE ELABORACION` para aceptar y estructurar un arreglo de varios codeudores.
+- [ ] **Adaptación del Panel y Bitácora:** Actualizar los semáforos de `panel_validacion.html` y los ciclos de aprobación para requerir el "Aprobado" de todos los codeudores involucrados.
+
+### 7. ✍️ Automatización de Firmas (AutenticSign)
+*Objetivo: Sustituir la generación manual de firmas conectando la API de AutenticSign para los contratos de arrendamiento.*
+- [ ] **Integración API REST:** Configurar Google Apps Script para enviar el "PDF Original Definitivo" a los servidores de AutenticSign de forma invisible.
+- [ ] **Flujo OTP:** Programar el envío de códigos SMS de validación a inquilinos y propietarios.
+
+### 8. 🏢 Escalado: Contratos de Administración de Inmuebles
+*Objetivo: Adaptar el motor E-FirmaContrata para captar propietarios que deseen ceder la administración de sus inmuebles.*
+- [ ] **Nuevo Cerebro:** Crear las variables específicas (comisiones, pólizas) para este tipo de contrato.
+- [ ] **Plantilla Dinámica:** Cargar la plantilla de Mandato/Administración y configurar las rutas de guardado en Drive.
+
+### 9. 🏡 Escalado: Promesas de Compraventa
+*Objetivo: Abarcar transacciones de alto valor inmobiliario con flujos colaborativos entre compradores y vendedores.*
+- [ ] **Adaptación del Frontend:** Generar los portales para recolección de documentos específicos de ventas (Promesas, Certificados de Tradición avanzados).
+- [ ] **Bitácora de Alta Complejidad:** Adaptar la negociación para clausulas de arras y fechas de escrituración.
+
+### 10. 🛡️ Acreditación Legal Premium (Olimpia IT)
+*Objetivo: Blindar las Promesas de Compraventa con el estándar legal más alto (ONAC y Registraduría).*
+- [ ] **Biometría Facial:** Conectar la API de Olimpia IT para exigir la validación facial de compradores/vendedores contra la Registraduría Nacional.
+- [ ] **Certificación ONAC:** Garantizar la "Presunción de Derecho" en todos los contratos de alto valor.
+
+### 11. 🏗️ Escalado del Sistema: Módulo "Registro del Inmueble"
+*Objetivo: Una vez todo el ecosistema de contratos y firmas opere al 100%, llevaremos esta misma robustez tecnológica al módulo inicial de captación de inmuebles.*
 - [ ] **Auditoría del Módulo de Registro:** Revisar la creación y enrutamiento inicial de carpetas en Google Drive (donde nacen los CDR largos).
-- [ ] **Optimización y Estandarización:** Aplicar las lecciones aprendidas de validación asíncrona y correos transaccionales al proceso en el que los asesores o clientes registran una nueva propiedad.
+- [ ] **Optimización y Estandarización:** Aplicar las lecciones aprendidas de validación asíncrona y correos al proceso en el que los asesores registran una propiedad.
+
+### 12. ✨ UI/UX: Experiencia "Dark Luxury" y Gamificación
+*Objetivo: Elevar la percepción de marca a un nivel premium y de alta gama en todos los portales, mejorando la satisfacción del cliente y del administrador.*
+- [ ] **Design System "Dark Luxury":** Implementar un fondo oscuro elegante (Dark Mode), tipografía limpia (ej. *Outfit*, *Inter* o *Cinzel* para títulos), y acentos de luz (neón sutil/dorado) para los llamados a la acción (CTAs).
+- [ ] **Estructura "Bento Grid":** Rediseñar el `panel_validacion.html` y los portales de clientes usando una cuadrícula estilo *Bento* (tarjetas modulares con bordes redondeados y efecto *Glassmorphism*).
+- [ ] **Gamificación y Micro-interacciones:** Añadir animaciones fluidas de transición, barras de progreso dinámicas, confeti digital o checks interactivos al completar hitos (ej. firmar un contrato o pagar), y *tooltips* interactivos.
+- [ ] **Consistencia en Backend y Frontend:** Unificar el diseño para que el administrador sienta la misma fluidez y modernidad que experimenta el cliente final.
 
 ---
 
-*Nota Arquitectónica: Al completar esta Fase 1, E-FirmaContrata no será solo un generador de PDFs, sino el motor de un CRM Inmobiliario unificado. La siguiente evolución (Fase 2) apuntará hacia arquitecturas de carga asíncrona (tipo Firebase) y automatización avanzada (VíaFirma).*
+*Nota Arquitectónica: Esta hoja de ruta proyecta a Gold Life System desde un generador de PDFs hasta convertirse en una PropTech transaccional, biométrica y 100% automatizada a nivel bancario.*

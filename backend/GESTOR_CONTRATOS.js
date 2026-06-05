@@ -59,10 +59,17 @@ function generarContrato(cdr, version = 'Borrador') {
       if (!match) throw new Error('No se pudo extraer el ID del borrador.');
       const draftId = match[1];
       
-      const carpetaContratoDestino = buscarCarpetaContratoDinamica(datos);
-      if (!carpetaContratoDestino) throw new Error('No se pudo localizar la carpeta.');
-      
       const draftFile = DriveApp.getFileById(draftId);
+      const parents = draftFile.getParents();
+      
+      let carpetaContratoDestino;
+      if (parents.hasNext()) {
+        carpetaContratoDestino = parents.next();
+      } else {
+        carpetaContratoDestino = buscarCarpetaContratoDinamica(datos);
+      }
+      
+      if (!carpetaContratoDestino) throw new Error('No se pudo localizar la carpeta de destino.');
       
       let nombreTipoContrato = datos.tipoNegocio === 'Corretaje' ? 'Corretaje' : 
                                (datos.tipoNegocio === 'Administracion' || datos.tipoNegocio === 'Administración' ? 'Administracion' : 
@@ -172,7 +179,7 @@ function generarContrato(cdr, version = 'Borrador') {
 /**
  * Enviar el borrador del contrato a revisión (Inquilino, Propietario, Codeudores)
  */
-function enviarBorradorAValidar(cdr) {
+function enviarBorradorAValidar(cdr, comentario_admin) {
   try {
     const datosResult = recopilarDatosContrato(cdr);
     if (!datosResult.success) throw new Error(datosResult.error);
@@ -185,18 +192,20 @@ function enviarBorradorAValidar(cdr) {
     const docId = docResult ? docResult.id : null;
     let urlContrato = docId ? `https://docs.google.com/document/d/${docId}/edit` : '';
 
-    const urlBaseValidacion = `${CONTRATO_CONFIG.BASE_URL}/validador-de-contratos.html?cdr=${cdr}`;
+    const idURL = datos.idRegistro || cdr; // Usar ID DE REGISTRO si existe, sino fallback al cdr
+    const cdrEncoded = encodeURIComponent(idURL).replace(/\(/g, '%28').replace(/\)/g, '%29');
+    const urlBaseValidacion = `${CONTRATO_CONFIG.BASE_URL}/validador-de-contratos.html?cdr=${cdrEncoded}`;
     
     // Inquilino
     if (datos.inquilino && datos.inquilino.email) {
       const urlAprobacion = `${urlBaseValidacion}&rol=inquilino`;
-      enviarEmailRevisionInquilino(datos.inquilino.email, datos.inquilino.nombre, cdr, urlContrato, urlAprobacion);
+      enviarEmailRevisionInquilino(datos.inquilino.email, datos.inquilino.nombre, idURL, urlContrato, urlAprobacion);
     }
     
     // Propietario
     if (datos.propietario && datos.propietario.email) {
       const urlAprobacion = `${urlBaseValidacion}&rol=propietario`;
-      enviarEmailRevisionPropietario(datos.propietario.email, datos.propietario.nombre, cdr, urlContrato, urlAprobacion);
+      enviarEmailRevisionPropietario(datos.propietario.email, datos.propietario.nombre, idURL, urlContrato, urlAprobacion);
     }
     
     // Codeudores
@@ -204,10 +213,14 @@ function enviarBorradorAValidar(cdr) {
       datos.codeudores.forEach((codeudor, index) => {
         if (codeudor.email) {
           const urlAprobacion = `${urlBaseValidacion}&rol=codeudor&idx=${index}`;
-          enviarEmailRevisionCodeudor(codeudor.email, codeudor.nombre, cdr, urlContrato, urlAprobacion);
+          enviarEmailRevisionCodeudor(codeudor.email, codeudor.nombre, idURL, urlContrato, urlAprobacion);
         }
       });
     }
+
+    // REGISTRAR LA NUEVA VERSIÓN EN EL HISTORIAL
+    const mensajeAdmin = comentario_admin || 'Nueva versión generada y enviada a revisión';
+    registrarAprobacionContrato(cdr, 'ADMIN', 'ENVIADO', mensajeAdmin);
 
     return { success: true, message: 'Enviado a revisión correctamente' };
   } catch (e) {
@@ -307,8 +320,27 @@ function buscarCarpetaContratoDinamica(datos) {
 
   } catch (e) {
     console.error(`Error crítico buscando carpeta dinámica: ${e.toString()}`);
-    if (!CONTRATO_CONFIG.CARPETA_CONTRATOS_ID) throw new Error("CARPETA_CONTRATOS_ID (fallback) indefinido");
-    return DriveApp.getFolderById(CONTRATO_CONFIG.CARPETA_CONTRATOS_ID);
+    
+    // Intentar fallback 1: Carpeta Contratos
+    if (CONTRATO_CONFIG.CARPETA_CONTRATOS_ID) {
+      try {
+        return DriveApp.getFolderById(CONTRATO_CONFIG.CARPETA_CONTRATOS_ID);
+      } catch (errFallback1) {
+        console.error("Fallo al acceder a CARPETA_CONTRATOS_ID: " + errFallback1.toString());
+      }
+    }
+    
+    // Intentar fallback 2: Carpeta Raíz de Inmuebles
+    if (CONTRATO_CONFIG.INMUEBLES_ROOT_ID) {
+      try {
+        return DriveApp.getFolderById(CONTRATO_CONFIG.INMUEBLES_ROOT_ID);
+      } catch (errFallback2) {
+        console.error("Fallo al acceder a INMUEBLES_ROOT_ID: " + errFallback2.toString());
+      }
+    }
+    
+    // Fallback absoluto: Raíz de Drive del usuario
+    return DriveApp.getRootFolder();
   }
 }
 
@@ -334,10 +366,12 @@ function recopilarDatosContrato(cdr) {
     const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
     const idCol = headers.indexOf('ID DE REGISTRO') + 1;
 
+    const cdrClean = String(cdr).trim();
+
     for (let i = 2; i <= lastRow; i++) {
-      const valorCDR = sheet.getRange(i, cdrCol).getValue();
-      const valorID = idCol > 0 ? sheet.getRange(i, idCol).getValue() : null;
-      if (valorCDR === cdr || valorID === cdr) {
+      const valorCDR = String(sheet.getRange(i, cdrCol).getValue()).trim();
+      const valorID = idCol > 0 ? String(sheet.getRange(i, idCol).getValue()).trim() : null;
+      if (valorCDR === cdrClean || valorID === cdrClean) {
         filaEncontrada = i;
         break;
       }
@@ -492,6 +526,37 @@ function recopilarDatosContrato(cdr) {
       contrato: contrato,
       codeudores: codeudores
     };
+
+    // === BUSCAR DOCUMENTOS DE RESPALDO ===
+    const documentosUI = { propietario: [], inquilino: [], codeudores: [], otros: [] };
+    try {
+      const cdrClean = cdr.replace(/'/g, "\\'");
+      // Buscar archivos que contengan el CDR, ignorando carpetas y docs del borrador
+      const fileSearch = DriveApp.searchFiles(`title contains '${cdrClean}' and trashed = false`);
+      while (fileSearch.hasNext()) {
+        const file = fileSearch.next();
+        const name = file.getName().toUpperCase();
+        const url = file.getUrl();
+        const mimeType = file.getMimeType();
+        
+        if (mimeType === MimeType.FOLDER || name.includes('DATOS DE ELABORACION') || name.includes('BORRADOR')) continue;
+        
+        const docObj = { nombre: file.getName(), url: url };
+        
+        if (name.includes('PROP') || name.includes('TRADICION') || name.includes('BANCARIO') || name.includes('RUT') || name.includes('RPR')) {
+          documentosUI.propietario.push(docObj);
+        } else if (name.includes('INQU')) {
+          documentosUI.inquilino.push(docObj);
+        } else if (name.includes('COD')) {
+          documentosUI.codeudores.push(docObj);
+        } else {
+          documentosUI.otros.push(docObj);
+        }
+      }
+      datosCompletos.documentosRelacionados = documentosUI;
+    } catch(errDoc) {
+      console.log("Error buscando documentos relacionados:", errDoc);
+    }
 
     console.log('Datos recopilados exitosamente');
 
@@ -859,35 +924,38 @@ function enviarContratosParaRevision(cdr, docId) {
     const doc = DocumentApp.openById(docId);
     const urlContrato = doc.getUrl();
     const baseUrl = CONTRATO_CONFIG.BASE_URL;
+    const idURL = datos.data.idRegistro || cdr;
+    const cdrEncoded = encodeURIComponent(idURL).replace(/\(/g, '%28').replace(/\)/g, '%29');
 
     // Enviar al inquilino
     enviarEmailRevisionInquilino(
       datos.data.inquilino.email,
       datos.data.inquilino.nombre,
-      cdr,
+      idURL,
       urlContrato,
-      `${baseUrl}/validador-de-contratos.html?cdr=${cdr}&tipo=inquilino&docId=${docId}`
+      `${baseUrl}/validador-de-contratos.html?cdr=${cdrEncoded}&tipo=inquilino&docId=${docId}`
     );
 
     // Enviar al propietario
     enviarEmailRevisionPropietario(
       datos.data.propietario.email,
       datos.data.propietario.nombre,
-      cdr,
+      idURL,
       urlContrato,
-      `${baseUrl}/validador-de-contratos.html?cdr=${cdr}&tipo=propietario&docId=${docId}`
+      `${baseUrl}/validador-de-contratos.html?cdr=${cdrEncoded}&tipo=propietario&docId=${docId}`
     );
 
     // Enviar a codeudores si existen
     if (datos.data.codeudores && datos.data.codeudores.length > 0) {
       datos.data.codeudores.forEach((codeudor, index) => {
         if (codeudor.email) {
+          const cdrEncoded = encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29');
           enviarEmailRevisionCodeudor(
             codeudor.email,
             codeudor.nombre,
-            cdr,
+            idURL,
             urlContrato,
-            `${baseUrl}/validador-de-contratos.html?cdr=${cdr}&tipo=codeudor${index + 1}&docId=${docId}`
+            `${baseUrl}/validador-de-contratos.html?cdr=${cdrEncoded}&tipo=codeudor${index + 1}&docId=${docId}`
           );
         }
       });
@@ -929,8 +997,8 @@ function registrarAprobacionContrato(cdr, tipo, accion, comentarios) {
     if (!hojaAprobaciones) {
       hojaAprobaciones = SpreadsheetApp.getActiveSpreadsheet().insertSheet(CONTRATO_CONFIG.HOJA_APROBACIONES);
       // Crear headers
-      hojaAprobaciones.getRange(1, 1, 1, 7).setValues([
-        ['CDR', 'TIPO', 'ACCION', 'COMENTARIOS', 'FECHA', 'HORA', 'EMAIL']
+      hojaAprobaciones.getRange(1, 1, 1, 8).setValues([
+        ['CDR', 'USUARIO', 'ACCION', 'COMENTARIOS', 'FECHA', 'HORA', 'EMAIL', 'VERSION']
       ]);
       hojaAprobaciones.getRange(1, 1, 1, 7).setFontWeight('bold');
     }
@@ -940,6 +1008,41 @@ function registrarAprobacionContrato(cdr, tipo, accion, comentarios) {
     const fechaFormato = Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'yyyy-MM-dd');
     const horaFormato = Utilities.formatDate(fecha, Session.getScriptTimeZone(), 'HH:mm:ss');
 
+    const datos = hojaAprobaciones.getDataRange().getValues();
+    
+    // Asegurar que exista la cabecera de VERSION y renombrar TIPO a USUARIO si aplica
+    if (datos.length > 0) {
+      if (datos[0].length < 8 || datos[0][7] !== 'VERSION') {
+        hojaAprobaciones.getRange(1, 8).setValue('VERSION');
+        hojaAprobaciones.getRange(1, 8).setFontWeight('bold');
+      }
+      if (datos[0][1] === 'TIPO') {
+        hojaAprobaciones.getRange(1, 2).setValue('USUARIO');
+      }
+    }
+
+    let maxVersion = 1;
+    let hasPreviousEnvio = false;
+    let foundAny = false;
+
+    for (let i = 1; i < datos.length; i++) {
+      if (datos[i][0] === cdr) {
+        foundAny = true;
+        let v = parseInt(datos[i][7]);
+        if (!isNaN(v) && v > maxVersion) maxVersion = v;
+        if (datos[i][1] === 'ADMIN' && datos[i][2] === 'ENVIADO') {
+          hasPreviousEnvio = true;
+        }
+      }
+    }
+
+    let version = 1;
+    if (tipo === 'ADMIN' && accion === 'ENVIADO') {
+      version = hasPreviousEnvio ? maxVersion + 1 : 1;
+    } else {
+      version = foundAny ? maxVersion : 1;
+    }
+
     hojaAprobaciones.appendRow([
       cdr,
       tipo,
@@ -947,13 +1050,16 @@ function registrarAprobacionContrato(cdr, tipo, accion, comentarios) {
       comentarios || '',
       fechaFormato,
       horaFormato,
-      Session.getActiveUser().getEmail()
+      Session.getActiveUser().getEmail(),
+      version
     ]);
+
+    SpreadsheetApp.flush(); // Asegurar que los datos se escriban antes de responder
 
     // Verificar si todas las partes han aprobado
     const aprobaciones = verificarAprobacionesCompletas(cdr);
 
-    if (aprobaciones.todasAprobadas) {
+    if (aprobaciones.todasAprobadas && accion === 'APROBADO') {
       // Actualizar estado a CONTRATO APROBADO
       actualizarEstadoContrato(cdr, 'CONTRATO APROBADO', '? Contrato aprobado por todas las partes');
 
@@ -965,7 +1071,7 @@ function registrarAprobacionContrato(cdr, tipo, accion, comentarios) {
         message: 'Aprobacion registrada. CONTRATO COMPLETAMENTE APROBADO.',
         estadoFinal: 'APROBADO_COMPLETO'
       };
-    } else if (accion === 'CAMBIOS_SOLICITADOS') {
+    } else if (accion === 'CAMBIOS_SOLICITADOS' || accion === 'CORREGIR') {
       // Actualizar estado a correccion solicitada
       actualizarEstadoContrato(cdr, 'ESTUDIO APROBADO', `?? Correcciones solicitadas por ${tipo}`);
 
@@ -1018,12 +1124,37 @@ function verificarAprobacionesCompletas(cdr) {
       codeudor3: false
     };
 
-    // Buscar aprobaciones para este CDR
+    const cdrClean = String(cdr).trim();
+
+    // 1. Determinar la versión actual (maxVersion) para este CDR
+    let maxVersion = 1;
     for (let i = 1; i < datos.length; i++) {
-      if (datos[i][0] === cdr && datos[i][2] === 'APROBADO') {
-        const tipo = datos[i][1];
-        if (aprobaciones.hasOwnProperty(tipo)) {
-          aprobaciones[tipo] = true;
+      const rowCdr = String(datos[i][0]).trim();
+      if (rowCdr === cdrClean || (rowCdr.length > 20 && cdrClean.startsWith(rowCdr))) {
+        let v = parseInt(datos[i][7]);
+        if (!isNaN(v) && v > maxVersion) maxVersion = v;
+      }
+    }
+
+    // 2. Buscar aprobaciones SOLO en la versión actual
+    for (let i = 1; i < datos.length; i++) {
+      const rowCdr = String(datos[i][0]).trim();
+      if (rowCdr === cdrClean || (rowCdr.length > 20 && cdrClean.startsWith(rowCdr))) {
+        let v = parseInt(datos[i][7]) || 1;
+        if (v === maxVersion && datos[i][2] === 'APROBADO') {
+          const tipo = datos[i][1].toLowerCase();
+          if (aprobaciones.hasOwnProperty(tipo)) {
+            aprobaciones[tipo] = true;
+          } else if (tipo.startsWith('codeudor')) {
+             // Si el objeto inicial no lo tenia (ej: codeudor4), lo agregamos dinámicamente
+             aprobaciones[tipo] = true;
+          }
+        } else if (v === maxVersion && (datos[i][2] === 'RECHAZADO' || datos[i][2] === 'CORREGIR' || datos[i][2] === 'CAMBIOS_SOLICITADOS')) {
+          // Si en esta misma versión rechazó después de aprobar (por seguridad)
+          const tipo = datos[i][1].toLowerCase();
+          if (aprobaciones.hasOwnProperty(tipo)) {
+            aprobaciones[tipo] = false;
+          }
         }
       }
     }
@@ -1074,22 +1205,29 @@ function obtenerEstadosAprobacion(cdr) {
     }
 
     const datos = hojaAprobaciones.getDataRange().getValues();
-    const estados = {};
+    const estados = [];
 
-    // Obtener ultimo estado de cada parte
+    const cdrClean = String(cdr).trim();
+
+    // Obtener todo el historial de este CDR
     for (let i = 1; i < datos.length; i++) {
-      if (datos[i][0] === cdr) {
+      const rowCdr = String(datos[i][0]).trim();
+      if (rowCdr === cdrClean || (rowCdr.length > 20 && cdrClean.startsWith(rowCdr))) {
         const tipo = datos[i][1];
         const accion = datos[i][2];
+        const comentarios = datos[i][3];
         const fecha = datos[i][4];
         const hora = datos[i][5];
+        const version = parseInt(datos[i][7]) || 1;
 
-        estados[tipo] = {
+        estados.push({
+          parte: tipo,
           estado: accion,
           fecha: fecha,
           hora: hora,
-          comentarios: datos[i][3]
-        };
+          comentarios: comentarios,
+          version: version
+        });
       }
     }
 
@@ -1251,7 +1389,9 @@ function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
     tpl.MENSAJE_SECUNDARIO = `Observaciones (${solicitante}):\n${observaciones || 'Sin observaciones específicas'}`;
     
     // Podemos incluir un botón para que vayan a la bitácora a revisar
-    tpl.URL_ACCION = `${CONTRATO_CONFIG.BASE_URL}/validador-de-contratos.html?cdr=${cdr}`;
+    const idURL = datosReq.success && datosReq.data.idRegistro ? datosReq.data.idRegistro : cdr;
+    const cdrEncoded = encodeURIComponent(idURL).replace(/\(/g, '%28').replace(/\)/g, '%29');
+    tpl.URL_ACCION = `${CONTRATO_CONFIG.BASE_URL}/validador-de-contratos.html?cdr=${cdrEncoded}`;
     tpl.TEXTO_BOTON = 'Ver Bitácora del Contrato';
 
     const htmlBody = tpl.evaluate().getContent();
@@ -1300,38 +1440,54 @@ function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
     const datosResult = recopilarDatosContrato(cdr);
     const datos = datosResult.success ? datosResult.data : null;
 
-    const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
-    tpl.TITULO = 'Contrato Definitivo Generado';
-    tpl.NOMBRE_CLIENTE = 'Cliente / Equipo GoldLife';
-    tpl.MENSAJE_PRINCIPAL = `El contrato de arrendamiento <strong>${displayId}</strong> ha sido aprobado por todas las partes y el documento ORIGINAL en PDF ha sido generado exitosamente.`;
-    tpl.MENSAJE_SECUNDARIO = 'El documento adjunto está listo para ser subido a la plataforma de firmas electrónicas (VíaFirma).';
-    tpl.URL_ACCION = urlPdf;
-    tpl.TEXTO_BOTON = 'Ver PDF en Drive';
+    // --- HTML PARA EL ADMINISTRADOR ---
+    const tplAdmin = HtmlService.createTemplateFromFile('backend/email_notificacion');
+    tplAdmin.TITULO = 'Contrato Definitivo Generado';
+    tplAdmin.NOMBRE_CLIENTE = 'Equipo GoldLife';
+    tplAdmin.MENSAJE_PRINCIPAL = `El contrato de arrendamiento <strong>${displayId}</strong> ha sido aprobado por todas las partes y el documento ORIGINAL en PDF ha sido generado exitosamente.`;
+    tplAdmin.MENSAJE_SECUNDARIO = 'El documento adjunto está listo para ser subido a la plataforma de firmas electrónicas (VíaFirma).';
+    tplAdmin.URL_ACCION = urlPdf;
+    tplAdmin.TEXTO_BOTON = 'Ver PDF en Drive';
+    const htmlBodyAdmin = tplAdmin.evaluate().getContent();
 
-    const htmlBody = tpl.evaluate().getContent();
+    const adminEmail = 'realestate.goldlifesystem@gmail.com';
+    MailApp.sendEmail({
+        to: adminEmail,
+        subject: asunto,
+        htmlBody: htmlBodyAdmin,
+        attachments: [pdfBlob.setName(`${nombreContrato}.pdf`)]
+    });
 
-    const emails = ['realestate.goldlifesystem@gmail.com'];
-    
+    // --- HTML PARA LOS CLIENTES (Sin PDF, sin botón) ---
+    const tplClientes = HtmlService.createTemplateFromFile('backend/email_notificacion');
+    tplClientes.TITULO = 'Contrato Definitivo Generado';
+    tplClientes.NOMBRE_CLIENTE = 'Cliente';
+    tplClientes.MENSAJE_PRINCIPAL = `El contrato de arrendamiento <strong>${displayId}</strong> ha sido aprobado por todas las partes y el documento definitivo ha sido generado exitosamente.`;
+    tplClientes.MENSAJE_SECUNDARIO = 'Por favor esté atento a su bandeja de entrada. Muy pronto recibirá un correo oficial de la plataforma de firmas electrónicas para proceder con la firma digital del documento.';
+    tplClientes.URL_ACCION = ''; 
+    tplClientes.TEXTO_BOTON = ''; 
+    const htmlBodyClientes = tplClientes.evaluate().getContent();
+
+    const emailsClientes = [];
     if (datos) {
-        if (datos.inquilino?.email) emails.push(datos.inquilino.email);
-        if (datos.propietario?.email) emails.push(datos.propietario.email);
+        if (datos.inquilino?.email) emailsClientes.push(datos.inquilino.email);
+        if (datos.propietario?.email) emailsClientes.push(datos.propietario.email);
         if (datos.codeudores && datos.codeudores.length > 0) {
             datos.codeudores.forEach(c => {
-                if (c.email) emails.push(c.email);
+                if (c.email) emailsClientes.push(c.email);
             });
         }
     }
 
-    emails.forEach(email => {
+    emailsClientes.forEach(email => {
         MailApp.sendEmail({
             to: email,
-            subject: asunto,
-            htmlBody: htmlBody,
-            attachments: [pdfBlob.setName(`${nombreContrato}.pdf`)]
+            subject: `Contrato Aprobado - Esperando Firma: ${displayId}`,
+            htmlBody: htmlBodyClientes
         });
     });
 
-    Logger.log(`Email final enviado con el PDF del contrato ${cdr} a ${emails.length} destinatarios`);
+    Logger.log(`Email final enviado con el PDF al Admin y notificación a ${emailsClientes.length} clientes`);
   } catch (error) {
     Logger.log(`Error enviando PDF final al admin y partes: ${error.toString()}`);
   }
@@ -1351,19 +1507,22 @@ function actualizarEstadoContrato(cdr, estado, detalles) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
     const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+    const idRegCol = headers.indexOf('ID DE REGISTRO') + 1;
     const estadoCol = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
 
     for (let i = 2; i <= lastRow; i++) {
-      const valorCDR = sheet.getRange(i, cdrCol).getValue();
-      if (valorCDR === cdr) {
+      const valorCDR = cdrCol > 0 ? sheet.getRange(i, cdrCol).getValue() : null;
+      const valorID = idRegCol > 0 ? sheet.getRange(i, idRegCol).getValue() : null;
+      
+      if (valorCDR === cdr || valorID === cdr) {
         if (estadoCol > 0) {
           sheet.getRange(i, estadoCol).setValue(estado);
         }
         if (detallesCol > 0) {
           sheet.getRange(i, detallesCol).setValue(detalles);
         }
-        Logger.log(`Estado actualizado para CDR ${cdr}: ${estado}`);
+        Logger.log(`Estado actualizado para CDR/ID ${cdr}: ${estado}`);
         break;
       }
     }
@@ -1528,7 +1687,7 @@ function obtenerContratosPendientes() {
     const contratos = [];
     const headers = data[0].map(h => String(h).trim().toUpperCase());
     
-    const idxCdr = headers.findIndex(h => h === 'CODIGO DE REGISTRO' || h === 'CÓDIGO DE REGISTRO');
+    const idxCdr = headers.findIndex(h => h === 'CODIGO DE REGISTRO' || h === 'CÓDIGO DE REGISTRO' || h === 'ID DE REGISTRO');
     const idxEstado = headers.findIndex(h => h === 'ESTADO DEL INMUEBLE');
     const idxDoc = headers.findIndex(h => h === 'ESTADO DOCUMENTAL');
     const idxDetalles = headers.findIndex(h => h === 'DETALLES DEL ESTADO DEL INMUEBLE');
@@ -1543,16 +1702,22 @@ function obtenerContratosPendientes() {
         const estadoDoc = idxDoc > -1 ? String(row[idxDoc]).trim().toUpperCase() : '';
         const detalles = idxDetalles > -1 ? String(row[idxDetalles]).trim().toUpperCase() : '';
 
+        if (estado.includes('CONTRATO ORIGINAL GENERADO')) {
+            continue;
+        }
+
         if (
             estado.includes('ESTUDIO APROBADO') || 
             estado.includes('READY_CONTRACT') ||
             estado.includes('CONTRATO GENERADO') ||
             estado.includes('BORRADOR ENVIADO') ||
             estado.includes('EN REVISION') ||
+            estado.includes('APROBADO') ||
             estadoDoc.includes('VALIDATED') ||
             estadoDoc.includes('READY_CONTRACT') ||
             detalles.includes('CONTRATO GENERADO') ||
-            detalles.includes('BORRADOR ENVIADO')
+            detalles.includes('BORRADOR ENVIADO') ||
+            detalles.includes('APROBADO POR TODAS LAS PARTES')
         ) {
             if (cdrValue) {
                 contratos.push({
@@ -1566,11 +1731,7 @@ function obtenerContratosPendientes() {
         }
     }
     if (contratos.length === 0) {
-        let debugStr = `Idx: cdr=${idxCdr}, est=${idxEstado}, det=${idxDetalles}. `;
-        if (data.length > 1) {
-            debugStr += `Row1: est="${data[1][idxEstado]}", det="${data[1][idxDetalles]}"`;
-        }
-        return [{cdr: "DEBUG-EMPTY", estadoBadge: debugStr}];
+        return [];
     }
     return contratos;
   } catch (err) {
@@ -1581,7 +1742,7 @@ function obtenerContratosPendientes() {
 /**
  * Función para enviar correos de validación a Inquilino y Propietario
  */
-function enviarBorradorAValidar(cdr) {
+function enviarBorradorAValidar(cdr, comentario_admin) {
   try {
     const datosRecopilados = recopilarDatosContrato(cdr);
     if (!datosRecopilados.success) throw new Error(datosRecopilados.message);
@@ -1633,6 +1794,10 @@ function enviarBorradorAValidar(cdr) {
       });
     }
 
+    // REGISTRAR LA NUEVA VERSIÓN EN EL HISTORIAL DE BITÁCORA
+    const mensajeAdmin = comentario_admin || 'Nueva versión generada y enviada a revisión';
+    registrarAprobacionContrato(datos.idRegistro || cdr, 'ADMIN', 'ENVIADO', mensajeAdmin);
+
     // Cambiar estado global a BORRADOR ENVIADO
     actualizarEstadoContrato(cdr, 'BORRADOR ENVIADO', 'Los correos de validación se enviaron exitosamente (incluyendo codeudores si aplica).');
 
@@ -1655,21 +1820,29 @@ function enviarBorradorAValidar(cdr) {
  */
 function obtenerEstadoAprobacionesContrato(cdr) {
   try {
+    // Ya no usamos recopilarDatosContrato para evitar que un error ahí bloquee la bitácora
+    const verdaderoCDR = cdr;
+
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONTRATO_CONFIG.HOJA_APROBACIONES);
     if (!sheet) return { success: true, estados: [] };
 
     const data = sheet.getDataRange().getValues();
     const estados = [];
     
+    const cdrClean = String(cdr).trim();
+    const verdaderoCDRClean = String(verdaderoCDR).trim();
+
     for (let i = 1; i < data.length; i++) {
-        if (data[i][0] === cdr) {
+        const rowCdr = String(data[i][0]).trim();
+        if (rowCdr === verdaderoCDRClean || rowCdr === cdrClean || (rowCdr.length > 20 && (verdaderoCDRClean.startsWith(rowCdr) || cdrClean.startsWith(rowCdr)))) {
            estados.push({
                parte: String(data[i][1]).toUpperCase(),
                estado: data[i][2],
                comentarios: data[i][3],
                fecha: data[i][4] instanceof Date ? Utilities.formatDate(data[i][4], Session.getScriptTimeZone(), 'yyyy-MM-dd') : data[i][4],
                hora: data[i][5] instanceof Date ? Utilities.formatDate(data[i][5], Session.getScriptTimeZone(), 'HH:mm:ss') : data[i][5],
-               email: data[i][6]
+               email: data[i][6],
+               version: parseInt(data[i][7]) || 1
            });
         }
     }
@@ -1685,25 +1858,41 @@ function obtenerEstadoAprobacionesContrato(cdr) {
  */
 function obtenerContextoContrato(cdr) {
   try {
+    // Primero recopilar datos para obtener el verdadero CDR por si nos pasaron el ID
+    const datosReq = recopilarDatosContrato(cdr);
+    if (!datosReq.success) {
+      throw new Error("No se encontraron los datos del contrato para el código: " + cdr);
+    }
+    
+    const verdaderoCDR = datosReq.data.cdr;
+    const datos = datosReq.data;
+
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONTRATO_CONFIG.HOJA_LOG_CONTRATOS);
     if (!sheet) throw new Error("No hay registros de contratos");
 
     const data = sheet.getDataRange().getValues();
     let url = '';
     
-    // Buscar el más reciente
+    // Buscar el más reciente usando el verdadero CDR
     for (let i = data.length - 1; i > 0; i--) {
-      if (data[i][1] === cdr) {
+      if (data[i][1] === verdaderoCDR) {
         url = data[i][3]; // URL está en la columna D
         break;
       }
     }
 
-    if (!url) throw new Error("No se encontró URL de borrador para este CDR");
+    // Fallback: Buscar en Google Drive directamente si no está en el Log
+    if (!url) {
+      const cdrEscaped = verdaderoCDR.replace(/'/g, "\\'");
+      const fileSearch = DriveApp.searchFiles(`title contains '${cdrEscaped}' and mimeType = 'application/vnd.google-apps.document' and trashed = false`);
+      if (fileSearch.hasNext()) {
+        const file = fileSearch.next();
+        url = file.getUrl();
+        // Opcional: Podríamos registrarlo en el log aquí mismo para futuras consultas
+      }
+    }
 
-    const datosReq = recopilarDatosContrato(cdr);
-    let datos = null;
-    if (datosReq.success) datos = datosReq.data;
+    if (!url) throw new Error("No se encontró URL de borrador para este CDR ni en Logs ni en Drive.");
 
     return {
       success: true,
@@ -1912,6 +2101,97 @@ function handleProcesarFirmaElectronica(datos) {
                   attachments: [finalPdf.getAs(MimeType.PDF)]
                 });
                 console.log("Copia final enviada a: " + emailCliente);
+                
+                // --- NUEVO: Correo separado con la Autorización de Ingreso ---
+                try {
+                  const targetRowData = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
+                  let rowIndexEncontrado = i - 1; // Para coincidir con el index 0-based si fuera array
+                  
+                  if (!targetRowData) {
+                    throw new Error("No se pudo obtener targetRowData para la fila " + i);
+                  }
+
+                  // Verificar si el inmueble dispone de portería/administración
+                  let colDisponePorteria = 0;
+                  for (let c = 0; c < headers.length; c++) {
+                    const hName = headers[c] ? headers[c].toString().toLowerCase() : '';
+                    if (hName.includes('dispone de portería') || hName.includes('dispone de porteria')) {
+                      colDisponePorteria = c + 1;
+                      break;
+                    }
+                  }
+                  
+                  let enviarAutorizacion = false;
+                  if (colDisponePorteria > 0) {
+                    const valorPorteria = String(targetRowData[colDisponePorteria - 1] || '').toLowerCase().trim();
+                    if (valorPorteria === 'si' || valorPorteria === 'sí') {
+                      enviarAutorizacion = true;
+                    }
+                  }
+
+                  // Solo procedemos si la respuesta fue "SI"
+                  if (enviarAutorizacion) {
+                    let colAuthId = 0;
+                    for (let c = 0; c < headers.length; c++) {
+                      const hName = headers[c] ? headers[c].toString().toUpperCase() : '';
+                      if (hName.includes('MERGED DOC ID') && hName.includes('AUTORIZACI')) {
+                        colAuthId = c + 1;
+                        break;
+                      }
+                    }
+                    
+                    let adminInmuebleEmail = '';
+                    for (let c = 0; c < headers.length; c++) {
+                      const headerName = headers[c] ? headers[c].toString().toLowerCase() : '';
+                      if (headerName.includes('correo') && headerName.includes('administración')) {
+                        const maybeEmail = targetRowData[c];
+                        if (maybeEmail && String(maybeEmail).includes('@')) {
+                          adminInmuebleEmail = String(maybeEmail).trim();
+                        }
+                        break;
+                      }
+                    }
+
+                    if (colAuthId > 0) {
+                      const authDocId = targetRowData[colAuthId - 1];
+                      if (authDocId && authDocId.toString().trim() !== '') {
+                        const authFile = DriveApp.getFileById(authDocId);
+                        const authPdfBlob = authFile.getAs(MimeType.PDF);
+                        
+                        const colNombreInmueble = headers.findIndex(h => h && h.toString().toUpperCase().includes('NOMBRE DEL INMUEBLE/ADMINISTRACION'));
+                        const nombreInmueble = colNombreInmueble >= 0 ? targetRowData[colNombreInmueble] : 'la Administración';
+
+                        let subjectAuth = `AUTORIZACION DE INGRESO AL INMUEBLE PARA GESTION INMOBILIARIA POR ${nombreCliente} en ${nombreInmueble} - REAL ESTATE Gold Life System`;
+                        
+                        var templateAuth = HtmlService.createTemplateFromFile('backend/email_autorizacion');
+                        templateAuth.NOMBRE_CLIENTE = nombreCliente;
+                        templateAuth.NOMBRE_INMUEBLE = nombreInmueble;
+                        templateAuth.ADMIN_EMAIL = adminInmuebleEmail || '';
+                        templateAuth.ANIO = new Date().getFullYear();
+                        var htmlBodyAuth = templateAuth.evaluate().getContent();
+
+                        let optionsAuth = {
+                          to: emailCliente,
+                          subject: subjectAuth,
+                          htmlBody: htmlBodyAuth,
+                          attachments: [authPdfBlob]
+                        };
+                        
+                        if (adminInmuebleEmail && adminInmuebleEmail.trim() !== '') {
+                          optionsAuth.cc = adminInmuebleEmail.trim();
+                        }
+
+                        MailApp.sendEmail(optionsAuth);
+                        console.log("Correo de Autorización de Ingreso enviado a: " + emailCliente);
+                      }
+                    }
+                  } else {
+                     console.log("No se envía Autorización de Ingreso porque el inmueble no dispone de portería.");
+                  }
+                } catch(eAuth) {
+                  console.error("Error enviando Autorización de Ingreso:", eAuth);
+                }
+                console.log("Limpieza de script realizada");
               }
             }
             

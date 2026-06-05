@@ -451,6 +451,14 @@ function doGet(e) {
         result = { success: true, message: 'Credenciales de Google Cloud Vision guardadas exitosamente' };
         break;
 
+      case 'obtenerContrato':
+        result = handleObtenerContrato(e);
+        break;
+
+      case 'obtenerEstadoAprobaciones':
+        result = handleObtenerEstadoAprobaciones(e);
+        break;
+
       default:
         result = {
           success: false,
@@ -1098,12 +1106,10 @@ function handleObtenerContrato(e) {
     const cdr = e.parameter.cdr;
 
     if (!cdr) {
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          success: false,
-          message: 'Faltan parámetros requeridos (cdr)'
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
+      return {
+        success: false,
+        message: 'Faltan parámetros requeridos (cdr)'
+      };
     }
 
     // Obtener la URL del borrador y datos
@@ -1113,22 +1119,18 @@ function handleObtenerContrato(e) {
       throw new Error(contexto.message || 'No se encontró el borrador para este CDR');
     }
 
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: true,
-        url: contexto.url,
-        datos: contexto.datos
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return {
+      success: true,
+      url: contexto.url,
+      datos: contexto.datos
+    };
 
   } catch (error) {
     Logger.log('Error en handleObtenerContrato: ' + error.toString());
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.message
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return {
+      success: false,
+      message: error.message
+    };
   }
 }
 
@@ -2480,8 +2482,8 @@ function abrirPanelValidacion() {
   try {
     // Cargar el archivo HTML que está en el proyecto de Apps Script
     const html = HtmlService.createHtmlOutputFromFile('backend/panel_validacion')
-      .setWidth(1500)
-      .setHeight(900)
+      .setWidth(3000)
+      .setHeight(2000)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);
 
     // Mostrar el diálogo modal
@@ -3269,8 +3271,9 @@ function procesarValidacionPropietario(datos) {
 /**
  * Enviar email inicial al inquilino
  */
-function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulario) {
-  const asunto = `Formulario de Arrendamiento - ${codigoRegistro}`;
+function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulario, direccion = '') {
+  const dirText = direccion ? ` "${direccion}"` : '';
+  const asunto = `FORMULARIO DE ARRENDAMIENTO DEL INMUEBLE${dirText} - ${codigoRegistro}`;
 
   const cuerpoHtml = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
@@ -3285,6 +3288,14 @@ function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulari
             Su solicitud de arrendamiento ha sido aprobada. Para continuar con el proceso en <strong>Gold Life System</strong>, 
             necesitamos que complete el formulario con sus datos y documentos.
           </p>
+
+          <div style="text-align: center; margin: 35px 0;">
+              <a href="${urlFormulario}" 
+                 style="display: inline-block; background-color: #d4af37; color: #ffffff; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
+                  Diligenciar Formulario
+              </a>
+          </div>
+
         <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
         
         <p style="color: #999; font-size: 14px; text-align: center;">
@@ -3394,8 +3405,11 @@ function enviarEmailPropietario(cdr) {
     const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
     const urlFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}`;
     Logger.log('URL generada para propietario: ' + urlFormulario);
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble');
+    const direccion = colDireccion >= 0 ? row[colDireccion] : '';
+    const dirText = direccion ? ` "${direccion}"` : '';
 
-    const asunto = `Documentación requerida - Contrato de arrendamiento ${idRegistro}`;
+    const asunto = `FORMULARIO DE PROPIETARIO DEL INMUEBLE${dirText} - ${idRegistro}`;
 
     const cuerpoHtml = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333;">
@@ -4035,9 +4049,12 @@ function procesarEmailInquilino(email, nombre) {
     const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(currentCDR) : currentCDR;
     const urlFormulario = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
 
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble') + 1;
+    const direccion = colDireccion > 0 ? sheet.getRange(currentRow, colDireccion).getValue() : '';
+
     // 4. Enviar Email
     // Usamos la función centralizada para mantener el diseño consistente
-    enviarEmailInquilinoInicial(email, nombre, idRegistro, urlFormulario);
+    enviarEmailInquilinoInicial(email, nombre, idRegistro, urlFormulario, direccion);
 
     // 5. Actualizar Estado en la Hoja
     const colEmail = headers.indexOf('CORREO INQUILINO') + 1;
