@@ -12,12 +12,13 @@
        PREMIUM FORM CONTAINER (Glassmorphism)
        ========================================= */
     .form-container {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: linear-gradient(145deg, rgba(30, 30, 35, 0.8), rgba(20, 20, 24, 0.95));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(212, 175, 55, 0.15);
       border-radius: 20px;
       padding: 40px;
-      box-shadow: 0 15px 35px rgba(24, 7, 43, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.15);
       margin-top: 20px;
     }
 
@@ -53,7 +54,7 @@
       left: 30px;
       right: 30px;
       height: 4px;
-      background: #e5e7eb;
+      background: rgba(255, 255, 255, 0.1);
       transform: translateY(-50%);
       z-index: 0;
       border-radius: 2px;
@@ -72,8 +73,8 @@
     }
 
     .progress .step {
-      background: #fff;
-      border: 3px solid #e5e7eb;
+      background: rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(212, 175, 55, 0.3);
       border-radius: 50%;
       width: 44px;
       height: 44px;
@@ -81,26 +82,26 @@
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      color: #9ca3af;
+      color: var(--text-muted);
       cursor: pointer;
       transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
       z-index: 1;
       font-size: 16px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
     }
 
     .progress .step.active {
       background: var(--primary);
       border-color: var(--primary);
-      color: #fff;
+      color: #000;
       transform: scale(1.15);
-      box-shadow: 0 8px 15px rgba(86, 18, 162, 0.25);
+      box-shadow: 0 8px 15px rgba(212, 175, 55, 0.4);
     }
 
     .progress .step.completed {
-      background: var(--secondary);
-      border-color: var(--secondary);
-      color: #fff;
+      background: rgba(212, 175, 55, 0.2);
+      border-color: var(--primary);
+      color: var(--primary);
     }
 
     /* Panel Transitions */
@@ -133,20 +134,20 @@
       display: flex;
       align-items: center;
       padding: 16px;
-      background: #f9fafb;
-      border: 2px dashed #d1d5db;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px dashed rgba(212, 175, 55, 0.4);
       border-radius: 12px;
       cursor: pointer;
       transition: all 0.3s ease;
-      color: var(--dark);
+      color: var(--text-main);
       font-weight: 500;
     }
 
     .file-label:hover {
-      border-color: var(--secondary);
-      background: #fffdf5;
+      border-color: var(--primary);
+      background: rgba(212, 175, 55, 0.05);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(220, 181, 60, 0.1);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.15);
     }
 
     .file-name {
@@ -168,25 +169,24 @@
 
     .servicio-item {
       padding: 18px;
-      border: 2px solid var(--border);
+      border: 1px solid var(--border);
       border-radius: 12px;
-      background: #fdfdfd;
-      color: var(--dark);
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--text-main);
       transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
       cursor: pointer;
     }
 
     .servicio-item:hover {
-      border-color: var(--secondary);
+      border-color: var(--primary);
       transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(220, 181, 60, 0.1);
+      box-shadow: 0 6px 15px rgba(212, 175, 55, 0.15);
     }
 
     .servicio-item.selected {
-      background: #fffdf5;
-      /* subtle gold */
-      border-color: var(--secondary);
-      box-shadow: 0 0 0 4px rgba(220, 181, 60, 0.15);
+      background: rgba(212, 175, 55, 0.05);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
     }
 
     .servicio-checkbox {
@@ -244,13 +244,13 @@
     .input.invalid,
     .form-control.invalid {
       border-color: var(--danger) !important;
-      background-color: #fef2f2 !important;
+      background-color: rgba(239, 68, 68, 0.05) !important;
     }
 
     .input.valid,
     .form-control.valid {
       border-color: var(--success) !important;
-      background-color: #f0fdf4 !important;
+      background-color: rgba(16, 185, 129, 0.05) !important;
     }
 
     /* Modal */
@@ -272,7 +272,10 @@
     }
 
     .modal-content {
-      background: #fff;
+      background: linear-gradient(145deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 24, 0.98));
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(212, 175, 55, 0.15);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.2);
       padding: 2rem;
       border-radius: 12px;
       max-width: 400px;
@@ -308,7 +311,7 @@
 
     .hr {
       height: 1px;
-      background: #e5e7eb;
+      background: rgba(255, 255, 255, 0.1);
       margin: 1.5rem 0;
     }
 
@@ -319,8 +322,8 @@
     .chip {
       display: inline-block;
       padding: 4px 12px;
-      background: #fef3c7;
-      color: #92400e;
+      background: rgba(212, 175, 55, 0.15);
+      color: var(--primary);
       border-radius: 12px;
       font-size: 0.875rem;
       margin: 0 4px;
@@ -362,20 +365,22 @@
     .ocr-modal-overlay.closing { animation: fadeOutOCR 0.3s ease forwards; }
 
     .ocr-modal {
-      background: #fff;
+      background: linear-gradient(145deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 24, 0.98));
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(212, 175, 55, 0.15);
       border-radius: 20px;
       padding: 2.5rem;
       max-width: 440px;
       width: 90%;
       text-align: center;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 20px rgba(212, 175, 55, 0.2);
       animation: slideUpOCR 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
     @keyframes slideUpOCR { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
     .ocr-modal .ocr-icon { font-size: 3.5rem; margin-bottom: 1rem; }
-    .ocr-modal h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; color: #1a1a2e; }
-    .ocr-modal p { color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1rem; }
+    .ocr-modal h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--primary); }
+    .ocr-modal p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1rem; }
 
     .ocr-spinner {
       width: 48px; height: 48px; margin: 0 auto 1rem;
@@ -396,11 +401,11 @@
 
     .ocr-modal .btn-cerrar-modal {
       display: inline-block; padding: 10px 24px;
-      background: #f1f5f9; color: #475569; font-weight: 600;
-      border: none; border-radius: 10px; cursor: pointer;
+      background: rgba(255, 255, 255, 0.1); color: var(--text-main); font-weight: 600;
+      border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
       font-size: 0.9rem; transition: background 0.2s;
     }
-    .ocr-modal .btn-cerrar-modal:hover { background: #e2e8f0; }
+    .ocr-modal .btn-cerrar-modal:hover { background: rgba(255, 255, 255, 0.2); }
 
     .ocr-badge-vigente { background: #d1fae5; color: #065f46; padding: 6px 16px; border-radius: 8px; font-weight: 700; display: inline-block; margin-bottom: 0.75rem; }
     .ocr-badge-vencido { background: #fee2e2; color: #991b1b; padding: 6px 16px; border-radius: 8px; font-weight: 700; display: inline-block; margin-bottom: 0.75rem; }
@@ -409,10 +414,10 @@
 
 <body>
   <!-- Header -->
-  <header class="header-main">
+  <header class="header-main" style="text-align: center; margin-bottom: 2rem;">
     <div class="container">
       <div class="header-content">
-        <h1 class="logo">🏠 E-FirmaContrata</h1>
+        <h1 class="logo" style="font-family: 'Cinzel', serif; color: var(--primary); text-shadow: 0 0 15px var(--primary-glow); margin: 0; font-size: 32px; letter-spacing: 2px; font-weight: 700;">REAL ESTATE <br><span style="font-size: 16px; font-family: 'Outfit', sans-serif; letter-spacing: 4px; opacity: 0.8; font-weight: 400; color: #fff;">GOLD LIFE SYSTEM</span></h1>
       </div>
     </div>
   </header>
@@ -433,7 +438,7 @@
 
       <!-- Form Container -->
       <div class="form-container">
-        <h2 class="form-title">🏠 Formulario del Propietario</h2>
+        <h2 class="form-title">Formulario del Propietario</h2>
         <p class="form-subtitle">Complete la información requerida para el contrato de arrendamiento</p>
 
         <!-- Progress -->
