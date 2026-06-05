@@ -979,8 +979,15 @@
                 `;
             });
             chatContainer.innerHTML = chatHtml;
+            
+            // Auto-scroll al final para ver el más reciente
+            setTimeout(() => {
+                const historySection = $('historySection');
+                if (historySection) {
+                    historySection.scrollTop = historySection.scrollHeight;
+                }
+            }, 100);
         }
-
 
         // Actualizar badge global
         const valuesFinales = Object.values(estadosFinales);
