@@ -1234,7 +1234,8 @@ function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
 
     if (tipo === 'inquilino') {
-      redirectUrl = `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}`;
+      const dirInq = sheet.getRange(fila, headers.indexOf('Ingrese la Dirección del inmueble') + 1).getValue().toString();
+      redirectUrl = `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}&dir=${encodeURIComponent(dirInq)}`;
 
       if (detalles.includes('Formulario del inquilino diligenciado') || detalles.includes('Documentación de inquilino recibida')) {
         status = 'diligenciado';
@@ -1250,7 +1251,8 @@ function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
       }
 
     } else if (tipo === 'propietario') {
-      redirectUrl = `${baseUrl}/formulario-propietario.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}`;
+      const dirProp = sheet.getRange(fila, headers.indexOf('Ingrese la Dirección del inmueble') + 1).getValue().toString();
+      redirectUrl = `${baseUrl}/formulario-propietario.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}&dir=${encodeURIComponent(dirProp)}`;
 
       if (detalles.includes('Formulario del propietario diligenciado')) {
         status = 'diligenciado';
