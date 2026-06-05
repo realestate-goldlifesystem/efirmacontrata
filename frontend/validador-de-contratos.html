@@ -709,6 +709,23 @@
         }).format(num || 0);
       };
 
+      const formatSafeDate = (fechaStr, horaStr) => {
+        try {
+          if (!fechaStr) return '';
+          // Si es un número serial largo o timestamp (ej. 17182928392)
+          if (!isNaN(fechaStr) && fechaStr.toString().length > 10) {
+            const d = new Date(Number(fechaStr));
+            return d.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+          }
+          // Si es un string normal
+          let res = fechaStr;
+          if (horaStr) res += ' a las ' + horaStr;
+          return res;
+        } catch(e) {
+          return fechaStr;
+        }
+      };
+
       // ---------- Init ----------
       init();
 
@@ -914,8 +931,8 @@
                 let badgeText = isApproved ? 'Aprobado' : (isRejected ? 'Solicitó Cambios' : 'Revisado');
                 if (isSystem) badgeText = 'Actualización de Sistema';
                 
-                const fechaFormat = est.fecha + (est.hora ? ' a las ' + est.hora : '');
-                const comentarios = est.comentarios ? escapeHTML(est.comentarios) : '<i style="color:#9ca3af;">Sin comentarios adicionales</i>';
+                const fechaFormat = formatSafeDate(est.fecha, est.hora);
+                const comentarios = est.comentarios ? escapeHTML(est.comentarios) : '<i style="color:var(--text-muted);">Sin comentarios adicionales</i>';
                 
                 // Formatear nombre de usuario
                 let displayParte = est.parte || 'Usuario';
@@ -940,47 +957,6 @@
             chatContainer.innerHTML = chatHtml;
         }
 
-        // 3. Renderizar Bitácora Transparente (Historial Completo)
-        // Buscamos si existe el contenedor, si no, lo creamos y lo insertamos antes de Actions
-        let bitacoraContainer = $('bitacoraObservaciones');
-        if(!bitacoraContainer) {
-            bitacoraContainer = document.createElement('div');
-            bitacoraContainer.id = 'bitacoraObservaciones';
-            bitacoraContainer.className = 'info-card';
-            bitacoraContainer.style.marginTop = '1.5rem';
-            bitacoraContainer.style.marginBottom = '1.5rem';
-            
-            // Insertar después del estado de aprobaciones y antes de las acciones
-            container.parentElement.after(bitacoraContainer);
-        }
-
-        let htmlBitacora = '<h3>💬 Bitácora del Contrato</h3><div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">';
-        
-        if (estados.length === 0) {
-            htmlBitacora += '<p style="color:#6b7280; font-size:0.9rem;">El historial de negociación aparecerá aquí.</p>';
-        } else {
-            estados.forEach(est => {
-                const isSystem = est.parte === 'ADMIN';
-                const colorParte = isSystem ? '#3b82f6' : (est.estado === 'APROBADO' ? '#10b981' : (est.estado === 'CORREGIR' || est.estado === 'CAMBIOS' || est.estado === 'CAMBIOS_SOLICITADOS' ? '#ef4444' : '#6b7280'));
-                
-                let displayParte = est.parte || 'Usuario';
-                if (displayParte.toUpperCase() === 'ADMIN') displayParte = 'Administrador';
-                else displayParte = displayParte.charAt(0).toUpperCase() + displayParte.slice(1).toLowerCase();
-
-                htmlBitacora += `
-                    <div style="border-left: 3px solid ${colorParte}; padding-left: 12px; margin-bottom: 12px; background: #f9fafb; padding-top: 8px; padding-bottom: 8px; padding-right: 8px; border-radius: 0 6px 6px 0;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                            <strong style="color: ${colorParte}; font-size: 0.9rem;">${escapeHTML(displayParte)}</strong>
-                            <span style="color: #9ca3af; font-size: 0.75rem;">${est.fecha} ${est.hora || ''} <strong style="color:#f59e0b;">(v${est.version || 1})</strong></span>
-                        </div>
-                        <div style="font-size: 0.8rem; font-weight: bold; color: #4b5563; margin-bottom: 4px;">${est.estado}</div>
-                        ${est.comentarios ? `<div style="font-size: 0.85rem; color: #1f2937; font-style: italic; background: white; padding: 6px; border-radius: 4px; border: 1px solid #e5e7eb;">"${escapeHTML(est.comentarios)}"</div>` : ''}
-                    </div>
-                `;
-            });
-        }
-        htmlBitacora += '</div>';
-        bitacoraContainer.innerHTML = htmlBitacora;
 
         // Actualizar badge global
         const valuesFinales = Object.values(estadosFinales);
