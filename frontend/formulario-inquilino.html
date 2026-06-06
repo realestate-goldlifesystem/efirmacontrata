@@ -368,55 +368,63 @@
       </div>
 
       <!-- Payment Screen (Checkout Landing) -->
-      <div id="paymentScreen" class="form-container" style="display: none; max-width: 900px; padding: 0;">
-        <div class="checkout-layout" style="display: flex; flex-wrap: wrap; background: rgba(18, 18, 18, 0.7); border-radius: 16px; border: 1px solid rgba(212,175,55,0.2); overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+      <div id="paymentScreen" class="form-container" style="display: none; max-width: 1100px; padding: 0; margin-top: 2rem;">
+        <div class="checkout-layout" style="display: flex; flex-wrap: wrap; background: rgba(18, 18, 18, 0.7); border-radius: 16px; border: 1px solid rgba(212,175,55,0.3); overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
           
           <!-- Left side: Value proposition -->
-          <div class="checkout-info" style="flex: 1 1 350px; padding: 40px; background: linear-gradient(135deg, rgba(30,30,30,0.9), rgba(15,15,15,0.9)); border-right: 1px solid rgba(255,255,255,0.05);">
-            <h2 class="form-title" style="font-size: 1.8rem; margin-bottom: 5px; text-align: left; line-height: 1.2;">E-FirmaContrata</h2>
-            <h3 style="font-size: 1.1rem; color: var(--primary); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">Derechos de Estudio de Perfil</h3>
-            <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin-bottom: 30px;">
-              Estás a un paso de iniciar el proceso formal automatizado de <strong>Gold Life</strong>. Tu pago asegura la viabilidad y cubre el uso de toda la plataforma tecnológica.
+          <div class="checkout-info" style="flex: 1 1 500px; padding: 50px; background: linear-gradient(135deg, rgba(30,30,30,0.95), rgba(15,15,15,0.98)); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;">
+            <div style="margin-bottom: 25px;">
+              <span style="display: inline-block; padding: 6px 12px; background: rgba(212,175,55,0.15); color: var(--primary); border-radius: 20px; font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 15px; font-weight: 600;">PLATAFORMA PREMIUM</span>
+              <h2 class="form-title" style="font-size: 2.2rem; margin-bottom: 5px; text-align: left; line-height: 1.1;">E-FirmaContrata</h2>
+              <h3 style="font-size: 1.05rem; color: #e5e7eb; margin-bottom: 0; font-weight: 400; letter-spacing: 0.5px;">Sistema Avanzado de Elaboración y Autenticación de Contratos</h3>
+            </div>
+            
+            <p style="color: #9ca3af; font-size: 1rem; line-height: 1.6; margin-bottom: 35px;">
+              No estás pagando un simple estudio de perfil. Estás adquiriendo el acceso a la plataforma automatizada de <strong>Gold Life</strong> que se encargará de redactar, negociar y autenticar tu contrato legalmente sin que muevas un solo papel.
             </p>
             
-            <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; color: #d1d5db; font-size: 0.9rem;">
-              <li style="margin-bottom: 15px; display: flex; align-items: flex-start; gap: 12px;">
-                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary);">✓</div>
-                <div><strong style="display: block; color: #fff; font-size: 0.95rem;">Elaboración Automatizada</strong>Tus datos construyen el borrador del contrato de forma automática e inteligente.</div>
+            <ul style="list-style: none; padding: 0; margin: 0 0 35px 0; color: #d1d5db; font-size: 0.95rem;">
+              <li style="margin-bottom: 20px; display: flex; align-items: flex-start; gap: 15px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 8px; border-radius: 50%; color: var(--primary);"><i class="fas fa-robot"></i></div>
+                <div><strong style="display: block; color: #fff; font-size: 1rem; margin-bottom: 4px;">Redacción Inteligente Inmediata</strong>Tus datos construyen un borrador legal perfecto de forma automática.</div>
               </li>
-              <li style="margin-bottom: 15px; display: flex; align-items: flex-start; gap: 12px;">
-                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary);">✓</div>
-                <div><strong style="display: block; color: #fff; font-size: 0.95rem;">Negociación y Aprobación</strong>Acceso al portal colaborativo para revisar, ajustar y aprobar tu contrato online.</div>
+              <li style="margin-bottom: 20px; display: flex; align-items: flex-start; gap: 15px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 8px; border-radius: 50%; color: var(--primary);"><i class="fas fa-users"></i></div>
+                <div><strong style="display: block; color: #fff; font-size: 1rem; margin-bottom: 4px;">Portal Colaborativo Transparente</strong>Tú y el propietario revisan, ajustan y aprueban todo desde cualquier dispositivo.</div>
               </li>
-              <li style="display: flex; align-items: flex-start; gap: 12px;">
-                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary);">✓</div>
-                <div><strong style="display: block; color: #fff; font-size: 0.95rem;">Firma Electrónica Segura</strong>Culmina todo el proceso firmando legalmente tu contrato a través de VíaFirma.</div>
+              <li style="display: flex; align-items: flex-start; gap: 15px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 8px; border-radius: 50%; color: var(--primary);"><i class="fas fa-file-signature"></i></div>
+                <div><strong style="display: block; color: #fff; font-size: 1rem; margin-bottom: 4px;">Firma Electrónica VíaFirma</strong>Certificación legal de alto estándar, sellando el trato digitalmente.</div>
               </li>
             </ul>
 
-            <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-              <div style="display: flex; align-items: center; justify-content: space-between;">
-                <span style="color: #a1a1aa;">Valor a pagar</span>
-                <span style="font-size: 2rem; font-weight: 700; color: var(--primary);">$85.000 <small style="font-size: 1rem; color: #6b7280; font-weight: normal;">COP</small></span>
+            <div style="margin-top: auto; padding-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <span style="color: #9ca3af; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Inversión Única</span>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: var(--primary); line-height: 1;">$85.000 <small style="font-size: 1rem; color: #6b7280; font-weight: normal;">COP</small></span>
               </div>
             </div>
           </div>
 
           <!-- Right side: Payment Widget -->
-          <div class="checkout-widget" style="flex: 1 1 350px; padding: 40px; background: rgba(0,0,0,0.4); position: relative; display: flex; flex-direction: column; justify-content: center;">
-            <div id="payment-loader" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 10;">
-              <div class="loader-spinner" style="width: 40px; height: 40px; border-width: 4px; margin-bottom: 15px;"></div>
-              <p style="color: var(--primary); font-weight: 600; letter-spacing: 1px; animation: pulse 1.5s infinite;">CONECTANDO CON MERCADO PAGO...</p>
+          <div class="checkout-widget" style="flex: 1 1 350px; padding: 50px 40px; background: rgba(0,0,0,0.5); position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <div id="payment-loader" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); z-index: 10;">
+              <div class="loader-spinner" style="width: 50px; height: 50px; border-width: 4px; margin-bottom: 20px;"></div>
+              <p style="color: var(--primary); font-weight: 600; letter-spacing: 1.5px; animation: pulse 1.5s infinite; font-size: 0.9rem;">PREPARANDO CHECKOUT...</p>
             </div>
             
-            <div style="text-align: center; margin-bottom: 20px;">
-              <p style="color: #a1a1aa; font-size: 0.9rem; margin-bottom: 10px;">Selecciona tu método de pago seguro</p>
+            <div style="text-align: center; margin-bottom: 30px; width: 100%;">
+              <h4 style="font-size: 1.2rem; color: #fff; margin-bottom: 10px;">Comenzar Ahora</h4>
+              <p style="color: #9ca3af; font-size: 0.95rem;">Selecciona tu método para activar la plataforma y crear tu contrato.</p>
             </div>
+            
             <!-- Mercado Pago Widget Container -->
-            <div id="wallet_container" style="min-height: 100px;"></div>
+            <div id="wallet_container" style="min-height: 100px; width: 100%; max-width: 400px;"></div>
             
-            <div style="text-align: center; margin-top: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; opacity: 0.6;">
-              <i class="fas fa-lock"></i> <span style="font-size: 0.8rem;">Procesado por Mercado Pago. SSL 256-bit.</span>
+            <div style="text-align: center; margin-top: 40px; display: flex; align-items: center; justify-content: center; gap: 8px; opacity: 0.5;">
+              <i class="fas fa-shield-alt" style="color: var(--primary);"></i> <span style="font-size: 0.85rem; color: #fff;">Checkout oficial de Mercado Pago. Cifrado de extremo a extremo.</span>
             </div>
           </div>
           

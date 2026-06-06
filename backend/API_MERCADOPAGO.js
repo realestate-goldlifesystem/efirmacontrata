@@ -12,7 +12,7 @@ function crearPreferenciaPago(datos) {
     const payload = {
       items: [
           {
-            title: 'Derechos de Estudio de Perfil - E-FirmaContrata',
+            title: 'Elaboración y Autenticación de Contrato - E-FirmaContrata',
             description: 'Estudio para solicitud de arrendamiento',
             quantity: 1,
             currency_id: 'COP',
