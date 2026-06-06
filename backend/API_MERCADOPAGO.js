@@ -93,3 +93,51 @@ function handleMercadoPagoWebhook(datos) {
     return { success: false, error: e.toString() };
   }
 }
+
+function auditorDeContratosVencidos() {
+  try {
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/1B9I3y3E3qI7FwXJ5W-xMhLw2pXWkE1W0w4x1kR0fRj0/edit';
+    const ss = SpreadsheetApp.openByUrl(sheetUrl);
+    const sheet = ss.getSheetByName('PAGOS_RECIBIDOS');
+    if (!sheet) return;
+
+    const data = sheet.getDataRange().getValues();
+    const now = new Date();
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const fechaPago = new Date(row[0]); // Columna A: Timestamp
+      const paymentId = row[1]; // Columna B: Payment ID
+      const cdr = row[2]; // Columna C: CDR
+      const estadoPago = row[4]; // Columna E: Estado
+
+      if (estadoPago === 'APROBADO') {
+        const hoursDiff = (now - fechaPago) / (1000 * 60 * 60);
+        if (hoursDiff >= 48) {
+          // Reembolsar usando MP API
+          const url = 'https://api.mercadopago.com/v1/payments/' + paymentId + '/refunds';
+          const options = {
+            method: 'post',
+            headers: {
+              'Authorization': 'Bearer ' + MP_ACCESS_TOKEN,
+              'X-Idempotency-Key': paymentId + '-' + Date.now()
+            },
+            muteHttpExceptions: true
+          };
+
+          const response = UrlFetchApp.fetch(url, options);
+          if (response.getResponseCode() === 200 || response.getResponseCode() === 201) {
+            sheet.getRange(i + 1, 5).setValue('REEMBOLSADO POR TIEMPO');
+            sheet.getRange(i + 1, 5).setBackground('#ffcccc'); // Rojo claro
+            console.log('Reembolsado automáticamente el pago ' + paymentId + ' para CDR ' + cdr);
+          } else {
+            console.error('Error reembolsando: ' + response.getContentText());
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error en auditorDeContratosVencidos:', e);
+  }
+}
+

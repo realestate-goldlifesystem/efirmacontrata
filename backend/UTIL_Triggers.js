@@ -154,3 +154,24 @@ function repararPermisos() {
     // Reinstalamos los triggers para que queden con los permisos nuevos
     instalarActivadores();
 }
+
+/**
+ * Instala el Cron Job para reembolsos de Mercado Pago
+ */
+function instalarTriggerReembolsosMP() {
+    const fnName = 'auditorDeContratosVencidos';
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(t => {
+        if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
+    });
+
+    // Se ejecutará todos los días a las 2:00 AM
+    ScriptApp.newTrigger(fnName)
+        .timeBased()
+        .everyDays(1)
+        .atHour(2)
+        .create();
+
+    SpreadsheetApp.getUi().alert('? Cron Trigger de Reembolsos activado (Ejecución Diaria 2:00 AM).');
+}
+
