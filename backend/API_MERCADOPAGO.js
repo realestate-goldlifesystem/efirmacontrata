@@ -1,8 +1,8 @@
 // Credenciales de Prueba (Activas)
-const MP_ACCESS_TOKEN = 'APP_USR-996653389612421-060519-8c8f4b7e9d9eb7d87c56cf2c138ff2d5-1824932605';
+// const MP_ACCESS_TOKEN = 'APP_USR-996653389612421-060519-8c8f4b7e9d9eb7d87c56cf2c138ff2d5-1824932605';
 
-// Credenciales de ProducciÃ³n (Reales - Para cuando estÃ©s listo para salir en vivo)
-// const MP_ACCESS_TOKEN = 'APP_USR-8777396757564882-052314-43723717a419b60b7e28e4b9a4638c6d-365464952';
+// Credenciales de Producción (Reales - Para cuando estés listo para salir en vivo)
+const MP_ACCESS_TOKEN = 'APP_USR-8777396757564882-052314-43723717a419b60b7e28e4b9a4638c6d-365464952';
 
 function crearPreferenciaPago(datos) {
   try {
