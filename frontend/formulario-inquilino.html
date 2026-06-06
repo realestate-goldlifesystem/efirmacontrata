@@ -399,13 +399,9 @@
               </li>
             </ul>
 
-            <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-              <div>
-                <span style="color: #9ca3af; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Costo del Trámite</span>
-              </div>
-              <div style="text-align: right;">
-                <span style="font-size: clamp(1.8rem, 3vw, 2.2rem); font-weight: 800; color: var(--primary); line-height: 1;">$85.000 <small style="font-size: 0.9rem; color: #6b7280; font-weight: normal;">COP</small></span>
-              </div>
+            <div class="summary-footer" style="display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 1rem;">
+              <span style="color: #9ca3af; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase;">COSTO DEL TRÁMITE</span>
+              <span style="color: #D4AF37; font-size: clamp(1.8rem, 4vw, 2.2rem); font-weight: 800;">$5.000 <span style="font-size: 0.9rem; color: #6b7280; font-weight: 500;">COP</span></span>
             </div>
           </div>
 
@@ -1851,7 +1847,7 @@
       // ==========================================
       let mp;
       try {
-        mp = new MercadoPago('APP_USR-c8da1c51-a70c-418b-9365-033454ec347e', { locale: 'es-CO' });
+        mp = new MercadoPago('APP_USR-a0703444-6388-4a61-8807-2a4257160248', { locale: 'es-CO' });
       } catch(e) {
         console.warn('MercadoPago SDK no cargó o fue bloqueado:', e);
       }
