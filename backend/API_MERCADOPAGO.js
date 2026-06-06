@@ -19,9 +19,9 @@ function crearPreferenciaPago(datos) {
             unit_price: 85000
           }
       ],
-      payer: {
-        email: datos.email || 'cliente@ejemplo.com'
-      },
+      // payer: {
+      //   email: datos.email || 'cliente@ejemplo.com'
+      // },
       back_urls: {
         success: "https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/formulario-inquilino.html?status=success",
         failure: "https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/formulario-inquilino.html?status=failure",
