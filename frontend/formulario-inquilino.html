@@ -458,7 +458,8 @@
           <div class="step active" data-step="0">1</div>
           <div class="step" data-step="1">2</div>
           <div class="step" data-step="2">3</div>
-          <div class="step" data-step="3">✓</div>
+          <div class="step" data-step="3">4</div>
+          <div class="step" data-step="4">✓</div>
         </div>
 
         <!-- Step 1: Datos -->
@@ -706,7 +707,7 @@
         modoCorreccion: false,
         docsCorreccion: [],
         step: 0,
-        max: 3,
+        max: 4,
         archivos: {},
         maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
       };
@@ -1418,7 +1419,7 @@
         if (state.modoCorreccion) {
           if (step === 1) return [{ id: 'docFront', isType: 'file' }, { id: 'docBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
           if (step === 3) return [{ id: 'coDocFront', isType: 'file' }, { id: 'coDocBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
-          if (step === 4) return [{ id: 'comprobantePago', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 4) return [];
           return [];
         }
 
@@ -1444,9 +1445,7 @@
             { id: 'coDocBack', isType: 'file' }
           ];
         }
-        if (step === 4) return [
-          { id: 'comprobantePago', isType: 'file' }
-        ];
+        if (step === 4) return [];
         return [];
       }
 
@@ -1503,8 +1502,8 @@
             return true;
           }
           case 4: {
-            if (state.modoCorreccion) return !state.docsCorreccion.includes('comprobantePago') || !!state.archivos['comprobantePago'];
-            return !!state.archivos['comprobantePago'];
+            // Step 4 is summary, always valid
+            return true;
           }
           default: return true;
         }
@@ -1623,19 +1622,7 @@
             return true;
           }
           case 4: {
-            if (state.modoCorreccion) {
-              if (state.docsCorreccion.includes('comprobantePago') && !state.archivos['comprobantePago'] && !window.mercadoPagoApproved) {
-                showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar.');
-                return false;
-              }
-              return true;
-            }
-
-            // Pago obligatorio para validación
-            if (!state.archivos['comprobantePago'] && !window.mercadoPagoApproved) {
-              showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar.');
-              return false;
-            }
+            // Step 4 is the summary screen, no validation needed
             return true;
           }
           default: return true;
