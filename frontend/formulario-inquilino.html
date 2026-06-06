@@ -367,25 +367,58 @@
         <button id="btnGoToPayment" onclick="goToPayment()" class="btn btn-primary btn-lg" style="width: 100%; max-width: 280px; padding: 12px; font-size: 1rem; border-radius: 30px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; box-shadow: 0 10px 25px rgba(212,175,55,0.3);">Comenzar Ahora →</button>
       </div>
 
-      <!-- Payment Screen (Ante-página 2) -->
-      <div id="paymentScreen" class="form-container" style="display: none; max-width: 500px; margin: 0 auto;">
-        <div style="text-align: center; margin-bottom: 25px;">
-          <h2 class="form-title" style="font-size: 1.6rem; margin-bottom: 8px;">💳 Derechos de Estudio</h2>
-          <p class="form-subtitle" style="font-size: 0.95rem; line-height: 1.5; color: #a1a1aa;">
-            Antes de iniciar con el formulario, es necesario procesar el pago del estudio de perfil.
-          </p>
-        </div>
-        
-        <div class="card" style="border: 1px solid rgba(212,175,55,0.2); background: rgba(0,0,0,0.2);">
-            <div class="card-body" style="padding: 1.5rem;">
-              <div style="text-align: center; margin-bottom: 20px;">
-                <span style="font-size: 0.85rem; color: #a1a1aa; text-transform: uppercase; letter-spacing: 1px;">Valor a pagar</span>
-                <h3 style="font-size: 2.2rem; color: var(--primary); margin: 5px 0 0;">$85.000 <span style="font-size: 1rem; color: #6b7280;">COP</span></h3>
-              </div>
+      <!-- Payment Screen (Checkout Landing) -->
+      <div id="paymentScreen" class="form-container" style="display: none; max-width: 900px; padding: 0;">
+        <div class="checkout-layout" style="display: flex; flex-wrap: wrap; background: rgba(18, 18, 18, 0.7); border-radius: 16px; border: 1px solid rgba(212,175,55,0.2); overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+          
+          <!-- Left side: Value proposition -->
+          <div class="checkout-info" style="flex: 1 1 350px; padding: 40px; background: linear-gradient(135deg, rgba(30,30,30,0.9), rgba(15,15,15,0.9)); border-right: 1px solid rgba(255,255,255,0.05);">
+            <h2 class="form-title" style="font-size: 1.8rem; margin-bottom: 15px; text-align: left;">Derechos de Estudio</h2>
+            <p style="color: #a1a1aa; font-size: 1rem; line-height: 1.6; margin-bottom: 30px;">
+              Estás a un paso de comenzar el proceso formal. El estudio de perfil garantiza la viabilidad del contrato.
+            </p>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; color: #d1d5db;">
+              <li style="margin-bottom: 15px; display: flex; align-items: flex-start; gap: 12px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary);">✓</div>
+                <div><strong style="display: block; color: #fff;">Análisis de Riesgo VIP</strong>Evaluación exprés en bases de datos financieras.</div>
+              </li>
+              <li style="margin-bottom: 15px; display: flex; align-items: flex-start; gap: 12px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary);">✓</div>
+                <div><strong style="display: block; color: #fff;">100% Reembolsable</strong>Si el propietario cancela, te devolvemos el dinero al instante.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary);">✓</div>
+                <div><strong style="display: block; color: #fff;">Privacidad Total</strong>Tus datos encriptados bajo estándares bancarios.</div>
+              </li>
+            </ul>
 
-              <!-- Mercado Pago Widget Container -->
-              <div id="wallet_container" style="margin-bottom: 10px;"></div>
+            <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+              <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span style="color: #a1a1aa;">Valor a pagar</span>
+                <span style="font-size: 2rem; font-weight: 700; color: var(--primary);">$85.000 <small style="font-size: 1rem; color: #6b7280; font-weight: normal;">COP</small></span>
+              </div>
             </div>
+          </div>
+
+          <!-- Right side: Payment Widget -->
+          <div class="checkout-widget" style="flex: 1 1 350px; padding: 40px; background: rgba(0,0,0,0.4); position: relative; display: flex; flex-direction: column; justify-content: center;">
+            <div id="payment-loader" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 10;">
+              <div class="loader-spinner" style="width: 40px; height: 40px; border-width: 4px; margin-bottom: 15px;"></div>
+              <p style="color: var(--primary); font-weight: 600; letter-spacing: 1px; animation: pulse 1.5s infinite;">CONECTANDO CON MERCADO PAGO...</p>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+              <p style="color: #a1a1aa; font-size: 0.9rem; margin-bottom: 10px;">Selecciona tu método de pago seguro</p>
+            </div>
+            <!-- Mercado Pago Widget Container -->
+            <div id="wallet_container" style="min-height: 100px;"></div>
+            
+            <div style="text-align: center; margin-top: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; opacity: 0.6;">
+              <i class="fas fa-lock"></i> <span style="font-size: 0.8rem;">Procesado por Mercado Pago. SSL 256-bit.</span>
+            </div>
+          </div>
+          
         </div>
       </div>
 
@@ -1817,10 +1850,12 @@
         const btnGoToPayment = document.getElementById('btnGoToPayment');
         if (btnGoToPayment) {
           btnGoToPayment.disabled = true;
-          btnGoToPayment.innerHTML = 'Generando pago... <span class="loader-spinner"></span>';
+          btnGoToPayment.innerHTML = 'Conectando... <span class="loader-spinner"></span>';
         }
         
         try {
+          // Immediately swap screens for a seamless transition
+          document.getElementById('welcomeScreen').style.display = 'none';
           document.getElementById('paymentScreen').style.display = 'block';
           window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -1844,9 +1879,15 @@
             } else {
               alert('El sistema de pagos no cargó correctamente. Verifique si tiene un AdBlocker activado.');
             }
-            if (btnGoToPayment) btnGoToPayment.style.display = 'none';
-            document.getElementById('welcomeScreen').style.display = 'none';
+            
+            // Hide the custom loader so the MP widget takes over
+            const loader = document.getElementById('payment-loader');
+            if (loader) loader.style.display = 'none';
+
           } else {
+            // Revert on error
+            document.getElementById('paymentScreen').style.display = 'none';
+            document.getElementById('welcomeScreen').style.display = 'block';
             alert('Error generando el pago: ' + (res.error || res.message || 'Desconocido'));
             if (btnGoToPayment) {
               btnGoToPayment.disabled = false;
@@ -1855,6 +1896,8 @@
           }
         } catch(e) {
           console.error('Error MP:', e);
+          document.getElementById('paymentScreen').style.display = 'none';
+          document.getElementById('welcomeScreen').style.display = 'block';
           alert('Error de conexión con Mercado Pago.');
           if (btnGoToPayment) {
             btnGoToPayment.disabled = false;
