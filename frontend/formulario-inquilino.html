@@ -369,48 +369,48 @@
 
       <!-- Payment Screen (Checkout Landing) -->
       <!-- Payment Screen (Checkout Landing) -->
-      <div id="paymentScreen" style="display: none; width: 100%; max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem;">
-        <div class="checkout-layout" style="display: flex; background: rgba(18, 18, 18, 0.7); border-radius: 12px; border: 1px solid rgba(212,175,55,0.3); overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+      <div id="paymentScreen" style="display: none; width: 95%; max-width: 1300px; margin: 1.5rem auto; padding: 0;">
+        <div class="checkout-layout" style="display: flex; flex-wrap: wrap; gap: 0; background: rgba(18, 18, 18, 0.7); border-radius: 12px; border: 1px solid rgba(212,175,55,0.3); overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
           
           <!-- Left side: Value proposition -->
-          <div class="checkout-info" style="flex: 1 1 55%; padding: 25px 40px; background: linear-gradient(135deg, rgba(30,30,30,0.95), rgba(15,15,15,0.98)); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;">
+          <div class="checkout-info" style="flex: 1 1 500px; min-width: 300px; padding: clamp(20px, 4vw, 50px); background: linear-gradient(135deg, rgba(30,30,30,0.95), rgba(15,15,15,0.98)); border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column;">
             <div style="margin-bottom: 12px;">
               <span style="display: inline-block; padding: 3px 8px; background: rgba(212,175,55,0.15); color: var(--primary); border-radius: 20px; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; font-weight: 600;">PASO 1 DE 3</span>
-              <h2 class="form-title" style="font-size: 1.6rem; margin-bottom: 3px; text-align: left; line-height: 1.1;">Activación del Servicio</h2>
-              <h3 style="font-size: 0.9rem; color: #e5e7eb; margin-bottom: 0; font-weight: 400; letter-spacing: 0.5px;">Elaboración y Autenticación de Contrato</h3>
+              <h2 class="form-title" style="font-size: clamp(1.4rem, 2.5vw, 1.8rem); margin-bottom: 3px; text-align: left; line-height: 1.1;">Activación del Servicio</h2>
+              <h3 style="font-size: clamp(0.85rem, 1.5vw, 0.95rem); color: #e5e7eb; margin-bottom: 0; font-weight: 400; letter-spacing: 0.5px;">Elaboración y Autenticación de Contrato</h3>
             </div>
             
-            <p style="color: #9ca3af; font-size: clamp(0.85rem, 1vw, 0.95rem); line-height: 1.5; margin-bottom: 20px;">
+            <p style="color: #9ca3af; font-size: clamp(0.9rem, 1.2vw, 1rem); line-height: 1.5; margin-bottom: 25px;">
               Estás a punto de iniciar el proceso formal con <strong>E-FirmaContrata</strong>. A continuación, te explicamos cómo funciona nuestro sistema automatizado una vez realices el pago:
             </p>
             
-            <ul style="list-style: none; padding: 0; margin: 0 0 20px 0; color: #d1d5db; font-size: clamp(0.8rem, 1vw, 0.9rem);">
-              <li style="margin-bottom: 15px; display: flex; align-items: flex-start; gap: 12px;">
-                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary); flex-shrink: 0;"><i class="fas fa-id-card"></i></div>
-                <div><strong style="display: block; color: #fff; font-size: clamp(0.85rem, 1vw, 0.95rem); margin-bottom: 2px;">1. Toma de Datos Segura</strong>Se solicitarán documentos e información. El sistema extraerá los datos necesarios de forma encriptada.</div>
+            <ul style="list-style: none; padding: 0; margin: 0 0 25px 0; color: #d1d5db; font-size: clamp(0.85rem, 1.1vw, 0.95rem);">
+              <li style="margin-bottom: 18px; display: flex; align-items: flex-start; gap: 15px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 8px; border-radius: 50%; color: var(--primary); flex-shrink: 0;"><i class="fas fa-id-card"></i></div>
+                <div><strong style="display: block; color: #fff; font-size: clamp(0.9rem, 1.1vw, 1rem); margin-bottom: 4px;">1. Toma de Datos Segura</strong>Se solicitarán documentos e información. El sistema extraerá los datos necesarios de forma encriptada.</div>
               </li>
-              <li style="margin-bottom: 15px; display: flex; align-items: flex-start; gap: 12px;">
-                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary); flex-shrink: 0;"><i class="fas fa-file-contract"></i></div>
-                <div><strong style="display: block; color: #fff; font-size: clamp(0.85rem, 1vw, 0.95rem); margin-bottom: 2px;">2. Elaboración a Medida</strong>Utilizaremos tus datos para redactar automáticamente el contrato legal correspondiente al inmueble.</div>
+              <li style="margin-bottom: 18px; display: flex; align-items: flex-start; gap: 15px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 8px; border-radius: 50%; color: var(--primary); flex-shrink: 0;"><i class="fas fa-file-contract"></i></div>
+                <div><strong style="display: block; color: #fff; font-size: clamp(0.9rem, 1.1vw, 1rem); margin-bottom: 4px;">2. Elaboración a Medida</strong>Utilizaremos tus datos para redactar automáticamente el contrato legal correspondiente al inmueble.</div>
               </li>
-              <li style="display: flex; align-items: flex-start; gap: 12px;">
-                <div style="background: rgba(212,175,55,0.1); padding: 6px; border-radius: 50%; color: var(--primary); flex-shrink: 0;"><i class="fas fa-pen-nib"></i></div>
-                <div><strong style="display: block; color: #fff; font-size: clamp(0.85rem, 1vw, 0.95rem); margin-bottom: 2px;">3. Revisión y Autenticación</strong>Acceso a un portal para leer el contrato. Culminaremos con la firma electrónica certificada.</div>
+              <li style="display: flex; align-items: flex-start; gap: 15px;">
+                <div style="background: rgba(212,175,55,0.1); padding: 8px; border-radius: 50%; color: var(--primary); flex-shrink: 0;"><i class="fas fa-pen-nib"></i></div>
+                <div><strong style="display: block; color: #fff; font-size: clamp(0.9rem, 1.1vw, 1rem); margin-bottom: 4px;">3. Revisión y Autenticación</strong>Acceso a un portal para leer el contrato. Culminaremos con la firma electrónica certificada.</div>
               </li>
             </ul>
 
-            <div style="margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between;">
+            <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div>
-                <span style="color: #9ca3af; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">Costo del Trámite</span>
+                <span style="color: #9ca3af; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Costo del Trámite</span>
               </div>
               <div style="text-align: right;">
-                <span style="font-size: 1.8rem; font-weight: 800; color: var(--primary); line-height: 1;">$85.000 <small style="font-size: 0.8rem; color: #6b7280; font-weight: normal;">COP</small></span>
+                <span style="font-size: clamp(1.8rem, 3vw, 2.2rem); font-weight: 800; color: var(--primary); line-height: 1;">$85.000 <small style="font-size: 0.9rem; color: #6b7280; font-weight: normal;">COP</small></span>
               </div>
             </div>
           </div>
 
           <!-- Right side: Payment Widget -->
-          <div class="checkout-widget" style="flex: 1 1 350px; padding: 50px 40px; background: rgba(0,0,0,0.5); position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+          <div class="checkout-widget" style="flex: 1 1 350px; min-width: 300px; padding: clamp(30px, 4vw, 50px) clamp(20px, 4vw, 40px); background: rgba(0,0,0,0.5); position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center;">
             <div id="payment-loader" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); z-index: 10;">
               <div class="loader-spinner" style="width: 50px; height: 50px; border-width: 4px; margin-bottom: 20px;"></div>
               <p style="color: var(--primary); font-weight: 600; letter-spacing: 1.5px; animation: pulse 1.5s infinite; font-size: 0.9rem;">PREPARANDO CHECKOUT...</p>
