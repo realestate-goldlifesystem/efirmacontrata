@@ -32,9 +32,8 @@ function recuperarPagosPerdidos() {
     return;
   }
   
-  const MP_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty('MP_ACCESS_TOKEN');
   if (!MP_ACCESS_TOKEN) {
-    Logger.log('Error: No se encontró el Access Token de Mercado Pago.');
+    Logger.log('Error: No se encontró el Access Token de Mercado Pago global.');
     return;
   }
   
