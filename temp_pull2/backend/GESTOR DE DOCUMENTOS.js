@@ -1,0 +1,4324 @@
+// ==========================================
+// GESTOR DE DOCUMENTOS - E-FIRMACONTRATA v3.0
+// Sistema de Gestión de Documentos y Formularios
+// Real Estate Gold Life System
+// ==========================================
+
+// CONFIGURACIÓN
+const DOCS_CONFIG = {
+  HOJA_PRINCIPAL: '1.1 - INMUEBLES REGISTRADOS',
+  HOJA_LOG: 'LOG_DOCUMENTOS',
+  HOJA_VALIDACIONES: 'LOG_VALIDACIONES',
+  VERSION: 'v3.0-produccion',
+  PLANTILLA_DATOS_CONTRATO: '1zlYZrcue02cK2v-HSWecTyFfp_-_JwNqqknEs9q7q30',
+  CARPETA_RAIZ_ID: '1tJSOD4-OXmx-GNmuvPxRAWRzRX6Dh8gE'
+};
+
+// ==========================================
+// MENÚ PERSONALIZADO - E-FIRMACONTRATA
+// ==========================================
+
+/**
+ * Crea el menú personalizado cuando se abre la hoja
+ */
+function onOpen(e) {
+  const ui = SpreadsheetApp.getUi();
+
+  ui.createMenu('🏠 E-FirmaContrata')
+    .addItem('📋 Panel de Validación', 'abrirPanelValidacion')
+    .addSeparator()
+    .addItem('📧 Enviar Email a Inquilino', 'mostrarPopupEmailInquilino')
+    .addItem('📧 Enviar Email a Propietario', 'mostrarPopupEmailPropietario')
+    .addSeparator()
+    .addItem('🔄 Actualizar Estados', 'actualizarTodosLosEstados')
+    .addItem('📊 Ver Estadísticas', 'mostrarEstadisticas')
+    .addSeparator()
+    .addItem('⚙️ Configuración', 'mostrarConfiguracion')
+    .addSeparator()
+    .addItem('⚡ Instalar Activadores', 'instalarActivadores')
+    .addSeparator()
+    .addSubMenu(ui.createMenu('📸 AutoRename DNG')
+      .addItem('▶️ Ejecutar Ahora', 'autoRenameDNGtoJPG')
+      .addItem('⏰ Activar Trigger (1 min)', 'instalarTriggerAutoRename')
+      .addItem('🛑 Desactivar Trigger', 'desinstalarTriggerAutoRename'))
+    .addSeparator()
+    .addItem('📂 Reporte Jerarquía', 'mostrarEstructuraCarpetasPlantilla')
+    .addToUi();
+}
+
+function construirMenuManualmente() {
+  onOpen(null);
+  SpreadsheetApp.getUi().alert("✅ Menú forzado e instalado correctamente. Revisa la barra superior (al lado de Ayuda).");
+}
+
+/**
+ * Muestra el popup para enviar email al inquilino
+ * Puede ser llamada desde el menú (sin args) o desde el trigger automático (con sheet y fila)
+ * CACHE_BUST: 20260216_v4_CLEAN
+ */
+function mostrarPopupEmailInquilino(sheetParam, filaParam) {
+  try {
+    const ui = SpreadsheetApp.getUi();
+
+    // PASO 1: Obtener la hoja de datos
+    let sheet;
+    if (sheetParam) {
+      sheet = sheetParam;
+    } else {
+      // Llamada desde menú: buscar la hoja por nombre explícito
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      if (!ss) {
+        ui.alert('❌ Error', 'No se pudo acceder a la hoja de cálculo activa.', ui.ButtonSet.OK);
+        return;
+      }
+      sheet = ss.getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+      if (!sheet) {
+        // Fallback: intentar con la hoja activa
+        sheet = ss.getActiveSheet();
+      }
+    }
+
+    if (!sheet) {
+      ui.alert('❌ Error', 'No se encontró la hoja de datos. Verifique que existe la hoja "1.1 - INMUEBLES REGISTRADOS".', ui.ButtonSet.OK);
+      return;
+    }
+
+    // PASO 2: Obtener la fila
+    let filaActiva;
+    if (filaParam) {
+      filaActiva = filaParam;
+    } else {
+      const activeRange = sheet.getActiveRange();
+      if (!activeRange) {
+        ui.alert('⚠️ Sin selección', 'Por favor seleccione una fila con un registro de inmueble antes de usar esta opción.', ui.ButtonSet.OK);
+        return;
+      }
+      filaActiva = activeRange.getRow();
+    }
+
+    // Validar que sea una fila válida (no el header)
+    if (filaActiva <= 1) {
+      ui.alert('⚠️ Seleccione un registro', 'Por favor seleccione una fila con un registro de inmueble (no el encabezado).', ui.ButtonSet.OK);
+      return;
+    }
+
+    // PASO 3: Obtener headers y CDR
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 1) {
+      ui.alert('❌ Error', 'La hoja de datos está vacía.', ui.ButtonSet.OK);
+      return;
+    }
+
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+
+    if (cdrCol < 1) {
+      ui.alert('❌ Error', 'No se encontró la columna "CODIGO DE REGISTRO" en la hoja.', ui.ButtonSet.OK);
+      return;
+    }
+
+    const cdr = sheet.getRange(filaActiva, cdrCol).getValue();
+
+    if (!cdr) {
+      ui.alert('⚠️ Sin Código de Registro', 'Esta fila no tiene un código de registro válido.', ui.ButtonSet.OK);
+      return;
+    }
+
+    // --- REGLAS DE NEGOCIO ---
+    const colEstado = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
+    const colTipo = headers.indexOf('TIPO DE NEGOCIO') + 1;
+
+    if (colEstado > 0 && colTipo > 0) {
+      const estadoActual = sheet.getRange(filaActiva, colEstado).getValue();
+      const tipoNegocio = sheet.getRange(filaActiva, colTipo).getValue();
+
+      const ESTADO_REQUERIDO = 'ESTUDIO APROBADO';
+      const TIPOS_PERMITIDOS = ['Arriendo', 'Vendi-Renta', 'Admi-Venta', 'Corretaje', 'Administración', 'Administracion'];
+
+      if (estadoActual !== ESTADO_REQUERIDO) {
+        ui.alert(
+          '⚠️ Estado Incorrecto',
+          'Para enviar el formulario de contrato, el inmueble debe estar en estado:\n"' + ESTADO_REQUERIDO + '"\n\nEstado actual: "' + estadoActual + '"',
+          ui.ButtonSet.OK
+        );
+        return;
+      }
+
+      const tipoNormalizado = tipoNegocio ? tipoNegocio.toString().trim() : '';
+      if (!TIPOS_PERMITIDOS.includes(tipoNormalizado)) {
+        ui.alert(
+          '⚠️ Tipo de Negocio No Válido',
+          'Esta función solo aplica para contratos de:\n' + TIPOS_PERMITIDOS.join(', ') + '\n\nTipo actual: "' + tipoNegocio + '"',
+          ui.ButtonSet.OK
+        );
+        return;
+      }
+    }
+    // --- FIN REGLAS ---
+
+    // PASO 4: Guardar contexto en Properties para el popup
+    PropertiesService.getScriptProperties().setProperties({
+      'currentRow': filaActiva.toString(),
+      'currentCDR': cdr.toString()
+    });
+
+    // PASO 5: Mostrar el popup
+    const html = HtmlService.createHtmlOutputFromFile('backend/popup_email_inquilino')
+      .setWidth(1000)
+      .setHeight(800)
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+
+    ui.showModalDialog(html, '📧 Enviar Formulario al Inquilino');
+
+  } catch (error) {
+    Logger.log('Error en mostrarPopupEmailInquilino: ' + error.toString() + ' | Stack: ' + error.stack);
+    try {
+      SpreadsheetApp.getUi().alert('❌ Error al mostrar popup', 'Detalle: ' + error.message + '\n\nPor favor reporte este error.', SpreadsheetApp.getUi().ButtonSet.OK);
+    } catch (e2) {
+      Logger.log('Error doble en mostrarPopupEmailInquilino: ' + e2.toString());
+    }
+  }
+}
+
+/**
+ * Muestra el popup para enviar email al propietario
+ */
+function mostrarPopupEmailPropietario(sheetParam, filaParam) {
+  try {
+    const ui = SpreadsheetApp.getUi();
+
+    // PASO 1: Obtener la hoja de datos
+    let sheet;
+    if (sheetParam) {
+      sheet = sheetParam;
+    } else {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      if (!ss) {
+        ui.alert('❌ Error', 'No se pudo acceder a la hoja de cálculo activa.', ui.ButtonSet.OK);
+        return;
+      }
+      sheet = ss.getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+      if (!sheet) sheet = ss.getActiveSheet();
+    }
+
+    if (!sheet) {
+      ui.alert('❌ Error', 'No se encontró la hoja de datos.', ui.ButtonSet.OK);
+      return;
+    }
+
+    // PASO 2: Obtener la fila
+    let filaActiva;
+    if (filaParam) {
+      filaActiva = filaParam;
+    } else {
+      const activeRange = sheet.getActiveRange();
+      if (!activeRange) {
+        ui.alert('⚠️ Sin selección', 'Por favor seleccione una fila con un registro de inmueble antes de usar esta opción.', ui.ButtonSet.OK);
+        return;
+      }
+      filaActiva = activeRange.getRow();
+    }
+
+    if (filaActiva <= 1) {
+      ui.alert('⚠️ Seleccione un registro', 'Por favor seleccione una fila con un registro de inmueble (no el encabezado).', ui.ButtonSet.OK);
+      return;
+    }
+
+    // PASO 3: Obtener headers y CDR
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 1) {
+      ui.alert('❌ Error', 'La hoja de datos está vacía.', ui.ButtonSet.OK);
+      return;
+    }
+
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+
+    if (cdrCol < 1) {
+      ui.alert('❌ Error', 'No se encontró la columna "CODIGO DE REGISTRO".', ui.ButtonSet.OK);
+      return;
+    }
+
+    const cdr = sheet.getRange(filaActiva, cdrCol).getValue();
+    if (!cdr) {
+      ui.alert('⚠️ Sin Código de Registro', 'Esta fila no tiene un código de registro válido.', ui.ButtonSet.OK);
+      return;
+    }
+
+    // --- REGLAS DE NEGOCIO ---
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    const colEstadoDoc = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+
+    if (colDetalles > 0) {
+      const detalles = sheet.getRange(filaActiva, colDetalles).getValue().toString();
+      const estadoDoc = colEstadoDoc > 0 ? sheet.getRange(filaActiva, colEstadoDoc).getValue().toString() : '';
+
+      const inqAprobado = detalles.includes('Documentos del inquilino aprobados') || estadoDoc.includes('INQ_VALIDATED');
+      const propAprobado = detalles.includes('Documentos completos') || estadoDoc.includes('PROP_VALIDATED');
+
+      if (!inqAprobado && !propAprobado) {
+        ui.alert(
+          '⚠️ Inquilino No Validado',
+          'Para enviar el formulario al propietario, los documentos del inquilino deben estar aprobados previamente en el Panel de Validación.\n\nEstado actual:\n"' + detalles + '"',
+          ui.ButtonSet.OK
+        );
+        return;
+      }
+    }
+
+    // PASO 4: Guardar contexto en Properties para el popup
+    PropertiesService.getScriptProperties().setProperties({
+      'currentRow': filaActiva.toString(),
+      'currentCDR': cdr.toString()
+    });
+
+    // PASO 5: Mostrar el popup
+    const html = HtmlService.createHtmlOutputFromFile('backend/popup_email_propietario')
+      .setWidth(1000)
+      .setHeight(800)
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+
+    ui.showModalDialog(html, '📧 Enviar Formulario al Propietario');
+
+  } catch (error) {
+    Logger.log('Error en mostrarPopupEmailPropietario: ' + error.toString());
+    try {
+      SpreadsheetApp.getUi().alert('❌ Error al mostrar popup', 'Detalle: ' + error.message, SpreadsheetApp.getUi().ButtonSet.OK);
+    } catch (e2) { }
+  }
+}
+
+
+/**
+ * Actualiza todos los estados
+ */
+function actualizarTodosLosEstados() {
+  SpreadsheetApp.getUi().alert(
+    '♻️ Actualización de Estados',
+    'Función en desarrollo.\n\nActualizará automáticamente todos los estados pendientes.',
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+/**
+ * Muestra estadísticas del sistema
+ */
+function mostrarEstadisticas() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    const lastRow = sheet.getLastRow();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // Encontrar columna de estado
+    const estadoCol = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
+    const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+
+    let stats = {
+      total: lastRow - 1,
+      estudioAprobado: 0,
+      formularioEnviado: 0,
+      documentosValidados: 0,
+      contratoGenerado: 0,
+      pendientes: 0
+    };
+
+    if (estadoCol > 0 && lastRow > 1) {
+      const datos = sheet.getRange(2, estadoCol, lastRow - 1, 1).getValues();
+
+      datos.forEach(row => {
+        const estado = row[0];
+        if (estado === 'ESTUDIO APROBADO') stats.estudioAprobado++;
+        else if (estado === 'PENDIENTE') stats.pendientes++;
+      });
+    }
+
+    SpreadsheetApp.getUi().alert(
+      '📊 Estadísticas del Sistema',
+      `Total de registros: ${stats.total}\n` +
+      `Estudios aprobados: ${stats.estudioAprobado}\n` +
+      `Pendientes: ${stats.pendientes}\n` +
+      `\n` +
+      `Porcentaje procesado: ${Math.round((stats.estudioAprobado / stats.total) * 100)}%`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+
+  } catch (error) {
+    SpreadsheetApp.getUi().alert('Error obteniendo estadísticas: ' + error.toString());
+  }
+}
+
+/**
+ * Muestra configuración del sistema
+ */
+function mostrarConfiguracion() {
+  const props = PropertiesService.getScriptProperties();
+  const config = {
+    OCR_CLIENT_EMAIL: props.getProperty('OCR_CLIENT_EMAIL') ? '✅ Configurado' : '❌ No configurado',
+    OCR_PRIVATE_KEY: props.getProperty('OCR_PRIVATE_KEY') ? '✅ Configurado' : '❌ No configurado',
+    CARPETA_RAIZ_ID: props.getProperty('CARPETA_RAIZ_ID') || '1tJSOD4-OXmx-GNmuvPxRAWRzRX6Dh8gE'
+  };
+
+  SpreadsheetApp.getUi().alert(
+    '⚙️ Configuración del Sistema',
+    `OCR Client Email: ${config.OCR_CLIENT_EMAIL}\n` +
+    `OCR Private Key: ${config.OCR_PRIVATE_KEY}\n` +
+    `Carpeta Drive ID: ${config.CARPETA_RAIZ_ID}\n` +
+    `\n` +
+    `API URL:\n` +
+    `https://script.google.com/macros/s/AKfycbzOnhQ8CD2gWMdvvYnF2v1FL3yto5sM8i_jV9FmIJa1Os05YwXR5RKSsq22ePlwqQgL/exec`,
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+// ==========================================
+// FUNCIONES PRINCIPALES DE API
+// ==========================================
+
+// Helper para crear respuestas CORS (o JSONP si hay callback)
+function corsResponse(data, callback = null) {
+  if (callback) {
+    // Modo JSONP
+    return ContentService
+      .createTextOutput(callback + '(' + JSON.stringify(data) + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  } else {
+    // Modo CORS Normal (Google Apps Script no soporta agregar custom headers en TextOutput)
+    return ContentService
+      .createTextOutput(JSON.stringify(data))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    const accion = e.parameter.accion;
+
+    // INTEGRACIÓN REMOTE EXECUTION
+    if (e.parameter.token && typeof handleRemoteExecution === 'function') {
+      return handleRemoteExecution(e);
+    }
+
+    let result;
+
+    switch (accion) {
+      case 'verificarLink':
+        // Devolvemos DIRECTAMENTE el objeto, corsResponse lo envolverá
+        const cdr = e.parameter.cdr;
+        const tipo = e.parameter.tipo;
+        const docs = e.parameter.docs; // Parameter passed through by validador.html
+        result = verificarEstadoLink(cdr, tipo, docs);
+        break;
+
+      case 'obtenerRegistrosInquilinos':
+        return handleObtenerRegistrosInquilinos(); // Estos ya retornan ContentService, revisar si necesitan CORS
+
+      case 'obtenerRegistrosPropietarios':
+        return handleObtenerRegistrosPropietarios(); // Revisar
+
+      case 'obtenerDocumentosPanel':
+        // Si estos handlers retornan ContentService, debieron ser actualizados. 
+        // Para minimizar cambios invasivos, solo aseguramos 'verificarLink' por ahora con la nueva lógica,
+        // o envolvemos todo.
+        // MEJOR ESTRATEGIA: Si el handler ya retorna ContentService, lo dejamos (pero debería tener CORS).
+        // Si retorna objeto data, usamos corsResponse.
+        return handleObtenerDocumentosPanel(e);
+
+      
+      case 'obtenerDireccion':
+        result = { success: true, direccion: handleObtenerDireccionInmueble(e.parameter.cdr) };
+        break;
+
+      case 'base':
+        result = { success: true, message: 'Endpoint base activo' };
+        break;
+
+      case 'getMultimediaData':
+        if (typeof handleGetMultimediaData === 'function') {
+           result = handleGetMultimediaData(e.parameter);
+        } else {
+           result = { success: false, message: 'Módulo multimedia no cargado' };
+        }
+        break;
+
+      // ... otros casos ...
+      case 'test':
+        result = {
+          success: true,
+          message: 'API funcionando correctamente',
+          version: DOCS_CONFIG.VERSION,
+        };
+        break;
+
+      case 'setCreds':
+        const props = PropertiesService.getScriptProperties();
+        props.setProperty('OCR_CLIENT_EMAIL', 'ocr-vision@real-estate-ocr-468904.iam.gserviceaccount.com');
+        props.setProperty('OCR_PRIVATE_KEY', '-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCzUR0SyBcGYgJD\\n8M/V9KORYzis/xcujzFCfzbbr3hHbbGD9zOV1z3PJjMnAo0Zku2dyS+Voy6wZAcv\\nPWL6LfdYLQ+ubZ0F6xQM+1VFCeMglPU9jT4OmlYplCiaj1mQsOFa4rvW+A9mzBct\\nC5TKMlJsqmlAfIf6n7+cHFuxbWVayZ4vZ2fodP4Msvdk34+YTWJlnpnyJI5UJc+1\\n+0oCjL1oyn/5Dc7vULtIzvOfCZQdnDj3M/NUY8QpK3rd123Ht/OaqqXwChtZWyHP\\nPox60TeHhraj//TKp9wOUz0TsjHJfwlxLCoKNXIV1c5j8ZrZY7CQXXL3RuPqS3ax\\n51TIHlPNAgMBAAECggEARvwDtdUmpDy1J98S72A2Rg4QuA8NRr2hovDILyQhyajn\\nXlXEAnuf+LpnAnjUkXyj+tPTNfnQuDwIyg8TePUsVqgT7plu0RJzsAXohfl5g4Lk\\nKDcbC13WYQRJJJI9wvT6aOebs2gkdK2zOP4+KuLL1T+KheAmVjTZ/bsOI0kql8rR\\n2mzs//H/n98DlP0F7cuwELB4u/Un3653+emE+QS0c6Yb4+QCjBiIzKL9ci2VxuIE\\nUQvm4DJfpFjUXs295CBJpf8eNii9RGWj5E08e4Ph8Dx5Qzv3mXIoavneWikfTvIw\\nm9tSsCI54/E3/Qv+CXyfMUd6irpcE47o6/QMLa9jQwKBgQDbJyL94/4/s2jaPFvq\\nRT0KGyDx8ALZG9A6A+ilwOQqp66xG3APC+ROesvGFPs3fjYq15d6x2yZ/ml2vB91\\nGp+DM3m/PDSEDa4vT1uXSE4j8qhTwcpIqdt9/NhW6pxuNIpHQhxeYc6rXw5jzYZe\\nvUqi/FAXWHvCvH0R09gOAJcEJwKBgQDRd1bO3ZShvnDdSkt//0ReRFuW0xlOqvAp\\n/fCcAwCfQ1De5UZCVkMGy/jOZO3QYTcQTvu/jU2vdhZfQLJk71Mz7T1cpao6g6F1\\nYkmVO4H2P7jZlXZPzEFQix14K8i31XSloGWLZUDZkb1oB3ynvGAsBpk2jjjJA0Rk\\nFFEkMjTc6wKBgEZgfRY3f1CJluRueb3z2jRCngPT5bY+/lGDK9T+6sbf7nOlsgjC\\n8uBZAtNrrXkWqOJ9NYISRMf3MXsV0qxSjmMdxr0o4lx94DAFNg6RA7b7mB69nu5S\\nzc/ZwMe4s9+YM8fKbT3J/wp9jitytvH5q9xHVpkIq0XQLgHpm/pzKgwFAoGAbGqp\\ner8DjEgm4NLwixqTx3r4MPOoeKhPUFzIleptD2r+4y3dZl4bQpeqLg4MOfT6z8N\\nkjzQBc5IPBsfetDIrurPROHWXxz8d+ZckapQVSWcRrpul1TwRYELysRWypfoHUYM\\n6P6Kd1JQx8SAR81ftcngiXVJfPl875P4f5Sg+esCgYEA0jNbUHnCOIV0uzGnkU0A\\nz3bk8jof/Sc1SU0tJ9nqG66mbu1iluoYNXZLRrs8jk5gwiQvsSXH5TE4AIX5F8Rn\\nihsIbqeBkEOnLx8b37Ooue1FPr0YRb1IxynBenZPNy3u+m5DHPjAgan521puZmxS\\nJkDqJOHGbt+vbiWxJrRSr48=\\n-----END PRIVATE KEY-----\\n');
+        result = { success: true, message: 'Credenciales de Google Cloud Vision guardadas exitosamente' };
+        break;
+
+      case 'obtenerContrato':
+        result = handleObtenerContrato(e);
+        break;
+
+      case 'obtenerEstadoAprobaciones':
+        result = handleObtenerEstadoAprobaciones(e);
+        break;
+
+      default:
+        result = {
+          success: false,
+          message: 'Acción no válida: ' + accion
+        };
+        break;
+    }
+
+    return corsResponse(result, e.parameter.callback);
+
+  } catch (error) {
+    Logger.log('Error en doGet: ' + error.toString());
+    return corsResponse({
+      success: false,
+      message: error.message
+    }, e.parameter ? e.parameter.callback : null);
+  }
+}
+
+function doPost(e) {
+  try {
+    const datosJson = e.postData.contents;
+    const datos = JSON.parse(datosJson);
+    const accion = datos.accion;
+    let result;
+
+    switch (accion) {
+      case 'enviarFormularioInquilino':
+        result = handleEnviarFormularioInquilino(datos);
+        break;
+      case 'enviarFormularioPropietario':
+        result = handleEnviarFormularioPropietario(datos);
+        break;
+      case 'procesarFormularioInquilino':
+        result = handleProcesarFormularioInquilino(datos);
+        break;
+      case 'procesarFormularioPropietario':
+        result = handleProcesarFormularioPropietario(datos);
+        break;
+      case 'procesarValidacionInquilino':
+        result = handleProcesarValidacionInquilino(datos);
+        break;
+      case 'procesarValidacionPropietario':
+        result = handleProcesarValidacionPropietario(datos);
+        break;
+      case 'actualizarCampoValidacion':
+        result = handleActualizarCampoValidacion(datos);
+        break;
+      case 'enviarCorreccionInquilino':
+        result = handleEnviarCorreccionInquilino(datos);
+        break;
+      case 'enviarCorreccionPropietario':
+        result = handleEnviarCorreccionPropietario(datos);
+        break;
+      case 'generarContrato':
+        result = handleGenerarContrato(datos);
+        break;
+      case 'enviarContratoRevision':
+        result = { success: true, data: enviarContratoARevision(datos.cdr) };
+        break;
+      case 'registrarAprobacionContrato':
+        result = handleRegistrarAprobacionContrato(datos);
+        break;
+      case 'subirContratoFirmado':
+        result = handleSubirContratoFirmado(datos);
+        break;
+      case 'validarCertificadoOCR':
+        // Llama a la función del OCR-HANDLER.js
+        result = validarCertificadoDesdeFormulario(datos.base64);
+        break;
+      case 'analizarCertificadoDesdePanel':
+        result = analizarCertificadoDesdePanel(datos.fileId, datos.datosPropietario);
+        break;
+      case 'procesarFirmaElectronica':
+        result = handleProcesarFirmaElectronica(datos);
+        break;
+      case 'verificarEstadoFirma':
+        result = handleVerificarEstadoFirma(datos);
+        break;
+      case 'finalizeMultimedia':
+        if (typeof handleFinalizeMultimedia === 'function') {
+           result = handleFinalizeMultimedia(datos);
+        } else {
+           result = { success: false, message: 'Módulo multimedia no cargado' };
+        }
+        break;
+      default:
+        result = {
+          success: false,
+          message: 'Acción POST no válida: ' + accion
+        };
+        break;
+    }
+
+    return corsResponse(result);
+
+  } catch (error) {
+    Logger.log('Error en doPost: ' + error.toString());
+    return corsResponse({
+      success: false,
+      message: error.message
+    });
+  }
+}
+
+// ==========================================
+// WRAPPERS PARA EL FRONTEND (PANEL VALIDACIÓN)
+// ==========================================
+
+function procesarValidacion(datos) {
+  if (datos.tipo === 'inquilino') {
+    return procesarValidacionInquilino(datos);
+  } else if (datos.tipo === 'propietario') {
+    return procesarValidacionPropietario(datos);
+  } else {
+    throw new Error('Tipo de validación no soportado: ' + datos.tipo);
+  }
+}
+
+function enviarCorrecciones(datos) {
+  if (datos.tipo === 'inquilino') {
+    return enviarCorreccionInquilino(datos);
+  } else if (datos.tipo === 'propietario') {
+    return enviarCorreccionPropietario(datos);
+  } else {
+    throw new Error('Tipo de corrección no soportado: ' + datos.tipo);
+  }
+}
+
+// ==========================================
+// Integración Directa OCR - Panel de Validación 
+// ==========================================
+
+function analizarCertificadoDesdePanel(fileId, datosPropietario) {
+  try {
+    if (!fileId) throw new Error("No se proporcionó el ID del archivo.");
+    if (!datosPropietario) throw new Error("No se enviaron los datos del propietario para cotejar.");
+
+    // 1. Obtener el archivo de Drive y convertir a base64
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob();
+    const contentType = blob.getContentType();
+    
+    // Necesitamos el MIME + Base64 puro
+    let base64Content = Utilities.base64Encode(blob.getBytes());
+    
+    if (contentType === 'application/pdf') {
+       // El handler ya sabe detectar 'JVBERi0' (prefijo base64 de PDF) 
+       // pero podemos asegurar el formato completo con data uri si es necesario
+    }
+    
+    // 2. Ejecutar OCR completo
+    const resultadoOCR = procesarCertificadoTradicionOCR(base64Content);
+    
+    if (!resultadoOCR.exito) {
+      return { success: false, message: resultadoOCR.mensaje };
+    }
+    
+    const datosDuros = resultadoOCR.datos;
+    
+    // 3. Cruce de Datos (Validaciones Inteligentes)
+    const cedulaPropietario = String(datosPropietario.documento).trim().replace(/\D/g, '');
+    const nombrePropietario = String(datosPropietario.nombre).toUpperCase().trim();
+    
+    // Verificar Matrícula
+    // IMPORTANTE: Asegurarnos de que cedulas exista antes de hacer .some()
+    const cedulaMatch = datosDuros.cedulas && Array.isArray(datosDuros.cedulas) 
+        ? datosDuros.cedulas.some(ced => ced.includes(cedulaPropietario))
+        : false;
+    
+    // Verificar Nombre (búsqueda aproximada / substring)
+    // El OCR extrae los propietarios como un solo string en datosDuros.propietarios
+    let nombreMatch = false;
+    let propietarioDetectado = datosDuros.propietarios ? datosDuros.propietarios.toUpperCase().trim() : "";
+    
+    if (propietarioDetectado) {
+        // Una simple validación si al menos el nombre largo coincide sustancialmente
+        if(propietarioDetectado.includes(nombrePropietario) || nombrePropietario.includes(propietarioDetectado)) {
+             nombreMatch = true;
+        } else {
+             // Intentar cruzar por palabras (Ej: Si es Juan Perez y el OCR dice Perez Juan)
+             const palabras = nombrePropietario.split(' ').filter(p => p.length > 3);
+             let aciertos = 0;
+             palabras.forEach(palabra => {
+                 if (propietarioDetectado.includes(palabra)) aciertos++;
+             });
+             if (aciertos >= 2) { // 2 palabras largas de match = aceptado
+                 nombreMatch = true;
+             }
+        }
+    }
+
+    // 4. Armar el payload para el frontend
+    return {
+        success: true,
+        datos: {
+            matricula: datosDuros.matricula || 'No detectada',
+            direccion: datosDuros.direccion || 'No detectada',
+            ciudad: datosDuros.ciudad || 'No detectada',
+            vigente: datosDuros.fechaExpedicion ? (Math.floor((new Date().getTime() - new Date(datosDuros.fechaExpedicion + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24)) <= 30) : false,
+            diasExpedido: datosDuros.fechaExpedicion ? Math.floor((new Date().getTime() - new Date(datosDuros.fechaExpedicion + 'T12:00:00').getTime()) / (1000 * 60 * 60 * 24)) : 'Desconocido',
+            tieneEmbargo: datosDuros.embargo ? datosDuros.embargo.tieneEmbargo : false,
+            alertasEmbargo: datosDuros.embargo ? datosDuros.embargo.alertas : [],
+            cedulaMatch: cedulaMatch,
+            nombreMatch: nombreMatch,
+            propietarioDetectado: propietarioDetectado || 'No detectado/Sin Match'
+        }
+    };
+
+  } catch (error) {
+    Logger.log('Error en analizarCertificadoDesdePanel: ' + error.message);
+    return { success: false, message: error.message };
+  }
+}
+
+function analizarReciboServicio(fileId) {
+  try {
+    if (!fileId) throw new Error("No se proporcionó el ID del recibo.");
+
+    // 1. Obtener el archivo de Drive y convertir a base64
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob();
+    
+    // Convertir a Base64 puro para enviarlo a GCP Vision API
+    let base64Content = Utilities.base64Encode(blob.getBytes());
+    
+    // 2. Ejecutar OCR completo para Recibos
+    const resultadoOCR = procesarReciboOCR(base64Content);
+    
+    if (!resultadoOCR.exito) {
+      return { success: false, message: resultadoOCR.mensaje };
+    }
+    
+    // 3. Armar el payload para el frontend
+    return {
+        success: true,
+        datos: resultadoOCR.datos
+    };
+
+  } catch (error) {
+    Logger.log('Error en analizarReciboServicio: ' + error.message);
+    return { success: false, message: error.message };
+  }
+}
+
+function actualizarDatosCerebro(datos) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    if (!sheet) throw new Error("Hoja 1.1 - INMUEBLES REGISTRADOS no encontrada");
+
+    // Encontrar fila por CDR
+    let rowIdx = buscarFilaPorCDR(datos.cdr);
+    if (rowIdx === -1) throw new Error("No se encontró el registro con CDR: " + datos.cdr);
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // Actualizar Google Sheet (Sólo para el Inquilino/Propietario principal y si no es Bancaria)
+    if (!datos.isCodeudor && !datos.isBancaria) {
+      let nomColPrefix = 'NOMBRE COMPLETO INQUILINO';
+      let docColPrefix = 'NUMERO DOCUMENTO INQUILINO';
+      let mailColPrefix = 'CORREO INQUILINO';
+      let celColPrefix = 'CELULAR INQUILINO';
+
+      if (datos.tipo === 'propietario') {
+         nomColPrefix = 'Ingrese Nombres y Apellidos';
+         docColPrefix = 'Número de documento';
+         mailColPrefix = 'Correo electrónico';
+         celColPrefix = 'Celular';
+      }
+
+      const nomColIdx = headers.findIndex(h => h && h.toString().toUpperCase().trim() === nomColPrefix.toUpperCase());
+      const docColIdx = headers.findIndex(h => h && h.toString().toUpperCase().trim() === docColPrefix.toUpperCase());
+      const mailColIdx = headers.findIndex(h => h && h.toString().toUpperCase().trim() === mailColPrefix.toUpperCase());
+      const celColIdx = headers.findIndex(h => h && h.toString().toUpperCase().trim() === celColPrefix.toUpperCase());
+
+      if (nomColIdx > -1 && datos.nombre) sheet.getRange(rowIdx, nomColIdx + 1).setValue(datos.nombre);
+      if (docColIdx > -1 && datos.documento) sheet.getRange(rowIdx, docColIdx + 1).setValue(datos.documento);
+      if (mailColIdx > -1 && datos.email) sheet.getRange(rowIdx, mailColIdx + 1).setValue(datos.email);
+      if (celColIdx > -1 && datos.celular) sheet.getRange(rowIdx, celColIdx + 1).setValue(datos.celular);
+    }
+
+    // Actualizar Documento Cerebro (DATOS DE ELABORACION) usando Reemplazo de Texto
+    const cdrEscaped = datos.cdr.replace(/'/g, "\\'");
+    let docFileId = null;
+
+    // Búsqueda directa
+    const cerebroSearch = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and title contains '${cdrEscaped}' and trashed = false`);
+    if (cerebroSearch.hasNext()) {
+      docFileId = cerebroSearch.next().getId();
+    } else {
+      // Fallback jerárquico
+      const searchRoot = DriveApp.searchFolders(`title contains '${cdrEscaped}' and trashed = false`);
+      if (searchRoot.hasNext()) {
+        const f = searchRoot.next();
+        let entregas = getFolderByNameHelper(f, 'ENTREGAS DEL INMUEBLE');
+        if (entregas) {
+          let anio = obtenerCarpetaAnioMasRecienteLocal(entregas);
+          if (anio) {
+            let docInq = getFolderByNameHelper(anio, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+            if (docInq) {
+              const subsFiles = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${docInq.getId()}' in parents and trashed = false`);
+              if (subsFiles.hasNext()) docFileId = subsFiles.next().getId();
+              else {
+                const checkVarios = DriveApp.searchFolders(`title contains 'VARIOS' and '${docInq.getId()}' in parents and trashed = false`);
+                if (checkVarios.hasNext()) {
+                  const sf = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${checkVarios.next().getId()}' in parents and trashed = false`);
+                  if (sf.hasNext()) docFileId = sf.next().getId();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (docFileId) {
+      const cerebroDoc = DocumentApp.openById(docFileId);
+      const body = cerebroDoc.getBody();
+
+      if (datos.isBancaria) {
+        // Reemplazar campos bancarios en el Cerebro usando un patrón seguro por línea completa
+        body.replaceText('TIPO DE CUENTA::.*', 'TIPO DE CUENTA:: ' + (datos.tipoCuenta || ''));
+        body.replaceText('NÚMERO DE CUENTA::.*', 'NÚMERO DE CUENTA:: ' + (datos.numeroCuenta || ''));
+        body.replaceText('BANCO::.*', 'BANCO:: ' + (datos.banco || ''));
+        body.replaceText('TITULAR::.*', 'TITULAR:: ' + (datos.titularCuenta || ''));
+        body.replaceText('DOC TITULAR::.*', 'DOC TITULAR:: ' + (datos.documentoTitular || ''));
+
+      } else if (datos.isInmueble) {
+        // Reemplazar o agregar datos del inmueble en el Cerebro
+        const matricula = datos.matricula || '';
+        const direccionInm = datos.direccionInmueble || '';
+        const ciudadInm = datos.ciudadInmueble || '';
+        const certTrad = datos.certTradicion || '';
+
+        const bodyText = body.getText();
+        if (bodyText.includes('MATRICULA_INMOBILIARIA::')) {
+          body.replaceText('MATRICULA_INMOBILIARIA::.*', 'MATRICULA_INMOBILIARIA:: ' + matricula);
+        } else {
+          body.appendParagraph('MATRICULA_INMOBILIARIA:: ' + matricula);
+        }
+        if (bodyText.includes('DIRECCION_INMUEBLE::')) {
+          body.replaceText('DIRECCION_INMUEBLE::.*', 'DIRECCION_INMUEBLE:: ' + direccionInm);
+        } else {
+          body.appendParagraph('DIRECCION_INMUEBLE:: ' + direccionInm);
+        }
+        if (bodyText.includes('CIUDAD_INMUEBLE::')) {
+          body.replaceText('CIUDAD_INMUEBLE::.*', 'CIUDAD_INMUEBLE:: ' + ciudadInm);
+        } else {
+          body.appendParagraph('CIUDAD_INMUEBLE:: ' + ciudadInm);
+        }
+        if (bodyText.includes('CERT_TRADICION_ESTADO::')) {
+          body.replaceText('CERT_TRADICION_ESTADO::.*', 'CERT_TRADICION_ESTADO:: ' + certTrad);
+        } else {
+          body.appendParagraph('CERT_TRADICION_ESTADO:: ' + certTrad);
+        }
+
+        // También actualizar la hoja principal con la matrícula y dirección
+        const headers2 = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        const matriculaCol = headers2.findIndex(h => h && h.toString().toUpperCase().includes('MATRICULA_INMOBILIARIA'));
+        const ciudadCol    = headers2.findIndex(h => h && h.toString().toUpperCase().trim() === 'CIUDAD');
+        if (matriculaCol > -1 && matricula) sheet.getRange(rowIdx, matriculaCol + 1).setValue(matricula);
+        if (ciudadCol > -1 && ciudadInm) sheet.getRange(rowIdx, ciudadCol + 1).setValue(ciudadInm);
+
+      } else if (datos.isServicio) {
+        // Agregar o actualizar línea de servicio en el Cerebro
+        const claveServicio = 'SERVICIO ' + datos.servicio.toUpperCase() + '::';
+        if (body.getText().includes(claveServicio)) {
+          body.replaceText(claveServicio + '.*', claveServicio + ' ' + datos.referencia);
+        } else {
+          body.appendParagraph(claveServicio + ' ' + datos.referencia);
+        }
+
+      } else if (!datos.isCodeudor) {
+        // Reemplazar campos del inquilino/propietario
+        if (datos.tipo === 'inquilino') {
+          body.replaceText("«N_INQ»", datos.nombre);
+          body.replaceText("«C_INQ»", datos.documento);
+          body.replaceText("«CEL_INQ»", datos.celular);
+          body.replaceText("«EMAIL_INQ»", datos.email);
+
+          if (datos.oldNombre) body.replaceText(datos.oldNombre, datos.nombre);
+          if (datos.oldDocumento) body.replaceText(datos.oldDocumento, datos.documento);
+          if (datos.oldCelular) body.replaceText(datos.oldCelular, datos.celular);
+          if (datos.oldEmail) body.replaceText(datos.oldEmail, datos.email);
+        }
+      } else {
+        // Reemplazar Codeudor
+        if (datos.oldNombre) body.replaceText(datos.oldNombre, datos.nombre);
+        if (datos.oldDocumento) body.replaceText(datos.oldDocumento, datos.documento);
+        if (datos.oldCelular) body.replaceText(datos.oldCelular, datos.celular);
+        if (datos.oldEmail) body.replaceText(datos.oldEmail, datos.email);
+      }
+      cerebroDoc.saveAndClose();
+    }
+
+    return { success: true };
+  } catch (e) {
+    Logger.log("Error actualizarDatosCerebro: " + e.toString());
+    throw new Error("Error interno al actualizar datos: " + e.message);
+  }
+}
+
+// ==========================================
+// HANDLERS DE API EXISTENTES
+// ==========================================
+
+
+function handleObtenerDireccionInmueble(cdr) {
+  try {
+    const fila = buscarFilaPorCDR(cdr);
+    if (!fila) return '';
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const direccion = obtenerValorPorHeader(headers, row, 'Ingrese la Dirección del inmueble');
+    return direccion || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function handleVerificarLink(e) {
+  const cdr = e.parameter.cdr;
+  const tipo = e.parameter.tipo;
+  return verificarEstadoLink(cdr, tipo);
+}
+
+function handleObtenerRegistrosInquilinos() {
+  const registros = obtenerRegistrosInquilinos();
+  return {
+    success: true,
+    data: registros
+  };
+}
+
+function handleObtenerRegistrosPropietarios() {
+  const registros = obtenerRegistrosPropietarios();
+  return {
+    success: true,
+    data: registros
+  };
+}
+
+function handleObtenerDocumentosPanel(e) {
+  const cdr = e.parameter.cdr;
+  const documentos = obtenerDocumentosDelCDR(cdr);
+
+  return {
+    success: true,
+    documentos: documentos
+  };
+}
+
+function handleEnviarFormularioInquilino(datos) {
+  return procesarFormularioInquilino(
+    datos.codigoRegistro,
+    datos.datosFormulario,
+    datos.archivosBase64
+  );
+}
+
+function handleProcesarFormularioInquilino(datos) {
+  return handleEnviarFormularioInquilino(datos);
+}
+
+function handleEnviarFormularioPropietario(datos) {
+  return procesarFormularioPropietario(
+    datos.codigoRegistro,
+    datos.datosFormulario,
+    datos.archivosBase64
+  );
+}
+
+function handleProcesarFormularioPropietario(datos) {
+  return handleEnviarFormularioPropietario(datos);
+}
+
+function handleProcesarValidacionInquilino(datos) {
+  return procesarValidacionInquilino(datos);
+}
+
+function handleProcesarValidacionPropietario(datos) {
+  return procesarValidacionPropietario(datos);
+}
+
+function handleActualizarCampoValidacion(datos) {
+  return actualizarCampoValidacion(datos);
+}
+
+function handleEnviarCorreccionInquilino(datos) {
+  return enviarCorreccionInquilino(datos);
+}
+
+function handleEnviarCorreccionPropietario(datos) {
+  return enviarCorreccionPropietario(datos);
+}
+
+// ==========================================
+// HANDLERS DE CONTRATOS (NUEVOS)
+// ==========================================
+
+/**
+ * Obtener datos del contrato
+ */
+function handleObtenerDatosContrato(e) {
+  try {
+    const cdr = e.parameter.cdr;
+
+    if (!cdr) {
+      return {
+        success: false,
+        message: 'CDR no proporcionado'
+      };
+    }
+
+    // Recopilar datos usando función de GESTOR_CONTRATOS.gs
+    const datos = recopilarDatosContrato(cdr);
+
+    return datos;
+
+  } catch (error) {
+    Logger.log('Error en handleObtenerDatosContrato: ' + error.toString());
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+}
+
+/**
+ * Generar contrato
+ */
+function handleGenerarContrato(datos) {
+  try {
+    const { cdr } = datos;
+
+    if (!cdr) {
+      return {
+        success: false,
+        message: 'CDR no proporcionado'
+      };
+    }
+
+    // Generar contrato usando función de GESTOR_CONTRATOS.gs
+    const resultado = generarContrato(cdr);
+
+    return resultado;
+
+  } catch (error) {
+    Logger.log('Error en handleGenerarContrato: ' + error.toString());
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+}
+
+/**
+ * Registrar aprobación de contrato
+ */
+function handleRegistrarAprobacionContrato(datos) {
+  try {
+    const { cdr, tipo, estadoAprobacion, comentarios } = datos;
+
+    if (!cdr || !tipo || !estadoAprobacion) {
+      return {
+        success: false,
+        message: 'Faltan datos requeridos'
+      };
+    }
+
+    // Registrar aprobación usando función de GESTOR_CONTRATOS.gs
+    const resultado = registrarAprobacionContrato(cdr, tipo, estadoAprobacion, comentarios);
+
+    return resultado;
+
+  } catch (error) {
+    Logger.log('Error en handleRegistrarAprobacionContrato: ' + error.toString());
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+}
+
+/**
+ * Obtener estado de aprobaciones
+ */
+function handleObtenerEstadoAprobaciones(e) {
+  const cdr = e.parameter.cdr;
+
+  if (!cdr) {
+    return {
+      success: false,
+      message: 'CDR no proporcionado'
+    };
+  }
+
+  // Obtener estados usando función de GESTOR_CONTRATOS.gs
+  const estados = obtenerEstadosAprobacion(cdr);
+
+  return {
+    success: true,
+    estados: estados
+  };
+}
+
+/**
+ * Subir contrato firmado
+ */
+function handleSubirContratoFirmado(datos) {
+  try {
+    const { cdr, archivoBase64, nombreArchivo } = datos;
+
+    if (!cdr || !archivoBase64) {
+      return {
+        success: false,
+        message: 'Faltan datos requeridos'
+      };
+    }
+
+    // Procesar el archivo
+    const carpetaRaiz = DriveApp.getFolderById(DOCS_CONFIG.CARPETA_RAIZ_ID);
+    const carpetaCDR = buscarOcrearCarpeta(carpetaRaiz, cdr);
+    const carpetaContratos = buscarOcrearCarpeta(carpetaCDR, 'CONTRATOS_FIRMADOS');
+
+    // Crear el archivo
+    const blob = Utilities.newBlob(
+      Utilities.base64Decode(archivoBase64.split(',')[1]),
+      'application/pdf',
+      nombreArchivo || `Contrato_Firmado_${cdr}_${new Date().getTime()}.pdf`
+    );
+
+    const archivo = carpetaContratos.createFile(blob);
+
+    // Actualizar estado en la hoja
+    actualizarEstadoContrato(cdr, 'CONTRATO FIRMADO', '✅ Contrato firmado y archivado');
+
+    return {
+      success: true,
+      message: 'Contrato firmado guardado exitosamente',
+      url: archivo.getUrl(),
+      id: archivo.getId()
+    };
+
+  } catch (error) {
+    Logger.log('Error en handleSubirContratoFirmado: ' + error.toString());
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+}
+
+/**
+ * Obtener contrato para visualización (usado por validador-de-contratos.html)
+ */
+function handleObtenerContrato(e) {
+  try {
+    const cdr = e.parameter.cdr;
+
+    if (!cdr) {
+      return {
+        success: false,
+        message: 'Faltan parámetros requeridos (cdr)'
+      };
+    }
+
+    // Obtener la URL del borrador y datos
+    const contexto = obtenerContextoContrato(cdr);
+    
+    if (!contexto.success) {
+      throw new Error(contexto.message || 'No se encontró el borrador para este CDR');
+    }
+
+    return {
+      success: true,
+      url: contexto.url,
+      datos: contexto.datos
+    };
+
+  } catch (error) {
+    Logger.log('Error en handleObtenerContrato: ' + error.toString());
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+}
+
+// ==========================================
+// FUNCIONES DE PROCESAMIENTO
+// ==========================================
+
+// === ELIMINADO: función duplicada procesarFormularioInquilino ===
+
+/**
+ * Procesar formulario de propietario
+ */
+function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivosBase64) {
+  try {
+    Logger.log('Procesando formulario propietario para CDR: ' + codigoRegistro);
+
+    // Buscar la fila correspondiente
+    const fila = buscarFilaPorCDR(codigoRegistro);
+    if (!fila) {
+      return { success: false, message: 'Código de registro no encontrado' };
+    }
+
+    // Asegurar que tenemos el email del propietario en modo corrección
+    if (datosFormulario.modoCorreccion || !datosFormulario.propietario.email) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+      
+      datosFormulario.propietario.email = datosFormulario.propietario.email || obtenerValorPorHeader(headers, row, 'CORREO PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Correo electrónico') || '';
+      datosFormulario.propietario.nombre = datosFormulario.propietario.nombre || obtenerValorPorHeader(headers, row, 'NOMBRE PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos') || '';
+    }
+
+    // Procesar OCR si hay certificado de tradición
+    if (archivosBase64.certTradicion) {
+      const resultadoOCR = procesarCertificadoDesdeFormulario(archivosBase64.certTradicion.contenido);
+      if (resultadoOCR.success) {
+        datosFormulario.datosOCR = resultadoOCR;
+      }
+    }
+
+    // Guardar archivos en Drive
+    const urlsCarpetas = guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormulario);
+
+    // Actualizar datos en la hoja
+    actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas);
+
+    // Enviar email de confirmación
+    enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario);
+
+    // Registrar en log
+    registrarLog('PROPIETARIO', codigoRegistro, 'Formulario procesado exitosamente');
+
+    return {
+      success: true,
+      message: 'Formulario procesado exitosamente',
+      codigo: codigoRegistro
+    };
+
+  } catch (error) {
+    Logger.log('Error procesando formulario propietario: ' + error.toString());
+    return { success: false, message: error.message };
+  }
+}
+
+// ==========================================
+// FUNCIONES DE VALIDACIÓN
+// ==========================================
+
+/**
+ * Verificar estado del link
+ */
+/**
+ * Verificar estado del link y determinar acción
+ */
+function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
+  try {
+    Logger.log('verificarEstadoLink: cdr=' + cdr + ', tipo=' + tipo);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const fila = buscarFilaPorCDR(cdr);
+    Logger.log('verificarEstadoLink: fila encontrada=' + fila);
+
+    if (!fila) {
+      return {
+        success: false,
+        activo: false,
+        mensaje: 'Código de registro no encontrado: ' + cdr,
+        status: 'diligenciado'
+      };
+    }
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    const detalles = sheet.getRange(fila, detallesCol).getValue().toString();
+    Logger.log('verificarEstadoLink: detalles=' + detalles);
+
+    let status = 'pendiente';
+    let mensaje = 'Formulario disponible';
+    let redirectUrl = '';
+
+    // Lógica de redirección base
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+
+    if (tipo === 'inquilino') {
+      const idxInq = headers.indexOf('Ingrese la Dirección del inmueble'); const dirInq = idxInq >= 0 ? sheet.getRange(fila, idxInq + 1).getValue().toString() : '';
+      redirectUrl = `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}&dir=${encodeURIComponent(dirInq)}`;
+
+      if (detalles.includes('Formulario del inquilino diligenciado') || detalles.includes('Documentación de inquilino recibida')) {
+        status = 'diligenciado';
+        mensaje = 'Ya has enviado tu formulario. Estamos validando tus documentos.';
+      } else if (detalles.includes('Corrección solicitada al inquilino')) {
+        status = 'correccion';
+        mensaje = 'Se requieren correcciones en tu formulario.';
+        redirectUrl += '&modo=correccion';
+        if (docsParaCorreccion) redirectUrl += '&docs=' + encodeURIComponent(docsParaCorreccion);
+      } else if (detalles.includes('Documentos del inquilino aprobados')) {
+        status = 'aprobado';
+        mensaje = 'Tus documentos ya han sido aprobados. El proceso continúa con el propietario.';
+      }
+
+    } else if (tipo === 'propietario') {
+      const idxProp = headers.indexOf('Ingrese la Dirección del inmueble'); const dirProp = idxProp >= 0 ? sheet.getRange(fila, idxProp + 1).getValue().toString() : '';
+      redirectUrl = `${baseUrl}/formulario-propietario.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}&dir=${encodeURIComponent(dirProp)}`;
+
+      if (detalles.includes('Formulario del propietario diligenciado')) {
+        status = 'diligenciado';
+        mensaje = 'Ya has enviado tu formulario. Estamos validando tus documentos.';
+      } else if (detalles.includes('Corrección solicitada al propietario')) {
+        status = 'correccion';
+        mensaje = 'Se requieren correcciones en tu formulario.';
+        redirectUrl += '&modo=correccion';
+        if (docsParaCorreccion) redirectUrl += '&docs=' + encodeURIComponent(docsParaCorreccion);
+      } else if (detalles.includes('Documentos completos') || detalles.includes('Listo para generar contrato')) {
+        status = 'aprobado';
+        mensaje = 'Tus documentos han sido aprobados y el contrato está en proceso.';
+      }
+    }
+
+    return {
+      success: true,
+      activo: (status === 'pendiente' || status === 'correccion'),
+      status: status,
+      mensaje: mensaje,
+      redirectUrl: redirectUrl,
+      tipo: tipo
+    };
+
+  } catch (error) {
+    Logger.log('Error verificando link: ' + error.toString());
+    return {
+      success: false,
+      activo: false,
+      mensaje: 'Error técnico al verificar el link',
+      error: error.message
+    };
+  }
+}
+
+/**
+ * Obtener registros de inquilinos pendientes
+ */
+function obtenerRegistrosInquilinos() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const lastRow = sheet.getLastRow();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    const registros = [];
+
+    for (let i = 2; i <= lastRow; i++) {
+      const detalles = (sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue() || '').toString();
+      const detallesLower = detalles.toLowerCase();
+
+      // Hacemos el filtro más robusto para que no falle si hay problemas de codificación con la "ó"
+      const esDeInquilino = detallesLower.includes('inquilino');
+      const esPendiente = detallesLower.includes('recibida') || detallesLower.includes('diligenciado') || detallesLower.includes('correcci');
+      
+      // Asegurarse de no mostrar los ya aprobados o firmados
+      const esAprobado = detallesLower.includes('aprobado') || detallesLower.includes('firmado');
+
+      if (esDeInquilino && esPendiente && !esAprobado) {
+        const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
+        const cdrValue = obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO');
+        const idRegistroValue = obtenerValorPorHeader(headers, row, 'ID DE REGISTRO');
+
+        const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';
+
+        registros.push({
+          cdr: cdrValue,
+          idRegistro: idRegistroValue,
+          detalles: detalles,
+          estadoDocumental: estadoDocumental,
+          inquilino: {
+            nombre: obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO'),
+            documento: obtenerValorPorHeader(headers, row, 'NUMERO DOCUMENTO INQUILINO'),
+            email: obtenerValorPorHeader(headers, row, 'CORREO INQUILINO'),
+            celular: obtenerValorPorHeader(headers, row, 'CELULAR INQUILINO')
+          },
+          codeudores: obtenerCodeudoresDesdeCerebro(cdrValue)
+        });
+      }
+    }
+
+    return registros;
+
+  } catch (error) {
+    Logger.log('Error obteniendo registros inquilinos: ' + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Obtener registros de propietarios pendientes
+ */
+function obtenerRegistrosPropietarios() {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const lastRow = sheet.getLastRow();
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    const registros = [];
+
+    for (let i = 2; i <= lastRow; i++) {
+      const detalles = (sheet.getRange(i, headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1).getValue() || '').toString();
+      const detallesLower = detalles.toLowerCase();
+
+      const esDePropietario = detallesLower.includes('propietario');
+      const esPendiente = detallesLower.includes('recibida') || detallesLower.includes('diligenciado') || detallesLower.includes('correcci');
+      const esAprobado = detallesLower.includes('aprobado') || detallesLower.includes('firmado');
+
+      if (esDePropietario && esPendiente && !esAprobado) {
+        const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+        const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';
+
+        // Datos del inmueble desde la hoja
+        const matricula = obtenerValorPorHeader(headers, row, 'MATRICULA_INMOBILIARIA') || '';
+        const direccionInm = obtenerValorPorHeader(headers, row, 'Ingrese la Dirección del inmueble') || '';
+        const ciudadInm = obtenerValorPorHeader(headers, row, 'Ciudad') || '';
+
+        // Datos bancarios
+        const tipoCuenta = obtenerValorPorHeader(headers, row, 'Tipo de cuenta') || '';
+        const numeroCuenta = obtenerValorPorHeader(headers, row, 'Numero de cuenta') || '';
+        const banco = obtenerValorPorHeader(headers, row, 'Banco') || '';
+        const titularCuenta = obtenerValorPorHeader(headers, row, 'Titular de la cuenta') || '';
+        const documentoTitular = obtenerValorPorHeader(headers, row, 'Número de documento del titular') || '';
+
+        // Servicios: leer del Cerebro
+        let servicios = [];
+        let certTradicion = '';
+        try {
+          const cdrVal = obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO');
+          const cerebroDoc = abrirDocCerebro(cdrVal);
+          if (cerebroDoc) {
+            const lines = cerebroDoc.getBody().getText().split('\n');
+            lines.forEach(line => {
+              const match = line.match(/^SERVICIO\s+(.+?)::\s+(.+)$/i);
+              if (match) servicios.push({ servicio: match[1].trim(), referencia: match[2].trim() });
+              const certMatch = line.match(/^CERT_TRADICION_ESTADO::\s+(.+)$/i);
+              if (certMatch) certTradicion = certMatch[1].trim();
+            });
+          }
+        } catch(e) { /* Cerebro no disponible: continuar sin servicios */ }
+
+        registros.push({
+          cdr: obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO'),
+          detalles: detalles,
+          estadoDocumental: estadoDocumental,
+          propietario: {
+            nombre: obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos'),
+            documento: obtenerValorPorHeader(headers, row, 'Número de documento'),
+            email: obtenerValorPorHeader(headers, row, 'Correo electrónico'),
+            celular: obtenerValorPorHeader(headers, row, 'Celular'),
+            tipoCuenta: tipoCuenta,
+            numeroCuenta: numeroCuenta,
+            banco: banco,
+            titularCuenta: titularCuenta,
+            documentoTitular: documentoTitular
+          },
+          inmueble: {
+            matricula: matricula,
+            direccion: direccionInm,
+            ciudad: ciudadInm,
+            certTradicion: certTradicion
+          },
+          servicios: servicios
+        });
+      }
+    }
+
+    return registros;
+
+  } catch (error) {
+    Logger.log('Error obteniendo registros propietarios: ' + error.toString());
+    throw error;
+  }
+}
+
+// ==========================================
+// FUNCIONES DE PROCESAMIENTO DE FORMULARIOS
+// ==========================================
+
+/**
+ * Procesar datos del formulario del inquilino
+ */
+function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBase64) {
+  try {
+    // 1. Validar CDR
+    if (!codigoRegistro) throw new Error('Código de registro no proporcionado');
+
+    // Buscar la fila correspondiente (la necesitamos temprano)
+    const fila = buscarFilaPorCDR(codigoRegistro);
+    if (!fila) throw new Error('Código de registro no encontrado');
+
+    // Asegurar que tenemos el email del inquilino en modo corrección
+    if (datosFormulario.modoCorreccion || !datosFormulario.inquilino.email) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+      
+      datosFormulario.inquilino.email = datosFormulario.inquilino.email || obtenerValorPorHeader(headers, row, 'CORREO INQUILINO') || '';
+      datosFormulario.inquilino.nombre = datosFormulario.inquilino.nombre || obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO') || '';
+    }
+
+    // 2. Guardar documentos
+    const urlsDoc = guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormulario);
+
+    // 3. Registrar en Log
+    registrarLog('FORMULARIO_INQUILINO', codigoRegistro, `Formulario recibido de ${datosFormulario.inquilino.nombre}`);
+
+    // 4. Actualizar Estado en Sheet
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('Hoja principal no encontrada');
+
+    if (fila) {
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+      if (detallesCol > 0) {
+        sheet.getRange(fila, detallesCol).setValue('✅ Documentación de inquilino recibida y guardada');
+      }
+
+      // Actualizar ESTADO DOCUMENTAL preservando la lista de docs a corregir
+      const estadoDocCol = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+      if (estadoDocCol > 0) {
+        let nuevoEstado = 'INQ_SUBMITTED';
+        if (datosFormulario.modoCorreccion) {
+          const estadoActual = sheet.getRange(fila, estadoDocCol).getValue().toString();
+          if (estadoActual.includes('|')) {
+            nuevoEstado = 'INQ_SUBMITTED|' + estadoActual.split('|')[1];
+          }
+        }
+        sheet.getRange(fila, estadoDocCol).setValue(nuevoEstado);
+      }
+
+      // Actualizar datos del inquilino si vienen en el formulario
+      actualizarCamposInquilino(fila, {
+        nombre: datosFormulario.inquilino.nombre,
+        documento: datosFormulario.inquilino.numeroDocumento,
+        email: datosFormulario.inquilino.email,
+        celular: datosFormulario.inquilino.celular,
+        fechaInicio: datosFormulario.fechaInicio
+      });
+    }
+
+    // 5. Si es corrección, actualizar buzones ACTUALIZANDO → RECIBIDO (CORRECCIÓN) en el Cerebro
+    if (datosFormulario.modoCorreccion) {
+      try {
+        const estadosActuales = obtenerEstadosValidacionDesdeCerebro(codigoRegistro);
+        const estadosActualizar = {};
+        for (const [buzon, estado] of Object.entries(estadosActuales)) {
+          if (estado === 'ACTUALIZANDO') {
+            estadosActualizar[buzon] = 'RECIBIDO (CORRECCIÓN)';
+          }
+        }
+        if (Object.keys(estadosActualizar).length > 0) {
+          actualizarEstadosValidacionEnCerebro(codigoRegistro, estadosActualizar);
+          Logger.log('✅ Buzones ACTUALIZANDO → RECIBIDO (CORRECCIÓN) en Cerebro');
+        }
+      } catch (e) {
+        Logger.log('⚠️ Error actualizando buzones post-corrección: ' + e.message);
+      }
+    }
+
+    // 6. Enviar correos
+    if (datosFormulario.inquilino.email) {
+      enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario);
+    }
+
+    return {
+      success: true,
+      message: 'Documentación enviada y procesada correctamente',
+      urls: urlsDoc
+    };
+
+  } catch (error) {
+    Logger.log('Error procesando formulario inquilino: ' + error.toString());
+    throw error;
+  }
+}
+
+// ==========================================
+// FUNCIONES DE GUARDADO DE DOCUMENTOS
+// ==========================================
+
+/**
+ * Guardar documentos del inquilino en Drive (IMPLEMENTACIÓN DINÁMICA DE RUTAS Y REEMPLAZO LIMPIO)
+ */
+function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormulario) {
+  try {
+    // RESOLVER EL CDR LARGO DESDE EL SHORT ID
+    const fila = buscarFilaPorCDR(codigoRegistro);
+    if (fila) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const colCdr = headers.indexOf('CODIGO DE REGISTRO') + 1;
+      if (colCdr > 0) {
+        const val = sheet.getRange(fila, colCdr).getValue();
+        if (val) codigoRegistro = val.toString().trim();
+      }
+    }
+
+    Logger.log('Iniciando enrutamiento dinámico para CDR: ' + codigoRegistro);
+    const ROOT_FOLDER_ID = '1ozAkjspgSj6m2fN4tqqCm-mjrsux6ULi'; // Carpeta INMUEBLES
+    const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+
+    // 1. La carpeta CDR vive dentro de: INMUEBLES > [TIPO_NEGOCIO] > CDR
+    //    Debemos buscar en cada subcarpeta de tipo de negocio
+    let inmuebleFolder = null;
+
+    // Primero buscar directamente en el root (por si acaso)
+    const directFolders = rootFolder.getFoldersByName(codigoRegistro);
+    if (directFolders.hasNext()) {
+      inmuebleFolder = directFolders.next();
+    }
+
+    // Si no está directo, buscar dentro de cada subcarpeta de tipo de negocio
+    if (!inmuebleFolder) {
+      const tipoNegocioFolders = rootFolder.getFolders();
+      while (tipoNegocioFolders.hasNext() && !inmuebleFolder) {
+        const tipoFolder = tipoNegocioFolders.next();
+        Logger.log('Buscando CDR en subcarpeta: ' + tipoFolder.getName());
+
+        // Buscar por nombre exacto dentro de esta subcarpeta
+        const subFolders = tipoFolder.getFoldersByName(codigoRegistro);
+        if (subFolders.hasNext()) {
+          inmuebleFolder = subFolders.next();
+          Logger.log('✅ CDR encontrado en: ' + tipoFolder.getName() + ' > ' + inmuebleFolder.getName());
+        }
+
+        // Fallback: buscar carpetas que empiecen con el CDR
+        if (!inmuebleFolder) {
+          const allSub = tipoFolder.getFolders();
+          while (allSub.hasNext()) {
+            const sf = allSub.next();
+            if (sf.getName().startsWith(codigoRegistro + ' -') || sf.getName().startsWith(codigoRegistro + '_')) {
+              inmuebleFolder = sf;
+              Logger.log('✅ CDR encontrado (parcial) en: ' + tipoFolder.getName() + ' > ' + sf.getName());
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback final: búsqueda global en Drive por nombre exacto
+    if (!inmuebleFolder) {
+      Logger.log('🔍 Usando búsqueda global en Drive para CDR: ' + codigoRegistro);
+      // Escapar caracteres especiales para la query de Drive
+      const cdrEscaped = codigoRegistro.replace(/'/g, "\\'");
+      const globalSearch = DriveApp.searchFolders(`title = '${cdrEscaped}' and trashed = false`);
+      if (globalSearch.hasNext()) {
+        inmuebleFolder = globalSearch.next();
+        Logger.log('✅ CDR encontrado por búsqueda global: ' + inmuebleFolder.getName());
+      }
+    }
+
+    if (!inmuebleFolder) {
+      throw new Error(`No se encontró la carpeta raíz del inmueble para CDR: ${codigoRegistro}`);
+    }
+
+    // 2. Navegar a 'ENTREGAS DEL INMUEBLE'
+    let entregasFolder = getFolderByNameHelper(inmuebleFolder, 'ENTREGAS DEL INMUEBLE');
+    if (!entregasFolder) throw new Error('No se encontró la carpeta ENTREGAS DEL INMUEBLE');
+
+    // 3. Buscar carpeta del año más reciente
+    let anioFolder = obtenerCarpetaAnioMasRecienteLocal(entregasFolder);
+    if (!anioFolder) throw new Error('No se encontró ninguna carpeta de Año en ENTREGAS DEL INMUEBLE');
+
+    // 4. Navegar a 'DOCUMENTOS DE ENTREGA - INQUILINO'
+    let docsEntregaInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+    if (!docsEntregaInqFolder) docsEntregaInqFolder = anioFolder.createFolder('DOCUMENTOS DE ENTREGA - INQUILINO');
+
+    // 5. Navegar a '4- VARIOS, FORMATO DE MUDANZAS, ETC'
+    let variosFolder = getFolderByNameHelper(docsEntregaInqFolder, '4- VARIOS, FORMATO DE MUDANZAS, ETC');
+    if (!variosFolder) {
+      const subFolders = docsEntregaInqFolder.getFolders();
+      while (subFolders.hasNext()) {
+        const subF = subFolders.next();
+        if (subF.getName().includes('VARIOS, FORMATO DE MUDANZAS')) { variosFolder = subF; break; }
+      }
+      if (!variosFolder) variosFolder = docsEntregaInqFolder.createFolder('4- VARIOS, FORMATO DE MUDANZAS, ETC');
+    }
+
+    // 6. Carpeta del comprobante de pago (vive DENTRO de variosFolder, no de docsEntregaInqFolder)
+    let pagoDerechosFolder = getFolderByNameHelper(variosFolder, '6- PAGO DE LOS DERECHOS DE CONTRATO')
+      || variosFolder.createFolder('6- PAGO DE LOS DERECHOS DE CONTRATO');
+
+    // 7. Carpetas destino para cédulas
+    let cedulaInquilinoFolder = getFolderByNameHelper(variosFolder, '2- CEDULA DEL INQUILINO')
+      || variosFolder.createFolder('2- CEDULA DEL INQUILINO');
+    let cedulaCodeudoresFolder = getFolderByNameHelper(variosFolder, '3- CEDULA DE CODEUDOR(ES)')
+      || variosFolder.createFolder('3- CEDULA DE CODEUDOR(ES)');
+
+    // 8. Procesar archivos con rutas y nombres correctos
+    // Claves del formulario: docFront, docBack, ingresos, coDocFront, coDocBack, coIngresos, comprobantePago
+    const RUTAS_ARCHIVOS = {
+      'docFront': { carpeta: cedulaInquilinoFolder, nombre: `CEDULA_INQU_FRONTAL_[${codigoRegistro}]` },
+      'docBack': { carpeta: cedulaInquilinoFolder, nombre: `CEDULA_INQU_REVERSO_[${codigoRegistro}]` },
+      'ingresos': { carpeta: cedulaInquilinoFolder, nombre: `SOPORTES_INGRESO_INQU_[${codigoRegistro}]` },
+      'coDocFront': { carpeta: cedulaCodeudoresFolder, nombre: `CEDULA_COD_1_FRONTAL_[${codigoRegistro}]` },
+      'coDocBack': { carpeta: cedulaCodeudoresFolder, nombre: `CEDULA_COD_1_REVERSO_[${codigoRegistro}]` },
+      'coIngresos': { carpeta: cedulaCodeudoresFolder, nombre: `SOPORTES_INGRESO_COD_1_[${codigoRegistro}]` },
+      'comprobantePago': { carpeta: pagoDerechosFolder, nombre: `COMPROBANTE_PAGO_INQU_[${codigoRegistro}]` },
+    };
+
+    for (const [clave, contenidoBase64] of Object.entries(archivosBase64)) {
+      if (!contenidoBase64 || !contenidoBase64.contenido) continue;
+
+      const mimeType = contenidoBase64.tipo || MimeType.JPEG;
+      let extension = 'jpg';
+      if (mimeType.includes('png')) extension = 'png';
+      if (mimeType.includes('pdf')) extension = 'pdf';
+
+      const base64Data = contenidoBase64.contenido.split(',')[1];
+      const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType);
+
+      const ruta = RUTAS_ARCHIVOS[clave];
+      let targetFolder, nuevoNombre;
+
+      if (ruta) {
+        targetFolder = ruta.carpeta;
+        nuevoNombre = `${ruta.nombre}.${extension}`;
+      } else {
+        // Cualquier clave no mapeada va a variosFolder
+        targetFolder = variosFolder;
+        nuevoNombre = `${clave.toUpperCase()}_[${codigoRegistro}].${extension}`;
+        Logger.log(`⚠️ Clave no mapeada "${clave}" → variosFolder`);
+      }
+
+      // Limpiar TODAS las versiones anteriores del archivo (cualquier extensión)
+      const nombreBase = ruta ? ruta.nombre : `${clave.toUpperCase()}_[${codigoRegistro}]`;
+      limpiarArchivosAnteriores(targetFolder, nombreBase);
+
+      blob.setName(nuevoNombre);
+      targetFolder.createFile(blob);
+      Logger.log(`✅ Guardado: ${nuevoNombre} en "${targetFolder.getName()}"`);
+    }
+
+    // 9. Escribir datos del formulario en "DATOS DE ELABORACION DE CONTRATO" (Nivel 7 - VARIOS)
+    // SOLO si NO es modo corrección (en corrección solo se suben archivos, los datos ya existen)
+    if (!datosFormulario.modoCorreccion) {
+      escribirDatosContratoDocNivel7(variosFolder, datosFormulario, codigoRegistro);
+    } else {
+      Logger.log('ℹ️ Modo corrección: se omite escritura de datos en DATOS DE ELABORACION (ya existen).');
+    }
+
+    return {
+      carpetaPrincipal: inmuebleFolder.getUrl(),
+      carpetaInquilino: variosFolder.getUrl()
+    };
+
+  } catch (error) {
+    Logger.log('❌ Error guardando documentos inquilino: ' + error.toString());
+    throw error;
+  }
+}
+
+// ==========================================
+// FUNCIONES HELPER LOCALES (Rutas Dinámicas)
+// ==========================================
+
+function getFolderByNameHelper(parent, name) {
+  const folders = parent.getFoldersByName(name);
+  return folders.hasNext() ? folders.next() : null;
+}
+
+/**
+ * Elimina TODOS los archivos existentes que coincidan con el nombre base
+ * (sin importar la extensión), para evitar duplicados al re-subir.
+ * Ejemplo: nombreBase = "CEDULA_INQU_FRONTAL_[REG_...]"
+ *   → elimina: CEDULA_INQU_FRONTAL_[REG_...].jpg, .pdf, .png, etc.
+ */
+function limpiarArchivosAnteriores(folder, nombreBase) {
+  const extensiones = ['jpg', 'jpeg', 'png', 'pdf'];
+  extensiones.forEach(ext => {
+    const nombre = `${nombreBase}.${ext}`;
+    const existentes = folder.getFilesByName(nombre);
+    while (existentes.hasNext()) {
+      const archivo = existentes.next();
+      archivo.setTrashed(true);
+      Logger.log(`🗑️ Archivo anterior eliminado: ${nombre}`);
+    }
+  });
+}
+
+function obtenerCarpetaAnioMasRecienteLocal(entregasFolder) {
+  const folders = entregasFolder.getFolders();
+  const carpetasAnios = [];
+  while (folders.hasNext()) {
+    const folder = folders.next();
+    const nombre = folder.getName();
+    if (nombre !== 'XXXX' && nombre.match(/^\d{4}(-\d+)?$/)) {
+      const match = nombre.match(/^(\d{4})/);
+      if (match) carpetasAnios.push({ folder: folder, nombre: nombre, anio: parseInt(match[1], 10) });
+    }
+  }
+  if (carpetasAnios.length === 0) return null;
+  carpetasAnios.sort((a, b) => b.anio - a.anio);
+  return carpetasAnios[0].folder;
+}
+
+function escribirDatosContratoDocNivel7(cedulaFolder, datosFormulario, cdr) {
+  try {
+    let docFile = null;
+
+    // Buscar primero por nombre exacto (como está en la plantilla maestra)
+    const exactSearch = cedulaFolder.getFilesByName('DATOS DE ELABORACION DE CONTRATO');
+    if (exactSearch.hasNext()) {
+      docFile = exactSearch.next();
+    }
+
+    // Fallback: buscar por nombre parcial entre todos los archivos de la carpeta
+    if (!docFile) {
+      const allFiles = cedulaFolder.getFiles();
+      while (allFiles.hasNext()) {
+        const f = allFiles.next();
+        if (f.getName().includes('DATOS DE ELABORACION') || f.getName().includes('DATOS CONTRATO')) {
+          docFile = f;
+          break;
+        }
+      }
+    }
+
+    // Si definitivamente no existe, NO crear uno nuevo (ya lo crea el registro de inmueble desde plantilla)
+    if (!docFile) {
+      Logger.log('⚠️ No se encontró DATOS DE ELABORACION DE CONTRATO en la carpeta. Se omite escritura (el doc debe existir desde el registro).');
+      return;
+    }
+
+    const doc = DocumentApp.openById(docFile.getId());
+    const body = doc.getBody();
+    body.appendParagraph('\n------------------------------------------');
+    body.appendParagraph(`[INICIO - ENVIADO EL ${new Date().toLocaleDateString('es-CO')}]`);
+
+    body.appendParagraph('DATOS DEL INQUILINO:');
+    body.appendParagraph(`NOMBRES:: ${datosFormulario?.inquilino?.nombre || ''}`);
+    body.appendParagraph(`TIPO DE IDENTIFICACIÓN:: ${datosFormulario?.inquilino?.tipoDocumento || ''}`);
+    body.appendParagraph(`NÚMERO DE IDENTIFICACIÓN:: ${datosFormulario?.inquilino?.numeroDocumento || ''}`);
+    body.appendParagraph(`CELULAR:: ${datosFormulario?.inquilino?.celular || ''}`);
+    body.appendParagraph(`CORREO:: ${datosFormulario?.inquilino?.email || ''}`);
+
+    // Normalizar codeudor: el formulario envía un objeto único (o null), no un array
+    const codeudorRaw = datosFormulario?.codeudor || datosFormulario?.codeudores;
+    const codeudores = Array.isArray(codeudorRaw)
+      ? codeudorRaw
+      : (codeudorRaw && codeudorRaw.numeroDocumento ? [codeudorRaw] : []);
+
+    if (codeudores.length > 0) {
+      body.appendParagraph('\nCODEUDORES:');
+      codeudores.forEach((c, i) => {
+        body.appendParagraph(`[CODEUDOR ${i + 1}]`);
+        body.appendParagraph(`NOMBRES:: ${c.nombre || ''}`);
+        body.appendParagraph(`TIPO DE IDENTIFICACIÓN:: ${c.tipoDocumento || 'CC'}`);
+        body.appendParagraph(`NÚMERO DE IDENTIFICACIÓN:: ${c.numeroDocumento || c.documento || ''}`);
+        body.appendParagraph(`CELULAR:: ${c.celular || ''}`);
+        body.appendParagraph(`CORREO:: ${c.email || ''}`);
+        body.appendParagraph('-----------------------');
+      });
+    }
+
+    // --- BUZONES DE DOCUMENTACIÓN ---
+    body.appendParagraph('');
+    body.appendParagraph('ESTADO DOCUMENTAL:');
+
+    // Buzones del inquilino
+    body.appendParagraph('BUZON INQUILINO FRONTAL:: RECIBIDO');
+    body.appendParagraph('BUZON INQUILINO REVERSO:: RECIBIDO');
+    body.appendParagraph('BUZON SOPORTES INGRESO INQUILINO:: RECIBIDO');
+
+    // Buzones de codeudores (dinámico)
+    if (codeudores.length > 0) {
+      codeudores.forEach((c, i) => {
+        body.appendParagraph(`BUZON CODEUDOR ${i + 1} FRONTAL:: RECIBIDO`);
+        body.appendParagraph(`BUZON CODEUDOR ${i + 1} REVERSO:: RECIBIDO`);
+        body.appendParagraph(`BUZON SOPORTES INGRESO CODEUDOR ${i + 1}:: RECIBIDO`);
+      });
+    }
+
+    // Buzón de pago
+    body.appendParagraph('BUZON COMPROBANTE DE PAGO:: RECIBIDO');
+
+    body.appendParagraph('[FIN]');
+    doc.saveAndClose();
+    Logger.log('✅ Datos de contrato escritos en DATOS DE ELABORACION DE CONTRATO.');
+  } catch (e) {
+    Logger.log('⚠️ Error escribiendo DATOS DE ELABORACION DE CONTRATO: ' + e.message);
+  }
+}
+
+// ==========================================
+// FUNCIONES DE CEREBRO - MEMORIA DE VALIDACIÓN
+// ==========================================
+
+/**
+ * Helper: Abrir el documento Cerebro (DATOS DE ELABORACION DE CONTRATO) dado un CDR
+ * Retorna el DocumentApp.Document o null
+ */
+function abrirDocCerebro(cdr) {
+  try {
+    const cdrEscaped = cdr.replace(/'/g, "\\'");
+    let inmuebleFolder = null;
+    const searchRoot = DriveApp.searchFolders(`title contains '${cdrEscaped}' and trashed = false`);
+    while (searchRoot.hasNext()) {
+      const f = searchRoot.next();
+      const fName = f.getName();
+      if (fName === cdr || fName.startsWith(cdr + ' -') || fName.startsWith(cdr + '_')) {
+        inmuebleFolder = f; break;
+      }
+    }
+    if (!inmuebleFolder) return null;
+
+    let entregasFolder = getFolderByNameHelper(inmuebleFolder, 'ENTREGAS DEL INMUEBLE');
+    if (!entregasFolder) return null;
+    let anioFolder = obtenerCarpetaAnioMasRecienteLocal(entregasFolder);
+    if (!anioFolder) return null;
+    let docsEntregaInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+    if (!docsEntregaInqFolder) return null;
+
+    let variosFolder = null;
+    const subF = docsEntregaInqFolder.getFolders();
+    while (subF.hasNext()) {
+      const sf = subF.next();
+      if (sf.getName().includes('VARIOS') || sf.getName().startsWith('4-')) {
+        variosFolder = sf; break;
+      }
+    }
+    if (!variosFolder) return null;
+
+    // Buscar el documento Cerebro directamente en variosFolder
+    let searchFiles = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${variosFolder.getId()}' in parents and trashed = false`);
+    if (searchFiles.hasNext()) {
+      const docFile = searchFiles.next();
+      return DocumentApp.openById(docFile.getId());
+    }
+
+    // Fallback: Buscar en la subcarpeta '2- CEDULA DEL INQUILINO'
+    const cedulaSubFolders = variosFolder.getFolders();
+    let cedulaFolder = null;
+    while (cedulaSubFolders.hasNext()) {
+      const sf = cedulaSubFolders.next();
+      if (sf.getName().includes('CEDULA DEL INQUILINO')) {
+        cedulaFolder = sf;
+        break;
+      }
+    }
+
+    if (cedulaFolder) {
+      searchFiles = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${cedulaFolder.getId()}' in parents and trashed = false`);
+      if (searchFiles.hasNext()) {
+        const docFile = searchFiles.next();
+        return DocumentApp.openById(docFile.getId());
+      }
+    }
+
+    return null;
+  } catch (e) {
+    Logger.log('⚠️ Error abriendo Cerebro: ' + e.message);
+    return null;
+  }
+}
+
+/**
+ * Leer estados de validación desde el Cerebro
+ * Retorna objeto tipo: { 'BUZON INQUILINO FRONTAL': 'RECIBIDO', 'BUZON COMPROBANTE DE PAGO': 'APROBADO', ... }
+ */
+function obtenerEstadosValidacionDesdeCerebro(cdr) {
+  try {
+    const doc = abrirDocCerebro(cdr);
+    if (!doc) return {};
+
+    const text = doc.getBody().getText();
+    const estados = {};
+    const lines = text.split('\n');
+
+    for (const line of lines) {
+      if (line.trim().startsWith('BUZON ')) {
+        const parts = line.split('::');
+        if (parts.length === 2) {
+          const clave = parts[0].trim();
+          const valor = parts[1].trim();
+          estados[clave] = valor;
+        }
+      }
+    }
+
+    Logger.log('📋 Estados del Cerebro para ' + cdr + ': ' + JSON.stringify(estados));
+    return estados;
+  } catch (e) {
+    Logger.log('⚠️ Error leyendo estados del Cerebro: ' + e.message);
+    return {};
+  }
+}
+
+/**
+ * Obtener datos bancarios del propietario desde el Cerebro
+ * Parsea las líneas con formato "TIPO DE CUENTA:: valor", "NÚMERO DE CUENTA:: valor", etc.
+ */
+function obtenerDatosBancariosDesdeCerebro(cdr) {
+  try {
+    const doc = abrirDocCerebro(cdr);
+    if (!doc) return {};
+
+    const text = doc.getBody().getText();
+    const datos = {};
+    const lines = text.split('\n');
+
+    // Mapa de claves del Cerebro -> claves JS
+    const claveMap = {
+      'TIPO DE CUENTA': 'tipoCuenta',
+      'NÚMERO DE CUENTA': 'numeroCuenta',
+      'BANCO': 'banco',
+      'TITULAR': 'titularCuenta',
+      'DOC TITULAR': 'documentoTitular'
+    };
+
+    for (const line of lines) {
+      const parts = line.split('::');
+      if (parts.length === 2) {
+        const clave = parts[0].trim();
+        const valor = parts[1].trim();
+        if (claveMap[clave]) {
+          datos[claveMap[clave]] = valor;
+        }
+      }
+    }
+
+    Logger.log('🏦 Datos bancarios del Cerebro para ' + cdr + ': ' + JSON.stringify(datos));
+    return datos;
+  } catch (e) {
+    Logger.log('⚠️ Error leyendo datos bancarios del Cerebro: ' + e.message);
+    return {};
+  }
+}
+
+/**
+ * Actualizar estados de validación en el Cerebro
+ * @param {string} cdr - Código de registro
+ * @param {Object} estadosMap - Mapa clave-valor (ej: {'BUZON INQUILINO FRONTAL': 'APROBADO', ...})
+ */
+function actualizarEstadosValidacionEnCerebro(cdr, estadosMap) {
+  try {
+    const doc = abrirDocCerebro(cdr);
+    if (!doc) {
+      Logger.log('⚠️ No se encontró el Cerebro para CDR: ' + cdr);
+      return false;
+    }
+
+    const body = doc.getBody();
+    const text = body.getText();
+    let modificado = false;
+
+    for (const [buzon, nuevoEstado] of Object.entries(estadosMap)) {
+      // Buscar la línea existente y reemplazarla
+      const regex = new RegExp(buzon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '::\\s*\\S+.*');
+      const match = text.match(regex);
+      if (match) {
+        body.replaceText(regex.source, buzon + ':: ' + nuevoEstado);
+        modificado = true;
+      }
+    }
+
+    if (modificado) {
+      doc.saveAndClose();
+      Logger.log('✅ Estados actualizados en Cerebro para CDR: ' + cdr);
+    }
+
+    return true;
+  } catch (e) {
+    Logger.log('⚠️ Error actualizando estados en Cerebro: ' + e.message);
+    return false;
+  }
+}
+
+/**
+ * Guardar documentos del propietario en Drive
+ */
+function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormulario) {
+  try {
+    // RESOLVER EL CDR LARGO DESDE EL SHORT ID
+    const fila = buscarFilaPorCDR(codigoRegistro);
+    if (fila) {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+      const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const colCdr = headers.indexOf('CODIGO DE REGISTRO') + 1;
+      if (colCdr > 0) {
+        const val = sheet.getRange(fila, colCdr).getValue();
+        if (val) codigoRegistro = val.toString().trim();
+      }
+    }
+
+    Logger.log('📂 Iniciando guardado de documentos propietario para CDR: ' + codigoRegistro);
+
+    // ==============================
+    // 1. Encontrar la carpeta CDR (misma lógica que inquilino)
+    // ==============================
+    const ROOT_FOLDER_ID = '1ozAkjspgSj6m2fN4tqqCm-mjrsux6ULi'; // INMUEBLES
+    const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+    let inmuebleFolder = null;
+
+    // Buscar directamente en root
+    const directFolders = rootFolder.getFoldersByName(codigoRegistro);
+    if (directFolders.hasNext()) inmuebleFolder = directFolders.next();
+
+    // Buscar dentro de subcarpetas de tipo de negocio
+    if (!inmuebleFolder) {
+      const tipoFolders = rootFolder.getFolders();
+      while (tipoFolders.hasNext() && !inmuebleFolder) {
+        const tipoF = tipoFolders.next();
+        const sub = tipoF.getFoldersByName(codigoRegistro);
+        if (sub.hasNext()) {
+          inmuebleFolder = sub.next();
+          Logger.log('✅ CDR encontrado en: ' + tipoF.getName());
+        }
+      }
+    }
+
+    // Fallback global en Drive
+    if (!inmuebleFolder) {
+      const cdrEscaped = codigoRegistro.replace(/'/g, "\\'");
+      const globalSearch = DriveApp.searchFolders(`title = '${cdrEscaped}' and trashed = false`);
+      if (globalSearch.hasNext()) inmuebleFolder = globalSearch.next();
+    }
+
+    if (!inmuebleFolder) {
+      throw new Error('No se encontró la carpeta CDR: ' + codigoRegistro);
+    }
+
+    // ==============================
+    // 2. Navegar a las carpetas destino dentro del CDR
+    // ==============================
+
+    // --- ARCHIVOS DEL INMUEBLE ---
+    const archivosInmuebleFolder = getFolderByNameHelper(inmuebleFolder, 'ARCHIVOS DEL INMUEBLE');
+    const certTradicionFolder = archivosInmuebleFolder
+      ? getFolderByNameHelper(archivosInmuebleFolder, 'CERTIFICADO DE LIBERTAD Y TRADICIÓN')
+      : null;
+
+    // --- ENTREGAS DEL INMUEBLE > [año] ---
+    const entregasFolder = getFolderByNameHelper(inmuebleFolder, 'ENTREGAS DEL INMUEBLE');
+    let anioFolder = entregasFolder ? obtenerCarpetaAnioMasRecienteLocal(entregasFolder) : null;
+
+    // --- DOCUMENTOS DE LA ASEGURADORA > 4- VARIOS, APROBADO, SARLAFT > SARLAFT ---
+    let sarlaftFolder = null;
+    if (anioFolder) {
+      let docsAseguradora = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE LA ASEGURADORA');
+      if (!docsAseguradora) docsAseguradora = anioFolder.createFolder('DOCUMENTOS DE LA ASEGURADORA');
+
+      let variosAseg = getFolderByNameHelper(docsAseguradora, '4- VARIOS, APROBADO, SARLAFT');
+      if (!variosAseg) variosAseg = docsAseguradora.createFolder('4- VARIOS, APROBADO, SARLAFT');
+
+      sarlaftFolder = getFolderByNameHelper(variosAseg, 'SARLAFT');
+      if (!sarlaftFolder) sarlaftFolder = variosAseg.createFolder('SARLAFT');
+    }
+
+    // --- COMPROBANTES DE SERVICIOS PÚBLICOS (para facturas) ---
+    let serviciosFolder = null;
+    if (anioFolder) {
+      let docsEntrega = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+      if (!docsEntrega) docsEntrega = anioFolder.createFolder('DOCUMENTOS DE ENTREGA - INQUILINO');
+
+      let comprobantes = getFolderByNameHelper(docsEntrega, '1- COMPROBANTES DE PAGO DEL INMUEBLE');
+      if (!comprobantes) comprobantes = docsEntrega.createFolder('1- COMPROBANTES DE PAGO DEL INMUEBLE');
+
+      serviciosFolder = getFolderByNameHelper(comprobantes, 'COMPROBANTES DE SERVICIOS PÚBLICOS');
+      if (!serviciosFolder) serviciosFolder = comprobantes.createFolder('COMPROBANTES DE SERVICIOS PÚBLICOS');
+    }
+
+    // --- DOCUMENTOS DEL PROPIETARIO (a nivel RPR, hermano de INMUEBLES) ---
+    // Navegar: CDR → padre (TIPO_NEGOCIO) → padre (INMUEBLES) → padre (RPR/Z1 copy)
+    let rprRoot = null;
+    try {
+      const tipoNegocioParent = inmuebleFolder.getParents();
+      if (tipoNegocioParent.hasNext()) {
+        const tipoNeg = tipoNegocioParent.next();
+        const inmueblesParent = tipoNeg.getParents();
+        if (inmueblesParent.hasNext()) {
+          const inmueblesF = inmueblesParent.next();
+          const rprParent = inmueblesF.getParents();
+          if (rprParent.hasNext()) rprRoot = rprParent.next();
+        }
+      }
+    } catch (e) {
+      Logger.log('⚠️ No se pudo navegar al RPR root: ' + e.message);
+    }
+
+    let cedulaRPRFolder = null;
+    let certBancarioFolder = null;
+    if (rprRoot) {
+      const docsPropietario = getFolderByNameHelper(rprRoot, 'DOCUMENTOS DEL PROPIETARIO');
+      if (docsPropietario) {
+        const repreLegal = getFolderByNameHelper(docsPropietario, '1- REPRESENTANTE LEGAL');
+        if (repreLegal) {
+          cedulaRPRFolder = getFolderByNameHelper(repreLegal, '1- CEDULA RPR LEGAL');
+          certBancarioFolder = getFolderByNameHelper(repreLegal, '2- CERTIFICADO BANCARIO RPR LEGAL');
+        }
+      }
+    }
+
+    // ==============================
+    // 3. Función helper para obtener o crear dinámicamente carpeta de servicio público
+    // ==============================
+    function buscarOCrearCarpetaServicio(nombreServicioKey) {
+      if (!serviciosFolder) return null;
+
+      let carpetaEncontrada = null;
+      let maxNum = 0;
+
+      const subcarpetas = serviciosFolder.getFolders();
+      while (subcarpetas.hasNext()) {
+        const folder = subcarpetas.next();
+        const nombre = folder.getName();
+
+        const match = nombre.match(/^(\d+)\.\s+(.*)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          const servicio = match[2];
+
+          if (num > maxNum) maxNum = num;
+
+          if (servicio.toUpperCase() === nombreServicioKey.toUpperCase()) {
+            carpetaEncontrada = folder;
+          }
+        } else {
+          if (nombre.toUpperCase().includes(nombreServicioKey.toUpperCase())) {
+            carpetaEncontrada = folder;
+          }
+        }
+      }
+
+      if (!carpetaEncontrada) {
+        const nuevoNum = maxNum + 1;
+        const nuevoNombre = `${nuevoNum}. ${nombreServicioKey.toUpperCase()}`;
+        carpetaEncontrada = serviciosFolder.createFolder(nuevoNombre);
+        Logger.log('📂 Carpeta de servicio creada dinámicamente: ' + nuevoNombre);
+
+        // Dejar lista la estructura de 12 meses para el inquilino (creamos en reversa para ordenar visualmente)
+        for (let i = 12; i >= 1; i--) {
+          carpetaEncontrada.createFolder(`MES #${i}`);
+        }
+        Logger.log('📂 Carpetas mensuales pre-generadas para: ' + nuevoNombre);
+      }
+
+      let ultimoRecibo = getFolderByNameHelper(carpetaEncontrada, '1. ULTIMO RECIBO PAGO');
+      if (!ultimoRecibo) {
+        ultimoRecibo = carpetaEncontrada.createFolder('1. ULTIMO RECIBO PAGO');
+        Logger.log('📂 Subcarpeta creada: 1. ULTIMO RECIBO PAGO en ' + carpetaEncontrada.getName());
+      }
+      return ultimoRecibo;
+    }
+
+    // ==============================
+    // 4. Mapa de rutas por clave del formulario (Lazy Loading de carpetas)
+    // ==============================
+    const RUTAS = {
+      'docFront': { getCarpeta: () => cedulaRPRFolder, nombre: `CEDULA_PROP_FRONTAL_[${codigoRegistro}]` },
+      'docBack': { getCarpeta: () => cedulaRPRFolder, nombre: `CEDULA_PROP_REVERSO_[${codigoRegistro}]` },
+      'certTradicion': { getCarpeta: () => certTradicionFolder, nombre: `CERT_TRADICION_[${codigoRegistro}]` },
+      'sarlaft': { getCarpeta: () => sarlaftFolder, nombre: `SARLAFT_[${codigoRegistro}]` },
+      'certBancario': { getCarpeta: () => certBancarioFolder, nombre: `CERT_BANCARIO_[${codigoRegistro}]` },
+      'facturaAgua': { getCarpeta: () => buscarOCrearCarpetaServicio('AGUA'), nombre: `FACTURA_AGUA_[${codigoRegistro}]` },
+      'facturaLuz': { getCarpeta: () => buscarOCrearCarpetaServicio('LUZ'), nombre: `FACTURA_LUZ_[${codigoRegistro}]` },
+      'facturaGas': { getCarpeta: () => buscarOCrearCarpetaServicio('GAS'), nombre: `FACTURA_GAS_[${codigoRegistro}]` },
+      'facturaTelefono': { getCarpeta: () => buscarOCrearCarpetaServicio('TELEFONO'), nombre: `FACTURA_TELEFONO_[${codigoRegistro}]` },
+      'facturaInternet': { getCarpeta: () => buscarOCrearCarpetaServicio('INTERNET'), nombre: `FACTURA_INTERNET_[${codigoRegistro}]` },
+    };
+
+    // ==============================
+    // 5. Procesar y guardar cada archivo
+    // ==============================
+    for (const [clave, contenidoBase64] of Object.entries(archivosBase64)) {
+      if (!contenidoBase64 || !contenidoBase64.contenido) continue;
+
+      const mimeType = contenidoBase64.tipo || MimeType.JPEG;
+      let extension = 'jpg';
+      if (mimeType.includes('png')) extension = 'png';
+      if (mimeType.includes('pdf')) extension = 'pdf';
+
+      const ruta = RUTAS[clave];
+      let targetFolder = null;
+      let nuevoNombre = null;
+
+      if (ruta) {
+        targetFolder = ruta.getCarpeta();
+        nuevoNombre = `${ruta.nombre}.${extension}`;
+      }
+
+      if (!targetFolder) {
+        // Fallback: guardar en la carpeta CDR raíz
+        targetFolder = inmuebleFolder;
+        nuevoNombre = `${clave.toUpperCase()}_[${codigoRegistro}].${extension}`;
+        Logger.log(`⚠️ Carpeta no encontrada para "${clave}", guardando en CDR raíz`);
+      }
+
+      // Limpiar TODAS las versiones anteriores del archivo (cualquier extensión)
+      const nombreBase = ruta ? ruta.nombre : `${clave.toUpperCase()}_[${codigoRegistro}]`;
+      limpiarArchivosAnteriores(targetFolder, nombreBase);
+
+      // PREVENCIÓN DE ERROR DRIVE: Validar que el contenido base64 sea un string válido con la coma separadora
+      if (typeof contenidoBase64.contenido !== 'string' || !contenidoBase64.contenido.includes(',')) {
+        Logger.log(`⚠️ Archivo ignorado por contenido inválido/vacío: ${clave}`);
+        continue;
+      }
+
+      const base64Data = contenidoBase64.contenido.split(',')[1];
+      const blob = Utilities.newBlob(Utilities.base64Decode(base64Data), mimeType);
+      blob.setName(nuevoNombre);
+      targetFolder.createFile(blob);
+      Logger.log(`✅ Guardado: ${nuevoNombre} en "${targetFolder.getName()}"`);
+    }
+
+    // ==============================
+    // 6. Escribir datos del propietario en DATOS DE ELABORACION DE CONTRATO
+    // SOLO si NO es modo corrección (en corrección solo se suben archivos, los datos ya existen)
+    // ==============================
+    if (!datosFormulario.modoCorreccion) {
+      try {
+        escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, codigoRegistro, archivosBase64);
+      } catch (e) {
+        Logger.log('⚠️ Error escribiendo datos propietario en doc: ' + e.message);
+      }
+    } else {
+      Logger.log('ℹ️ Modo corrección: se omite escritura de datos propietario en DATOS DE ELABORACION (ya existen).');
+    }
+
+    return {
+      carpetaPrincipal: inmuebleFolder.getUrl(),
+      carpetaPropietario: rprRoot ? rprRoot.getUrl() : inmuebleFolder.getUrl()
+    };
+
+  } catch (error) {
+    Logger.log('❌ Error guardando documentos propietario: ' + error.toString());
+    throw error;
+  }
+}
+
+// Helper: escribir datos del propietario en el mismo doc DATOS DE ELABORACION DE CONTRATO
+function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr, archivosBase64 = {}) {
+  const doc = abrirDocCerebro(cdr);
+  if (!doc) {
+    Logger.log('⚠️ No se encontró el Cerebro para CDR: ' + cdr);
+    return;
+  }
+
+  const body = doc.getBody();
+  body.appendParagraph('\n------------------------------------------');
+  body.appendParagraph(`[PROPIETARIO - ENVIADO EL ${new Date().toLocaleDateString('es-CO')}]`);
+
+  const prop = datosFormulario?.propietario || {};
+  body.appendParagraph('DATOS DEL PROPIETARIO:');
+  body.appendParagraph(`NOMBRES:: ${prop.nombre || ''}`);
+  body.appendParagraph(`TIPO DE IDENTIFICACIÓN:: ${prop.tipoDocumento || ''}`);
+  body.appendParagraph(`NÚMERO DE IDENTIFICACIÓN:: ${prop.numeroDocumento || ''}`);
+  body.appendParagraph(`CELULAR:: ${prop.celular || ''}`);
+  body.appendParagraph(`CORREO:: ${prop.email || ''}`);
+
+  // Datos bancarios
+  const banco = datosFormulario?.bancarios || {};
+  if (banco.tipoCuenta || banco.numeroCuenta) {
+    body.appendParagraph('\nDATOS BANCARIOS:');
+    body.appendParagraph(`TIPO DE CUENTA:: ${banco.tipoCuenta || ''}`);
+    body.appendParagraph(`NÚMERO DE CUENTA:: ${banco.numeroCuenta || ''}`);
+    body.appendParagraph(`BANCO:: ${banco.banco || ''}`);
+    body.appendParagraph(`TITULAR:: ${banco.titularCuenta || ''}`);
+    body.appendParagraph(`DOC TITULAR:: ${banco.docTitular || ''}`);
+  }
+
+  // --- BUZONES DE DOCUMENTACIÓN DEL PROPIETARIO ---
+  body.appendParagraph('\nESTADO DOCUMENTAL PROPIETARIO:');
+  body.appendParagraph('BUZON PROPIETARIO FRONTAL:: RECIBIDO');
+  body.appendParagraph('BUZON PROPIETARIO REVERSO:: RECIBIDO');
+  body.appendParagraph('BUZON CERTIFICADO TRADICION:: RECIBIDO');
+  body.appendParagraph('BUZON CERTIFICADO BANCARIO:: RECIBIDO');
+  body.appendParagraph('BUZON SARLAFT:: RECIBIDO');
+
+  // Agregar buzones dinámicos de facturas extraídos directamente de los archivos recabados
+  const keysFacturas = ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'];
+  keysFacturas.forEach(key => {
+    if (archivosBase64 && archivosBase64[key] && archivosBase64[key].contenido) {
+      const nombreServicio = key.replace('factura', '').toUpperCase();
+      body.appendParagraph(`BUZON FACTURA ${nombreServicio}:: RECIBIDO`);
+    }
+  });
+
+  body.appendParagraph('[FIN PROPIETARIO]');
+  doc.saveAndClose();
+  Logger.log('✅ Datos (y buzones) de propietario escritos en el Cerebro.');
+}
+
+// ==========================================
+// FUNCIONES DE ACTUALIZACIÓN DE DATOS
+// ==========================================
+
+/**
+ * Actualizar datos del inquilino en la hoja
+ */
+function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    let estadoDoc = 'INQ_SUBMITTED';
+    if (datosFormulario.modoCorreccion) {
+      const colEstado = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+      if (colEstado > 0) {
+        const estadoActual = sheet.getRange(fila, colEstado).getValue().toString();
+        if (estadoActual.includes('|')) {
+          estadoDoc = 'INQ_SUBMITTED|' + estadoActual.split('|')[1];
+        }
+      }
+    }
+
+    // Mapeo de campos
+    const campos = {
+      'CORREO INQUILINO': datosFormulario.inquilino.email,
+      'NOMBRE COMPLETO INQUILINO': datosFormulario.inquilino.nombre,
+      'TIPO DOCUMENTO INQUILINO': datosFormulario.inquilino.tipoDocumento,
+      'NUMERO DOCUMENTO INQUILINO': datosFormulario.inquilino.numeroDocumento,
+      'CELULAR INQUILINO': datosFormulario.inquilino.celular,
+      'OCUPACIÓN INQUILINO': datosFormulario.inquilino.ocupacion,
+      'FECHA INICIO DEL CONTRATO': datosFormulario.fechaInicio,
+      'DETALLES DEL ESTADO DEL INMUEBLE': '📄 Formulario del inquilino diligenciado. Pendiente validación',
+      'ESTADO DOCUMENTAL': estadoDoc
+    };
+
+    // Actualizar campos
+    for (const [header, valor] of Object.entries(campos)) {
+      const colIndex = headers.indexOf(header) + 1;
+      if (colIndex > 0 && valor && valor.toString().trim() !== '') {
+        sheet.getRange(fila, colIndex).setValue(valor);
+      }
+    }
+
+    // Guardar codeudores como JSON
+    const codeudorDatos = datosFormulario.codeudor || datosFormulario.codeudores;
+    if (codeudorDatos) {
+      const codeudorList = Array.isArray(codeudorDatos) ? codeudorDatos : [codeudorDatos];
+      if (codeudorList.length > 0) {
+        const codeudorCol = headers.indexOf('CODEUDORES_JSON') + 1;
+        if (codeudorCol > 0) {
+          sheet.getRange(fila, codeudorCol).setValue(JSON.stringify(codeudorList));
+        }
+      }
+    }
+
+    // Guardar URLs de carpetas
+    const urlCol = headers.indexOf('URL_DOCUMENTOS_INQ') + 1;
+    if (urlCol > 0) {
+      sheet.getRange(fila, urlCol).setValue(urlsCarpetas.carpetaInquilino);
+    }
+
+  } catch (error) {
+    Logger.log('Error actualizando datos inquilino: ' + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Actualizar datos del propietario en la hoja
+ */
+function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    let estadoDoc = 'PROP_SUBMITTED';
+    if (datosFormulario.modoCorreccion) {
+      const colEstado = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+      if (colEstado > 0) {
+        const estadoActual = sheet.getRange(fila, colEstado).getValue().toString();
+        if (estadoActual.includes('|')) {
+          estadoDoc = 'PROP_SUBMITTED|' + estadoActual.split('|')[1];
+        }
+      }
+    }
+
+    // Mapeo de campos
+    const campos = {
+      'Correo electrónico': datosFormulario.propietario.email,
+      'Ingrese Nombres y Apellidos': datosFormulario.propietario.nombre,
+      'TIPO DOCUMENTO PROPIETARIO': datosFormulario.propietario.tipoDocumento,
+      'Número de documento': datosFormulario.propietario.numeroDocumento,
+      'Celular': datosFormulario.propietario.celular,
+      'DETALLES DEL ESTADO DEL INMUEBLE': '📄 Formulario del propietario diligenciado. Pendiente validación',
+      'ESTADO DOCUMENTAL': estadoDoc
+    };
+
+    // Actualizar campos
+    for (const [header, valor] of Object.entries(campos)) {
+      const colIndex = headers.indexOf(header) + 1;
+      if (colIndex > 0 && valor && valor.toString().trim() !== '') {
+        sheet.getRange(fila, colIndex).setValue(valor);
+      }
+    }
+
+    // Si hay datos OCR, actualizarlos
+    if (datosFormulario.datosOCR) {
+      const camposOCR = {
+        'MATRICULA_INMOBILIARIA': datosFormulario.datosOCR.matricula,
+        'DIRECCION_CERTIFICADO': datosFormulario.datosOCR.direccion,
+        'AREA_M2': datosFormulario.datosOCR.area,
+        'PROPIETARIOS_CERTIFICADO': datosFormulario.datosOCR.propietarios
+      };
+
+      for (const [header, valor] of Object.entries(camposOCR)) {
+        const colIndex = headers.indexOf(header) + 1;
+        if (colIndex > 0 && valor) {
+          sheet.getRange(fila, colIndex).setValue(valor);
+        }
+      }
+    }
+
+    // Guardar URLs de carpetas
+    const urlCol = headers.indexOf('URL_DOCUMENTOS_PROP') + 1;
+    if (urlCol > 0) {
+      sheet.getRange(fila, urlCol).setValue(urlsCarpetas.carpetaPropietario);
+    }
+
+  } catch (error) {
+    Logger.log('Error actualizando datos propietario: ' + error.toString());
+    throw error;
+  }
+}
+
+// ==========================================
+// FUNCIONES DE PANEL DE VALIDACIÓN
+// ==========================================
+
+/**
+ * Función para abrir el Panel de Validación
+ */
+function abrirPanelValidacion() {
+  try {
+    // Cargar el archivo HTML que está en el proyecto de Apps Script
+    const html = HtmlService.createHtmlOutputFromFile('backend/panel_validacion')
+      .setWidth(3000)
+      .setHeight(2000)
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME);
+
+    // Mostrar el diálogo modal
+    SpreadsheetApp.getUi().showModalDialog(html, '🔍 Panel de Validación - E-FirmaContrata');
+
+    Logger.log('Panel de validación abierto correctamente');
+
+  } catch (error) {
+    Logger.log('Error abriendo panel: ' + error.toString());
+    SpreadsheetApp.getUi().alert(
+      '⌠Error al abrir el panel',
+      'No se encontró el archivo panel_validacion.html en el proyecto.\n\n' +
+      'Verifique que:\n' +
+      '1. El archivo existe en Apps Script\n' +
+      '2. El nombre es exactamente "panel_validacion" (sin .html)\n' +
+      '3. El archivo contiene código HTML válido',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
+
+/**
+ * Obtener documentos de un CDR para el panel (IMPLEMENTACIÓN DINÁMICA DE RUTAS)
+ */
+function obtenerDocumentosDelCDR(cdr) {
+  try {
+    // 1. Encontrar la carpeta del CDR usando búsqueda global en Drive
+    //    (El CDR NO es hijo directo de INMUEBLES, está anidado: INMUEBLES → ARRIENDO → CDR)
+    let carpetaCDR = null;
+    const cdrEscaped = cdr.replace(/'/g, "\\'");
+
+    // Búsqueda global por nombre exacto o que empiece con el CDR
+    const searchResults = DriveApp.searchFolders(`title contains '${cdrEscaped}' and trashed = false`);
+    while (searchResults.hasNext()) {
+      const folder = searchResults.next();
+      const fName = folder.getName();
+      if (fName === cdr || fName.startsWith(cdr + ' -') || fName.startsWith(cdr + '_')) {
+        carpetaCDR = folder;
+        break;
+      }
+    }
+
+    if (!carpetaCDR) {
+      Logger.log('❌ No se encontró carpeta CDR en Drive: ' + cdr);
+      return { inquilino: [], propietario: [] };
+    }
+
+    Logger.log('✅ Carpeta CDR encontrada: ' + carpetaCDR.getName() + ' (ID: ' + carpetaCDR.getId() + ')');
+
+    const documentos = {
+      inquilino: [],
+      propietario: []
+    };
+
+    // --- LÓGICA DE INQUILINOS (SOLO ARCHIVOS DE FORMULARIO) ---
+    // Navegar: ENTREGAS DEL INMUEBLE → AÑO → DOCUMENTOS DE ENTREGA - INQUILINO → 4- VARIOS → subcarpetas específicas
+    try {
+      let entregasFolder = getFolderByNameHelper(carpetaCDR, 'ENTREGAS DEL INMUEBLE');
+      if (entregasFolder) {
+        let anioFolder = obtenerCarpetaAnioMasRecienteLocal(entregasFolder);
+        if (anioFolder) {
+          let docsInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+          if (docsInqFolder) {
+            // Buscar carpeta 4- VARIOS
+            let variosFolder = null;
+            const subF = docsInqFolder.getFolders();
+            while (subF.hasNext()) {
+              const sf = subF.next();
+              if (sf.getName().includes('VARIOS') || sf.getName().startsWith('4-')) {
+                variosFolder = sf;
+                break;
+              }
+            }
+
+            if (variosFolder) {
+              const varSubs = variosFolder.getFolders();
+              while (varSubs.hasNext()) {
+                const subFolder = varSubs.next();
+                const subName = subFolder.getName();
+
+                if (subName.includes('2- CEDULA DEL INQUILINO') || subName.includes('6- PAGO')) {
+                  // Van al tab del Inquilino
+                  let pre = subName.includes('PAGO') ? '💲 [Pago]' : '🪪 [Inquilino]';
+                  const archivos = subFolder.getFiles();
+                  while (archivos.hasNext()) {
+                    const file = archivos.next();
+                    documentos.inquilino.push({
+                      nombre: pre + ' ' + file.getName(),
+                      url: file.getUrl(),
+                      fileId: file.getId(),
+                      tipo: file.getMimeType(),
+                      tamaño: file.getSize()
+                    });
+                  }
+                } else if (subName.includes('3- CEDULA DE CODEUDOR')) {
+                  // Clasificar por número de Codeudor
+                  const archivos = subFolder.getFiles();
+                  while (archivos.hasNext()) {
+                    const file = archivos.next();
+                    const fName = file.getName();
+                    let codIndex = 0; // Por defecto Codeudor 1 (codeudor_0 en la UI)
+
+                    // Buscar el _COD_N_ en el nombre
+                    const match = fName.match(/_COD_(\d+)_/);
+                    if (match) {
+                      codIndex = parseInt(match[1], 10) - 1; // COD_1 -> 0, COD_2 -> 1
+                    }
+
+                    const key = 'codeudor_' + codIndex;
+                    if (!documentos[key]) documentos[key] = [];
+
+                    documentos[key].push({
+                      nombre: `🪪 [Codeudor ${codIndex + 1}] ` + fName,
+                      url: file.getUrl(),
+                      fileId: file.getId(),
+                      tipo: file.getMimeType(),
+                      tamaño: file.getSize()
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      Logger.log('Error buscando archivos inquilino: ' + e);
+    }
+
+    // --- LÓGICA DE PROPIETARIOS (MANTENIDA EN RAÍZ Y NUEVAS UBICACIONES) ---
+    // Buscar carpeta de propietario antigua en la raíz (por si acaso hay legacy)
+    const subfoldersRaiz = carpetaCDR.getFolders();
+    while (subfoldersRaiz.hasNext()) {
+      const subfolder = subfoldersRaiz.next();
+      const nombre = subfolder.getName();
+
+      if (nombre.startsWith('PROPIETARIO_')) {
+        const archivos = subfolder.getFiles();
+        while (archivos.hasNext()) {
+          const archivo = archivos.next();
+          documentos.propietario.push({
+            nombre: archivo.getName(),
+            url: archivo.getUrl(),
+            tipo: archivo.getMimeType(),
+            tamaño: archivo.getSize()
+          });
+        }
+      }
+    }
+
+    // --- LÓGICA DE PROPIETARIOS (NUEVA: RPR y CARPETAS DEL INMUEBLE) ---
+    // En las nuevas rutas los archivos del propietario se guardan con los tags CEDULA_PROP, CERT_TRADICION, CERT_BANCARIO, SARLAFT, FACTURA_
+    // Navegamos al nivel ENTREGAS DEL INMUEBLE para las facturas y SARLAFT
+    try {
+      let entregasF = getFolderByNameHelper(carpetaCDR, 'ENTREGAS DEL INMUEBLE');
+      if (entregasF) {
+        let anioF = obtenerCarpetaAnioMasRecienteLocal(entregasF);
+        if (anioF) {
+
+          // 1. FACTURAS (COMPROBANTES DE SERVICIOS PÚBLICOS)
+          let docsEntrega = getFolderByNameHelper(anioF, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+          if (docsEntrega) {
+            let comprobantes = getFolderByNameHelper(docsEntrega, '1- COMPROBANTES DE PAGO DEL INMUEBLE');
+            if (comprobantes) {
+              let serviciosFolder = getFolderByNameHelper(comprobantes, 'COMPROBANTES DE SERVICIOS PÚBLICOS');
+              if (serviciosFolder) {
+                const srvFolders = serviciosFolder.getFolders();
+                while (srvFolders.hasNext()) {
+                  const sV = srvFolders.next();
+                  const ultimoR = getFolderByNameHelper(sV, '1. ULTIMO RECIBO PAGO');
+                  if (ultimoR) {
+                    const archivosSrv = ultimoR.getFiles();
+                    while (archivosSrv.hasNext()) {
+                      const f = archivosSrv.next();
+                      if (f.getName().includes('FACTURA_')) {
+                        documentos.propietario.push({
+                          nombre: '🧾 [Propietario] ' + f.getName(),
+                          url: f.getUrl(),
+                          fileId: f.getId(),
+                          tipo: f.getMimeType(),
+                          tamaño: f.getSize()
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          // 2. SARLAFT
+          let docsAseg = getFolderByNameHelper(anioF, 'DOCUMENTOS DE LA ASEGURADORA');
+          if (docsAseg) {
+            let variosAsg = getFolderByNameHelper(docsAseg, '4- VARIOS, APROBADO, SARLAFT');
+            if (variosAsg) {
+              let sarl = getFolderByNameHelper(variosAsg, 'SARLAFT');
+              if (sarl) {
+                const af = sarl.getFiles();
+                while (af.hasNext()) {
+                  const f = af.next();
+                  if (f.getName().includes('SARLAFT')) {
+                    documentos.propietario.push({
+                      nombre: '🛡️ [Propietario] ' + f.getName(),
+                      url: f.getUrl(),
+                      fileId: f.getId(),
+                      tipo: f.getMimeType(),
+                      tamaño: f.getSize()
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 3. CERTIFICADO DE TRADICION (Nivel 3 -> ARCHIVOS DEL INMUEBLE)
+      let archF = getFolderByNameHelper(carpetaCDR, 'ARCHIVOS DEL INMUEBLE');
+      if (archF) {
+        let certF = getFolderByNameHelper(archF, 'CERTIFICADO DE LIBERTAD Y TRADICIÓN');
+        if (certF) {
+          const af = certF.getFiles();
+          while (af.hasNext()) {
+            const f = af.next();
+            if (f.getName().includes('CERT_TRADICION')) {
+              documentos.propietario.push({
+                nombre: '📜 [Propietario] ' + f.getName(),
+                url: f.getUrl(),
+                fileId: f.getId(),
+                tipo: f.getMimeType(),
+                tamaño: f.getSize()
+              });
+            }
+          }
+        }
+      }
+
+      // 4. DOCUMENTOS DEL RPR (Ruta dinámica y paralela)
+      let rprRoot = null;
+      try {
+        const tipoNegocioParent = carpetaCDR.getParents();
+        if (tipoNegocioParent.hasNext()) {
+          const tipoNeg = tipoNegocioParent.next();
+          const inmueblesParent = tipoNeg.getParents();
+          if (inmueblesParent.hasNext()) {
+            const inmueblesF = inmueblesParent.next();
+            const rprParent = inmueblesF.getParents();
+            if (rprParent.hasNext()) rprRoot = rprParent.next();
+          }
+        }
+      } catch (e) { }
+
+      if (rprRoot) {
+        let docsProp = getFolderByNameHelper(rprRoot, 'DOCUMENTOS DEL PROPIETARIO');
+        if (docsProp) {
+          let repLegal = getFolderByNameHelper(docsProp, '1- REPRESENTANTE LEGAL');
+          if (repLegal) {
+
+            // Cedula
+            let cedRpr = getFolderByNameHelper(repLegal, '1- CEDULA RPR LEGAL');
+            if (cedRpr) {
+              const af = cedRpr.getFiles();
+              while (af.hasNext()) {
+                const f = af.next();
+                if (f.getName().includes('CEDULA_PROP')) {
+                  documentos.propietario.push({
+                    nombre: '🪪 [Propietario] ' + f.getName(),
+                    url: f.getUrl(),
+                    fileId: f.getId(),
+                    tipo: f.getMimeType(),
+                    tamaño: f.getSize()
+                  });
+                }
+              }
+            }
+
+            // Bancario
+            let certB = getFolderByNameHelper(repLegal, '2- CERTIFICADO BANCARIO RPR LEGAL');
+            if (certB) {
+              const af = certB.getFiles();
+              while (af.hasNext()) {
+                const f = af.next();
+                if (f.getName().includes('CERT_BANCARIO')) {
+                  documentos.propietario.push({
+                    nombre: '🏦 [Propietario] ' + f.getName(),
+                    url: f.getUrl(),
+                    fileId: f.getId(),
+                    tipo: f.getMimeType(),
+                    tamaño: f.getSize()
+                  });
+                }
+              }
+            }
+
+          }
+        }
+      }
+
+    } catch (e) {
+      Logger.log('Error buscando nuevos archivos de propietario: ' + e);
+    }
+
+    // --- LEER ESTADOS DE VALIDACIÓN DESDE EL CEREBRO ---
+    try {
+      documentos.estadosBuzon = obtenerEstadosValidacionDesdeCerebro(cdr);
+    } catch (e) {
+      Logger.log('⚠️ No se pudieron leer estados del Cerebro: ' + e.message);
+      documentos.estadosBuzon = {};
+    }
+
+    // --- LEER DATOS BANCARIOS DESDE EL CEREBRO ---
+    try {
+      documentos.datosBancarios = obtenerDatosBancariosDesdeCerebro(cdr);
+    } catch (e) {
+      Logger.log('⚠️ No se pudieron leer datos bancarios del Cerebro: ' + e.message);
+      documentos.datosBancarios = {};
+    }
+
+    return documentos;
+
+  } catch (error) {
+    Logger.log('Error obteniendo documentos: ' + error.toString());
+    throw error;
+  }
+}
+
+// ==========================================
+// FUNCIONES AUXILIARES
+// ==========================================
+
+/**
+ * Buscar fila por CDR
+ */
+function buscarFilaPorCDR(cdr) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return null;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const cdrCol = headers.indexOf('CODIGO DE REGISTRO'); // base 0
+    const idRegCol = headers.indexOf('ID DE REGISTRO'); // base 0
+
+    const cdrBusqueda = (cdr || '').toString().trim().toUpperCase();
+    if (cdrBusqueda === '') return null;
+
+    // Obtener todos los datos a la vez para evitar límite de ejecución por getValue en bucle
+    const data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+
+    for (let i = 0; i < data.length; i++) {
+      let match = false;
+      const row = data[i];
+
+      if (cdrCol !== -1) {
+        const valorCDR = (row[cdrCol] || '').toString().trim().toUpperCase();
+        if (valorCDR === cdrBusqueda) match = true;
+      }
+
+      if (!match && idRegCol !== -1) {
+        const valorIdReg = (row[idRegCol] || '').toString().trim().toUpperCase();
+        if (valorIdReg === cdrBusqueda) match = true;
+      }
+
+      if (match) {
+        return i + 2; // +2 porque los datos empiezan en la fila 2
+      }
+    }
+
+    return null;
+
+  } catch (error) {
+    Logger.log('Error buscando CDR: ' + error.toString());
+    return null;
+  }
+}
+
+/**
+ * Actualizar campos del inquilino en la hoja
+ */
+function actualizarCamposInquilino(fila, datos) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) return;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    const mapCampos = {
+      'NOMBRE COMPLETO INQUILINO': datos.nombre,
+      'Documento de Identidad': datos.documento, // Ajusta según tu header exacto
+      'CORREO INQUILINO': datos.email,
+      'CELULAR INQUILINO': datos.celular
+    };
+
+    if (datos.fechaInicio) {
+      const arr = datos.fechaInicio.split('-'); // YYYY-MM-DD
+      if (arr.length === 3) {
+        const y = parseInt(arr[0], 10);
+        const m = parseInt(arr[1], 10) - 1;
+        const d = parseInt(arr[2], 10);
+        const dInit = new Date(y, m, d);
+        const dEnd = new Date(y + 1, m, d - 1);
+        
+        mapCampos['FECHA INICIO DEL CONTRATO'] = Utilities.formatDate(dInit, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+        mapCampos['FECHA FINAL DEL CONTRATO'] = Utilities.formatDate(dEnd, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+      }
+    }
+
+    Object.entries(mapCampos).forEach(([header, valor]) => {
+      const colIndex = headers.indexOf(header) + 1;
+      if (colIndex > 0 && valor) {
+        sheet.getRange(fila, colIndex).setValue(valor);
+      }
+    });
+
+  } catch (error) {
+    Logger.log('Error actualizando campos inquilino: ' + error.toString());
+  }
+}
+
+/**
+ * Obtener valor por header
+ */
+function obtenerValorPorHeader(headers, row, headerName) {
+  const index = headers.indexOf(headerName);
+  return index >= 0 ? row[index] : '';
+}
+
+/**
+ * Obtener codeudores de una fila
+ */
+function obtenerCodeudores(headers, row) {
+  const codeudorCol = headers.indexOf('CODEUDORES_JSON');
+  if (codeudorCol >= 0 && row[codeudorCol]) {
+    try {
+      return JSON.parse(row[codeudorCol]);
+    } catch (e) {
+      return [];
+    }
+  }
+  return [];
+}
+
+/**
+ * Obtener codeudores directamente del documento "DATOS DE ELABORACION DE CONTRATO" (Cerebro)
+ */
+function obtenerCodeudoresDesdeCerebro(cdr) {
+  try {
+    const cdrEscaped = cdr.replace(/'/g, "\\'");
+    let inmuebleFolder = null;
+
+    // Búsqueda global del CDR en Drive
+    const searchRoot = DriveApp.searchFolders(`title contains '${cdrEscaped}' and trashed = false`);
+    while (searchRoot.hasNext()) {
+      const f = searchRoot.next();
+      const fName = f.getName();
+      if (fName === cdr || fName.startsWith(cdr + ' -') || fName.startsWith(cdr + '_')) {
+        inmuebleFolder = f;
+        break;
+      }
+    }
+    if (!inmuebleFolder) return [];
+
+    let entregasFolder = getFolderByNameHelper(inmuebleFolder, 'ENTREGAS DEL INMUEBLE');
+    if (!entregasFolder) return [];
+
+    let anioFolder = obtenerCarpetaAnioMasRecienteLocal(entregasFolder);
+    if (!anioFolder) return [];
+
+    let docsEntregaInqFolder = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE ENTREGA - INQUILINO');
+    if (!docsEntregaInqFolder) return [];
+
+    let variosFolder = getFolderByNameHelper(docsEntregaInqFolder, '4- VARIOS, FORMATO DE MUDANZAS, ETC');
+    if (!variosFolder) {
+      const subF = docsEntregaInqFolder.getFolders();
+      while (subF.hasNext()) {
+        const sf = subF.next();
+        if (sf.getName().includes('VARIOS') || sf.getName().includes('FORMATO DE MUDANZAS')) {
+          variosFolder = sf; break;
+        }
+      }
+    }
+
+    if (!variosFolder) return [];
+
+    let docFile = null;
+    // Buscar el documento Cerebro en VARIOS
+    const searchVarios = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${variosFolder.getId()}' in parents and trashed = false`);
+    if (searchVarios.hasNext()) docFile = searchVarios.next();
+
+    // Búsqueda profunda si el archivo quedó guardado en subnivel u otra subcarpeta temporalmente
+    if (!docFile) {
+      const subs = variosFolder.getFolders();
+      while (subs.hasNext() && !docFile) {
+        const sf = subs.next();
+        const searchSub = DriveApp.searchFiles(`title contains 'DATOS DE ELABORACION' and '${sf.getId()}' in parents and trashed = false`);
+        if (searchSub.hasNext()) docFile = searchSub.next();
+      }
+    }
+
+    if (!docFile) return [];
+
+    // Extraer y parsear datos del Cerebro
+    const doc = DocumentApp.openById(docFile.getId());
+    const text = doc.getBody().getText();
+
+    const codeudoresLoc = text.indexOf('CODEUDORES:');
+    if (codeudoresLoc === -1) return [];
+
+    const codesStr = text.substring(codeudoresLoc);
+    const codes = [];
+    const blocks = codesStr.split(/\[CODEUDOR \d+\]/);
+
+    for (let i = 1; i < blocks.length; i++) {
+      const block = blocks[i];
+      const matchName = block.match(/NOMBRES::\s*(.+)/);
+      const matchType = block.match(/TIPO DE IDENTIFICACIÓN::\s*(.+)/);
+      const matchDoc = block.match(/NÚMERO DE IDENTIFICACIÓN::\s*(.+)/);
+      const matchPhone = block.match(/CELULAR::\s*(.+)/);
+      const matchEmail = block.match(/CORREO::\s*(.+)/);
+
+      if (matchName || matchDoc) {
+        codes.push({
+          nombre: matchName ? matchName[1].trim() : '',
+          tipoDocumento: matchType ? matchType[1].trim() : '',
+          documento: matchDoc ? matchDoc[1].trim() : '',
+          celular: matchPhone ? matchPhone[1].trim() : '',
+          email: matchEmail ? matchEmail[1].trim() : ''
+        });
+      }
+    }
+    return codes;
+
+  } catch (e) {
+    Logger.log('Error en obtenerCodeudoresDesdeCerebro (' + cdr + '): ' + e.message);
+    return [];
+  }
+}
+
+/**
+ * Buscar o crear carpeta
+ */
+function buscarOcrearCarpeta(carpetaPadre, nombreCarpeta) {
+  const folders = carpetaPadre.getFoldersByName(nombreCarpeta);
+
+  if (folders.hasNext()) {
+    return folders.next();
+  } else {
+    return carpetaPadre.createFolder(nombreCarpeta);
+  }
+}
+
+/**
+ * Actualizar estado del contrato en la hoja
+ */
+function actualizarEstadoContrato(cdr, estado, detalles) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const fila = buscarFilaPorCDR(cdr);
+
+    if (!fila) {
+      Logger.log(`No se encontró registro con CDR: ${cdr}`);
+      return;
+    }
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const estadoCol = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
+    const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+
+    if (estadoCol > 0) {
+      sheet.getRange(fila, estadoCol).setValue(estado);
+    }
+
+    if (detallesCol > 0) {
+      sheet.getRange(fila, detallesCol).setValue(detalles);
+    }
+
+    Logger.log(`Estado actualizado para CDR ${cdr}: ${estado} - ${detalles}`);
+
+  } catch (error) {
+    Logger.log(`Error actualizando estado: ${error.toString()}`);
+  }
+}
+
+/**
+ * Actualizar documento con datos del contrato
+ */
+function actualizarDocumentoDatosContrato(carpetaCDR, datosFormulario, tipo) {
+  try {
+    // Buscar o crear el documento de datos
+    let doc;
+    const files = carpetaCDR.getFilesByName('DATOS_CONTRATO.gdoc');
+
+    if (files.hasNext()) {
+      doc = DocumentApp.openById(files.next().getId());
+    } else {
+      doc = DocumentApp.create('DATOS_CONTRATO');
+      DriveApp.getFileById(doc.getId()).moveTo(carpetaCDR);
+    }
+
+    const body = doc.getBody();
+
+    // Agregar sección según el tipo
+    const fecha = new Date().toLocaleString('es-CO');
+    body.appendParagraph(`\n=== ${tipo} - ${fecha} ===`);
+    body.appendParagraph(JSON.stringify(datosFormulario, null, 2));
+
+    doc.saveAndClose();
+
+  } catch (error) {
+    Logger.log('Error actualizando documento de datos: ' + error.toString());
+  }
+}
+
+/**
+ * Determinar tipo de documento por nombre
+ */
+function determinarTipoDocumento(nombreArchivo) {
+  const nombre = nombreArchivo.toLowerCase();
+
+  if (nombre.includes('pago') || nombre.includes('comprobante')) return 'comprobantePago';
+  if (nombre.includes('estudio') || nombre.includes('aprobado')) return 'estudioAprobado';
+  if (nombre.includes('cedula') || nombre.includes('documento') || nombre.includes('identidad')) return 'documentoIdentidad';
+  if (nombre.includes('sarlaft')) return 'sarlaft';
+  if (nombre.includes('banco') || nombre.includes('bancario')) return 'certificadoBancario';
+  if (nombre.includes('tradicion') || nombre.includes('libertad')) return 'tradicionLibertad';
+  if (nombre.includes('agua')) return 'servicioAgua';
+  if (nombre.includes('luz') || nombre.includes('energia')) return 'servicioLuz';
+  if (nombre.includes('gas')) return 'servicioGas';
+  if (nombre.includes('telefono') || nombre.includes('internet')) return 'servicioTelefono';
+  if (nombre.includes('administracion')) return 'administracion';
+  if (nombre.includes('reglamento')) return 'reglamento';
+  if (nombre.includes('manual') || nombre.includes('convivencia')) return 'manualConvivencia';
+
+  return 'otro';
+}
+
+// ==========================================
+// FUNCIONES DE PROCESAMIENTO DE VALIDACIONES
+// ==========================================
+
+/**
+ * Procesar validación de inquilino
+ */
+function procesarValidacionInquilino(datos) {
+  try {
+    const { cdr, estado, observaciones, campos } = datos;
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+
+    // Buscar la fila del registro
+    const fila = buscarFilaPorCDR(cdr);
+    if (!fila) {
+      return { success: false, message: 'Registro no encontrado' };
+    }
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    const estadoDocCol = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+
+    // Actualizar campos editados si hay
+    if (campos) {
+      actualizarCamposInquilino(fila, campos);
+    }
+
+    // Procesar según el estado
+    if (estado === 'aprobado') {
+      // Actualizar estados
+      sheet.getRange(fila, detallesCol).setValue('✅ Documentos del inquilino aprobados. Pendiente formulario propietario');
+      if (estadoDocCol > 0) {
+        sheet.getRange(fila, estadoDocCol).setValue('INQ_VALIDATED');
+      }
+
+      // Actualizar Cerebro con todos los buzones como APROBADO
+      if (datos.estadosBuzon) {
+        actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
+      }
+
+      // Enviar email al propietario
+      enviarEmailPropietario(cdr);
+
+      return {
+        success: true,
+        message: 'Documentos aprobados. Email enviado al propietario'
+      };
+
+    } else if (estado === 'correccion') {
+      // Actualizar estado en Sheet
+      sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
+      if (estadoDocCol > 0) {
+        const docsStr = (datos.documentosCorregir || []).join(',');
+        sheet.getRange(fila, estadoDocCol).setValue('INQ_CORRECTION|' + docsStr);
+      }
+
+      // Actualizar Cerebro con buzones APROBADO/ACTUALIZANDO
+      if (datos.estadosBuzon) {
+        actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
+      }
+
+      // Enviar email de corrección
+      enviarEmailCorreccionInquilino(cdr, observaciones, datos.documentosCorregir);
+
+      return {
+        success: true,
+        message: 'Solicitud de corrección enviada'
+      };
+    }
+
+  } catch (error) {
+    Logger.log('Error procesando validación inquilino: ' + error.toString());
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Procesar validación de propietario
+ */
+function procesarValidacionPropietario(datos) {
+  try {
+    const { cdr, estado, observaciones, campos } = datos;
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+
+    // Buscar la fila del registro
+    const fila = buscarFilaPorCDR(cdr);
+    if (!fila) {
+      return { success: false, message: 'Registro no encontrado' };
+    }
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    const estadoDocCol = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+
+    // Actualizar campos editados si hay
+    if (campos) {
+      actualizarCamposPropietario(fila, campos);
+    }
+
+    // Procesar según el estado
+    if (estado === 'aprobado') {
+      // Actualizar estados
+      sheet.getRange(fila, detallesCol).setValue('✅ Documentos completos. Listo para generar contrato');
+      if (estadoDocCol > 0) {
+        sheet.getRange(fila, estadoDocCol).setValue('PROP_VALIDATED');
+      }
+
+      return {
+        success: true,
+        message: 'Documentos aprobados. Sistema listo para generar contrato',
+        contratoListo: true
+      };
+
+    } else if (estado === 'correccion') {
+      // Actualizar estado — almacenar nombres de docs a corregir para referencia futura
+      sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
+      if (estadoDocCol > 0) {
+        const docsStr = (datos.documentosCorregir || []).join(',');
+        sheet.getRange(fila, estadoDocCol).setValue('PROP_CORRECTION|' + docsStr);
+      }
+
+      // Enviar email de corrección
+      try {
+        if (typeof enviarCorreoCorreccion === 'function') {
+          enviarCorreoCorreccion(cdr, 'propietario', { observaciones: observaciones, documentos: datos.documentosCorregir || [] });
+        } else {
+          Logger.log('Advertencia: enviarCorreoCorreccion no está definida en este ámbito global.');
+        }
+      } catch (e) {
+        Logger.log('Error enviando correo de corrección: ' + e);
+      }
+
+      return {
+        success: true,
+        message: 'Solicitud de corrección enviada'
+      };
+    }
+
+  } catch (error) {
+    Logger.log('Error procesando validación propietario: ' + error.toString());
+    return { success: false, message: error.message };
+  }
+}
+
+// ==========================================
+// FUNCIONES DE EMAIL
+// ==========================================
+
+/**
+ * Enviar email inicial al inquilino
+ */
+function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulario, direccion = '') {
+  const dirText = direccion ? ` "${direccion}"` : '';
+  const asunto = `FORMULARIO DE ARRENDAMIENTO DEL INMUEBLE${dirText} - ${codigoRegistro}`;
+
+  const cuerpoHtml = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+          <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+        </div>
+        
+        <div style="padding: 40px 30px; line-height: 1.6; color: #333333;">
+          <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombre}</strong>,</p>
+          
+          <p style="margin-bottom: 20px; font-size: 16px;">
+            Su solicitud de arrendamiento ha sido aprobada. Para continuar con el proceso en <strong>Gold Life System</strong>, 
+            necesitamos que complete el formulario con sus datos y documentos.
+          </p>
+
+          <div style="text-align: center; margin: 35px 0;">
+              <a href="${urlFormulario}" 
+                 style="display: inline-block; background-color: #d4af37; color: #ffffff; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
+                  Diligenciar Formulario
+              </a>
+          </div>
+
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+        
+        <p style="color: #999; font-size: 14px; text-align: center;">
+          E-firmaContrata • Real Estate Gold Life System<br>
+          Código de registro: ${codigoRegistro}<br>
+          Este es un correo automático, por favor no responder.
+        </p>
+      </div>
+    </div>
+  `;
+
+  MailApp.sendEmail({
+    to: email,
+    subject: asunto,
+    htmlBody: cuerpoHtml
+  });
+
+  Logger.log(`Email inicial enviado a ${email} con URL: ${urlFormulario}`);
+}
+
+/**
+ * Enviar email de confirmación al inquilino
+ */
+function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
+  try {
+    const inquilino = datosFormulario.inquilino;
+    const asunto = `Confirmación de recepción - Documentos de arrendamiento ${codigoRegistro}`;
+
+    const cuerpoHtml = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+                <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+            </div>
+            
+            <div style="padding: 40px 30px; line-height: 1.6;">
+                <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${inquilino.nombre}</strong>,</p>
+                
+                <p style="margin-bottom: 20px; font-size: 16px;">
+                  Confirmamos que hemos recibido exitosamente sus documentos para el proceso de arrendamiento 
+                  con código de registro <strong>${codigoRegistro}</strong>.
+                </p>
+                
+                <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+                    <h3 style="margin-top: 0; color: #333; font-size: 16px;">📋 Próximos pasos:</h3>
+                    <ol style="color: #555; line-height: 1.8; margin-bottom: 0; font-size: 15px;">
+                      <li>Validación de documentos (24-48 horas)</li>
+                      <li>Revisión y aprobación final</li>
+                      <li>Generación del contrato de arrendamiento</li>
+                      <li>Coordinación de firma y entrega</li>
+                    </ol>
+                </div>
+                
+                <p style="margin-bottom: 20px; font-size: 16px;">
+                  Le notificaremos por este medio cualquier actualización sobre el estado de su solicitud.
+                </p>
+            </div>
+            
+            <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+                <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <span style="color: #d4af37; font-weight: bold;">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0;">Código de registro: ${codigoRegistro}</p>
+                <p style="margin: 5px 0;">Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
+            </div>
+        </div>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: inquilino.email,
+      subject: asunto,
+      htmlBody: cuerpoHtml
+    });
+
+    Logger.log(`Email de confirmación enviado a inquilino: ${inquilino.email}`);
+
+  } catch (error) {
+    Logger.log('Error enviando email confirmación inquilino: ' + error.toString());
+  }
+}
+
+/**
+ * Enviar email al propietario para iniciar su formulario
+ */
+function enviarEmailPropietario(cdr) {
+  try {
+    Logger.log('enviarEmailPropietario llamado con CDR: ' + cdr);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const fila = buscarFilaPorCDR(cdr);
+
+    if (!fila) {
+      Logger.log('enviarEmailPropietario: No se encontró fila para CDR: ' + cdr);
+      return;
+    }
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    const emailProp = obtenerValorPorHeader(headers, row, 'Correo electrónico');
+    const nombreProp = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
+
+    if (!emailProp) {
+      Logger.log('No se encontró email del propietario para CDR: ' + cdr);
+      return;
+    }
+
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+    const urlFormulario = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}`;
+    Logger.log('URL generada para propietario: ' + urlFormulario);
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble');
+    const direccion = colDireccion >= 0 ? row[colDireccion] : '';
+    const dirText = direccion ? ` "${direccion}"` : '';
+
+    const asunto = `FORMULARIO DE PROPIETARIO DEL INMUEBLE${dirText} - ${idRegistro}`;
+
+    const cuerpoHtml = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+                <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+            </div>
+            
+            <div style="padding: 40px 30px; line-height: 1.6;">
+                <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombreProp}</strong>,</p>
+                
+                <p style="margin-bottom: 20px; font-size: 16px;">
+                  Los documentos del inquilino han sido aprobados. Ahora necesitamos que complete 
+                  su formulario con la documentación requerida para continuar con el proceso de arrendamiento.
+                </p>
+                
+                <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+                    <h3 style="margin-top: 0; color: #333; font-size: 16px;">📄 Documentos requeridos:</h3>
+                    <ul style="color: #555; line-height: 1.8; margin-bottom: 0; font-size: 15px;">
+                      <li>Documento de identidad</li>
+                      <li>Formulario SARLAFT</li>
+                      <li>Certificado bancario</li>
+                      <li>Certificado de tradición y libertad</li>
+                      <li>Recibos de servicios públicos al día</li>
+                    </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 35px 0;">
+                    <a href="${urlFormulario}" 
+                       style="display: inline-block; background-color: #d4af37; color: #ffffff; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
+                      COMPLETAR FORMULARIO
+                    </a>
+                </div>
+            </div>
+            
+            <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+                <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <span style="color: #d4af37; font-weight: bold;">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0;">Código de registro: ${cdr}</p>
+                <p style="margin: 5px 0;">Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
+            </div>
+        </div>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: emailProp,
+      subject: asunto,
+      htmlBody: cuerpoHtml
+    });
+
+    Logger.log(`Email enviado a propietario: ${emailProp}`);
+
+  } catch (error) {
+    Logger.log('Error enviando email a propietario: ' + error.toString());
+  }
+}
+
+/**
+ * Enviar email de confirmación al propietario
+ */
+function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
+  try {
+    const propietario = datosFormulario.propietario;
+    const asunto = `Confirmación de recepción - Documentos del propietario ${codigoRegistro}`;
+
+    const cuerpoHtml = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333;">
+        <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+                <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+            </div>
+            
+            <div style="padding: 40px 30px; line-height: 1.6;">
+                <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${propietario.nombre}</strong>,</p>
+                
+                <p style="margin-bottom: 20px; font-size: 16px;">
+                  Confirmamos que hemos recibido exitosamente sus documentos como propietario 
+                  para el proceso de arrendamiento con código de registro <strong>${codigoRegistro}</strong>.
+                </p>
+                
+                <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+                    <h3 style="margin-top: 0; color: #333; font-size: 16px;">✅ Documentación completa</h3>
+                    <p style="color: #555; line-height: 1.8; margin-bottom: 0; font-size: 15px;">
+                      Todos los documentos han sido recibidos. Procederemos con la generación del contrato 
+                      de arrendamiento.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+                <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <span style="color: #d4af37; font-weight: bold;">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+                <p style="margin: 5px 0;">Código de registro: ${codigoRegistro}</p>
+                <p style="margin: 5px 0;">Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
+            </div>
+        </div>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: propietario.email,
+      subject: asunto,
+      htmlBody: cuerpoHtml
+    });
+
+    Logger.log(`Email de confirmación enviado a propietario: ${propietario.email}`);
+
+  } catch (error) {
+    Logger.log('Error enviando email confirmación propietario: ' + error.toString());
+  }
+}
+
+/**
+ * Mapea los nombres físicos de Drive a los IDs del Frontend
+ */
+function mapearNombresAFrontendIds(documentosNombres) {
+  const MAP = {
+    'CEDULA_INQU_FRONTAL': 'docFront',
+    'CEDULA_INQU_REVERSO': 'docBack',
+    'SOPORTES_INGRESO_INQU': 'ingresos',
+    'CEDULA_COD_1_FRONTAL': 'coDocFront',
+    'CEDULA_COD_1_REVERSO': 'coDocBack',
+    'SOPORTES_INGRESO_COD_1': 'coIngresos',
+    'COMPROBANTE_PAGO_INQU': 'comprobantePago',
+    'CEDULA_PROP_FRONTAL': 'docFront',
+    'CEDULA_PROP_REVERSO': 'docBack',
+    'CERT_TRADICION': 'certTradicion',
+    'SARLAFT': 'sarlaft',
+    'CERT_BANCARIO': 'certBancario',
+    'FACTURA_AGUA': 'facturaAgua',
+    'FACTURA_LUZ': 'facturaLuz',
+    'FACTURA_GAS': 'facturaGas',
+    'FACTURA_TELEFONO': 'facturaTelefono',
+    'FACTURA_INTERNET': 'facturaInternet'
+  };
+
+  const ids = [];
+  if (!documentosNombres || !Array.isArray(documentosNombres)) return ids;
+
+  for (const docName of documentosNombres) {
+    if (!docName) continue;
+    for (const [key, frontendId] of Object.entries(MAP)) {
+      if (docName.includes(key)) {
+        if (!ids.includes(frontendId)) ids.push(frontendId);
+        break; // Pasamos al siguiente documento
+      }
+    }
+  }
+  return ids;
+}
+
+/**
+ * Enviar corrección al inquilino
+ */
+function enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir = []) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const fila = buscarFilaPorCDR(cdr);
+
+    if (!fila) return;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    const email = obtenerValorPorHeader(headers, row, 'CORREO INQUILINO');
+    const nombre = obtenerValorPorHeader(headers, row, 'NOMBRE COMPLETO INQUILINO');
+
+    const docsMapeados = mapearNombresAFrontendIds(documentosCorregir);
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+    const docsParam = docsMapeados.length > 0 ? `&docs=${encodeURIComponent(JSON.stringify(docsMapeados))}` : '';
+
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}&modo=correccion${docsParam}`;
+
+    const asunto = `Corrección requerida - Documentos de arrendamiento ${idRegistro}`;
+
+    const listDocsHtml = documentosCorregir && documentosCorregir.length > 0
+      ? `<ul style="color: #666; font-weight: 500; margin-bottom: 20px;">${documentosCorregir.map(d => `<li>${d}</li>`).join('')}</ul>`
+      : '';
+
+    const cuerpoHtml = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+          <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+        </div>
+        
+        <div style="padding: 40px 30px; line-height: 1.6; color: #333333;">
+          <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombre}</strong>,</p>
+          
+          <p style="margin-bottom: 20px; font-size: 16px;">
+            Hemos revisado sus documentos y necesitamos que vuelva a enviar los siguientes archivos para continuar con el proceso:
+          </p>
+
+          ${listDocsHtml}
+          
+          <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+            <p style="margin: 0; font-size: 15px; color: #555;"><strong>📋 Observaciones / Instrucciones:</strong><br><br>${observaciones || 'Por favor revise los documentos enviados'}</p>
+          </div>
+          
+          <div style="text-align: center; margin: 35px 0;">
+            <a href="${urlCorreccion}" 
+               style="display: inline-block; background-color: #d4af37; color: #ffffff !important; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
+              REALIZAR CORRECCIONES
+            </a>
+          </div>
+          
+        </div>
+        
+        <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+          <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <strong style="color: #d4af37;">Real Estate - Gold Life System</strong>. Todos los derechos reservados.</p>
+          <p style="margin: 5px 0;">Código de registro: ${cdr}</p>
+        </div>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: email,
+      subject: asunto,
+      htmlBody: cuerpoHtml
+    });
+
+    Logger.log(`Email de corrección enviado a inquilino: ${email}`);
+
+  } catch (error) {
+    Logger.log('Error enviando corrección inquilino: ' + error.toString());
+  }
+}
+
+/**
+ * Enviar corrección al propietario
+ */
+function enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir = []) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const fila = buscarFilaPorCDR(cdr);
+
+    if (!fila) return;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    const email = obtenerValorPorHeader(headers, row, 'Correo electrónico');
+    const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
+
+    const docsMapeados = mapearNombresAFrontendIds(documentosCorregir);
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
+    const docsParam = docsMapeados.length > 0 ? `&docs=${encodeURIComponent(JSON.stringify(docsMapeados))}` : '';
+
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+    const urlCorreccion = `${baseUrl}/validador.html?action=formulario-propietario&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}&modo=correccion${docsParam}`;
+
+    const asunto = `Corrección requerida - Documentos del propietario ${idRegistro}`;
+
+    const listDocsHtml = documentosCorregir && documentosCorregir.length > 0
+      ? `<ul style="color: #666; font-weight: 500; margin-bottom: 20px;">${documentosCorregir.map(d => `<li>${d}</li>`).join('')}</ul>`
+      : '';
+
+    const cuerpoHtml = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+        <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
+          <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
+        </div>
+        
+        <div style="padding: 40px 30px; line-height: 1.6; color: #333333;">
+          <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombre}</strong>,</p>
+          
+          <p style="margin-bottom: 20px; font-size: 16px;">
+            Hemos revisado sus documentos y necesitamos que vuelva a enviar los siguientes archivos para continuar con el proceso:
+          </p>
+
+          ${listDocsHtml}
+          
+          <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
+            <p style="margin: 0; font-size: 15px; color: #555;"><strong>📋 Observaciones / Instrucciones:</strong><br><br>${observaciones || 'Por favor revise los documentos enviados'}</p>
+          </div>
+          
+          <div style="text-align: center; margin: 35px 0;">
+            <a href="${urlCorreccion}" 
+               style="display: inline-block; background-color: #d4af37; color: #ffffff !important; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
+              REALIZAR CORRECCIONES
+            </a>
+          </div>
+          
+        </div>
+        
+        <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
+          <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <strong style="color: #d4af37;">Real Estate - Gold Life System</strong>. Todos los derechos reservados.</p>
+          <p style="margin: 5px 0;">Código de registro: ${cdr}</p>
+        </div>
+      </div>
+    `;
+
+    MailApp.sendEmail({
+      to: email,
+      subject: asunto,
+      htmlBody: cuerpoHtml
+    });
+
+    Logger.log(`Email de corrección enviado a propietario: ${email}`);
+
+  } catch (error) {
+    Logger.log('Error enviando corrección propietario: ' + error.toString());
+  }
+}
+
+// ==========================================
+// FUNCIONES DE ACTUALIZACIÓN DE CAMPOS
+// ==========================================
+
+/**
+ * Actualizar campos del inquilino
+ */
+function actualizarCamposInquilino(fila, campos) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    if (campos.nombre) {
+      const col = headers.indexOf('NOMBRE COMPLETO INQUILINO') + 1;
+      if (col > 0) sheet.getRange(fila, col).setValue(campos.nombre);
+    }
+
+    if (campos.documento) {
+      const col = headers.indexOf('NUMERO DOCUMENTO INQUILINO') + 1;
+      if (col > 0) sheet.getRange(fila, col).setValue(campos.documento);
+    }
+
+    if (campos.email) {
+      const col = headers.indexOf('CORREO INQUILINO') + 1;
+      if (col > 0) sheet.getRange(fila, col).setValue(campos.email);
+    }
+
+    if (campos.celular) {
+      const col = headers.indexOf('CELULAR INQUILINO') + 1;
+      if (col > 0) sheet.getRange(fila, col).setValue(campos.celular);
+    }
+
+  } catch (error) {
+    Logger.log('Error actualizando campos inquilino: ' + error.toString());
+  }
+}
+
+/**
+ * Actualizar campos del propietario
+ */
+function actualizarCamposPropietario(fila, campos) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    if (campos.nombre) {
+      const col = headers.indexOf('Ingrese Nombres y Apellidos') + 1;
+      if (col > 0) sheet.getRange(fila, col).setValue(campos.nombre);
+    }
+
+    if (campos.documento) {
+      const col = headers.indexOf('Número de documento') + 1;
+      if (col > 0) sheet.getRange(fila, col).setValue(campos.documento);
+    }
+
+    if (campos.email) {
+      const col = headers.indexOf('Correo electrónico') + 1;
+      if (col > 0) sheet.getRange(fila, col).setValue(campos.email);
+    }
+
+    if (campos.celular) {
+      const col = headers.indexOf('Celular') + 1;
+      if (col > 0) sheet.getRange(fila, col).setValue(campos.celular);
+    }
+
+  } catch (error) {
+    Logger.log('Error actualizando campos propietario: ' + error.toString());
+  }
+}
+
+/**
+ * Actualizar campo de validación
+ */
+function actualizarCampoValidacion(datos) {
+  try {
+    const { cdr, tipo, campo, valor } = datos;
+    const fila = buscarFilaPorCDR(cdr);
+
+    if (!fila) {
+      return { success: false, message: 'Registro no encontrado' };
+    }
+
+    if (tipo === 'inquilino') {
+      actualizarCamposInquilino(fila, { [campo]: valor });
+    } else if (tipo === 'propietario') {
+      actualizarCamposPropietario(fila, { [campo]: valor });
+    }
+
+    return { success: true, message: 'Campo actualizado' };
+
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Enviar corrección al inquilino
+ */
+function enviarCorreccionInquilino(datos) {
+  try {
+    const { cdr, observaciones, documentosCorregir } = datos;
+    enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir || []);
+
+    // Actualizar estado en Sheet
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const fila = buscarFilaPorCDR(cdr);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
+
+    // Actualizar Cerebro con buzones APROBADO/ACTUALIZANDO
+    if (datos.estadosBuzon) {
+      actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
+    }
+
+    return {
+      success: true,
+      message: 'Corrección enviada al inquilino'
+    };
+
+  } catch (error) {
+    Logger.log('Error enviando corrección inquilino: ' + error.toString());
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Enviar corrección al propietario
+ */
+function enviarCorreccionPropietario(datos) {
+  try {
+    const { cdr, observaciones, documentosCorregir } = datos;
+    enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir || []);
+
+    // Actualizar estado en Sheet
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const fila = buscarFilaPorCDR(cdr);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
+
+    // Actualizar Cerebro con buzones APROBADO/ACTUALIZANDO
+    if (datos.estadosBuzon) {
+      actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
+    }
+
+    return {
+      success: true,
+      message: 'Corrección enviada al propietario'
+    };
+
+  } catch (error) {
+    Logger.log('Error enviando corrección propietario: ' + error.toString());
+    return { success: false, message: error.message };
+  }
+}
+
+// ==========================================
+// FUNCIONES PARA EL POPUP DE EMAIL INICIAL
+// ==========================================
+
+// [FUNCIÓN OBSOLETA ELIMINADA] - Usar procesarEmailInquilino centralizada al final del archivo
+
+// ==========================================
+// FUNCIONES DE LOG
+// ==========================================
+
+/**
+ * Registrar en log
+ */
+function registrarLog(tipo, cdr, mensaje) {
+  try {
+    let logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_LOG);
+
+    if (!logSheet) {
+      logSheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(DOCS_CONFIG.HOJA_LOG);
+      logSheet.getRange(1, 1, 1, 5).setValues([['FECHA', 'TIPO', 'CDR', 'MENSAJE', 'USUARIO']]);
+    }
+
+    const fecha = new Date();
+    const usuario = Session.getActiveUser().getEmail();
+
+    logSheet.appendRow([fecha, tipo, cdr, mensaje, usuario]);
+
+  } catch (error) {
+    Logger.log('Error registrando log: ' + error.toString());
+  }
+}
+// ==========================================
+// FUNCIONES DE ENVÍO DE EMAIL CON BRANDING DARK + DORADO
+// ==========================================
+
+// ✉️ Inquilino: envío de formulario
+// [FUNCIÓN OBSOLETA ELIMINADA]
+
+// ✉️ Inquilino: correo de corrección
+function procesarEmailCorreccion(email, linkCorreccion) {
+  const asunto = "Corrección requerida - E-FirmaContrata";
+  const cuerpoHTML = `
+    <body style="background:#0F0F0F; padding:30px; color:#f4f4f4; font-family:Segoe UI,sans-serif;">
+      <div style="max-width:600px; margin:auto; background:#1e1e1e; padding:30px; border-radius:12px;">
+        <h2 style="color:#FFD700; text-align:center;">EFirmaContrata</h2>
+        <p>Se requiere que corrijas o completes algunos datos/documentos enviados previamente.</p>
+        <a href="${linkCorreccion}" style="display:inline-block; margin-top:20px; background:#FFD700; color:#000; padding:12px 20px; border-radius:8px; text-decoration:none;">Corregir formulario</a>
+        <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
+      </div>
+    </body>`;
+  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
+}
+
+// ✉️ Inquilino: contrato para firmar
+function enviarContratoFirmar(email, linkContrato) {
+  const asunto = "Firma de Contrato - E-FirmaContrata";
+  const cuerpoHTML = `
+    <body style="background:#0F0F0F; padding:30px; color:#f4f4f4; font-family:Segoe UI,sans-serif;">
+      <div style="max-width:600px; margin:auto; background:#1e1e1e; padding:30px; border-radius:12px;">
+        <h2 style="color:#FFD700; text-align:center;">EFirmaContrata</h2>
+        <p>Se ha generado el contrato de arrendamiento. Por favor ingresa para revisarlo y firmarlo:</p>
+        <a href="${linkContrato}" style="display:inline-block; margin-top:20px; background:#FFD700; color:#000; padding:12px 20px; border-radius:8px; text-decoration:none;">Ver y firmar contrato</a>
+        <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
+      </div>
+    </body>`;
+  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
+}
+
+// ✉️ Inquilino: notificación de finalización
+function notificarFinalizacion(email) {
+  const asunto = "Contrato Finalizado - E-FirmaContrata";
+  const cuerpoHTML = `
+    <body style="background:#0F0F0F; padding:30px; color:#f4f4f4; font-family:Segoe UI,sans-serif;">
+      <div style="max-width:600px; margin:auto; background:#1e1e1e; padding:30px; border-radius:12px;">
+        <h2 style="color:#FFD700; text-align:center;">EFirmaContrata</h2>
+        <p>El contrato ha sido finalizado y registrado correctamente en el sistema.</p>
+        <p>Gracias por usar E-FirmaContrata.</p>
+        <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
+      </div>
+    </body>`;
+  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
+}
+
+// ==========================================
+// PROPIETARIO
+// ==========================================
+
+// === ELIMINADO: función duplicada enviarEmailPropietario ===
+// La versión principal con try-catch y encodeURIComponent está en línea ~2672
+
+// === ELIMINADAS: funciones duplicadas enviarEmailConfirmacionPropietario y enviarEmailCorreccionPropietario ===
+// Las versiones principales actualizadas están más arriba en el archivo
+
+// ==========================================
+// FUNCIONES PARA EL POPUP DE EMAIL INQUILINO
+// ==========================================
+
+/**
+ * Obtener datos del registro actual (para el popup)
+ */
+function obtenerDatosRegistroActual() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const currentRow = props.getProperty('currentRow');
+    const currentCDR = props.getProperty('currentCDR');
+
+    if (!currentRow || !currentCDR) {
+      throw new Error('No se encontró información del registro activo. Por favor cierre y vuelva a abrir el popup desde el menú.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    const fila = parseInt(currentRow);
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const rowData = sheet.getRange(fila, 1, 1, lastCol).getValues()[0];
+
+    // Obtener índices de columnas clave
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble');
+    const colTipo = headers.indexOf('TIPO DE NEGOCIO');
+    const colEstado = headers.indexOf('ESTADO DEL INMUEBLE');
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
+
+    const direccion = colDireccion !== -1 ? rowData[colDireccion] : 'No especificada';
+    const tipoNegocio = colTipo !== -1 ? rowData[colTipo] : 'No especificado';
+    const estadoActual = colEstado !== -1 ? rowData[colEstado] : '';
+    const detallesEstado = colDetalles !== -1 ? rowData[colDetalles] : '';
+
+    // Verificar si ya se envió antes (si el estado contiene "ENVIADO" o similar)
+    const yaEnviado = (estadoActual && estadoActual.includes('ENVIADO')) ||
+      (detallesEstado && detallesEstado.includes('Formulario enviado'));
+
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(currentCDR) : currentCDR;
+
+    return {
+      cdr: currentCDR,
+      idRegistro: idRegistro,
+      direccion: direccion,
+      tipoNegocio: tipoNegocio,
+      yaEnviado: yaEnviado
+    };
+
+  } catch (error) {
+    Logger.log('Error en obtenerDatosRegistroActual: ' + error.toString());
+    throw error; // Re-lanzar para que el frontend lo capture
+  }
+}
+
+/**
+ * Procesar envío de email al inquilino (Backend)
+ */
+function procesarEmailInquilino(email, nombre) {
+  try {
+    // 1. Validaciones básicas
+    if (!email || !email.includes('@')) throw new Error('Email inválido');
+    if (!nombre || nombre.length < 2) throw new Error('Nombre inválido');
+
+    // 2. Recuperar contexto
+    const props = PropertiesService.getScriptProperties();
+    const currentRow = parseInt(props.getProperty('currentRow'));
+    const currentCDR = props.getProperty('currentCDR');
+
+    if (!currentRow || !currentCDR) {
+      throw new Error('Sesión del popup expirada. Por favor cierre y vuelva a intentar.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // Generar URL del formulario
+    // CORRECCIÓN: El frontend está en /frontend/
+    const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
+    const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(currentCDR) : currentCDR;
+    const urlFormulario = `${baseUrl}/validador.html?action=formulario-inquilino&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}&email=${encodeURIComponent(email)}&nombre=${encodeURIComponent(nombre)}`;
+
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble') + 1;
+    const direccion = colDireccion > 0 ? sheet.getRange(currentRow, colDireccion).getValue() : '';
+
+    // 4. Enviar Email
+    // Usamos la función centralizada para mantener el diseño consistente
+    enviarEmailInquilinoInicial(email, nombre, idRegistro, urlFormulario, direccion);
+
+    // 5. Actualizar Estado en la Hoja
+    const colEmail = headers.indexOf('CORREO INQUILINO') + 1;
+    const colNombre = headers.indexOf('NOMBRE COMPLETO INQUILINO') + 1;
+    const colEstado = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+
+    // Guardar datos
+    if (colEmail > 0) sheet.getRange(currentRow, colEmail).setValue(email);
+    if (colNombre > 0) sheet.getRange(currentRow, colNombre).setValue(nombre);
+
+    // Actualizar estado
+    if (colEstado > 0) sheet.getRange(currentRow, colEstado).setValue('FORMULARIO ENVIADO');
+    if (colDetalles > 0) sheet.getRange(currentRow, colDetalles).setValue('⏳ Esperando respuesta del inquilino');
+
+    return {
+      success: true,
+      message: '✅ Email enviado y estado actualizado correctamente.'
+    };
+
+  } catch (error) {
+    Logger.log('Error en procesarEmailInquilino: ' + error.toString());
+    return {
+      success: false,
+      message: 'Error: ' + error.message
+    };
+  }
+}
+
+// ==========================================
+// FUNCIONES PARA EL POPUP DE EMAIL PROPIETARIO
+// ==========================================
+
+/**
+ * Obtener datos del registro actual para el popup del propietario
+ */
+function obtenerDatosRegistroPropietarioActual() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const currentRow = props.getProperty('currentRow');
+    const currentCDR = props.getProperty('currentCDR');
+
+    if (!currentRow || !currentCDR) {
+      throw new Error('No se encontró información del registro activo. Por favor cierre y vuelva a abrir el popup desde el menú.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    const fila = parseInt(currentRow);
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const rowData = sheet.getRange(fila, 1, 1, lastCol).getValues()[0];
+
+    // Obtener índices de columnas clave
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble');
+    const colTipo = headers.indexOf('TIPO DE NEGOCIO');
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
+
+    // Nombres y Correos (tanto inquilino para mostrar contexto, como propietario)
+    const colNombreProp = headers.indexOf('Ingrese Nombres y Apellidos');
+    const colEmailProp = headers.indexOf('Correo electrónico');
+
+    const direccion = colDireccion !== -1 ? rowData[colDireccion] : 'No especificada';
+    const tipoNegocio = colTipo !== -1 ? rowData[colTipo] : 'No especificado';
+    const detallesEstado = colDetalles !== -1 ? rowData[colDetalles] : '';
+
+    // Buscamos si ya hay un propietario pre-registrado
+    const nombrePropietario = colNombreProp !== -1 ? rowData[colNombreProp] : '';
+    const emailPropietario = colEmailProp !== -1 ? rowData[colEmailProp] : '';
+
+    // Si ya dice "Pendiente formulario propietario" significa que en el flujo normal ya se le envió al menos una vez al terminar al inquilino
+    const yaEnviado = detallesEstado.includes('Pendiente formulario propietario') || detallesEstado.includes('Propietario');
+
+    return {
+      cdr: currentCDR,
+      direccion: direccion,
+      tipoNegocio: tipoNegocio,
+      nombrePreCargado: nombrePropietario,
+      emailPreCargado: emailPropietario,
+      yaEnviado: yaEnviado
+    };
+
+  } catch (error) {
+    Logger.log('Error en obtenerDatosRegistroPropietarioActual: ' + error.toString());
+    throw error;
+  }
+}
+
+/**
+ * Procesar envío de email al propietario (Backend) desde el Popup Manual
+ */
+function procesarEmailPropietarioPopup(email, nombre) {
+  try {
+    // 1. Validaciones básicas
+    if (!email || !email.includes('@')) throw new Error('Email inválido');
+    if (!nombre || nombre.length < 2) throw new Error('Nombre inválido');
+
+    // 2. Recuperar contexto
+    const props = PropertiesService.getScriptProperties();
+    const currentRow = parseInt(props.getProperty('currentRow'));
+    const currentCDR = props.getProperty('currentCDR');
+
+    if (!currentRow || !currentCDR) {
+      throw new Error('Sesión del popup expirada. Por favor cierre y vuelva a intentar.');
+    }
+
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    if (!sheet) throw new Error('No se encontró la hoja principal');
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+    // 3. Escribir/Actualizar nombre y correo del propietario (si los cambió el admin en el popup)
+    const colEmailProp = headers.indexOf('Correo electrónico') + 1;
+    const colNombreProp = headers.indexOf('Ingrese Nombres y Apellidos') + 1;
+
+    if (colEmailProp > 0) sheet.getRange(currentRow, colEmailProp).setValue(email);
+    if (colNombreProp > 0) sheet.getRange(currentRow, colNombreProp).setValue(nombre);
+
+    // 4. Enviar Email llamando a la función principal
+    // Nota: enviarEmailPropietario internamente lee el correo y nombre desde la hoja (que acabamos de actualizar)
+    enviarEmailPropietario(currentCDR);
+
+    // 5. No modificamos el estado 'DETALLES DEL ESTADO DEL INMUEBLE' porque ya debería estar en "✅ Documentos del inquilino aprobados. Pendiente formulario propietario"
+    // Pero si quieren reiniciar forzosamente a ese estado, podríamos hacerlo:
+    const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    if (colDetalles > 0) {
+      sheet.getRange(currentRow, colDetalles).setValue('✅ Documentos del inquilino aprobados. Pendiente formulario propietario');
+    }
+
+    return {
+      success: true,
+      message: '✅ Email enviado exitosamente al Propietario.'
+    };
+
+  } catch (error) {
+    Logger.log('Error en procesarEmailPropietarioPopup: ' + error.toString());
+    return {
+      success: false,
+      message: 'Error: ' + error.message
+    };
+  }
+}
+
+// ==========================================
+// FUNCIONES DE UTILIDAD (BITÁCORA E ID)
+// ==========================================
+
+/**
+ * Registra un mensaje en la bitácora del Cerebro (Tabla al final del documento)
+ */
+function handleRegistrarMensajeBitacora(datos) {
+  try {
+    const cdr = datos.cdr;
+    const mensaje = datos.mensaje;
+    const autor = datos.autor || 'Sistema';
+    if (!cdr || !mensaje) throw new Error('Faltan datos para la bitácora');
+
+    const cdrEscaped = cdr.replace(/'/g, "\\'");
+    // Buscar el Cerebro usando la función robusta
+    const docCerebro = abrirDocCerebro(cdr);
+    if (docCerebro) {
+      docFileId = docCerebro.getId();
+    } else {
+      throw new Error('Documento Cerebro no encontrado para el CDR: ' + cdr);
+    }
+
+    const doc = DocumentApp.openById(docFileId);
+    const body = doc.getBody();
+    
+    // Buscar la tabla de bitácora
+    let bitacoraTable = null;
+    const tables = body.getTables();
+    for (let i = 0; i < tables.length; i++) {
+      const table = tables[i];
+      if (table.getNumRows() > 0) {
+        const firstCellText = table.getRow(0).getCell(0).getText().toUpperCase();
+        if (firstCellText.includes('BITÁCORA') || firstCellText.includes('BITACORA')) {
+          bitacoraTable = table;
+          break;
+        }
+      }
+    }
+
+    // Si no existe la tabla, crearla al final
+    if (!bitacoraTable) {
+      body.appendParagraph('\n--- REGISTRO DE BITÁCORA ---').setHeading(DocumentApp.ParagraphHeading.HEADING2);
+      bitacoraTable = body.appendTable([
+        ['FECHA', 'AUTOR', 'MENSAJE']
+      ]);
+      // Estilizar encabezado
+      const headerRow = bitacoraTable.getRow(0);
+      for(let c=0; c<3; c++) {
+         headerRow.getCell(c).setBackgroundColor('#d9d9d9');
+         headerRow.getCell(c).getChild(0).asParagraph().setAttributes({ [DocumentApp.Attribute.BOLD]: true });
+      }
+    }
+
+    // Añadir nueva fila
+    const fecha = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    bitacoraTable.appendTableRow().autoAppend([fecha, autor, mensaje]);
+
+    doc.saveAndClose();
+
+    return { success: true, message: 'Mensaje registrado en la bitácora del Cerebro exitosamente.' };
+
+  } catch (error) {
+    Logger.log('Error en handleRegistrarMensajeBitacora: ' + error.message);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Obtiene el ID DE REGISTRO a partir del CDR
+ */
+function obtenerIdRegistro(cdr) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS') || 
+                  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1- REGISTROS PRINCIPALES');
+    if (!sheet) return cdr;
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return cdr;
+    
+    const headers = data[0].map(h => String(h).trim().toUpperCase());
+    const cdrCol = headers.indexOf('CODIGO DE REGISTRO');
+    const idCol = headers.indexOf('ID DE REGISTRO');
+    
+    if (cdrCol === -1 || idCol === -1) return cdr;
+    
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][cdrCol] === cdr) {
+        const id = data[i][idCol];
+        return id ? id : cdr;
+      }
+    }
+    return cdr;
+  } catch (error) {
+    return cdr;
+  }
+}
+
+// ==========================================
+// FIN DEL ARCHIVO
+// ==========================================

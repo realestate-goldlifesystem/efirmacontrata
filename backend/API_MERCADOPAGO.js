@@ -11,13 +11,13 @@ function crearPreferenciaPago(datos) {
     // Configurar la preferencia
     const payload = {
       items: [
-        {
-          title: 'Derechos de Estudio de Perfil - E-FirmaContrata',
-          description: 'Estudio para solicitud de arrendamiento',
-          quantity: 1,
-          currency_id: 'COP',
-          unit_price: 60000
-        }
+          {
+            title: 'Derechos de Estudio de Perfil - E-FirmaContrata',
+            description: 'Estudio para solicitud de arrendamiento',
+            quantity: 1,
+            currency_id: 'COP',
+            unit_price: 85000
+          }
       ],
       payer: {
         email: datos.email || 'cliente@ejemplo.com'

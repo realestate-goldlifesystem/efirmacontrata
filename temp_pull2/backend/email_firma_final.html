@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firma Exitosa - Copia Certificada</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .header {
+            background-color: #1a1a1a;
+            color: #d4af37;
+            text-align: center;
+            padding: 30px 20px;
+            border-bottom: 4px solid #d4af37;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 1px;
+            font-weight: 300;
+        }
+        .header h1 strong {
+            font-weight: 700;
+        }
+        .content {
+            padding: 40px 30px;
+            line-height: 1.6;
+        }
+        .content p {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .highlight-box {
+            background-color: #f4fdf4;
+            border-left: 4px solid #28a745;
+            padding: 15px 20px;
+            margin: 25px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .highlight-box p {
+            margin: 0;
+            font-size: 15px;
+            color: #155724;
+        }
+        .footer {
+            background-color: #1a1a1a;
+            color: #888888;
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .gold-text {
+            color: #d4af37;
+            font-weight: bold;
+        }
+        .icon-success {
+            font-size: 48px;
+            text-align: center;
+            display: block;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>REAL ESTATE <br><strong>GOLD LIFE SYSTEM</strong></h1>
+        </div>
+        
+        <div class="content">
+            <span class="icon-success">✅</span>
+            <p>Estimado/a <strong><?= NOMBRE_CLIENTE ?></strong>,</p>
+            
+            <p>El proceso de firma electrónica se ha completado exitosamente.</p>
+            
+            <p>Adjunto a este correo encontrará la copia final certificada de su <strong><?= TIPO_ACTA ?></strong> del inmueble registrado bajo ID: <strong><?= CDR ?></strong>, la cual incluye su firma electrónica y el anexo legal de auditoría (Ley 527 de 1999).</p>
+            
+            <div class="highlight-box">
+                <p><strong>Confirmación Legal:</strong> El documento adjunto tiene plena validez jurídica e inalterabilidad comprobada, resguardado con su rastro de red (IP, Dispositivo y Fecha).</p>
+            </div>
+            
+            <p>Agradecemos su confianza en nosotros. Si tiene alguna inquietud adicional, no dude en contactarnos.</p>
+            
+            <p>Cordialmente,</p>
+            <p class="gold-text">Real Estate - Gold Life System</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; <?= ANIO ?> <span class="gold-text">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+            <p>Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
+        </div>
+    </div>
+</body>
+</html>

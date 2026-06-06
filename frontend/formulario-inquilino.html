@@ -368,49 +368,25 @@
       </div>
 
       <!-- Payment Screen (Ante-página 2) -->
-      <div id="paymentScreen" class="form-container" style="display: none; max-width: 550px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h2 class="form-title" style="font-size: 1.8rem; margin-bottom: 10px;">💳 Derechos de Estudio</h2>
-          <p class="form-subtitle" style="font-size: 1.05rem; line-height: 1.6; color: #a1a1aa;">
-            Antes de iniciar con el formulario, es necesario procesar el pago del estudio de perfil. Una vez verificado, el formulario se desbloqueará instantáneamente.
+      <div id="paymentScreen" class="form-container" style="display: none; max-width: 500px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h2 class="form-title" style="font-size: 1.6rem; margin-bottom: 8px;">💳 Derechos de Estudio</h2>
+          <p class="form-subtitle" style="font-size: 0.95rem; line-height: 1.5; color: #a1a1aa;">
+            Antes de iniciar con el formulario, es necesario procesar el pago del estudio de perfil.
           </p>
         </div>
         
         <div class="card" style="border: 1px solid rgba(212,175,55,0.2); background: rgba(0,0,0,0.2);">
-            <div class="card-body" style="padding: 2rem;">
-              <div style="text-align: center; margin-bottom: 25px;">
-                <span style="font-size: 0.9rem; color: #a1a1aa; text-transform: uppercase; letter-spacing: 1px;">Valor a pagar</span>
-                <h3 style="font-size: 2.5rem; color: var(--primary); margin: 5px 0 0;">$60.000 <span style="font-size: 1rem; color: #6b7280;">COP</span></h3>
+            <div class="card-body" style="padding: 1.5rem;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <span style="font-size: 0.85rem; color: #a1a1aa; text-transform: uppercase; letter-spacing: 1px;">Valor a pagar</span>
+                <h3 style="font-size: 2.2rem; color: var(--primary); margin: 5px 0 0;">$85.000 <span style="font-size: 1rem; color: #6b7280;">COP</span></h3>
               </div>
 
               <!-- Mercado Pago Widget Container -->
-              <div id="wallet_container" style="margin-bottom: 20px;"></div>
-
-              <div class="payment-options">
-                <button id="btnPayBreb" class="btn btn-secondary btn-lg btn-block" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                  <span>📱</span> Pagar con Nequi/Daviplata
-                </button>
-              </div>
-
-              <div class="hr" style="margin: 25px 0;"></div>
-              
-              <div style="background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1);">
-                <h4 style="font-size: 1rem; margin-bottom: 5px;">Soporte de Transferencia</h4>
-                <p class="muted" style="margin-bottom:15px; font-size: 0.85rem;">Si realizó transferencia manual, adjunte su comprobante aquí.</p>
-                <div class="file-upload">
-                  <input type="file" id="comprobantePago" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
-                  <label for="comprobantePago" class="file-label" style="justify-content: center; background: rgba(0,0,0,0.3);">
-                    <span>📄 Adjuntar Comprobante</span>
-                    <span id="comprobantePagoName" class="file-name"></span>
-                  </label>
-                </div>
-              </div>
+              <div id="wallet_container" style="margin-bottom: 10px;"></div>
             </div>
         </div>
-
-        <button id="btnStartWizard" class="btn btn-success btn-lg btn-block" style="margin-top: 25px; padding: 15px; font-size: 1.1rem; border-radius: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease;" disabled>
-          Iniciar Formulario Oficial <span>→</span>
-        </button>
       </div>
 
       <!-- Form Container -->
@@ -787,7 +763,8 @@
         }
 
         const mpStatus = params.get('status');
-        if (mpStatus === 'approved') {
+        const mpCollectionStatus = params.get('collection_status');
+        if (mpStatus === 'success' || mpStatus === 'approved' || mpCollectionStatus === 'approved') {
           // Si vino de MP con pago aprobado, pasarlo al wizard directamente
           const welcome = document.getElementById('welcomeScreen');
           const payment = document.getElementById('paymentScreen');
@@ -795,7 +772,7 @@
           if (welcome) welcome.style.display = 'none';
           if (payment) payment.style.display = 'none';
           if (mainWiz) mainWiz.style.display = 'block';
-          showAlert('success', '¡Pago procesado con éxito! Por favor continúa con el formulario.');
+          showAlert('success', '¡Pago verificado con éxito! Puede continuar con el formulario.');
         }
 
         if (state.modoCorreccion) {

@@ -23,3 +23,9 @@ _legacy/
 *.py
 combined_test.js
 frontend/**
+
+temp_pull2/
+
+
+temp_pull2/**
+
