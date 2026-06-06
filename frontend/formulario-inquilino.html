@@ -458,8 +458,7 @@
           <div class="step active" data-step="0">1</div>
           <div class="step" data-step="1">2</div>
           <div class="step" data-step="2">3</div>
-          <div class="step" data-step="3">4</div>
-          <div class="step" data-step="4">✓</div>
+          <div class="step" data-step="3">✓</div>
         </div>
 
         <!-- Step 1: Datos -->
@@ -707,7 +706,7 @@
         modoCorreccion: false,
         docsCorreccion: [],
         step: 0,
-        max: 4,
+        max: 3,
         archivos: {},
         maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024)
       };
@@ -1181,6 +1180,7 @@
 
       // --------- Files ----------
       function bindFile(input, key, nameEl) {
+        if (!input) return;
         input.addEventListener('change', () => handleFile(input.files?.[0], key, nameEl));
       }
 
@@ -1752,7 +1752,7 @@
       // --------- Submit CORREGIDO ----------
       async function onSubmit() {
         // Validación final
-        for (let i = 0; i <= 4; i++) {
+        for (let i = 0; i <= 3; i++) {
           if (!validateStep(i)) { gotoStep(i); return; }
         }
 
