@@ -26,7 +26,7 @@ function instalarActivadores() {
         .onFormSubmit()
         .create();
 
-    console.log('✅ Activadores instalados correctamente.');
+    console.log('âœ… Activadores instalados correctamente.');
     SpreadsheetApp.getUi().alert('Activadores instalados correctamente.');
 }
 
@@ -41,7 +41,7 @@ function instalarTriggerAutoRename() {
         .everyMinutes(1)
         .create();
 
-    SpreadsheetApp.getUi().alert('✅ AutoRename activado: Se ejecutará cada 1 minuto (Casi en tiempo real).');
+    SpreadsheetApp.getUi().alert('âœ… AutoRename activado: Se ejecutarÃ¡ cada 1 minuto (Casi en tiempo real).');
 }
 
 /**
@@ -59,15 +59,15 @@ function desinstalarTriggerAutoRename() {
     });
 
     if (count > 0) {
-        SpreadsheetApp.getUi().alert('🛑 AutoRename desactivado.');
+        SpreadsheetApp.getUi().alert('ðŸ›‘ AutoRename desactivado.');
     } else {
-        // Si no había triggers, no molestamos al usuario a menos que lo llame explícitamente
+        // Si no habÃ­a triggers, no molestamos al usuario a menos que lo llame explÃ­citamente
         console.log('No se encontraron triggers de AutoRename para borrar.');
     }
 }
 
 /**
- * Instala el Cron Job Diario para actualizar bancos en caché
+ * Instala el Cron Job Diario para actualizar bancos en cachÃ©
  */
 function instalarTriggerCacheBancos() {
     const fnName = 'cronJobActualizarBancos';
@@ -76,36 +76,36 @@ function instalarTriggerCacheBancos() {
         if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
     });
 
-    // Se ejecutará todos los días a las 3:00 AM (Aprox)
+    // Se ejecutarÃ¡ todos los dÃ­as a las 3:00 AM (Aprox)
     ScriptApp.newTrigger(fnName)
         .timeBased()
         .everyDays(1)
         .atHour(3)
         .create();
 
-    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Bancos activado (Ejecución Diaria 3:00 AM).');
+    SpreadsheetApp.getUi().alert('âœ… Cron Trigger de Bancos activado (EjecuciÃ³n Diaria 3:00 AM).');
 }
 
 /**
- * Este es el "Robot" que se ejecuta oculto cada día.
+ * Este es el "Robot" que se ejecuta oculto cada dÃ­a.
  * Descarga de la API y lo salva en PropertiesService para velocidad luz.
  */
 function cronJobActualizarBancos() {
     try {
         const URL_API_BANCOS = 'https://ejemplo.com/api/bancos-colombia'; // Reemplazar con endpoint Wompi/PayZen
         
-        // --- SIMULACIÓN SI NO HAY API OFICIAL CONFIGURADA AUN ---
-        // (Aquí harías const res = UrlFetchApp.fetch(URL_API_BANCOS); const bancosApi = JSON.parse(res.getContentText());)
+        // --- SIMULACIÃ“N SI NO HAY API OFICIAL CONFIGURADA AUN ---
+        // (AquÃ­ harÃ­as const res = UrlFetchApp.fetch(URL_API_BANCOS); const bancosApi = JSON.parse(res.getContentText());)
         
-        // Simulación: La API retornó una lista fresca que incluye "Banco Nuevo Colombia"
+        // SimulaciÃ³n: La API retornÃ³ una lista fresca que incluye "Banco Nuevo Colombia"
         const bancosSimuladosDesdeAPI = [
             { nombre: "Bancolombia" },
             { nombre: "Nequi" },
             { nombre: "Daviplata" },
             { nombre: "Banco Davivienda" },
-            { nombre: "Banco de Bogotá" },
+            { nombre: "Banco de BogotÃ¡" },
             { nombre: "BBVA Colombia" },
-            { nombre: "Itaú" },
+            { nombre: "ItaÃº" },
             { nombre: "Lulo Bank" },
             { nombre: "RappiPay" },
             { nombre: "Banco Falabella" },
@@ -115,20 +115,20 @@ function cronJobActualizarBancos() {
         
         const jsonBancos = JSON.stringify(bancosSimuladosDesdeAPI);
         
-        // GUARDAMOS EN MEMORIA ULTRA-RAPIDA (Caché duradera)
+        // GUARDAMOS EN MEMORIA ULTRA-RAPIDA (CachÃ© duradera)
         PropertiesService.getScriptProperties().setProperty('CACHE_BANCOS_COLOMBIA', jsonBancos);
-        Logger.log('✅ CronJob: Bancos actualizados con éxito a las 3:00 AM');
+        Logger.log('âœ… CronJob: Bancos actualizados con Ã©xito a las 3:00 AM');
         
     } catch (e) {
-        Logger.log('❌ Error en CronJob Bancos: ' + e.message);
+        Logger.log('âŒ Error en CronJob Bancos: ' + e.message);
     }
 }
 
 /**
- * Lee la caché instantánea desde el Frontend
- * @returns {Array} Lista de Bancos (o null si está vacío)
+ * Lee la cachÃ© instantÃ¡nea desde el Frontend
+ * @returns {Array} Lista de Bancos (o null si estÃ¡ vacÃ­o)
  */
-function obtenerBancosDesdeCaché() {
+function obtenerBancosDesdeCachÃ©() {
     try {
         const str = PropertiesService.getScriptProperties().getProperty('CACHE_BANCOS_COLOMBIA');
         if (str) {
@@ -141,7 +141,7 @@ function obtenerBancosDesdeCaché() {
 }
 
 /**
- * Función de rescate para forzar la autorización de YouTube y reinstalar triggers
+ * FunciÃ³n de rescate para forzar la autorizaciÃ³n de YouTube y reinstalar triggers
  */
 function repararPermisos() {
     try {
@@ -165,13 +165,11 @@ function instalarTriggerReembolsosMP() {
         if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
     });
 
-    // Se ejecutar� todos los d�as a las 2:00 AM
+    // Se ejecutará cada minuto (PRUEBAS)
     ScriptApp.newTrigger(fnName)
         .timeBased()
-        .everyDays(1)
-        .atHour(2)
+        .everyMinutes(1)
         .create();
 
-    SpreadsheetApp.getUi().alert('? Cron Trigger de Reembolsos activado (Ejecuci�n Diaria 2:00 AM).');
+    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Reembolsos activado (Ejecución PRUEBA 1 MINUTO).');
 }
-

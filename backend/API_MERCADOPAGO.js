@@ -125,9 +125,9 @@ function auditorDeContratosVencidos() {
       const estadoPago = row[4]; // Columna E: Estado
 
       if (estadoPago === 'APROBADO') {
-        const hoursDiff = (now - fechaPago) / (1000 * 60 * 60);
+        const minutesDiff = (now - fechaPago) / (1000 * 60);
         
-        if (hoursDiff >= 48) {
+        if (minutesDiff >= 2) {
           // Buscar el estado documental del CDR en la hoja de inmuebles
           let estadoDocumental = '';
           for (let j = 1; j < dataInmuebles.length; j++) {
