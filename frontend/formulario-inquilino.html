@@ -364,7 +364,7 @@
           </div>
         </div>
 
-        <button id="btnGoToPayment" class="btn btn-primary btn-lg" style="width: 100%; max-width: 280px; padding: 12px; font-size: 1rem; border-radius: 30px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; box-shadow: 0 10px 25px rgba(212,175,55,0.3);">Comenzar Ahora →</button>
+        <button id="btnGoToPayment" onclick="goToPayment()" class="btn btn-primary btn-lg" style="width: 100%; max-width: 280px; padding: 12px; font-size: 1rem; border-radius: 30px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; box-shadow: 0 10px 25px rgba(212,175,55,0.3);">Comenzar Ahora →</button>
       </div>
 
       <!-- Payment Screen (Ante-página 2) -->
@@ -1832,52 +1832,55 @@
         console.warn('MercadoPago SDK no cargó o fue bloqueado:', e);
       }
       
-      const btnGoToPayment = document.getElementById('btnGoToPayment');
-      
-      if (btnGoToPayment) {
-        btnGoToPayment.addEventListener('click', async () => {
+      window.goToPayment = async function() {
+        const btnGoToPayment = document.getElementById('btnGoToPayment');
+        if (btnGoToPayment) {
           btnGoToPayment.disabled = true;
           btnGoToPayment.innerHTML = 'Generando pago... <span class="loader-spinner"></span>';
+        }
+        
+        try {
+          document.getElementById('paymentScreen').style.display = 'block';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+
+          const urlParams = new URLSearchParams(window.location.search);
+          const cdr = urlParams.get('cdr') || 'TEST-CDR';
+
+          const req = await fetch(CONFIG.API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ accion: 'crearPreferenciaPago', cdr: cdr }),
+            redirect: 'follow'
+          });
           
-          try {
-            document.getElementById('paymentScreen').style.display = 'block';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const cdr = urlParams.get('cdr') || 'TEST-CDR';
-
-            const req = await fetch(CONFIG.API_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify({ accion: 'crearPreferenciaPago', cdr: cdr }),
-              redirect: 'follow'
-            });
-            
-            const res = await req.json();
-            if(res.success && res.preferenceId) {
-              if (mp) {
-                mp.bricks().create("wallet", "wallet_container", {
-                  initialization: { preferenceId: res.preferenceId },
-                  customization: { texts: { valueProp: 'security_details' } }
-                });
-              } else {
-                alert('El sistema de pagos no cargó correctamente. Verifique si tiene un AdBlocker activado.');
-              }
-              btnGoToPayment.style.display = 'none';
-              document.getElementById('welcomeScreen').style.display = 'none'; // Esconder la pantalla anterior
+          const res = await req.json();
+          if(res.success && res.preferenceId) {
+            if (mp) {
+              mp.bricks().create("wallet", "wallet_container", {
+                initialization: { preferenceId: res.preferenceId },
+                customization: { texts: { valueProp: 'security_details' } }
+              });
             } else {
-              alert('Error generando el pago: ' + (res.error || 'Desconocido'));
+              alert('El sistema de pagos no cargó correctamente. Verifique si tiene un AdBlocker activado.');
+            }
+            if (btnGoToPayment) btnGoToPayment.style.display = 'none';
+            document.getElementById('welcomeScreen').style.display = 'none';
+          } else {
+            alert('Error generando el pago: ' + (res.error || 'Desconocido'));
+            if (btnGoToPayment) {
               btnGoToPayment.disabled = false;
               btnGoToPayment.innerHTML = 'Comenzar Ahora →';
             }
-          } catch(e) {
-            console.error('Error MP:', e);
-            alert('Error de conexión con Mercado Pago.');
+          }
+        } catch(e) {
+          console.error('Error MP:', e);
+          alert('Error de conexión con Mercado Pago.');
+          if (btnGoToPayment) {
             btnGoToPayment.disabled = false;
             btnGoToPayment.innerHTML = 'Comenzar Ahora →';
           }
-        });
-      }
+        }
+      };
       
       const btnStartWizard = document.getElementById('btnStartWizard');
       if (btnStartWizard) {
