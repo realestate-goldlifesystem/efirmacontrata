@@ -16,7 +16,7 @@ function crearPreferenciaPago(datos) {
             description: 'Estudio para solicitud de arrendamiento',
             quantity: 1,
             currency_id: 'COP',
-            unit_price: 5000
+            unit_price: 85000
           }
       ],
       // payer: {
