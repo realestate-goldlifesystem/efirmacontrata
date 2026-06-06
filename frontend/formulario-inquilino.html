@@ -1626,7 +1626,7 @@
           }
           case 4: {
             if (state.modoCorreccion) {
-              if (state.docsCorreccion.includes('comprobantePago') && !state.archivos['comprobantePago']) {
+              if (state.docsCorreccion.includes('comprobantePago') && !state.archivos['comprobantePago'] && !window.mercadoPagoApproved) {
                 showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar.');
                 return false;
               }
@@ -1634,7 +1634,7 @@
             }
 
             // Pago obligatorio para validación
-            if (!state.archivos['comprobantePago']) {
+            if (!state.archivos['comprobantePago'] && !window.mercadoPagoApproved) {
               showAlert('warning', 'Debes adjuntar el comprobante de pago para continuar.');
               return false;
             }
@@ -1933,8 +1933,28 @@
           const btn = document.getElementById('btnStartWizard');
           if (btn) btn.disabled = !file;
         }
-      };
-
+<script>
+      // Handle MercadoPago Auto-Return Redirects
+      window.addEventListener('load', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        if (status === 'approved' || status === 'success') {
+          // Hide welcome screens
+          const welcome = document.getElementById('welcomeScreen');
+          const payment = document.getElementById('paymentScreen');
+          const wizard = document.getElementById('mainWizard');
+          
+          if(welcome) welcome.style.display = 'none';
+          if(payment) payment.style.display = 'none';
+          if(wizard) wizard.style.display = 'block';
+          
+          window.mercadoPagoApproved = true;
+          alert('¡Pago aprobado exitosamente! Por favor, completa el formulario a continuación.');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (status === 'failure' || status === 'rejected') {
+          alert('El pago fue rechazado. Por favor intenta nuevamente.');
+        }
+      });
 </script>
 </body>
 </html>
