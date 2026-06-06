@@ -77,7 +77,7 @@ function handleMercadoPagoWebhook(datos) {
 
       if (paymentData.status === 'approved') {
         const externalReference = paymentData.external_reference; // This is the CDR
-        if (externalReference && externalReference.startsWith('RI')) {
+        if (externalReference) {
           const sheetUrl = 'https://docs.google.com/spreadsheets/d/1B9I3y3E3qI7FwXJ5W-xMhLw2pXWkE1W0w4x1kR0fRj0/edit';
           const ss = SpreadsheetApp.openByUrl(sheetUrl);
           const sheet = ss.getSheetByName('PAGOS_RECIBIDOS');
