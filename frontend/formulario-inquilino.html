@@ -763,12 +763,6 @@
         coDocBackName: $("coDocBackName"),
         comprobantePago: $("comprobantePago"),
         comprobantePagoName: $("comprobantePagoName"),
-        btnPayBreb: $("btnPayBreb"),
-        btnPayWompi: $("btnPayWompi"),
-        modalBreb: $("modalBreb"),
-        brebNumber: $("brebNumber"),
-        btnCopyBreb: $("btnCopyBreb"),
-        btnCloseBreb: $("btnCloseBreb"),
         toast: $("toast"),
       };
 
@@ -1015,13 +1009,7 @@
         updateMicroProgress();
       }, 50);
 
-      // Pago
-      el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
-      el.btnPayBreb.addEventListener('click', openBrebModal);
-      el.btnCloseBreb.addEventListener('click', closeBrebModal);
-      el.modalBreb.addEventListener('click', (e) => { if (e.target === el.modalBreb) closeBrebModal(); });
-      el.btnCopyBreb.addEventListener('click', copyBreb);
-      el.btnPayWompi.addEventListener('click', handlePayWompi);
+      // Pago (Eliminado por integracion Mercado Pago)
 
       // --------- Corrección ----------
       function renderCorreccionBanner() {

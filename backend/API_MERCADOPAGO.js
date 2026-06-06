@@ -78,6 +78,9 @@ function handleMercadoPagoWebhook(datos) {
       if (paymentData.status === 'approved') {
         const externalReference = paymentData.external_reference; // This is the CDR
         if (externalReference) {
+          // GUARDAR EN SCRIPT PROPERTIES POR SEGURIDAD MAXIMA
+          PropertiesService.getScriptProperties().setProperty('PAGO_APROBADO_' + externalReference, 'true');
+
           const ss = SpreadsheetApp.getActiveSpreadsheet();
           const sheet = ss.getSheetByName('PAGOS_RECIBIDOS');
           if (sheet) {
@@ -172,6 +175,12 @@ function auditorDeContratosVencidos() {
 
 function verificarPagoPorCDR(cdr) {
   try {
+    // Verificación de máxima seguridad usando ScriptProperties
+    const properties = PropertiesService.getScriptProperties();
+    if (properties.getProperty('PAGO_APROBADO_' + cdr) === 'true') {
+      return true;
+    }
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheetPagos = ss.getSheetByName('PAGOS_RECIBIDOS');
     if (!sheetPagos) return false;
