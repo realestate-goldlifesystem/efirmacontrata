@@ -1824,12 +1824,14 @@
       }
     })();
   
-      
       // PUBLIC KEY DE PRUEBA (Activa)
-      const mp = new MercadoPago('APP_USR-c8da1c51-a70c-418b-9365-033454ec347e', { locale: 'es-CO' });
+      let mp;
+      try {
+        mp = new MercadoPago('APP_USR-c8da1c51-a70c-418b-9365-033454ec347e', { locale: 'es-CO' });
+      } catch(e) {
+        console.warn('MercadoPago SDK no cargó o fue bloqueado:', e);
+      }
       
-      // PUBLIC KEY DE PRODUCCIÓN (Real - Para cuando vayas a salir en vivo, intercambia la línea de arriba por esta)
-      // const mp = new MercadoPago('APP_USR-a0703444-6388-4a61-8807-2a4257160248', { locale: 'es-CO' });
       const btnGoToPayment = document.getElementById('btnGoToPayment');
       
       if (btnGoToPayment) {
@@ -1838,13 +1840,11 @@
           btnGoToPayment.innerHTML = 'Generando pago... <span class="loader-spinner"></span>';
           
           try {
-            // Ask our backend for the preference
-            const urlParams = new URLSearchParams(window.location.search);
-            const cdr = urlParams.get('cdr') || 'TEST-CDR';
-            
-            // Re-enable if needed
             document.getElementById('paymentScreen').style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const cdr = urlParams.get('cdr') || 'TEST-CDR';
 
             const req = await fetch(CONFIG.API_URL, {
               method: 'POST',
@@ -1855,18 +1855,16 @@
             
             const res = await req.json();
             if(res.success && res.preferenceId) {
-              const bricksBuilder = mp.bricks();
-              mp.bricks().create("wallet", "wallet_container", {
-                initialization: {
-                  preferenceId: res.preferenceId,
-                },
-                customization: {
-                  texts: {
-                    valueProp: 'security_details',
-                  },
-                },
-              });
+              if (mp) {
+                mp.bricks().create("wallet", "wallet_container", {
+                  initialization: { preferenceId: res.preferenceId },
+                  customization: { texts: { valueProp: 'security_details' } }
+                });
+              } else {
+                alert('El sistema de pagos no cargó correctamente. Verifique si tiene un AdBlocker activado.');
+              }
               btnGoToPayment.style.display = 'none';
+              document.getElementById('welcomeScreen').style.display = 'none'; // Esconder la pantalla anterior
             } else {
               alert('Error generando el pago: ' + (res.error || 'Desconocido'));
               btnGoToPayment.disabled = false;
