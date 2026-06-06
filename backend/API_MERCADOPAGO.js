@@ -172,3 +172,21 @@ function auditorDeContratosVencidos() {
   }
 }
 
+function verificarPagoPorCDR(cdr) {
+  try {
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/1B9I3y3E3qI7FwXJ5W-xMhLw2pXWkE1W0w4x1kR0fRj0/edit';
+    const ss = SpreadsheetApp.openByUrl(sheetUrl);
+    const sheetPagos = ss.getSheetByName('PAGOS_RECIBIDOS');
+    if (!sheetPagos) return false;
+    
+    const dataPagos = sheetPagos.getDataRange().getValues();
+    for (let i = 1; i < dataPagos.length; i++) {
+      if (dataPagos[i][2] === cdr && dataPagos[i][4] === 'APROBADO') {
+        return true;
+      }
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+}

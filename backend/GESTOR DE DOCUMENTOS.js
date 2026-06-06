@@ -425,7 +425,12 @@ function doGet(e) {
 
       
       case 'obtenerDireccion':
-        result = { success: true, direccion: handleObtenerDireccionInmueble(e.parameter.cdr) };
+        const dir = handleObtenerDireccionInmueble(e.parameter.cdr);
+        let pago_completado = false;
+        if (typeof verificarPagoPorCDR === 'function') {
+           pago_completado = verificarPagoPorCDR(e.parameter.cdr);
+        }
+        result = { success: true, direccion: dir, pago_completado: pago_completado };
         break;
 
       case 'base':

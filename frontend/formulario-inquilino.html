@@ -791,8 +791,20 @@
             
             const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
             window[callbackName] = function(data) {
-              if (data && data.success && data.direccion) {
-                document.getElementById('displayDir').textContent = data.direccion;
+              if (data && data.success) {
+                if (data.direccion) {
+                  document.getElementById('displayDir').textContent = data.direccion;
+                }
+                if (data.pago_completado && !state.modoCorreccion) {
+                  window.mercadoPagoApproved = true;
+                  const welcome = document.getElementById('welcomeScreen');
+                  const payment = document.getElementById('paymentScreen');
+                  const mainWiz = document.getElementById('mainWizard');
+                  if (welcome) welcome.style.display = 'none';
+                  if (payment) payment.style.display = 'none';
+                  if (mainWiz) mainWiz.style.display = 'block';
+                  showAlert('success', '¡Hemos verificado su pago en el sistema! Puede continuar con el formulario.');
+                }
               }
               delete window[callbackName];
             };
