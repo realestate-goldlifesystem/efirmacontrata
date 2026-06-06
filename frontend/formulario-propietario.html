@@ -1130,12 +1130,214 @@
         servicioInternet: $("servicioInternet"),
         // Pagos
         btnPayBreb: $("btnPayBreb"),
+        try {
+          const db = await abrirDB();
+          const tx = db.transaction(DB_STORE, 'readonly');
+          const store = tx.objectStore(DB_STORE);
+
+          const archivos = await new Promise((res, rej) => {
+            const r = store.get(`files_${state.cdr}`);
+            r.onsuccess = () => res(r.result);
+            r.onerror = () => rej(r.error);
+          });
+
+          if (archivos && typeof archivos === 'object') {
+            state.archivos = archivos;
+            // Restaurar la UI para cada archivo guardado
+            const nameMap = {
+              docFront: 'docFrontName', docBack: 'docBackName',
+              certTradicion: 'certTradicionName', sarlaft: 'sarlaftName',
+              certBancario: 'certBancarioName',
+              facturaAgua: 'facturaAguaName', facturaLuz: 'facturaLuzName',
+              facturaGas: 'facturaGasName', facturaTelefono: 'facturaTelefonoName',
+              facturaInternet: 'facturaInternetName'
+            };
+            for (const [key, archivo] of Object.entries(archivos)) {
+              if (archivo && archivo.nombre) {
+                const nameElId = nameMap[key];
+                if (nameElId) {
+                  const nameElement = document.getElementById(nameElId);
+                  if (nameElement) nameElement.textContent = '✅ ' + archivo.nombre;
+                }
+                const container = document.getElementById(key);
+                if (container) {
+                  const wrapper = container.closest('.file-upload');
+                  if (wrapper) wrapper.classList.add('has-file');
+                }
+              }
+            }
+          }
+        } catch (e) { console.warn('No se pudieron cargar archivos de IndexedDB.', e); }
+      }
+
+      async function limpiarDB() {
+        try {
+          const db = await abrirDB();
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          const store = tx.objectStore(DB_STORE);
+          store.delete(`files_${state.cdr}`);
+          store.delete(`servicios_${state.cdr}`);
+        } catch (e) { /* silencioso */ }
+      }
+
+      function guardarProgresoUsuario() {
+        if (state.modoCorreccion || !state.cdr) return;
+
+        clearTimeout(state.saveDelay);
+        state.saveDelay = setTimeout(() => {
+          try {
+            const formData = {
+              step: state.step,
+              tipoDocumento: el.tipoDocumento.value,
+              numeroDocumento: el.numeroDocumento.value,
+              confirmarDocumento: el.confirmarDocumento.value,
+              nombres: el.nombres.value,
+              apellidos: el.apellidos.value,
+              email: el.email.value,
+              confirmarEmail: el.confirmarEmail.value,
+              celular: el.celular.value,
+              confirmarCelular: el.confirmarCelular.value,
+              tipoCuenta: el.tipoCuenta.value,
+              numeroCuenta: el.numeroCuenta.value,
+              banco: el.banco.value,
+              titularCuenta: el.titularCuenta.value,
+              docTitular: el.docTitular.value
+            };
+
+            const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
+            checkboxes.forEach(cb => { formData[cb.id] = cb.checked; });
+
+            localStorage.setItem(`efirma_prop_${state.cdr}`, JSON.stringify(formData));
+
+            // Guardar archivos en IndexedDB (sin límite de tamaño)
+            guardarArchivosEnDB();
+          } catch (e) { console.warn('No se pudo guardar progreso.', e); }
+        }, 800);
+      }
+
+      async function cargarProgresoUsuario() {
+        if (state.modoCorreccion || !state.cdr) return;
+
+        let savedStep = 0;
+
+        try {
+          // 1. Restaurar campos de texto desde localStorage
+          const saved = localStorage.getItem(`efirma_prop_${state.cdr}`);
+          if (saved) {
+            const formData = JSON.parse(saved);
+
+            if (formData.tipoDocumento) el.tipoDocumento.value = formData.tipoDocumento;
+            if (formData.numeroDocumento) el.numeroDocumento.value = formData.numeroDocumento;
+            if (formData.confirmarDocumento) el.confirmarDocumento.value = formData.confirmarDocumento;
+            if (formData.nombres) el.nombres.value = formData.nombres;
+            if (formData.apellidos) el.apellidos.value = formData.apellidos;
+            if (formData.email) el.email.value = formData.email;
+            if (formData.confirmarEmail) el.confirmarEmail.value = formData.confirmarEmail;
+            if (formData.celular) el.celular.value = formData.celular;
+            if (formData.confirmarCelular) el.confirmarCelular.value = formData.confirmarCelular;
+
+            if (formData.tipoCuenta) el.tipoCuenta.value = formData.tipoCuenta;
+            if (formData.numeroCuenta) el.numeroCuenta.value = formData.numeroCuenta;
+            if (formData.banco) el.banco.value = formData.banco;
+            if (formData.titularCuenta) el.titularCuenta.value = formData.titularCuenta;
+            if (formData.docTitular) el.docTitular.value = formData.docTitular;
+
+            // Restaurar checkboxes
+            const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+              if (formData[cb.id] !== undefined) {
+                cb.checked = formData[cb.id];
+                cb.dispatchEvent(new Event('change'));
+              }
+            });
+
+            // Guardar paso para restaurar DESPUÉS de evaluar
+            if (typeof formData.step === 'number' && formData.step > 0) {
+              savedStep = formData.step;
+            }
+          }
+
+          // 2. Restaurar archivos desde IndexedDB (ANTES de evaluar disclosure)
+          await cargarArchivosDeDB();
+
+          // 3. AHORA que todo está restaurado, revelar campos progresivos
+          evaluateProgress();
+
+          // 4. Navegar al paso guardado (después de que todo esté visible)
+          if (savedStep > 0) {
+            setTimeout(() => gotoStep(savedStep, true), 50);
+          }
+
+        } catch (e) {
+          console.warn('No se pudo cargar el progreso.', e);
+        }
+      }
+
+      // --------- Shortcuts ----------
+      const $ = (id) => document.getElementById(id);
+      const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+
+      // --------- Elementos ----------
+      const el = {
+        bannerCorreccion: $("bannerCorreccion"),
+        correccionDocs: $("correccionDocs"),
+        alertBox: $("alertBox"),
+        loader: $("loader"),
+        btnPrev: $("btnPrev"),
+        btnNext: $("btnNext"),
+        btnEnviar: $("btnEnviar"),
+        resumen: $("resumen"),
+        // Datos personales
+        tipoDocumento: $("tipoDocumento"),
+        numeroDocumento: $("numeroDocumento"),
+        confirmarDocumento: $("confirmarDocumento"),
+        nombres: $("nombres"),
+        apellidos: $("apellidos"),
+        email: $("email"),
+        confirmarEmail: $("confirmarEmail"),
+        celular: $("celular"),
+        confirmarCelular: $("confirmarCelular"),
+        docError: $("docError"),
+        emailError: $("emailError"),
+        celError: $("celError"),
+        // Documentos
+        docFront: $("docFront"),
+        docFrontName: $("docFrontName"),
+        docBack: $("docBack"),
+        docBackName: $("docBackName"),
+        certTradicion: $("certTradicion"),
+        certTradicionName: $("certTradicionName"),
+        sarlaft: $("sarlaft"),
+        sarlaftName: $("sarlaftName"),
+        // Bancarios
+        tipoCuenta: $("tipoCuenta"),
+        numeroCuenta: $("numeroCuenta"),
+        banco: $("banco"),
+        titularCuenta: $("titularCuenta"),
+        docTitular: $("docTitular"),
+        certBancario: $("certBancario"),
+        certBancarioName: $("certBancarioName"),
+        // Servicios
+        servicioAgua: $("servicioAgua"),
+        servicioLuz: $("servicioLuz"),
+        servicioGas: $("servicioGas"),
+        servicioTelefono: $("servicioTelefono"),
+        servicioInternet: $("servicioInternet"),
+        // Pagos
+        btnPayBreb: $("btnPayBreb"),
         btnPayWompi: $("btnPayWompi"),
         modalBreb: $("modalBreb"),
         brebNumber: $("brebNumber"),
         btnCopyBreb: $("btnCopyBreb"),
         btnCloseBreb: $("btnCloseBreb"),
         toast: $("toast")
+      };
+
+      // --------- Validación ----------
+      const rx = {
+        email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        phone: /^\d{10}$/,
+        num: /^[0-9A-Za-z.-]{5,}$/
       };
 
       // --------- Init ----------
@@ -1182,710 +1384,6 @@
             welcome.style.display = 'none';
             mainWiz.style.display = 'block';
           }
-        }
-
-        renderSteps();
-        bindWizard();
-        bindFiles();
-        bindServicios();
-        bindProgressValidators();
-        updateMicroProgress();
-
-        // Cargar progreso DESPUÉS de que todo esté bindado
-        if (!state.modoCorreccion) {
-          await cargarProgresoUsuario();
-        }
-      }
-
-      // Update XP Bar dynamically
-      function updateMicroProgress() {
-        const activePane = document.querySelector('.step-pane.show');
-        if (!activePane) return;
-        
-        const requiredFields = Array.from(activePane.querySelectorAll('input[required], select[required]'))
-          .filter(el => {
-            // No excluimos los 'progressive-hidden' para que el TOTAL sea constante
-            // y el porcentaje nunca baje al revelar nuevos campos.
-            const container = el.closest('.hidden');
-            if (container && container.classList.contains('hidden')) return false;
-            return true;
-          });
-        
-        let filled = 0;
-        requiredFields.forEach(field => {
-          if (field.type === 'file') {
-            if (field.files && field.files.length > 0) filled++;
-          } else {
-            if (field.value.trim() !== '') filled++;
-          }
-        });
-
-        // Sumar facturas de servicios si el checkbox está marcado
-        if (state.step === 3) {
-            let totalFacturasRequeridas = 0;
-            let facturasAdjuntadas = 0;
-            const servicios = ['Agua', 'Luz', 'Gas', 'Telefono', 'Internet'];
-            servicios.forEach(srv => {
-                const cb = document.getElementById('servicio' + srv);
-                if(cb && cb.checked) {
-                    totalFacturasRequeridas++;
-                    const fi = document.getElementById('factura' + srv);
-                    if(fi && fi.files && fi.files.length > 0) facturasAdjuntadas++;
-                }
-            });
-            filled += facturasAdjuntadas;
-            requiredFields.push(...Array(totalFacturasRequeridas).fill(null)); // Mock para sumar al total
-        }
-
-        const total = requiredFields.length || 1;
-        const percentage = Math.round((filled / total) * 100);
-        
-        const xpBar = document.getElementById('xpBar');
-        const xpText = document.getElementById('xpText');
-        if (xpBar && xpText) {
-          xpBar.style.width = percentage + '%';
-          xpText.textContent = percentage + '%';
-          
-          if (percentage >= 100) {
-            xpBar.style.background = 'linear-gradient(90deg, var(--success), #34d399)';
-            xpBar.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.6)';
-            xpText.style.color = 'var(--success)';
-          } else {
-            xpBar.style.background = 'linear-gradient(90deg, #d4af37, #f0c541)';
-            xpBar.style.boxShadow = '0 0 15px rgba(212,175,55,0.6)';
-            xpText.style.color = 'var(--primary)';
-          }
-        }
-
-        // Gamify main progress line
-        const line = document.getElementById('progressLine');
-        if (line && state.step < state.max) {
-            const baseProgress = (state.step / state.max) * 100;
-            const microAdd = (percentage / 100) * (100 / state.max) * 0.95; 
-            line.style.width = (baseProgress + microAdd) + '%';
-        } else if (line && state.step === state.max) {
-            line.style.width = '100%';
-        }
-      }
-
-      // Bind micro progress to inputs
-      document.addEventListener('input', updateMicroProgress);
-      document.addEventListener('change', updateMicroProgress);
-
-      // --------- Corrección ----------
-      function renderCorreccionBanner() {
-        if (!state.docsCorreccion.length) return;
-        el.bannerCorreccion.classList.remove('hidden');
-
-        // Nombres amigables
-        const friendlyNames = {
-          'docFront': 'Cédula Frontal',
-          'docBack': 'Cédula Reverso',
-          'certTradicion': 'Certificado Tradición',
-          'sarlaft': 'Formato SARLAFT',
-          'certBancario': 'Certificación Bancaria',
-          'facturaAgua': 'Factura Agua',
-          'facturaLuz': 'Factura Luz',
-          'facturaGas': 'Factura Gas',
-          'facturaTelefono': 'Factura Teléfono',
-          'facturaInternet': 'Factura Internet'
-        };
-        el.correccionDocs.innerHTML = state.docsCorreccion.map(d => {
-          const label = friendlyNames[d] || d;
-          return `<span class="chip">${escapeHTML(label)}</span>`;
-        }).join('');
-
-        // Marcar archivos no requeridos como ocultos
-        const allFileKeys = [
-          'docFront', 'docBack', 'certTradicion', 'sarlaft', 'certBancario',
-          'facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet', 'comprobantePago'
-        ];
-        allFileKeys.forEach(key => {
-          if (!state.docsCorreccion.includes(key)) {
-            const input = document.getElementById(key);
-            if (input) {
-              const wrapper = input.closest('.file-upload') || input.closest('.servicio-item') || input.closest('.form-group');
-              if (wrapper) {
-                wrapper.style.display = 'none';
-              }
-            }
-          }
-        });
-
-        // Ocultar campos de texto que no sean de archivo
-        const step2Pane = document.querySelector('.step-pane[data-pane="2"]');
-        if (step2Pane) {
-          step2Pane.querySelectorAll('.form-group').forEach(fg => {
-            if (!fg.querySelector('.file-upload') && !fg.querySelector('.file-input')) {
-              fg.style.display = 'none';
-            }
-          });
-        }
-        
-        // Ocultar paso 0 (Datos personales) completamente
-        const step0Pane = document.querySelector('.step-pane[data-pane="0"]');
-        if (step0Pane) {
-            step0Pane.style.display = 'none';
-        }
-        
-        // Simular clic en el paso 1 para saltar datos personales
-        setTimeout(() => {
-             const step1 = document.querySelector('.step-indicator[data-step="1"]');
-             if(step1) step1.click();
-        }, 300);
-      }
-
-      // --------- Wizard ----------
-
-      // Propietario: Step 0=datos, Step 1=docs(docFront,docBack,certTradicion,sarlaft),
-      // Step 2=bancario(certBancario), Step 3=servicios(facturas), Step 4=resumen
-      function getStepFileKeys(step) {
-        if (step === 1) return ['docFront', 'docBack', 'certTradicion', 'sarlaft'];
-        if (step === 2) return ['certBancario'];
-        if (step === 3) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'];
-        return []; // Step 0 y 4 no tienen archivos
-      }
-
-      function isStepNeededInCorrection(step) {
-        if (step === state.max) return true; // Resumen siempre visible
-        if (!state.modoCorreccion) return true;
-        const keys = getStepFileKeys(step);
-        if (keys.length === 0) return false; // Pasos de solo texto se saltan
-        return keys.some(k => state.docsCorreccion.includes(k));
-      }
-
-      function getNextRelevantStep(current) {
-        for (let s = current + 1; s <= state.max; s++) {
-          if (isStepNeededInCorrection(s)) return s;
-        }
-        return state.max;
-      }
-
-      function getPrevRelevantStep(current) {
-        for (let s = current - 1; s >= 0; s--) {
-          if (isStepNeededInCorrection(s)) return s;
-        }
-        return current;
-      }
-
-      function getFirstRelevantStep() {
-        for (let s = 0; s <= state.max; s++) {
-          if (isStepNeededInCorrection(s)) return s;
-        }
-        return 0;
-      }
-
-      function renderSteps() {
-        if (state.modoCorreccion && state.docsCorreccion.length > 0) {
-          for (let s = 0; s < state.max; s++) {
-            const stepEl = document.querySelector(`.progress .step[data-step="${s}"]`);
-            if (stepEl && !isStepNeededInCorrection(s)) {
-              stepEl.style.display = 'none';
-            }
-          }
-          gotoStep(getFirstRelevantStep(), true);
-        } else {
-          gotoStep(0, true);
-        }
-      }
-
-      function bindWizard() {
-        el.btnPrev.addEventListener('click', () => {
-          if (state.modoCorreccion) {
-            gotoStep(getPrevRelevantStep(state.step));
-          } else {
-            gotoStep(state.step - 1);
-          }
-        });
-        el.btnNext.addEventListener('click', () => {
-          if (!validateStep(state.step)) return;
-          if (state.modoCorreccion) {
-            gotoStep(getNextRelevantStep(state.step));
-          } else {
-            if (state.step < state.max) gotoStep(state.step + 1);
-          }
-        });
-        el.btnEnviar.addEventListener('click', onSubmit);
-
-        qsa('.progress .step').forEach(s => {
-          s.addEventListener('click', () => {
-            const target = Number(s.dataset.step);
-            if (target <= state.step) return gotoStep(target);
-            if (validateStep(state.step)) gotoStep(target);
-          });
-        });
-      }
-
-
-
-      function gotoStep(n, first = false) {
-        state.step = Math.max(0, Math.min(n, state.max));
-        qsa('.step-pane').forEach(p => p.classList.toggle('show', Number(p.dataset.pane) === state.step));
-
-        qsa('.progress .step').forEach(s => {
-          const sNum = Number(s.dataset.step);
-          s.classList.toggle('active', sNum === state.step);
-          s.classList.toggle('completed', sNum < state.step);
-        });
-
-        // La línea principal se actualiza via updateMicroProgress()
-        // por lo que no la sobreescribimos aquí para no perder la gamificación.
-
-        const firstRelevant = state.modoCorreccion ? getFirstRelevantStep() : 0;
-        el.btnPrev.classList.toggle('hidden', state.step === firstRelevant);
-        el.btnNext.classList.toggle('hidden', state.step === state.max);
-        el.btnEnviar.classList.toggle('hidden', state.step !== state.max);
-
-        if (state.step === state.max) buildSummary();
-        if (!first) {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          guardarProgresoUsuario();
-        }
-        updateMicroProgress();
-      }
-
-      // --------- Files ----------
-      function bindFiles() {
-        bindFile(el.docFront, 'docFront', el.docFrontName);
-        bindFile(el.docBack, 'docBack', el.docBackName);
-        bindFile(el.certTradicion, 'certTradicion', el.certTradicionName);
-        bindFile(el.sarlaft, 'sarlaft', el.sarlaftName);
-        bindFile(el.certBancario, 'certBancario', el.certBancarioName);
-
-        // Servicios
-        bindFile($('facturaAgua'), 'facturaAgua', $('facturaAguaName'));
-        bindFile($('facturaLuz'), 'facturaLuz', $('facturaLuzName'));
-        bindFile($('facturaGas'), 'facturaGas', $('facturaGasName'));
-        bindFile($('facturaTelefono'), 'facturaTelefono', $('facturaTelefonoName'));
-        bindFile($('facturaInternet'), 'facturaInternet', $('facturaInternetName'));
-      }
-
-      function bindFile(input, key, nameEl) {
-        if (!input) return;
-        input.addEventListener('change', () => handleFile(input.files?.[0], key, nameEl));
-      }
-
-      function handleFile(file, key, nameEl) {
-        if (!file) return;
-        if (file.size > state.maxFileSize) {
-          showAlert('danger', `El archivo "${file.name}" excede el límite de ${(state.maxFileSize / 1024 / 1024).toFixed(0)}MB.`);
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const base64Result = e.target.result;
-
-          // ── Interceptar certTradicion para validación OCR ──
-          if (key === 'certTradicion') {
-            validarCertificadoOCR(base64Result, file.name, nameEl);
-            return; // No guardar aún, el callback del OCR lo hará si es vigente
-          }
-
-          // Flujo normal para otros archivos
-          state.archivos[key] = { nombre: file.name, tipo: file.type, contenido: base64Result };
-          if (nameEl) nameEl.textContent = file.name;
-          const container = document.getElementById(key);
-          if (container) {
-            const wrapper = container.closest('.file-upload');
-            if (wrapper) wrapper.classList.add('has-file');
-          }
-          evaluateProgress();
-          guardarArchivosEnDB();
-        };
-        reader.readAsDataURL(file);
-      }
-
-      // ── OCR Validation Modal Logic ──
-      function validarCertificadoOCR(base64, fileName, nameEl) {
-        const modal = document.getElementById('modalOCRValidacion');
-        const estadoAnalizando = document.getElementById('ocrEstadoAnalizando');
-        const estadoVigente = document.getElementById('ocrEstadoVigente');
-        const estadoVencido = document.getElementById('ocrEstadoVencido');
-        const estadoError = document.getElementById('ocrEstadoError');
-
-        // Reset states
-        estadoAnalizando.style.display = 'block';
-        estadoVigente.style.display = 'none';
-        estadoVencido.style.display = 'none';
-        estadoError.style.display = 'none';
-        modal.classList.remove('closing');
-        modal.classList.add('show');
-
-        const payload = {
-          accion: 'validarCertificadoOCR',
-          base64: base64
-        };
-
-        fetch(CONFIG.API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        })
-          .then(res => res.json())
-          .then(result => {
-            estadoAnalizando.style.display = 'none';
-
-            if (!result || !result.success) {
-              // Error de OCR: dejar continuar pero advertir
-              document.getElementById('ocrErrorMsg').textContent = result?.mensaje || 'No se pudo leer el documento.';
-              estadoError.style.display = 'block';
-              // Guardar archivo de todas formas (el admin validará en el panel)
-              window._ocrPendingFile = { base64: base64, fileName: fileName, nameEl: nameEl };
-              return;
-            }
-
-            if (result.vigente) {
-              // ✅ Certificado vigente
-              const diasTxt = result.diasAntiguedad >= 0
-                ? `Expedido hace ${result.diasAntiguedad} día${result.diasAntiguedad !== 1 ? 's' : ''}`
-                : 'Fecha no detectada — verificar manualmente';
-              document.getElementById('ocrBadgeDias').textContent = diasTxt;
-              estadoVigente.style.display = 'block';
-
-              // Guardar archivo normalmente
-              state.archivos['certTradicion'] = { nombre: fileName, tipo: 'application/pdf', contenido: base64 };
-              if (nameEl) nameEl.textContent = fileName;
-              const container = document.getElementById('certTradicion');
-              if (container) {
-                const wrapper = container.closest('.file-upload');
-                if (wrapper) wrapper.classList.add('has-file');
-              }
-              evaluateProgress();
-              guardarArchivosEnDB();
-
-              // Auto-cerrar en 3 segundos
-              setTimeout(() => cerrarModalOCR(), 3000);
-
-            } else {
-              // ❌ Certificado vencido
-              document.getElementById('ocrBadgeDiasVencido').textContent =
-                `Tiene ${result.diasAntiguedad} días de expedido`;
-              estadoVencido.style.display = 'block';
-
-              // Limpiar el input file
-              const inputCert = document.getElementById('certTradicion');
-              if (inputCert) inputCert.value = '';
-              if (nameEl) nameEl.textContent = '';
-              const container = document.getElementById('certTradicion');
-              if (container) {
-                const wrapper = container.closest('.file-upload');
-                if (wrapper) wrapper.classList.remove('has-file');
-              }
-              // NO guardar el archivo
-            }
-          })
-          .catch(error => {
-            estadoAnalizando.style.display = 'none';
-            document.getElementById('ocrErrorMsg').textContent = 'Error de red: ' + (error.message || error);
-            estadoError.style.display = 'block';
-            window._ocrPendingFile = { base64: base64, fileName: fileName, nameEl: nameEl };
-          });
-      }
-
-      // Listen for force-accept from the global cerrarModalOCR(true) call
-      document.addEventListener('ocrForceAccept', function(e) {
-        const pf = e.detail;
-        if (pf && pf.base64) {
-          state.archivos['certTradicion'] = { nombre: pf.fileName, tipo: 'application/pdf', contenido: pf.base64 };
-          if (pf.nameEl) pf.nameEl.textContent = pf.fileName;
-          const container = document.getElementById('certTradicion');
-          if (container) {
-            const wrapper = container.closest('.file-upload');
-            if (wrapper) wrapper.classList.add('has-file');
-          }
-          evaluateProgress();
-          guardarArchivosEnDB();
-        }
-      });
-
-      // --------- Servicios ----------
-      function bindServicios() {
-        ['agua', 'luz', 'gas', 'telefono', 'internet'].forEach(tipo => {
-          const checkbox = $(`servicio${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
-          const item = document.querySelector(`.servicio-item[data-servicio="${tipo}"]`);
-          const uploadDiv = item?.querySelector('.servicio-upload');
-
-          checkbox?.addEventListener('change', () => {
-            if (checkbox.checked) {
-              item?.classList.add('selected');
-              uploadDiv?.classList.add('visible');
-              if (!state.servicios.includes(tipo)) state.servicios.push(tipo);
-            } else {
-              item?.classList.remove('selected');
-              uploadDiv?.classList.remove('visible');
-              state.servicios = state.servicios.filter(s => s !== tipo);
-            }
-          });
-        });
-      }
-
-      // --------- Pagos ----------
-      function bindPagos() {
-        el.brebNumber.value = CONFIG?.PAGO?.NEQUI || '3177623878';
-        el.btnPayBreb.addEventListener('click', openBrebModal);
-        el.btnCloseBreb.addEventListener('click', closeBrebModal);
-        el.modalBreb.addEventListener('click', (e) => { if (e.target === el.modalBreb) closeBrebModal(); });
-        el.btnCopyBreb.addEventListener('click', copyBreb);
-        el.btnPayWompi.addEventListener('click', handlePayWompi);
-      }
-
-      function openBrebModal() {
-        el.modalBreb.classList.add('show');
-        el.modalBreb.setAttribute('aria-hidden', 'false');
-        el.brebNumber.select();
-      }
-
-      function closeBrebModal() {
-        el.modalBreb.classList.remove('show');
-        el.modalBreb.setAttribute('aria-hidden', 'true');
-      }
-
-      async function copyBreb() {
-        const value = (CONFIG?.PAGO?.NEQUI || '').toString().trim();
-        try {
-          if (!value) throw new Error('Número de pago no configurado.');
-          await navigator.clipboard.writeText(value);
-          toast('Número copiado: ' + value);
-        } catch (e) {
-          toast('No se pudo copiar. Selecciona y copia manualmente.');
-        }
-      }
-
-      function handlePayWompi() {
-        const url = CONFIG?.PAGO?.WOMPI_LINK || '';
-        if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta.');
-        window.open(url, '_blank', 'noopener');
-      }
-
-      // --------- Progressive Validation ----------
-      function evaluateProgress() {
-        if (state.step === state.max) return;
-        const requiredFields = getRequiredForStep(state.step);
-
-        if (requiredFields.length) {
-          let filledCount = 0;
-          requiredFields.forEach(field => {
-            if (field.isType === 'file' && state.archivos[field.id]) filledCount++;
-            else if (field.isType === 'input' && field.el && field.el.value.trim() !== '') filledCount++;
-          });
-
-          const percentage = (filledCount / requiredFields.length) * 100;
-          const baseWidth = (state.step / state.max) * 100;
-          const extraWidth = (percentage / 100) * (100 / state.max);
-
-          const line = document.getElementById('progressLine');
-          if (line) {
-            line.style.width = (baseWidth + extraWidth) + '%';
-          }
-        }
-
-        // --- LÓGICA DE REVELACIÓN PROGRESIVA ---
-        // Paso 0
-        const vTipo = el.tipoDocumento.value.trim();
-        const prog2_0 = document.getElementById('prog-prop-0-2');
-        if (prog2_0) {
-          if (vTipo) {
-            prog2_0.classList.remove('progressive-hidden'); prog2_0.classList.add('progressive-visible');
-          } else {
-            prog2_0.classList.add('progressive-hidden'); prog2_0.classList.remove('progressive-visible');
-          }
-        }
-
-        const vNum = el.numeroDocumento.value.trim();
-        const vConfNum = el.confirmarDocumento.value.trim();
-        if (vNum && vConfNum && vNum !== vConfNum) {
-          el.confirmarDocumento.classList.add('invalid');
-          el.docError.classList.add('show');
-        } else {
-          el.confirmarDocumento.classList.remove('invalid');
-          el.docError.classList.remove('show');
-        }
-        const prog3_0 = document.getElementById('prog-prop-0-3');
-        if (prog3_0) {
-          if (vNum && vConfNum && vNum === vConfNum && rx.num.test(vNum)) {
-            prog3_0.classList.remove('progressive-hidden'); prog3_0.classList.add('progressive-visible');
-          } else {
-            prog3_0.classList.add('progressive-hidden'); prog3_0.classList.remove('progressive-visible');
-          }
-        }
-
-        const vNom = el.nombres.value.trim();
-        const vApe = el.apellidos.value.trim();
-        const prog4_0 = document.getElementById('prog-prop-0-4');
-        if (prog4_0) {
-          if (vNom && vApe) {
-            prog4_0.classList.remove('progressive-hidden'); prog4_0.classList.add('progressive-visible');
-          } else {
-            prog4_0.classList.add('progressive-hidden'); prog4_0.classList.remove('progressive-visible');
-          }
-        }
-
-        const vEmail = el.email.value.trim();
-        const vConfEmail = el.confirmarEmail.value.trim();
-        if (vEmail && vConfEmail && vEmail !== vConfEmail) {
-          el.confirmarEmail.classList.add('invalid');
-          el.emailError.classList.add('show');
-        } else {
-          el.confirmarEmail.classList.remove('invalid');
-          el.emailError.classList.remove('show');
-        }
-        const prog5_0 = document.getElementById('prog-prop-0-5');
-        if (prog5_0) {
-          if (vEmail && vConfEmail && vEmail === vConfEmail && rx.email.test(vEmail)) {
-            prog5_0.classList.remove('progressive-hidden'); prog5_0.classList.add('progressive-visible');
-          } else {
-            prog5_0.classList.add('progressive-hidden'); prog5_0.classList.remove('progressive-visible');
-          }
-        }
-
-        const vCel = el.celular.value.trim();
-        const vConfCel = el.confirmarCelular.value.trim();
-        if (vCel && vConfCel && vCel !== vConfCel) {
-          el.confirmarCelular.classList.add('invalid');
-          el.celError.classList.add('show');
-        } else {
-          el.confirmarCelular.classList.remove('invalid');
-          el.celError.classList.remove('show');
-        }
-
-        // Paso 1
-        const prog2_1 = document.getElementById('prog-prop-1-2');
-        if (prog2_1) {
-          if (state.archivos['docFront']) {
-            prog2_1.classList.remove('progressive-hidden'); prog2_1.classList.add('progressive-visible');
-          } else {
-            prog2_1.classList.add('progressive-hidden'); prog2_1.classList.remove('progressive-visible');
-          }
-        }
-        const prog3_1 = document.getElementById('prog-prop-1-3');
-        if (prog3_1) {
-          if (state.archivos['docBack']) {
-            prog3_1.classList.remove('progressive-hidden'); prog3_1.classList.add('progressive-visible');
-          } else {
-            prog3_1.classList.add('progressive-hidden'); prog3_1.classList.remove('progressive-visible');
-          }
-        }
-        const prog4_1 = document.getElementById('prog-prop-1-4');
-        if (prog4_1) {
-          if (state.archivos['certTradicion']) {
-            prog4_1.classList.remove('progressive-hidden'); prog4_1.classList.add('progressive-visible');
-          } else {
-            prog4_1.classList.add('progressive-hidden'); prog4_1.classList.remove('progressive-visible');
-          }
-        }
-
-        // Paso 2
-        const vTCuenta = el.tipoCuenta.value.trim();
-        const prog2_2 = document.getElementById('prog-prop-2-2');
-        if (prog2_2) {
-          if (vTCuenta) {
-            prog2_2.classList.remove('progressive-hidden'); prog2_2.classList.add('progressive-visible');
-          } else {
-            prog2_2.classList.add('progressive-hidden'); prog2_2.classList.remove('progressive-visible');
-          }
-        }
-
-        const vNCuenta = el.numeroCuenta.value.trim();
-        const prog3_2 = document.getElementById('prog-prop-2-3');
-        if (prog3_2) {
-          if (vNCuenta) {
-            prog3_2.classList.remove('progressive-hidden'); prog3_2.classList.add('progressive-visible');
-          } else {
-            prog3_2.classList.add('progressive-hidden'); prog3_2.classList.remove('progressive-visible');
-          }
-        }
-
-        const vBanco = el.banco.value.trim();
-        const prog4_2 = document.getElementById('prog-prop-2-4');
-        if (prog4_2) {
-          if (vBanco) {
-            prog4_2.classList.remove('progressive-hidden'); prog4_2.classList.add('progressive-visible');
-          } else {
-            prog4_2.classList.add('progressive-hidden'); prog4_2.classList.remove('progressive-visible');
-          }
-        }
-
-        const vTitular = el.titularCuenta.value.trim();
-        const prog5_2 = document.getElementById('prog-prop-2-5');
-        if (prog5_2) {
-          if (vTitular) {
-            prog5_2.classList.remove('progressive-hidden'); prog5_2.classList.add('progressive-visible');
-          } else {
-            prog5_2.classList.add('progressive-hidden'); prog5_2.classList.remove('progressive-visible');
-          }
-        }
-
-        const vDocTitular = el.docTitular.value.trim();
-        const prog6_2 = document.getElementById('prog-prop-2-6');
-        if (prog6_2) {
-          if (vDocTitular) {
-            prog6_2.classList.remove('progressive-hidden'); prog6_2.classList.add('progressive-visible');
-          } else {
-            prog6_2.classList.add('progressive-hidden'); prog6_2.classList.remove('progressive-visible');
-          }
-        }
-
-        const isValid = validateStepRaw(state.step);
-        el.btnNext.disabled = !isValid;
-        updateMicroProgress();
-      }
-
-      function getRequiredForStep(step) {
-        if (state.modoCorreccion) {
-          if (step === 1) return [{ id: 'docFront', isType: 'file' }, { id: 'docBack', isType: 'file' }, { id: 'certTradicion', isType: 'file' }, { id: 'sarlaft', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
-          if (step === 2) return [{ id: 'certBancario', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
-          if (step === 3) return [{ id: 'facturaAgua', isType: 'file' }, { id: 'facturaLuz', isType: 'file' }, { id: 'facturaGas', isType: 'file' }, { id: 'facturaTelefono', isType: 'file' }, { id: 'facturaInternet', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
-          if (step === 4) return [{ id: 'comprobantePago', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
-          return [];
-        }
-
-        if (step === 0) return [
-          { id: 'tipoDocumento', isType: 'input', el: el.tipoDocumento },
-          { id: 'numeroDocumento', isType: 'input', el: el.numeroDocumento },
-          { id: 'confirmarDocumento', isType: 'input', el: el.confirmarDocumento },
-          { id: 'nombres', isType: 'input', el: el.nombres },
-          { id: 'apellidos', isType: 'input', el: el.apellidos },
-          { id: 'email', isType: 'input', el: el.email },
-          { id: 'confirmarEmail', isType: 'input', el: el.confirmarEmail },
-          { id: 'celular', isType: 'input', el: el.celular },
-          { id: 'confirmarCelular', isType: 'input', el: el.confirmarCelular }
-        ];
-        if (step === 1) return [
-          { id: 'docFront', isType: 'file' },
-          { id: 'docBack', isType: 'file' },
-          { id: 'certTradicion', isType: 'file' },
-          { id: 'sarlaft', isType: 'file' }
-        ];
-        if (step === 2) return [
-          { id: 'tipoCuenta', isType: 'input', el: el.tipoCuenta },
-          { id: 'numeroCuenta', isType: 'input', el: el.numeroCuenta },
-          { id: 'banco', isType: 'input', el: el.banco },
-          { id: 'titularCuenta', isType: 'input', el: el.titularCuenta },
-          { id: 'docTitular', isType: 'input', el: el.docTitular },
-          { id: 'certBancario', isType: 'file' }
-        ];
-        return [];
-      }
-
-      function bindProgressValidators() {
-        const inputs = document.querySelectorAll('.form-control, .input, .file-input, .servicio-checkbox');
-        inputs.forEach(input => {
-          input.addEventListener('input', () => { evaluateProgress(); guardarProgresoUsuario(); });
-          input.addEventListener('change', () => { evaluateProgress(); guardarProgresoUsuario(); });
-        });
-      }
-
-      // --------- Validación ----------
-      const rx = {
-        email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        phone: /^\d{10}$/,
-        num: /^[0-9A-Za-z.-]{5,}$/
-      };
-
-      function validateStepRaw(step) {
-        switch (step) {
-          case 0: {
-            if (state.modoCorreccion) return true;
             const required = getRequiredForStep(0).map(f => f.el);
             for (const r of required) { if (!r.value?.trim()) return false; }
             if (!rx.num.test(el.numeroDocumento.value.trim())) return false;
