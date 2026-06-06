@@ -78,8 +78,7 @@ function handleMercadoPagoWebhook(datos) {
       if (paymentData.status === 'approved') {
         const externalReference = paymentData.external_reference; // This is the CDR
         if (externalReference) {
-          const sheetUrl = 'https://docs.google.com/spreadsheets/d/1B9I3y3E3qI7FwXJ5W-xMhLw2pXWkE1W0w4x1kR0fRj0/edit';
-          const ss = SpreadsheetApp.openByUrl(sheetUrl);
+          const ss = SpreadsheetApp.getActiveSpreadsheet();
           const sheet = ss.getSheetByName('PAGOS_RECIBIDOS');
           if (sheet) {
             sheet.appendRow([new Date(), paymentId, externalReference, paymentData.transaction_amount, 'APROBADO', JSON.stringify(paymentData)]);
@@ -96,8 +95,7 @@ function handleMercadoPagoWebhook(datos) {
 
 function auditorDeContratosVencidos() {
   try {
-    const sheetUrl = 'https://docs.google.com/spreadsheets/d/1B9I3y3E3qI7FwXJ5W-xMhLw2pXWkE1W0w4x1kR0fRj0/edit';
-    const ss = SpreadsheetApp.openByUrl(sheetUrl);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheetPagos = ss.getSheetByName('PAGOS_RECIBIDOS');
     const sheetInmuebles = ss.getSheetByName('1.1 - INMUEBLES REGISTRADOS');
     if (!sheetPagos || !sheetInmuebles) return;
@@ -174,8 +172,7 @@ function auditorDeContratosVencidos() {
 
 function verificarPagoPorCDR(cdr) {
   try {
-    const sheetUrl = 'https://docs.google.com/spreadsheets/d/1B9I3y3E3qI7FwXJ5W-xMhLw2pXWkE1W0w4x1kR0fRj0/edit';
-    const ss = SpreadsheetApp.openByUrl(sheetUrl);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheetPagos = ss.getSheetByName('PAGOS_RECIBIDOS');
     if (!sheetPagos) return false;
     
