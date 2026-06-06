@@ -38,13 +38,13 @@
 - [x] **Simulación End-to-End (E2E) - Completada:** El usuario realizó la prueba maestra empezando desde el "Registro del Inmueble" hasta la generación de contrato, validando el éxito total del sistema.
 - [x] **Validación de Correos y Estética:** Comprobado. Todos los correos llegan al buzón correcto con un renderizado visual perfecto y estético.
 
-### 5. 💳 Integración Pasarela de Pagos y Reembolsos (Mercado Pago) - [PRÓXIMO PASO]
+### 5. 💳 Integración Pasarela de Pagos y Reembolsos (Mercado Pago) - [FINALIZADA]
 *Objetivo: Monetizar el flujo bloqueando el avance hasta validar el pago, y ofrecer una "Garantía Automática de 48h" de reembolso.*
 - [x] **Widget Frontend:** Incrustar el Checkout Pro/API de Mercado Pago en `formulario-inquilino.html`.
 - [x] **Validación Webhook (doPost):** Escuchar eventos de Mercado Pago para asentar el "Sello de Pago Verificado" en Google Sheets.
 - [x] **Sistema de Reembolso Automático (Garantía 48h):** Programar un *Time-driven Trigger* en Apps Script que escanee contratos en PENDING. Si pasan 48h sin respuesta del propietario, consumir la API de Reembolsos (`/v1/payments/{id}/refunds`) para devolver el dinero automáticamente.
 
-### 6. 👥 Escalabilidad de Múltiples Codeudores
+### 6. 👥 Escalabilidad de Múltiples Codeudores - [PRÓXIMO PASO]
 *Objetivo: Escalar el formulario y todo el ecosistema (paneles, bitácora y PDF) para que soporte 'N' cantidad de codeudores de forma dinámica.*
 - [ ] **Lógica Dinámica Frontend:** Adaptar el formulario de registro para permitir agregar codeudores adicionales dinámicamente.
 - [ ] **Sincronización en el Cerebro:** Modificar el esquema de `DATOS DE ELABORACION` para aceptar y estructurar un arreglo de varios codeudores.

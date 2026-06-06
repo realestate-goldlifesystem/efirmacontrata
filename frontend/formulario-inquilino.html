@@ -864,26 +864,19 @@
         const activePane = document.querySelector('.step-pane.show');
         if (!activePane) return;
         
-        const requiredFields = Array.from(activePane.querySelectorAll('input[required], select[required]'))
-          .filter(el => {
-            // No excluimos los 'progressive-hidden' para que el TOTAL sea constante
-            // y el porcentaje nunca baje al revelar nuevos campos.
-            const container = el.closest('.hidden');
-            if (container && container.classList.contains('hidden')) return false;
-            return true;
-          });
-        
+        const requiredFields = getRequiredForStep(state.step);
         let filled = 0;
+        
         requiredFields.forEach(field => {
-          if (field.type === 'file') {
-            if (field.files && field.files.length > 0) filled++;
-          } else {
-            if (field.value.trim() !== '') filled++;
+          if (field.isType === 'file') {
+            if (state.archivos[field.id]) filled++;
+          } else if (field.isType === 'input' && field.el) {
+            if (field.el.value.trim() !== '') filled++;
           }
         });
 
         const total = requiredFields.length || 1;
-        const percentage = Math.round((filled / total) * 100);
+        const percentage = requiredFields.length === 0 ? 100 : Math.round((filled / total) * 100);
         
         const xpBar = document.getElementById('xpBar');
         const xpText = document.getElementById('xpText');
