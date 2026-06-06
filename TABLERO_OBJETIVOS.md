@@ -40,9 +40,9 @@
 
 ### 5. 💳 Integración Pasarela de Pagos y Reembolsos (Mercado Pago) - [PRÓXIMO PASO]
 *Objetivo: Monetizar el flujo bloqueando el avance hasta validar el pago, y ofrecer una "Garantía Automática de 48h" de reembolso.*
-- [ ] **Widget Frontend:** Incrustar el Checkout Pro/API de Mercado Pago en `formulario-inquilino.html`.
-- [ ] **Validación Webhook (doPost):** Escuchar eventos de Mercado Pago para asentar el "Sello de Pago Verificado" en Google Sheets.
-- [ ] **Sistema de Reembolso Automático (Garantía 48h):** Programar un *Time-driven Trigger* en Apps Script que escanee contratos en PENDING. Si pasan 48h sin respuesta del propietario, consumir la API de Reembolsos (`/v1/payments/{id}/refunds`) para devolver el dinero automáticamente.
+- [x] **Widget Frontend:** Incrustar el Checkout Pro/API de Mercado Pago en `formulario-inquilino.html`.
+- [x] **Validación Webhook (doPost):** Escuchar eventos de Mercado Pago para asentar el "Sello de Pago Verificado" en Google Sheets.
+- [x] **Sistema de Reembolso Automático (Garantía 48h):** Programar un *Time-driven Trigger* en Apps Script que escanee contratos en PENDING. Si pasan 48h sin respuesta del propietario, consumir la API de Reembolsos (`/v1/payments/{id}/refunds`) para devolver el dinero automáticamente.
 
 ### 6. 👥 Escalabilidad de Múltiples Codeudores
 *Objetivo: Escalar el formulario y todo el ecosistema (paneles, bitácora y PDF) para que soporte 'N' cantidad de codeudores de forma dinámica.*
@@ -77,9 +77,9 @@
 
 ### 12. ✨ UI/UX: Experiencia "Dark Luxury" y Gamificación
 *Objetivo: Elevar la percepción de marca a un nivel premium y de alta gama en todos los portales, mejorando la satisfacción del cliente y del administrador.*
-- [ ] **Design System "Dark Luxury":** Implementar un fondo oscuro elegante (Dark Mode), tipografía limpia (ej. *Outfit*, *Inter* o *Cinzel* para títulos), y acentos de luz (neón sutil/dorado) para los llamados a la acción (CTAs).
-- [ ] **Estructura "Bento Grid":** Rediseñar el `panel_validacion.html` y los portales de clientes usando una cuadrícula estilo *Bento* (tarjetas modulares con bordes redondeados y efecto *Glassmorphism*).
-- [ ] **Gamificación y Micro-interacciones:** Añadir animaciones fluidas de transición, barras de progreso dinámicas, confeti digital o checks interactivos al completar hitos (ej. firmar un contrato o pagar), y *tooltips* interactivos.
+- [x] **Design System "Dark Luxury":** Implementar un fondo oscuro elegante (Dark Mode), tipografía limpia (ej. *Outfit*, *Inter* o *Cinzel* para títulos), y acentos de luz (neón sutil/dorado) para los llamados a la acción (CTAs).
+- [x] **Estructura "Bento Grid":** Rediseñar el `panel_validacion.html` y los portales de clientes usando una cuadrícula estilo *Bento* (tarjetas modulares con bordes redondeados y efecto *Glassmorphism*).
+- [x] **Gamificación y Micro-interacciones:** Añadir animaciones fluidas de transición, barras de progreso dinámicas, confeti digital o checks interactivos al completar hitos (ej. firmar un contrato o pagar), y *tooltips* interactivos.
 - [ ] **Consistencia en Backend y Frontend:** Unificar el diseño para que el administrador sienta la misma fluidez y modernidad que experimenta el cliente final.
 
 ---
