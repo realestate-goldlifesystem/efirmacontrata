@@ -1817,14 +1817,213 @@
         setTimeout(() => el.toast.classList.remove('show'), 3000);
       }
 
+}
+
+      function hideInlineErrors() {
+        [el.docError, el.emailError, el.celError, el.coDocError, el.coEmailError, el.coCelError].forEach(n => { if (n) n.classList.remove('show'); });
+        [el.confirmarDocumento, el.confirmarEmail, el.confirmarCelular, el.coConfirmarDocumento, el.coConfirmarEmail, el.coConfirmarCelular].forEach(i => { if (i) i.classList.remove('invalid'); });
+        el.alertBox.classList.add('hidden');
+      }
+
+      // --------- Resumen ----------
+      function buildSummary() {
+        const files = Object.entries(state.archivos).map(([k, v]) => {
+          const nice = {
+            docFront: 'Doc. Identidad (frontal)', docBack: 'Doc. Identidad (reverso)',
+            coDocFront: 'Codeudor: Doc. (frontal)', coDocBack: 'Codeudor: Doc. (reverso)',
+            comprobantePago: 'Comprobante de Pago'
+          }[k] || k;
+          return `<div class="summary-file"><i class="fas fa-file-alt"></i> ${nice}: ${escapeHTML(v?.nombre || '—')}</div>`;
+        }).join('');
+
+        const co = [el.coTipo.value, el.coNumero.value, el.coNombres.value, el.coApellidos.value, el.coEmail.value, el.coCelular.value].some(Boolean);
+
+        el.resumen.innerHTML = `
+          <div class="summary-container">
+            <div class="summary-title"><i class="fas fa-clipboard-check"></i> Verificación Final</div>
+            
+            <div class="summary-section">
+              <h4>Datos del Inquilino</h4>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <span class="summary-label">Documento</span>
+                  <span class="summary-value">${escapeHTML(el.tipoDocumento.value || '')} ${escapeHTML(el.numeroDocumento.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Nombre Completo</span>
+                  <span class="summary-value">${escapeHTML(el.nombres.value || '')} ${escapeHTML(el.apellidos.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Correo Electrónico</span>
+                  <span class="summary-value">${escapeHTML(el.email.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Celular</span>
+                  <span class="summary-value">${escapeHTML(el.celular.value || '')}</span>
+                </div>
+              </div>
+            </div>
+
+            ${co ? `
+            <div class="summary-section">
+              <h4>Datos del Codeudor</h4>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <span class="summary-label">Documento</span>
+                  <span class="summary-value">${escapeHTML(el.coTipo.value || '')} ${escapeHTML(el.coNumero.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Nombre Completo</span>
+                  <span class="summary-value">${escapeHTML(el.coNombres.value || '')} ${escapeHTML(el.coApellidos.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Correo Electrónico</span>
+                  <span class="summary-value">${escapeHTML(el.coEmail.value || '')}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Celular</span>
+                  <span class="summary-value">${escapeHTML(el.coCelular.value || '')}</span>
+                </div>
+              </div>
+            </div>` : ''}
+
+            <div class="summary-section">
+              <h4>Archivos Adjuntos</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                ${files || '<span class="muted">Sin archivos adjuntos</span>'}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // --------- Pagos ----------
+      function openBrebModal() {
+        el.modalBreb.classList.add('show');
+        el.modalBreb.setAttribute('aria-hidden', 'false');
+        el.brebNumber.select();
+      }
+
+      function closeBrebModal() {
+        el.modalBreb.classList.remove('show');
+        el.modalBreb.setAttribute('aria-hidden', 'true');
+      }
+
+      async function copyBreb() {
+        const value = (CONFIG?.PAGO?.NEQUI || '').toString().trim();
+        try {
+          if (!value) throw new Error('Número de pago no configurado.');
+          await navigator.clipboard.writeText(value);
+          toast('Número copiado: ' + value);
+        } catch (e) {
+          toast('No se pudo copiar. Selecciona y copia manualmente.');
+        }
+      }
+
+      function handlePayWompi() {
+        const url = CONFIG?.PAGO?.WOMPI_LINK || '';
+        if (!url) return showAlert('warning', 'No encontramos el enlace de pago con tarjeta.');
+        window.open(url, '_blank', 'noopener');
+      }
+
+      // --------- Submit CORREGIDO ----------
+      async function onSubmit() {
+        // Validación final
+        for (let i = 0; i <= 4; i++) {
+          if (!validateStep(i)) { gotoStep(i); return; }
+        }
+
+        toggleLoading(true);
+
+        // ESTRUCTURA CORREGIDA para coincidir con el backend
+        const payload = {
+          accion: 'procesarFormularioInquilino',
+          codigoRegistro: state.cdr,  // Cambio: cdr → codigoRegistro
+          datosFormulario: {  // Cambio: agrupamos inquilino y codeudor aquí
+            inquilino: {
+              tipoDocumento: el.tipoDocumento.value.trim(),
+              numeroDocumento: el.numeroDocumento.value.trim(),
+              nombre: `${el.nombres.value.trim()} ${el.apellidos.value.trim()}`.toUpperCase(),
+              email: el.email.value.trim(),
+              celular: el.celular.value.trim(),
+              ocupacion: 'Por definir'  // Campo requerido por el backend
+            },
+            codeudor: el.coNumero.value.trim() ? {
+              tipoDocumento: el.coTipo.value.trim(),
+              numeroDocumento: el.coNumero.value.trim(),
+              nombre: `${el.coNombres.value.trim()} ${el.coApellidos.value.trim()}`.toUpperCase(),
+              email: el.coEmail.value.trim(),
+              celular: el.coCelular.value.trim()
+            } : null,
+            fechaInicio: el.fechaInicioContrato.value.trim() || new Date().toISOString().split('T')[0],
+            modoCorreccion: state.modoCorreccion
+          },
+          archivosBase64: state.archivos  // Cambio: archivos → archivosBase64
+        };
+
+        try {
+          const url = new URL(CONFIG.API_URL);
+          const res = await fetch(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+          });
+
+          const data = await res.json();
+
+          // VALIDACIÓN CORREGIDA: success en lugar de ok
+          if (!data || !data.success) {
+            throw new Error(data?.message || 'No fue posible procesar la información.');
+          }
+
+          const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
+          try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) { }
+          location.href = `pagina-exito.html?status=success&msg=${msg}`;
+
+        } catch (err) {
+          console.error('[Inquilino] Error:', err);
+          showAlert('danger', err.message || 'Ocurrió un error inesperado.');
+        } finally {
+          toggleLoading(false);
+        }
+      }
+
+      // --------- Utilidades ----------
+      function showAlert(type, text) {
+        const map = { success: 'alert-success', warning: 'alert-warning', danger: 'alert-danger', info: 'alert-info' };
+        el.alertBox.className = `alert ${map[type] || 'alert-info'}`;
+        el.alertBox.innerHTML = escapeHTML(text);
+        el.alertBox.classList.remove('hidden');
+        el.alertBox.focus?.();
+      }
+
+      function toggleLoading(show) {
+        if (show) el.loader.classList.add('active');
+        else el.loader.classList.remove('active');
+        el.btnPrev.disabled = !!show;
+        el.btnNext.disabled = !!show;
+        el.btnEnviar.disabled = !!show;
+      }
+
+      function toast(text) {
+        el.toast.textContent = text || 'Acción realizada.';
+        el.toast.classList.add('show');
+        setTimeout(() => el.toast.classList.remove('show'), 3000);
+      }
+
       function escapeHTML(str) {
         const div = document.createElement('div');
         div.textContent = str || '';
         return div.innerHTML;
       }
     })();
+  </script>
   
-      // PUBLIC KEY DE PRUEBA (Activa)
+  <script>
+      // ==========================================
+      // INTEGRACIÓN MERCADO PAGO (Aislado)
+      // ==========================================
       let mp;
       try {
         mp = new MercadoPago('APP_USR-c8da1c51-a70c-418b-9365-033454ec347e', { locale: 'es-CO' });
