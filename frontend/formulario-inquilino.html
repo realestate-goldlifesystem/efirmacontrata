@@ -1825,7 +1825,11 @@
     })();
   
       
+      // PUBLIC KEY DE PRUEBA (Activa)
       const mp = new MercadoPago('APP_USR-c8da1c51-a70c-418b-9365-033454ec347e', { locale: 'es-CO' });
+      
+      // PUBLIC KEY DE PRODUCCIÓN (Real - Para cuando vayas a salir en vivo, intercambia la línea de arriba por esta)
+      // const mp = new MercadoPago('APP_USR-a0703444-6388-4a61-8807-2a4257160248', { locale: 'es-CO' });
       const btnGoToPayment = document.getElementById('btnGoToPayment');
       
       if (btnGoToPayment) {
