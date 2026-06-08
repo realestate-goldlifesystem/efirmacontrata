@@ -2571,6 +2571,12 @@
                                 <span class="info-value">${registro.codeudores.length}</span>
                             </div>
                             ` : '') + '\n' +
+'                            <div class="info-row" id="mp-badge-row-' + registro.cdr.replace(/[^a-zA-Z0-9]/g, '_') + '">\n' +
+'                                <span class="info-label">&#x1F4B3; Pago (MP):</span>\n' +
+'                                <span class="info-value" id="mp-status-' + registro.cdr.replace(/[^a-zA-Z0-9]/g, '_') + '">\n' +
+'                                    <span style="color:var(--text-muted);font-size:0.8rem;">&#x23F3; verificando...</span>\n' +
+'                                </span>\n' +
+'                            </div>\n' +
 '                        </div>\n' +
 '                        <div class="registro-actions" style="justify-content: flex-end;">\n' +
 '                            <button class="btn btn-primary" onclick="validarInquilino(\'' + (registro.cdr) + '\')">\n' +
@@ -2582,6 +2588,11 @@
             }
 
             lista.innerHTML = html;
+
+            // Disparar la carga asíncrona del badge MP para cada tarjeta
+            for (let k = 0; k < registros.length; k++) {
+                cargarEstadoPagoMP(registros[k].cdr);
+            }
         }
 
         // Mostrar registros de propietarios
@@ -2692,8 +2703,43 @@
             });
         }
 
+        // ─── Badge Mercado Pago ───────────────────────────────────────────
+        // Carga el estado del pago via google.script.run (mismo origen, sin CORS)
+        function cargarEstadoPagoMP(cdr) {
+            var safeId = cdr.replace(/[^a-zA-Z0-9]/g, '_');
+            var el = document.getElementById('mp-status-' + safeId);
+            if (!el) return;
+
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    var statusEl = document.getElementById('mp-status-' + safeId);
+                    if (!statusEl) return;
+                    if (data && data.success && data.pagado) {
+                        var monto = data.monto ? Number(data.monto).toLocaleString('es-CO') : '---';
+                        statusEl.innerHTML =
+                            '<span style="color:var(--success);font-weight:700;">&#x2705; VERIFICADO</span>' +
+                            '<span style="color:var(--text-muted);font-size:0.8rem;margin-left:8px;">$' + monto + ' COP</span>' +
+                            '<span style="color:var(--text-muted);font-size:0.75rem;display:block;margin-top:2px;">' +
+                            'ID: ' + (data.paymentId || '') + ' &mdash; ' + (data.fecha || '') +
+                            '</span>';
+                    } else {
+                        statusEl.innerHTML =
+                            '<span style="color:var(--warning);font-weight:600;">&#x23F3; PAGO PENDIENTE</span>';
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    var statusEl = document.getElementById('mp-status-' + safeId);
+                    if (statusEl) statusEl.innerHTML =
+                        '<span style="color:var(--text-muted);font-size:0.75rem;">No disponible</span>';
+                    console.warn('Error cargando estado MP para ' + cdr + ':', err);
+                })
+                .obtenerEstadoPagoMP(cdr);
+        }
+        // ──────────────────────────────────────────────────────────────────
+
         // Mostrar / Ocultar loading overlay
         function mostrarLoading(texto) {
+
             const overlay = document.getElementById('loadingOverlay');
             if (texto) document.getElementById('loadingText').textContent = texto;
             overlay.classList.add('show');
@@ -3758,7 +3804,7 @@
         // Función que extrae la categoría BUZON de un nombre de archivo del Drive
         function obtenerBuzonParaDoc(nombreArchivo) {
             const n = nombreArchivo.toUpperCase();
-            if (n.includes('COMPROBANTE_PAGO') || n.includes('COMPROBANTE')) return 'BUZON COMPROBANTE DE PAGO';
+            if (n.includes('COMPROBANTE_PAGO') || n.includes('COMPROBANTE')) return null; // Pago validado por MP, no por archivo
             if (n.includes('SOPORTES_INGRESO_COD')) {
                 const m = n.match(/COD_(\d+)/);
                 return m ? `BUZON SOPORTES INGRESO CODEUDOR ${m[1]}` : 'BUZON SOPORTES INGRESO CODEUDOR 1';

@@ -1,31 +1,55 @@
+# === SISTEMA Y CONFIGURACIÓN LOCAL ===
+node_modules/
 node_modules/**
-**/node_modules/**
-.git/
-.gitignore
 .clasp.json
-.claspignore
+.clasprc.json
 package.json
 package-lock.json
-README.md
-*.md
-*.zip
-backend_backup.zip
-backend_legacy_backup/
-content-download/
-temp*/
-remote*/
-backend_ready/
-deployment_fix/
-EfirmaContrata - Gold Life System.pdf
-_herramientas_locales/**
-apps-script.json
-_legacy/
-*.py
-combined_test.js
+.gitignore
+
+# === CREDENCIALES PRIVADAS ===
+creds.json
+*.json
+!appsscript.json
+
+# === FRONTEND (Vive en GitHub Pages — NO va a Apps Script) ===
 frontend/**
 
+# === HERRAMIENTAS LOCALES (Node.js — solo corren localmente) ===
+_herramientas_locales/**
+
+# === LEGACY Y RESPALDOS ===
+**_legacy/**
+_legacy
+
+# === DOCUMENTACIÓN ===
+*.md
+**/*.md
+
+# === ARCHIVOS TEMPORALES Y DE TRABAJO LOCAL ===
+temp_pull*/
 temp_pull2/
+temp_pull3/
+temp_pull4/
+poppler/
+poppler.zip
+backend_diff.txt
+test_mp.js
+test_mp.py
+combined_test.js
 
+# === ARCHIVOS NO-CÓDIGO (Binarios, imágenes, docs) ===
+*.png
+*.PNG
+*.pdf
+*.docx
+*.txt
+*.zip
+*.py
 
-temp_pull2/**
+# === CARPETAS DE RECURSOS LOCALES ===
+imagenes del proyecto/
+Servicios publicos/
 
+# === GEMINI / IDE ===
+.gemini/

@@ -424,6 +424,15 @@ function doGet(e) {
         return handleObtenerDocumentosPanel(e);
 
       
+      case 'verificarPagoMP':
+        var cdrPagoMP = e.parameter.cdr;
+        if (!cdrPagoMP) {
+          result = { success: false, message: 'CDR requerido' };
+        } else {
+          result = obtenerEstadoPagoMP(cdrPagoMP);
+        }
+        break;
+
       case 'obtenerDireccion':
         const dir = handleObtenerDireccionInmueble(e.parameter.cdr);
         let pago_completado = false;
@@ -1867,8 +1876,8 @@ function escribirDatosContratoDocNivel7(cedulaFolder, datosFormulario, cdr) {
       });
     }
 
-    // Buzón de pago
-    body.appendParagraph('BUZON COMPROBANTE DE PAGO:: RECIBIDO');
+    // Pago verificado por Mercado Pago — ya no se escribe buzón en el Cerebro.
+    // El estado del pago se consulta directamente desde la hoja PAGOS_RECIBIDOS.
 
     body.appendParagraph('[FIN]');
     doc.saveAndClose();
@@ -1983,7 +1992,42 @@ function obtenerEstadosValidacionDesdeCerebro(cdr) {
 }
 
 /**
+ * Consulta el estado del pago en la hoja PAGOS_RECIBIDOS (Mercado Pago).
+ * Se llama desde doGet con accion=verificarPagoMP&cdr=XXX
+ * Retorna: { success: true, pagado: boolean, monto, fecha, paymentId }
+ */
+function obtenerEstadoPagoMP(cdr) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('PAGOS_RECIBIDOS');
+    if (!sheet) {
+      return { success: true, pagado: false, motivo: 'Hoja PAGOS_RECIBIDOS no encontrada' };
+    }
+    var data = sheet.getDataRange().getValues();
+    // Recorremos al revés para retornar el último pago aprobado si hay varios
+    for (var i = data.length - 1; i >= 1; i--) {
+      var filaCDR   = String(data[i][2]).trim();
+      var filaEstado = String(data[i][4]).trim().toUpperCase();
+      if (filaCDR === cdr && filaEstado === 'APROBADO') {
+        return {
+          success:   true,
+          pagado:    true,
+          monto:     data[i][3],
+          fecha:     data[i][0] ? new Date(data[i][0]).toLocaleDateString('es-CO') : '',
+          paymentId: String(data[i][1])
+        };
+      }
+    }
+    return { success: true, pagado: false };
+  } catch (ex) {
+    Logger.log('Error en obtenerEstadoPagoMP: ' + ex.message);
+    return { success: false, pagado: false, motivo: ex.message };
+  }
+}
+
+/**
  * Obtener datos bancarios del propietario desde el Cerebro
+
  * Parsea las líneas con formato "TIPO DE CUENTA:: valor", "NÚMERO DE CUENTA:: valor", etc.
  */
 function obtenerDatosBancariosDesdeCerebro(cdr) {
