@@ -17,4 +17,11 @@ Quiero que construyas esta interfaz bajo los siguientes estándares de diseño, 
 - Mantén la armonía en la disposición de los elementos. Usa `display: flex` con `gap` en lugar de márgenes aleatorios para que las listas, badges y botones nunca se desalineen ni generen saltos de línea feos si la pantalla se achica.
 
 4. FLUJOS DE USUARIO LÓGICOS (Control de Rondas y Bloqueos):
-- Si hay un proceso de envío, validación o formulario, diseña lógicas de bloqueo (UI Locking). Cuando el usuario realiza una acción, OCULTA los botones de acción y muestra en su lugar un mensaje claro de '⏳ Acción registrada, esperando...', para evitar clics duplicados o alteraciones que rompan la lógica del backend."
+- Si hay un proceso de envío, validación o formulario, diseña lógicas de bloqueo (UI Locking). Cuando el usuario realiza una acción, OCULTA los botones de acción y muestra en su lugar un mensaje claro de '⏳ Acción registrada, esperando...', para evitar clics duplicados o alteraciones que rompan la lógica del backend.
+
+5. ESTRUCTURA DE PANELES Y MODALES (App-like Layout / Scroll Interno):
+- Para paneles o modales complejos que ocupan casi toda la pantalla, NUNCA fuerces al usuario a hacer scroll global para encontrar el botón final.
+- Emplea una "Maquetación Flexbox con Scroll Interno": El contenedor principal (`.modal-body` o wrapper) debe tener `display: flex; flex-direction: column; height: 100%; overflow: hidden;`.
+- Los contenedores de botones maestros (acciones globales) deben quedar por fuera del flujo que se desplaza, anclados siempre al fondo.
+- Usa `flex: 1` en el contenedor del centro (donde van las listas, datos o previsualizadores visuales) y un `min-height: 0` para que absorba todo el espacio dinámicamente y "empuje" los botones abajo.
+- Si el contenido del medio tiene mucha información (formularios largos), ponle SOLO a ese contenedor interno un `overflow-y: auto`. Esto garantiza una experiencia idéntica a la de una app de escritorio: barras de herramientas fijas y contenido desplazable en el medio."
