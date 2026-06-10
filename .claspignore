@@ -6,50 +6,54 @@ node_modules/**
 package.json
 package-lock.json
 .gitignore
+.nojekyll
 
 # === CREDENCIALES PRIVADAS ===
 creds.json
-*.json
-!appsscript.json
+real-estate-ocr-468904-38d35bfd32d6.json
 
 # === FRONTEND (Vive en GitHub Pages — NO va a Apps Script) ===
 frontend/**
+frontend/
 
 # === HERRAMIENTAS LOCALES (Node.js — solo corren localmente) ===
 _herramientas_locales/**
+_herramientas_locales/
 
 # === LEGACY Y RESPALDOS ===
 **_legacy/**
-_legacy
+_legacy/**
+_legacy/
 
 # === DOCUMENTACIÓN ===
 *.md
 **/*.md
 
-# === ARCHIVOS TEMPORALES Y DE TRABAJO LOCAL ===
-temp_pull*/
+# === ARCHIVOS TEMPORALES DE CLASP PULL ===
+temp_pull/
+temp_pull/**
 temp_pull2/
+temp_pull2/**
 temp_pull3/
+temp_pull3/**
 temp_pull4/
-poppler/
-poppler.zip
-backend_diff.txt
-test_mp.js
-test_mp.py
-combined_test.js
+temp_pull4/**
 
-# === ARCHIVOS NO-CÓDIGO (Binarios, imágenes, docs) ===
+# === RECURSOS Y BINARIOS LOCALES ===
+poppler/
+poppler/**
+poppler.zip
+imagenes del proyecto/
+Servicios publicos/
 *.png
 *.PNG
 *.pdf
 *.docx
-*.txt
 *.zip
 *.py
 
-# === CARPETAS DE RECURSOS LOCALES ===
-imagenes del proyecto/
-Servicios publicos/
-
 # === GEMINI / IDE ===
 .gemini/
+.gemini/**
+.git/
+.git/**

@@ -2490,9 +2490,20 @@
 
 
 
+        // Helper: escapa caracteres especiales para uso seguro en atributos HTML onclick
+        function escH(v) {
+            if (v === null || v === undefined) return '';
+            return String(v)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
         // Mostrar registros de inquilinos
         function mostrarRegistrosInquilinos(registros) {
-            const lista = document.getElementById('listaInquilinos');
+            var lista = document.getElementById('listaInquilinos');
 
             if (!registros || registros.length === 0) {
                 lista.innerHTML =
@@ -2504,44 +2515,33 @@
                 return;
             }
 
-            let html = '';
+            var html = '';
 
-            // Helper: escapa caracteres especiales para uso seguro en atributos HTML onclick
-            function escH(v) {
-                if (v === null || v === undefined) return '';
-                return String(v)
-                    .replace(/&/g, '&amp;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#39;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;');
-            }
-
-            for (let i = 0; i < registros.length; i++) {
-                const registro = registros[i];
-                const estado = obtenerEstadoRegistro(registro.detalles);
+            for (var i = 0; i < registros.length; i++) {
+                var registro = registros[i];
+                var estado = obtenerEstadoRegistro(registro.detalles);
 
                 // Extraer fecha y dirección del CDR
-                let fechaStr = 'Fecha en ID';
-                let direccionStr = registro.cdr;
-                const match = registro.cdr.match(/REG_(\d{2}-\d{2}-\d{4})-[^_]+_\((.+?)\)/);
+                var fechaStr = 'Fecha en ID';
+                var direccionStr = registro.cdr;
+                var match = registro.cdr.match(/REG_(\d{2}-\d{2}-\d{4})-[^_]+_\((.+?)\)/);
                 if (match) {
                     fechaStr = match[1];
                     direccionStr = match[2];
                 }
 
                 // Acceso seguro a datos del inquilino
-                const inq = registro.inquilino || {};
-                const nombre    = inq.nombre    || '';
-                const documento = inq.documento || '';
-                const email     = inq.email     || '';
-                const celular   = inq.celular   || '';
-                const refStr    = registro.idRegistro || registro.cdr.split('_(')[0];
-                const safeId    = registro.cdr.replace(/[^a-zA-Z0-9]/g, '_');
-                const cdrEsc    = escH(registro.cdr);
+                var inq = registro.inquilino || {};
+                var nombre    = inq.nombre    || '';
+                var documento = inq.documento || '';
+                var email     = inq.email     || '';
+                var celular   = inq.celular   || '';
+                var refStr    = registro.idRegistro || registro.cdr.split('_(')[0];
+                var safeId    = registro.cdr.replace(/[^a-zA-Z0-9]/g, '_');
+                var cdrEsc    = escH(registro.cdr);
 
                 // Fila de codeudores (opcional)
-                let codRow = '';
+                var codRow = '';
                 if (registro.codeudores && registro.codeudores.length > 0) {
                     codRow = '<div class="info-row">' +
                                  '<span class="info-label">Codeudores:</span>' +
@@ -2601,7 +2601,7 @@
             lista.innerHTML = html;
 
             // Disparar la carga asíncrona del badge MP para cada tarjeta
-            for (let k = 0; k < registros.length; k++) {
+            for (var k = 0; k < registros.length; k++) {
                 cargarEstadoPagoMP(registros[k].cdr);
             }
         }
