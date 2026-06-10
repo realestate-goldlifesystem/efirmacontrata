@@ -486,6 +486,12 @@ function doGet(e) {
         result = handleObtenerEstadoAprobaciones(e);
         break;
 
+      case 'test-inquilinos':
+        return ContentService.createTextOutput(JSON.stringify({
+          success: true,
+          data: obtenerRegistrosInquilinos()
+        })).setMimeType(ContentService.MimeType.JSON);
+
       default:
         result = {
           success: false,

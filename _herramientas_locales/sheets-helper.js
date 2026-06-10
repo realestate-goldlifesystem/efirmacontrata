@@ -10,28 +10,15 @@ const path = require('path');
 
 // Configuración
 const SPREADSHEET_ID = '1jdPeOqQ2rRQNhlClAnFQFaNMxOl7HCI7oI1yG3_QRZc'; // ID Real
-const CREDENTIALS_PATH = path.join(__dirname, 'backend', 'creds.json');
-const TOKEN_PATH = path.join(__dirname, 'backend', 'sheet_token.json');
+const CREDENTIALS_PATH = path.join(__dirname, '..', 'real-estate-ocr-468904-38d35bfd32d6.json');
 
 // Cargar Auth Client
 function getAuth() {
-    const content = fs.readFileSync(CREDENTIALS_PATH);
-    const keys = JSON.parse(content).installed || JSON.parse(content).web;
-
-    const client = new google.auth.OAuth2(
-        keys.client_id,
-        keys.client_secret,
-        keys.redirect_uris[0]
-    );
-
-    if (fs.existsSync(TOKEN_PATH)) {
-        const token = JSON.parse(fs.readFileSync(TOKEN_PATH));
-        client.setCredentials(token);
-    } else {
-        throw new Error('No se encontró el token. Ejecuta "node backend/simple_auth.js" primero.');
-    }
-
-    return client;
+    const auth = new google.auth.GoogleAuth({
+        keyFile: CREDENTIALS_PATH,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    return auth;
 }
 
 // Obtener Servicio Sheets
@@ -104,8 +91,45 @@ async function main() {
                 console.log(await escribir(args[0], val));
                 break;
 
+            case 'leer-inquilinos':
+                // Simular la funcion obtenerRegistrosInquilinos() de GESTOR DE DOCUMENTOS.js
+                const dataInq = await leer(args[0] + '!A:AC'); // Hasta estado del inmueble
+                const headersInq = dataInq[0];
+                const registrosInq = [];
+                for (let i = 1; i < dataInq.length; i++) {
+                    const row = dataInq[i];
+                    if (!row || row.length < 5) continue;
+                    const detalles = (row[4] || '').toString();
+                    const detallesLower = detalles.toLowerCase();
+
+                    const esDeInquilino = detallesLower.includes('inquilino');
+                    const esPendiente = detallesLower.includes('recibida') || detallesLower.includes('diligenciado') || detallesLower.includes('correcci');
+                    const esAprobado = detallesLower.includes('aprobado') || detallesLower.includes('firmado');
+
+                    if (esDeInquilino && esPendiente && !esAprobado) {
+                        registrosInq.push({
+                            cdr: row[0],
+                            detalles: detalles
+                        });
+                    }
+                }
+                console.log(JSON.stringify(registrosInq, null, 2));
+                break;
+                const numFilas = parseInt(args[1] || '5', 10);
+                const data = await leer(args[0] + '!A:AC'); // Hasta estado del inmueble
+                const headers = data[0];
+                const ultimas = data.slice(-numFilas);
+                ultimas.forEach((fila, i) => {
+                    console.log(`\n--- FILA -${numFilas - i} ---`);
+                    console.log(`CDR: ${fila[0]}`);
+                    console.log(`ESTADO (Col E): ${fila[4]}`);
+                    console.log(`ESTADO DOC (Col G): ${fila[6]}`);
+                    console.log(`ESTADO INMUEBLE (Col AC): ${fila[28]}`);
+                });
+                break;
+
             default:
-                console.log('Uso: node sheets-helper.js [hojas | leer <rango> | escribir <rango> <json>]');
+                console.log('Uso: node sheets-helper.js [hojas | leer <rango> | escribir <rango> <json> | leer-ultimos <Hoja> <num>]');
         }
     } catch (e) {
         console.error('ERROR:', e.message);
