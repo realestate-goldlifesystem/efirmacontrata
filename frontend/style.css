@@ -279,7 +279,7 @@ select.input option {
 
 .file-upload.has-file {
   border-color: var(--success);
-  background: #e8f5e9;
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .file-upload input[type="file"] {
@@ -334,7 +334,7 @@ select.input option {
   text-align: center;
   margin-top: 10px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-muted);
 }
 
 /* ALERTAS */
@@ -346,26 +346,26 @@ select.input option {
 }
 
 .alert-warning {
-  background: #fff3cd;
-  color: #856404;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
   border-left-color: var(--warning);
 }
 
 .alert-info {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: rgba(33, 150, 243, 0.1);
+  color: #64b5f6;
   border-left-color: #2196f3;
 }
 
 .alert-success {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
   border-left-color: var(--success);
 }
 
 .alert-danger {
-  background: #f8d7da;
-  color: #721c24;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
   border-left-color: var(--danger);
 }
 
@@ -567,14 +567,14 @@ select.input option {
 
 .summary-label {
   font-size: 0.8rem;
-  color: #6c757d;
+  color: var(--text-muted);
   font-weight: 500;
   margin-bottom: 4px;
 }
 
 .summary-value {
   font-size: 0.95rem;
-  color: var(--text-color);
+  color: var(--white);
   font-weight: 600;
   word-break: break-word;
 }
@@ -667,7 +667,7 @@ select.input option {
 .summary-value {
   font-size: 15px;
   font-weight: 600;
-  color: var(--dark);
+  color: var(--white);
 }
 
 .summary-file {
@@ -675,13 +675,13 @@ select.input option {
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  background: #fffdf5;
-  border: 1px solid var(--secondary);
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid var(--border);
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
   color: var(--primary);
-  box-shadow: 0 2px 5px rgba(220, 181, 60, 0.2);
+  box-shadow: 0 2px 5px rgba(212, 175, 55, 0.2);
 }
 
 
