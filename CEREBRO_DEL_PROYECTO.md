@@ -48,6 +48,11 @@ Cada vez que la IA cree herramientas "tras bambalinas" para debuggear, consultar
 3. Si la herramienta fue "desechable" o momentánea (como un script de una sola ejecución para renombrar algo), **BORRARLA** inmediatamente después de usarla.
 4. Mantener siempre el espacio de trabajo local (Workspace) impecable y libre de scripts basura para no confundir el contexto en futuras sesiones.
 
+**🎯 MANDATO OBLIGATORIO DE ARRANQUE (NUEVOS OBJETIVOS):**
+Cuando el usuario (Leonardo) te asigne un nuevo objetivo grande o complejo, tu **PRIMER PASO antes de escribir código o proponer un plan técnico** debe ser:
+- Ejecutar `node _herramientas_locales/sheets-helper.js` (u otra herramienta relevante) para extraer y leer la estructura en vivo (los Headers/Columnas actuales) de la hoja de Google Sheets.
+- Basado en los datos *reales* que existen en la base de datos, elaborar y proponer el Plan de Acción. ¡NUNCA asumas los nombres de las columnas!
+
 ## 🚀 3. Reglas de Despliegue (CÓMO HACER TU TRABAJO)
 Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los despliegues de esta forma:
 
