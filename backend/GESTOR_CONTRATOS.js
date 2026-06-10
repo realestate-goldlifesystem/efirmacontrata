@@ -1707,14 +1707,13 @@ function obtenerContratosPendientes() {
         }
 
         if (
-            estado.includes('ESTUDIO APROBADO') || 
             estado.includes('READY_CONTRACT') ||
             estado.includes('CONTRATO GENERADO') ||
             estado.includes('BORRADOR ENVIADO') ||
             estado.includes('EN REVISION') ||
             estado.includes('APROBADO') ||
-            estadoDoc.includes('VALIDATED') ||
             estadoDoc.includes('READY_CONTRACT') ||
+            estadoDoc.includes('CONTRACT_') ||
             detalles.includes('CONTRATO GENERADO') ||
             detalles.includes('BORRADOR ENVIADO') ||
             detalles.includes('APROBADO POR TODAS LAS PARTES')

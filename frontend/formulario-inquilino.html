@@ -1784,7 +1784,8 @@
 
           const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
           try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) { }
-          location.href = `pagina-exito.html?status=success&msg=${msg}`;
+          const displayDir = document.getElementById('displayDir') ? document.getElementById('displayDir').textContent : '';
+          location.href = `pagina-exito.html?status=success&msg=${msg}&cdr=${encodeURIComponent(state.cdr)}&dir=${encodeURIComponent(displayDir)}`;
 
         } catch (err) {
           console.error('[Inquilino] Error:', err);
