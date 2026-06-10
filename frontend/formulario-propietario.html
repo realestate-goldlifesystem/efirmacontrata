@@ -247,6 +247,20 @@
     /* =========================================
        INLINE ERRORS & VALIDATION
        ========================================= */
+    .disabled-upload {
+      opacity: 0.4;
+      pointer-events: none;
+      filter: grayscale(100%);
+      transition: all 0.3s ease;
+    }
+
+    .btn-titila-sarlaft {
+      animation: pulse-relieve 1.5s infinite;
+      box-shadow: 0 4px 6px rgba(212,175,55,0.4), 0 1px 3px rgba(0,0,0,0.5);
+      border: 1px solid var(--primary);
+      margin-right: 8px;
+    }
+
     .error-msg {
       display: none;
       color: var(--danger);
@@ -651,21 +665,21 @@
             </label>
           </div>
 
-          <div class="file-upload progressive-hidden" id="prog-prop-1-4">
-            <input type="file" id="sarlaft" class="file-input" accept=".pdf">
-            <label for="sarlaft" class="file-label">
-              <span>📋 Formato SARLAFT *</span>
-              <span id="sarlaftName" class="file-name"></span>
-            </label>
-          </div>
+          <div class="progressive-hidden" id="prog-prop-1-4">
+            <div class="alert alert-info" style="margin-bottom: 15px;">
+              <p>📥 Descargar formato SARLAFT:</p>
+              <div style="margin-top:8px" id="sarlaft-download-buttons">
+                <a href="https://bit.ly/B114-Persona-Natural" target="_blank" class="btn btn-sm btn-outline btn-titila-sarlaft" data-tipo="natural">Persona Natural</a>
+                <a href="https://bit.ly/B115-Persona-Juridica" target="_blank" class="btn btn-sm btn-outline btn-titila-sarlaft" data-tipo="juridica">Persona Jurídica</a>
+              </div>
+            </div>
 
-          <div class="alert alert-info">
-            <p>📥 Descargar formato SARLAFT:</p>
-            <div style="margin-top:8px">
-              <a href="https://bit.ly/B114-Persona-Natural" target="_blank" class="btn btn-sm btn-outline">Persona
-                Natural</a>
-              <a href="https://bit.ly/B115-Persona-Juridica" target="_blank" class="btn btn-sm btn-outline">Persona
-                Jurídica</a>
+            <div class="file-upload disabled-upload" id="sarlaftUploadContainer">
+              <input type="file" id="sarlaft" class="file-input" accept=".pdf" disabled>
+              <label for="sarlaft" class="file-label" style="cursor: pointer;">
+                <span>📋 Formato SARLAFT *</span>
+                <span id="sarlaftName" class="file-name"></span>
+              </label>
             </div>
           </div>
         </div>
@@ -934,7 +948,8 @@
         archivos: {},
         servicios: [],
         maxFileSize: CONFIG?.MAX_FILE_SIZE || (10 * 1024 * 1024),
-        saveDelay: null
+        saveDelay: null,
+        sarlaftTipo: null
       };
       // --------- Persistencia: Texto en localStorage, Archivos en IndexedDB ----------
       const DB_NAME = 'efirma_propietario_db';
@@ -1034,7 +1049,8 @@
               numeroCuenta: el.numeroCuenta.value,
               banco: el.banco.value,
               titularCuenta: el.titularCuenta.value,
-              docTitular: el.docTitular.value
+              docTitular: el.docTitular.value,
+              sarlaftTipo: state.sarlaftTipo
             };
 
             const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
@@ -1074,6 +1090,7 @@
             if (formData.banco) el.banco.value = formData.banco;
             if (formData.titularCuenta) el.titularCuenta.value = formData.titularCuenta;
             if (formData.docTitular) el.docTitular.value = formData.docTitular;
+            if (formData.sarlaftTipo) state.sarlaftTipo = formData.sarlaftTipo;
 
             // Restaurar checkboxes
             const checkboxes = document.querySelectorAll('.servicio-checkbox input[type="checkbox"]');
@@ -1226,12 +1243,14 @@
         bindFiles();
         bindServicios();
         bindProgressValidators();
-        updateMicroProgress();
+        setupSarlaftLogic();
 
         // Cargar progreso DESPUÉS de que todo esté bindado
         if (!state.modoCorreccion) {
           await cargarProgresoUsuario();
         }
+        updateSarlaftUI();
+        updateMicroProgress();
       }
 
       // Update XP Bar dynamically
@@ -1695,6 +1714,38 @@
       }
 
       // --------- Progressive Validation ----------
+      function setupSarlaftLogic() {
+        const btns = document.querySelectorAll('#sarlaft-download-buttons .btn');
+        btns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.sarlaftTipo = btn.dataset.tipo;
+            guardarProgresoUsuario();
+            updateSarlaftUI();
+          });
+        });
+      }
+
+      function updateSarlaftUI() {
+        const container = document.getElementById('sarlaftUploadContainer');
+        const input = document.getElementById('sarlaft');
+        const btns = document.querySelectorAll('#sarlaft-download-buttons .btn');
+        
+        if (state.sarlaftTipo || state.archivos['sarlaft']) {
+           if (container) container.classList.remove('disabled-upload');
+           if (input) input.disabled = false;
+           btns.forEach(b => {
+              b.classList.remove('btn-titila-sarlaft');
+              if (state.sarlaftTipo === b.dataset.tipo) {
+                 b.style.background = 'rgba(212,175,55, 0.2)';
+                 b.style.borderColor = 'var(--primary)';
+              } else {
+                 b.style.background = 'transparent';
+                 b.style.borderColor = 'var(--primary)';
+              }
+           });
+        }
+      }
+
       function evaluateProgress() {
         if (state.step === state.max) return;
         const requiredFields = getRequiredForStep(state.step);
