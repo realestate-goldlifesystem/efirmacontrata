@@ -20,6 +20,7 @@ const DOCS_CONFIG = {
 
 /**
  * Crea el menú personalizado cuando se abre la hoja
+ * Force update
  */
 function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
