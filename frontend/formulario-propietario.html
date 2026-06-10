@@ -190,6 +190,12 @@
       box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
     }
 
+    .servicio-item.completed {
+      background: rgba(16, 185, 129, 0.05);
+      border-color: var(--success);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+    }
+
     .servicio-checkbox {
       margin-bottom: 0.75rem;
       transform: scale(1.1);
@@ -1015,8 +1021,11 @@
                 }
                 const container = document.getElementById(key);
                 if (container) {
-                  const wrapper = container.closest('.file-upload');
+                  const wrapper = container.closest('.file-upload') || container.closest('.servicio-upload');
                   if (wrapper) wrapper.classList.add('has-file');
+
+                  const servicioItem = container.closest('.servicio-item');
+                  if (servicioItem) servicioItem.classList.add('completed');
                 }
               }
             }
@@ -1550,6 +1559,9 @@
           if (container) {
             const wrapper = container.closest('.file-upload') || container.closest('.servicio-upload');
             if (wrapper) wrapper.classList.add('has-file');
+            
+            const servicioItem = container.closest('.servicio-item');
+            if (servicioItem) servicioItem.classList.add('completed');
           }
           evaluateProgress();
           guardarArchivosEnDB();
