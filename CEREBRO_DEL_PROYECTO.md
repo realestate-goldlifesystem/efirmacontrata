@@ -33,6 +33,10 @@ El proyecto vive en dos repositorios/carpetas que se hablan mediante una API (JS
 ### 2.3 Herramientas Locales IA (`_herramientas_locales/`)
 - Carpeta exclusiva para scripts y utilidades de Node.js o Python (ej. `sheets-helper.js`, `simple_auth_backup.js`) creados por la IA para soporte o consultas locales.
 - **Importante:** Todo lo que esté en esta carpeta NUNCA debe subir a Apps Script. Por ello, `_herramientas_locales/**` está estrictamente ignorado en `.claspignore`.
+- **POLÍTICA DE LIMPIEZA:** Cada vez que la IA cree herramientas "tras bambalinas" para debuggear, consultar datos o arreglar problemas, **DEBE** asegurarse de:
+  1. Si la herramienta es útil para el futuro, guardarla debidamente nombrada dentro de `_herramientas_locales/`.
+  2. Si la herramienta fue "desechable" o momentánea (como un script de una sola ejecución en la raíz), **BORRARLA** inmediatamente después de usarla.
+  3. Mantener siempre el espacio de trabajo local (Workspace) impecable y libre de scripts basura para no confundir el contexto en futuras sesiones.
 
 ## 🚀 3. Reglas de Despliegue (CÓMO HACER TU TRABAJO)
 Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los despliegues de esta forma:
