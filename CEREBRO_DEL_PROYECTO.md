@@ -45,7 +45,7 @@ Antes de crear un nuevo script para conectarte a Sheets o testear algo, **¡REVI
 Cada vez que la IA cree herramientas "tras bambalinas" para debuggear, consultar datos o arreglar problemas, **DEBE** asegurarse de:
 1. **Validar antes de crear:** Verifica en `_herramientas_locales/` si ya existe un script similar. Modifícalo en lugar de crear uno desde cero.
 2. Si la herramienta es útil para el futuro, guardarla debidamente nombrada dentro de `_herramientas_locales/`.
-3. Si la herramienta fue "desechable" o momentánea (como un script de una sola ejecución para renombrar algo), **BORRARLA** inmediatamente después de usarla.
+3. Si la herramienta o archivo de prueba es "desechable" o momentáneo (como un `temp.js` creado en la raíz para evaluar código o chequear sintaxis), **BORRARLO LOCALMENTE ANTES de ejecutar `clasp push`**. Si no lo borras (o no está en `.claspignore`), Clasp lo subirá automáticamente a Google Apps Script. Si ese archivo tiene errores de sintaxis (`SyntaxError`) o conflictos globales, **corromperá la compilación global de todo el proyecto en la nube**, causando que las funciones nativas automáticas como `onOpen()` fallen silenciosamente y los menús personalizados (como el de "E-FirmaContrata") desaparezcan en Google Sheets.
 4. Mantener siempre el espacio de trabajo local (Workspace) impecable y libre de scripts basura para no confundir el contexto en futuras sesiones.
 
 **🎯 MANDATO OBLIGATORIO DE ARRANQUE (NUEVOS OBJETIVOS):**
