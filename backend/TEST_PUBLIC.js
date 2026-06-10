@@ -64,3 +64,32 @@ function testVerHeaders() {
     const info = headers.map((h, i) => `Col ${i+1}: "${h}"`).join('\n');
     Logger.log(info);
 }
+function inspectAndCleanProperties() {
+    const props = PropertiesService.getScriptProperties();
+    const allProps = props.getProperties();
+    let deletedCount = 0;
+    let report = "--- PROPIEDADES ACTUALES ---\n";
+    
+    for (let key in allProps) {
+        report += key + ": " + allProps[key] + "\n";
+        
+        // Limpiar basura de las pruebas
+        if (key.startsWith('ROLLBACK_') || 
+            key.startsWith('PROCESO_PARTE2_') || 
+            key.startsWith('TRIGGERS_') || 
+            key.startsWith('EMAIL_ROLLBACK_') || 
+            key.startsWith('MULTIMEDIA_PREVIO_') ||
+            key.startsWith('PENDING_EMAIL_') ||
+            key === 'currentCDR' ||
+            key === 'currentRow') {
+            props.deleteProperty(key);
+            deletedCount++;
+            report += "🗑️ Borrado: " + key + "\n";
+        }
+    }
+    report += "----------------------------\n";
+    report += "✅ Propiedades borradas: " + deletedCount;
+    
+    console.log(report);
+    return report;
+}

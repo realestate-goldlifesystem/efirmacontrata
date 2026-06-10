@@ -77,6 +77,11 @@ Existe un archivo local llamado `real-estate-ocr-468904-38d35bfd32d6.json` (Serv
    - **Drive:** `https://www.googleapis.com/auth/drive` (Subir PDFs, leer actas, gestionar carpetas).
    - **Docs:** `https://www.googleapis.com/auth/documents` (Leer/escribir en el "Cerebro" y contratos).
 3. El ID de la hoja principal es: `1jdPeOqQ2rRQNhlClAnFQFaNMxOl7HCI7oI1yG3_QRZc`.
-4. Ejecuta el script localmente con `node script_name.js`. ¡Es 100 veces más rápido que subir logs a Apps Script!
+8. Ejecuta el script localmente con `node script_name.js`. ¡Es 100 veces más rápido que subir logs a Apps Script!
+
+## 🤖 6. Manejo de Autocrat y Tiempos de Espera (Crucial)
+Autocrat es un Add-on externo que se dispara con "On Form Submit". Tarda entre 30 y 60 segundos en generar los PDFs y escribir los `Merged Doc IDs` de vuelta a la hoja temporal.
+- **NUNCA** elimines una fila temporal recién creada por un form si Autocrat aún no ha escrito sus resultados, de lo contrario arruinarás todo el pipeline.
+- Para flujos síncronos (como el Archivo 2: `continuarRegistroInmuebleParte2`), el sistema **debe esperar activamente** a que Autocrat deposite su enlace (un bucle `while` con `Utilities.sleep(5000)` esperando un máximo de 60 segundos) antes de intentar copiar esos enlaces (TIPO 2 / TIPO 4), enviar correos iniciales, o borrar la fila temporal.
 
 ¡Actúa con seguridad y confianza, y siempre infórmale al usuario qué nivel de despliegue realizaste!

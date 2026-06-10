@@ -2045,6 +2045,11 @@ function handleProcesarFirmaElectronica(datos) {
             sheet.getRange(i, cargarContenidoCol).setFormula(`=HYPERLINK("https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/carga_multimedia.html?id=${encodeURIComponent(idParaUrl)}"; "📤📷 CARGAR")`);
           }
           
+          // --- NUEVO: Cancelar Triggers de Rollback (Si aplicaba por Renovación) ---
+          if (typeof cancelarTriggersRollback === 'function') {
+            cancelarTriggersRollback(idParaUrl);
+          }
+          
           // --- NUEVO: Enviar copia del PDF al cliente ---
           try {
             const emailCol = getCol('Correo electrónico');

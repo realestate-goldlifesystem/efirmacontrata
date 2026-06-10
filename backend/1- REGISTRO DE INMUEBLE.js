@@ -304,9 +304,20 @@ function calcularSecuencia(sheet, currentRow, tipoNegocioCode) {
     }
   });
 
-  secuencias[tipoNegocioCode] = (secuencias[tipoNegocioCode] || 0) + 1;
+  // NUEVO: Consultar el récord histórico en la "nube oculta" (PropertiesService)
+  var props = PropertiesService.getScriptProperties();
+  var maxMemoriaStr = props.getProperty('MAX_SEQ_' + tipoNegocioCode);
+  var maxMemoria = maxMemoriaStr ? parseInt(maxMemoriaStr, 10) : 0;
 
-  return secuencias[tipoNegocioCode];
+  // Tomar el mayor entre lo que hay en el Excel y el récord histórico
+  var maxActual = Math.max((secuencias[tipoNegocioCode] || 0), maxMemoria);
+
+  var nuevaSecuencia = maxActual + 1;
+
+  // Guardar el nuevo récord en la memoria oculta
+  props.setProperty('MAX_SEQ_' + tipoNegocioCode, nuevaSecuencia.toString());
+
+  return nuevaSecuencia;
 }
 
 // ==========================================

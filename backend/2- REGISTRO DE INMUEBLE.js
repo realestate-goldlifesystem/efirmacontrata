@@ -81,6 +81,32 @@ function procesarRegistroParte2(datos) {
     // Respaldar y eliminar filtros en Archivo 2
     backupFiltro = removerYRespaldarFiltros(sheet);
 
+    // NUEVO: Esperar activamente a que Autocrat genere el documento (Máx 60s)
+    var tipoNegocio = datos.datosInmueble.tipoNegocio;
+    var colName = '';
+    switch(tipoNegocio) {
+      case 'Administración': colName = 'Merged Doc ID - ADMINISTRACIÓN'; break;
+      case 'Venta': colName = 'Merged Doc ID - VENTA'; break;
+      case 'Admi-Venta': colName = 'Merged Doc ID - ADMI-VENTA'; break;
+      case 'Vendi-Renta': colName = 'Merged Doc ID - VENDI-RENTA'; break;
+      case 'Corretaje':
+      default: colName = 'Merged Doc ID - CORRETAJE'; break;
+    }
+    var colIndex = getColumnByName(sheet, colName);
+    if (colIndex) {
+      var intent = 0;
+      while (!sheet.getRange(row, colIndex).getValue() && intent < 12) {
+        Logger.log('⏳ Esperando a que Autocrat genere el PDF (' + (intent+1) + '/12)...');
+        Utilities.sleep(5000); // 5 segundos
+        intent++;
+      }
+      if (intent >= 12) {
+        Logger.log('⚠️ Tiempo agotado esperando a Autocrat.');
+      } else {
+        Logger.log('✅ Autocrat ha finalizado la generación de PDFs.');
+      }
+    }
+
     // Procesar según tipo detectado
     switch (datos.tipoRegistro.tipo) {
       case 'TIPO_3': // Anteriormente TIPO_1_1
@@ -108,11 +134,14 @@ function procesarRegistroParte2(datos) {
         break;
     }
 
-    // --- NUEVO: Enviar correo de firma para Corretaje ---
-    try {
-      enviarCorreoFirmaInicial(sheet, row, datos.cdr, datos.datosInmueble.tipoNegocio);
-    } catch(err) {
-      Logger.log('⚠️ Error no bloqueante al enviar correo de firma: ' + err.message);
+    // --- NUEVO: Enviar correo de firma inicial (Solo para Tipos 1 y 3) ---
+    // (Para TIPO 2 y TIPO 4 ya se envía internamente antes de borrar la fila temporal)
+    if (datos.tipoRegistro.tipo === 'TIPO_1' || datos.tipoRegistro.tipo === 'TIPO_3') {
+      try {
+        enviarCorreoFirmaInicial(sheet, row, datos.cdr, datos.datosInmueble.tipoNegocio);
+      } catch(err) {
+        Logger.log('⚠️ Error no bloqueante al enviar correo de firma: ' + err.message);
+      }
     }
 
     Logger.log(`✅ Fila ${row} procesada correctamente`);
@@ -372,25 +401,57 @@ function procesarTipo12_Renovacion(sheet, row, datos) {
   Logger.log('📦 Moviendo archivos de Autocrat...');
   moverArchivosAutocratTipo12(sheet, row, regFolder);
 
-  // 9. Actualizar links en la FILA ORIGINAL
+  // 9. Implementar Fase 1 del Rollback: Backup y Transferencia
   var filaOriginal = datos.tipoRegistro.filaOriginal;
   if (filaOriginal > 0) {
-    Logger.log(`🔗 Actualizando links en fila original: ${filaOriginal}`);
+    Logger.log(`💾 Respaldando datos y transfiriendo a fila original: ${filaOriginal}`);
+    
+    // Obtener ID DE REGISTRO para el backup
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var colId = headers.indexOf('ID DE REGISTRO');
+    var idRegistro = colId !== -1 ? sheet.getRange(filaOriginal, colId + 1).getValue() : datos.cdr;
+    
+    // 9.1 Respaldar datos viejos en la Nube Oculta
+    respaldarDatosFila(sheet, filaOriginal, idRegistro);
+    
+    // 9.2 Transferir precios y limpiar candado multimedia
+    transferirPreciosRenovacion(sheet, filaOriginal, row);
+    
+    // 9.3 Actualizar links
     actualizarLinksTipo12(sheet, filaOriginal, row, carpetaNuevoAnio, regFolder);
+    
+    // 9.4 Actualizar estado a Pendiente de Firma
+    actualizarEstadoFinal(sheet, filaOriginal, 'TIPO_2_PENDIENTE');
   } else {
-    Logger.log('⚠️ No se encontró fila original, no se actualizan links');
+    Logger.log('⚠️ No se encontró fila original, no se actualizan links ni se realiza el Rollback');
   }
 
   // 10. BORRAR fila temporal (la que creó Autocrat)
   Logger.log(`🗑️ Borrando fila temporal: ${row}`);
   borrarFilaTemporal(sheet, row);
 
-  // 11. Actualizar estado final en fila ORIGINAL
+  // 11. Programar Triggers (Fase 2 Rollback)
   if (filaOriginal > 0) {
-    actualizarEstadoFinal(sheet, filaOriginal, 'TIPO_2');
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var colId = headers.indexOf('ID DE REGISTRO');
+    var idRegistro = colId !== -1 ? sheet.getRange(filaOriginal, colId + 1).getValue() : datos.cdr;
+    
+    var colEmail = headers.indexOf('Correo electrónico');
+    var email = colEmail !== -1 ? sheet.getRange(filaOriginal, colEmail + 1).getValue() : '';
+    
+    if (email) {
+      programarTriggersRollback(idRegistro, email);
+    }
+    
+    try {
+      enviarCorreoFirmaInicial(sheet, filaOriginal, datos.cdr, datos.datosInmueble.tipoNegocio);
+      Logger.log('📧 Correo de firma de renovación enviado al propietario.');
+    } catch(e) {
+      Logger.log('⚠️ Error enviando correo de firma: ' + e.message);
+    }
   }
 
-  Logger.log('✅ TIPO 2 completado');
+  Logger.log('✅ TIPO 2 (Fase 1 completada)');
 }
 
 function determinarNombreNuevoAnio(carpetaEntregas) {
@@ -520,26 +581,40 @@ function procesarTipo13_CambioTipoNegocio(sheet, row, datos) {
   Logger.log('📦 Moviendo archivos de Autocrat...');
   moverArchivosAutocratTipo13(sheet, row, regFolder);
 
-  // 6. Actualizar CDR en la FILA ORIGINAL
+  // 6. Backup y Transferencia de Precios (Fase 1 Rollback TIPO 4)
   var filaOriginal = datos.tipoRegistro.filaOriginal;
   if (filaOriginal > 0) {
+    Logger.log(`💾 Respaldando datos para Rollback TIPO 4 en fila original: ${filaOriginal}`);
+    
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var colId = headers.indexOf('ID DE REGISTRO');
+    var idRegistro = colId !== -1 ? sheet.getRange(filaOriginal, colId + 1).getValue() : datos.cdr;
+    
+    // Backup espacial (saber a dónde devolver la carpeta si se cancela)
+    var spatialData = {
+      carpetaOrigen: datos.tipoRegistro.carpetaOrigen,
+      carpetaDestino: datos.tipoRegistro.carpetaDestino,
+      nuevoCDR: nuevoCDR // Lo guardamos para saber a qué carpeta hacer el rename reverso
+    };
+    respaldarDatosFila(sheet, filaOriginal, idRegistro, spatialData);
+    
+    // Transferir precios actualizados del nuevo formulario
+    transferirPreciosRenovacion(sheet, filaOriginal, row);
+
+    // 6.1 Actualizar CDR en la FILA ORIGINAL
     Logger.log(`📝 Actualizando CDR en fila original: ${filaOriginal}`);
     var cdrCol = getColumnByName(sheet, 'CODIGO DE REGISTRO');
     sheet.getRange(filaOriginal, cdrCol).setValue(nuevoCDR);
     Logger.log(`✅ CDR actualizado: ${nuevoCDR}`);
-  }
 
-  // 7. Actualizar TIPO DE NEGOCIO en la FILA ORIGINAL
-  if (filaOriginal > 0) {
+    // 7. Actualizar TIPO DE NEGOCIO en la FILA ORIGINAL
     Logger.log(`📝 Actualizando TIPO DE NEGOCIO en fila original: ${filaOriginal}`);
     var tipoNegocioCol = getColumnByName(sheet, 'TIPO DE NEGOCIO');
     var nuevoTipoNegocio = datos.datosInmueble.tipoNegocio;
     sheet.getRange(filaOriginal, tipoNegocioCol).setValue(nuevoTipoNegocio);
     Logger.log(`✅ TIPO DE NEGOCIO actualizado: ${nuevoTipoNegocio}`);
-  }
 
-  // 8. Actualizar link de REG (texto del hipervínculo) en la FILA ORIGINAL
-  if (filaOriginal > 0) {
+    // 8. Actualizar link de REG (texto del hipervínculo) en la FILA ORIGINAL
     Logger.log(`🔗 Actualizando link de REG en fila original: ${filaOriginal}`);
     var linkREGCol = getColumnByName(sheet, 'LINK DE CARPETA REG');
     var codigoCortoNuevo = extraerCodigoCortoREG(nuevoCDR);
@@ -547,17 +622,14 @@ function procesarTipo13_CambioTipoNegocio(sheet, row, datos) {
     var formulaNueva = `=HYPERLINK("${regUrl}";"${codigoCortoNuevo}")`;
     sheet.getRange(filaOriginal, linkREGCol).setFormula(formulaNueva);
     Logger.log(`✅ Link REG actualizado: ${codigoCortoNuevo}`);
-  }
 
-  // 9. Agregar links de Autocrat (solo si están vacíos)
-  if (filaOriginal > 0) {
+    // 9. Agregar links de Autocrat (solo si están vacíos)
     Logger.log('🔗 Agregando links de nuevos documentos...');
     agregarLinksTipo13(sheet, filaOriginal, row);
   }
 
   // 10. Extraer descripción de Autocrat (NUEVO - Usando fila de autocrat "row" para leer IDs)
   try {
-    // Nota: Usamos 'row' porque ahí están los IDs de Autocrat nuevos
     procesarYGuardarDescripcion(sheet, row, regFolder);
   } catch (e) {
     Logger.log('⚠️ Error no bloqueante en extracción descripción: ' + e.message);
@@ -567,12 +639,30 @@ function procesarTipo13_CambioTipoNegocio(sheet, row, datos) {
   Logger.log(`🗑️ Borrando fila temporal: ${row}`);
   borrarFilaTemporal(sheet, row);
 
-  // 12. Actualizar estado final en fila ORIGINAL
+  // 12. Actualizar estado final en fila ORIGINAL (TIPO_4_PENDIENTE) y Programar Triggers
   if (filaOriginal > 0) {
-    actualizarEstadoFinal(sheet, filaOriginal, 'TIPO_4');
+    actualizarEstadoFinal(sheet, filaOriginal, 'TIPO_4_PENDIENTE');
+    
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var colId = headers.indexOf('ID DE REGISTRO');
+    var idRegistro = colId !== -1 ? sheet.getRange(filaOriginal, colId + 1).getValue() : datos.cdr;
+    
+    var colEmail = headers.indexOf('Correo electrónico');
+    var email = colEmail !== -1 ? sheet.getRange(filaOriginal, colEmail + 1).getValue() : '';
+    
+    if (email) {
+      programarTriggersRollback(idRegistro, email);
+    }
+    
+    try {
+      enviarCorreoFirmaInicial(sheet, filaOriginal, datos.cdr, datos.datosInmueble.tipoNegocio);
+      Logger.log('📧 Correo de firma de Cambio de Negocio enviado al propietario.');
+    } catch(e) {
+      Logger.log('⚠️ Error enviando correo de firma: ' + e.message);
+    }
   }
 
-  Logger.log('✅ TIPO 4 completado');
+  Logger.log('✅ TIPO 4 (Fase 1 y Triggers completados)');
 }
 
 function generarNuevoCDRParaCambioTipo(sheet, datos) {
@@ -627,7 +717,20 @@ function calcularSecuenciaParaTipo(sheet, tipoNegocioCode) {
     }
   });
 
-  return maxSecuencia + 1;
+  // NUEVO: Consultar el récord histórico en la "nube oculta" (PropertiesService)
+  var props = PropertiesService.getScriptProperties();
+  var maxMemoriaStr = props.getProperty('MAX_SEQ_' + tipoNegocioCode);
+  var maxMemoria = maxMemoriaStr ? parseInt(maxMemoriaStr, 10) : 0;
+
+  // Tomar el mayor entre lo que hay en el Excel y el récord histórico
+  var maxActual = Math.max(maxSecuencia, maxMemoria);
+
+  var nuevaSecuencia = maxActual + 1;
+
+  // Guardar el nuevo récord en la memoria oculta
+  props.setProperty('MAX_SEQ_' + tipoNegocioCode, nuevaSecuencia.toString());
+
+  return nuevaSecuencia;
 }
 // ==========================================
 // REGISTRO DE INMUEBLES - ARCHIVO 2 - PARTE 3
@@ -1175,8 +1278,16 @@ function actualizarEstadoFinal(sheet, row, tipo) {
       mensajeDetalle = '✅ Renovación procesada exitosamente. 📅 Nuevo año creado con documentos actualizados.';
       break;
 
+    case 'TIPO_2_PENDIENTE':
+      mensajeDetalle = '⏳ Renovación pendiente de firma. ⏱️ Esperando confirmación para validar el nuevo año.';
+      break;
+
     case 'TIPO_4':
       mensajeDetalle = '✅ Tipo de negocio actualizado exitosamente. 📂➡️📂✅ Inmueble reubicado y documentos agregados.';
+      break;
+
+    case 'TIPO_4_PENDIENTE':
+      mensajeDetalle = '⏳ Cambio de negocio pendiente de firma. ⏱️ Esperando confirmación para oficializar el traslado.';
       break;
 
     case 'TIPO_1':
@@ -1367,6 +1478,80 @@ function copiarContenidoCompleto(sourceFolder, destinationFolder) {
     }
   } catch (error) {
     Logger.log(`⚠️ Error al copiar contenido: ${error.message}`);
+  }
+}
+
+// ==========================================
+// SISTEMA DE ROLLBACK (RENOVACIONES Y CAMBIOS)
+// ==========================================
+
+function respaldarDatosFila(sheet, filaOriginal, idRegistro, extraData) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var rowData = sheet.getRange(filaOriginal, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  var backup = {};
+  
+  // Guardar Precios
+  ['PRECIO DE PROMOCION GENERAL', 'PRECIO DE PROMOCION EN VENTA', 'CANON DE ARRENDAMIENTO'].forEach(function(h) {
+    var col = headers.indexOf(h);
+    if (col !== -1) backup[h] = rowData[col];
+  });
+  
+  // Guardar YouTube y Estado y CDR y TIPO DE NEGOCIO (Críticos para TIPO 4)
+  ['LINK DEL VIDEO DEL INMUEBLE', 'STATUS', 'CODIGO DE REGISTRO', 'TIPO DE NEGOCIO'].forEach(function(h) {
+    var col = headers.indexOf(h);
+    if (col !== -1) backup[h] = rowData[col];
+  });
+  
+  // Guardar Links Autocrat
+  var columnasAutocrat = [
+    'Merged Doc ID - CORRETAJE', 'Merged Doc ID - ADMINISTRACIÓN',
+    'Merged Doc ID - VENTA', 'Merged Doc ID - AUTORIZACIÓN DE INGRESO AL INMUEBLE',
+    'Merged Doc ID - ADMI-VENTA', 'Merged Doc ID - VENDI-RENTA', 'Link to merged Doc - CORRETAJE'
+  ];
+  columnasAutocrat.forEach(function(h) {
+    var col = headers.indexOf(h);
+    if (col !== -1) backup[h] = rowData[col];
+  });
+  
+  // Guardar datos espaciales extra si los hay (Para TIPO 4)
+  if (extraData) {
+    backup['EXTRA_SPATIAL_DATA'] = extraData;
+  }
+  
+  var props = PropertiesService.getScriptProperties();
+  props.setProperty('ROLLBACK_' + idRegistro, JSON.stringify(backup));
+  Logger.log('💾 Backup guardado para rollback usando ID: ' + idRegistro);
+}
+
+function transferirPreciosRenovacion(sheet, filaOriginal, filaTemp) {
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var rowTemp = sheet.getRange(filaTemp, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  Logger.log('💸 Transfiriendo precios...');
+  ['PRECIO DE PROMOCION GENERAL', 'PRECIO DE PROMOCION EN VENTA', 'CANON DE ARRENDAMIENTO'].forEach(function(h) {
+    var col = headers.indexOf(h);
+    if (col !== -1 && rowTemp[col] !== "" && rowTemp[col] !== undefined) {
+      sheet.getRange(filaOriginal, col + 1).setValue(rowTemp[col]);
+    }
+  });
+  
+  // Limpiar link de YouTube para que el portal multimedia quede abierto
+  // Y guardarlo en memoria para la Fase 4 (Reutilización Multimedia)
+  var colYT = headers.indexOf('LINK DEL VIDEO DEL INMUEBLE');
+  if (colYT !== -1) {
+    var oldLink = sheet.getRange(filaOriginal, colYT + 1).getValue();
+    if (oldLink) {
+      // Necesitamos el ID DE REGISTRO
+      var colId = headers.indexOf('ID DE REGISTRO');
+      var idRegistro = colId !== -1 ? sheet.getRange(filaOriginal, colId + 1).getValue() : '';
+      if (idRegistro) {
+        PropertiesService.getScriptProperties().setProperty('MULTIMEDIA_PREVIO_' + idRegistro, oldLink);
+      }
+    }
+    
+    sheet.getRange(filaOriginal, colYT + 1).clearContent();
+    Logger.log('🔓 Candado Multimedia abierto (Link YT guardado y borrado temporalmente)');
   }
 }
 

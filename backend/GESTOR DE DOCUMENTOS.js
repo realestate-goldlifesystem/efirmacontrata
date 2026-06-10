@@ -454,6 +454,14 @@ function doGet(e) {
         }
         break;
 
+      case 'cancelarRenovacion':
+        if (typeof ejecutarRollbackTotal === 'function') {
+           var success = ejecutarRollbackTotal(e.parameter.id);
+           var msg = success ? '✅ Renovación cancelada exitosamente. Todo ha vuelto a su estado original.' : '⚠️ Error al cancelar. Puede que ya haya sido procesada o expirada.';
+           return HtmlService.createHtmlOutput('<html style="height:100%;display:flex;align-items:center;justify-content:center;background:#1a1a1a;color:#d4af37;"><body style="font-family:sans-serif;text-align:center;padding:50px;"><h2>' + msg + '</h2><p>Ya puedes cerrar esta ventana.</p></body></html>');
+        }
+        return HtmlService.createHtmlOutput('<h2>Módulo de Rollback no disponible</h2>');
+
       // ... otros casos ...
       case 'test':
         result = {
@@ -574,6 +582,13 @@ function doPost(e) {
       case 'finalizeMultimedia':
         if (typeof handleFinalizeMultimedia === 'function') {
            result = handleFinalizeMultimedia(datos);
+        } else {
+           result = { success: false, message: 'Módulo multimedia no cargado' };
+        }
+        break;
+      case 'reutilizarMultimedia':
+        if (typeof handleReutilizarMultimedia === 'function') {
+           result = handleReutilizarMultimedia(datos);
         } else {
            result = { success: false, message: 'Módulo multimedia no cargado' };
         }

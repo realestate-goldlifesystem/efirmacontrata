@@ -69,11 +69,14 @@ async function loadPropertyData() {
         
         if (data && data.success) {
             propertyData = data;
-            propertyInfoCard.innerHTML = `
-                <h3>Inmueble ID: ${currentCdr}</h3>
-                <p>✅ Datos cargados. Listo para procesar y subir contenido.</p>
-            `;
-            workspace.style.display = 'block';
+            
+            if (data.hasPreviousMedia) {
+                document.getElementById('decision-screen').style.display = 'block';
+                document.getElementById('btn-reutilizar').onclick = handleReutilizar;
+                document.getElementById('btn-subir-nuevo').onclick = handleSubirNuevo;
+            } else {
+                showWorkspace();
+            }
         } else {
             blockMessage.innerHTML = data.message || 'No se encontró el registro en el CRM.';
             blockScreen.style.display = 'block';
@@ -85,6 +88,49 @@ async function loadPropertyData() {
         blockScreen.style.display = 'block';
     }
 }
+
+function showWorkspace() {
+    document.getElementById('decision-screen').style.display = 'none';
+    propertyInfoCard.innerHTML = `
+        <h3>Inmueble ID: ${currentCdr}</h3>
+        <p>✅ Datos cargados. Listo para procesar y subir contenido.</p>
+    `;
+    workspace.style.display = 'block';
+}
+
+async function handleReutilizar() {
+    document.getElementById('decision-screen').style.display = 'none';
+    loadingScreen.style.display = 'block';
+    document.querySelector('#loading-screen h3').textContent = "Restaurando Multimedia...";
+    
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'reutilizarMultimedia', id: currentCdr })
+        });
+        const resData = await response.json();
+        
+        loadingScreen.style.display = 'none';
+        
+        if (resData.success) {
+            successScreen.style.display = 'block';
+            successScreen.querySelector('p').innerHTML = "Material anterior reutilizado con éxito.<br>El portal ha quedado cerrado nuevamente.";
+        } else {
+            alert('Error: ' + resData.message);
+            blockScreen.style.display = 'block';
+        }
+    } catch(e) {
+        console.error(e);
+        loadingScreen.style.display = 'none';
+        blockMessage.innerHTML = 'Error de conexión durante la restauración.';
+        blockScreen.style.display = 'block';
+    }
+}
+
+function handleSubirNuevo() {
+    showWorkspace();
+}
+
 
 // Navegación Pasos
 btnNext.addEventListener('click', () => {
