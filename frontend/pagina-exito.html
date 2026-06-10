@@ -3,150 +3,295 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Confirmación - E-firmaContrata</title>
+  <title>Confirmación - E-FirmaContrata</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --gold-primary: #FFD700;
-      --black-primary: #0F0F0F;
-      --gray-dark: #222;
-      --text-light: #f4f4f4;
+      /* Fondo Principal (El espacio) */
+      --dark: #0a0a0a;              /* Negro puro para el fondo extremo */
+      --surface: #171018;           /* Charcoal muy oscuro para paneles base */
+      
+      /* Color Primario (Oro/Dorado) */
+      --primary: #d4af37;           /* Dorado Elegante */
+      --primary-glow: rgba(212, 175, 55, 0.4); /* Resplandor dorado */
+      
+      /* Color Secundario */
+      --secondary: #1e1e1e;
+      
+      /* Textos */
+      --text-main: #ffffff;
+      --text-muted: #a1a1aa;
+      
+      /* Estados */
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.2);
+      --danger: #ef4444;
+      
+      /* Bordes y Estructura */
+      --border-color: rgba(212, 175, 55, 0.15);
+      --border: rgba(212, 175, 55, 0.2);
     }
 
     body {
       margin: 0;
-      padding: 25px;
-      background-color: var(--black-primary);
-      background-image: radial-gradient(#FFD70011 1px, transparent 1px);
-      background-size: 40px 40px;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      color: var(--text-light);
-    }
-
-    .center-box {
-      max-width: 680px;
-      margin: 40px auto;
-      background: var(--gray-dark);
-      padding: 35px;
-      border-radius: 16px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, .5);
-      text-align: center;
-    }
-
-    .status-icon {
-      font-size: 58px;
-      margin-bottom: 15px;
-    }
-
-    h1 {
-      margin: 0 0 18px;
-      font-size: 30px;
-      color: var(--gold-primary);
-    }
-
-    p {
-      color: var(--text-light);
-      font-size: 15px;
-      margin: 10px 0;
-      line-height: 1.55;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: 18px;
-      background: #333;
-      color: var(--gold-primary);
-      font-weight: 600;
-      font-size: 12px;
-      margin: 5px 4px;
-      border: 1px solid var(--gold-primary);
-    }
-
-    .actions {
-      margin-top: 28px;
+      padding: 20px;
+      min-height: 100dvh;
+      background: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--dark) 100%);
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-main);
       display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
     }
 
-    .btn {
-      border-radius: 30px;
-      text-transform: none;
-      letter-spacing: .5px;
-      font-size: 14px;
-      padding: 10px 20px;
-      font-weight: bold;
-      text-decoration: none;
-      transition: all 0.3s ease;
+    .header-logo {
+      font-family: 'Cinzel', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 2rem;
+      text-shadow: 0 0 15px var(--primary-glow);
+      text-align: center;
     }
 
-    .btn-primary {
-      background: var(--gold-primary);
-      color: var(--black-primary);
+    .center-box {
+      width: 100%;
+      max-width: 550px;
+      background: linear-gradient(145deg, rgba(30, 30, 35, 0.8), rgba(20, 20, 24, 0.95));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 40px 30px;
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(212, 175, 55, 0.15);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
     }
 
-    .btn-primary:hover {
-      background: #f2c300;
+    /* Glow background internal effect */
+    .center-box::before {
+      content: '';
+      position: absolute;
+      top: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 100px;
+      background: var(--success);
+      filter: blur(80px);
+      opacity: 0.3;
+      z-index: 0;
+    }
+    
+    .center-box.error-box::before {
+      background: var(--danger);
     }
 
-    .btn-secondary {
-      background: #333;
-      color: white;
+    .content-wrapper {
+      position: relative;
+      z-index: 1;
     }
 
-    .btn-secondary:hover {
-      background: #555;
+    .status-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px solid var(--border);
+    }
+
+    .status-icon.success {
+      color: var(--success);
+      border-color: var(--success);
+      box-shadow: 0 0 30px var(--success-glow);
+      animation: pulseSuccess 2s infinite;
+    }
+    
+    .status-icon.error {
+      color: var(--danger);
+      border-color: var(--danger);
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+    }
+
+    @keyframes pulseSuccess {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    h1 {
+      font-family: 'Cinzel', serif;
+      margin: 0 0 15px;
+      font-size: 28px;
+      color: var(--primary);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 16px;
+      margin: 10px 0 25px;
+      line-height: 1.6;
+    }
+
+    .info-card {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 25px;
+      text-align: left;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+
+    .info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .info-value {
+      font-size: 16px;
+      color: var(--text-main);
+      font-weight: 500;
+      word-break: break-all;
     }
 
     .small-note {
-      margin-top: 25px;
-      font-size: 12px;
-      color: #aaa;
+      margin-top: 35px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+      font-weight: 300;
+    }
+
+    /* Partículas o estrellas de fondo (Gamificación sutil) */
+    .stars {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: -1;
+      background-image: 
+        radial-gradient(1px 1px at 10% 20%, rgba(212, 175, 55, 0.3) 1px, transparent 0),
+        radial-gradient(1px 1px at 80% 40%, rgba(212, 175, 55, 0.2) 1px, transparent 0),
+        radial-gradient(2px 2px at 40% 60%, rgba(212, 175, 55, 0.4) 1px, transparent 0),
+        radial-gradient(1px 1px at 90% 80%, rgba(212, 175, 55, 0.2) 1px, transparent 0);
+      background-size: 200px 200px;
+      opacity: 0.5;
     }
   </style>
 </head>
 
 <body>
+  <div class="stars"></div>
+
+  <div class="header-logo">
+    <i class="fas fa-crown" style="font-size: 1.2rem; margin-right: 8px;"></i>
+    E-FirmaContrata
+  </div>
+
   <div class="center-box" id="box">
-    <div id="icon" class="status-icon">⌛</div>
-    <h1 id="title">Procesando...</h1>
-    <p id="desc">Validando información.</p>
-    <div id="badges"></div>
-    <div class="small-note">E-firmaContrata • Real Estate Gold Life System</div>
+    <div class="content-wrapper">
+      <div id="icon" class="status-icon success">
+        <i class="fas fa-check"></i>
+      </div>
+      <h1 id="title">Procesando...</h1>
+      <p id="desc">Validando información.</p>
+
+      <div class="info-card" id="infoCard" style="display: none;">
+        <div class="info-item" id="itemDir" style="display: none;">
+          <span class="info-label"><i class="fas fa-building" style="margin-right:5px;"></i> Propiedad Vinculada</span>
+          <span class="info-value" id="valDir">-</span>
+        </div>
+        <div class="info-item" id="itemCdr" style="display: none;">
+          <span class="info-label"><i class="fas fa-fingerprint" style="margin-right:5px;"></i> Código de Registro (CDR)</span>
+          <span class="info-value" id="valCdr" style="font-family: monospace; font-size: 14px; color: var(--text-muted);">-</span>
+        </div>
+      </div>
+
+      <div class="small-note">Real Estate Gold Life System &copy; 2026</div>
+    </div>
   </div>
 
   <script>
     (function () {
       const p = new URLSearchParams(window.location.search);
-      const estado = p.get('estado') || 'exitoso';
-      const cdr = p.get('cdr') || '-';
-      const tipo = p.get('tipo') || '-';
+      const status = p.get('status') || 'exitoso';
+      const msg = p.get('msg') || '';
+      const cdr = p.get('cdr') || '';
+      const dir = p.get('dir') || '';
+      
+      const box = document.getElementById('box');
       const icon = document.getElementById('icon');
       const title = document.getElementById('title');
       const desc = document.getElementById('desc');
-      const badges = document.getElementById('badges');
+      const infoCard = document.getElementById('infoCard');
+      const itemDir = document.getElementById('itemDir');
+      const itemCdr = document.getElementById('itemCdr');
+      const valDir = document.getElementById('valDir');
+      const valCdr = document.getElementById('valCdr');
 
-      if (estado === 'exitoso') {
-        icon.textContent = '✅';
-        title.textContent = 'Documentos Enviados';
-        desc.innerHTML = 'Hemos recibido sus documentos correctamente. Se enviará confirmación por correo una vez validados.';
-      } else if (estado === 'usado') {
-        icon.textContent = '🔒';
-        title.textContent = 'Enlace Utilizado';
-        desc.innerHTML = 'Este enlace ya fue utilizado anteriormente. Si necesita volver a enviar documentos, contacte a soporte.';
+      if (status === 'success' || status === 'exitoso') {
+        icon.className = 'status-icon success';
+        icon.innerHTML = '<i class="fas fa-check"></i>';
+        title.textContent = '¡Validación Exitosa!';
+        desc.innerHTML = msg || 'Hemos recibido y guardado su documentación correctamente. Se le notificará por correo electrónico los siguientes pasos del proceso.';
+      } else if (status === 'error' || status === 'fallo') {
+        box.classList.add('error-box');
+        icon.className = 'status-icon error';
+        icon.innerHTML = '<i class="fas fa-times"></i>';
+        title.textContent = 'Ocurrió un Problema';
+        title.style.color = 'var(--danger)';
+        title.style.textShadow = '0 2px 4px rgba(239, 68, 68, 0.3)';
+        desc.innerHTML = msg || 'No se pudo completar el proceso. Por favor intente nuevamente o contacte a soporte.';
       } else {
-        icon.textContent = 'ℹ️';
+        icon.className = 'status-icon';
+        icon.innerHTML = '<i class="fas fa-info"></i>';
         title.textContent = 'Estado Desconocido';
-        desc.textContent = 'No se pudo determinar el estado del envío.';
+        desc.textContent = msg || 'No se pudo determinar el estado exacto de su solicitud.';
       }
 
-      badges.innerHTML = `
-        <span class="badge">CDR: ${cdr}</span>
-        <span class="badge">Tipo: ${tipo}</span>
-        <span class="badge">Estado: ${estado}</span>
-      `;
+      let hasInfo = false;
+      
+      if (dir && dir.trim() !== '') {
+        valDir.textContent = dir;
+        itemDir.style.display = 'flex';
+        hasInfo = true;
+      }
+      
+      if (cdr && cdr.trim() !== '') {
+        valCdr.textContent = cdr;
+        itemCdr.style.display = 'flex';
+        hasInfo = true;
+      }
+
+      if (hasInfo) {
+        infoCard.style.display = 'block';
+      }
     })();
   </script>
 </body>
