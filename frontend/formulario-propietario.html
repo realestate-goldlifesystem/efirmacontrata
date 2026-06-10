@@ -205,9 +205,10 @@
     }
 
     .servicio-upload.visible {
-      max-height: 120px;
+      max-height: 150px;
       opacity: 1;
       margin-top: 0.75rem;
+      padding: 10px 5px;
     }
 
     /* Efecto relieve y titilar para el botón adjuntar cuando se requiere */
@@ -216,8 +217,10 @@
       box-shadow: 0 4px 6px rgba(212,175,55,0.4), 0 1px 3px rgba(0,0,0,0.5);
       border: 1px solid var(--primary);
       background: rgba(212,175,55, 0.1);
-      transform: translateY(-2px);
+      transform: scale(1.02);
       transition: all 0.3s ease;
+      display: inline-flex;
+      margin: 5px;
     }
 
     /* Cuando ya se subió el archivo (.has-file) el botón vuelve a la normalidad */
