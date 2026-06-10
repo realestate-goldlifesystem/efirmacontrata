@@ -243,6 +243,24 @@ select.input option {
   box-shadow: none !important;
 }
 
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.1);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+  transform: translateY(-2px);
+}
+
 /* FILE UPLOAD */
 .file-upload {
   border: 1px dashed var(--border);
