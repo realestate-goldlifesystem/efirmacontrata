@@ -210,6 +210,37 @@
       margin-top: 0.75rem;
     }
 
+    /* Efecto relieve y titilar para el botón adjuntar cuando se requiere */
+    .servicio-upload.visible:not(.has-file) .btn-outline {
+      animation: pulse-relieve 1.5s infinite;
+      box-shadow: 0 4px 6px rgba(212,175,55,0.4), 0 1px 3px rgba(0,0,0,0.5);
+      border: 1px solid var(--primary);
+      background: rgba(212,175,55, 0.1);
+      transform: translateY(-2px);
+      transition: all 0.3s ease;
+    }
+
+    /* Cuando ya se subió el archivo (.has-file) el botón vuelve a la normalidad */
+    .servicio-upload.has-file .btn-outline {
+      animation: none !important;
+      box-shadow: none !important;
+      transform: none !important;
+      background: transparent !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
+    @keyframes pulse-relieve {
+      0% {
+        box-shadow: 0 4px 6px rgba(212,175,55,0.4), 0 1px 3px rgba(0,0,0,0.5);
+      }
+      50% {
+        box-shadow: 0 4px 15px rgba(212,175,55,0.8), 0 2px 5px rgba(0,0,0,0.6);
+      }
+      100% {
+        box-shadow: 0 4px 6px rgba(212,175,55,0.4), 0 1px 3px rgba(0,0,0,0.5);
+      }
+    }
+
     /* =========================================
        INLINE ERRORS & VALIDATION
        ========================================= */
@@ -1489,7 +1520,7 @@
           if (nameEl) nameEl.textContent = file.name;
           const container = document.getElementById(key);
           if (container) {
-            const wrapper = container.closest('.file-upload');
+            const wrapper = container.closest('.file-upload') || container.closest('.servicio-upload');
             if (wrapper) wrapper.classList.add('has-file');
           }
           evaluateProgress();
