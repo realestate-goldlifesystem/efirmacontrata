@@ -1881,6 +1881,7 @@
         }
 
         function mostrarListaContratos(contratos) {
+            console.log("Contratos recibidos:", contratos);
             const lista = document.getElementById('listaContratos');
 
             try {
@@ -1911,7 +1912,7 @@
                         btnText = ' 🏆 Abrir para Finalizar';
                         btnAction = 'abrirBorrador(\'' + (c.cdr) + '\', this)';
                     }
-                    else if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CORRECCION') || estadoMayus.includes('CONTRATO GENERADO')) {
+                    else if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CORRECCI') || estadoMayus.includes('CONTRATO GENERADO')) {
                         badgeClass = 'badge-warning';
                         badgeText = c.detallesExtra ? c.detallesExtra : 'BORRADOR ACTIVO';
                         btnText = ' Abrir Borrador';

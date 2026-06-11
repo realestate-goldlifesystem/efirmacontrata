@@ -1720,6 +1720,7 @@ function obtenerContratosPendientes() {
             estado.includes('CONTRATO GENERADO') ||
             estado.includes('BORRADOR ENVIADO') ||
             estado.includes('EN REVISION') ||
+            estado.includes('CORRECCION') ||
             estado.includes('APROBADO') ||
             estadoDoc.includes('READY_CONTRACT') ||
             estadoDoc.includes('PROP_VALIDATED') ||
