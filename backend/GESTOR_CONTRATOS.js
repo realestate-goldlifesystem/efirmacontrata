@@ -1260,7 +1260,7 @@ function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAproba
   const asunto = `Contrato de Arrendamiento para Revisión - ${displayId}`;
 
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
-  tpl.TITULO = 'Revisión como Inquilino';
+  tpl.TITULO = 'Contrato Listo para Revisión como Inquilino';
   tpl.NOMBRE_CLIENTE = nombre;
   tpl.MENSAJE_PRINCIPAL = 'El borrador de su contrato de arrendamiento está listo. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, aprobar el documento o solicitar cambios.';
   tpl.MENSAJE_SECUNDARIO = 'Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas.';
@@ -1286,7 +1286,7 @@ function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlApro
   const asunto = `Contrato de Arrendamiento para Revisión - ${displayId}`;
 
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
-  tpl.TITULO = 'Revisión como Propietario';
+  tpl.TITULO = 'Contrato Listo para Revisión como Propietario';
   tpl.NOMBRE_CLIENTE = nombre;
   tpl.MENSAJE_PRINCIPAL = 'El contrato de arrendamiento de su propiedad está listo para revisión. Por favor, ingrese a nuestro portal de validación transparente y verifique que todos los términos sean correctos.';
   tpl.MENSAJE_SECUNDARIO = 'Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas.';
@@ -1312,7 +1312,7 @@ function enviarEmailRevisionCodeudor(email, nombre, cdr, urlContrato, urlAprobac
   const asunto = `Contrato de Arrendamiento - Codeudor - ${displayId}`;
 
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
-  tpl.TITULO = 'Revisión como Codeudor';
+  tpl.TITULO = 'Contrato Listo para Revisión como Codeudor';
   tpl.NOMBRE_CLIENTE = nombre;
   tpl.MENSAJE_PRINCIPAL = 'Ha sido designado como codeudor en un contrato de arrendamiento. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, sus responsabilidades y aprobar el documento.';
   tpl.MENSAJE_SECUNDARIO = 'Como codeudor, usted responde solidariamente por el pago del canon y garantiza el cumplimiento del contrato. Nuestro sistema registrará su aprobación en la bitácora del contrato.';
