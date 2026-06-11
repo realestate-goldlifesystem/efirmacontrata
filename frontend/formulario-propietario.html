@@ -1688,6 +1688,26 @@
               item?.classList.remove('selected');
               uploadDiv?.classList.remove('visible');
               state.servicios = state.servicios.filter(s => s !== tipo);
+              
+              // Eliminar archivo al quitar el check
+              const inputId = 'factura' + tipo.charAt(0).toUpperCase() + tipo.slice(1);
+              const fileInput = document.getElementById(inputId);
+              if (fileInput) {
+                  fileInput.value = ''; // Limpiar input HTML
+                  if (state.archivos[inputId]) {
+                      delete state.archivos[inputId]; // Eliminar del estado
+                      const nameEl = document.getElementById(inputId + 'Name');
+                      if (nameEl) nameEl.textContent = 'Ningún archivo seleccionado';
+                  }
+                  
+                  // Limpiar UI
+                  const wrapper = fileInput.closest('.file-upload') || fileInput.closest('.servicio-upload');
+                  if (wrapper) wrapper.classList.remove('has-file');
+                  if (item) item.classList.remove('completed');
+              }
+              
+              evaluateProgress();
+              guardarArchivosEnDB();
             }
           });
         });

@@ -24,6 +24,8 @@ function handleRemoteExecution(e) {
             data = testSerialization();
         } else if (func === 'testAllPending') {
             data = testAllPending();
+        } else if (func === 'testContratos') {
+            data = obtenerContratosPendientes();
         } else {
             data = { message: 'Función no soportada', func: func };
         }

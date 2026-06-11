@@ -442,7 +442,7 @@ function recopilarDatosContrato(cdr) {
       tipoCuenta: extraerCampoCerebro(propietarioText, 'TIPO DE CUENTA::') || obtenerValor('Tipo de cuenta'),
       numeroCuenta: extraerCampoCerebro(propietarioText, 'NÚMERO DE CUENTA::') || extraerCampoCerebro(propietarioText, 'NUMERO DE CUENTA::') || obtenerValor('Numero de cuenta'),
       titularCuenta: extraerCampoCerebro(propietarioText, 'TITULAR::'),
-      docTitularCuenta: extraerCampoCerebro(propietarioText, 'DOC TITULAR::')
+      documentoTitular: extraerCampoCerebro(propietarioText, 'DOC TITULAR::')
     };
 
     // Recopilar datos del inmueble
@@ -528,7 +528,7 @@ function recopilarDatosContrato(cdr) {
     };
 
     // === BUSCAR DOCUMENTOS DE RESPALDO ===
-    const documentosUI = { propietario: [], inquilino: [], codeudores: [], otros: [] };
+    const documentosUI = { propietario: [], inquilino: [], codeudores: [], bancario: [], otros: [] };
     try {
       const cdrClean = cdr.replace(/'/g, "\\'");
       // Buscar archivos que contengan el CDR, ignorando carpetas y docs del borrador
@@ -543,7 +543,9 @@ function recopilarDatosContrato(cdr) {
         
         const docObj = { nombre: file.getName(), url: url };
         
-        if (name.includes('PROP') || name.includes('TRADICION') || name.includes('BANCARIO') || name.includes('RUT') || name.includes('RPR')) {
+        if (name.includes('BANCARIO')) {
+          documentosUI.bancario.push(docObj);
+        } else if (name.includes('PROP') || name.includes('TRADICION') || name.includes('RUT') || name.includes('RPR')) {
           documentosUI.propietario.push(docObj);
         } else if (name.includes('INQU')) {
           documentosUI.inquilino.push(docObj);
@@ -613,8 +615,15 @@ function reemplazarVariablesContrato(doc, datos) {
       if (datos.contrato.fechaInicio instanceof Date) {
         fechaInicio = datos.contrato.fechaInicio;
       } else {
-        // Asumiendo formato YYYY-MM-DD si es string, añadimos T12:00:00 para evitar desface horario
-        fechaInicio = new Date(datos.contrato.fechaInicio.toString().includes('T') ? datos.contrato.fechaInicio : datos.contrato.fechaInicio + 'T12:00:00');
+        const fechaStr = String(datos.contrato.fechaInicio).trim();
+        if (fechaStr.includes('/')) {
+          // Formato dd/MM/yyyy
+          const partes = fechaStr.split('/');
+          fechaInicio = new Date(parseInt(partes[2], 10), parseInt(partes[1], 10) - 1, parseInt(partes[0], 10));
+        } else {
+          // Asumiendo formato YYYY-MM-DD
+          fechaInicio = new Date(fechaStr.includes('T') ? fechaStr : fechaStr + 'T12:00:00');
+        }
       }
       
       if (!isNaN(fechaInicio.getTime())) {
@@ -1689,11 +1698,11 @@ function obtenerContratosPendientes() {
     
     const idxCdr = headers.findIndex(h => h === 'CODIGO DE REGISTRO' || h === 'CÓDIGO DE REGISTRO' || h === 'ID DE REGISTRO');
     const idxEstado = headers.findIndex(h => h === 'ESTADO DEL INMUEBLE');
-    const idxDoc = headers.findIndex(h => h === 'ESTADO DOCUMENTAL');
-    const idxDetalles = headers.findIndex(h => h === 'DETALLES DEL ESTADO DEL INMUEBLE');
-    const idxTipo = headers.findIndex(h => h === 'TIPO DE INMUEBLE');
-    const idxCanon = headers.findIndex(h => h === 'CANON MENSUAL');
-    const idxInquilino = headers.findIndex(h => h === 'NOMBRES - INQUILINO');
+    const idxDoc = headers.findIndex(h => h === 'ESTADO DOCUMENTAL' || h.includes('ESTADO DOCUMENTAL'));
+    const idxDetalles = headers.findIndex(h => h === 'DETALLES DEL ESTADO DEL INMUEBLE' || h === 'DETALLES ESTADO DOCUMENTAL' || h.includes('DETALLES DEL ESTADO') || h.includes('DETALLES ESTADO'));
+    const idxTipo = headers.findIndex(h => h === 'TIPO DE INMUEBLE' || h.includes('TIPO DE INMUEBLE'));
+    const idxCanon = headers.findIndex(h => h === 'CANON MENSUAL' || h.includes('CANON'));
+    const idxInquilino = headers.findIndex(h => h === 'NOMBRES - INQUILINO' || h.includes('INQUILINO'));
     
     for (let i = 1; i < data.length; i++) {
         const row = data[i];
@@ -1713,28 +1722,36 @@ function obtenerContratosPendientes() {
             estado.includes('EN REVISION') ||
             estado.includes('APROBADO') ||
             estadoDoc.includes('READY_CONTRACT') ||
+            estadoDoc.includes('PROP_VALIDATED') ||
             estadoDoc.includes('CONTRACT_') ||
             detalles.includes('CONTRATO GENERADO') ||
             detalles.includes('BORRADOR ENVIADO') ||
-            detalles.includes('APROBADO POR TODAS LAS PARTES')
+            detalles.includes('APROBADO POR TODAS LAS PARTES') ||
+            detalles.includes('LISTO PARA GENERAR CONTRATO')
         ) {
-            if (cdrValue) {
-                contratos.push({
-                    cdr: cdrValue,
-                    tipoNegocio: idxTipo > -1 ? row[idxTipo] : 'N/A',
-                    canon: idxCanon > -1 ? row[idxCanon] : '0',
-                    inquilino: idxInquilino > -1 ? row[idxInquilino] : 'Pendiente',
-                    estadoBadge: estado || detalles || estadoDoc
-                });
-            }
+            // Si no tiene CDR, le asignamos uno temporal para que igual se muestre
+            const safeCdr = cdrValue ? String(cdrValue) : `SIN-CDR-(Fila ${i + 1})`;
+            contratos.push({
+                cdr: safeCdr,
+                tipoNegocio: idxTipo > -1 ? String(row[idxTipo] || 'N/A') : 'N/A',
+                canon: idxCanon > -1 ? String(row[idxCanon] || '0') : '0',
+                inquilino: idxInquilino > -1 ? String(row[idxInquilino] || 'Pendiente') : 'Pendiente',
+                estadoBadge: String(estado || detalles || estadoDoc || '')
+            });
         }
     }
     if (contratos.length === 0) {
-        return [];
+        return [{
+            cdr: `DEBUG-INDICES: Cdr:${idxCdr}, Est:${idxEstado}, Doc:${idxDoc}, Det:${idxDetalles}`,
+            estadoBadge: "FILTRO_VACIO",
+            tipoNegocio: `Filas Totales: ${data.length}`,
+            canon: "0",
+            inquilino: "No hay coincidencias"
+        }];
     }
-    return contratos;
+    return JSON.parse(JSON.stringify(contratos));
   } catch (err) {
-      return [{cdr: "DEBUG-ERROR CRITICO", estadoBadge: err.message}];
+      return [{cdr: "DEBUG-ERROR CRITICO", estadoBadge: err.message, tipoNegocio: "ERROR", canon: "0", inquilino: "N/A"}];
   }
 }
 

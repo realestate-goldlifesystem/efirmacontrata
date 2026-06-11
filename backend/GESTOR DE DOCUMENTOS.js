@@ -1,4 +1,5 @@
 // ==========================================
+// FORCE SYNC TIMESTAMP: 18:01
 // GESTOR DE DOCUMENTOS - E-FIRMACONTRATA v3.0
 // Sistema de Gestión de Documentos y Formularios
 // Real Estate Gold Life System
@@ -878,15 +879,51 @@ function actualizarDatosCerebro(datos) {
         if (ciudadCol > -1 && ciudadInm) sheet.getRange(rowIdx, ciudadCol + 1).setValue(ciudadInm);
 
       } else if (datos.isServicio) {
-        // Agregar o actualizar línea de servicio en el Cerebro
-        const claveServicio = 'SERVICIO ' + datos.servicio.toUpperCase() + '::';
-        if (body.getText().includes(claveServicio)) {
-          body.replaceText(claveServicio + '.*', claveServicio + ' ' + datos.referencia);
-        } else {
-          body.appendParagraph(claveServicio + ' ' + datos.referencia);
+        // Formato unificado: "[SERVICIO CATEGORIA] EMPRESA:: REFERENCIA"
+        // Ejemplo: "[SERVICIO AGUA] ACUEDUCTO (EAAB):: 12345"
+        const categoria = (datos.categoria || datos.servicio).toUpperCase();
+        const nuevaClave = `[SERVICIO ${categoria}] ${datos.servicio.toUpperCase()}::`;
+        const nuevaLinea = `${nuevaClave} ${datos.referencia}`;
+        
+        let reemplazado = false;
+        const texto = body.getText();
+        
+        // Escapar caracteres especiales para RegExp
+        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const categoriaEscapada = escapeRegExp(categoria);
+        
+        // 1. Buscar si ya existe la categoría con el formato unificado
+        const regexNuevo = new RegExp(`\\[SERVICIO ${categoriaEscapada}\\].*::.*`);
+        const claveBuscada = `[SERVICIO ${categoria}]`; // String literal backup
+        
+        if (regexNuevo.test(texto) || texto.includes(claveBuscada)) {
+            try {
+                // replaceText usa regex internamente
+                body.replaceText(`\\[SERVICIO ${categoriaEscapada}\\].*::.*`, nuevaLinea);
+                reemplazado = true;
+            } catch(e) {
+                console.error("Fallo al reemplazar:", e);
+            }
         }
 
-      } else if (!datos.isCodeudor) {
+        // 2. Si no lo encontramos con el formato unificado, buscar con el formato viejo
+        if (!reemplazado) {
+            const claveViejaExacta = 'SERVICIO ' + datos.servicio.toUpperCase() + '::';
+            if (texto.includes(claveViejaExacta)) {
+                try {
+                    body.replaceText(escapeRegExp(claveViejaExacta) + '.*', nuevaLinea);
+                } catch(e) {}
+            } else {
+                // 3. Si no existe en absoluto, lo agregamos como un nuevo párrafo al final
+                body.appendParagraph(nuevaLinea);
+            }
+        }
+        
+        // 4. Limpieza automática: Si existían errores previos huérfanos de "DESCONOCIDA", borrarlos
+        try {
+            body.replaceText('SERVICIO DESCONOCIDA::.*', ''); 
+            body.replaceText('\\[SERVICIO DESCONOCIDO\\].*::.*', ''); 
+        } catch(e) {}
         // Reemplazar campos del inquilino/propietario
         if (datos.tipo === 'inquilino') {
           body.replaceText("«N_INQ»", datos.nombre);
@@ -943,18 +980,18 @@ function handleVerificarLink(e) {
 
 function handleObtenerRegistrosInquilinos() {
   const registros = obtenerRegistrosInquilinos();
-  return {
+  return JSON.parse(JSON.stringify({
     success: true,
     data: registros
-  };
+  }));
 }
 
 function handleObtenerRegistrosPropietarios() {
   const registros = obtenerRegistrosPropietarios();
-  return {
+  return JSON.parse(JSON.stringify({
     success: true,
     data: registros
-  };
+  }));
 }
 
 function handleObtenerDocumentosPanel(e) {
@@ -1244,6 +1281,32 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
     // Guardar archivos en Drive
     const urlsCarpetas = guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormulario);
 
+    // Limpiar del Cerebro los servicios que hayan sido desmarcados
+    try {
+      const cerebroDoc = abrirDocCerebro(codigoRegistro);
+      if (cerebroDoc) {
+        const body = cerebroDoc.getBody();
+        const serviciosEnviados = datosFormulario.serviciosPublicos.map(s => s.tipo.toUpperCase());
+        const posiblesServicios = ['AGUA', 'LUZ', 'GAS', 'TELEFONO', 'INTERNET'];
+        
+        const paragraphs = body.getParagraphs();
+        for (let i = paragraphs.length - 1; i >= 0; i--) {
+          const text = paragraphs[i].getText().toUpperCase();
+          posiblesServicios.forEach(svc => {
+            if (!serviciosEnviados.includes(svc)) {
+              // Si el párrafo menciona el servicio y tiene el separador '::'
+              if (text.includes('SERVICIO') && text.includes(svc + '::')) {
+                paragraphs[i].removeFromParent();
+              }
+            }
+          });
+        }
+        cerebroDoc.saveAndClose();
+      }
+    } catch (e) {
+      Logger.log("Error limpiando servicios desmarcados del Cerebro: " + e.message);
+    }
+
     // Actualizar datos en la hoja
     actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas);
 
@@ -1403,7 +1466,7 @@ function obtenerRegistrosInquilinos() {
       }
     }
 
-    return registros;
+    return JSON.parse(JSON.stringify(registros));
 
   } catch (error) {
     Logger.log('Error obteniendo registros inquilinos: ' + error.toString());
@@ -1436,18 +1499,18 @@ function obtenerRegistrosPropietarios() {
         const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';
 
         // Datos del inmueble desde la hoja
-        const matricula = obtenerValorPorHeader(headers, row, 'MATRICULA_INMOBILIARIA') || '';
-        const direccionInm = obtenerValorPorHeader(headers, row, 'Ingrese la Dirección del inmueble') || '';
-        const ciudadInm = obtenerValorPorHeader(headers, row, 'Ciudad') || '';
+        let matricula = obtenerValorPorHeader(headers, row, 'MATRICULA_INMOBILIARIA') || '';
+        let direccionInm = obtenerValorPorHeader(headers, row, 'Ingrese la Dirección del inmueble') || '';
+        let ciudadInm = obtenerValorPorHeader(headers, row, 'Ciudad') || '';
 
         // Datos bancarios
-        const tipoCuenta = obtenerValorPorHeader(headers, row, 'Tipo de cuenta') || '';
-        const numeroCuenta = obtenerValorPorHeader(headers, row, 'Numero de cuenta') || '';
-        const banco = obtenerValorPorHeader(headers, row, 'Banco') || '';
-        const titularCuenta = obtenerValorPorHeader(headers, row, 'Titular de la cuenta') || '';
-        const documentoTitular = obtenerValorPorHeader(headers, row, 'Número de documento del titular') || '';
+        let tipoCuenta = obtenerValorPorHeader(headers, row, 'Tipo de cuenta') || '';
+        let numeroCuenta = obtenerValorPorHeader(headers, row, 'Numero de cuenta') || '';
+        let banco = obtenerValorPorHeader(headers, row, 'Banco') || '';
+        let titularCuenta = obtenerValorPorHeader(headers, row, 'Titular de la cuenta') || '';
+        let documentoTitular = obtenerValorPorHeader(headers, row, 'Número de documento del titular') || '';
 
-        // Servicios: leer del Cerebro
+        // Servicios y Bancos: leer del Cerebro
         let servicios = [];
         let certTradicion = '';
         try {
@@ -1456,10 +1519,23 @@ function obtenerRegistrosPropietarios() {
           if (cerebroDoc) {
             const lines = cerebroDoc.getBody().getText().split('\n');
             lines.forEach(line => {
-              const match = line.match(/^SERVICIO\s+(.+?)::\s+(.+)$/i);
-              if (match) servicios.push({ servicio: match[1].trim(), referencia: match[2].trim() });
+              const matchServ = line.match(/^\[SERVICIO\s+.*\]\s+(.+?)::\s+(.+)$/i) || line.match(/^SERVICIO\s+(.+?)::\s+(.+)$/i);
+              if (matchServ) servicios.push({ servicio: matchServ[1].trim(), referencia: matchServ[2].trim() });
+              
               const certMatch = line.match(/^CERT_TRADICION_ESTADO::\s+(.+)$/i);
               if (certMatch) certTradicion = certMatch[1].trim();
+
+              // Extraer datos inmueble como fallback
+              if (!matricula && line.match(/^MATRICULA_INMOBILIARIA::\s+(.+)$/i)) matricula = line.match(/^MATRICULA_INMOBILIARIA::\s+(.+)$/i)[1].trim();
+              if (!direccionInm && line.match(/^DIRECCION_INMUEBLE::\s+(.+)$/i)) direccionInm = line.match(/^DIRECCION_INMUEBLE::\s+(.+)$/i)[1].trim();
+              if (!ciudadInm && line.match(/^CIUDAD_INMUEBLE::\s+(.+)$/i)) ciudadInm = line.match(/^CIUDAD_INMUEBLE::\s+(.+)$/i)[1].trim();
+
+              // Extraer datos bancarios como fallback si la hoja está vacía
+              if (!tipoCuenta && line.match(/^TIPO DE CUENTA::\s+(.+)$/i)) tipoCuenta = line.match(/^TIPO DE CUENTA::\s+(.+)$/i)[1].trim();
+              if (!numeroCuenta && line.match(/^NÚMERO DE CUENTA::\s+(.+)$/i)) numeroCuenta = line.match(/^NÚMERO DE CUENTA::\s+(.+)$/i)[1].trim();
+              if (!banco && line.match(/^BANCO::\s+(.+)$/i)) banco = line.match(/^BANCO::\s+(.+)$/i)[1].trim();
+              if (!titularCuenta && line.match(/^TITULAR::\s+(.+)$/i)) titularCuenta = line.match(/^TITULAR::\s+(.+)$/i)[1].trim();
+              if (!documentoTitular && line.match(/^DOC TITULAR::\s+(.+)$/i)) documentoTitular = line.match(/^DOC TITULAR::\s+(.+)$/i)[1].trim();
             });
           }
         } catch(e) { /* Cerebro no disponible: continuar sin servicios */ }
@@ -1490,7 +1566,7 @@ function obtenerRegistrosPropietarios() {
       }
     }
 
-    return registros;
+    return JSON.parse(JSON.stringify(registros));
 
   } catch (error) {
     Logger.log('Error obteniendo registros propietarios: ' + error.toString());
@@ -2418,7 +2494,7 @@ function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr, arc
     body.appendParagraph(`NÚMERO DE CUENTA:: ${banco.numeroCuenta || ''}`);
     body.appendParagraph(`BANCO:: ${banco.banco || ''}`);
     body.appendParagraph(`TITULAR:: ${banco.titularCuenta || ''}`);
-    body.appendParagraph(`DOC TITULAR:: ${banco.docTitular || ''}`);
+    body.appendParagraph(`DOC TITULAR:: ${banco.documentoTitular || ''}`);
   }
 
   // --- BUZONES DE DOCUMENTACIÓN DEL PROPIETARIO ---
@@ -2541,6 +2617,14 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
       'ESTADO DOCUMENTAL': estadoDoc
     };
 
+    if (datosFormulario.bancarios) {
+      campos['Tipo de cuenta'] = datosFormulario.bancarios.tipoCuenta;
+      campos['Numero de cuenta'] = datosFormulario.bancarios.numeroCuenta;
+      campos['Banco'] = datosFormulario.bancarios.banco;
+      campos['Titular de la cuenta'] = datosFormulario.bancarios.titularCuenta;
+      campos['Número de documento del titular'] = datosFormulario.bancarios.docTitular || datosFormulario.bancarios.documentoTitular;
+    }
+
     // Actualizar campos
     for (const [header, valor] of Object.entries(campos)) {
       const colIndex = headers.indexOf(header) + 1;
@@ -2587,8 +2671,9 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
  */
 function abrirPanelValidacion() {
   try {
-    // Cargar el archivo HTML que está en el proyecto de Apps Script
-    const html = HtmlService.createHtmlOutputFromFile('backend/panel_validacion')
+    // Cargar el archivo HTML usando Template para obligar al servidor a saltarse la caché
+    const template = HtmlService.createTemplateFromFile('backend/panel_validacion');
+    const html = template.evaluate()
       .setWidth(3000)
       .setHeight(2000)
       .setSandboxMode(HtmlService.SandboxMode.IFRAME);

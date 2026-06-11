@@ -1035,13 +1035,14 @@
           if (!lockedMsg) {
             lockedMsg = document.createElement('div');
             lockedMsg.id = 'lockedMessageDiv';
+            lockedMsg.style.flex = '1';
+            lockedMsg.style.display = 'flex';
+            lockedMsg.style.flexDirection = 'column';
+            lockedMsg.style.alignItems = 'center';
+            lockedMsg.style.justifyContent = 'center';
             lockedMsg.style.padding = '3rem 1.5rem';
             lockedMsg.style.background = 'rgba(17, 24, 39, 0.9)';
-            lockedMsg.style.border = '1px solid #374151';
-            lockedMsg.style.borderRadius = '12px';
             lockedMsg.style.textAlign = 'center';
-            lockedMsg.style.marginTop = '2rem';
-            lockedMsg.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.5)';
             
             // Lo insertamos en el panel principal
             const mainPanel = document.querySelector('.content-grid');
@@ -1061,7 +1062,7 @@
             </p>
             <p style="color: #9ca3af; font-size: 0.9rem;">(Puedes seguir leyendo la Bitácora en el panel derecho)</p>
           `;
-          lockedMsg.style.display = 'block';
+          lockedMsg.style.display = 'flex';
         } else {
           // No ha votado, mostrar controles
           if (accionContainer) accionContainer.style.display = 'flex';

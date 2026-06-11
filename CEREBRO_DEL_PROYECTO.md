@@ -39,6 +39,12 @@ Antes de crear un nuevo script para conectarte a Sheets o testear algo, **¡REVI
 - `sheets-helper.js`: Utilidad core para leer/escribir en Google Sheets directamente desde la consola usando la Service Account.
 - `validar_sheet_pagos.js`: Para debuggear y validar el registro de transacciones.
 - `debug_auth.js` / `simple_auth_backup.js`: Para pruebas rápidas de autenticación.
+- `debug_html_service/`: Carpeta (Botiquín de primeros auxilios) con scripts (`split_script.js`, `extract_js.js`, `check_syntax.js`) para hacer ingeniería inversa de errores HTML/JS.
+
+**💀 CUIDADO: EL BUG DEL MINIFICADOR DE GOOGLE APPS SCRIPT:**
+Si en el frontend servido por Apps Script (`HtmlService`) aparece de la nada un error ciego como `Uncaught SyntaxError: Invalid or unexpected token` en una línea ilógica (ej. Línea 400+), **probablemente NO ES TU CÓDIGO**. El servidor de Google tiene un minificador antiguo que a veces elimina TODO lo que está después de un `//`, ¡incluso si el `//` está dentro de un string válido! (por ejemplo, recorta `embedUrl = 'https://docs...` dejándolo como `embedUrl = 'https:`).
+**Solución:** Ofusca las dobles barras en los strings de URL (ej. `'https:/' + '/'`). Usa las herramientas de `debug_html_service/` para ver el HTML truncado que Google generó.
+
 *(Nota: Hay varios scripts de refactorización (`fix_*.js`, `update_*.js`) que la IA anterior usó para editar el frontend masivamente. Siéntete libre de reusar su lógica de lectura de archivos).*
 
 **POLÍTICA DE LIMPIEZA Y REUTILIZACIÓN:**
