@@ -2002,7 +2002,7 @@
                         if (res.success) {
                             abrirModalContrato(cdr, res);
                             const estadoStr = ((res.datos && res.datos.estado) ? res.datos.estado : '').toUpperCase();
-                            if (estadoStr.includes('BORRADOR ENVIADO') || estadoStr.includes('REVISION') || estadoStr.includes('CORRECCION') || (estadoStr.includes('APROBADO') && !estadoStr.includes('ESTUDIO APROBADO')) || estadoStr.includes('OBSERVACIONES')) {
+                            if (estadoStr.includes('BORRADOR ENVIADO') || estadoStr.includes('REVISION') || estadoStr.includes('CORRECCI') || (estadoStr.includes('APROBADO') && !estadoStr.includes('ESTUDIO APROBADO')) || estadoStr.includes('OBSERVACIONES')) {
                                 cambiarModoValidacionExterna();
                             } else {
                                 // Si está recién generado pero no enviado
