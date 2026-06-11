@@ -60,10 +60,11 @@
 - [ ] **Nuevo Cerebro:** Crear las variables específicas (comisiones, pólizas) para este tipo de contrato.
 - [ ] **Plantilla Dinámica:** Cargar la plantilla de Mandato/Administración y configurar las rutas de guardado en Drive.
 
-### 9. 🏡 Escalado: Promesas de Compraventa
+### 9. 🏡 Escalado: Promesas de Compraventa y Sala de Negociación
 *Objetivo: Abarcar transacciones de alto valor inmobiliario con flujos colaborativos entre compradores y vendedores.*
 - [ ] **Adaptación del Frontend:** Generar los portales para recolección de documentos específicos de ventas (Promesas, Certificados de Tradición avanzados).
-- [ ] **Bitácora de Alta Complejidad:** Adaptar la negociación para clausulas de arras y fechas de escrituración.
+- [ ] **Sala de Negociación Privada (En Vivo):** Crear un entorno digital ("Bolsa de Valores Inmobiliaria") donde comprador y vendedor puedan enviarse ofertas y contraofertas económicas de forma asíncrona, eliminando la fricción emocional y generando urgencia/FOMO con el Polling Inteligente.
+- [ ] **Generación y Firma Automática:** Cuando ambas partes lleguen a un acuerdo y aprueben la oferta final en la Sala de Negociación, E-FirmaContrata generará automáticamente la Promesa de Compraventa con las cláusulas pactadas (arras, fechas) y la enviará para su autenticación digital desde casa.
 
 ### 10. 🛡️ Acreditación Legal Premium (Olimpia IT)
 *Objetivo: Blindar las Promesas de Compraventa con el estándar legal más alto (ONAC y Registraduría).*
