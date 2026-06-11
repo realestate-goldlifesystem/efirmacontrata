@@ -2466,7 +2466,10 @@
                                     const anyRechazado = codeudoresKeys.some(k => partesEstadoFinal[k].includes('RECHAZADO') || partesEstadoFinal[k].includes('CAMBIOS') || partesEstadoFinal[k].includes('CORREGIR'));
                                     if (anyRechazado) estado = 'RECHAZADO';
                                     else if (allAprobado) estado = 'APROBADO';
-                                    else estado = 'PENDIENTE';
+                                    else {
+                                        const notApprovedKey = codeudoresKeys.find(k => partesEstadoFinal[k] !== 'APROBADO');
+                                        estado = notApprovedKey ? partesEstadoFinal[notApprovedKey] : 'PENDIENTE';
+                                    }
                                 }
                             } else {
                                 estado = partesEstadoFinal[parte] || 'ENVIADO';
