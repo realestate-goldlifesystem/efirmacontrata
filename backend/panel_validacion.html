@@ -1911,7 +1911,7 @@
                         btnText = ' 🏆 Abrir para Finalizar';
                         btnAction = 'abrirBorrador(\'' + (c.cdr) + '\', this)';
                     }
-                    else if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CONTRATO GENERADO')) {
+                    else if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CORRECCION') || estadoMayus.includes('CONTRATO GENERADO')) {
                         badgeClass = 'badge-warning';
                         badgeText = 'BORRADOR ACTIVO';
                         btnText = ' Abrir Borrador';
@@ -2001,7 +2001,7 @@
                         if (res.success) {
                             abrirModalContrato(cdr, res);
                             const estadoStr = ((res.datos && res.datos.estado) ? res.datos.estado : '').toUpperCase();
-                            if (estadoStr.includes('BORRADOR ENVIADO') || estadoStr.includes('REVISION') || (estadoStr.includes('APROBADO') && !estadoStr.includes('ESTUDIO APROBADO')) || estadoStr.includes('OBSERVACIONES')) {
+                            if (estadoStr.includes('BORRADOR ENVIADO') || estadoStr.includes('REVISION') || estadoStr.includes('CORRECCION') || (estadoStr.includes('APROBADO') && !estadoStr.includes('ESTUDIO APROBADO')) || estadoStr.includes('OBSERVACIONES')) {
                                 cambiarModoValidacionExterna();
                             } else {
                                 // Si está recién generado pero no enviado

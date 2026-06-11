@@ -1082,7 +1082,7 @@ function registrarAprobacionContrato(cdr, tipo, accion, comentarios) {
       };
     } else if (accion === 'CAMBIOS_SOLICITADOS' || accion === 'CORREGIR') {
       // Actualizar estado a correccion solicitada
-      actualizarEstadoContrato(cdr, 'ESTUDIO APROBADO', `?? Correcciones solicitadas por ${tipo}`);
+      actualizarEstadoContrato(cdr, 'CONTRATO EN CORRECCION', `⚠️ Correcciones solicitadas por ${tipo}`);
 
       // Enviar notificacion de cambios solicitados
       enviarNotificacionCambiosSolicitados(cdr, tipo, comentarios);
