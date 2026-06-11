@@ -2252,12 +2252,45 @@
                     const comentario = result.value || '';
                     const btn = document.getElementById('btnEnviarValidar');
                     btn.disabled = true;
-                    btn.innerHTML = ' Enviando...';
+
+                    // Mostrar modal de carga bloqueante con barra de progreso
+                    let progress = 0;
+                    Swal.fire({
+                        title: 'Enviando Nueva Versión...',
+                        html: `
+                            <div style="margin-bottom: 15px; color: #a1a1aa; font-size: 0.95rem;">
+                                Notificando a todas las partes y actualizando la bitácora.<br>
+                                <b style="color: #fff;">Por favor, espera sin cerrar la ventana...</b>
+                            </div>
+                            <div style="height: 24px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 1px solid rgba(212,175,55,0.2); position: relative;">
+                                <div id="swalProgress" style="height: 100%; width: 0%; background: linear-gradient(90deg, rgba(212,175,55,0.6) 0%, rgba(212,175,55,1) 100%); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 0.8rem;">0%</div>
+                            </div>
+                        `,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        background: 'rgba(30, 30, 35, 0.95)',
+                        color: '#fff',
+                        backdrop: `rgba(0,0,0,0.8)`,
+                        didOpen: () => {
+                            const pBar = document.getElementById('swalProgress');
+                            window.swalProgressInterval = setInterval(() => {
+                                progress += Math.random() * 10 + 2; // Sube de a pocos
+                                if (progress > 95) progress = 95; // Se congela en 95% esperando al servidor
+                                if (pBar) {
+                                    pBar.style.width = progress + '%';
+                                    pBar.innerText = Math.round(progress) + '%';
+                                }
+                            }, 600);
+                        },
+                        willClose: () => {
+                            clearInterval(window.swalProgressInterval);
+                        }
+                    });
 
                     // Aqui se conectará con el Backend
                     google.script.run
                         .withSuccessHandler(function(res) {
-                            btn.innerHTML = ' Enviar Borrador a Validar';
                             btn.disabled = false;
                             if(res.success) {
                                 Swal.fire('Enviado', 'Contrato enviado a revisión y bitácora actualizada.', 'success');
@@ -2267,7 +2300,6 @@
                             }
                         })
                         .withFailureHandler(function(err){
-                            btn.innerHTML = ' Enviar Borrador a Validar';
                             btn.disabled = false;
                             Swal.fire('Error de red', err.message, 'error');
                         })
