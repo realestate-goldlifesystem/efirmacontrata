@@ -26,6 +26,7 @@
       margin: 0;
       padding: 0;
       height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -95,6 +96,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      box-sizing: border-box;
     }
 
     /* Layout Principal */
@@ -104,6 +106,7 @@
       width: 100%;
       overflow: hidden;
       position: relative;
+      box-sizing: border-box;
     }
 
     /* Documento preview */
@@ -1172,6 +1175,7 @@
             lockedMsg.style.alignItems = 'center';
             lockedMsg.style.justifyContent = 'center';
             lockedMsg.style.padding = '3rem 1.5rem';
+            lockedMsg.style.boxSizing = 'border-box';
             lockedMsg.style.background = 'rgba(17, 24, 39, 0.9)';
             lockedMsg.style.textAlign = 'center';
             
