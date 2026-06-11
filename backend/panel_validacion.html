@@ -2348,22 +2348,28 @@
                                 if(e.parte === 'ADMIN') badgeColor = 'var(--primary)';
 
                                 historialHTML += `
-                                    <div class="timeline-item" style="border-left: 3px solid ${badgeColor}; padding-left: 15px; margin-bottom: 15px; background: #f8fafc; padding: 10px; border-radius: 0 8px 8px 0;">
-                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
-                                            <strong style="color: ${badgeColor};">${e.parte} ${e.version > 1 ? '(v' + e.version + ')' : ''}</strong>
-                                            <span style="font-size:0.75em; color:#94a3b8;">${e.fecha} ${e.hora || ''}</span>
+                                    <div class="timeline-item" style="border-left: 4px solid ${badgeColor}; padding: 8px 12px; margin-bottom: 10px; background: rgba(30, 30, 35, 0.8); border-top: 1px solid rgba(212,175,55,0.15); border-right: 1px solid rgba(212,175,55,0.15); border-bottom: 1px solid rgba(212,175,55,0.15); border-radius: 0 8px 8px 0; backdrop-filter: blur(8px);">
+                                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 3px;">
+                                            <strong style="color: ${badgeColor}; font-size: 0.9em; text-transform: uppercase;">${e.parte} (v${e.version || 1})</strong>
+                                            <span style="font-size:0.7em; color:var(--text-muted, #a1a1aa);">${e.fecha} ${e.hora || ''}</span>
                                         </div>
-                                        <div style="font-size:0.85em; font-weight:bold; margin-bottom: 5px;">${e.estado}</div>
-                                        ${e.comentarios ? `<p style="font-size:0.9em; margin:0; color:#334155; font-style:italic;">"${e.comentarios}"</p>` : ''}
+                                        <div style="font-size:0.8em; font-weight:bold; margin-bottom: 3px; color: #fff;">${e.estado}</div>
+                                        ${e.comentarios ? `<p style="font-size:0.85em; margin:0; color:var(--text-muted, #a1a1aa); font-style:italic;">"${e.comentarios}"</p>` : ''}
                                     </div>
                                 `;
                             }
                         } else {
-                            historialHTML += '<div class="empty-state" style="padding: 1.5rem; text-align: center; color: #94a3b8; font-size: 0.85rem;">La bitácora está vacía. Esperando revisión virtual.</div>';
+                            historialHTML += '<div class="empty-state" style="padding: 1.5rem; text-align: center; color: var(--text-muted, #a1a1aa); font-size: 0.85rem;">La bitácora está vacía. Esperando revisión virtual.</div>';
                         }
                         historialHTML += '</div>';
 
-                        document.getElementById('contenedorBitacora').innerHTML = historialHTML;
+                        const bitacoraContainer = document.getElementById('contenedorBitacora');
+                        bitacoraContainer.innerHTML = historialHTML;
+                        
+                        // Hacer scroll automático al final de la bitácora
+                        setTimeout(() => {
+                            bitacoraContainer.scrollTop = bitacoraContainer.scrollHeight;
+                        }, 100);
 
                         // Rellenar partes que no han respondido en la última versión
                         var partesPendientesMaxVersion = false;
