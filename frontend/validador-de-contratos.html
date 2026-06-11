@@ -345,6 +345,7 @@
       
       .document-preview {
         border-right: none;
+        padding-bottom: 90px;
       }
 
       .mobile-bottom-bar {
@@ -384,6 +385,20 @@
       .actions-card {
         flex: 1;
         overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 2rem 1.5rem;
+      }
+      .actions-card > div:first-child {
+        display: none !important; /* Oculta título interno en móvil */
+      }
+      .action-buttons {
+        gap: 1.2rem;
+      }
+      .btn-action {
+        padding: 1rem;
+        font-size: 1.05rem;
       }
     }
 
@@ -1168,7 +1183,7 @@
               <br><br>
               Estamos a la espera de que el resto de las partes validen el documento o que el Administrador revise los comentarios y envíe una resolución final.
             </p>
-            <p style="color: #9ca3af; font-size: 0.9rem;">(Puedes seguir leyendo la Bitácora en el panel derecho)</p>
+            <p style="color: #9ca3af; font-size: 0.9rem;">(Puedes seguir leyendo el historial de revisiones del borrador)</p>
           `;
           lockedMsg.style.display = 'flex';
         } else {
@@ -1238,6 +1253,10 @@
 
           // Recargar estado
           await loadApprovalStatus();
+
+          // Cerrar sidebar en móvil
+          const sidebar = $('mainSidebar');
+          if (sidebar) sidebar.classList.remove('show');
 
         } catch (err) {
           console.error('[Aprobar] Error:', err);
@@ -1309,6 +1328,10 @@
 
           // Recargar estado
           await loadApprovalStatus();
+
+          // Cerrar sidebar en móvil
+          const sidebar = $('mainSidebar');
+          if (sidebar) sidebar.classList.remove('show');
 
         } catch (err) {
           console.error('[Rechazar] Error:', err);
