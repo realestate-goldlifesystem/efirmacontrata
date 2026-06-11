@@ -384,6 +384,7 @@
       
       .actions-card {
         flex: 1 !important;
+        height: 100% !important;
         overflow-y: auto !important;
         flex-direction: column !important;
         justify-content: center !important;
@@ -668,21 +669,23 @@
                   ⛶ <span id="expandText">Ampliar</span>
                 </button>
               </div>
-              <div class="action-buttons">
-                <button id="btnApprove" class="btn-action btn-approve">
-                  ✓ Aprobar Contrato
-                </button>
-                <button id="btnReject" class="btn-action btn-reject">
-                  ✗ Solicitar Corrección
-                </button>
-                <button id="btnDownload" class="btn-action btn-download">
-                  📥 Descargar Borrador
-                </button>
-              </div>
+              <div class="actions-mobile-wrapper" style="margin: auto 0; width: 100%;">
+                <div class="action-buttons">
+                  <button id="btnApprove" class="btn-action btn-approve">
+                    ✓ Aprobar Contrato
+                  </button>
+                  <button id="btnReject" class="btn-action btn-reject">
+                    ✗ Solicitar Corrección
+                  </button>
+                  <button id="btnDownload" class="btn-action btn-download">
+                    📥 Descargar Borrador
+                  </button>
+                </div>
 
-              <div class="observations-field">
-                <label for="observaciones">Observaciones (Opcional)</label>
-                <textarea id="observaciones" placeholder="Ingrese sus comentarios o motivo de rechazo..."></textarea>
+                <div class="observations-field" style="margin-top: 1.5rem;">
+                  <label for="observaciones">Observaciones (Opcional)</label>
+                  <textarea id="observaciones" placeholder="Ingrese sus comentarios o motivo de rechazo..."></textarea>
+                </div>
               </div>
             </div>
 
