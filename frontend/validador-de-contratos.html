@@ -818,8 +818,12 @@
         }
 
         bindEvents();
-        await loadContractData();
-        await loadApprovalStatus();
+        toggleLoading(true);
+        await Promise.all([
+            loadContractData(),
+            loadApprovalStatus()
+        ]);
+        toggleLoading(false);
       }
 
       // ---------- Bindings ----------
@@ -869,8 +873,6 @@
 
       // ---------- Load Data CORREGIDO ----------
       async function loadContractData() {
-        toggleLoading(true);
-
         try {
           const url = new URL(CONFIG.API_URL);
           url.searchParams.append('accion', 'obtenerContrato');
@@ -892,8 +894,6 @@
         } catch (err) {
           console.error('[Contrato] Error:', err);
           showAlert('danger', err.message || 'Error cargando el contrato');
-        } finally {
-          toggleLoading(false);
         }
       }
 
