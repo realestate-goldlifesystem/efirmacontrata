@@ -279,6 +279,21 @@ btnUpload.addEventListener('click', async () => {
         workspace.style.display = 'none';
         successScreen.style.display = 'block';
         
+        let seconds = 5;
+        const closeBtn = document.getElementById('btn-close-success');
+        if (closeBtn) {
+            closeBtn.textContent = `Cerrando pestaña en ${seconds}s...`;
+            const timer = setInterval(() => {
+                seconds--;
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    window.close();
+                } else {
+                    closeBtn.textContent = `Cerrando pestaña en ${seconds}s...`;
+                }
+            }, 1000);
+        }
+        
     } catch (e) {
         alert('❌ Error durante la subida: ' + e.message);
         btnUpload.style.display = 'block';
