@@ -379,16 +379,18 @@
       }
 
       /* Modos del modal móvil */
-      .sidebar.mode-history .actions-card { display: none; }
-      .sidebar.mode-actions .sidebar-scrollable { display: none; }
+      .sidebar.mode-history .actions-card { display: none !important; }
+      .sidebar.mode-actions .sidebar-scrollable { display: none !important; }
       
       .actions-card {
         flex: 1 !important;
         overflow-y: auto !important;
-        display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
         padding: 2rem 1.5rem !important;
+      }
+      .sidebar.mode-actions .actions-card {
+        display: flex !important;
       }
       .actions-card-header {
         display: none !important; /* Oculta título interno en móvil */
