@@ -10,7 +10,9 @@ Quiero que construyas esta interfaz bajo los siguientes estándares de diseño, 
 - Si creas una barra inferior (Bottom Bar) para acciones rápidas en móviles, usa SIEMPRE `position: fixed; bottom: 0; left: 0; right: 0;` para anclarla con seguridad absoluta, evitando que quede atrapada detrás de los botones físicos o digitales del sistema operativo (Android/iOS).
 - A esa Bottom Bar flotante, agrégale SIEMPRE el padding de seguridad de dispositivos modernos: `padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));`.
 - Asegúrate de dejarle espacio al Bottom Bar en el contenedor principal usando un `padding-bottom` generoso, para que el último bloque de contenido no quede oculto detrás de la barra.
-
+- APLICA SIEMPRE `box-sizing: border-box;` a todos tus contenedores principales, especialmente los que usan Flexbox y padding al mismo tiempo. Esto evitará el "Bug de Flexbox Safari iOS" donde el padding inferior hace que el contenedor estalle y empuje las cabeceras fuera de la pantalla.
+- TAMAÑO ERGONÓMICO (Sopa para móviles): En las Media Queries para móvil, garantiza que los botones tengan buena altura (`padding: 1.25rem 1rem`) y las cajas de texto una altura mínima generosa (`min-height: 120px`). El pulgar del usuario necesita área para no errar el toque.
+- PRIORIDAD DE MEDIA QUERIES: Asegúrate de que las reglas de `@media (max-width: 768px)` se ubiquen al FINAL de tu archivo CSS, o usa `!important` en sus atributos si es necesario, para evitar que clases genéricas escritas después sobreescriban los diseños de celular y rompan el layout móvil.
 3. DISEÑO PREMIUM Y ESTÉTICA:
 - Crea una estética moderna, limpia y armónica (piensa en un diseño Dark Mode premium con contrastes sutiles, como grises oscuros #111827, toques dorados/primarios vibrantes #fbbf24 y textos legibles).
 - Evita el diseño aburrido. Usa bordes redondeados (`border-radius: 8px o 12px`), sombras sutiles (`box-shadow`), transiciones suaves en los botones (`transition: all 0.3s ease`) y efectos hover.

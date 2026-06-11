@@ -1174,10 +1174,11 @@
             lockedMsg.style.flexDirection = 'column';
             lockedMsg.style.alignItems = 'center';
             lockedMsg.style.justifyContent = 'center';
-            lockedMsg.style.padding = '3rem 1.5rem';
+            lockedMsg.style.padding = 'clamp(1rem, 5vh, 3rem) 1.5rem';
             lockedMsg.style.boxSizing = 'border-box';
             lockedMsg.style.background = 'rgba(17, 24, 39, 0.9)';
             lockedMsg.style.textAlign = 'center';
+            lockedMsg.style.overflowY = 'auto';
             
             // Lo insertamos en el panel principal
             const mainPanel = document.querySelector('.content-grid');
@@ -1188,14 +1189,14 @@
           const title = miEstado === 'APROBADO' ? '¡Contrato Aprobado por tu parte!' : '¡Correcciones Solicitadas!';
           
           lockedMsg.innerHTML = `
-            <div style="font-size: 3rem; margin-bottom: 1rem;">${icon}</div>
-            <h2 style="color:#fbbf24; margin:0 0 1rem 0; font-size: 1.8rem;">${title}</h2>
-            <p style="color:#e5e7eb; margin:0 0 1.5rem 0; font-size:1.1rem; max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+            <div style="font-size: clamp(2.5rem, 8vw, 3.5rem); margin-bottom: clamp(0.5rem, 2vh, 1rem);">${icon}</div>
+            <h2 style="color:#fbbf24; margin:0 0 clamp(0.5rem, 2vh, 1rem) 0; font-size: clamp(1.4rem, 5vw, 1.8rem);">${title}</h2>
+            <p style="color:#e5e7eb; margin:0 0 clamp(1rem, 3vh, 1.5rem) 0; font-size: clamp(0.95rem, 3.5vw, 1.1rem); max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.5;">
               Tu validación <strong>(${miEstado})</strong> ha sido registrada con éxito en la Bitácora.
               <br><br>
               Estamos a la espera de que el resto de las partes validen el documento o que el Administrador revise los comentarios y envíe una resolución final.
             </p>
-            <p style="color: #9ca3af; font-size: 0.9rem;">(Puedes seguir leyendo el historial de revisiones del borrador)</p>
+            <p style="color: #9ca3af; font-size: clamp(0.8rem, 2.5vw, 0.9rem);">(Puedes seguir leyendo el historial de revisiones del borrador)</p>
           `;
           lockedMsg.style.display = 'flex';
         } else {
