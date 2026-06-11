@@ -2293,7 +2293,22 @@
                         .withSuccessHandler(function(res) {
                             btn.disabled = false;
                             if(res.success) {
-                                Swal.fire('Enviado', 'Contrato enviado a revisión y bitácora actualizada.', 'success');
+                                Swal.fire({
+                                    title: '¡Enviado!',
+                                    html: '<div style="color: #a1a1aa; font-size: 0.95rem;">Contrato enviado a revisión y bitácora actualizada.</div>',
+                                    icon: 'success',
+                                    iconColor: '#d4af37',
+                                    background: 'rgba(30, 30, 35, 0.95)',
+                                    color: '#fff',
+                                    backdrop: `rgba(0,0,0,0.8)`,
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true,
+                                    willOpen: () => {
+                                        const b = Swal.getTimerProgressBar()
+                                        if(b) b.style.background = '#d4af37'
+                                    }
+                                });
                                 cambiarModoValidacionExterna();
                             } else {
                                 Swal.fire('Error', res.message, 'error');
