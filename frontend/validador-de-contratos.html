@@ -1023,40 +1023,45 @@
             }
         });
 
-        // 1. Calcular el estado final de cada parte SOLO para la versión actual
-        const estadosFinales = {};
+        // 1. Inicializar las partes esperadas por defecto como Pendientes
+        const estadosFinales = {
+            'PROPIETARIO': 'PENDIENTE',
+            'INQUILINO': 'PENDIENTE'
+        };
+        
         estados.forEach(est => {
            if(est.parte && est.parte.toUpperCase() !== 'ADMIN') {
-              // Si el voto no es de la versión actual, lo ignoramos para estados finales (queda pendiente)
               const v = est.version || 1;
+              const parteUpper = est.parte.toUpperCase();
+              // Solo actualizamos el estado final si la validación corresponde a la versión actual.
+              // Si es de una versión anterior, el estado para la versión actual sigue siendo PENDIENTE.
               if (v === currentVersion) {
-                  estadosFinales[est.parte.toUpperCase()] = est.estado;
+                  estadosFinales[parteUpper] = est.estado;
+              } else if (!estadosFinales[parteUpper]) {
+                  // Si no existía en nuestro objeto por defecto, lo agregamos como pendiente
+                  estadosFinales[parteUpper] = 'PENDIENTE';
               }
            }
         });
 
         // 2. Renderizar Badges de Estado Actual (Ignorando ADMIN para los badges)
         let htmlBadges = '';
-        if(Object.keys(estadosFinales).length === 0) {
-            htmlBadges = '<p style="color:#6b7280; font-size:0.9rem;">No hay registros de validación aún.</p>';
-        } else {
-            Object.keys(estadosFinales).forEach(parte => {
-              const estado = estadosFinales[parte];
-              const badgeClass = estado === 'APROBADO' ? 'status-approved' :
-                estado === 'CORREGIR' || estado === 'CAMBIOS' ? 'status-rejected' :
-                  'status-pending';
-              const badgeText = estado === 'APROBADO' ? 'Aprobado' :
-                estado === 'CORREGIR' || estado === 'CAMBIOS' ? 'Solicitó Corrección' :
-                  'Pendiente';
+        Object.keys(estadosFinales).forEach(parte => {
+          const estado = estadosFinales[parte];
+          const badgeClass = estado === 'APROBADO' ? 'status-approved' :
+            estado === 'CORREGIR' || estado === 'CAMBIOS' || estado === 'CAMBIOS_SOLICITADOS' ? 'status-rejected' :
+              'status-pending';
+          const badgeText = estado === 'APROBADO' ? 'Aprobado' :
+            estado === 'CORREGIR' || estado === 'CAMBIOS' || estado === 'CAMBIOS_SOLICITADOS' ? 'Solicitó Cambios' :
+              'Pendiente';
 
-              htmlBadges += `
+          htmlBadges += `
               <div class="status-horizontal-item">
                 <span class="info-label" style="font-weight:bold;">${escapeHTML(parte)}:</span>
                 <span class="status-badge ${badgeClass}">${badgeText}</span>
               </div>
             `;
             });
-        }
         
         container.innerHTML = htmlBadges;
 
