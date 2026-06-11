@@ -383,14 +383,14 @@
       .sidebar.mode-actions .sidebar-scrollable { display: none; }
       
       .actions-card {
-        flex: 1;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 2rem 1.5rem;
+        flex: 1 !important;
+        overflow-y: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        padding: 2rem 1.5rem !important;
       }
-      .actions-card > div:first-child {
+      .actions-card-header {
         display: none !important; /* Oculta título interno en móvil */
       }
       .action-buttons {
@@ -660,7 +660,7 @@
 
             <!-- Acciones (Fijas al fondo) -->
             <div class="actions-card">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <div class="actions-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h3 style="margin: 0;">🎯 Acciones</h3>
                 <button id="btnExpand" style="background: none; border: none; color: #9ca3af; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; font-size: 0.85rem;" title="Ampliar panel">
                   ⛶ <span id="expandText">Ampliar</span>
