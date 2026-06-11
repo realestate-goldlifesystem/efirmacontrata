@@ -972,9 +972,7 @@
                       <span class="chat-bubble-name">${escapeHTML(displayParte)}</span>
                       <span class="chat-bubble-time">${escapeHTML(fechaFormat)} <strong style="color:#fbbf24;">(v${est.version || 1})</strong></span>
                     </div>
-                    <div class="chat-bubble-body">
-                      ${comentarios}
-                    </div>
+                    <div class="chat-bubble-body">${comentarios}</div>
                     <div class="chat-bubble-status">
                       <span class="status-badge ${badgeClass}" style="margin-top:0.5rem;">${badgeText}</span>
                     </div>
@@ -985,9 +983,9 @@
             
             // Auto-scroll al final para ver el más reciente
             setTimeout(() => {
-                const historySection = $('historySection');
-                if (historySection) {
-                    historySection.scrollTop = historySection.scrollHeight;
+                const historyScrollTarget = $('chatHistory');
+                if (historyScrollTarget) {
+                    historyScrollTarget.scrollTop = historyScrollTarget.scrollHeight;
                 }
             }, 100);
         }
