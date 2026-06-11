@@ -2045,6 +2045,12 @@ function handleProcesarFirmaElectronica(datos) {
           const i = targetRow;
           sheet.getRange(i, estadoCol).setValue('ACTIVO'); 
           
+          // Limpiar el mensaje de "⏳ Renovación pendiente de firma..."
+          const detallesCol = getCol('DETALLES DEL ESTADO DEL INMUEBLE') || getCol('DETALLES ESTADO DOCUMENTAL');
+          if (detallesCol > 0) {
+            sheet.getRange(i, detallesCol).setValue('✅ Proceso de firma completado exitosamente. 📂 Documento y anexos actualizados.');
+          }
+          
           // --- NUEVO: Añadir Link en "DOCUMENTO FIRMADO" ---
           const docFirmadoCol = getCol('DOCUMENTO FIRMADO');
           if (docFirmadoCol > 0) {
