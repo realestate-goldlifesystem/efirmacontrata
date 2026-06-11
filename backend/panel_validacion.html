@@ -1820,62 +1820,63 @@
         }
 
         // Cargar Registros de Inquilinos
-        function cargarRegistrosInquilinos() {
+        function cargarRegistrosInquilinos(silent = false) {
             google.script.run
                 .withSuccessHandler(function (registros) {
-                    mostrarToast('Cargado: ' + (registros ? registros.length : 'null') + ' registros', 'success');
+                    if (!silent) mostrarToast('Cargado: ' + (registros ? registros.length : 'null') + ' registros', 'success');
                     registrosData.inquilinos = (registros || []).reverse();
                     mostrarRegistrosInquilinos(registrosData.inquilinos);
                     actualizarEstadisticas('inquilinos', registrosData.inquilinos);
                 })
                 .withFailureHandler(function (error) {
                     console.error('Error cargando inquilinos:', error);
-                    mostrarToast('Error al cargar registros de inquilinos', 'error');
+                    if (!silent) mostrarToast('Error al cargar registros de inquilinos', 'error');
                 })
                 .obtenerRegistrosInquilinos();
         }
 
         // Cargar Registros de Propietarios
-        function cargarRegistrosPropietarios() {
+        function cargarRegistrosPropietarios(silent = false) {
             google.script.run
                 .withSuccessHandler(function (registros) {
-                    mostrarToast('Cargado Prop: ' + (registros ? registros.length : 'null') + ' registros', 'success');
+                    if (!silent) mostrarToast('Cargado Prop: ' + (registros ? registros.length : 'null') + ' registros', 'success');
                     registrosData.propietarios = (registros || []).reverse();
                                     mostrarRegistrosPropietarios(registrosData.propietarios);
                     actualizarEstadisticas('propietarios', registrosData.propietarios);
                 })
                 .withFailureHandler(function (error) {
                     console.error('Error cargando propietarios:', error);
-                    mostrarToast('Error al cargar registros de propietarios', 'error');
+                    if (!silent) mostrarToast('Error al cargar registros de propietarios', 'error');
                 })
                 .obtenerRegistrosPropietarios();
         }
 
         // Cargar Contratos
-        function cargarContratos() {
+        function cargarContratos(silent = false) {
             const lista = document.getElementById('listaContratos');
             
             // CONTRATO DE PRUEBA HARDCODEADO PARA FORZAR RENDER UI INMEDIATO
-            const mockData = [{
-                cdr: "CARGANDO... REG_05-06-2026",
-                tipoNegocio: "Test UI",
-                canon: "Esperando servidor",
-                inquilino: "Test UI",
-                estadoBadge: "ESTUDIO APROBADO"
-            }];
-            
-            mostrarListaContratos(mockData);
-            actualizarContadoresContratos(mockData);
+            if (!silent) {
+                const mockData = [{
+                    cdr: "CARGANDO... REG_05-06-2026",
+                    tipoNegocio: "Test UI",
+                    canon: "Esperando servidor",
+                    inquilino: "Test UI",
+                    estadoBadge: "ESTUDIO APROBADO"
+                }];
+                mostrarListaContratos(mockData);
+                actualizarContadoresContratos(mockData);
+            }
 
             // Llamada al backend real
             google.script.run
                 .withSuccessHandler(function (contratos) {
-                    mostrarToast('Contratos desde Servidor: ' + (contratos ? contratos.length : 0), 'info');
+                    if (!silent) mostrarToast('Contratos desde Servidor: ' + (contratos ? contratos.length : 0), 'info');
                     mostrarListaContratos(contratos);
                     actualizarContadoresContratos(contratos);
                 })
                 .withFailureHandler(function (error) {
-                    lista.innerHTML = '<div class="error-state"><p>Error servidor: ' + error.message + '</p></div>';
+                    if (!silent) lista.innerHTML = '<div class="error-state"><p>Error servidor: ' + error.message + '</p></div>';
                 })
                 .obtenerContratosPendientes();
         }
@@ -4229,6 +4230,40 @@
                 })
                 .registrarAprobacionContrato(cdrParaBackend, 'ADMIN', 'COMENTARIO', mensaje);
         }
+
+        // ==========================================
+        // AUTO-SINCRONIZACIÓN (Polling Inteligente)
+        // ==========================================
+        let adminSyncInterval;
+        
+        function startAdminSmartSync() {
+            // Ejecutar cada 60 segundos
+            adminSyncInterval = setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    silentAdminSync();
+                }
+            }, 60000);
+            
+            // Ejecutar instantáneamente al volver a la pestaña
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    silentAdminSync();
+                }
+            });
+        }
+
+        function silentAdminSync() {
+            // Recargamos todo silenciosamente para actualizar la bandeja de pendientes
+            cargarRegistrosInquilinos(true);
+            cargarRegistrosPropietarios(true);
+            cargarContratos(true);
+            console.log('[Smart Sync] Panel de administrador actualizado en background.');
+        }
+
+        // Iniciar el sincronizador
+        document.addEventListener('DOMContentLoaded', () => {
+            startAdminSmartSync();
+        });
         </script>
 </body>
 
