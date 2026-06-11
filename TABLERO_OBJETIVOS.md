@@ -64,6 +64,7 @@
 *Objetivo: Abarcar transacciones de alto valor inmobiliario con flujos colaborativos entre compradores y vendedores.*
 - [ ] **Adaptación del Frontend:** Generar los portales para recolección de documentos específicos de ventas (Promesas, Certificados de Tradición avanzados).
 - [ ] **Sala de Negociación Privada (En Vivo):** Crear un entorno digital ("Bolsa de Valores Inmobiliaria") donde comprador y vendedor puedan enviarse ofertas y contraofertas económicas de forma asíncrona, eliminando la fricción emocional y generando urgencia/FOMO con el Polling Inteligente.
+- [ ] **Integración "Escrow" (Retención de Arras Segura):** Conectar vía API con una Fintech (ej. Kustodio) o Fiduciaria Tradicional (ej. Fiduciaria Bogotá / Alianza) para custodiar el dinero de las arras de forma neutral y segura, protegiendo a ambas partes sin que Gold Life asuma el riesgo legal de la captación de dinero.
 - [ ] **Generación y Firma Automática:** Cuando ambas partes lleguen a un acuerdo y aprueben la oferta final en la Sala de Negociación, E-FirmaContrata generará automáticamente la Promesa de Compraventa con las cláusulas pactadas (arras, fechas) y la enviará para su autenticación digital desde casa.
 
 ### 10. 🛡️ Acreditación Legal Premium (Olimpia IT)
