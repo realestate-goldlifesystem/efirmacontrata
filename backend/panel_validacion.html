@@ -2294,19 +2294,19 @@
             cargarEstadosAprobacion(cdrParaBackend);
         }
 
-        function refrescarPanelValidacion() {
+        function refrescarPanelValidacion(silent = false) {
             if (!contratoActualContext) return;
             const btnRefresh = document.getElementById('btnRefreshValidacion');
-            if (btnRefresh) {
+            if (btnRefresh && !silent) {
                 btnRefresh.style.transform = 'rotate(180deg)';
                 setTimeout(() => btnRefresh.style.transform = 'rotate(0deg)', 300);
             }
             const cdrParaBackend = contratoActualContext.datos && contratoActualContext.datos.idRegistro ? contratoActualContext.datos.idRegistro : contratoActualContext.cdr;
-            cargarEstadosAprobacion(cdrParaBackend);
+            cargarEstadosAprobacion(cdrParaBackend, silent);
         }
 
-        function cargarEstadosAprobacion(cdr) {
-            document.getElementById('contenedorBitacora').innerHTML = '<p> Cargando estados...</p>';
+        function cargarEstadosAprobacion(cdr, silent = false) {
+            if (!silent) document.getElementById('contenedorBitacora').innerHTML = '<p> Cargando estados...</p>';
             google.script.run
                 .withFailureHandler(function(err) {
                     document.getElementById('contenedorBitacora').innerHTML = '<div class="empty-state">Error cargando bitácora: ' + err.message + '</div>';
@@ -2365,12 +2365,19 @@
                         historialHTML += '</div>';
 
                         const bitacoraContainer = document.getElementById('contenedorBitacora');
+                        
+                        // Si es modo silencioso (polling), solo hacemos scroll si ya estábamos abajo.
+                        // Esto evita que se le mueva el scroll al usuario si estaba leyendo algo viejo
+                        const isAtBottom = (bitacoraContainer.scrollHeight - bitacoraContainer.scrollTop - bitacoraContainer.clientHeight) < 50;
+                        
                         bitacoraContainer.innerHTML = historialHTML;
                         
-                        // Hacer scroll automático al final de la bitácora
-                        setTimeout(() => {
-                            bitacoraContainer.scrollTop = bitacoraContainer.scrollHeight;
-                        }, 100);
+                        if (!silent || isAtBottom) {
+                            // Hacer scroll automático al final de la bitácora
+                            setTimeout(() => {
+                                bitacoraContainer.scrollTop = bitacoraContainer.scrollHeight;
+                            }, 100);
+                        }
 
                         // Rellenar partes que no han respondido en la última versión
                         var partesPendientesMaxVersion = false;
@@ -4260,7 +4267,7 @@
             
             // Si el modal de un contrato está abierto, refrescamos también sus semáforos y bitácora
             if (typeof contratoActualContext !== 'undefined' && contratoActualContext !== null) {
-                refrescarPanelValidacion();
+                refrescarPanelValidacion(true);
                 console.log('[Smart Sync] Semáforos y Bitácora del modal actualizados.');
             }
 
