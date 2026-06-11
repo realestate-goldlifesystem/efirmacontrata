@@ -1375,6 +1375,42 @@
         window.open(state.contrato.url, '_blank', 'noopener');
         toast('📥 Descargando contrato...');
       }
+      // AUTO-SINCRONIZACIÓN (Polling Inteligente)
+      let syncInterval;
+      
+      function startSmartSync() {
+        // Ejecutar cada 60 segundos
+        syncInterval = setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            silentSync();
+          }
+        }, 60000);
+        
+        // Ejecutar instantáneamente al volver a la pestaña
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            silentSync();
+          }
+        });
+      }
+
+      function silentSync() {
+        if (!state.registro) return;
+        
+        google.script.run
+          .withSuccessHandler(function(response) {
+            if(response.success) {
+              const contractData = response.data;
+              displayApprovalStatus(contractData.estados || []);
+              
+              // Si necesitamos actualizar algo más en silencio, se puede hacer aquí
+            }
+          })
+          .getContratoData(state.registro);
+      }
+
+      // Iniciar el sincronizador inteligente
+      startSmartSync();
 
     })();
   </script>
