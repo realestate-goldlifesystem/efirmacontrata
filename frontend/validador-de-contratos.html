@@ -989,10 +989,29 @@
             }, 100);
         }
 
-        // Actualizar badge global
+        // Determinar partes requeridas desde los datos del contrato
+        const partesRequeridas = new Set();
+        if (state.contrato && state.contrato.datos) {
+            const d = state.contrato.datos;
+            if (d.inquilino) partesRequeridas.add('INQUILINO');
+            if (d.propietario) partesRequeridas.add('PROPIETARIO');
+            if (d.codeudores && d.codeudores.length > 0) {
+                d.codeudores.forEach((c, idx) => partesRequeridas.add('CODEUDOR' + (idx + 1)));
+            }
+        }
+
+        // Si no hay datos en el estado, asumimos INQUILINO y PROPIETARIO como mínimo para no dar falsos positivos
+        if (partesRequeridas.size === 0) {
+            partesRequeridas.add('INQUILINO');
+            partesRequeridas.add('PROPIETARIO');
+        }
+
+        // Actualizar badge global verificando que todas las partes requeridas hayan aprobado
+        const partesUnicas = Array.from(partesRequeridas);
+        const todosAprobados = partesUnicas.every(p => estadosFinales[p] === 'APROBADO');
+        
         const valuesFinales = Object.values(estadosFinales);
-        const todosAprobados = valuesFinales.length > 0 && valuesFinales.every(e => e === 'APROBADO');
-        const hayRechazado = valuesFinales.some(e => e === 'CORREGIR' || e === 'CAMBIOS');
+        const hayRechazado = valuesFinales.some(e => e === 'CORREGIR' || e === 'CAMBIOS' || e === 'CAMBIOS_SOLICITADOS');
 
         const badge = $('estadoBadge');
         if (todosAprobados) {
