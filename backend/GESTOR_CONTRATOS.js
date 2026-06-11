@@ -1736,7 +1736,8 @@ function obtenerContratosPendientes() {
                 tipoNegocio: idxTipo > -1 ? String(row[idxTipo] || 'N/A') : 'N/A',
                 canon: idxCanon > -1 ? String(row[idxCanon] || '0') : '0',
                 inquilino: idxInquilino > -1 ? String(row[idxInquilino] || 'Pendiente') : 'Pendiente',
-                estadoBadge: String(estado || detalles || estadoDoc || '')
+                estadoBadge: String(estado || detalles || estadoDoc || ''),
+                detallesExtra: detalles
             });
         }
     }

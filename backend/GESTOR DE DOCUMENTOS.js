@@ -1440,10 +1440,12 @@ function obtenerRegistrosInquilinos() {
       const esDeInquilino = detallesLower.includes('inquilino');
       const esPendiente = detallesLower.includes('recibida') || detallesLower.includes('diligenciado') || detallesLower.includes('correcci');
       
-      // Asegurarse de no mostrar los ya aprobados o firmados
+      // Asegurarse de no mostrar los ya aprobados o firmados, ni los que ya están en proceso de contrato
       const esAprobado = detallesLower.includes('aprobado') || detallesLower.includes('firmado');
+      const estadoPrincipal = (sheet.getRange(i, headers.indexOf('ESTADO DEL INMUEBLE') + 1).getValue() || '').toString().toLowerCase();
+      const esContrato = estadoPrincipal.includes('contrato');
 
-      if (esDeInquilino && esPendiente && !esAprobado) {
+      if (esDeInquilino && esPendiente && !esAprobado && !esContrato) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
         const cdrValue = obtenerValorPorHeader(headers, row, 'CODIGO DE REGISTRO');
         const idRegistroValue = obtenerValorPorHeader(headers, row, 'ID DE REGISTRO');
@@ -1492,8 +1494,10 @@ function obtenerRegistrosPropietarios() {
       const esDePropietario = detallesLower.includes('propietario');
       const esPendiente = detallesLower.includes('recibida') || detallesLower.includes('diligenciado') || detallesLower.includes('correcci');
       const esAprobado = detallesLower.includes('aprobado') || detallesLower.includes('firmado');
+      const estadoPrincipal = (sheet.getRange(i, headers.indexOf('ESTADO DEL INMUEBLE') + 1).getValue() || '').toString().toLowerCase();
+      const esContrato = estadoPrincipal.includes('contrato');
 
-      if (esDePropietario && esPendiente && !esAprobado) {
+      if (esDePropietario && esPendiente && !esAprobado && !esContrato) {
         const row = sheet.getRange(i, 1, 1, sheet.getLastColumn()).getValues()[0];
 
         const estadoDocumental = obtenerValorPorHeader(headers, row, 'ESTADO DOCUMENTAL') || '';

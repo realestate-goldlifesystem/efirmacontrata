@@ -1913,7 +1913,7 @@
                     }
                     else if (estadoMayus.includes('BORRADOR ENVIADO') || estadoMayus.includes('EN REVISION') || estadoMayus.includes('CORRECCION') || estadoMayus.includes('CONTRATO GENERADO')) {
                         badgeClass = 'badge-warning';
-                        badgeText = 'BORRADOR ACTIVO';
+                        badgeText = c.detallesExtra ? c.detallesExtra : 'BORRADOR ACTIVO';
                         btnText = ' Abrir Borrador';
                         btnAction = 'abrirBorrador(\'' + (c.cdr) + '\', this)';
                     }
@@ -1922,7 +1922,7 @@
 '                        <div class="registro-card contrato-card">\n' +
 '                            <div class="registro-header">\n' +
 '                                <h3> ' + (c.cdr) + '</h3>\n' +
-'                                <span class="badge ' + (badgeClass) + '" style="' + (badgeClass === 'badge-warning' ? 'background:var(--warning); color:black;' : 'background:var(--success); color:white;') + '">' + (badgeText) + '</span>\n' +
+'                                <span class="badge ' + (badgeClass) + '" style="font-size:0.75rem; max-width:200px; text-overflow:ellipsis; white-space:nowrap; overflow:hidden; ' + (badgeClass === 'badge-warning' ? 'background:var(--warning); color:black;' : 'background:var(--success); color:white;') + '" title="' + badgeText + '">' + (badgeText) + '</span>\n' +
 '                            </div>\n' +
 '                            <div class="registro-info">\n' +
 '                                <div class="info-row">\n' +
