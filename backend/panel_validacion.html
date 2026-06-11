@@ -4257,6 +4257,13 @@
             cargarRegistrosInquilinos(true);
             cargarRegistrosPropietarios(true);
             cargarContratos(true);
+            
+            // Si el modal de un contrato está abierto, refrescamos también sus semáforos y bitácora
+            if (typeof contratoActualContext !== 'undefined' && contratoActualContext !== null) {
+                refrescarPanelValidacion();
+                console.log('[Smart Sync] Semáforos y Bitácora del modal actualizados.');
+            }
+
             console.log('[Smart Sync] Panel de administrador actualizado en background.');
         }
 
