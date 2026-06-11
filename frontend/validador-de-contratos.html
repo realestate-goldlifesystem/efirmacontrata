@@ -1395,18 +1395,13 @@
       }
 
       function silentSync() {
-        if (!state.registro) return;
+        if (!state.cdr) return;
         
-        google.script.run
-          .withSuccessHandler(function(response) {
-            if(response.success) {
-              const contractData = response.data;
-              displayApprovalStatus(contractData.estados || []);
-              
-              // Si necesitamos actualizar algo más en silencio, se puede hacer aquí
-            }
-          })
-          .getContratoData(state.registro);
+        // Simplemente reusamos la función que ya hace todo bien (fetch a la API)
+        // pero silenciosamente. loadApprovalStatus ya se encarga de actualizar la UI
+        loadApprovalStatus().catch(err => {
+            console.warn('[Polling Silencioso] Falló la sincronización:', err);
+        });
       }
 
       // Iniciar el sincronizador inteligente
