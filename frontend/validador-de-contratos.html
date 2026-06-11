@@ -1194,7 +1194,7 @@
           const title = miEstado === 'APROBADO' ? '¡Contrato Aprobado por tu parte!' : '¡Correcciones Solicitadas!';
           
           lockedMsg.innerHTML = `
-            <div style="margin: auto 0; width: 100%;">
+            <div style="margin: auto 0; width: 100%; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box;">
               <div style="font-size: clamp(2.5rem, 8vw, 3.5rem); margin-bottom: clamp(0.5rem, 2vh, 1rem);">${icon}</div>
               <h2 style="color:#fbbf24; margin:0 0 clamp(0.5rem, 2vh, 1rem) 0; font-size: clamp(1.4rem, 5vw, 1.8rem);">${title}</h2>
               <p style="color:#e5e7eb; margin:0 0 clamp(1rem, 3vh, 1.5rem) 0; font-size: clamp(0.95rem, 3.5vw, 1.1rem); max-width: 600px; margin-left: auto; margin-right: auto; line-height: 1.5;">
