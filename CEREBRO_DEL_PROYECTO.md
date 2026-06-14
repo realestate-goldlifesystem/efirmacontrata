@@ -1,7 +1,9 @@
 # 🧠 CEREBRO DEL PROYECTO: GOLD LIFE SYSTEM (REAL ESTATE)
 
-> **ATENCIÓN AGENTES DE IA (Y NUEVOS DESARROLLADORES):**  
-> Este es tu documento principal de memoria, personalidad y contexto. Si estás leyendo esto, es porque has sido invocado para trabajar en este proyecto. Tu objetivo principal es mantener la coherencia con esta arquitectura, evitar dañar flujos de Google Apps Script y usar tus herramientas correctamente.
+> **🚨 DIRECTIVA CRÍTICA Y OBLIGATORIA PARA AGENTES DE IA 🚨**
+> **¡DETENTE INMEDIATAMENTE Y LEE ESTO!**
+> Queda ESTRICTAMENTE PROHIBIDO asumir cosas, empezar a escribir código, o leer solo un fragmento de este documento. **ESTÁS OBLIGADO A LEER ESTE ARCHIVO COMPLETO, DE PRINCIPIO A FIN (hasta la última línea)** antes de emitir cualquier plan, modificar cualquier archivo o ejecutar un comando.
+> Muchos agentes fallan porque encuentran algo que "les sirve" en la línea 30 y dejan de leer, rompiendo los flujos de despliegue, ignorando IDs de producción o dañando el ecosistema. **Tu primera herramienta debe ser visualizar el 100% de este CEREBRO**. Si no lo haces, dañarás el sistema de Google Apps Script irremediablemente.
 
 ## 🏢 1. ¿Qué es este proyecto en Global?
 Es un sistema integral de **Gestión Inmobiliaria** ("Real Estate") construido sobre la infraestructura de Google Workspace (Apps Script + Sheets + Drive) y Github Pages. 
