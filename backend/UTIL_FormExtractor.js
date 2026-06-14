@@ -52,6 +52,30 @@ function extraerEstructuraFormulario() {
       } catch (e) {
         Logger.log("Error procesando opciones de: " + item.getTitle());
       }
+    } else if (tipoItem === 'GRID' || tipoItem === 'CHECKBOX_GRID') {
+      try {
+        var asGrid = null;
+        if (tipoItem === 'GRID') asGrid = item.asGridItem();
+        if (tipoItem === 'CHECKBOX_GRID') asGrid = item.asCheckboxGridItem();
+        
+        // Se extraen tanto las filas (ej. Gimnasio, Piscina) como las columnas (ej. SI, NO)
+        objItem.filas = asGrid.getRows();
+        objItem.columnas = asGrid.getColumns();
+        
+      } catch (e) {
+        Logger.log("Error procesando cuadrícula de: " + item.getTitle());
+      }
+    } else if (tipoItem === 'SCALE') {
+      try {
+        var asScale = item.asScaleItem();
+        objItem.requerido = asScale.isRequired();
+        objItem.limiteInferior = asScale.getLowerBound();
+        objItem.limiteSuperior = asScale.getUpperBound();
+        objItem.etiquetaIzquierda = asScale.getLeftLabel();
+        objItem.etiquetaDerecha = asScale.getRightLabel();
+      } catch (e) {
+        Logger.log("Error procesando SCALE de: " + item.getTitle());
+      }
     } else {
       // Intentar ver si es requerido para otros tipos de datos
       try {
@@ -60,6 +84,7 @@ function extraerEstructuraFormulario() {
         else if (tipoItem === 'DATE') objItem.requerido = item.asDateItem().isRequired();
         else if (tipoItem === 'DATETIME') objItem.requerido = item.asDateTimeItem().isRequired();
         else if (tipoItem === 'TIME') objItem.requerido = item.asTimeItem().isRequired();
+        else if (tipoItem === 'FILE_UPLOAD') objItem.requerido = false; // No hay un método estándar expuesto en Apps Script para isRequired de File Upload a veces.
       } catch (e) {}
     }
     
