@@ -2778,7 +2778,17 @@
       "id": 1768302640,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características internas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble",
+      "filas": [
+        "Zona interna #1 Citófono",
+        "Zona interna #2 Estudio",
+        "Zona interna #3 Zona de Lavandería"
+      ],
+      "columnas": [
+        "•Citófonoㅤ",
+        "•Estudioㅤ",
+        "•Zona de Lavanderíaㅤ"
+      ]
     },
     {
       "id": 1729068622,
@@ -2790,7 +2800,17 @@
       "id": 47543891,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características internas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble",
+      "filas": [
+        "Zona interna #4 Balcón",
+        "Zona interna #5 Chimenea",
+        "Zona interna #6 Terraza privada"
+      ],
+      "columnas": [
+        "•Balcónㅤ",
+        "•Chimeneaㅤ",
+        "•Terraza privadaㅤ"
+      ]
     },
     {
       "id": 1867094078,
@@ -2802,7 +2822,17 @@
       "id": 1862314731,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características internas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble",
+      "filas": [
+        "Zona interna #7 Patio",
+        "Zona interna #8 Alarma",
+        "Zona interna #9 Hall de Alcobas"
+      ],
+      "columnas": [
+        "•Patioㅤ",
+        "•Alarmaㅤ",
+        "•Hall de Alcobasㅤ"
+      ]
     },
     {
       "id": 1726333735,
@@ -2814,7 +2844,19 @@
       "id": 441117097,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características internas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble",
+      "filas": [
+        "Zona interna #10 Cuarto de Servicio",
+        "Zona interna #11 Aire Acondicionado",
+        "Zona interna #12 Comedor Auxiliar",
+        "Zona interna #13 Amoblado"
+      ],
+      "columnas": [
+        "•Cuarto de Servicioㅤ",
+        "•Aire Acondicionadoㅤ",
+        "•Comedor Auxiliarㅤ",
+        "•Amobladoㅤ"
+      ]
     },
     {
       "id": 1091341650,
@@ -2863,7 +2905,17 @@
       "id": 3617060,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #1 Ascensor",
+        "Zona comunal #2 Parqueadero de visitantes",
+        "Zona comunal #3 Zonas Verdes"
+      ],
+      "columnas": [
+        "•Ascensor‎‎‎‎ㅤ",
+        "•Parqueadero de visitantesㅤ",
+        "•Zonas Verdesㅤ"
+      ]
     },
     {
       "id": 1792094783,
@@ -2875,7 +2927,17 @@
       "id": 1311904284,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #4 Terraza social",
+        "Zona comunal #5 Salón comunal",
+        "Zona comunal #6 Gimnasio"
+      ],
+      "columnas": [
+        "•Terraza socialㅤ",
+        "•Salón comunalㅤ",
+        "•Gimnasioㅤ"
+      ]
     },
     {
       "id": 1078866327,
@@ -2887,7 +2949,17 @@
       "id": 1021783184,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #7 BBQ",
+        "Zona comunal #8 Zona Infantil",
+        "Zona comunal #9 Teatrino"
+      ],
+      "columnas": [
+        "•BBQㅤ",
+        "•Zona Infantilㅤ",
+        "•Teatrinoㅤ"
+      ]
     },
     {
       "id": 1543208710,
@@ -2899,7 +2971,17 @@
       "id": 1935610465,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #10 Oficina de Negocios",
+        "Zona comunal #11 Salón de Juegos",
+        "Zona comunal #12 Salón de Videojuegos"
+      ],
+      "columnas": [
+        "•Oficina de Negociosㅤ",
+        "•Salón de Juegosㅤ",
+        "•Salón de Videojuegosㅤ"
+      ]
     },
     {
       "id": 2085143170,
@@ -2911,7 +2993,17 @@
       "id": 2009622481,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #13 Tanque de reserva de agua",
+        "Zona comunal #14 Planta eléctrica",
+        "Zona comunal #15 Salón de pilates/Yoga"
+      ],
+      "columnas": [
+        "•Tanque de reserva de aguaㅤ",
+        "•Planta eléctricaㅤ",
+        "•Salón de pilates/Yogaㅤ"
+      ]
     },
     {
       "id": 1064046947,
@@ -2923,7 +3015,19 @@
       "id": 706048764,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características Externas de las ZONAS HUMEDAS del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características Externas de las ZONAS HUMEDAS del inmueble",
+      "filas": [
+        "Zona húmedas #1 Piscina",
+        "Zona húmedas #2 Turco",
+        "Zona húmedas #3 Sauna",
+        "Zona húmedas #4 Jacuzzi"
+      ],
+      "columnas": [
+        "•Piscinaㅤ",
+        "•Turcoㅤ",
+        "•Saunaㅤ",
+        "•Jacuzziㅤ"
+      ]
     },
     {
       "id": 1200085062,
@@ -2935,7 +3039,17 @@
       "id": 505678739,
       "titulo": "",
       "tipo": "GRID",
-      "ayuda": "Seleccione las opciones que describan las características Externas de las CANCHAS DEPORTIVAS del inmueble"
+      "ayuda": "Seleccione las opciones que describan las características Externas de las CANCHAS DEPORTIVAS del inmueble",
+      "filas": [
+        "Cancha deportiva #1 Cancha de Squash",
+        "Cancha deportiva #2 Cancha de Tenis",
+        "Cancha deportiva #3 Cancha de Futsal"
+      ],
+      "columnas": [
+        "•Cancha de Squashㅤ",
+        "•Cancha de Tenisㅤ",
+        "•Cancha de Futsalㅤ"
+      ]
     },
     {
       "id": 1543237586,
@@ -2960,7 +3074,19 @@
       "id": 1033835446,
       "titulo": "¿En que tipo de zona se encuentra el inmueble?",
       "tipo": "GRID",
-      "ayuda": "Seleccione una o las opciones que su inmueble disponga"
+      "ayuda": "Seleccione una o las opciones que su inmueble disponga",
+      "filas": [
+        "Tipo de zona #1 Zona Residencial",
+        "Tipo de zona #2 Zona Comercial",
+        "Tipo de zona #3 Zona Industrial",
+        "Tipo de zona #4 Zona Campestre"
+      ],
+      "columnas": [
+        "Zona Residencialㅤ",
+        "Zona Comercialㅤ",
+        "Zona Industrialㅤ",
+        "Zona Campestreㅤ"
+      ]
     },
     {
       "id": 1498044398,
@@ -2984,7 +3110,17 @@
       "id": 1913512920,
       "titulo": "¿Dispone de las siguientes características el sector??",
       "tipo": "GRID",
-      "ayuda": ""
+      "ayuda": "",
+      "filas": [
+        "Parques Cercanos",
+        "Super Mercados/Centros comerciales",
+        "Colegios/Universidades",
+        "Tranporte publico/Transmilenio"
+      ],
+      "columnas": [
+        "SI",
+        "NO"
+      ]
     },
     {
       "id": 1087078806,

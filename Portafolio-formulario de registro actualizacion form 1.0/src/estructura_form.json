@@ -1,0 +1,3305 @@
+{
+  "titulo": "FORMULARIO DE REGISTRO DE INMUEBLE PARA PROMOCIÓN INMOBILIARIA",
+  "descripcion": "Llena el siguiente formulario para promocionar tu inmueble",
+  "items": [
+    {
+      "id": 504622421,
+      "titulo": "Fecha de registro del inmueble.",
+      "tipo": "DATE",
+      "ayuda": "",
+      "requerido": true
+    },
+    {
+      "id": 362837728,
+      "titulo": "DESTINACION DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1515879039,
+      "titulo": "Define el propósito de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Vivienda"
+        },
+        {
+          "valor": "Comercio"
+        },
+        {
+          "valor": "Mixto"
+        }
+      ]
+    },
+    {
+      "id": 1409035473,
+      "titulo": "Localidad",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 48744544,
+      "titulo": "Selecciona la localidad del inmueble",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Usaquén",
+          "tipoNavegacion": "CONTINUE"
+        }
+      ]
+    },
+    {
+      "id": 1306829114,
+      "titulo": "UPZ de Usaquen",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1059006016,
+      "titulo": "Selecciona la UPZ  de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "LOS CEDROS",
+          "saltoCondicional_SeccionDestino": "Barrios de  LOS CEDROS",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "USAQUEN",
+          "saltoCondicional_SeccionDestino": "Barrios de  USAQUEN",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "COUNTRY CLUB",
+          "saltoCondicional_SeccionDestino": "Barrios de  COUNTRY CLUB",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "SANTA BARBARA",
+          "saltoCondicional_SeccionDestino": "Barrios de SANTA BARBARA",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "SAN CRISTOBAL NORTE",
+          "saltoCondicional_SeccionDestino": "Barrios de  SAN CRISTOBAL NORTE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "TOBERIN",
+          "saltoCondicional_SeccionDestino": "Barrios de  TOBERIN",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "VERBENAL",
+          "saltoCondicional_SeccionDestino": "Barrios de  VERBENAL",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "LA URIBE",
+          "saltoCondicional_SeccionDestino": "Barrios de LA URIBE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "PASEO DE LOS LIBERTADORES",
+          "saltoCondicional_SeccionDestino": "Barrios de  PASEO DE LOS LIBERTADORES",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 773095899,
+      "titulo": "Barrios de  PASEO DE LOS LIBERTADORES",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 579796448,
+      "titulo": "Selecciona el barrio de PASEO DE LOS LIBERTADORES de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "CANAIMA"
+        },
+        {
+          "valor": "LA FLORESTA DE LA SABANA"
+        },
+        {
+          "valor": "TORCA"
+        }
+      ]
+    },
+    {
+      "id": 430239282,
+      "titulo": "Barrios de  VERBENAL",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 307372115,
+      "titulo": "Selecciona el barrio de VERBENAL de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "ALTOS DE SERREZUELA"
+        },
+        {
+          "valor": "BALCONES DE VISTA HERMOSA"
+        },
+        {
+          "valor": "BALMORAL NORTE"
+        },
+        {
+          "valor": "BUENAVISTA"
+        },
+        {
+          "valor": "CHAPARRAL"
+        },
+        {
+          "valor": "EL CODITO"
+        },
+        {
+          "valor": "EL REFUGIO DE SAN ANTONIO"
+        },
+        {
+          "valor": "EL VERBENAL"
+        },
+        {
+          "valor": "HORIZONTES"
+        },
+        {
+          "valor": "LA ESTRELLITA"
+        },
+        {
+          "valor": "LA FRONTERA"
+        },
+        {
+          "valor": "LA LLANURITA"
+        },
+        {
+          "valor": "LIJACÁ"
+        },
+        {
+          "valor": "LOS CONSUELOS"
+        },
+        {
+          "valor": "MARANTA"
+        },
+        {
+          "valor": "MATURIN"
+        },
+        {
+          "valor": "MEDELLIN"
+        },
+        {
+          "valor": "MIRADOR DEL NORTE"
+        },
+        {
+          "valor": "NUEVO HORIZONTE"
+        },
+        {
+          "valor": "SAN ANTONIO NORTE"
+        },
+        {
+          "valor": "SANTA FELISA"
+        },
+        {
+          "valor": "SANTANDERSITO"
+        },
+        {
+          "valor": "TIBABITA"
+        },
+        {
+          "valor": "VIÑA DEL MAR"
+        }
+      ]
+    },
+    {
+      "id": 2136290274,
+      "titulo": "Barrios de LA URIBE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 1200569672,
+      "titulo": "Selecciona el barrio de LA URIBE de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "BOSQUE DE SAN ANTONIO"
+        },
+        {
+          "valor": "CONJUNTO CAMINO DEL PALMAR"
+        },
+        {
+          "valor": "EL PITE"
+        },
+        {
+          "valor": "EL REDIL"
+        },
+        {
+          "valor": "CIUDAD LA SALLE"
+        },
+        {
+          "valor": "LA CITA"
+        },
+        {
+          "valor": "LA GRANJA NORTE"
+        },
+        {
+          "valor": "LA URIBE"
+        },
+        {
+          "valor": "LOS NARANJOS"
+        },
+        {
+          "valor": "SAN JUAN BOSCO"
+        },
+        {
+          "valor": "URBANIZACION LOS LAURELES"
+        },
+        {
+          "valor": "LA ALAMEDA"
+        }
+      ]
+    },
+    {
+      "id": 1253965889,
+      "titulo": "Barrios de  SAN CRISTOBAL NORTE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 160527581,
+      "titulo": "Selecciona el barrio de SAN CRISTOBAL NORTE tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "AINSUCA"
+        },
+        {
+          "valor": "ALTABLANCA"
+        },
+        {
+          "valor": "BARRANCAS"
+        },
+        {
+          "valor": "CALIFORNIA"
+        },
+        {
+          "valor": "CERRO NORTE"
+        },
+        {
+          "valor": "DANUBIO"
+        },
+        {
+          "valor": "DON BOSCO"
+        },
+        {
+          "valor": "LA PERLA ORIENTAL"
+        },
+        {
+          "valor": "LAS ARENERAS"
+        },
+        {
+          "valor": "MILAN (BARRANCAS)"
+        },
+        {
+          "valor": "PRADERA NORTE"
+        },
+        {
+          "valor": "SAN CRISTOBAL NORTE"
+        },
+        {
+          "valor": "SANTA CECILIA NORTE PARTE ALTA"
+        },
+        {
+          "valor": "SANTA CECILIA PARTE BAJA"
+        },
+        {
+          "valor": "SANTA TERESA"
+        },
+        {
+          "valor": "SORATAMA"
+        },
+        {
+          "valor": "TORCOROMA"
+        },
+        {
+          "valor": "VILLA NYDIA"
+        },
+        {
+          "valor": "VILLA OLIVA"
+        }
+      ]
+    },
+    {
+      "id": 921697537,
+      "titulo": "Barrios de  TOBERIN",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 848288371,
+      "titulo": "Selecciona el barrio de TOBERIN de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL TOBERIN"
+        },
+        {
+          "valor": "BABILONIA"
+        },
+        {
+          "valor": "DARDANELOS"
+        },
+        {
+          "valor": "ESTRELLA DEL NORTE"
+        },
+        {
+          "valor": "GUANOA"
+        },
+        {
+          "valor": "JARDIN NORTE"
+        },
+        {
+          "valor": "LA LIBERIA"
+        },
+        {
+          "valor": "LA PRADERA NORTE"
+        },
+        {
+          "valor": "ORQUÍDEAS"
+        },
+        {
+          "valor": "PANTANITOS"
+        },
+        {
+          "valor": "SANTA MONICA"
+        },
+        {
+          "valor": "VILLA MAGDALA"
+        },
+        {
+          "valor": "VILLAS DE ARANJUEZ"
+        },
+        {
+          "valor": "VILLAS DEL MEDITERRANEO"
+        },
+        {
+          "valor": "ZARAGOZA"
+        }
+      ]
+    },
+    {
+      "id": 423538412,
+      "titulo": "Barrios de  LOS CEDROS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 782377683,
+      "titulo": "Selecciona el barrio de LOS CEDROS de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "ACACIAS"
+        },
+        {
+          "valor": "ANTIGUA"
+        },
+        {
+          "valor": "BELMIRA"
+        },
+        {
+          "valor": "BOSQUE DE PINOS"
+        },
+        {
+          "valor": "CAOBOS SALAZAR"
+        },
+        {
+          "valor": "CAPRI"
+        },
+        {
+          "valor": "CEDRITOS"
+        },
+        {
+          "valor": "CEDRO BOLIVAR"
+        },
+        {
+          "valor": "CEDRO GOLF"
+        },
+        {
+          "valor": "CEDRO MADEIRA"
+        },
+        {
+          "valor": "CEDRO NARVAEZ"
+        },
+        {
+          "valor": "CEDRO SALAZAR"
+        },
+        {
+          "valor": "EL CONTADOR"
+        },
+        {
+          "valor": "EL RINCON DE LAS MARGARITAS"
+        },
+        {
+          "valor": "LA SONORA"
+        },
+        {
+          "valor": "LAS MARGARITAS"
+        },
+        {
+          "valor": "LISBOA"
+        },
+        {
+          "valor": "LOS CEDROS"
+        },
+        {
+          "valor": "LOS CEDROS ORIENTALES"
+        },
+        {
+          "valor": "MONTEARROYO"
+        },
+        {
+          "valor": "NUEVA AUTOPISTA"
+        },
+        {
+          "valor": "NUEVO COUNTRY"
+        },
+        {
+          "valor": "SIERRAS DEL MORAL EL NOGAL"
+        }
+      ]
+    },
+    {
+      "id": 617043418,
+      "titulo": "Barrios de  USAQUEN",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 872966125,
+      "titulo": "Selecciona el barrio de USAQUEN de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "BELLA SUIZA"
+        },
+        {
+          "valor": "BELLAVISTA"
+        },
+        {
+          "valor": "BOSQUE MEDINA"
+        },
+        {
+          "valor": "EL PAÑUELITO"
+        },
+        {
+          "valor": "EL PEDREGAL"
+        },
+        {
+          "valor": "ESCUELA DE CABALLERIA"
+        },
+        {
+          "valor": "ESCUELA DE INFANTERIA"
+        },
+        {
+          "valor": "FRANCISCO MIRANDA"
+        },
+        {
+          "valor": "GINEBRA"
+        },
+        {
+          "valor": "LA ESPERANZA"
+        },
+        {
+          "valor": "LA GLORIETA"
+        },
+        {
+          "valor": "LAS DELICIAS DEL CARMEN"
+        },
+        {
+          "valor": "SAGRADO CORAZÓN"
+        },
+        {
+          "valor": "SAN GABRIEL"
+        },
+        {
+          "valor": "SANTA ANA"
+        },
+        {
+          "valor": "SANTA ANA OCCIDENTAL"
+        },
+        {
+          "valor": "SANTA BARBARA"
+        },
+        {
+          "valor": "SANTA BARBARA ALTA"
+        },
+        {
+          "valor": "SANTA BARBARA ORIENTAL"
+        },
+        {
+          "valor": "UNICERROS"
+        },
+        {
+          "valor": "USAQUEN"
+        }
+      ]
+    },
+    {
+      "id": 393016111,
+      "titulo": "Barrios de  COUNTRY CLUB",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 760870172,
+      "titulo": "Selecciona el barrio del COUNTRY CLUB de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": false,
+      "opciones": [
+        {
+          "valor": "COUNTRY CLUB"
+        },
+        {
+          "valor": "LA CALLEJA"
+        },
+        {
+          "valor": "LA CAROLINA"
+        },
+        {
+          "valor": "LA CRISTALINA"
+        },
+        {
+          "valor": "PRADOS DEL COUNTRY"
+        },
+        {
+          "valor": "RECODO DEL COUNTRY"
+        },
+        {
+          "valor": "SANTA COLOMA"
+        },
+        {
+          "valor": "SOATAMA"
+        },
+        {
+          "valor": "TOLEDO"
+        },
+        {
+          "valor": "TORRES DEL COUNTRY"
+        },
+        {
+          "valor": "VERGEL DEL COUNTRY"
+        }
+      ]
+    },
+    {
+      "id": 1384457884,
+      "titulo": "Barrios de SANTA BARBARA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 1291451230,
+      "titulo": "Selecciona el barrio de SANTA BARBARA de tu inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": false,
+      "opciones": [
+        {
+          "valor": "CAMPO ALEGRE"
+        },
+        {
+          "valor": "MOLINOS DEL NORTE"
+        },
+        {
+          "valor": "MULTICENTRO"
+        },
+        {
+          "valor": "NAVARRA"
+        },
+        {
+          "valor": "RINCON DEL CHICO"
+        },
+        {
+          "valor": "SAN PATRICIO"
+        },
+        {
+          "valor": "SANTA BARBARA"
+        },
+        {
+          "valor": "SANTA BARBARA CENTRAL"
+        },
+        {
+          "valor": "SANTA BIBIANA"
+        },
+        {
+          "valor": "SANTA BARBARA OCCIDENTAL"
+        },
+        {
+          "valor": "SANTA PAULA"
+        }
+      ]
+    },
+    {
+      "id": 198725638,
+      "titulo": "BARRIO DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 1745689166,
+      "titulo": "Escriba el barrio del inmueble",
+      "tipo": "TEXT",
+      "ayuda": "",
+      "requerido": true
+    },
+    {
+      "id": 445115302,
+      "titulo": "DIRECCION Y CUIDAD DEL INMUEBLE ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "DIRECCION Y CUIDAD DEL INMUEBLE "
+    },
+    {
+      "id": 1225085268,
+      "titulo": "Ingrese la Dirección del inmueble",
+      "tipo": "TEXT",
+      "ayuda": "",
+      "requerido": true
+    },
+    {
+      "id": 1776214200,
+      "titulo": "Ingrese la Ciudad del inmueble",
+      "tipo": "TEXT",
+      "ayuda": "",
+      "requerido": true
+    },
+    {
+      "id": 837448540,
+      "titulo": "TIPO DE INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1584054808,
+      "titulo": "Selecciona el tipo de inmueble",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Apartamento"
+        },
+        {
+          "valor": "Apartaestudio"
+        },
+        {
+          "valor": "Casa"
+        },
+        {
+          "valor": "Local"
+        },
+        {
+          "valor": "Oficina"
+        },
+        {
+          "valor": "Bodega"
+        },
+        {
+          "valor": "Lote"
+        },
+        {
+          "valor": "Edificio"
+        },
+        {
+          "valor": "Casa Lote"
+        },
+        {
+          "valor": "Casa Campestre"
+        }
+      ]
+    },
+    {
+      "id": 415175588,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 657955506,
+      "titulo": "Area  M²",
+      "tipo": "TEXT",
+      "ayuda": "",
+      "requerido": true
+    },
+    {
+      "id": 1354589298,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 625911837,
+      "titulo": "N° de Habitaciones",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "1",
+          "saltoCondicional_SeccionDestino": "CARACTERÍSTICAS DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "2",
+          "saltoCondicional_SeccionDestino": "CARACTERÍSTICAS DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "3",
+          "saltoCondicional_SeccionDestino": "CARACTERÍSTICAS DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "4",
+          "saltoCondicional_SeccionDestino": "CARACTERÍSTICAS DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "5",
+          "saltoCondicional_SeccionDestino": "CARACTERÍSTICAS DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 1394615007,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 941459871,
+      "titulo": "Habitación quinaria",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "Selecciona la CAMA que se acomoda a la habitación",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Dormitorio Quinario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m"
+        },
+        {
+          "valor": "Dormitorio Quinario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m"
+        },
+        {
+          "valor": "Dormitorio Quinario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m"
+        },
+        {
+          "valor": "Dormitorio Quinario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m"
+        },
+        {
+          "valor": "Dormitorio Quinario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m"
+        },
+        {
+          "valor": "Dormitorio Quinario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m"
+        }
+      ]
+    },
+    {
+      "id": 1343379464,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1128646282,
+      "titulo": "Habitación cuaternaria",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "Selecciona la CAMA que se acomoda a la habitación",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Dormitorio Cuaternario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m"
+        },
+        {
+          "valor": "Dormitorio Cuaternario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m"
+        },
+        {
+          "valor": "Dormitorio Cuaternario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m"
+        },
+        {
+          "valor": "Dormitorio Cuaternario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m"
+        },
+        {
+          "valor": "Dormitorio Cuaternario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m"
+        },
+        {
+          "valor": "Dormitorio Cuaternario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m"
+        }
+      ]
+    },
+    {
+      "id": 420189896,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 2059144866,
+      "titulo": "Habitación terciaria",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "Selecciona la CAMA que se acomoda a la habitación",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Dormitorio terciario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m"
+        },
+        {
+          "valor": "Dormitorio terciario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m"
+        },
+        {
+          "valor": "Dormitorio terciario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m"
+        },
+        {
+          "valor": "Dormitorio terciario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m"
+        },
+        {
+          "valor": "Dormitorio terciario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m"
+        },
+        {
+          "valor": "Dormitorio terciario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m"
+        }
+      ]
+    },
+    {
+      "id": 1275290051,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1710808705,
+      "titulo": "Habitación secundaria",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "Selecciona la CAMA que se acomoda a la habitación",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Dormitorio secundario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m"
+        },
+        {
+          "valor": "Dormitorio secundario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m"
+        },
+        {
+          "valor": "Dormitorio secundario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m"
+        },
+        {
+          "valor": "Dormitorio secundario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m"
+        },
+        {
+          "valor": "Dormitorio secundario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m"
+        },
+        {
+          "valor": "Dormitorio secundario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m"
+        }
+      ]
+    },
+    {
+      "id": 2010067633,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 308894013,
+      "titulo": "Habitación principal",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "Selecciona la CAMA que se acomoda a la habitación",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Dormitorio principal: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m"
+        },
+        {
+          "valor": "Dormitorio principal: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m"
+        },
+        {
+          "valor": "Dormitorio principal: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m"
+        },
+        {
+          "valor": "Dormitorio principal: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m"
+        },
+        {
+          "valor": "Dormitorio principal: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m"
+        },
+        {
+          "valor": "Dormitorio principal: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m"
+        }
+      ]
+    },
+    {
+      "id": 1010183593,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 72060543,
+      "titulo": "N° de Baños",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "1"
+        },
+        {
+          "valor": "2"
+        },
+        {
+          "valor": "3"
+        },
+        {
+          "valor": "4"
+        },
+        {
+          "valor": "5"
+        },
+        {
+          "valor": "6"
+        },
+        {
+          "valor": "7"
+        },
+        {
+          "valor": "8"
+        }
+      ]
+    },
+    {
+      "id": 106912871,
+      "titulo": "¿Cual es el estrato?",
+      "tipo": "LIST",
+      "ayuda": "Indique cual es el estrato de la ubicacion del inmueble",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "1"
+        },
+        {
+          "valor": "2"
+        },
+        {
+          "valor": "3"
+        },
+        {
+          "valor": "4"
+        },
+        {
+          "valor": "5"
+        },
+        {
+          "valor": "6"
+        },
+        {
+          "valor": "7"
+        }
+      ]
+    },
+    {
+      "id": 235371393,
+      "titulo": "Antiguedad del Inmueble",
+      "tipo": "TEXT",
+      "ayuda": "Escriba los años de construido que tiene el inmueble ",
+      "requerido": true
+    },
+    {
+      "id": 46378574,
+      "titulo": "N° de piso",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese en que numero de piso se encuentra el inmueble",
+      "requerido": true
+    },
+    {
+      "id": 577858291,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1012139361,
+      "titulo": "MEDIDAS DEL ESPACIO DE LA NEVERA",
+      "tipo": "TEXT",
+      "ayuda": "Por favor, usa el formato: A: 0.00m x L: 0.00m x AL: 0.00m. \n\nEjemplo: A: 0.60m x L: 0.70m x AL: 1.80m  Ancho x Largo x Alto\nDetalles importantes:\nCada valor debe tener dos decimales: Esto significa que no puedes usar \"2m\" o \"2.3m\", sino \"2.00m\" o \"2.30m\".\nSin espacios adicionales: Asegúrate de que no haya espacios extras antes, después o entre cada parte.\nEl orden es obligatorio: Primero \"A\", seguido de \"L\", y luego \"AL\", separados exactamente por \" x \".",
+      "requerido": true
+    },
+    {
+      "id": 649274824,
+      "titulo": "PUNTO DE AGUA",
+      "tipo": "LIST",
+      "ayuda": "¿ La zona de NEVERA tiene punto de agua?",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "SI"
+        },
+        {
+          "valor": "NO"
+        }
+      ]
+    },
+    {
+      "id": 2012202011,
+      "titulo": "CARACTERÍSTICAS DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 888684939,
+      "titulo": "MEDIDAS DEL ESPACIO DE LA LAVADORA",
+      "tipo": "TEXT",
+      "ayuda": "Por favor, usa el formato: A: 0.00m x L: 0.00m x AL: 0.00m\n\nEjemplo: A: 0.69m x L: 0.66m x AL: 1.13m  Ancho x Largo x Alto\nDetalles importantes:\nCada valor debe tener dos decimales: Esto significa que no puedes usar \"2m\" o \"2.3m\", sino \"2.00m\" o \"2.30m\".\nSin espacios adicionales: Asegúrate de que no haya espacios extras antes, después o entre cada parte.\nEl orden es obligatorio: Primero \"A\", seguido de \"L\", y luego \"AL\", separados exactamente por \" x \".",
+      "requerido": true
+    },
+    {
+      "id": 1480598516,
+      "titulo": "PUNTO DE GAS",
+      "tipo": "LIST",
+      "ayuda": "¿ La zona de LAVADORA tiene punto de GAS?",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "SI"
+        },
+        {
+          "valor": "NO"
+        }
+      ]
+    },
+    {
+      "id": 17235541,
+      "titulo": "IDENTIFICACIÓN DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Seleccione a continuación la opción que describa su inmueble  "
+    },
+    {
+      "id": 1064263981,
+      "titulo": "¿El inmueble solo lo describe el Número? o ¿Número y torre?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": false,
+      "opciones": [
+        {
+          "valor": "Número",
+          "saltoCondicional_SeccionDestino": "INGRESE EL NÚMERO DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "Torre y número",
+          "saltoCondicional_SeccionDestino": "INGRESE EL NÚMERO O LETRA DE TORRE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 365610196,
+      "titulo": "INGRESE EL NÚMERO O LETRA DE TORRE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1857450614,
+      "titulo": "N° o Letra de la Torre",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el Número/Letra de la torre ",
+      "requerido": false
+    },
+    {
+      "id": 1045115543,
+      "titulo": "INGRESE EL NÚMERO DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1561488367,
+      "titulo": "N° de inmueble",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el numero del inmueble",
+      "requerido": true
+    },
+    {
+      "id": 2097396985,
+      "titulo": "GARAJE DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "¿Dispone de garaje el inmueble?"
+    },
+    {
+      "id": 1565485050,
+      "titulo": "N° de Garajes",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "1",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "2",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "3",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "4",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "5",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "Comunal",
+          "saltoCondicional_SeccionDestino": "DATOS DEL PROPIETARIO",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "Ningun",
+          "saltoCondicional_SeccionDestino": "DATOS DEL PROPIETARIO",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 2052696744,
+      "titulo": "DETALLES DEL GARAJE DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Seleccione a continuación los detalles del garaje"
+    },
+    {
+      "id": 1080372371,
+      "titulo": "¿Es Independiente o en Servidumbre?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Independiente"
+        },
+        {
+          "valor": "Servidumbre"
+        }
+      ]
+    },
+    {
+      "id": 1078346801,
+      "titulo": "¿Es Cubierto o descubierto?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Cubierto"
+        },
+        {
+          "valor": "Descubierto"
+        }
+      ]
+    },
+    {
+      "id": 1974402345,
+      "titulo": "N° Asignado del garaje",
+      "tipo": "TEXT",
+      "ayuda": "",
+      "requerido": false
+    },
+    {
+      "id": 1926316774,
+      "titulo": "DATOS DEL PROPIETARIO",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Ingrese los siguientes datos a continuación"
+    },
+    {
+      "id": 525030214,
+      "titulo": "Ingrese Nombres y Apellidos",
+      "tipo": "TEXT",
+      "ayuda": "Escriba nombres y apellidos del propietario",
+      "requerido": true
+    },
+    {
+      "id": 1980811550,
+      "titulo": "Celular",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el numero del celular del propietario",
+      "requerido": true
+    },
+    {
+      "id": 1999122288,
+      "titulo": "Número de documento",
+      "tipo": "TEXT",
+      "ayuda": "Escriba el numero de documento de identidad del propietario",
+      "requerido": true
+    },
+    {
+      "id": 106531458,
+      "titulo": "Ciudad de Expedicion",
+      "tipo": "TEXT",
+      "ayuda": "Escriba la ciudad de expedicion del documento del propietario",
+      "requerido": true
+    },
+    {
+      "id": 558808437,
+      "titulo": "Pais de Expedicion",
+      "tipo": "TEXT",
+      "ayuda": "Escriba el pais de expedicion del documento del propietario",
+      "requerido": true
+    },
+    {
+      "id": 1466013012,
+      "titulo": "Correo electrónico",
+      "tipo": "TEXT",
+      "ayuda": "Escriba el correo electrónico del propietario",
+      "requerido": true
+    },
+    {
+      "id": 2081876768,
+      "titulo": "TIPO DE NEGOCIO INMOBILIARIO",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Seleccione a continuación cual será la modalidad de comercialización del inmueble "
+    },
+    {
+      "id": 1512684428,
+      "titulo": "TIPO DE NEGOCIO",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Corretaje",
+          "saltoCondicional_SeccionDestino": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN ARRIENDO POR CORRETAJE ",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "Administración",
+          "saltoCondicional_SeccionDestino": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "Venta",
+          "saltoCondicional_SeccionDestino": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DE INMUEBLE PARA VENTA",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "Vendi-Renta",
+          "saltoCondicional_SeccionDestino": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN VENTA Y ARRIENTO POR CORRETAJE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "Admi-Venta",
+          "saltoCondicional_SeccionDestino": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 884676167,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN ARRIENDO POR CORRETAJE ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 797918662,
+      "titulo": "Facultades:",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO faculta a EL AGENTE para anunciar el inmueble, promocionarlo, ingresar a este, mostrarlo, colocar avisos y en general, realizar los actos y diligencias necesarias para su arrendamiento."
+        }
+      ]
+    },
+    {
+      "id": 1206837041,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN ARRIENDO POR CORRETAJE ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1173188837,
+      "titulo": "Precio: ",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El precio por el que será comercializado en arriendo el inmueble se registrara más adelante en este mismo formulario y tendrá el valor de la administración Incluida, En caso que cambie o se modifique el valor en que se arrienda el inmueble EL AGENTE deberá contar con la autorización previa de EL PROPIETARIO para cerrar el negocio."
+        }
+      ]
+    },
+    {
+      "id": 9885776,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN ARRIENDO POR CORRETAJE ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 2089316129,
+      "titulo": "Comisión:",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Cuando EL PROPIETARIO suscriba directamente el contrato de arrendamiento con un cliente presentado por EL AGENTE deberá pagar a éste una comisión equivalente al primer (1er) CANON de arrendamiento por el PORCENTAJE acordado previamente con el agente y se deberá registrar más adelante en este formulario por motivo de corretaje, en el momento en que EL PROPIETARIO reciba el pago del primer mes de arriendo"
+        }
+      ]
+    },
+    {
+      "id": 1177722306,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN ARRIENDO POR CORRETAJE ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 212783650,
+      "titulo": "Vigencia",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO acepta que durante el periodo de promoción del inmueble reconocerá a EL AGENTE como intermediario y cancelará la comisión pactada por cualquier negociación que se realice sobre el inmueble consignado con el cliente presentado por EL AGENTE"
+        }
+      ]
+    },
+    {
+      "id": 535665748,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN ARRIENDO POR CORRETAJE ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1480189948,
+      "titulo": "Exclusividad",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El presente documento no implica exclusividad para EL PROPIETARIO con EL AGENTE, este solo se obliga a cancelar la comisión del primer (1er) mes del canon o el porcentaje acordado, en el momento en que EL AGENTE presenta al cliente y se firme el contrato o cuando se cancele el primer canon de arrendamiento por este, según sea el caso."
+        }
+      ]
+    },
+    {
+      "id": 383190923,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN ARRIENDO POR CORRETAJE ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 747447009,
+      "titulo": "Mérito Ejecutivo",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Para todos los efectos legales, el presente documento presta mérito ejecutivo."
+        }
+      ]
+    },
+    {
+      "id": 75213004,
+      "titulo": "VALOR DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1454759646,
+      "titulo": "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO",
+      "tipo": "TEXT",
+      "ayuda": "Escriba el numero del % el cual se pactó previamente para la gestión de arrendamiento Inmobiliaria sobre el valor del canon",
+      "requerido": true
+    },
+    {
+      "id": 227585676,
+      "titulo": "COBRO DE COMISION POR EL AGENTE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1525052051,
+      "titulo": "¿Desea que el agente reciba el cobro del canon UNICAMENTE del primer mes para que se pueda cobrar directamente la comisión?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "Una ves el agente se cobre el porcentaje pactado debe de consignarle al propietario el excedente restante del valor del primer mes de arriendo en dado caso",
+      "requerido": false,
+      "opciones": [
+        {
+          "valor": "Si",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "No",
+          "saltoCondicional_SeccionDestino": "PRECIO DE COMERCIALIZACION DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 1420197072,
+      "titulo": "VALOR QUE EL AGENTE DEBE DE RESPONDER AL PROPIETARIO",
+      "tipo": "PAGE_BREAK",
+      "ayuda": " EL AGENTE recibirá el pago SOLAMENTE DEL PRIMER MES y podrá cobrarse UNICAMENTE Y directamente la comisión PACTADA, así correspondiendo al propietario el valor restante de:"
+    },
+    {
+      "id": 730324787,
+      "titulo": "VALOR RESTANTE EN NUMERO",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el valor restante en (Numero) Ejem: 1.000.000",
+      "requerido": true
+    },
+    {
+      "id": 1924438369,
+      "titulo": "PRECIO DEL VALOR RESTANTE EN LETRA",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el precio anterior en (LETRA) Ejem: Un millón de pesos",
+      "requerido": true
+    },
+    {
+      "id": 233471526,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE"
+    },
+    {
+      "id": 1123337680,
+      "titulo": "Objeto:",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO entrega a EL ADMINISTRADOR el inmueble en mención para anunciar el inmueble, promocionarlo, ingresar a este, mostrarlo, colocar avisos, administrarlo y, en general, realizar los actos y diligencias necesarias para su arrendamiento con el respaldo de LA ASEGURADORA en lo relacionado con garantías de arrendamiento y gestión de pagos."
+        }
+      ]
+    },
+    {
+      "id": 1447655251,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 935195326,
+      "titulo": "Facultades del Administrador. Este debe de:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Promocionar el inmueble."
+        },
+        {
+          "valor": "Fijar el canon de arrendamiento."
+        },
+        {
+          "valor": "Celebrar contratos de arrendamiento en nombre del PROPIETARIO."
+        },
+        {
+          "valor": "Recaudar arrendamientos con soportes y expedir recibos."
+        },
+        {
+          "valor": "Efectuar reparaciones necesarias y descontar su costo del canon de renta."
+        },
+        {
+          "valor": "Exigir la entrega del inmueble en caso de incumplimiento del arrendatario."
+        },
+        {
+          "valor": "Descontar del valor de los arrendamientos los gastos y comisiones correspondientes."
+        }
+      ]
+    },
+    {
+      "id": 1978119790,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1902671585,
+      "titulo": "Facultades del Propietario. EL PROPIETARIO autoriza a EL ADMINISTRADOR para:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Promocionar, mostrar y arrendar el inmueble."
+        },
+        {
+          "valor": "Gestionar contratos de arrendamiento con el respaldo de LA ASEGURADORA."
+        },
+        {
+          "valor": "Tramitar garantías de arrendamiento ofrecidas por LA ASEGURADORA, cubriendo posibles incumplimientos de los arrendatarios en canon, administración y servicios públicos."
+        },
+        {
+          "valor": "Cobrar cánones y expedir los recibos correspondientes."
+        },
+        {
+          "valor": "Gestionar pagos y reportes mensuales, incluyendo la dispersión de pagos a EL PROPIETARIO con descuentos aprobados."
+        }
+      ]
+    },
+    {
+      "id": 347923261,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 451724778,
+      "titulo": "Garantía. LA ASEGURADORA y EL ADMINISTRADOR garantiza al PROPIETARIO:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Garantía: En caso de incumplimiento por parte del arrendatario, LA ASEGURADORA garantizará el pago del canon, administración y servicios básicos hasta por 36 meses o 60 meses (si es con APTUNO) o hasta la restitución del inmueble, lo que ocurra primero,"
+        },
+        {
+          "valor": "Gestión de Pagos: EL ADMINISTRADOR dispersará los pagos recibidos, incluyendo la deducción de costos asociados, y transferirá el saldo restante a EL PROPIETARIO dentro de los tiempos establecidos,"
+        }
+      ]
+    },
+    {
+      "id": 1356441692,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1945245838,
+      "titulo": "Obligaciones del Propietario. EL PROPIETARIO se compromete a:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Pagar la comisión por los servicios de administración y los gastos incurridos por EL ADMINISTRADOR en el caso de que el inmueble lo requiera."
+        },
+        {
+          "valor": "Cubrir los costos de la garantía Aptuno, que será deducido del primer canon recibido."
+        },
+        {
+          "valor": "Colaborar con LA ASEGURADORA en procesos judiciales o extrajudiciales relacionados con la recuperación del inmueble."
+        },
+        {
+          "valor": "Mantener el inmueble libre de limitaciones jurídicas y deudas."
+        },
+        {
+          "valor": "Atender oportunamente las solicitudes de reparaciones."
+        }
+      ]
+    },
+    {
+      "id": 1031153191,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1858815772,
+      "titulo": "Vigencia.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El contrato tendrá una duración inicial de 12 meses(O EL PACTADO CON EL PROPIETARIO) y se renovará automáticamente si no hay notificación escrita de terminación con 90 días de anticipación."
+        }
+      ]
+    },
+    {
+      "id": 1045542138,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 171849314,
+      "titulo": "Terminación anticipada.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Cualquiera de las partes puede dar por terminado el contrato con aviso previo de 90 días, debiendo EL PROPIETARIO cumplir con las obligaciones económicas pendientes relacionadas con LA ASEGURADORA y EL ADMINISTRADOR."
+        }
+      ]
+    },
+    {
+      "id": 840130150,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1422417370,
+      "titulo": "Preavisos y responsabilidades.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Las partes deben dar aviso por escrito con una antelación de 3 meses para terminar el contrato."
+        },
+        {
+          "valor": "EL ADMINISTRADOR no será responsable por daños o conductas delictivas en el inmueble."
+        },
+        {
+          "valor": "Fallecimiento del propietario: En caso de muerte de EL PROPIETARIO, EL ADMINISTRADOR suspenderá la entrega de los arrendamientos hasta tanto el Juzgado o la Notaría donde se esté tramitando la respectiva sucesión le oficie sobre el destino de dichos valores."
+        },
+        {
+          "valor": "Obligación especial sobre prevención de lavado de activos: EL PROPIETARIO manifiesta bajo la gravedad de juramento que el inmueble objeto del presente contrato no fue adquirido con el producto de dinero proveniente de lavado de activos. Asimismo, se obliga a no utilizar a EL ADMINISTRADOR como instrumento para la inversión o aprovechamiento, o para dar apariencia de legalidad a actividades delictivas o a transacciones o fondos vinculados con las mismas."
+        },
+        {
+          "valor": "Responsabilidades por daños y mantenimiento: EL PROPIETARIO asume toda la responsabilidad por causa de los perjuicios o accidentes sufridos por el arrendatario y por terceras personas que sobrevengan en razón del mal estado o deficiente funcionamiento del inmueble o de alguna de sus instalaciones."
+        },
+        {
+          "valor": "Obligaciones de asistencia a asambleas de propiedad horizontal: Si el inmueble en administración está sujeto al régimen de propiedad horizontal, EL PROPIETARIO deberá asistir a las asambleas ordinarias y extraordinarias de copropietarios o designar personalmente a alguien en su reemplazo."
+        },
+        {
+          "valor": "Inobservancia de obligaciones: La inobservancia de cualquiera de las obligaciones contenidas en el presente contrato por parte del PROPIETARIO otorga el derecho automático a LA ASEGURADORA de abstenerse de reconocer y pagar cualquier concepto cubierto por la Garantía"
+        }
+      ]
+    },
+    {
+      "id": 1407512395,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 220465919,
+      "titulo": "Pólizas y seguros.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO contrata seguro de arrendamiento y LA ASEGURADORA gestiona la póliza correspondiente."
+        }
+      ]
+    },
+    {
+      "id": 1246979117,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1215211939,
+      "titulo": "Cláusula de venta.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "En caso de que EL ARRENDATARIO desee adquirir en compra el inmueble arrendado, y el PROPIETARIO desee venderlo. EL PROPIETARIO se compromete a hacer todas las gestiones de venta por intermedio de EL ADMINISTRADOR, a quien desde ahora reconoce como intermediario directo de la venta y le cancelará por concepto de comisión de venta un valor equivalente al 3% sobre el valor total de la venta."
+        }
+      ]
+    },
+    {
+      "id": 919193142,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1858787961,
+      "titulo": "Mérito ejecutivo.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Para todos los efectos legales, el presente documento presta mérito ejecutivo sin necesidad de requerimiento en caso de que EL APODERADO no cancele a EL ADMINISTRADOR cualquiera de las sumas que debe pagar en virtud del presente instrumento, o en caso de incumplimiento por parte del ADMINISTRADOR."
+        }
+      ]
+    },
+    {
+      "id": 551435636,
+      "titulo": "PORCENTAJE DEL SERVICIO DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "% por la gestion de administración Inmobiliaria"
+    },
+    {
+      "id": 502348179,
+      "titulo": "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE ",
+      "tipo": "LIST",
+      "ayuda": "Selecciona el % que deseas dependiendo si quieres que se cobre desde el primer mes (8.5%) o el 9.1% si es desde el segundo mes",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "8.5% desde el primer mes"
+        },
+        {
+          "valor": "9.1% desde el segundo mes"
+        }
+      ]
+    },
+    {
+      "id": 974780559,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DE INMUEBLE PARA VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE"
+    },
+    {
+      "id": 1855316569,
+      "titulo": "Facultades:",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO faculta a EL AGENTE para anunciar el inmueble, promocionarlo, ingresar a este, mostrarlo, colocar avisos y en general, realizar los actos y diligencias necesarias para su venta."
+        }
+      ]
+    },
+    {
+      "id": 986481452,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DE INMUEBLE PARA VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1579633741,
+      "titulo": "Precio: ",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El precio por el que será comercializado en venta el inmueble se registrara más adelante en este mismo formulario y tendrá aparte su registro del valor de la administración , En caso que cambie o se modifique los valores en que se venda el inmueble EL AGENTE deberá contar con la autorización previa de EL PROPIETARIO para cerrar el negocio."
+        }
+      ]
+    },
+    {
+      "id": 1324762498,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DE INMUEBLE PARA VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1884948702,
+      "titulo": "Comisión:",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Si EL AGENTE es quien VENDE el inmueble EL PROPIETARIO pagará una comisión equivalente al PORCENTAJE ACORDADO PREVIAMENTE y registrado en este formulario, sobre el valor de la venta por concepto de intermediación en la venta del inmueble, cuyo valor será cancelado de la siguiente manera : el 50 % en la fecha de la suscripción de la promesa de compraventa y el saldo osea el otro 50 % en el momento de la firma de la escritura que formalice la venta."
+        }
+      ]
+    },
+    {
+      "id": 1203883844,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DE INMUEBLE PARA VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1241247002,
+      "titulo": "Vigencia",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO acepta que durante el periodo de promoción del inmueble reconocerá a EL AGENTE como intermediario y cancelará la comisión pactada por cualquier negociación que se realice sobre el inmueble consignado con el cliente presentado por EL AGENTE"
+        }
+      ]
+    },
+    {
+      "id": 913685558,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DE INMUEBLE PARA VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1914902335,
+      "titulo": "Exclusividad",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El presente documento no implica exclusividad para EL PROPIETARIO con EL AGENTE, este solo se obliga a cancelar la comisión por la venta que realice EL AGENTE."
+        }
+      ]
+    },
+    {
+      "id": 1778743173,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DE INMUEBLE PARA VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1123453159,
+      "titulo": "Mérito Ejecutivo",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Para todos los efectos legales, el presente documento presta mérito ejecutivo."
+        }
+      ]
+    },
+    {
+      "id": 1876124574,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN HE INTERMEDIACION DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Seleccione el % previamente acordado por la gestión de VENTA del inmueble comercializado"
+    },
+    {
+      "id": 308804670,
+      "titulo": "(Porcentaje en números)",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "3%",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "2.5%",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "2%",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "1.5%",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 717658304,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 449000401,
+      "titulo": "(1.5%)  (Porcentaje en letras)",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "UNO PUNTO CINCO"
+        }
+      ]
+    },
+    {
+      "id": 201873097,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE"
+    },
+    {
+      "id": 1620442429,
+      "titulo": "(2%)  (Porcentaje en letras)",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "DOS"
+        }
+      ]
+    },
+    {
+      "id": 642724182,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE"
+    },
+    {
+      "id": 1236903428,
+      "titulo": "(2.5%)  (Porcentaje en letras)",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "DOS PUNTO CINCO"
+        }
+      ]
+    },
+    {
+      "id": 631694306,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE"
+    },
+    {
+      "id": 905447707,
+      "titulo": "(3%)  (Porcentaje en letras)",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "TRES"
+        }
+      ]
+    },
+    {
+      "id": 6449477,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN VENTA Y ARRIENTO POR CORRETAJE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE"
+    },
+    {
+      "id": 976275022,
+      "titulo": "Facultades:",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO faculta a EL AGENTE para anunciar el inmueble, promocionarlo, ingresar a este, mostrarlo, colocar avisos y en general, realizar los actos y diligencias necesarias para su arrendamiento."
+        }
+      ]
+    },
+    {
+      "id": 1537841891,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN VENTA Y ARRIENTO POR CORRETAJE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1536678950,
+      "titulo": "Precio: ",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El precio por el que será comercializado en venta y en arriendo el inmueble se registrara más adelante en este mismo formulario y tendrá el valor de la administración Incluida si es en arriendo, En caso que cambie o se modifique algún valor en que se promocione el inmueble EL AGENTE deberá contar con la autorización previa de EL PROPIETARIO para cerrar el negocio."
+        }
+      ]
+    },
+    {
+      "id": 684978365,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN VENTA Y ARRIENTO POR CORRETAJE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 87616256,
+      "titulo": "Comisión:",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Cuando EL PROPIETARIO suscriba directamente el contrato de arrendamiento o en su defecto la promesa de compraventa y la escritura publica con un cliente presentado por EL AGENTE deberá pagar a éste una comisión equivalente al primer (1er) CANON de arrendamiento o la comisión de venta por el PORCENTAJE acordado previamente con el agente y se deberá registrar más adelante en este formulario por motivo de corretaje, en el momento en que EL PROPIETARIO reciba el pago del primer mes de arriendo o del cierre efectivo de VENTA no mayor a 5 días hábiles."
+        }
+      ]
+    },
+    {
+      "id": 1222314504,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN VENTA Y ARRIENTO POR CORRETAJE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1163424903,
+      "titulo": "Vigencia",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO acepta que durante el periodo de promoción del inmueble reconocerá a EL AGENTE como intermediario y cancelará la comisión pactada por cualquier negociación que se realice sobre el inmueble consignado con el cliente presentado por EL AGENTE"
+        }
+      ]
+    },
+    {
+      "id": 1690558698,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN VENTA Y ARRIENTO POR CORRETAJE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 826125825,
+      "titulo": "Exclusividad",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El presente documento no implica exclusividad para EL PROPIETARIO con EL AGENTE, este solo se obliga a cancelar la comisión del primer (1er) mes del canon o el porcentaje acordado, en el momento en que EL AGENTE presenta al cliente y se firme el contrato o cuando se cancele el primer canon de arrendamiento por este, según sea el caso."
+        }
+      ]
+    },
+    {
+      "id": 826503382,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE PROMOCIÓN DEL INMUEBLE EN VENTA Y ARRIENTO POR CORRETAJE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1305656110,
+      "titulo": "Mérito Ejecutivo",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Para todos los efectos legales, el presente documento presta mérito ejecutivo."
+        }
+      ]
+    },
+    {
+      "id": 1679202045,
+      "titulo": "VALOR DEL SERVICIO DE LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA Y ARRIENTO POR CORRETAJE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1851260345,
+      "titulo": "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO (Vendi-Renta)",
+      "tipo": "TEXT",
+      "ayuda": "Escriba el numero del % el cual se pactó previamente para la gestión de arrendamiento Inmobiliaria sobre el valor del canon",
+      "requerido": true
+    },
+    {
+      "id": 1101886704,
+      "titulo": "COBRO DE COMISION POR EL AGENTE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 609311588,
+      "titulo": "¿Desea que el agente reciba el cobro del canon UNICAMENTE del primer mes para que se pueda cobrar directamente la comisión?  (V-R)",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "Una ves el agente se cobre el porcentaje pactado debe de consignarle al propietario el excedente restante del valor del primer mes de arriendo en dado caso",
+      "requerido": false,
+      "opciones": [
+        {
+          "valor": "Si",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "No",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN HE INTERMEDIACION DEL INMUEBLE EN VENTA ",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 1669083048,
+      "titulo": "VALOR QUE EL AGENTE DEBE DE RESPONDER AL PROPIETARIO",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Si el PROPIETARIO autoriza a EL AGENTE recibir el pago SOLAMENTE DEL PRIMER MES, podrá cobrarse UNICAMENTE Y directamente la comisión PACTADA, así correspondiendo al propietario el valor restante de:"
+    },
+    {
+      "id": 291590082,
+      "titulo": "VALOR RESTANTE EN NUMERO (V-R)",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el valor restante en (Numero) Ejem: 1.000.000",
+      "requerido": true
+    },
+    {
+      "id": 669305113,
+      "titulo": "PRECIO DEL VALOR RESTANTE EN LETRA (V-R)",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el precio anterior en (LETRA) Ejem: Un millón de pesos",
+      "requerido": true
+    },
+    {
+      "id": 189633653,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue",
+      "alTerminarSeccion_IrA": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN HE INTERMEDIACION DEL INMUEBLE EN VENTA "
+    },
+    {
+      "id": 416005086,
+      "titulo": "Objeto:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO entrega a EL ADMINISTRADOR el inmueble en mención para anunciar el inmueble, promocionarlo, ingresar a este, mostrarlo, colocar avisos, administrarlo y, en general, realizar los actos y diligencias necesarias para su arrendamiento con el respaldo de LA ASEGURADORA en lo relacionado con garantías de arrendamiento y cobertura de pagos de este, una vez aprobado el inquilino, firmado el contrato de arrendamiento y pagada la póliza,"
+        },
+        {
+          "valor": "Se promociona el inmueble con exclusividad de promoción de 60 días"
+        }
+      ]
+    },
+    {
+      "id": 428544821,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1475433899,
+      "titulo": "Facultades del Administrador. Este debe de:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Promocionar el inmueble."
+        },
+        {
+          "valor": "Fijar el canon de arrendamiento."
+        },
+        {
+          "valor": "Celebrar contratos de arrendamiento en nombre del PROPIETARIO."
+        },
+        {
+          "valor": "Recaudar arrendamientos con soporte y expedir recibos."
+        },
+        {
+          "valor": "Efectuar reparaciones necesarias y descontar su costo del canon de renta."
+        },
+        {
+          "valor": "Exigir la entrega del inmueble en caso de incumplimiento del arrendatario."
+        },
+        {
+          "valor": "Descontar del valor de los arrendamientos los gastos y comisiones correspondientes."
+        }
+      ]
+    },
+    {
+      "id": 1729092996,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1129096142,
+      "titulo": "Facultades del Propietario. EL PROPIETARIO autoriza a EL ADMINISTRADOR para:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Promocionar, mostrar y arrendar el inmueble."
+        },
+        {
+          "valor": "Gestionar contratos de arrendamiento con el respaldo de LA ASEGURADORA"
+        },
+        {
+          "valor": "Tramitar garantías de arrendamiento ofrecidas por LA ASEGURADORA, cubriendo posibles incumplimientos de los arrendatarios en canon, administración y servicios públicos."
+        },
+        {
+          "valor": "Cobrar cánones y expedir los recibos correspondientes."
+        },
+        {
+          "valor": "Gestionar pagos y reportes mensuales, incluyendo la dispersión de pagos a EL PROPIETARIO con descuentos aprobados."
+        }
+      ]
+    },
+    {
+      "id": 1876276841,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 183929593,
+      "titulo": "Garantía.  LA ASEGURADORA garantiza al PROPIETARIO:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Garantía: En caso de incumplimiento por parte del arrendatario, LA ASEGURADORA garantizará el pago del canon, administración y servicios básicos hasta por 34 o 60 meses(Según la aseguradora) o hasta la restitución del inmueble, lo que ocurra primero, Una vez adquirida la póliza"
+        }
+      ]
+    },
+    {
+      "id": 354704350,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 950685113,
+      "titulo": "Obligaciones del Propietario. EL PROPIETARIO se compromete a:",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Pagar la comisión por los servicios de administración y los gastos incurridos por EL ADMINISTRADOR en el caso de que el inmueble lo requiera."
+        },
+        {
+          "valor": "Cubrir los costos de la garantía de LA ASEGURADORA, que será deducido del primer canon recibido."
+        },
+        {
+          "valor": "Colaborar con LA ASEGURADORA en procesos judiciales o extrajudiciales relacionados con la recuperación del inmueble."
+        },
+        {
+          "valor": "Mantener el inmueble libre de limitaciones jurídicas y deudas."
+        },
+        {
+          "valor": "Atender oportunamente las solicitudes de reparaciones."
+        }
+      ]
+    },
+    {
+      "id": 2028840213,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1779638195,
+      "titulo": "Vigencia.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El contrato tendrá una duración inicial de 12 meses y se renovará automáticamente si no hay notificación escrita de terminación con 90 días de anticipación."
+        }
+      ]
+    },
+    {
+      "id": 276058858,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1318761891,
+      "titulo": "Terminación anticipada.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Cualquiera de las partes puede dar por terminado el contrato con aviso previo de 90 días, debiendo EL PROPIETARIO cumplir con las obligaciones económicas pendientes relacionadas con LA ASEGURADORA y EL ADMINISTRADOR."
+        }
+      ]
+    },
+    {
+      "id": 1724201251,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1007487937,
+      "titulo": "Preavisos y responsabilidades.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Las partes deben dar aviso por escrito con una antelación de 3 meses para terminar el contrato."
+        },
+        {
+          "valor": "EL ADMINISTRADOR no será responsable por daños o conductas delictivas en el inmueble."
+        },
+        {
+          "valor": "Fallecimiento del propietario: En caso de muerte de EL PROPIETARIO, EL ADMINISTRADOR suspenderá la entrega de los arrendamientos hasta tanto el Juzgado o la Notaría donde se esté tramitando la respectiva sucesión le oficie sobre el destino de dichos valores."
+        },
+        {
+          "valor": "Obligación especial sobre prevención de lavado de activos: EL PROPIETARIO manifiesta bajo la gravedad de juramento que el inmueble objeto del presente contrato no fue adquirido con el producto de dinero proveniente de lavado de activos. Asimismo, se obliga a no utilizar a EL ADMINISTRADOR como instrumento para la inversión o aprovechamiento, o para dar apariencia de legalidad a actividades delictivas o a transacciones o fondos vinculados con las mismas."
+        },
+        {
+          "valor": "Responsabilidades por daños y mantenimiento: EL PROPIETARIO asume toda la responsabilidad por causa de los perjuicios o accidentes sufridos por el arrendatario y por terceras personas que sobrevengan en razón del mal estado o deficiente funcionamiento del inmueble o de alguna de sus instalaciones."
+        },
+        {
+          "valor": "Obligaciones de asistencia a asambleas de propiedad horizontal: Si el inmueble en administración está sujeto al régimen de propiedad horizontal, EL PROPIETARIO deberá asistir a las asambleas ordinarias y extraordinarias de copropietarios o designar personalmente a alguien en su reemplazo."
+        },
+        {
+          "valor": "Inobservancia de obligaciones: La inobservancia de cualquiera de las obligaciones contenidas en el presente contrato por parte del PROPIETARIO otorga el derecho automático a LA ASEGURADORA de abstenerse de reconocer y pagar cualquier concepto cubierto por la Garantía de LA ASEGURADORA."
+        }
+      ]
+    },
+    {
+      "id": 415387607,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1297229626,
+      "titulo": "Pólizas y seguros.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "EL PROPIETARIO contrata seguro de arrendamiento y LA ASEGURADORA gestiona la póliza correspondiente."
+        }
+      ]
+    },
+    {
+      "id": 17158679,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 918617567,
+      "titulo": "Cláusula de venta.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "En caso de que EL ARRENDATARIO desee adquirir en compra el inmueble arrendado, EL PROPIETARIO se compromete a hacer todas las gestiones de venta por intermedio de EL ADMINISTRADOR, a quien desde ahora reconoce como intermediario directo de la venta y le cancelará por concepto de comisión de venta un valor equivalente al 3% sobre el valor total de la venta."
+        },
+        {
+          "valor": "Si EL PROPIETARIO desea continuar ofreciendo el inmueble para su venta durante la vigencia del presente contrato. Para tal efecto, EL ARRENDATARIO permitirá el ingreso de potenciales compradores para visitas al inmueble, previa notificación con mínimo 24 horas de anticipación y en horarios acordados mutuamente que no afecten la tranquilidad del ARRENDATARIO. En caso de venta efectiva del inmueble, se respetarán los términos y condiciones del presente contrato hasta su finalización conforme lo establece el artículo 2020 del Código Civil y el artículo 26 de la Ley 820 de 2003, a menos que EL ARRENDATARIO y el nuevo propietario acuerden algo diferente por escrito."
+        },
+        {
+          "valor": "Si EL ADMINISTRADOR es quien VENDE el inmueble EL PROPIETARIO pagará una comisión equivalente al porcentaje acordado con EL ADMINISTRADOR Sobre el valor de la venta por concepto de intermediación en la venta del inmueble, cuyo valor será cancelado de la manera descrita en el contrato de ADMI-VENTA generado al concluir este formulario"
+        }
+      ]
+    },
+    {
+      "id": 685373204,
+      "titulo": "CLÁUSULAS DEL CONTRATO DE SERVICIOS DE ADMINISTRACIÓN Y VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Lea atentamente cada CLÁUSULA y al terminar selecciónela y dele siguiente para leer la que sigue"
+    },
+    {
+      "id": 1777609641,
+      "titulo": "Mérito ejecutivo.",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Para todos los efectos legales, el presente documento presta mérito ejecutivo sin necesidad de requerimiento en caso de que EL APODERADO no cancele a EL ADMINISTRADOR cualquiera de las sumas que debe pagar en virtud del presente instrumento, o en caso de incumplimiento por parte del ADMINISTRADOR."
+        }
+      ]
+    },
+    {
+      "id": 1265502834,
+      "titulo": "PORCENTAJE DEL SERVICIO DE ADMINISTRACIÓN ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "% por la gestion de administración Inmobiliaria"
+    },
+    {
+      "id": 263418303,
+      "titulo": "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE (Admi-Venta)",
+      "tipo": "LIST",
+      "ayuda": "Selecciona el % que deseas dependiendo si quieres que se cobre desde el primer mes (8.5%) o el 9.1% si es desde el segundo mes",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "8.5% desde el primer mes"
+        },
+        {
+          "valor": "9.1% desde el segundo mes"
+        }
+      ]
+    },
+    {
+      "id": 379518226,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN HE INTERMEDIACION DEL INMUEBLE EN VENTA ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Seleccione el % previamente acordado por la gestión de VENTA del inmueble comercializado"
+    },
+    {
+      "id": 462459449,
+      "titulo": "(Porcentaje en números) (A-V)",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "3%",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "2.5%",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "2%",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "1.5%",
+          "saltoCondicional_SeccionDestino": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 173126816,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 2013773926,
+      "titulo": "(1.5%)  (Porcentaje en letras)  (A-V)",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "UNO PUNTO CINCO"
+        }
+      ]
+    },
+    {
+      "id": 1824729373,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE EN VENTA"
+    },
+    {
+      "id": 1789619259,
+      "titulo": "(2%)  (Porcentaje en letras)  (A-V)",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "DOS"
+        }
+      ]
+    },
+    {
+      "id": 786053855,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE EN VENTA"
+    },
+    {
+      "id": 1347555241,
+      "titulo": "(2.5%)  (Porcentaje en letras) (A-V)",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "DOS PUNTO CINCO"
+        }
+      ]
+    },
+    {
+      "id": 487523175,
+      "titulo": "PORCENTAJE DEL SERVICIO POR LA COMERCIALIZACIÓN DEL INMUEBLE EN VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE EN VENTA"
+    },
+    {
+      "id": 153152469,
+      "titulo": "(3%)  (Porcentaje en letras) (A-V)",
+      "tipo": "CHECKBOX",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "TRES"
+        }
+      ]
+    },
+    {
+      "id": 1941082548,
+      "titulo": "PRECIO DE COMERCIALIZACION DEL INMUEBLE EN VENTA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Ingrese el valor por la cual se comercializará el inmueble incluyendo la administración "
+    },
+    {
+      "id": 505551007,
+      "titulo": "PRECIO DE PROMOCION EN VENTA",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el precio de promoción del inmueble para VENTA SIN ADMINSTRACION (Solo numero)  Ejem: 1.000.000 o 1.000.000.000",
+      "requerido": true
+    },
+    {
+      "id": 813697490,
+      "titulo": "PRECIO DE PROMOCION EN VENTA EN LETRA",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el precio anterior en (LETRA)  Ejem: MIL MILLONES DE PESOS o según sea el caso",
+      "requerido": true
+    },
+    {
+      "id": 870308728,
+      "titulo": "PRECIO DE COMERCIALIZACION DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Ingrese el valor por la cual se comercializará el inmueble incluyendo la administración ",
+      "alTerminarSeccion_IrA": "PRECIO DE COMERCIALIZACION DEL INMUEBLE"
+    },
+    {
+      "id": 1566622439,
+      "titulo": "PRECIO DE PROMOCION GENERAL",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el precio de promoción del inmueble: si es para ARRIENDO ingrese el VALOR+ADMINISTRACION si es para VENTA SIN ADMINSTRACION, o si ya se diligencio el valor de VENTA solo diligenciar el valor de ARRIENDO+ADMINSTRACION (Solo numero)  Ejem: 1.000.000 o 1.000.000.000",
+      "requerido": true
+    },
+    {
+      "id": 1793352561,
+      "titulo": "PRECIO DE PROMOCION GENERAL EN LETRA",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el precio anterior en (LETRA)  Ejem: UN MILLON DE PESOS o MIL MILLONES DE PESOS o según sea el caso",
+      "requerido": true
+    },
+    {
+      "id": 887606961,
+      "titulo": "VALOR DE LA ADMINISTRACION DEL INMUEBLE",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Ingrese el valor de la adminstracion del inmueble sin descuento"
+    },
+    {
+      "id": 516345918,
+      "titulo": "PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el precio en (numero)  Ejem: 350.000",
+      "requerido": true
+    },
+    {
+      "id": 325010850,
+      "titulo": "PRECIO DE ADMINISTRACION PLENA EN LETRA",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el precio anterior en (LETRA)  Ejem: Trecientos cincuenta mil pesos",
+      "requerido": true
+    },
+    {
+      "id": 851305736,
+      "titulo": "CARACTERISTICAS INTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble"
+    },
+    {
+      "id": 38299343,
+      "titulo": "¿Que tipo vista tiene?",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Interior"
+        },
+        {
+          "valor": "Exterior"
+        },
+        {
+          "valor": "Interior y Exterior"
+        }
+      ]
+    },
+    {
+      "id": 1401487060,
+      "titulo": "¿Que tipo de calentador tiene?",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Gas"
+        },
+        {
+          "valor": "Eléctrico"
+        },
+        {
+          "valor": "Caldera"
+        },
+        {
+          "valor": "N/A"
+        }
+      ]
+    },
+    {
+      "id": 1206489418,
+      "titulo": "¿Que tipo de cocina es?",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Integral"
+        },
+        {
+          "valor": "Semi-Integral"
+        }
+      ]
+    },
+    {
+      "id": 1583811592,
+      "titulo": "¿Que tipo de estilo de cocina es?",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Abierta(CO)"
+        },
+        {
+          "valor": "cerrada"
+        },
+        {
+          "valor": "Americana"
+        },
+        {
+          "valor": "Isla"
+        },
+        {
+          "valor": "U"
+        }
+      ]
+    },
+    {
+      "id": 1455517571,
+      "titulo": "¿Que tipo de estufa dispone la cocina?",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Gas"
+        },
+        {
+          "valor": "Eléctrica"
+        },
+        {
+          "valor": "Mixta"
+        }
+      ]
+    },
+    {
+      "id": 1652597212,
+      "titulo": "CARACTERÍSTICAS INTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble"
+    },
+    {
+      "id": 841668144,
+      "titulo": "¿Dispone de deposito?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "Si la respuesta es SI, Seleccione Deposito o ya en su defecto, seleccione el espacio en blanco para NO",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Depositoㅤ",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "ㅤ",
+          "saltoCondicional_SeccionDestino": "CARACTERÍSTICAS INTERNAS",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 414381653,
+      "titulo": "IDENTIFICACION DEL DEPOSITO",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Ingresa el Número o la Identificación del deposito"
+    },
+    {
+      "id": 1048204110,
+      "titulo": "# De Deposito",
+      "tipo": "TEXT",
+      "ayuda": "",
+      "requerido": true
+    },
+    {
+      "id": 739551647,
+      "titulo": "CARACTERÍSTICAS INTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1768302640,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble",
+      "filas": [
+        "Zona interna #1 Citófono",
+        "Zona interna #2 Estudio",
+        "Zona interna #3 Zona de Lavandería"
+      ],
+      "columnas": [
+        "•Citófonoㅤ",
+        "•Estudioㅤ",
+        "•Zona de Lavanderíaㅤ"
+      ]
+    },
+    {
+      "id": 1729068622,
+      "titulo": "CARACTERÍSTICAS INTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 47543891,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble",
+      "filas": [
+        "Zona interna #4 Balcón",
+        "Zona interna #5 Chimenea",
+        "Zona interna #6 Terraza privada"
+      ],
+      "columnas": [
+        "•Balcónㅤ",
+        "•Chimeneaㅤ",
+        "•Terraza privadaㅤ"
+      ]
+    },
+    {
+      "id": 1867094078,
+      "titulo": "CARACTERÍSTICAS INTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1862314731,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble",
+      "filas": [
+        "Zona interna #7 Patio",
+        "Zona interna #8 Alarma",
+        "Zona interna #9 Hall de Alcobas"
+      ],
+      "columnas": [
+        "•Patioㅤ",
+        "•Alarmaㅤ",
+        "•Hall de Alcobasㅤ"
+      ]
+    },
+    {
+      "id": 1726333735,
+      "titulo": "CARACTERÍSTICAS INTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 441117097,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características internas del inmueble",
+      "filas": [
+        "Zona interna #10 Cuarto de Servicio",
+        "Zona interna #11 Aire Acondicionado",
+        "Zona interna #12 Comedor Auxiliar",
+        "Zona interna #13 Amoblado"
+      ],
+      "columnas": [
+        "•Cuarto de Servicioㅤ",
+        "•Aire Acondicionadoㅤ",
+        "•Comedor Auxiliarㅤ",
+        "•Amobladoㅤ"
+      ]
+    },
+    {
+      "id": 1091341650,
+      "titulo": "CARACTERÍSTICAS INTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1253000663,
+      "titulo": "Otro Interno",
+      "tipo": "TEXT",
+      "ayuda": "Escriba si hay una características internas del inmueble adicional",
+      "requerido": false
+    },
+    {
+      "id": 895424586,
+      "titulo": "CARACTERISTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 815068984,
+      "titulo": "¿Qué tipo de vigilancia dispone?",
+      "tipo": "LIST",
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "vigilancia de celaduría"
+        },
+        {
+          "valor": "vigilancia electrónica"
+        },
+        {
+          "valor": "puerta de seguridad"
+        }
+      ]
+    },
+    {
+      "id": 1606025511,
+      "titulo": "CARACTERÍSTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 3617060,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #1 Ascensor",
+        "Zona comunal #2 Parqueadero de visitantes",
+        "Zona comunal #3 Zonas Verdes"
+      ],
+      "columnas": [
+        "•Ascensor‎‎‎‎ㅤ",
+        "•Parqueadero de visitantesㅤ",
+        "•Zonas Verdesㅤ"
+      ]
+    },
+    {
+      "id": 1792094783,
+      "titulo": "CARACTERÍSTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1311904284,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #4 Terraza social",
+        "Zona comunal #5 Salón comunal",
+        "Zona comunal #6 Gimnasio"
+      ],
+      "columnas": [
+        "•Terraza socialㅤ",
+        "•Salón comunalㅤ",
+        "•Gimnasioㅤ"
+      ]
+    },
+    {
+      "id": 1078866327,
+      "titulo": "CARACTERÍSTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1021783184,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #7 BBQ",
+        "Zona comunal #8 Zona Infantil",
+        "Zona comunal #9 Teatrino"
+      ],
+      "columnas": [
+        "•BBQㅤ",
+        "•Zona Infantilㅤ",
+        "•Teatrinoㅤ"
+      ]
+    },
+    {
+      "id": 1543208710,
+      "titulo": "CARACTERÍSTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1935610465,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #10 Oficina de Negocios",
+        "Zona comunal #11 Salón de Juegos",
+        "Zona comunal #12 Salón de Videojuegos"
+      ],
+      "columnas": [
+        "•Oficina de Negociosㅤ",
+        "•Salón de Juegosㅤ",
+        "•Salón de Videojuegosㅤ"
+      ]
+    },
+    {
+      "id": 2085143170,
+      "titulo": "CARACTERÍSTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 2009622481,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características Externas del inmueble",
+      "filas": [
+        "Zona comunal #13 Tanque de reserva de agua",
+        "Zona comunal #14 Planta eléctrica",
+        "Zona comunal #15 Salón de pilates/Yoga"
+      ],
+      "columnas": [
+        "•Tanque de reserva de aguaㅤ",
+        "•Planta eléctricaㅤ",
+        "•Salón de pilates/Yogaㅤ"
+      ]
+    },
+    {
+      "id": 1064046947,
+      "titulo": "CARACTERÍSTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 706048764,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características Externas de las ZONAS HUMEDAS del inmueble",
+      "filas": [
+        "Zona húmedas #1 Piscina",
+        "Zona húmedas #2 Turco",
+        "Zona húmedas #3 Sauna",
+        "Zona húmedas #4 Jacuzzi"
+      ],
+      "columnas": [
+        "•Piscinaㅤ",
+        "•Turcoㅤ",
+        "•Saunaㅤ",
+        "•Jacuzziㅤ"
+      ]
+    },
+    {
+      "id": 1200085062,
+      "titulo": "CARACTERÍSTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 505678739,
+      "titulo": "",
+      "tipo": "GRID",
+      "ayuda": "Seleccione las opciones que describan las características Externas de las CANCHAS DEPORTIVAS del inmueble",
+      "filas": [
+        "Cancha deportiva #1 Cancha de Squash",
+        "Cancha deportiva #2 Cancha de Tenis",
+        "Cancha deportiva #3 Cancha de Futsal"
+      ],
+      "columnas": [
+        "•Cancha de Squashㅤ",
+        "•Cancha de Tenisㅤ",
+        "•Cancha de Futsalㅤ"
+      ]
+    },
+    {
+      "id": 1543237586,
+      "titulo": "CARACTERISTICAS EXTERNAS",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 571512886,
+      "titulo": "Otro Externo",
+      "tipo": "TEXT",
+      "ayuda": "Escriba si hay una características externa del inmueble adicional",
+      "requerido": false
+    },
+    {
+      "id": 881501880,
+      "titulo": "CARACTERISTICAS DEL SECTOR",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Seleccione las opciones que describan las características del sector del inmueble"
+    },
+    {
+      "id": 1033835446,
+      "titulo": "¿En que tipo de zona se encuentra el inmueble?",
+      "tipo": "GRID",
+      "ayuda": "Seleccione una o las opciones que su inmueble disponga",
+      "filas": [
+        "Tipo de zona #1 Zona Residencial",
+        "Tipo de zona #2 Zona Comercial",
+        "Tipo de zona #3 Zona Industrial",
+        "Tipo de zona #4 Zona Campestre"
+      ],
+      "columnas": [
+        "Zona Residencialㅤ",
+        "Zona Comercialㅤ",
+        "Zona Industrialㅤ",
+        "Zona Campestreㅤ"
+      ]
+    },
+    {
+      "id": 1498044398,
+      "titulo": "¿En que tipo de via se encuentra el inmueble?",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Principal"
+        },
+        {
+          "valor": "Secundaria"
+        },
+        {
+          "valor": "Privada"
+        }
+      ]
+    },
+    {
+      "id": 1913512920,
+      "titulo": "¿Dispone de las siguientes características el sector??",
+      "tipo": "GRID",
+      "ayuda": "",
+      "filas": [
+        "Parques Cercanos",
+        "Super Mercados/Centros comerciales",
+        "Colegios/Universidades",
+        "Tranporte publico/Transmilenio"
+      ],
+      "columnas": [
+        "SI",
+        "NO"
+      ]
+    },
+    {
+      "id": 1087078806,
+      "titulo": "¿Cual es el tipo de diseño que tiene el inmueble?",
+      "tipo": "LIST",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Convencional"
+        },
+        {
+          "valor": "Pent House"
+        },
+        {
+          "valor": "Loft"
+        },
+        {
+          "valor": "Duplex"
+        },
+        {
+          "valor": "Triplex"
+        },
+        {
+          "valor": "Cuadruplex"
+        }
+      ]
+    },
+    {
+      "id": 1318550981,
+      "titulo": "INGRESE A CONTINUACIÓN UNA DESCRIPCIÓN ADICIONAL DEL INMUEBLE",
+      "tipo": "PARAGRAPH_TEXT",
+      "ayuda": "Adicionando:",
+      "requerido": false
+    },
+    {
+      "id": 1087771603,
+      "titulo": "ACTA DE NOTIFICACION A PORTERIA",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Acta de NOTIFIACION de gestión inmobiliaria para el inmueble si dispone PORTERIA y ADMINISTRACION "
+    },
+    {
+      "id": 13567720,
+      "titulo": "¿El inmueble dispone de portería y administración para realizar un acta de notificación de promoción inmobiliaria he ingreso?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "SI",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "NO",
+          "tipoNavegacion": "SUBMIT"
+        }
+      ]
+    },
+    {
+      "id": 236853284,
+      "titulo": "NOTIFICACION DE PORTERIA PARA INGRESO Y PROMOCION DEL INMUEBLE ",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "Ingrese los siguientes datos para la notificación de autorización de ingreso a la administración y portería"
+    },
+    {
+      "id": 81232289,
+      "titulo": "NOMBRE DEL INMUEBLE/ADMINISTRACION",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el nombre del inmueble registrado que esta en el certificado de libertad y tradición, ejem: CONJUNTO RESIDENCIAL ALTOS DEL MORAL",
+      "requerido": true
+    },
+    {
+      "id": 1940617967,
+      "titulo": "ENVIO AUTOMATICO AL CORREO DE LA ADMINISTRACION",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 153620971,
+      "titulo": "¿Desea enviar el acta notificación de gestión inmobiliaria a la administración desde este formulario también?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "SI",
+          "tipoNavegacion": "CONTINUE"
+        },
+        {
+          "valor": "NO",
+          "saltoCondicional_SeccionDestino": "TIPO DE AUTORIZACION DE INGRESO",
+          "tipoNavegacion": "GO_TO_PAGE"
+        }
+      ]
+    },
+    {
+      "id": 1933025671,
+      "titulo": "CORREO DE LA ADMINISTRACION",
+      "tipo": "PAGE_BREAK",
+      "ayuda": ""
+    },
+    {
+      "id": 1453878839,
+      "titulo": "Correo electrónico de la administración",
+      "tipo": "TEXT",
+      "ayuda": "Ingrese el correo de la administración para enviarle el acta automáticamente",
+      "requerido": true
+    },
+    {
+      "id": 1897472309,
+      "titulo": "TIPO DE AUTORIZACION DE INGRESO",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "(RECUERDE QUE UNA VES TERMINADO ESTE FORMULARIO SE ENVIARA LAS ACTAS DE ACUERDOS Y AUTORIZACIONES AL CORREO AUTOMATICAMENTE)"
+    },
+    {
+      "id": 248690566,
+      "titulo": "¿Qué tipo de autorización desea realizar?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "GENERAL",
+          "saltoCondicional_SeccionDestino": "TIPO DE AUTORIZACION DE INGRESO",
+          "tipoNavegacion": "GO_TO_PAGE"
+        },
+        {
+          "valor": "ADMINISTRACION",
+          "tipoNavegacion": "CONTINUE"
+        }
+      ]
+    },
+    {
+      "id": 414066560,
+      "titulo": "TIPO DE AUTORIZACION DE INGRESO",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "(RECUERDE QUE UNA VES TERMINADO ESTE FORMULARIO SE ENVIARA LAS ACTAS DE ACUERDOS Y AUTORIZACIONES AL CORREO AUTOMATICAMENTE)"
+    },
+    {
+      "id": 588886313,
+      "titulo": "¿Qué tipo de autorización desea con el agente para administración?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí"
+        },
+        {
+          "valor": "Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves"
+        },
+        {
+          "valor": "Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados"
+        }
+      ]
+    },
+    {
+      "id": 1345869062,
+      "titulo": "TIPO DE AUTORIZACION DE INGRESO",
+      "tipo": "PAGE_BREAK",
+      "ayuda": "(RECUERDE QUE UNA VES TERMINADO ESTE FORMULARIO SE ENVIARA LAS ACTAS DE ACUERDOS Y AUTORIZACIONES AL CORREO AUTOMATICAMENTE)"
+    },
+    {
+      "id": 745521224,
+      "titulo": "¿Qué tipo de autorización desea con el agente?",
+      "tipo": "MULTIPLE_CHOICE",
+      "ayuda": "",
+      "requerido": true,
+      "opciones": [
+        {
+          "valor": "El cual recoge las llaves en portería y después de la visita las deja nuevamente allí"
+        },
+        {
+          "valor": "Disponiendo de copia de las llaves"
+        },
+        {
+          "valor": "Con acompañamiento de mi parte en las visitas de interesados"
+        }
+      ]
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { numberToWordsSpanish } from '../lib/numberToWords';
 import CountryMap from './CountryMap';
+import FeaturesGridSelector from './FeaturesGridSelector';
 
 const COUNTRIES = [
   { code: 'CO', name: 'Colombia', flag: '🇨🇴', prefix: '+57', maxLength: 10, placeholder: '300 123 4567', regex: /^3\d{9}$/ },
@@ -49,6 +50,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 
   // Form State containing exact variables requested by the JSON Form
   const [formData, setFormData] = useState({
+    gridAnswers: {} as Record<string, string>,
     // Step 1: Destino y Ubicación
     registrationDate: new Date().toISOString().split('T')[0],
     destination: 'Vivienda', // Vivienda, Comercio, Mixto
@@ -284,10 +286,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "Número de documento": formData.documentNumber,
         "Celular": formData.phone,
         "Correo electrónico": formData.email,
-        "TIPO DE NEGOCIO": formData.serviceType === 'administracion' ? 'Administración' : formData.serviceType === 'corretaje' ? 'Corretaje' : formData.serviceType === 'venta' ? 'Venta' : formData.serviceType === 'admi-venta' ? 'Admi-Venta' : 'Vendi-Renta'
+        "TIPO DE NEGOCIO": formData.serviceType === 'administracion' ? 'Administración' : formData.serviceType === 'corretaje' ? 'Corretaje' : formData.serviceType === 'venta' ? 'Venta' : formData.serviceType === 'admi-venta' ? 'Admi-Venta' : 'Vendi-Renta',
+        ...formData.gridAnswers
       };
 
-      const response = await fetch('https://script.google.com/macros/s/AKfycbzOnhQ8CD2gWMdvvYnF2v1FL3yto5sM8i_jV9FmIJa1Os05YwXR5RKSsq22ePlwqQgL/exec', {
+      const response = await fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: {
@@ -988,6 +991,12 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
                         />
                       </div>
+
+                      <div className="pt-4 border-t border-stone-100">
+                        <label className="text-sm text-stone-900 font-bold block mb-3 text-center uppercase tracking-widest font-mono text-[#8A631F]">SELECCIÓN DE CARACTERÍSTICAS (ZONAS Y EXTRAS)</label>
+                        <FeaturesGridSelector onAnswersChange={(ans) => setFormData(prev => ({ ...prev, gridAnswers: ans }))} />
+                      </div>
+
                     </div>
                   )}
 

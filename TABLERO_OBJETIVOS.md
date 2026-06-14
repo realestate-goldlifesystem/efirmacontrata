@@ -47,7 +47,8 @@
 ### 6. 🚀 Portafolio / Formulario Transicional (MVP de Captación) - [PRÓXIMO PASO]
 *Objetivo: Reemplazar inmediatamente el Google Form por una Landing Page/Portafolio profesional para transmitir mayor confianza a los clientes y generar ingresos mientras se construye el resto del sistema.*
 - [x] **Pulir Interfaz:** Tomar la carpeta `Portafolio-formulario de registro actualizacion form 1.0` y conectarla con la lógica extraída del JSON (Integración Frontend -> Apps Script Backend Completada).
-- [ ] **Despliegue Rápido:** Publicar esta página para que funcione como la nueva cara pública de recaudo de inmuebles.
+- [ ] **Mapeo Perfecto (Autocrat):** Añadir al formulario React TODOS los campos específicos secundarios (Antigüedad, Depósito, Zonas Comunes, Parqueaderos, Múltiples Habitaciones) para garantizar que las etiquetas de Autocrat (`<<Zonas Comunes>>`, etc.) se llenen siempre al 100% sin dejar huecos en el contrato final.
+- [x] **Despliegue Rápido:** Página publicada exitosamente en GitHub Pages dentro de la rama `main` (`frontend/portafolio/`).
 
 ### 7. 👥 Escalabilidad de Múltiples Codeudores
 *Objetivo: Escalar el formulario y todo el ecosistema (paneles, bitácora y PDF) para que soporte 'N' cantidad de codeudores de forma dinámica.*
