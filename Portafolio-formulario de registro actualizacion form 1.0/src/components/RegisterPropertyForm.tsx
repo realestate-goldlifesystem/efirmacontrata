@@ -72,6 +72,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     estrato: '4',
     propertyAge: '',
     floorNumber: '',
+    commonAreas: '',
     fridgeAncho: '0.60', fridgeLargo: '0.70', fridgeAlto: '1.80', 
     fridgeWaterPoint: 'NO',
     washingAncho: '0.69', washingLargo: '0.66', washingAlto: '1.13',
@@ -266,8 +267,15 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "N° de Habitaciones": formData.roomsCount,
         "Habitación principal": formData.bedPrincipal,
         "Habitación secundaria": formData.bedSecondary,
+        "Habitación terciaria": formData.bedTertiary,
+        "Habitación cuaternaria": formData.bedQuaternary,
+        "Habitación quinaria": formData.bedQuinary,
         "N° de Baños": formData.bathroomsCount,
         "¿Cual es el estrato?": formData.estrato,
+        "Antiguedad en Años": formData.propertyAge,
+        "N° de Parqueaderos": formData.garagesCount,
+        "¿Tiene deposito?": formData.hasDeposit,
+        "ZONAS COMUNES DEL INMUEBLE": formData.commonAreas,
         "IDENTIFICACIÓN DEL INMUEBLE": formData.idTypeDescription,
         "N° o Letra de la Torre": formData.towerLetter,
         "N° de inmueble": formData.propertyNumber,
@@ -698,6 +706,51 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               </select>
                             </div>
                           )}
+                          {parseInt(formData.roomsCount) >= 3 && (
+                            <div className="animate-fade-in">
+                              <span className="text-[10px] font-mono text-[#8A631F] block">HABITACIÓN TERCIARIA</span>
+                              <select 
+                                value={formData.bedTertiary} 
+                                onChange={e => setFormData({ ...formData, bedTertiary: e.target.value })}
+                                className="w-full bg-white border border-stone-250 rounded-lg p-2 text-[11px]"
+                              >
+                                <option value="">Selecciona cama...</option>
+                                <option value="Sencilla">Cama individual (2.10 m)</option>
+                                <option value="Semidoble">Cama semidoble (2.40 m)</option>
+                                <option value="Doble">Cama doble (2.55 m)</option>
+                              </select>
+                            </div>
+                          )}
+                          {parseInt(formData.roomsCount) >= 4 && (
+                            <div className="animate-fade-in">
+                              <span className="text-[10px] font-mono text-[#8A631F] block">HABITACIÓN CUATERNARIA</span>
+                              <select 
+                                value={formData.bedQuaternary} 
+                                onChange={e => setFormData({ ...formData, bedQuaternary: e.target.value })}
+                                className="w-full bg-white border border-stone-250 rounded-lg p-2 text-[11px]"
+                              >
+                                <option value="">Selecciona cama...</option>
+                                <option value="Sencilla">Cama individual (2.10 m)</option>
+                                <option value="Semidoble">Cama semidoble (2.40 m)</option>
+                                <option value="Doble">Cama doble (2.55 m)</option>
+                              </select>
+                            </div>
+                          )}
+                          {parseInt(formData.roomsCount) >= 5 && (
+                            <div className="animate-fade-in">
+                              <span className="text-[10px] font-mono text-[#8A631F] block">HABITACIÓN QUINARIA</span>
+                              <select 
+                                value={formData.bedQuinary} 
+                                onChange={e => setFormData({ ...formData, bedQuinary: e.target.value })}
+                                className="w-full bg-white border border-stone-250 rounded-lg p-2 text-[11px]"
+                              >
+                                <option value="">Selecciona cama...</option>
+                                <option value="Sencilla">Cama individual (2.10 m)</option>
+                                <option value="Semidoble">Cama semidoble (2.40 m)</option>
+                                <option value="Doble">Cama doble (2.55 m)</option>
+                              </select>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -915,6 +968,15 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             />
                           </div>
                         )}
+                      </div>
+
+                      <div>
+                        <label className="text-xs text-stone-600 font-bold block mb-1">ZONAS COMUNES DEL INMUEBLE</label>
+                        <input 
+                          type="text" value={formData.commonAreas} 
+                          onChange={e => setFormData({ ...formData, commonAreas: e.target.value })}
+                          placeholder="Ej. Piscina, Gimnasio, BBQ, Parque infantil..." className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                        />
                       </div>
 
                       <div>
