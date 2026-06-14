@@ -810,10 +810,18 @@ function moverArchivosDesdeFilaADestino(sheet, row, destinoFolder) {
     try {
       var file = DriveApp.getFileById(fileId);
 
-      // Verificar si ya existe en destino
-      var existingFiles = destinoFolder.getFilesByName(file.getName());
-      if (existingFiles.hasNext()) {
-        Logger.log(`ℹ️ Archivo ya existe: ${file.getName()}`);
+      // Verificar si ESTE archivo específico ya está en la carpeta destino (por si se reejecuta)
+      var parents = file.getParents();
+      var yaEnDestino = false;
+      while (parents.hasNext()) {
+        if (parents.next().getId() === destinoFolder.getId()) {
+          yaEnDestino = true;
+          break;
+        }
+      }
+
+      if (yaEnDestino) {
+        Logger.log(`ℹ️ El archivo ya se encuentra en la carpeta destino: ${file.getName()}`);
       } else {
         file.moveTo(destinoFolder);
         archivosMovidos++;
@@ -1006,14 +1014,23 @@ function agregarLinksTipo13(sheet, filaOriginal, filaTemp) {
     var colIndex = getColumnByName(sheet, nombreCol);
     if (!colIndex) return;
 
-    var valorNuevo = sheet.getRange(filaTemp, colIndex).getValue();
-    if (!valorNuevo) return;
+    var rangoTemporal = sheet.getRange(filaTemp, colIndex);
+    var formulaNueva = rangoTemporal.getFormula();
+    var valorNuevo = rangoTemporal.getValue();
 
-    var valorActual = sheet.getRange(filaOriginal, colIndex).getValue();
+    if (!valorNuevo && !formulaNueva) return;
 
-    if (!valorActual) {
+    var rangoOriginal = sheet.getRange(filaOriginal, colIndex);
+    var valorActual = rangoOriginal.getValue();
+    var formulaActual = rangoOriginal.getFormula();
+
+    if (!valorActual && !formulaActual) {
       // Solo agregar si está vacío
-      sheet.getRange(filaOriginal, colIndex).setValue(valorNuevo);
+      if (formulaNueva) {
+        rangoOriginal.setFormula(formulaNueva);
+      } else {
+        rangoOriginal.setValue(valorNuevo);
+      }
       Logger.log(`✅ Link agregado: ${nombreCol}`);
     } else {
       Logger.log(`ℹ️ Link ya existe: ${nombreCol} (se mantiene)`);
@@ -1042,13 +1059,18 @@ function reemplazarLinksAutocrat(sheet, filaOriginal, filaTemp) {
     var colIndex = getColumnByName(sheet, nombreCol);
     if (!colIndex) return;
 
-    var valorNuevo = sheet.getRange(filaTemp, colIndex).getValue();
+    var rangoTemporal = sheet.getRange(filaTemp, colIndex);
+    var formulaNueva = rangoTemporal.getFormula();
+    var valorNuevo = rangoTemporal.getValue();
 
-    if (valorNuevo) {
-      // REEMPLAZAR siempre (es renovación)
+    if (formulaNueva) {
+      sheet.getRange(filaOriginal, colIndex).setFormula(formulaNueva);
+      linksActualizados++;
+      Logger.log(`🔄 Formula reemplazada: ${nombreCol}`);
+    } else if (valorNuevo) {
       sheet.getRange(filaOriginal, colIndex).setValue(valorNuevo);
       linksActualizados++;
-      Logger.log(`🔄 Link reemplazado: ${nombreCol}`);
+      Logger.log(`🔄 Valor reemplazado: ${nombreCol}`);
     }
   });
 

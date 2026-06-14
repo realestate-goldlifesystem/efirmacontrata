@@ -44,45 +44,51 @@
 - [x] **Validación Webhook (doPost):** Escuchar eventos de Mercado Pago para asentar el "Sello de Pago Verificado" en Google Sheets.
 - [x] **Sistema de Reembolso Automático (Garantía 48h):** Programar un *Time-driven Trigger* en Apps Script que escanee contratos en PENDING. Si pasan 48h sin respuesta del propietario, consumir la API de Reembolsos (`/v1/payments/{id}/refunds`) para devolver el dinero automáticamente.
 
-### 6. 👥 Escalabilidad de Múltiples Codeudores - [PRÓXIMO PASO]
+### 6. 🚀 Portafolio / Formulario Transicional (MVP de Captación) - [PRÓXIMO PASO]
+*Objetivo: Reemplazar inmediatamente el Google Form por una Landing Page/Portafolio profesional para transmitir mayor confianza a los clientes y generar ingresos mientras se construye el resto del sistema.*
+- [x] **Pulir Interfaz:** Tomar la carpeta `Portafolio-formulario de registro actualizacion form 1.0` y conectarla con la lógica extraída del JSON (Integración Frontend -> Apps Script Backend Completada).
+- [ ] **Despliegue Rápido:** Publicar esta página para que funcione como la nueva cara pública de recaudo de inmuebles.
+
+### 7. 👥 Escalabilidad de Múltiples Codeudores
 *Objetivo: Escalar el formulario y todo el ecosistema (paneles, bitácora y PDF) para que soporte 'N' cantidad de codeudores de forma dinámica.*
 - [ ] **Lógica Dinámica Frontend:** Adaptar el formulario de registro para permitir agregar codeudores adicionales dinámicamente.
 - [ ] **Sincronización en el Cerebro:** Modificar el esquema de `DATOS DE ELABORACION` para aceptar y estructurar un arreglo de varios codeudores.
 - [ ] **Adaptación del Panel y Bitácora:** Actualizar los semáforos de `panel_validacion.html` y los ciclos de aprobación para requerir el "Aprobado" de todos los codeudores involucrados.
-
-### 7. ✍️ Automatización de Firmas (AutenticSign)
-*Objetivo: Sustituir la generación manual de firmas conectando la API de AutenticSign para los contratos de arrendamiento.*
-- [ ] **Integración API REST:** Configurar Google Apps Script para enviar el "PDF Original Definitivo" a los servidores de AutenticSign de forma invisible.
-- [ ] **Flujo OTP:** Programar el envío de códigos SMS de validación a inquilinos y propietarios.
 
 ### 8. 🏢 Escalado: Contratos de Administración de Inmuebles
 *Objetivo: Adaptar el motor E-FirmaContrata para captar propietarios que deseen ceder la administración de sus inmuebles.*
 - [ ] **Nuevo Cerebro:** Crear las variables específicas (comisiones, pólizas) para este tipo de contrato.
 - [ ] **Plantilla Dinámica:** Cargar la plantilla de Mandato/Administración y configurar las rutas de guardado en Drive.
 
-### 9. 🏡 Escalado: Promesas de Compraventa y Sala de Negociación
-*Objetivo: Abarcar transacciones de alto valor inmobiliario con flujos colaborativos entre compradores y vendedores.*
-- [ ] **Adaptación del Frontend:** Generar los portales para recolección de documentos específicos de ventas (Promesas, Certificados de Tradición avanzados).
-- [ ] **Sala de Negociación Privada (En Vivo):** Crear un entorno digital ("Bolsa de Valores Inmobiliaria") donde comprador y vendedor puedan enviarse ofertas y contraofertas económicas de forma asíncrona, eliminando la fricción emocional y generando urgencia/FOMO con el Polling Inteligente.
-- [ ] **Integración "Escrow" (Retención de Arras Segura):** Conectar vía API con una Fintech (ej. Kustodio) o Fiduciaria Tradicional (ej. Fiduciaria Bogotá / Alianza) para custodiar el dinero de las arras de forma neutral y segura, protegiendo a ambas partes sin que Gold Life asuma el riesgo legal de la captación de dinero.
-- [ ] **Generación y Firma Automática:** Cuando ambas partes lleguen a un acuerdo y aprueben la oferta final en la Sala de Negociación, E-FirmaContrata generará automáticamente la Promesa de Compraventa con las cláusulas pactadas (arras, fechas) y la enviará para su autenticación digital desde casa.
+### 9. ✍️ Automatización de Firmas (AutenticSign)
+*Objetivo: Sustituir la generación manual de firmas conectando la API de AutenticSign para los contratos de arrendamiento y administración.*
+- [ ] **Integración API REST:** Configurar Google Apps Script para enviar el "PDF Original Definitivo" a los servidores de AutenticSign de forma invisible.
+- [ ] **Flujo OTP:** Programar el envío de códigos SMS de validación a inquilinos y propietarios.
 
-### 10. 🛡️ Acreditación Legal Premium (Olimpia IT)
+### 10. 🏗️ Desarrollo de "Bien Dorado App" (Portales, Identidad y Agentes)
+*Objetivo: Construir el ecosistema visual frontend (Bien Dorado App) para atraer agentes, captar inventario masivo y blindar la base de datos contra fraudes antes de habilitar ventas.*
+- [ ] **Portal "Bien Dorado App":** Crear la interfaz visual completa para agentes inmobiliarios y clientes, reemplazando los Google Forms tradicionales (usando el JSON extraído).
+- [ ] **Extracción de Datos por Foto (OCR):** Permitir a propietarios e inquilinos subir una foto de su cédula para extraer automáticamente Nombres, Cédula y Fecha de Expedición.
+- [ ] **Background Checks Inteligentes (KYC):** Validar identidad y antecedentes (Tusdatos.co) de forma invisible antes de autorizar usuarios y propiedades en la app.
+
+### 11. 🏡 Escalado: Promesas de Compraventa y Sala de Negociación
+*Objetivo: Abarcar transacciones de alto valor inmobiliario con flujos colaborativos entre compradores y vendedores, ahora con identidades pre-validadas.*
+- [ ] **Adaptación del Frontend:** Generar los portales para recolección de documentos específicos de ventas (Promesas, Certificados de Tradición avanzados).
+- [ ] **Sala de Negociación Privada (En Vivo):** Crear un entorno digital ("Bolsa de Valores Inmobiliaria") donde comprador y vendedor puedan enviarse ofertas y contraofertas económicas.
+- [ ] **Integración "Escrow" (Retención de Arras Segura):** Conectar vía API con una Fintech (ej. Kustodio o Fiduciaria) para custodiar el dinero de las arras de forma neutral.
+- [ ] **Generación Automática:** Generar la Promesa de Compraventa automáticamente al llegar a un acuerdo en la Sala de Negociación.
+
+### 12. 🛡️ Acreditación Legal Premium (Olimpia IT)
 *Objetivo: Blindar las Promesas de Compraventa con el estándar legal más alto (ONAC y Registraduría).*
 - [ ] **Biometría Facial:** Conectar la API de Olimpia IT para exigir la validación facial de compradores/vendedores contra la Registraduría Nacional.
 - [ ] **Certificación ONAC:** Garantizar la "Presunción de Derecho" en todos los contratos de alto valor.
 
-### 11. 🏗️ Escalado del Sistema: Módulo "Registro del Inmueble"
-*Objetivo: Una vez todo el ecosistema de contratos y firmas opere al 100%, llevaremos esta misma robustez tecnológica al módulo inicial de captación de inmuebles.*
-- [ ] **Auditoría del Módulo de Registro:** Revisar la creación y enrutamiento inicial de carpetas en Google Drive (donde nacen los CDR largos).
-- [ ] **Optimización y Estandarización:** Aplicar las lecciones aprendidas de validación asíncrona y correos al proceso en el que los asesores registran una propiedad.
-
-### 12. ✨ UI/UX: Experiencia "Dark Luxury" y Gamificación
-*Objetivo: Elevar la percepción de marca a un nivel premium y de alta gama en todos los portales, mejorando la satisfacción del cliente y del administrador.*
-- [x] **Design System "Dark Luxury":** Implementar un fondo oscuro elegante (Dark Mode), tipografía limpia (ej. *Outfit*, *Inter* o *Cinzel* para títulos), y acentos de luz (neón sutil/dorado) para los llamados a la acción (CTAs).
-- [x] **Estructura "Bento Grid":** Rediseñar el `panel_validacion.html` y los portales de clientes usando una cuadrícula estilo *Bento* (tarjetas modulares con bordes redondeados y efecto *Glassmorphism*).
-- [x] **Gamificación y Micro-interacciones:** Añadir animaciones fluidas de transición, barras de progreso dinámicas, confeti digital o checks interactivos al completar hitos (ej. firmar un contrato o pagar), y *tooltips* interactivos.
-- [ ] **Consistencia en Backend y Frontend:** Unificar el diseño para que el administrador sienta la misma fluidez y modernidad que experimenta el cliente final.
+### 13. ✨ UI/UX: Experiencia "Dark Luxury" y Gamificación (Pendientes E-FirmaContrata)
+*Objetivo: Elevar la percepción de marca a un nivel premium y de alta gama en todos los portales.*
+- [x] **Design System "Dark Luxury":** Implementar un fondo oscuro elegante (Dark Mode), tipografía limpia y acentos de luz.
+- [ ] **Estructura "Bento Grid" (Múltiples Codeudores):** Rediseñar el `panel_validacion.html` para que las tarjetas de codeudores se adapten dinámicamente visualmente si hay 1, 2 o más.
+- [ ] **Gamificación en Sala de Firmas:** Implementar una **Barra de Progreso animada y fluida** en la `sala_firmas.html` para guiar al cliente paso a paso durante la revisión y firma.
+- [ ] **Consistencia Total:** Unificar el diseño para que el administrador sienta la misma fluidez y modernidad que experimenta el cliente final.
 
 ---
 

@@ -1986,10 +1986,18 @@ function handleProcesarFirmaElectronica(datos) {
     const folder = DriveApp.getFileById(docId).getParents().next();
     const pdfName = doc.getName() + " - FIRMADO.pdf";
     
-    // Buscar si ya existe para reemplazar o crear uno nuevo
+    const driveDoc = DriveApp.getFileById(docId);
+    const docCreatedTime = driveDoc.getDateCreated().getTime();
+    
+    // Buscar si ya existe para reemplazar (solo si es de este año)
     const files = folder.searchFiles(`title = '${pdfName}'`);
-    if (files.hasNext()) {
-      files.next().setTrashed(true);
+    while (files.hasNext()) {
+      let existing = files.next();
+      // Solo borrar si es un PDF de ESTE mismo contrato (creado después del DOCX).
+      // Si es de un contrato viejo (año pasado), conservarlo en el historial.
+      if (existing.getDateCreated().getTime() >= docCreatedTime) {
+        existing.setTrashed(true);
+      }
     }
     const finalPdf = folder.createFile(pdfBlob).setName(pdfName);
 
@@ -2285,14 +2293,32 @@ function handleVerificarEstadoFirma(datos) {
     
     const docFile = DriveApp.getFileById(docId);
     const folder = docFile.getParents().next();
+    const docCreatedTime = docFile.getDateCreated().getTime();
     
     // Buscar si existe la versión en PDF firmada
     const pdfName = docFile.getName() + " - FIRMADO.pdf";
     const files = folder.searchFiles(`title = '${pdfName}'`);
     
-    if (files.hasNext()) {
-      const finalPdf = files.next();
-      return { success: true, firmado: true, pdfUrl: finalPdf.getUrl() };
+    let yaFirmado = false;
+    let pdfUrl = null;
+    let minDiff = Infinity;
+
+    while (files.hasNext()) {
+      const pdfFile = files.next();
+      const diff = pdfFile.getDateCreated().getTime() - docCreatedTime;
+      
+      // El PDF debe haber nacido DESPUÉS del DOCX (diff >= 0).
+      // Nos quedamos con el que tenga la diferencia de tiempo MÁS PEQUEÑA.
+      // Esto asegura que el DOCX 2025 se case con el PDF 2025, y no con el PDF 2026.
+      if (diff >= 0 && diff < minDiff) {
+        minDiff = diff;
+        yaFirmado = true;
+        pdfUrl = pdfFile.getUrl();
+      }
+    }
+    
+    if (yaFirmado) {
+      return { success: true, firmado: true, pdfUrl: pdfUrl };
     } else {
       return { success: true, firmado: false };
     }

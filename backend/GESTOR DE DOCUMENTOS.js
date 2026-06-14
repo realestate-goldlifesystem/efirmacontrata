@@ -581,6 +581,9 @@ function doPost(e) {
       case 'analizarCertificadoDesdePanel':
         result = analizarCertificadoDesdePanel(datos.fileId, datos.datosPropietario);
         break;
+      case 'registrarInmueble':
+        result = handleRegistrarInmueble(datos);
+        break;
       case 'procesarFirmaElectronica':
         result = handleProcesarFirmaElectronica(datos);
         break;
@@ -617,6 +620,57 @@ function doPost(e) {
       success: false,
       message: error.message
     });
+  }
+}
+
+// ==========================================
+// INTEGRACIÓN PORTAFOLIO REACT -> CRM
+// ==========================================
+function handleRegistrarInmueble(datos) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    if (!sheet) throw new Error("Hoja '1.1 - INMUEBLES REGISTRADOS' no encontrada en el CRM.");
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const newRow = new Array(headers.length).fill("");
+
+    // Google Forms siempre inyecta la "Marca temporal" en la primera columna
+    newRow[0] = new Date();
+
+    // Mapear los datos exactos del JSON (React) a las columnas (Sheet)
+    for (let i = 1; i < headers.length; i++) {
+      const headerName = headers[i].toString().trim();
+      if (headerName && datos.hasOwnProperty(headerName)) {
+        newRow[i] = datos[headerName];
+      }
+    }
+
+    // Insertar la nueva fila en el Excel
+    sheet.appendRow(newRow);
+    SpreadsheetApp.flush();
+
+    // Obtener la fila recién insertada
+    const lastRow = sheet.getLastRow();
+
+    // Simular el evento 'e' que envía Google Forms
+    const mockEvent = {
+      range: sheet.getRange(lastRow, 1, 1, headers.length)
+    };
+
+    // Disparar el motor principal como si hubiera sido un Form original
+    if (typeof onFormSubmitInmueble === 'function') {
+      onFormSubmitInmueble(mockEvent);
+    } else {
+       throw new Error("El motor onFormSubmitInmueble no está definido en este entorno.");
+    }
+
+    return { 
+      success: true, 
+      message: "Inmueble inyectado al CRM correctamente. Motor de carpetas activado." 
+    };
+  } catch (error) {
+    Logger.log("Error en handleRegistrarInmueble: " + error.toString());
+    return { success: false, message: "Error interno: " + error.message };
   }
 }
 
