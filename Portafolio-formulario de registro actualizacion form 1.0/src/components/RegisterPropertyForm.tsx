@@ -140,7 +140,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     porteriaAdminEmail: '',
     porteriaAuthType: 'GENERAL', // GENERAL, ADMINISTRACION
     porteriaAuthAgentGeneral: 'El cual recoge las llaves en portería y después de la visita las deja nuevamente allí',
-    porteriaAuthAgentAdmin: 'Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería'
+    porteriaAuthAgentAdmin: 'Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí'
   });
 
   // Sync prop changes and initial values
@@ -655,7 +655,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             onChange={e => setFormData({ ...formData, propertyType: e.target.value })}
                             className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs"
                           >
-                            {["Apartamento", "Apartaestudio", "Casa", "Local", "Oficina", "Bodega", "Lote", "Edificio"].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            {["Apartamento", "Apartaestudio", "Casa", "Local", "Oficina", "Bodega", "Lote", "Edificio", "Casa Lote", "Casa Campestre"].map(opt => <option key={opt} value={opt}>{opt}</option>)}
                           </select>
                         </div>
                         <div>
@@ -1411,8 +1411,9 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                   onChange={e => setFormData({ ...formData, porteriaAuthAgentAdmin: e.target.value })}
                                   className="w-full bg-white border rounded p-2 text-[10px] cursor-pointer"
                                 >
-                                  <option value="Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería">Administrador recoge y entrega</option>
+                                  <option value="Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Administrador recoge y entrega</option>
                                   <option value="Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves">Administrador con copias</option>
+                                  <option value="Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados">Administrador con acompañamiento</option>
                                 </select>
                               </div>
                             </div>
