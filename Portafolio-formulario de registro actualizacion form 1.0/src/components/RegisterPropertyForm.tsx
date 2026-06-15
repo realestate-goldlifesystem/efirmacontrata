@@ -223,7 +223,14 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
       return formData.address.trim() !== '' && formData.city.trim() !== '';
     }
     if (currentStep === 2) {
-      return formData.area.trim() !== '' && formData.propertyAge.trim() !== '';
+      if (formData.area.trim() === '' || formData.propertyAge.trim() === '') return false;
+      const count = parseInt(formData.roomsCount) || 1;
+      if (count >= 1 && !formData.bedPrincipal) return false;
+      if (count >= 2 && !formData.bedSecondary) return false;
+      if (count >= 3 && !formData.bedTertiary) return false;
+      if (count >= 4 && !formData.bedQuaternary) return false;
+      if (count >= 5 && !formData.bedQuinary) return false;
+      return true;
     }
     if (currentStep === 3) {
       return formData.propertyNumber.trim() !== '';
