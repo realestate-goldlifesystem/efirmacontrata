@@ -703,10 +703,12 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               className="w-full bg-white border border-stone-250 rounded-lg p-2 text-[11px]"
                             >
                               <option value="">Selecciona cama...</option>
-                              <option value="Doble">Cama doble + Mesas (2.55 m)</option>
-                              <option value="Queen">Cama queen + Mesas (2.70 m)</option>
-                              <option value="King">Cama king + Mesas (3.20 m)</option>
-                              <option value="Super King">Cama súper king + Mesas (3.40 m)</option>
+                              <option value="Dormitorio principal: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                              <option value="Dormitorio principal: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                              <option value="Dormitorio principal: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                              <option value="Dormitorio principal: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                              <option value="Dormitorio principal: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                              <option value="Dormitorio principal: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
                             </select>
                           </div>
                           {parseInt(formData.roomsCount) >= 2 && (
@@ -718,9 +720,12 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 className="w-full bg-white border border-stone-250 rounded-lg p-2 text-[11px]"
                               >
                                 <option value="">Selecciona cama...</option>
-                                <option value="Sencilla">Cama individual (2.10 m)</option>
-                                <option value="Semidoble">Cama semidoble (2.40 m)</option>
-                                <option value="Doble">Cama doble (2.55 m)</option>
+                                <option value="Dormitorio secundario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                <option value="Dormitorio secundario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                <option value="Dormitorio secundario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                <option value="Dormitorio secundario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                <option value="Dormitorio secundario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                <option value="Dormitorio secundario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
                               </select>
                             </div>
                           )}
@@ -733,9 +738,12 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 className="w-full bg-white border border-stone-250 rounded-lg p-2 text-[11px]"
                               >
                                 <option value="">Selecciona cama...</option>
-                                <option value="Sencilla">Cama individual (2.10 m)</option>
-                                <option value="Semidoble">Cama semidoble (2.40 m)</option>
-                                <option value="Doble">Cama doble (2.55 m)</option>
+                                <option value="Dormitorio terciario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                <option value="Dormitorio terciario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                <option value="Dormitorio terciario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                <option value="Dormitorio terciario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                <option value="Dormitorio terciario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                <option value="Dormitorio terciario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
                               </select>
                             </div>
                           )}
@@ -748,9 +756,12 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 className="w-full bg-white border border-stone-250 rounded-lg p-2 text-[11px]"
                               >
                                 <option value="">Selecciona cama...</option>
-                                <option value="Sencilla">Cama individual (2.10 m)</option>
-                                <option value="Semidoble">Cama semidoble (2.40 m)</option>
-                                <option value="Doble">Cama doble (2.55 m)</option>
+                                <option value="Dormitorio Cuaternario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                <option value="Dormitorio Cuaternario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                <option value="Dormitorio Cuaternario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                <option value="Dormitorio Cuaternario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                <option value="Dormitorio Cuaternario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                <option value="Dormitorio Cuaternario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
                               </select>
                             </div>
                           )}
@@ -763,9 +774,12 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 className="w-full bg-white border border-stone-250 rounded-lg p-2 text-[11px]"
                               >
                                 <option value="">Selecciona cama...</option>
-                                <option value="Sencilla">Cama individual (2.10 m)</option>
-                                <option value="Semidoble">Cama semidoble (2.40 m)</option>
-                                <option value="Doble">Cama doble (2.55 m)</option>
+                                <option value="Dormitorio Quinario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                <option value="Dormitorio Quinario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                <option value="Dormitorio Quinario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                <option value="Dormitorio Quinario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                <option value="Dormitorio Quinario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                <option value="Dormitorio Quinario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
                               </select>
                             </div>
                           )}
