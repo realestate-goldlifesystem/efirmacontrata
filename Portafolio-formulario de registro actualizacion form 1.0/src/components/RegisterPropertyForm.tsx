@@ -292,6 +292,9 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "N° Asignado del garaje": formData.garageAssignedNumber,
         "¿Dispone de deposito?": formData.hasDeposit,
         "# De Deposito": formData.depositNumber,
+        "Otro Interno": formData.otherInternal,
+        "Otro Externo": formData.otherExternal,
+        "INGRESE A CONTINUACIÓN UNA DESCRIPCIÓN ADICIONAL DEL INMUEBLE": formData.additionalDescription,
         "Ingrese Nombres y Apellidos": formData.name,
         "Número de documento": `${formData.documentType} ${formData.documentNumber}`,
         "Ciudad de Expedicion": formData.documentCityOfExpedition,
@@ -988,6 +991,15 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       <div className="pt-4 border-t border-stone-100">
                         <label className="text-sm text-stone-900 font-bold block mb-3 text-center uppercase tracking-widest font-mono text-[#8A631F]">ZONAS Y CARACTERÍSTICAS INTERNAS</label>
                         <FeaturesGridSelector currentAnswers={formData.gridAnswers} category="internas" onAnswersChange={(ans) => setFormData(prev => ({ ...prev, gridAnswers: ans }))} />
+                        <div className="mt-6">
+                          <label className="text-xs text-stone-600 font-bold block mb-1">OTRAS ZONAS INTERNAS (Texto libre)</label>
+                          <textarea 
+                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs" 
+                            placeholder="Ej. Cuarto de hobbies, cava de vinos, cuarto de herramientas..."
+                            rows={2} value={formData.otherInternal}
+                            onChange={e => setFormData({ ...formData, otherInternal: e.target.value })}
+                          />
+                        </div>
                       </div>
 
                     </div>
@@ -1004,6 +1016,15 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       <div>
                         <label className="text-sm text-stone-900 font-bold block mb-3 text-center uppercase tracking-widest font-mono text-[#8A631F]">ZONAS COMUNALES Y EXTERNAS</label>
                         <FeaturesGridSelector currentAnswers={formData.gridAnswers} category="externas" onAnswersChange={(ans) => setFormData(prev => ({ ...prev, gridAnswers: ans }))} />
+                        <div className="mt-6">
+                          <label className="text-xs text-stone-600 font-bold block mb-1">OTRAS ZONAS EXTERNAS (Texto libre)</label>
+                          <textarea 
+                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs" 
+                            placeholder="Ej. Huerta comunitaria, zona pet-friendly, cuarto de escoltas..."
+                            rows={2} value={formData.otherExternal}
+                            onChange={e => setFormData({ ...formData, otherExternal: e.target.value })}
+                          />
+                        </div>
                       </div>
 
                       <div className="pt-4 border-t border-stone-100">
