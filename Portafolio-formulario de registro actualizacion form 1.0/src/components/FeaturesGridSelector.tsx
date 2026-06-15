@@ -4,32 +4,36 @@ import estructuraForm from '../estructura_form.json';
 
 interface FeaturesGridSelectorProps {
   onAnswersChange: (answers: Record<string, string>) => void;
+  category?: 'internas' | 'externas' | 'todas';
+  currentAnswers: Record<string, string>;
 }
 
-export default function FeaturesGridSelector({ onAnswersChange }: FeaturesGridSelectorProps) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+export default function FeaturesGridSelector({ onAnswersChange, category = 'todas', currentAnswers }: FeaturesGridSelectorProps) {
 
   // Filter only the GRID components that have single or multiple options
-  const grids = estructuraForm.items.filter(
+  let grids = estructuraForm.items.filter(
     (item) => item.tipo === 'GRID' || item.tipo === 'CHECKBOX_GRID'
   );
 
-  const toggleAnswer = (row: string, col: string) => {
-    setAnswers((prev) => {
-      const next = { ...prev };
-      // If it's a SI/NO grid, we allow toggling between SI and NO
-      if (next[row] === col) {
-        delete next[row]; // Unselect if already selected
-      } else {
-        next[row] = col;
-      }
-      return next;
-    });
-  };
+  if (category === 'internas') {
+    grids = grids.filter(g => g.filas && g.filas.some(f => f.toLowerCase().includes('interna')));
+  } else if (category === 'externas') {
+    grids = grids.filter(g => g.filas && !g.filas.some(f => f.toLowerCase().includes('interna')));
+  }
 
-  useEffect(() => {
-    onAnswersChange(answers);
-  }, [answers, onAnswersChange]);
+  const toggleAnswer = (row: string, col: string, gridTitle: string = '') => {
+    // Format the key EXACTLY as it appears in the Google Sheet headers
+    const key = gridTitle.trim() ? `${gridTitle} [${row}]` : `[${row}]`;
+    
+    const next = { ...currentAnswers };
+    // If it's a SI/NO grid, we allow toggling between SI and NO
+    if (next[key] === col) {
+      delete next[key]; // Unselect if already selected
+    } else {
+      next[key] = col;
+    }
+    onAnswersChange(next);
+  };
 
   return (
     <div className="space-y-6">
@@ -49,12 +53,13 @@ export default function FeaturesGridSelector({ onAnswersChange }: FeaturesGridSe
                     <span className="font-semibold text-stone-700">{row}</span>
                     <div className="flex space-x-2">
                       {grid.columnas?.map((col) => {
-                        const isSelected = answers[row] === col;
+                        const key = grid.titulo ? `${grid.titulo} [${row}]` : `[${row}]`;
+                        const isSelected = currentAnswers[key] === col;
                         return (
                           <button
                             key={col}
                             type="button"
-                            onClick={() => toggleAnswer(row, col)}
+                            onClick={() => toggleAnswer(row, col, grid.titulo || '')}
                             className={`px-3 py-1 rounded-md transition-colors ${
                               isSelected 
                                 ? col === 'SI' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
@@ -81,13 +86,14 @@ export default function FeaturesGridSelector({ onAnswersChange }: FeaturesGridSe
                   const cleanCol = colToSelect.replace(/[•ㅤ]/g, '').trim();
                   const cleanRow = row.replace(/Zona (interna|comunal|húmedas) #\d+ /, '').replace(/Cancha deportiva #\d+ /, '').replace(/Tipo de zona #\d+ /, '').trim();
 
-                  const isSelected = answers[row] === colToSelect;
+                  const key = grid.titulo ? `${grid.titulo} [${row}]` : `[${row}]`;
+                  const isSelected = currentAnswers[key] === colToSelect;
 
                   return (
                     <button
                       key={row}
                       type="button"
-                      onClick={() => toggleAnswer(row, colToSelect)}
+                      onClick={() => toggleAnswer(row, colToSelect, grid.titulo || '')}
                       className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
                         isSelected
                           ? 'bg-brand-gold/10 text-brand-gold-dark border-brand-gold shadow-sm'

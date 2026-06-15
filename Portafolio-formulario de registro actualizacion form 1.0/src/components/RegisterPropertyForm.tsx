@@ -229,20 +229,23 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
       return formData.propertyNumber.trim() !== '';
     }
     if (currentStep === 4) {
+      return true; // Any required fields on step 4? No
+    }
+    if (currentStep === 5) {
       return formData.name.trim() !== '' && 
              formData.documentNumber === formData.confirmDocumentNumber &&
              isPhoneValid(formData.phone, formData.countryCode) && 
              formData.phone === formData.confirmPhone &&
              formData.email.toLowerCase() === formData.confirmEmail.toLowerCase();
     }
-    if (currentStep === 5) {
+    if (currentStep === 6) {
       return formData.clausesAccepted;
     }
     return true;
   };
 
   const handleNextStep = () => {
-    if (canGoToNext()) setCurrentStep(p => Math.min(6, p + 1));
+    if (canGoToNext()) setCurrentStep(p => Math.min(7, p + 1));
   };
   const handlePrevStep = () => setCurrentStep(p => Math.max(1, p - 1));
 
@@ -261,7 +264,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "Define el propósito de tu inmueble": formData.destination,
         "Selecciona la localidad del inmueble": formData.localidad,
         "Selecciona la UPZ  de tu inmueble": formData.upz,
-        "BARRIO DEL INMUEBLE": formData.barrio === 'Otro' ? formData.customBarrio : formData.barrio,
+        "Escriba el barrio del inmueble": formData.barrio === 'Otro' ? formData.customBarrio : formData.barrio,
         "Ingrese la Dirección del inmueble": formData.address,
         "Ingrese la Ciudad del inmueble": formData.city,
         "Selecciona el tipo de inmueble": formData.propertyType,
@@ -274,17 +277,26 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "Habitación quinaria": formData.bedQuinary,
         "N° de Baños": formData.bathroomsCount,
         "¿Cual es el estrato?": formData.estrato,
-        "Antiguedad en Años": formData.propertyAge,
-        "N° de Parqueaderos": formData.garagesCount,
-        "¿Tiene deposito?": formData.hasDeposit,
-        "ZONAS COMUNES DEL INMUEBLE": formData.commonAreas,
-        "IDENTIFICACIÓN DEL INMUEBLE": formData.idTypeDescription,
+        "Antiguedad del Inmueble": formData.propertyAge,
+        "N° de piso": formData.floorNumber,
+        "MEDIDAS DEL ESPACIO DE LA NEVERA": `${formData.fridgeAncho}x${formData.fridgeLargo}x${formData.fridgeAlto}`,
+        "PUNTO DE AGUA": formData.fridgeWaterPoint,
+        "MEDIDAS DEL ESPACIO DE LA LAVADORA": `${formData.washingAncho}x${formData.washingLargo}x${formData.washingAlto}`,
+        "PUNTO DE GAS": formData.washingGasPoint,
+        "¿El inmueble solo lo describe el Número? o ¿Número y torre?": formData.idTypeDescription,
         "N° o Letra de la Torre": formData.towerLetter,
         "N° de inmueble": formData.propertyNumber,
+        "N° de Garajes": formData.garagesCount,
+        "¿Es Independiente o en Servidumbre?": formData.garageServitude,
+        "¿Es Cubierto o descubierto?": formData.garageCovered,
+        "N° Asignado del garaje": formData.garageAssignedNumber,
+        "¿Dispone de deposito?": formData.hasDeposit,
+        "# De Deposito": formData.depositNumber,
         "Ingrese Nombres y Apellidos": formData.name,
-        "Tipo de documento": formData.documentType,
-        "Número de documento": formData.documentNumber,
-        "Celular": formData.phone,
+        "Número de documento": `${formData.documentType} ${formData.documentNumber}`,
+        "Ciudad de Expedicion": formData.documentCityOfExpedition,
+        "Pais de Expedicion": formData.documentCountryOfExpedition,
+        "Celular": `${formData.countryCode} ${formData.phone}`,
         "Correo electrónico": formData.email,
         "TIPO DE NEGOCIO": formData.serviceType === 'administracion' ? 'Administración' : formData.serviceType === 'corretaje' ? 'Corretaje' : formData.serviceType === 'venta' ? 'Venta' : formData.serviceType === 'admi-venta' ? 'Admi-Venta' : 'Vendi-Renta',
         ...formData.gridAnswers
@@ -973,38 +985,44 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         )}
                       </div>
 
-                      <div>
-                        <label className="text-xs text-stone-600 font-bold block mb-1">ZONAS COMUNES DEL INMUEBLE</label>
-                        <input 
-                          type="text" value={formData.commonAreas} 
-                          onChange={e => setFormData({ ...formData, commonAreas: e.target.value })}
-                          placeholder="Ej. Piscina, Gimnasio, BBQ, Parque infantil..." className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="text-xs text-stone-600 font-bold block mb-1">OTROS COMENTARIOS O DESCRIPCIÓN ADICIONAL</label>
-                        <textarea 
-                          rows={2} value={formData.additionalDescription}
-                          onChange={e => setFormData({ ...formData, additionalDescription: e.target.value })}
-                          placeholder="Escribe detalles adicionales..."
-                          className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                        />
-                      </div>
-
                       <div className="pt-4 border-t border-stone-100">
-                        <label className="text-sm text-stone-900 font-bold block mb-3 text-center uppercase tracking-widest font-mono text-[#8A631F]">SELECCIÓN DE CARACTERÍSTICAS (ZONAS Y EXTRAS)</label>
-                        <FeaturesGridSelector onAnswersChange={(ans) => setFormData(prev => ({ ...prev, gridAnswers: ans }))} />
+                        <label className="text-sm text-stone-900 font-bold block mb-3 text-center uppercase tracking-widest font-mono text-[#8A631F]">ZONAS Y CARACTERÍSTICAS INTERNAS</label>
+                        <FeaturesGridSelector currentAnswers={formData.gridAnswers} category="internas" onAnswersChange={(ans) => setFormData(prev => ({ ...prev, gridAnswers: ans }))} />
                       </div>
 
                     </div>
                   )}
 
-                  {/* STEP 4: Datos del Propietario (Confirmaciones integradas) */}
+                  {/* STEP 4: Zonas Externas */}
                   {currentStep === 4 && (
                     <div className="space-y-4 animate-fade-in">
                       <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
                         <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">4</span>
+                        Zonas Externas y Entorno
+                      </h4>
+
+                      <div>
+                        <label className="text-sm text-stone-900 font-bold block mb-3 text-center uppercase tracking-widest font-mono text-[#8A631F]">ZONAS COMUNALES Y EXTERNAS</label>
+                        <FeaturesGridSelector currentAnswers={formData.gridAnswers} category="externas" onAnswersChange={(ans) => setFormData(prev => ({ ...prev, gridAnswers: ans }))} />
+                      </div>
+
+                      <div className="pt-4 border-t border-stone-100">
+                        <label className="text-xs text-stone-600 font-bold block mb-1">OTROS COMENTARIOS O DESCRIPCIÓN ADICIONAL</label>
+                        <textarea 
+                          rows={3} value={formData.additionalDescription}
+                          onChange={e => setFormData({ ...formData, additionalDescription: e.target.value })}
+                          placeholder="Escribe detalles adicionales..."
+                          className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 5: Datos del Propietario (Confirmaciones integradas) */}
+                  {currentStep === 5 && (
+                    <div className="space-y-4 animate-fade-in">
+                      <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">5</span>
                         Datos Personales del Propietario
                       </h4>
 
@@ -1171,11 +1189,11 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                     </div>
                   )}
 
-                  {/* STEP 5: Cláusulas y Porcentajes de Negocio */}
-                  {currentStep === 5 && (
+                  {/* STEP 6: Cláusulas y Porcentajes de Negocio */}
+                  {currentStep === 6 && (
                     <div className="space-y-4 animate-fade-in">
                       <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
-                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">5</span>
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">6</span>
                         Cláusulas Legales y Comisión de Acuerdos
                       </h4>
 
@@ -1285,11 +1303,11 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                     </div>
                   )}
 
-                  {/* STEP 6: Precios Generales, Autorización de Ingreso y Notificación */}
-                  {currentStep === 6 && (
+                  {/* STEP 7: Precios Generales, Autorización de Ingreso y Notificación */}
+                  {currentStep === 7 && (
                     <div className="space-y-4 animate-fade-in">
                       <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
-                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">6</span>
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">7</span>
                         Precios de Comercialización y Acta a Portería
                       </h4>
 
@@ -1432,7 +1450,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                     </button>
                   ) : <div />}
 
-                  {currentStep < 6 ? (
+                  {currentStep < 7 ? (
                     <button
                       type="button" onClick={handleNextStep}
                       disabled={!canGoToNext()}

@@ -81,30 +81,18 @@ function procesarRegistroParte2(datos) {
     // Respaldar y eliminar filtros en Archivo 2
     backupFiltro = removerYRespaldarFiltros(sheet);
 
-    // NUEVO: Esperar activamente a que Autocrat genere el documento (Máx 60s)
+    // NUEVO: Ejecutar Motor Autocrat Nativo inmediatamente en lugar de esperar 60s
     var tipoNegocio = datos.datosInmueble.tipoNegocio;
-    var colName = '';
-    switch(tipoNegocio) {
-      case 'Administración': colName = 'Merged Doc ID - ADMINISTRACIÓN'; break;
-      case 'Venta': colName = 'Merged Doc ID - VENTA'; break;
-      case 'Admi-Venta': colName = 'Merged Doc ID - ADMI-VENTA'; break;
-      case 'Vendi-Renta': colName = 'Merged Doc ID - VENDI-RENTA'; break;
-      case 'Corretaje':
-      default: colName = 'Merged Doc ID - CORRETAJE'; break;
-    }
-    var colIndex = getColumnByName(sheet, colName);
-    if (colIndex) {
-      var intent = 0;
-      while (!sheet.getRange(row, colIndex).getValue() && intent < 12) {
-        Logger.log('⏳ Esperando a que Autocrat genere el PDF (' + (intent+1) + '/12)...');
-        Utilities.sleep(5000); // 5 segundos
-        intent++;
-      }
-      if (intent >= 12) {
-        Logger.log('⚠️ Tiempo agotado esperando a Autocrat.');
+    try {
+      // Si el motor existe, generamos el PDF y su ID queda en la hoja
+      if (typeof generarDocumentoNativo === 'function') {
+        Logger.log('⚡ Disparando Motor Autocrat Nativo...');
+        generarDocumentoNativo(sheet, row, tipoNegocio, DriveApp.getRootFolder());
       } else {
-        Logger.log('✅ Autocrat ha finalizado la generación de PDFs.');
+        Logger.log('⚠️ Motor Autocrat Nativo no encontrado.');
       }
+    } catch (e) {
+      Logger.log('⚠️ Error al ejecutar Motor Autocrat Nativo: ' + e.message);
     }
 
     // Procesar según tipo detectado

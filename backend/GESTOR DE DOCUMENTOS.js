@@ -448,6 +448,20 @@ function doGet(e) {
         result = { success: true, message: 'Endpoint base activo' };
         break;
 
+      case 'getFormStructure':
+        try {
+          const form = FormApp.openById('1UZ7_3GpL-NR-Kt0cNWkalOqNscs2Fp8h2py1GE557g4');
+          const items = form.getItems();
+          result = { 
+            success: true, 
+            titles: items.map(i => i.getTitle()),
+            types: items.map(i => i.getType().toString())
+          };
+        } catch (err) {
+          result = { success: false, error: err.message };
+        }
+        break;
+
       case 'getMultimediaData':
         if (typeof handleGetMultimediaData === 'function') {
            result = handleGetMultimediaData(e.parameter);
