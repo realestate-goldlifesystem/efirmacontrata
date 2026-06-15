@@ -88,7 +88,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     garageServitude: 'Independiente',
     garageCovered: 'Cubierto',
     garageAssignedNumber: '',
-    hasDeposit: 'Ninguno', // Deposito, Ninguno
+    hasDeposit: 'ㅤ', // 'Depositoㅤ', 'ㅤ'
     depositNumber: '',
     internalFeatures: [] as string[],
     externalFeatures: [] as string[],
@@ -969,11 +969,11 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             onChange={e => setFormData({ ...formData, hasDeposit: e.target.value })}
                             className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs cursor-pointer"
                           >
-                            <option value="Ninguno">Ninguno</option>
-                            <option value="Deposito">Sí, asume depósito</option>
+                            <option value="ㅤ">Ninguno</option>
+                            <option value="Depositoㅤ">Sí, asume depósito</option>
                           </select>
                         </div>
-                        {formData.hasDeposit === 'Deposito' && (
+                        {formData.hasDeposit === 'Depositoㅤ' && (
                           <div className="animate-fade-in">
                             <label className="text-xs text-stone-600 font-bold block mb-1">NÚMERO DE DEPÓSITO</label>
                             <input 

@@ -64,7 +64,7 @@ Cuando el usuario (Leonardo) te asigne un nuevo objetivo grande o complejo, tu *
 ## 🚀 3. Reglas de Despliegue (CÓMO HACER TU TRABAJO)
 Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los despliegues de esta forma:
 
-### 6. Flujo de Trabajo (Apps Script y Clasp)
+### 3.1 Flujo de Trabajo Backend (Apps Script y Clasp)
 * El código se modifica localmente.
 * Para sincronizar con Google Scripts, se usa la terminal de VSCode (o la local): `clasp push`.
 * ⚠️ **OJO - TRAMPA MORTAL DE WEB APPS**: Si editas un archivo HTML o lógica del `doPost` que afecta al Web App (`/exec`), hacer `clasp push` **NO ES SUFICIENTE**. El Web App seguirá ejecutando el código viejo de la implementación anterior.
@@ -72,15 +72,17 @@ Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los
   - El ID actual lo puedes encontrar en `frontend/config.js` en la variable `API_URL` (es la cadena larga entre `/s/` y `/exec`). 
   - Si no haces esto, los cambios de backend nunca se reflejarán en el frontend y te volverás loco buscando el bug.
   - **LÍMITE DE 200 VERSIONES:** Google Apps Script tiene un límite estricto de 200 versiones por proyecto. Si al hacer `clasp deploy` la consola arroja `Script has reached the limit of 200 versions`, **notifica inmediatamente al usuario (Leonardo)** para que entre al entorno visual de Apps Script (Historial del Proyecto) y borre implementaciones antiguas. No intentes forzarlo ni crear nuevos IDs.
-* IMPORTANTE: No modificar archivos locales sin un `clasp pull` previo si hay riesgo de cambios remotos. Pero nuestra política es **Source of Truth = Local**, así que todo cambio se hace local y se pushea.
 
-1. **Modo Borrador / Desarrollo (`clasp push`):**
-   Si modificas un script en `backend/`, ejecuta en terminal `cmd /c npx clasp push`. Esto sube el código a Google. **OJO:** El frontend público no verá estos cambios aún, solo las URLs de prueba (`/dev`).
-2. **Modo Producción (`clasp deploy`):**
-   Si necesitas que tus cambios en el backend funcionen inmediatamente con el Frontend en GitHub, **TIENES** que crear una nueva versión de despliegue oficial.
-   Ejecuta: `cmd /c npx clasp deploy -i "AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW" -d "Parche IA"`
-3. **Frontend (GitHub):**
-   Si cambias algo en la carpeta `frontend/`, haz `git add .`, `git commit` y `git push origin main`. GitHub Pages se encargará del resto.
+### 3.2 Flujo de Trabajo Frontend (GitHub Pages / Arquitectura Global)
+* **Hosting:** Todo el ecosistema de cliente (Frontend) NO está en Vercel. Se aloja de forma integral en **GitHub Pages**. 
+* **Estructura Base URL:** `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/`
+* **Manejo de Páginas Clásicas (HTML/JS):** Páginas como el `validador.html`, `formulario-inquilino.html` o `sala_firmas.html` viven directamente en la carpeta `/frontend/`. Cualquier cambio en ellas simplemente requiere un `git push origin main`.
+* **Aplicaciones Modernas (React / Vite):** Para módulos más complejos creados en React (ej. la subcarpeta `Portafolio-formulario de registro actualizacion form 1.0` u otras aplicaciones futuras):
+  1. Realiza los cambios en los `.tsx` o fuente de la carpeta de desarrollo.
+  2. Ejecuta la compilación con `npm run build` en su directorio de origen.
+  3. MUEVE los archivos compilados de la carpeta `dist/` a su carpeta pública definitiva dentro de `/frontend/` (ej: `/frontend/portafolio/` para el portafolio actual). Reemplaza los `assets` e `index.html` anteriores.
+  4. Desde la raíz del proyecto, sincroniza usando Git: `git add frontend/`, `git commit -m "update frontend"`, y `git push origin main`.
+  5. GitHub Pages publicará automáticamente todo el contenido estático del directorio `/frontend/`. No esperes a Vercel ni a otras plataformas externas.
 
 ## 🛠️ 4. Tus Superpoderes y Limitaciones (IA)
 1. **Despliegue Autónomo:** Eres capaz de usar la terminal (cmd/powershell) para hacer `push` y `deploy` de Clasp y Git. ¡Hazlo! No esperes a que el usuario lo haga a mano.
