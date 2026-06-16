@@ -2189,6 +2189,24 @@ function handleProcesarFirmaElectronica(datos) {
                       }
                     }
 
+                    // Verificar si el propietario explícitamente desea enviar el acta a la administración también
+                    let colEnviarAdmin = 0;
+                    for (let c = 0; c < headers.length; c++) {
+                      const hName = headers[c] ? headers[c].toString().toLowerCase() : '';
+                      if (hName.includes('desea enviar el acta notificación') || hName.includes('desea enviar el acta notificacion')) {
+                        colEnviarAdmin = c + 1;
+                        break;
+                      }
+                    }
+
+                    let deseaEnviarAAdmin = false;
+                    if (colEnviarAdmin > 0) {
+                      const valorEnviarAdmin = String(targetRowData[colEnviarAdmin - 1] || '').toLowerCase().trim();
+                      if (valorEnviarAdmin === 'si' || valorEnviarAdmin === 'sí') {
+                        deseaEnviarAAdmin = true;
+                      }
+                    }
+
                     if (colAuthId > 0) {
                       const authDocId = targetRowData[colAuthId - 1];
                       if (authDocId && authDocId.toString().trim() !== '') {
@@ -2214,8 +2232,12 @@ function handleProcesarFirmaElectronica(datos) {
                           attachments: [authPdfBlob]
                         };
                         
-                        if (adminInmuebleEmail && adminInmuebleEmail.trim() !== '') {
+                        // Solo enviamos en copia a la administración si la respuesta fue "SI" y se cuenta con un correo válido
+                        if (deseaEnviarAAdmin && adminInmuebleEmail && adminInmuebleEmail.trim() !== '') {
                           optionsAuth.cc = adminInmuebleEmail.trim();
+                          Logger.log("Se agregará en CC a la administración: " + adminInmuebleEmail);
+                        } else {
+                          Logger.log("No se copia en CC a la administración (Opciones: deseaEnviarAdmin=" + deseaEnviarAAdmin + ", email=" + adminInmuebleEmail + ")");
                         }
 
                         MailApp.sendEmail(optionsAuth);
