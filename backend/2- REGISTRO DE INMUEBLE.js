@@ -86,8 +86,22 @@ function procesarRegistroParte2(datos) {
     try {
       // Si el motor existe, generamos el PDF y su ID queda en la hoja
       if (typeof generarDocumentoNativo === 'function') {
-        Logger.log('⚡ Disparando Motor Autocrat Nativo...');
+        Logger.log('⚡ Disparando Motor Autocrat Nativo para tipo de negocio...');
         generarDocumentoNativo(sheet, row, tipoNegocio, DriveApp.getRootFolder());
+
+        // Generar también la Autorización de Ingreso si la propiedad tiene portería y administración
+        var colPorteria = getColumnByName(sheet, '¿El inmueble dispone de portería y administración para realizar un acta de notificación de promoción inmobiliaria he ingreso?');
+        if (colPorteria) {
+          var valorPorteria = sheet.getRange(row, colPorteria).getValue();
+          if (valorPorteria === 'SI') {
+            Logger.log('⚡ Generando Acta de Autorización de Ingreso al Inmueble...');
+            generarDocumentoNativo(sheet, row, 'AUTORIZACIÓN DE INGRESO AL INMUEBLE', DriveApp.getRootFolder());
+          } else {
+            Logger.log('ℹ️ No aplica generación de Acta de Autorización de Ingreso (valor no es SI).');
+          }
+        } else {
+          Logger.log('⚠️ No se encontró la columna de portería para verificar el Acta de Ingreso.');
+        }
       } else {
         Logger.log('⚠️ Motor Autocrat Nativo no encontrado.');
       }

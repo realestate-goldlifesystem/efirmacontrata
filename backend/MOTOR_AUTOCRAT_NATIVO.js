@@ -27,6 +27,7 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
       else if (tipoNegocio === 'Venta') targetJobName = 'VENTA';
       else if (tipoNegocio === 'Admi-Venta') targetJobName = 'ADMI-VENTA';
       else if (tipoNegocio === 'Vendi-Renta') targetJobName = 'VENDI-RENTA';
+      else if (tipoNegocio === 'AUTORIZACIÓN DE INGRESO AL INMUEBLE') targetJobName = 'AUTORIZACIÓN DE INGRESO AL INMUEBLE';
       
       if (jobName === targetJobName) {
         jobRow = data[i];
@@ -107,6 +108,7 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
       case 'Venta': colName = 'Merged Doc ID - VENTA'; break;
       case 'Admi-Venta': colName = 'Merged Doc ID - ADMI-VENTA'; break;
       case 'Vendi-Renta': colName = 'Merged Doc ID - VENDI-RENTA'; break;
+      case 'AUTORIZACIÓN DE INGRESO AL INMUEBLE': colName = 'Merged Doc ID - AUTORIZACIÓN DE INGRESO AL INMUEBLE'; break;
       case 'Corretaje':
       default: colName = 'Merged Doc ID - CORRETAJE'; break;
     }
