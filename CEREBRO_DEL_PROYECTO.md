@@ -37,9 +37,9 @@ El proyecto vive en dos repositorios/carpetas que se hablan mediante una API (JS
 - **Importante:** Todo lo que esté en esta carpeta NUNCA debe subir a Apps Script. Por ello, `_herramientas_locales/**` está estrictamente ignorado en `.claspignore`.
 
 **INVENTARIO DE HERRAMIENTAS ACTUALES:**
-Antes de crear un nuevo script para conectarte a Sheets o testear algo, **¡REVISA ESTA CARPETA PRIMERO!** Ya existen herramientas pre-construidas muy potentes:
+Antes de crear un nuevo script para conectarte a Sheets o testear algo, **¡REVISA ESTA CARPETA PRIMERO!** Existe una guía completa en [GUIA_HERRAMIENTAS_LOCALES.md](file:///c:/Users/DLeo%20Gutierrez/Documents/Documentos%20personales/1-%20Gold%20Life%20System/1.%20REAL%20ESTATE-GOLDLIFE/Real%20Estate%20(Apps%20Script)/GUIA_HERRAMIENTAS_LOCALES.md) que documenta todas las herramientas pre-construidas:
 - `sheets-helper.js`: Utilidad core para leer/escribir en Google Sheets directamente desde la consola usando la Service Account.
-- `renombrar_columna_global.js`: Utilidad crítica para renombrar una columna simultáneamente en Google Sheets y en el mapeo de Autocrat. Uso: `node renombrar_columna_global.js "Nombre Viejo" "Nombre Nuevo"`.
+- `renombrar_columna_global.js`: Utilidad crítica repotenciada para renombrar una columna de forma global en Google Sheets, AutoCrat y en todos los archivos del proyecto (código local backend y frontend de forma paralela). Uso: `node _herramientas_locales/renombrar_columna_global.js "Nombre Viejo" "Nombre Nuevo"`.
 - `validar_sheet_pagos.js`: Para debuggear y validar el registro de transacciones.
 - `debug_auth.js` / `simple_auth_backup.js`: Para pruebas rápidas de autenticación.
 - `debug_html_service/`: Carpeta (Botiquín de primeros auxilios) con scripts (`split_script.js`, `extract_js.js`, `check_syntax.js`) para hacer ingeniería inversa de errores HTML/JS.

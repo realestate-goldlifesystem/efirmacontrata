@@ -1256,7 +1256,7 @@
     },
     {
       "id": 525030214,
-      "titulo": "Ingrese Nombres y Apellidos",
+      "titulo": "NOMBRES Y APELLIDOS DEL PROPIETARIO",
       "tipo": "TEXT",
       "ayuda": "Escriba nombres y apellidos del propietario",
       "requerido": true

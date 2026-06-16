@@ -75,7 +75,7 @@ function TEST_MANUAL_AUTORIZACION() {
           let colEmailProp = headers.findIndex(h => h && h.toString().toUpperCase().includes('CORREO ELECTRÓNICO'));
           let emailCliente = colEmailProp >= 0 ? targetRowData[colEmailProp] : Session.getActiveUser().getEmail();
 
-          let colNombrePropietario = headers.findIndex(h => h && h.toString().toUpperCase().includes('INGRESE NOMBRES Y APELLIDOS'));
+          let colNombrePropietario = headers.findIndex(h => h && h.toString().toUpperCase().includes('NOMBRES Y APELLIDOS DEL PROPIETARIO'));
           let nombreCliente = colNombrePropietario >= 0 ? targetRowData[colNombrePropietario] : 'TEST CLIENTE';
 
           let subjectAuth = `AUTORIZACION DE INGRESO AL INMUEBLE PARA GESTION INMOBILIARIA POR ${nombreCliente} en ${nombreInmueble} - REAL ESTATE Gold Life System`;

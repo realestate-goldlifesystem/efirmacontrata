@@ -847,7 +847,7 @@ function actualizarDatosCerebro(datos) {
       let celColPrefix = 'CELULAR INQUILINO';
 
       if (datos.tipo === 'propietario') {
-         nomColPrefix = 'Ingrese Nombres y Apellidos';
+         nomColPrefix = 'NOMBRES Y APELLIDOS DEL PROPIETARIO';
          docColPrefix = 'Número de documento';
          mailColPrefix = 'Correo electrónico';
          celColPrefix = 'Celular';
@@ -1335,7 +1335,7 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
       const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
       
       datosFormulario.propietario.email = datosFormulario.propietario.email || obtenerValorPorHeader(headers, row, 'CORREO PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Correo electrónico') || '';
-      datosFormulario.propietario.nombre = datosFormulario.propietario.nombre || obtenerValorPorHeader(headers, row, 'NOMBRE PROPIETARIO') || obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos') || '';
+      datosFormulario.propietario.nombre = datosFormulario.propietario.nombre || obtenerValorPorHeader(headers, row, 'NOMBRE PROPIETARIO') || obtenerValorPorHeader(headers, row, 'NOMBRES Y APELLIDOS DEL PROPIETARIO') || '';
     }
 
     // Procesar OCR si hay certificado de tradición
@@ -1617,7 +1617,7 @@ function obtenerRegistrosPropietarios() {
           detalles: detalles,
           estadoDocumental: estadoDocumental,
           propietario: {
-            nombre: obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos'),
+            nombre: obtenerValorPorHeader(headers, row, 'NOMBRES Y APELLIDOS DEL PROPIETARIO'),
             documento: obtenerValorPorHeader(headers, row, 'Número de documento'),
             email: obtenerValorPorHeader(headers, row, 'Correo electrónico'),
             celular: obtenerValorPorHeader(headers, row, 'Celular'),
@@ -2681,7 +2681,7 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
     // Mapeo de campos
     const campos = {
       'Correo electrónico': datosFormulario.propietario.email,
-      'Ingrese Nombres y Apellidos': datosFormulario.propietario.nombre,
+      'NOMBRES Y APELLIDOS DEL PROPIETARIO': datosFormulario.propietario.nombre,
       'TIPO DOCUMENTO PROPIETARIO': datosFormulario.propietario.tipoDocumento,
       'Número de documento': datosFormulario.propietario.numeroDocumento,
       'Celular': datosFormulario.propietario.celular,
@@ -3658,7 +3658,7 @@ function enviarEmailPropietario(cdr) {
     const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
 
     const emailProp = obtenerValorPorHeader(headers, row, 'Correo electrónico');
-    const nombreProp = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
+    const nombreProp = obtenerValorPorHeader(headers, row, 'NOMBRES Y APELLIDOS DEL PROPIETARIO');
 
     if (!emailProp) {
       Logger.log('No se encontró email del propietario para CDR: ' + cdr);
@@ -3915,7 +3915,7 @@ function enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir
     const row = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
 
     const email = obtenerValorPorHeader(headers, row, 'Correo electrónico');
-    const nombre = obtenerValorPorHeader(headers, row, 'Ingrese Nombres y Apellidos');
+    const nombre = obtenerValorPorHeader(headers, row, 'NOMBRES Y APELLIDOS DEL PROPIETARIO');
 
     const docsMapeados = mapearNombresAFrontendIds(documentosCorregir);
     const idRegistro = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
@@ -4024,7 +4024,7 @@ function actualizarCamposPropietario(fila, campos) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
     if (campos.nombre) {
-      const col = headers.indexOf('Ingrese Nombres y Apellidos') + 1;
+      const col = headers.indexOf('NOMBRES Y APELLIDOS DEL PROPIETARIO') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.nombre);
     }
 
@@ -4379,7 +4379,7 @@ function obtenerDatosRegistroPropietarioActual() {
     const colDetalles = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
 
     // Nombres y Correos (tanto inquilino para mostrar contexto, como propietario)
-    const colNombreProp = headers.indexOf('Ingrese Nombres y Apellidos');
+    const colNombreProp = headers.indexOf('NOMBRES Y APELLIDOS DEL PROPIETARIO');
     const colEmailProp = headers.indexOf('Correo electrónico');
 
     const direccion = colDireccion !== -1 ? rowData[colDireccion] : 'No especificada';
@@ -4433,7 +4433,7 @@ function procesarEmailPropietarioPopup(email, nombre) {
 
     // 3. Escribir/Actualizar nombre y correo del propietario (si los cambió el admin en el popup)
     const colEmailProp = headers.indexOf('Correo electrónico') + 1;
-    const colNombreProp = headers.indexOf('Ingrese Nombres y Apellidos') + 1;
+    const colNombreProp = headers.indexOf('NOMBRES Y APELLIDOS DEL PROPIETARIO') + 1;
 
     if (colEmailProp > 0) sheet.getRange(currentRow, colEmailProp).setValue(email);
     if (colNombreProp > 0) sheet.getRange(currentRow, colNombreProp).setValue(nombre);

@@ -432,7 +432,7 @@ function recopilarDatosContrato(cdr) {
 
     // Recopilar datos del propietario (Prioridad: Cerebro > Hoja)
     const propietario = {
-      nombre: extraerCampoCerebro(propietarioText, 'NOMBRES::') || obtenerValor('Ingrese Nombres y Apellidos'),
+      nombre: extraerCampoCerebro(propietarioText, 'NOMBRES::') || obtenerValor('NOMBRES Y APELLIDOS DEL PROPIETARIO'),
       tipoDocumento: extraerCampoCerebro(propietarioText, 'TIPO DE IDENTIFICACIÓN::') || obtenerValor('TIPO DOCUMENTO PROPIETARIO'),
       numeroDocumento: extraerCampoCerebro(propietarioText, 'NÚMERO DE IDENTIFICACIÓN::') || obtenerValor('Numero de documento'),
       celular: extraerCampoCerebro(propietarioText, 'CELULAR::') || obtenerValor('Celular'),
@@ -2085,7 +2085,7 @@ function handleProcesarFirmaElectronica(datos) {
           // --- NUEVO: Enviar copia del PDF al cliente ---
           try {
             const emailCol = getCol('Correo electrónico');
-            const nameCol = getCol('Ingrese Nombres y Apellidos');
+            const nameCol = getCol('NOMBRES Y APELLIDOS DEL PROPIETARIO');
             const tipoNegocioCol = getCol('TIPO DE NEGOCIO');
             
             if (emailCol > 0 && nameCol > 0) {

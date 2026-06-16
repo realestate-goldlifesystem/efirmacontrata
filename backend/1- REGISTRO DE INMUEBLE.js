@@ -379,7 +379,7 @@ function asignarEstadoRegistrando(sheet, row) {
 
 function extraerDatosInmueble(sheet, row) {
   return {
-    nombrePropietario: sheet.getRange(row, getColumnByName(sheet, 'Ingrese Nombres y Apellidos')).getValue(),
+    nombrePropietario: sheet.getRange(row, getColumnByName(sheet, 'NOMBRES Y APELLIDOS DEL PROPIETARIO')).getValue(),
     numeroDocumento: sheet.getRange(row, getColumnByName(sheet, 'Número de documento')).getValue(),
     tipoNegocio: sheet.getRange(row, getColumnByName(sheet, 'TIPO DE NEGOCIO')).getValue(),
     direccion: sheet.getRange(row, getColumnByName(sheet, 'Ingrese la Dirección del inmueble')).getValue(),

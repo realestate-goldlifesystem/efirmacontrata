@@ -829,7 +829,7 @@ function moverArchivosDesdeFilaADestino(sheet, row, destinoFolder) {
 
 function enviarCorreoFirmaInicial(sheet, row, cdr, tipoNegocio) {
   var emailCol = getColumnByName(sheet, 'Correo electrónico');
-  var nombreCol = getColumnByName(sheet, 'Ingrese Nombres y Apellidos');
+  var nombreCol = getColumnByName(sheet, 'NOMBRES Y APELLIDOS DEL PROPIETARIO');
   
   if (!emailCol || !nombreCol) {
     Logger.log('⚠️ No se puede enviar correo: Falta columna email o nombre');

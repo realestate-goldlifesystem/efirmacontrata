@@ -19,7 +19,7 @@ const CONFIG_DOCUMENTAL = {
     
     // Propietario
     EMAIL_PROPIETARIO: 'Correo electrónico',
-    NOMBRE_PROPIETARIO: 'Ingrese Nombres y Apellidos',
+    NOMBRE_PROPIETARIO: 'NOMBRES Y APELLIDOS DEL PROPIETARIO',
     TIPO_DOC_PROPIETARIO: 'TIPO DOCUMENTO PROPIETARIO',
     NUM_DOC_PROPIETARIO: 'Número de documento',
     CEL_PROPIETARIO: 'Celular',
