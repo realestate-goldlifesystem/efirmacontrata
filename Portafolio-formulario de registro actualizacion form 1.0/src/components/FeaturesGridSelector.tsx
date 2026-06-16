@@ -12,7 +12,7 @@ export default function FeaturesGridSelector({ onAnswersChange, category = 'toda
 
   // Filter only the GRID components that have single or multiple options
   let grids = estructuraForm.items.filter(
-    (item) => item.tipo === 'GRID' || item.tipo === 'CHECKBOX_GRID'
+    (item) => (item.tipo === 'GRID' || item.tipo === 'CHECKBOX_GRID') && item.titulo !== '¿En que tipo de zona se encuentra el inmueble?'
   );
 
   if (category === 'internas') {
