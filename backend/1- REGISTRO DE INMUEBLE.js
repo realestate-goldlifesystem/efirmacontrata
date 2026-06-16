@@ -428,10 +428,8 @@ function procesarRPR(datosInmueble) {
     carpetaPropietario = parentFolder.createFolder(folderName);
     Logger.log(`📁 Carpeta RPR creada: ${folderName}`);
 
-    // Copiar estructura completa de la plantilla
-    Logger.log('📋 Copiando estructura de PLANTILLA #1 (esto puede tardar 1-2 min)...');
-    copiarContenidoCompleto(templateFolder, carpetaPropietario);
-    Logger.log('✅ Estructura copiada completamente');
+    // NOTA: La copia de la PLANTILLA #1 se ha movido al Archivo 2 (procesarTipo4_NuevoPropietario)
+    // para evitar el límite de tiempo de 6 minutos de Apps Script.
 
     return {
       codigo: codigoRPR,

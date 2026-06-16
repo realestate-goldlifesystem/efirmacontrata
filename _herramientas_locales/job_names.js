@@ -1,6 +1,7 @@
 const { google } = require('googleapis');
 
-const SERVICE_ACCOUNT_FILE = '../real-estate-ocr-468904-38d35bfd32d6.json';
+const path = require('path');
+const SERVICE_ACCOUNT_FILE = path.join(__dirname, '../real-estate-ocr-468904-38d35bfd32d6.json');
 const SPREADSHEET_ID = '1jdPeOqQ2rRQNhlClAnFQFaNMxOl7HCI7oI1yG3_QRZc';
 
 async function main() {
@@ -24,8 +25,10 @@ async function main() {
         }
 
         // Just log Job Names
-        for (let i = 1; i < rows.length; i++) {
-            console.log(`JOB ${i}: ${rows[i][0]} (ID: ${rows[i][2]})`);
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i][1] === 'AUTORIZACIÓN DE INGRESO AL INMUEBLE') {
+                console.log(`FOUND JOB:`, rows[i]);
+            }
         }
     } catch (err) {
         console.error("Error:", err);

@@ -749,50 +749,52 @@ function procesarRegistrosPendientes() {
     // Ordenar de más antiguo a más reciente
     rowsToProcess.sort(function(a, b) { return a.row - b.row; });
 
-    Logger.log(`🚀 Worker: Iniciando procesamiento de ${rowsToProcess.length} registros encolados...`);
+    Logger.log(`🚀 Worker: Iniciando procesamiento del primer registro de ${rowsToProcess.length} encolados...`);
 
-    // Procesar cada fila secuencialmente usando un bucle for tradicional (permite break)
-    for (var i = 0; i < rowsToProcess.length; i++) {
-      var item = rowsToProcess[i];
+    // Procesar SOLO la primera fila para asegurar que cada ejecución tome menos de 10 segundos
+    var item = rowsToProcess[0];
 
-      // CONTROL DE TIEMPO LÍMITE: Si llevamos más de 4.5 minutos (270000 ms), autolanzamos otra instancia y salimos limpiamente.
-      var currentTime = new Date().getTime();
-      if (currentTime - startTime > 270000) {
-        Logger.log('⏳ Límite de tiempo cercano (4.5 minutos). Programando continuación automática para las filas restantes...');
-        try {
-          ScriptApp.newTrigger('procesarRegistrosPendientes')
-            .timeBased()
-            .after(60000) // Ejecutar en 1 minuto
-            .create();
-          Logger.log('✅ Nuevo trigger programado para dentro de 1 minuto.');
-        } catch (triggerErr) {
-          Logger.log('❌ Error al crear trigger de continuación: ' + triggerErr.message);
-        }
-        break; // Rompemos el ciclo para liberar el lock y salir ordenadamente
+    Logger.log(`⚙️ Worker: Procesando fila ${item.row}...`);
+    
+    // Obtener el rango y cabeceras
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var mockEvent = {
+      range: sheet.getRange(item.row, 1, 1, headers.length)
+    };
+
+    // Disparar el flujo síncrono en segundo plano (Fase 1)
+    if (typeof onFormSubmitInmueble === 'function') {
+      try {
+        onFormSubmitInmueble(mockEvent);
+        Logger.log(`✅ Worker: Fila ${item.row} procesada exitosamente en Fase 1.`);
+      } catch (execError) {
+        Logger.log(`❌ Worker: Error ejecutando onFormSubmitInmueble para fila ${item.row}: ` + execError.toString());
       }
+    } else {
+      Logger.log(`❌ Worker: onFormSubmitInmueble no está definido.`);
+    }
+    
+    // Eliminar el indicador de esta fila de la cola
+    props.deleteProperty(item.key);
 
-      Logger.log(`⚙️ Worker: Procesando fila ${item.row}...`);
-      
-      // Obtener el rango y cabeceras
-      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-      var mockEvent = {
-        range: sheet.getRange(item.row, 1, 1, headers.length)
-      };
-
-      // Disparar el flujo síncrono en segundo plano
-      if (typeof onFormSubmitInmueble === 'function') {
-        try {
-          onFormSubmitInmueble(mockEvent);
-          Logger.log(`✅ Worker: Fila ${item.row} procesada exitosamente.`);
-        } catch (execError) {
-          Logger.log(`❌ Worker: Error ejecutando onFormSubmitInmueble para fila ${item.row}: ` + execError.toString());
-        }
-      } else {
-        Logger.log(`❌ Worker: onFormSubmitInmueble no está definido.`);
+    // NUEVO: Revisar si quedaron más registros en la cola (o si llegaron nuevos mientras procesábamos)
+    var allPropsAfter = props.getProperties();
+    var hasMore = false;
+    for (var k in allPropsAfter) {
+      if (k.indexOf('PENDING_REGISTRATION_ROW_') === 0) {
+        hasMore = true;
+        break;
       }
-      
-      // Eliminar el indicador de esta fila de la cola
-      props.deleteProperty(item.key);
+    }
+
+    if (hasMore) {
+      Logger.log('⏳ Quedan más registros pendientes en la cola. Reprogramando Worker para el siguiente...');
+      ScriptApp.newTrigger('procesarRegistrosPendientes')
+        .timeBased()
+        .after(1000)
+        .create();
+    } else {
+      Logger.log('🏁 Todos los registros de la cola han sido enviados a la Fase 2.');
     }
 
   } catch (error) {

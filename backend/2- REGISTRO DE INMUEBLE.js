@@ -14,7 +14,16 @@ function continuarRegistroInmuebleParte2() {
   Logger.log('🟢 ARCHIVO 2 - INICIO DEL PROCESAMIENTO DIFERIDO');
   Logger.log('🟢 ═══════════════════════════════════════════════════');
 
+  var lock = LockService.getScriptLock();
   try {
+    // Intentar adquirir bloqueo para evitar que varias instancias procesen la misma cola concurrentemente
+    try {
+      lock.waitLock(15000);
+    } catch (e) {
+      Logger.log('🔒 No se pudo adquirir el bloqueo, otra instancia de Parte 2 está corriendo.');
+      return;
+    }
+
     // PASO 1: Recuperar registros pendientes
     Logger.log('💾 Recuperando datos guardados...');
     var props = PropertiesService.getScriptProperties();
@@ -35,34 +44,50 @@ function continuarRegistroInmuebleParte2() {
     if (procesosPendientes.length === 0) {
       Logger.log('⚠️ No hay procesos pendientes para Archivo 2');
       eliminarTriggerActual('continuarRegistroInmuebleParte2');
+      lock.releaseLock();
       return;
     }
 
-    Logger.log(`📋 Procesando ${procesosPendientes.length} registro(s) pendiente(s)`);
+    // Ordenar de más antiguo a más reciente para procesar en orden (FIFO)
+    procesosPendientes.sort(function(a, b) { return a.fila - b.fila; });
 
-    // PASO 2: Procesar cada registro
-    procesosPendientes.forEach(function (datos) {
-      Logger.log(`\n🔧 ═══════════════════════════════════════════════════`);
-      Logger.log(`🔧 Procesando fila ${datos.fila} - Tipo: ${datos.tipoRegistro.tipo}`);
-      Logger.log(`🔧 ═══════════════════════════════════════════════════`);
+    Logger.log(`📋 ${procesosPendientes.length} registro(s) pendiente(s) en total`);
 
-      procesarRegistroParte2(datos);
+    // PASO 2: Procesar SOLO EL PRIMER registro de la cola para no exceder los 6 minutos
+    var datos = procesosPendientes[0];
 
-      // Limpiar datos después de procesar
-      props.deleteProperty('PROCESO_PARTE2_' + datos.fila);
-    });
+    Logger.log(`\n🔧 ═══════════════════════════════════════════════════`);
+    Logger.log(`🔧 Procesando fila ${datos.fila} - Tipo: ${datos.tipoRegistro.tipo}`);
+    Logger.log(`🔧 ═══════════════════════════════════════════════════`);
 
-    // PASO 3: Eliminar trigger temporal
-    eliminarTriggerActual('continuarRegistroInmuebleParte2');
+    procesarRegistroParte2(datos);
+
+    // Limpiar datos después de procesar
+    props.deleteProperty('PROCESO_PARTE2_' + datos.fila);
+
+    // PASO 3: Si hay más registros pendientes, programamos otro trigger y salimos
+    if (procesosPendientes.length > 1) {
+      Logger.log(`⏳ Quedan ${procesosPendientes.length - 1} registros. Reprogramando Parte 2 para el siguiente registro...`);
+      ScriptApp.newTrigger('continuarRegistroInmuebleParte2')
+        .timeBased()
+        .after(1000)
+        .create();
+    } else {
+      // PASO 3: Eliminar trigger temporal si terminamos
+      eliminarTriggerActual('continuarRegistroInmuebleParte2');
+    }
 
     var tiempoTotal = (new Date().getTime() - tiempoInicio) / 1000;
     Logger.log('🟢 ═══════════════════════════════════════════════════');
-    Logger.log(`✅ ARCHIVO 2 - COMPLETO en ${tiempoTotal} segundos`);
+    Logger.log(`✅ ARCHIVO 2 - PROCESAMIENTO PARCIAL en ${tiempoTotal} segundos`);
     Logger.log('🟢 ═══════════════════════════════════════════════════');
+    
+    lock.releaseLock();
 
   } catch (error) {
     Logger.log('❌ ERROR CRÍTICO en Archivo 2: ' + error.message);
     Logger.log('📍 Stack: ' + error.stack);
+    if (typeof lock !== 'undefined') lock.releaseLock();
   }
 }
 
@@ -251,10 +276,26 @@ function procesarTipo4_NuevoPropietario(sheet, row, datos) {
 
   // 1. Obtener carpeta RPR
   var rprFolder = DriveApp.getFolderById(datos.rprFolderId);
-  var inmueblesFolder = getFolderByName(rprFolder, 'INMUEBLES');
+
+  // NUEVO: Ejecutar la copia pesada AQUÍ (se movió de la Parte 1 a la Parte 2)
+  var templateFolderId = '1YIsZRuxPmX7Ks43N16gFP_9Gd7r9SPNH'; // ID estático de PLANTILLA #1
+  var templateFolder = DriveApp.getFolderById(templateFolderId);
+  
+  // Validar si la copia ya se hizo por si el registro se reintenta
+  var inmueblesFolderIter = rprFolder.getFoldersByName('INMUEBLES');
+  var inmueblesFolder = inmueblesFolderIter.hasNext() ? inmueblesFolderIter.next() : null;
 
   if (!inmueblesFolder) {
-    throw new Error('No se encontró carpeta INMUEBLES en RPR');
+    Logger.log('📋 Copiando estructura de PLANTILLA #1 (esto puede tardar 1-2 min)...');
+    copiarContenidoCompleto(templateFolder, rprFolder);
+    Logger.log('✅ Estructura copiada completamente');
+    
+    inmueblesFolderIter = rprFolder.getFoldersByName('INMUEBLES');
+    inmueblesFolder = inmueblesFolderIter.hasNext() ? inmueblesFolderIter.next() : null;
+  }
+
+  if (!inmueblesFolder) {
+    throw new Error('No se encontró carpeta INMUEBLES en RPR incluso después de copiar la plantilla');
   }
 
   // 2. Asegurar carpetas de tipo de negocio

@@ -165,13 +165,13 @@ function instalarTriggerReembolsosMP() {
         if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
     });
 
-    // Se ejecutará cada 1 hora para evitar agotar las cuotas de Google (RESOURCE_EXHAUSTED)
+    // Se ejecutará cada 1 minuto
     ScriptApp.newTrigger(fnName)
         .timeBased()
-        .everyHours(1)
+        .everyMinutes(1)
         .create();
 
-    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Reembolsos activado (Ejecución optimizada cada 1 HORA).');
+    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Reembolsos activado (Ejecución optimizada cada 1 MINUTO).');
 }
 
 /**

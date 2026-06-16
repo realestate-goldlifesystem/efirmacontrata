@@ -58,7 +58,15 @@ Esta pestaña sigue siendo el "cerebro" que indica qué columna de Excel (`<<TIP
 
 Gracias a la información centralizada en el `CEREBRO_DEL_PROYECTO.md`, el sistema y yo tenemos la capacidad de cruzar y validar información por **4 vías distintas** para asegurar la conectividad al 100%:
 
-1. **Vía API Directa:** Llamando al endpoint `getFormStructure` en el backend para obtener en tiempo real todas las preguntas, opciones y títulos del Formulario original de Google Forms.
+1.- **Mapeo de Variables:** Cada Job tiene una correspondencia estricta entre una "Etiqueta" (Tag en el DOC) y un "Encabezado" (Header en la Columna).
+- **Control de Ejecución:** Autocrat está configurado para ejecutarse bajo condiciones muy específicas, usualmente cuando un registro cambia de estado o se completa.
+- **IDs de Plantillas de Google Docs por Negocio:**
+  - Corretaje: `1b6aL71TyCNvgOVEh7krZNQIYJdbCA5Zx15BYD6FEnxE`
+  - Administración: `1C_IJXKdf031UyWo2fO9O775DYZeWpKFxX53r3afoxmE`
+  - Venta: `1uPe1pK_e1MPI87KiOepNAeqWYpxgG7wwhrKbgfa6UL8`
+  - Vendi-Renta: `1RJDKSlknlIa9cxyAVICDck3HfwLP6y9m5PvP2MbyZqM`
+  - Admi-Venta: `1IKmt_elr6neRUdN3lUtYmIdfgVYti4ULvef9sEz_E90`
+  - Acta de Autorización de Ingreso: `1t4I70FYHWXVzN9HvYzFpjXQr5NrAkCeJqQvSAuz22Rs`
 2. **Vía Sheet (Cabezales):** Analizando y validando directamente los títulos de la pestaña `1.1 - INMUEBLES REGISTRADOS` para que hagan *match* exacto con el JSON Payload enviado desde el Portafolio.
 3. **Vía Archivo Físico (PDF):** Validando visual o textualmente la estructura del formulario oficial `FORMULARIO DE REGISTRO DE INMUEBLE PARA PROMOCIÓN INMOBILIARIA.pdf` para asegurar que el Frontend React replique la experiencia y los flujos condicionales de la empresa.
 4. **Vía Documentos y Tags de Autocrat:** Cruzando las preguntas del formulario (cabezales) con los `<<TAGS>>` incrustados en las actas y contratos finales (como las actas en Drive: `17gAoQX9DQ8AaGT0_qHLYu7T1orh62v7c` y la de Autorización de Ingreso `1hLFCeF4F9HrlPFBp3ER9uytOBOzhxW7r`). Se pueden verificar los tags manualmente o mediante scripts que llamen a la API de Drive para escanear el contenido del documento.

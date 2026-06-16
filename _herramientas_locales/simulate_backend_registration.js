@@ -66,7 +66,13 @@ async function run() {
     'LINK CARPETA DE INQUILINO',
     'SOPORTES CONTABLES',
     'INMUEBLES REGISTRADOS',
-    'LINK CARPETA DE CONTENIDO'
+    'LINK CARPETA DE CONTENIDO',
+    'Merged Doc ID - VENDI-RENTA',
+    'Merged Doc ID - AUTORIZACIÓN DE INGRESO AL INMUEBLE',
+    'Merged Doc ID - CORRETAJE',
+    'Merged Doc ID - ADMINISTRACIÓN',
+    'Merged Doc ID - VENTA',
+    'Merged Doc ID - ADMI-VENTA'
   ];
   
   console.log('\n--- LOOKUPS DE PARTE 2 ---');
