@@ -669,25 +669,116 @@ function handleRegistrarInmueble(datos) {
     // Obtener la fila recién insertada
     const lastRow = sheet.getLastRow();
 
-    // Simular el evento 'e' que envía Google Forms
-    const mockEvent = {
-      range: sheet.getRange(lastRow, 1, 1, headers.length)
-    };
+    // Encolar de forma asíncrona la fila para procesamiento pesado en segundo plano
+    const propKey = 'PENDING_REGISTRATION_ROW_' + lastRow;
+    PropertiesService.getScriptProperties().setProperty(propKey, 'true');
 
-    // Disparar el motor principal como si hubiera sido un Form original
-    if (typeof onFormSubmitInmueble === 'function') {
-      onFormSubmitInmueble(mockEvent);
-    } else {
-       throw new Error("El motor onFormSubmitInmueble no está definido en este entorno.");
-    }
+    // Programar el trigger asíncrono para ejecutar la cola en 1 segundo
+    ScriptApp.newTrigger('procesarRegistrosPendientes')
+      .timeBased()
+      .after(1000)
+      .create();
+
+    Logger.log(`⏳ Registro encolado asíncronamente para la fila ${lastRow}. Trigger programado.`);
 
     return { 
       success: true, 
-      message: "Inmueble inyectado al CRM correctamente. Motor de carpetas activado." 
+      message: "Inmueble inyectado al CRM correctamente. Su procesamiento y generación de documentos se realizará en segundo plano en breve." 
     };
   } catch (error) {
     Logger.log("Error en handleRegistrarInmueble: " + error.toString());
     return { success: false, message: "Error interno: " + error.message };
+  }
+}
+
+// ==========================================
+// WORKER ASÍNCRONO PARA PROCESAR COLA DE REGISTROS
+// ==========================================
+function procesarRegistrosPendientes() {
+  // 1. Intentar adquirir bloqueo para evitar ejecuciones concurrentes y colisiones
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000); // Esperar hasta 15 segundos si está ocupado
+  } catch (e) {
+    Logger.log('🔒 No se pudo adquirir el bloqueo de script, otra instancia de procesarRegistrosPendientes está activa.');
+    return;
+  }
+
+  // 2. Limpiar todos los triggers excedentes de esta función para mantener limpia la cuota
+  try {
+    var triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(function(trigger) {
+      if (trigger.getHandlerFunction() === 'procesarRegistrosPendientes') {
+        ScriptApp.deleteTrigger(trigger);
+      }
+    });
+  } catch (e) {
+    Logger.log('⚠️ Error limpiando triggers: ' + e.message);
+  }
+
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    if (!sheet) {
+      Logger.log("❌ Error en Worker: Hoja '1.1 - INMUEBLES REGISTRADOS' no encontrada.");
+      return;
+    }
+
+    var props = PropertiesService.getScriptProperties();
+    var allProps = props.getProperties();
+    var rowsToProcess = [];
+
+    // Encontrar todas las filas pendientes en la cola
+    for (var key in allProps) {
+      if (key.indexOf('PENDING_REGISTRATION_ROW_') === 0) {
+        var rowNum = parseInt(key.replace('PENDING_REGISTRATION_ROW_', ''), 10);
+        if (!isNaN(rowNum)) {
+          rowsToProcess.push({ row: rowNum, key: key });
+        }
+      }
+    }
+
+    // Si no hay nada encolado, terminar
+    if (rowsToProcess.length === 0) {
+      Logger.log('ℹ️ Cola vacía. No hay filas pendientes de procesar.');
+      return;
+    }
+
+    // Ordenar de más antiguo a más reciente
+    rowsToProcess.sort(function(a, b) { return a.row - b.row; });
+
+    Logger.log(`🚀 Worker: Iniciando procesamiento de ${rowsToProcess.length} registros encolados...`);
+
+    // Procesar cada fila secuencialmente
+    rowsToProcess.forEach(function(item) {
+      Logger.log(`⚙️ Worker: Procesando fila ${item.row}...`);
+      
+      // Obtener el rango y cabeceras
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var mockEvent = {
+        range: sheet.getRange(item.row, 1, 1, headers.length)
+      };
+
+      // Disparar el flujo síncrono en segundo plano
+      if (typeof onFormSubmitInmueble === 'function') {
+        try {
+          onFormSubmitInmueble(mockEvent);
+          Logger.log(`✅ Worker: Fila ${item.row} procesada exitosamente.`);
+        } catch (execError) {
+          Logger.log(`❌ Worker: Error ejecutando onFormSubmitInmueble para fila ${item.row}: ` + execError.toString());
+        }
+      } else {
+        Logger.log(`❌ Worker: onFormSubmitInmueble no está definido.`);
+      }
+      
+      // Eliminar el indicador de esta fila de la cola
+      props.deleteProperty(item.key);
+    });
+
+  } catch (error) {
+    Logger.log('❌ Worker: Error crítico en procesarRegistrosPendientes: ' + error.message);
+  } finally {
+    lock.releaseLock();
+    Logger.log('🔓 Bloqueo liberado y procesamiento finalizado.');
   }
 }
 
