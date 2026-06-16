@@ -12,12 +12,7 @@ import {
 import { numberToWordsSpanish } from '../lib/numberToWords';
 import CountryMap from './CountryMap';
 import FeaturesGridSelector from './FeaturesGridSelector';
-
-const COUNTRIES = [
-  { code: 'CO', name: 'Colombia', flag: '🇨🇴', prefix: '+57', maxLength: 10, placeholder: '300 123 4567', regex: /^3\d{9}$/ },
-  { code: 'VE', name: 'Venezuela', flag: '🇻🇪', prefix: '+58', maxLength: 10, placeholder: '412 123 4567', regex: /^4\d{9}$/ },
-  { code: 'EC', name: 'Ecuador', flag: '🇪🇨', prefix: '+593', maxLength: 9, placeholder: '912 345 678', regex: /^9\d{8}$/ }
-];
+import PhoneCountrySelector, { ALL_COUNTRIES } from './PhoneCountrySelector';
 
 const UPZ_BARRIOS: Record<string, string[]> = {
   'LOS CEDROS': ["CEDRITOS", "LOS CEDROS", "BELMIRA", "EL CONTADOR", "LISBOA", "ACACIAS", "ANTIGUA", "CEDRO GOLF"],
@@ -99,9 +94,10 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     kitchenType: '',
     kitchenStyle: '',
     stoveType: '',
-    sectorZoneType: 'Residencial',
-    sectorWayType: 'Secundaria',
-    propertyDesign: 'Convencional',
+    vigilanceType: '',
+    sectorZoneType: '',
+    sectorWayType: '',
+    propertyDesign: '',
     additionalDescription: '',
 
     // Step 4: Datos Propietario (Confirmaciones avanzadas integradas)
@@ -162,6 +158,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     }
   }, [selectedServiceType, initialCalculatorState]);
 
+  // Scroll to top when changing steps
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentStep]);
+
   const parseNum = (val: string): number => {
     const clean = val.replace(/[^0-9]/g, '');
     return clean ? parseInt(clean, 10) : 0;
@@ -187,8 +188,8 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 
   const isPhoneValid = (phoneStr: string, code: string): boolean => {
     const digits = phoneStr.replace(/\D/g, '');
-    const config = COUNTRIES.find(c => c.code === code);
-    return config ? config.regex.test(digits) : false;
+    const config = ALL_COUNTRIES.find(c => c.code === code);
+    return config ? digits.length >= 8 && digits.length <= config.maxLength : false;
   };
 
   // Interactive computed variables for the Dynamic Live Calculator panel
@@ -261,6 +262,39 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   };
   const handlePrevStep = () => setCurrentStep(p => Math.max(1, p - 1));
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter') {
+      const target = e.target as HTMLElement;
+      // Prevent Enter key from submitting form inside input/select
+      if (target.tagName === 'INPUT' || target.tagName === 'SELECT') {
+        const form = e.currentTarget;
+        const focusableElements = Array.from(
+          form.querySelectorAll('input, select, textarea, button')
+        ) as HTMLElement[];
+        
+        const index = focusableElements.indexOf(target);
+        if (index > -1 && index < focusableElements.length - 1) {
+          e.preventDefault();
+          let nextElement = focusableElements[index + 1];
+          let offset = 1;
+          // Skip disabled elements or non-submit buttons to find the next input
+          while (
+            nextElement && 
+            (nextElement.hasAttribute('disabled') || 
+             nextElement.getAttribute('type') === 'hidden' ||
+             (nextElement.tagName === 'BUTTON' && nextElement.getAttribute('type') !== 'submit'))
+          ) {
+            offset++;
+            nextElement = focusableElements[index + offset];
+          }
+          if (nextElement) {
+            nextElement.focus();
+          }
+        }
+      }
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!formData.hasNoEmbargo) {
@@ -278,7 +312,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "Selecciona la UPZ  de tu inmueble": formData.upz,
         "Escriba el barrio del inmueble": formData.barrio === 'Otro' ? formData.customBarrio : formData.barrio,
         "Ingrese la Dirección del inmueble": formData.address,
-        "Ingrese la Ciudad del inmueble": formData.city,
+        "Ingrese la Ciudad del inmueble": formData.city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase(),
         "Selecciona el tipo de inmueble": formData.propertyType,
         "Area  M²": formData.area,
         "N° de Habitaciones": formData.roomsCount,
@@ -310,15 +344,43 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "¿Que tipo de estilo de cocina es?": formData.kitchenStyle,
         "¿Que tipo de estufa dispone la cocina?": formData.stoveType,
         "Otro Interno": formData.otherInternal,
+        "¿Qué tipo de vigilancia dispone?": formData.vigilanceType,
+        "¿En que tipo de zona se encuentra el inmueble?": formData.sectorZoneType ? `Zona ${formData.sectorZoneType}ㅤ` : '',
+        "¿En que tipo de via se encuentra el inmueble?": formData.sectorWayType,
+        "¿Cual es el tipo de diseño que tiene el inmueble?": formData.propertyDesign,
         "Otro Externo": formData.otherExternal,
         "INGRESE A CONTINUACIÓN UNA DESCRIPCIÓN ADICIONAL DEL INMUEBLE": formData.additionalDescription,
-        "Ingrese Nombres y Apellidos": formData.name,
-        "Número de documento": `${formData.documentType} ${formData.documentNumber}`,
-        "Ciudad de Expedicion": formData.documentCityOfExpedition,
-        "Pais de Expedicion": formData.documentCountryOfExpedition,
-        "Celular": `${formData.countryCode} ${formData.phone}`,
+        "¿El inmueble dispone de portería y administración para realizar un acta de notificación de promoción inmobiliaria he ingreso?": formData.hasPorteriaAndAdmin,
+        "NOMBRE DEL INMUEBLE/ADMINISTRACION": formData.hasPorteriaAndAdmin === 'SI' ? formData.porteriaBuildingName.toUpperCase() : '',
+        "¿Desea enviar el acta notificación de gestión inmobiliaria a la administración desde este formulario también?": formData.hasPorteriaAndAdmin === 'SI' ? formData.porteriaAutoSendEmail : '',
+        "Correo electrónico de la administración": (formData.hasPorteriaAndAdmin === 'SI' && formData.porteriaAutoSendEmail === 'SI') ? formData.porteriaAdminEmail : '',
+        "¿Qué tipo de autorización desea realizar?": (formData.serviceType === 'administracion' || formData.serviceType === 'admi-venta') ? 'ADMINISTRACION' : 'GENERAL',
+        "¿Qué tipo de autorización desea con el agente para administración?": (formData.hasPorteriaAndAdmin === 'SI' && (formData.serviceType === 'administracion' || formData.serviceType === 'admi-venta')) ? formData.porteriaAuthAgentAdmin : '',
+        "¿Qué tipo de autorización desea con el agente?": (formData.hasPorteriaAndAdmin === 'SI' && formData.serviceType !== 'administracion' && formData.serviceType !== 'admi-venta') ? formData.porteriaAuthAgentGeneral : '',
+        "NOMBRES Y APELLIDOS DEL PROPIETARIO": formData.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase(),
+        "TIPO DOCUMENTO PROPIETARIO": formData.documentType,
+        "Número de documento": formData.documentNumber,
+        "Ciudad de Expedicion": formData.documentCityOfExpedition.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase(),
+        "Pais de Expedicion": formData.documentCountryOfExpedition.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase(),
+        "Pais del celular": ALL_COUNTRIES.find(c => c.code === formData.countryCode)?.prefix || '+57',
+        "Celular": formData.phone,
         "Correo electrónico": formData.email,
         "TIPO DE NEGOCIO": formData.serviceType === 'administracion' ? 'Administración' : formData.serviceType === 'corretaje' ? 'Corretaje' : formData.serviceType === 'venta' ? 'Venta' : formData.serviceType === 'admi-venta' ? 'Admi-Venta' : 'Vendi-Renta',
+        "PRECIO DE PROMOCION EN VENTA": formData.serviceType === 'venta' || formData.serviceType === 'admi-venta' || formData.serviceType === 'vendi-renta' ? sellPriceVal : '',
+        "PRECIO DE PROMOCION EN VENTA EN LETRA": formData.serviceType === 'venta' || formData.serviceType === 'admi-venta' || formData.serviceType === 'vendi-renta' ? numberToWordsSpanish(sellPriceVal).toUpperCase() : '',
+        "PRECIO DE PROMOCION GENERAL": formData.serviceType !== 'venta' ? priceGeneralVal : '',
+        "PRECIO DE PROMOCION GENERAL EN LETRA": formData.serviceType !== 'venta' ? numberToWordsSpanish(priceGeneralVal).toUpperCase() : '',
+        "PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)": priceHoaVal || '',
+        "PRECIO DE ADMINISTRACION PLENA EN LETRA": priceHoaVal ? numberToWordsSpanish(priceHoaVal).toUpperCase() : '',
+        
+        // --- PORCENTAJES DE NEGOCIO ---
+        "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO": formData.serviceType === 'corretaje' ? `${formData.corretajePercent}%` : '',
+        "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE ": formData.serviceType === 'administracion' ? formData.adminPercentSelector : '',
+        "(Porcentaje en números)": formData.serviceType === 'venta' ? formData.salesCommissionSelector : '',
+        "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO (Vendi-Renta)": formData.serviceType === 'vendi-renta' ? `${formData.vendiRentaArriendoPercent}%` : '',
+        "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE (Admi-Venta)": formData.serviceType === 'admi-venta' ? formData.admiVentaAdminPercentSelector : '',
+        "(Porcentaje en números) (A-V)": formData.serviceType === 'admi-venta' ? formData.admiVentaSalesCommissionSelector : '',
+        
         ...formData.gridAnswers
       };
 
@@ -557,7 +619,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
           {/* RIGHT COLUMN: The 6-Step Registration Wizard Form */}
           <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-2xl border border-stone-200 flex flex-col justify-between shadow-sm text-left">
             {!submitted ? (
-              <form onSubmit={handleSubmit} className="space-y-6 flex-1 flex flex-col justify-between">
+              <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-5">
                   
                   {/* STEP 1: Destinación y Ubicación */}
@@ -991,6 +1053,14 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 <option value="Descubierto">Descubierto</option>
                               </select>
                             </div>
+                            <div className="md:col-span-3">
+                              <label className="text-[11px] text-stone-500 font-bold block mb-0.5">N° ASIGNADO DEL GARAJE</label>
+                              <input 
+                                type="text" value={formData.garageAssignedNumber} 
+                                onChange={e => setFormData({ ...formData, garageAssignedNumber: e.target.value })}
+                                placeholder="Ej. 12A, Sótano 2..." className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs"
+                              />
+                            </div>
                           </>
                         )}
                       </div>
@@ -1097,6 +1167,49 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       <div>
                         <label className="text-sm text-stone-900 font-bold block mb-3 text-center uppercase tracking-widest font-mono text-[#8A631F]">ZONAS COMUNALES Y EXTERNAS</label>
                         <FeaturesGridSelector currentAnswers={formData.gridAnswers} category="externas" onAnswersChange={(ans) => setFormData(prev => ({ ...prev, gridAnswers: ans }))} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                          <div>
+                            <label className="text-[11px] text-stone-500 font-bold block mb-0.5">TIPO DE VIGILANCIA</label>
+                            <select value={formData.vigilanceType} onChange={e => setFormData({ ...formData, vigilanceType: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                              <option value="">Seleccione...</option>
+                              <option value="vigilancia de celaduría">De celaduría</option>
+                              <option value="vigilancia electrónica">Electrónica</option>
+                              <option value="puerta de seguridad">Puerta de seguridad</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-stone-500 font-bold block mb-0.5">TIPO DE ZONA</label>
+                            <select value={formData.sectorZoneType} onChange={e => setFormData({ ...formData, sectorZoneType: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                              <option value="">Seleccione...</option>
+                              <option value="Residencial">Residencial</option>
+                              <option value="Comercial">Comercial</option>
+                              <option value="Industrial">Industrial</option>
+                              <option value="Campestre">Campestre</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-stone-500 font-bold block mb-0.5">TIPO DE VÍA</label>
+                            <select value={formData.sectorWayType} onChange={e => setFormData({ ...formData, sectorWayType: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                              <option value="">Seleccione...</option>
+                              <option value="Principal">Principal</option>
+                              <option value="Secundaria">Secundaria</option>
+                              <option value="Privada">Privada</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-stone-500 font-bold block mb-0.5">DISEÑO DEL INMUEBLE</label>
+                            <select value={formData.propertyDesign} onChange={e => setFormData({ ...formData, propertyDesign: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                              <option value="">Seleccione...</option>
+                              <option value="Convencional">Convencional</option>
+                              <option value="Pent House">Pent House</option>
+                              <option value="Loft">Loft</option>
+                              <option value="Duplex">Duplex</option>
+                              <option value="Triplex">Triplex</option>
+                              <option value="Cuadruplex">Cuadruplex</option>
+                            </select>
+                          </div>
+                        </div>
+
                         <div className="mt-6">
                           <label className="text-xs text-stone-600 font-bold block mb-1">OTRAS ZONAS EXTERNAS (Texto libre)</label>
                           <textarea 
@@ -1206,14 +1319,15 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-xs text-stone-600 font-bold block mb-1">CELULAR (WHATSAPP)</label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-stone-500 font-bold select-none">
-                              {COUNTRIES.find(c => c.code === formData.countryCode)?.prefix}
-                            </span>
+                          <div className="flex bg-stone-50 border border-stone-200 rounded-xl focus-within:border-stone-400 transition-colors">
+                            <PhoneCountrySelector 
+                              value={formData.countryCode} 
+                              onChange={code => setFormData({ ...formData, countryCode: code })} 
+                            />
                             <input 
-                              type="tel" required value={formData.phone}
+                              type="tel" required value={formData.phone} maxLength={ALL_COUNTRIES.find(c => c.code === formData.countryCode)?.maxLength || 10}
                               onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                              placeholder="Celular" className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 pl-14 pr-3 text-xs font-mono font-bold"
+                              placeholder="Celular" className="w-full bg-transparent py-3 px-3 text-xs font-mono font-bold outline-none"
                             />
                           </div>
                         </div>
@@ -1228,7 +1342,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               )}
                             </label>
                             <input 
-                              type="tel" required value={formData.confirmPhone}
+                              type="tel" required value={formData.confirmPhone} maxLength={ALL_COUNTRIES.find(c => c.code === formData.countryCode)?.maxLength || 10}
                               onChange={e => setFormData({ ...formData, confirmPhone: e.target.value.replace(/\D/g, '') })}
                               placeholder="Confirma celular" className={`w-full border rounded-xl py-3 px-4 text-xs font-mono focus:outline-none ${
                                 formData.confirmPhone ? (formData.phone === formData.confirmPhone ? 'border-emerald-500' : 'border-rose-400') : 'bg-stone-50 border-stone-200'
@@ -1484,40 +1598,57 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 />
                               </div>
                               <div>
-                                <label className="text-[10px] text-stone-600 font-bold block mb-1">CORREO ADMINISTRACIÓN (NOTIFICACIÓN ACTA)</label>
+                                <label className="text-[10px] text-stone-600 font-bold block mb-1">¿ENVIAR ACTA A LA ADMINISTRACIÓN?</label>
+                                <select 
+                                  value={formData.porteriaAutoSendEmail} 
+                                  onChange={e => setFormData({ ...formData, porteriaAutoSendEmail: e.target.value })}
+                                  className="w-full bg-white border rounded p-2.5 text-[11px] cursor-pointer"
+                                >
+                                  <option value="SI">SÍ, enviar acta también a la admón</option>
+                                  <option value="NO">NO, solo enviar a mi correo</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {formData.porteriaAutoSendEmail === 'SI' && (
+                              <div className="animate-fade-in pt-1">
+                                <label className="text-[10px] text-stone-600 font-bold block mb-1">CORREO DE LA ADMINISTRACIÓN</label>
                                 <input 
                                   type="email" required value={formData.porteriaAdminEmail}
                                   onChange={e => setFormData({ ...formData, porteriaAdminEmail: e.target.value })}
                                   placeholder="admin@edificio.com" className="w-full bg-white border rounded-lg p-2.5 text-xs"
                                 />
                               </div>
-                            </div>
+                            )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                              <div>
-                                <label className="text-[10px] text-stone-500 font-bold block mb-0.5">AUTORIZACIÓN DE LLAVES CON AGENTE</label>
-                                <select 
-                                  value={formData.porteriaAuthAgentGeneral} 
-                                  onChange={e => setFormData({ ...formData, porteriaAuthAgentGeneral: e.target.value })}
-                                  className="w-full bg-white border rounded p-2 text-[10px] cursor-pointer"
-                                >
-                                  <option value="El cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Recoge llaves en portería y devuelve</option>
-                                  <option value="Disponiendo de copia de las llaves">Dispone de copia de llaves</option>
-                                  <option value="Con acompañamiento de mi parte en las visitas de interesados">Acompañamiento personal visitas</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label className="text-[10px] text-stone-500 font-bold block mb-0.5">AUTORIZACIÓN SIENDO EL NUEVO ADMINISTRADOR</label>
-                                <select 
-                                  value={formData.porteriaAuthAgentAdmin} 
-                                  onChange={e => setFormData({ ...formData, porteriaAuthAgentAdmin: e.target.value })}
-                                  className="w-full bg-white border rounded p-2 text-[10px] cursor-pointer"
-                                >
-                                  <option value="Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Administrador recoge y entrega</option>
-                                  <option value="Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves">Administrador con copias</option>
-                                  <option value="Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados">Administrador con acompañamiento</option>
-                                </select>
-                              </div>
+                            <div className="pt-1">
+                              {(formData.serviceType === 'administracion' || formData.serviceType === 'admi-venta') ? (
+                                <div className="animate-fade-in">
+                                  <label className="text-[10px] text-stone-500 font-bold block mb-0.5">AUTORIZACIÓN SIENDO EL NUEVO ADMINISTRADOR</label>
+                                  <select 
+                                    value={formData.porteriaAuthAgentAdmin} 
+                                    onChange={e => setFormData({ ...formData, porteriaAuthAgentAdmin: e.target.value })}
+                                    className="w-full bg-white border rounded p-2 text-[10px] cursor-pointer"
+                                  >
+                                    <option value="Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Administrador recoge y entrega</option>
+                                    <option value="Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves">Administrador con copias</option>
+                                    <option value="Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados">Administrador con acompañamiento</option>
+                                  </select>
+                                </div>
+                              ) : (
+                                <div className="animate-fade-in">
+                                  <label className="text-[10px] text-stone-500 font-bold block mb-0.5">AUTORIZACIÓN DE LLAVES CON AGENTE (GENERAL)</label>
+                                  <select 
+                                    value={formData.porteriaAuthAgentGeneral} 
+                                    onChange={e => setFormData({ ...formData, porteriaAuthAgentGeneral: e.target.value })}
+                                    className="w-full bg-white border rounded p-2 text-[10px] cursor-pointer"
+                                  >
+                                    <option value="El cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Recoge llaves en portería y devuelve</option>
+                                    <option value="Disponiendo de copia de las llaves">Dispone de copia de llaves</option>
+                                    <option value="Con acompañamiento de mi parte en las visitas de interesados">Acompañamiento personal visitas</option>
+                                  </select>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}

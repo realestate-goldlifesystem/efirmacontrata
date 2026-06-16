@@ -39,6 +39,7 @@ El proyecto vive en dos repositorios/carpetas que se hablan mediante una API (JS
 **INVENTARIO DE HERRAMIENTAS ACTUALES:**
 Antes de crear un nuevo script para conectarte a Sheets o testear algo, **¡REVISA ESTA CARPETA PRIMERO!** Ya existen herramientas pre-construidas muy potentes:
 - `sheets-helper.js`: Utilidad core para leer/escribir en Google Sheets directamente desde la consola usando la Service Account.
+- `renombrar_columna_global.js`: Utilidad crítica para renombrar una columna simultáneamente en Google Sheets y en el mapeo de Autocrat. Uso: `node renombrar_columna_global.js "Nombre Viejo" "Nombre Nuevo"`.
 - `validar_sheet_pagos.js`: Para debuggear y validar el registro de transacciones.
 - `debug_auth.js` / `simple_auth_backup.js`: Para pruebas rápidas de autenticación.
 - `debug_html_service/`: Carpeta (Botiquín de primeros auxilios) con scripts (`split_script.js`, `extract_js.js`, `check_syntax.js`) para hacer ingeniería inversa de errores HTML/JS.
