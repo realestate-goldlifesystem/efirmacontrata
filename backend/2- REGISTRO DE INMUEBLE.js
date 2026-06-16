@@ -405,6 +405,9 @@ function procesarTipo12_Renovacion(sheet, row, datos) {
     // 9.2 Transferir precios y limpiar candado multimedia
     transferirPreciosRenovacion(sheet, filaOriginal, row);
     
+    // 9.2.1 Transferir características del formulario (zonas, estrato, áreas, etc)
+    transferirCaracteristicasFormulario(sheet, filaOriginal, datos);
+    
     // 9.3 Actualizar links
     actualizarLinksTipo12(sheet, filaOriginal, row, carpetaNuevoAnio, regFolder);
     
@@ -588,6 +591,9 @@ function procesarTipo13_CambioTipoNegocio(sheet, row, datos) {
     
     // Transferir precios actualizados del nuevo formulario
     transferirPreciosRenovacion(sheet, filaOriginal, row);
+
+    // Transferir características del formulario (zonas, estrato, áreas, etc)
+    transferirCaracteristicasFormulario(sheet, filaOriginal, datos);
 
     // 6.1 Actualizar CDR en la FILA ORIGINAL
     Logger.log(`📝 Actualizando CDR en fila original: ${filaOriginal}`);
@@ -1562,6 +1568,53 @@ function transferirPreciosRenovacion(sheet, filaOriginal, filaTemp) {
     
     sheet.getRange(filaOriginal, colYT + 1).clearContent();
     Logger.log('🔓 Candado Multimedia abierto (Link YT guardado y borrado temporalmente)');
+  }
+}
+
+function transferirCaracteristicasFormulario(sheet, filaOriginal, datos) {
+  Logger.log('📋 Transfiriendo características del formulario a la fila original...');
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  // Columnas excluidas que no se deben sobrescribir en la fila original
+  var columnasExcluidas = [
+    'CODIGO DE REGISTRO',
+    'ID DE REGISTRO',
+    'ESTADO DEL INMUEBLE',
+    'DETALLES DEL ESTADO DEL INMUEBLE',
+    'LINK DE CARPETA RPR',
+    'LINK DE CARPETA REG',
+    'LINK CARPETA DE PROPIETARIO',
+    'LINK CARPETA DE INQUILINO',
+    'LINK CARPETA DE CONTENIDO',
+    'SOPORTES CONTABLES',
+    'DOCUMENTO FIRMADO',
+    'LINK DEL VIDEO DEL INMUEBLE' // Se maneja por separado en transferirPreciosRenovacion
+  ];
+
+  for (var i = 0; i < headers.length; i++) {
+    var rawHeader = headers[i].toString();
+    var trimmedHeader = rawHeader.trim();
+    
+    // Ignorar si es columna excluida o vacía
+    if (!trimmedHeader) continue;
+    if (columnasExcluidas.indexOf(trimmedHeader) !== -1 || columnasExcluidas.indexOf(rawHeader) !== -1) continue;
+    if (trimmedHeader.startsWith('Link to merged Doc') || trimmedHeader.startsWith('Merged Doc ID') || 
+        trimmedHeader.startsWith('Merged Doc URL') || trimmedHeader.startsWith('Document Merge Status')) {
+      continue;
+    }
+    
+    // Si la propiedad existe en datos, copiarla
+    var value = null;
+    if (datos.hasOwnProperty(rawHeader)) {
+      value = datos[rawHeader];
+    } else if (datos.hasOwnProperty(trimmedHeader)) {
+      value = datos[trimmedHeader];
+    }
+    
+    if (value !== null && value !== undefined && value !== '') {
+      sheet.getRange(filaOriginal, i + 1).setValue(value);
+      Logger.log(`   - Actualizado campo "${trimmedHeader}" con valor: ${value}`);
+    }
   }
 }
 

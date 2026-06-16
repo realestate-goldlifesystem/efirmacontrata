@@ -380,9 +380,19 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO": formData.serviceType === 'corretaje' ? `${formData.corretajePercent}%` : '',
         "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE ": formData.serviceType === 'administracion' ? formData.adminPercentSelector : '',
         "(Porcentaje en números)": formData.serviceType === 'venta' ? formData.salesCommissionSelector : '',
+        "(1.5%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '1.5%' ? 'UNO PUNTO CINCO' : '',
+        "(2%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '2%' ? 'DOS' : '',
+        "(2.5%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '2.5%' ? 'DOS PUNTO CINCO' : '',
+        "(3%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '3%' ? 'TRES' : '',
+        
         "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO (Vendi-Renta)": formData.serviceType === 'vendi-renta' ? `${formData.vendiRentaArriendoPercent}%` : '',
+        
         "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE (Admi-Venta)": formData.serviceType === 'admi-venta' ? formData.admiVentaAdminPercentSelector : '',
-        "(Porcentaje en números) (A-V)": formData.serviceType === 'admi-venta' ? formData.admiVentaSalesCommissionSelector : '',
+        "(Porcentaje en números) (A-V)": formData.serviceType === 'admi-venta' ? formData.admiVentaSalesCommissionSelector : formData.serviceType === 'vendi-renta' ? formData.salesCommissionSelector : '',
+        "(1.5%)  (Porcentaje en letras)  (A-V)": (formData.serviceType === 'admi-venta' && formData.admiVentaSalesCommissionSelector === '1.5%') || (formData.serviceType === 'vendi-renta' && formData.salesCommissionSelector === '1.5%') ? 'UNO PUNTO CINCO' : '',
+        "(2%)  (Porcentaje en letras)  (A-V)": (formData.serviceType === 'admi-venta' && formData.admiVentaSalesCommissionSelector === '2%') || (formData.serviceType === 'vendi-renta' && formData.salesCommissionSelector === '2%') ? 'DOS' : '',
+        "(2.5%)  (Porcentaje en letras) (A-V)": (formData.serviceType === 'admi-venta' && formData.admiVentaSalesCommissionSelector === '2.5%') || (formData.serviceType === 'vendi-renta' && formData.salesCommissionSelector === '2.5%') ? 'DOS PUNTO CINCO' : '',
+        "(3%)  (Porcentaje en letras) (A-V)": (formData.serviceType === 'admi-venta' && formData.admiVentaSalesCommissionSelector === '3%') || (formData.serviceType === 'vendi-renta' && formData.salesCommissionSelector === '3%') ? 'TRES' : '',
         
         ...formData.gridAnswers
       };
@@ -1490,13 +1500,68 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           </div>
                         )}
 
+                        {formData.serviceType === 'vendi-renta' && (
+                          <div className="space-y-3 w-full">
+                            <div>
+                              <span className="text-[10px] text-stone-500 block mb-1">PORCENTAJE DE COMISIÓN DE ARRIENDO PACTADO (Vendi-Renta)</span>
+                              <input 
+                                type="text" value={formData.vendiRentaArriendoPercent} 
+                                onChange={e => setFormData({ ...formData, vendiRentaArriendoPercent: e.target.value.replace(/\D/g, '') })}
+                                placeholder="100" className="bg-white border rounded p-2 text-xs w-full font-mono font-bold"
+                              />
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-stone-500 block mb-1">PORCENTAJE DE CORRETAJE POR VENTA PACTADO (Vendi-Renta - LETRAS AUTOMÁTICAS)</span>
+                              <select 
+                                value={formData.salesCommissionSelector} 
+                                onChange={e => setFormData({ ...formData, salesCommissionSelector: e.target.value })}
+                                className="bg-white border rounded p-2 text-xs cursor-pointer w-full font-mono font-bold border-stone-200"
+                              >
+                                <option value="3%">3% (TRES POR CIENTO)</option>
+                                <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
+                                <option value="2%">2% (DOS POR CIENTO)</option>
+                                <option value="1.5%">1.5% (UNO PUNTO CINCO POR CIENTO)</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+
+                        {formData.serviceType === 'admi-venta' && (
+                          <div className="space-y-3 w-full">
+                            <div>
+                              <span className="text-[10px] text-stone-500 block mb-1">PORCENTAJE DE COMISIÓN DE GESTIÓN RECURRENTE (ADMINISTRACIÓN - Admi-Venta)</span>
+                              <select 
+                                value={formData.admiVentaAdminPercentSelector} 
+                                onChange={e => setFormData({ ...formData, admiVentaAdminPercentSelector: e.target.value })}
+                                className="bg-white border rounded p-2 text-xs cursor-pointer w-full font-mono font-bold border-stone-200"
+                              >
+                                <option value="8.5% desde el primer mes">8.5% desde el primer mes (Preferencial)</option>
+                                <option value="9.1% desde el segundo mes">9.1% desde el segundo mes</option>
+                              </select>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-stone-500 block mb-1">PORCENTAJE DE CORRETAJE POR VENTA PACTADO (Admi-Venta - LETRAS AUTOMÁTICAS)</span>
+                              <select 
+                                value={formData.admiVentaSalesCommissionSelector} 
+                                onChange={e => setFormData({ ...formData, admiVentaSalesCommissionSelector: e.target.value })}
+                                className="bg-white border rounded p-2 text-xs cursor-pointer w-full font-mono font-bold border-stone-200"
+                              >
+                                <option value="3%">3% (TRES POR CIENTO)</option>
+                                <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
+                                <option value="2%">2% (DOS POR CIENTO)</option>
+                                <option value="1.5%">1.5% (UNO PUNTO CINCO POR CIENTO)</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+
                         {formData.serviceType === 'venta' && (
                           <div>
                             <span className="text-[10px] text-stone-500 block mb-1">PORCENTAJE DE CORRETAJE POR VENTA PACTADO (LETRAS AUTOMÁTICAS)</span>
                             <select 
                               value={formData.salesCommissionSelector} 
                               onChange={e => setFormData({ ...formData, salesCommissionSelector: e.target.value })}
-                              className="bg-white border rounded p-2 text-xs cursor-pointer w-full font-mono font-boldColor border-stone-250"
+                              className="bg-white border rounded p-2 text-xs cursor-pointer w-full font-mono font-bold border-stone-200"
                             >
                               <option value="3%">3% (TRES POR CIENTO)</option>
                               <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
