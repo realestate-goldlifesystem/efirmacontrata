@@ -649,7 +649,8 @@ function handleRegistrarInmueble(datos) {
     const newRow = new Array(headers.length).fill("");
 
     // Google Forms siempre inyecta la "Marca temporal" en la primera columna
-    newRow[0] = new Date();
+    const ssTimeZone = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+    newRow[0] = Utilities.formatDate(new Date(), ssTimeZone, "d/M/yyyy HH:mm:ss");
 
     // Mapear los datos exactos del JSON (React) a las columnas (Sheet)
     for (let i = 1; i < headers.length; i++) {
