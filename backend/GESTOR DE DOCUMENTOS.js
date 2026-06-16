@@ -696,6 +696,8 @@ function handleRegistrarInmueble(datos) {
 // WORKER ASÍNCRONO PARA PROCESAR COLA DE REGISTROS
 // ==========================================
 function procesarRegistrosPendientes() {
+  var startTime = new Date().getTime(); // Registrar el tiempo de inicio de la ejecución
+
   // 1. Intentar adquirir bloqueo para evitar ejecuciones concurrentes y colisiones
   var lock = LockService.getScriptLock();
   try {
@@ -749,8 +751,26 @@ function procesarRegistrosPendientes() {
 
     Logger.log(`🚀 Worker: Iniciando procesamiento de ${rowsToProcess.length} registros encolados...`);
 
-    // Procesar cada fila secuencialmente
-    rowsToProcess.forEach(function(item) {
+    // Procesar cada fila secuencialmente usando un bucle for tradicional (permite break)
+    for (var i = 0; i < rowsToProcess.length; i++) {
+      var item = rowsToProcess[i];
+
+      // CONTROL DE TIEMPO LÍMITE: Si llevamos más de 4.5 minutos (270000 ms), autolanzamos otra instancia y salimos limpiamente.
+      var currentTime = new Date().getTime();
+      if (currentTime - startTime > 270000) {
+        Logger.log('⏳ Límite de tiempo cercano (4.5 minutos). Programando continuación automática para las filas restantes...');
+        try {
+          ScriptApp.newTrigger('procesarRegistrosPendientes')
+            .timeBased()
+            .after(60000) // Ejecutar en 1 minuto
+            .create();
+          Logger.log('✅ Nuevo trigger programado para dentro de 1 minuto.');
+        } catch (triggerErr) {
+          Logger.log('❌ Error al crear trigger de continuación: ' + triggerErr.message);
+        }
+        break; // Rompemos el ciclo para liberar el lock y salir ordenadamente
+      }
+
       Logger.log(`⚙️ Worker: Procesando fila ${item.row}...`);
       
       // Obtener el rango y cabeceras
@@ -773,7 +793,7 @@ function procesarRegistrosPendientes() {
       
       // Eliminar el indicador de esta fila de la cola
       props.deleteProperty(item.key);
-    });
+    }
 
   } catch (error) {
     Logger.log('❌ Worker: Error crítico en procesarRegistrosPendientes: ' + error.message);
