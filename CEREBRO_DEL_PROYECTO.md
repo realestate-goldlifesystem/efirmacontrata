@@ -62,17 +62,28 @@ Cuando el usuario (Leonardo) te asigne un nuevo objetivo grande o complejo, tu *
 - Ejecutar `node _herramientas_locales/sheets-helper.js` (u otra herramienta relevante) para extraer y leer la estructura en vivo (los Headers/Columnas actuales) de la hoja de Google Sheets.
 - Basado en los datos *reales* que existen en la base de datos, elaborar y proponer el Plan de Acción. ¡NUNCA asumas los nombres de las columnas!
 
+## 📊 2.4 Mapeo de Columnas Críticas en Google Sheets
+Para evitar errores de referencia en las consultas `getRange` y `getColumnByName`, ten siempre en mente estas columnas vitales de la hoja `1.1 - INMUEBLES REGISTRADOS`:
+* **CODIGO DE REGISTRO (Col 1):** Identificador base temporal (CDR) generado al crear el registro.
+* **ID DE REGISTRO (Col 2):** Identificador definitivo del inmueble.
+* **ESTADO DEL INMUEBLE (Col 29):** Controla el estado del flujo (ej: `REGISTRANDO`, `ERROR`, `COMPLETO`, `TIPO_4_PENDIENTE`).
+* **DETALLES DEL ESTADO DEL INMUEBLE (Col 5):** Columna crítica donde el backend inyecta los mensajes de error técnicos (`⚠️ ERROR: ...`) o estados detallados de la ejecución. ¡Consúltala ante cualquier fallo!
+* **NOMBRES Y APELLIDOS DEL PROPIETARIO (Col 30):** Nombre completo del propietario.
+* **TIPO DE NEGOCIO (Col 112):** Tipo de contrato (`ARRIENDO`, `VENTA`, etc.).
+* **LINK DE CARPETA REG (Col 111):** URL de Google Drive de la carpeta del inmueble.
+* **Correo electrónico (Col 36):** Correo de contacto del propietario.
+
 ## 🚀 3. Reglas de Despliegue (CÓMO HACER TU TRABAJO)
 Dado que el frontend depende de la URL `/exec` de Google, tú debes gobernar los despliegues de esta forma:
 
 ### 3.1 Flujo de Trabajo Backend (Apps Script y Clasp)
 * El código se modifica localmente.
-* Para sincronizar con Google Scripts, se usa la terminal de VSCode (o la local): `clasp push`.
-* ⚠️ **OJO - TRAMPA MORTAL DE WEB APPS**: Si editas un archivo HTML o lógica del `doPost` que afecta al Web App (`/exec`), hacer `clasp push` **NO ES SUFICIENTE**. El Web App seguirá ejecutando el código viejo de la implementación anterior.
+* **⚠️ OBLIGATORIEDAD DE SINCRONIZACIÓN:** Cualquier modificación al backend local (incluso refactorizaciones de nombres de columnas) **debe ser empujada y desplegada de inmediato** en la nube de Google Apps Script. De lo contrario, se producirá un desfase crítico.
+* Para sincronizar, usa: `clasp push`.
+* ⚠️ **OJO - TRAMPA MORTAL DE WEB APPS**: Si editas un archivo HTML o lógica del `doPost` que afecta al Web App (`/exec`), hacer `clasp push` **NO ES SUFICIENTE**. El Web App seguirá ejecutando el código viejo.
   - Para actualizar la URL en vivo sin cambiar de ID, DEBES hacer: `clasp deploy -i [ID_DE_IMPLEMENTACION_ACTUAL] -d "Mensaje de actualizacion"`.
   - El ID actual lo puedes encontrar en `frontend/config.js` en la variable `API_URL` (es la cadena larga entre `/s/` y `/exec`). 
-  - Si no haces esto, los cambios de backend nunca se reflejarán en el frontend y te volverás loco buscando el bug.
-  - **LÍMITE DE 200 VERSIONES:** Google Apps Script tiene un límite estricto de 200 versiones por proyecto. Si al hacer `clasp deploy` la consola arroja `Script has reached the limit of 200 versions`, **notifica inmediatamente al usuario (Leonardo)** para que entre al entorno visual de Apps Script (Historial del Proyecto) y borre implementaciones antiguas. No intentes forzarlo ni crear nuevos IDs.
+  - **LÍMITE DE 200 VERSIONES:** Google Apps Script tiene un límite estricto de 200 versiones por proyecto. Si al hacer `clasp deploy` la consola arroja `Script has reached the limit of 200 versions`, **notifica inmediatamente a Leonardo** indicándole que libere espacio eliminando implementaciones pasadas obsoletas en el Historial del Proyecto de Apps Script para poder continuar con el despliegue. No intentes forzarlo ni crear nuevos IDs.
 
 ### 3.2 Flujo de Trabajo Frontend (GitHub Pages / Arquitectura Global)
 * **Hosting:** Todo el ecosistema de cliente (Frontend) NO está en Vercel. Se aloja de forma integral en **GitHub Pages**. 
