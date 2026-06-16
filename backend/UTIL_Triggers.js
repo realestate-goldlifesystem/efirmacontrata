@@ -165,11 +165,33 @@ function instalarTriggerReembolsosMP() {
         if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
     });
 
-    // Se ejecutará cada minuto (PRUEBAS)
+    // Se ejecutará cada 1 hora para evitar agotar las cuotas de Google (RESOURCE_EXHAUSTED)
     ScriptApp.newTrigger(fnName)
         .timeBased()
-        .everyMinutes(1)
+        .everyHours(1)
         .create();
 
-    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Reembolsos activado (Ejecución PRUEBA 1 MINUTO).');
+    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Reembolsos activado (Ejecución optimizada cada 1 HORA).');
+}
+
+/**
+ * Utilidad para limpiar propiedades obsoletas de ScriptProperties y liberar almacenamiento (500KB límite)
+ */
+function limpiarScriptProperties() {
+  const props = PropertiesService.getScriptProperties();
+  const allProps = props.getProperties();
+  let keysDeleted = 0;
+
+  for (const key in allProps) {
+    // Borrar de forma segura registros de cola antiguos que no sean secuencias históricas o configuraciones críticas
+    if (key.indexOf('PAGO_APROBADO_') === 0 || key.indexOf('PENDING_REGISTRATION_ROW_') === 0) {
+      props.deleteProperty(key);
+      keysDeleted++;
+    }
+  }
+
+  Logger.log(`🧹 Limpieza finalizada: Se eliminaron ${keysDeleted} propiedades obsoletas de la memoria.`);
+  if (typeof SpreadsheetApp !== 'undefined') {
+    SpreadsheetApp.getUi().alert(`🧹 Limpieza completa: Se eliminaron ${keysDeleted} claves obsoletas del ScriptProperties.`);
+  }
 }
