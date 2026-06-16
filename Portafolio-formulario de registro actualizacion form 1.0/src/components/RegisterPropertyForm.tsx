@@ -94,6 +94,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     externalFeatures: [] as string[],
     otherInternal: '',
     otherExternal: '',
+    viewType: '',
+    heaterType: '',
+    kitchenType: '',
+    kitchenStyle: '',
+    stoveType: '',
     sectorZoneType: 'Residencial',
     sectorWayType: 'Secundaria',
     propertyDesign: 'Convencional',
@@ -299,6 +304,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "N° Asignado del garaje": formData.garageAssignedNumber,
         "¿Dispone de deposito?": formData.hasDeposit,
         "# De Deposito": formData.depositNumber,
+        "¿Que tipo vista tiene?": formData.viewType,
+        "¿Que tipo de calentador tiene?": formData.heaterType,
+        "¿Que tipo de cocina es?": formData.kitchenType,
+        "¿Que tipo de estilo de cocina es?": formData.kitchenStyle,
+        "¿Que tipo de estufa dispone la cocina?": formData.stoveType,
         "Otro Interno": formData.otherInternal,
         "Otro Externo": formData.otherExternal,
         "INGRESE A CONTINUACIÓN UNA DESCRIPCIÓN ADICIONAL DEL INMUEBLE": formData.additionalDescription,
@@ -1009,7 +1019,57 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         )}
                       </div>
 
-                      <div className="pt-4 border-t border-stone-100">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-stone-100">
+                        <div>
+                          <label className="text-[11px] text-stone-500 font-bold block mb-0.5">¿QUÉ TIPO VISTA TIENE?</label>
+                          <select value={formData.viewType} onChange={e => setFormData({ ...formData, viewType: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                            <option value="">Seleccione...</option>
+                            <option value="Interior">Interior</option>
+                            <option value="Exterior">Exterior</option>
+                            <option value="Interior y Exterior">Interior y Exterior</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[11px] text-stone-500 font-bold block mb-0.5">¿QUÉ TIPO DE CALENTADOR TIENE?</label>
+                          <select value={formData.heaterType} onChange={e => setFormData({ ...formData, heaterType: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                            <option value="">Seleccione...</option>
+                            <option value="Gas">Gas</option>
+                            <option value="Eléctrico">Eléctrico</option>
+                            <option value="Caldera">Caldera</option>
+                            <option value="N/A">N/A</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[11px] text-stone-500 font-bold block mb-0.5">¿QUÉ TIPO DE COCINA ES?</label>
+                          <select value={formData.kitchenType} onChange={e => setFormData({ ...formData, kitchenType: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                            <option value="">Seleccione...</option>
+                            <option value="Integral">Integral</option>
+                            <option value="Semi-Integral">Semi-Integral</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[11px] text-stone-500 font-bold block mb-0.5">ESTILO DE COCINA</label>
+                          <select value={formData.kitchenStyle} onChange={e => setFormData({ ...formData, kitchenStyle: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                            <option value="">Seleccione...</option>
+                            <option value="Abierta(CO)">Abierta (CO)</option>
+                            <option value="cerrada">Cerrada</option>
+                            <option value="Americana">Americana</option>
+                            <option value="Isla">Isla</option>
+                            <option value="U">U</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[11px] text-stone-500 font-bold block mb-0.5">TIPO DE ESTUFA</label>
+                          <select value={formData.stoveType} onChange={e => setFormData({ ...formData, stoveType: e.target.value })} className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs">
+                            <option value="">Seleccione...</option>
+                            <option value="Gas">Gas</option>
+                            <option value="Eléctrica">Eléctrica</option>
+                            <option value="Mixta">Mixta</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-stone-100 mt-4">
                         <label className="text-sm text-stone-900 font-bold block mb-3 text-center uppercase tracking-widest font-mono text-[#8A631F]">ZONAS Y CARACTERÍSTICAS INTERNAS</label>
                         <FeaturesGridSelector currentAnswers={formData.gridAnswers} category="internas" onAnswersChange={(ans) => setFormData(prev => ({ ...prev, gridAnswers: ans }))} />
                         <div className="mt-6">
