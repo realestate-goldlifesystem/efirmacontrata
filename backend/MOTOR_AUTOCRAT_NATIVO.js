@@ -66,6 +66,16 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
         var value = colIndex !== -1 ? rowData[colIndex] : '';
         if (value instanceof Date) {
           value = Utilities.formatDate(value, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+        } else if (typeof value === 'number') {
+          var headerLower = headerMap.toLowerCase();
+          var esMoneda = headerLower.includes('precio') || 
+                         headerLower.includes('canon') || 
+                         headerLower.includes('costo') || 
+                         headerLower.includes('valor');
+          if (esMoneda) {
+            var formattedNumber = Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            value = "$ " + formattedNumber;
+          }
         }
         var regex = new RegExp('<<' + tag + '>>', 'g');
         result = result.replace(regex, value);
@@ -90,6 +100,16 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
       if (value === null || value === undefined) value = '';
       if (value instanceof Date) {
         value = Utilities.formatDate(value, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+      } else if (typeof value === 'number') {
+        var headerLower = headerMap.toLowerCase();
+        var esMoneda = headerLower.includes('precio') || 
+                       headerLower.includes('canon') || 
+                       headerLower.includes('costo') || 
+                       headerLower.includes('valor');
+        if (esMoneda) {
+          var formattedNumber = Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+          value = "$ " + formattedNumber;
+        }
       }
       
       body.replaceText('<<' + tag + '>>', value.toString());
