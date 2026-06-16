@@ -25,8 +25,8 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
       if (tipoNegocio === 'Corretaje') targetJobName = 'CORRETAJE';
       else if (tipoNegocio === 'Administración') targetJobName = 'ADMINISTRACIÓN';
       else if (tipoNegocio === 'Venta') targetJobName = 'VENTA';
-      else if (tipoNegocio === 'Admi-Venta') targetJobName = 'ADMINISTRACIÓN'; // Asumimos que usa el mismo o uno similar, ajustar si es necesario
-      else if (tipoNegocio === 'Vendi-Renta') targetJobName = 'CORRETAJE';
+      else if (tipoNegocio === 'Admi-Venta') targetJobName = 'ADMI-VENTA';
+      else if (tipoNegocio === 'Vendi-Renta') targetJobName = 'VENDI-RENTA';
       
       if (jobName === targetJobName) {
         jobRow = data[i];
