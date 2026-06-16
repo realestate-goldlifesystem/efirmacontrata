@@ -158,7 +158,11 @@ function auditorDeContratosVencidos() {
               sheetPagos.getRange(i + 1, 5).setBackground('#ffcccc'); // Rojo claro
               console.log('Reembolsado automáticamente el pago ' + paymentId + ' para CDR ' + cdr);
             } else {
-              console.error('Error reembolsando: ' + response.getContentText());
+              const errorText = response.getContentText();
+              console.error('Error reembolsando: ' + errorText);
+              // Marcar la celda con error para evitar bucles de reintento infinitos
+              sheetPagos.getRange(i + 1, 5).setValue('ERROR REEMBOLSO (MP)');
+              sheetPagos.getRange(i + 1, 5).setBackground('#f4c7c3'); // Rojo/rosa suave para error
             }
           } else {
             // El proceso se formalizó correctamente, el dinero se consolida.
