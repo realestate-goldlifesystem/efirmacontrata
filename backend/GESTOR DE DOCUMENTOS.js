@@ -653,9 +653,12 @@ function handleRegistrarInmueble(datos) {
 
     // Mapear los datos exactos del JSON (React) a las columnas (Sheet)
     for (let i = 1; i < headers.length; i++) {
-      const headerName = headers[i].toString().trim();
-      if (headerName && datos.hasOwnProperty(headerName)) {
-        newRow[i] = datos[headerName];
+      const rawHeader = headers[i].toString();
+      const trimmedHeader = rawHeader.trim();
+      if (rawHeader && datos.hasOwnProperty(rawHeader)) {
+        newRow[i] = datos[rawHeader];
+      } else if (trimmedHeader && datos.hasOwnProperty(trimmedHeader)) {
+        newRow[i] = datos[trimmedHeader];
       }
     }
 
