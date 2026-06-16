@@ -442,7 +442,9 @@ function procesarRPR(datosInmueble) {
 
 function buscarPropietarioPorCedula(parentFolder, cedula) {
   var cedulaStr = cedula.toString().trim();
-  var folders = parentFolder.getFolders();
+  // USO DE searchFolders para evitar iterar miles de carpetas (Timeout de 6 mins)
+  var query = "title contains 'CC " + cedulaStr + "'";
+  var folders = parentFolder.searchFolders(query);
 
   while (folders.hasNext()) {
     var folder = folders.next();
@@ -460,24 +462,55 @@ function buscarPropietarioPorCedula(parentFolder, cedula) {
 }
 
 function getNextRPRSequence(parentFolder) {
-  var folders = parentFolder.getFolders();
+  var props = PropertiesService.getScriptProperties();
+  var savedSeq = props.getProperty('LAST_RPR_SEQUENCE');
+  
+  if (savedSeq) {
+    var nextNumber = parseInt(savedSeq, 10) + 1;
+    props.setProperty('LAST_RPR_SEQUENCE', nextNumber.toString());
+    Logger.log(`📊 Siguiente secuencia RPR (desde caché rápida): ${nextNumber}`);
+    return nextNumber;
+  }
+
+  // Fallback: Buscar en la hoja de cálculo para evitar DriveApp.getFolders() (Timeout)
   var highestNumber = 0;
+  try {
+    var sheet = getSheet();
+    var linkCol = getColumnByName(sheet, 'LINK DE CARPETA RPR');
+    if (linkCol && sheet.getLastRow() > 1) {
+      var numRows = sheet.getLastRow() - 1;
+      var formulas = sheet.getRange(2, linkCol, numRows, 1).getFormulas();
+      var values = sheet.getRange(2, linkCol, numRows, 1).getValues();
 
-  while (folders.hasNext()) {
-    var folder = folders.next();
-    var folderName = folder.getName();
-
-    var match = folderName.match(/^(\d+)-/);
-    if (match) {
-      var number = parseInt(match[1], 10);
-      if (number > highestNumber) {
-        highestNumber = number;
+      for (var i = 0; i < values.length; i++) {
+        var textToSearch = formulas[i][0] || values[i][0];
+        if (textToSearch) {
+          var match = textToSearch.toString().match(/RPR-(\d+)-/);
+          if (match) {
+            var number = parseInt(match[1], 10);
+            if (number > highestNumber) {
+              highestNumber = number;
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log('⚠️ Error calculando secuencia RPR desde hoja, usando DriveApp lento como fallback extremo: ' + e.message);
+    var folders = parentFolder.getFolders();
+    while (folders.hasNext()) {
+      var folder = folders.next();
+      var match = folder.getName().match(/^(\d+)-/);
+      if (match) {
+        var number = parseInt(match[1], 10);
+        if (number > highestNumber) highestNumber = number;
       }
     }
   }
 
   var nextNumber = highestNumber + 1;
-  Logger.log(`📊 Siguiente secuencia RPR: ${nextNumber}`);
+  props.setProperty('LAST_RPR_SEQUENCE', nextNumber.toString());
+  Logger.log(`📊 Siguiente secuencia RPR calculada: ${nextNumber}`);
   return nextNumber;
 }
 
