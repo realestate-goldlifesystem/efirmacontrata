@@ -148,7 +148,7 @@ export default function PartnersAndContact({ onOpenRegisterForm }: PartnersAndCo
             onClick={onOpenRegisterForm}
             className="w-full md:w-auto bg-brand-gold hover:bg-brand-gold-dark text-stone-950 font-bold px-8 py-4 rounded-xl transition-all shadow-md text-nowrap text-center cursor-pointer active:scale-98 text-sm"
           >
-            Comenzar Registro Digital
+            Acceder al Portal
           </button>
         </div>
 

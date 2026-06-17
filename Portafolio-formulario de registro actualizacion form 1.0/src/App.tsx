@@ -14,6 +14,8 @@ import RegisterPropertyForm from './components/RegisterPropertyForm';
 import Testimonials from './components/Testimonials';
 import PartnersAndContact from './components/PartnersAndContact';
 import Footer from './components/Footer';
+import LoginRolesModal from './components/LoginRolesModal';
+import ScheduleVisitForm from './components/ScheduleVisitForm';
 
 export default function App() {
   const [selectedServiceType, setSelectedServiceType] = useState<'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta' | null>(null);
@@ -25,6 +27,10 @@ export default function App() {
     hoaPrice: number;
     isUpsellActive: boolean;
   } | null>(null);
+
+  const [showRolesModal, setShowRolesModal] = useState(false);
+  const [showScheduleVisit, setShowScheduleVisit] = useState(false);
+  const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
     if (showRegisterPage) {
@@ -60,15 +66,25 @@ export default function App() {
     } else {
       setInitialCalculatorState(null);
     }
-    setShowRegisterPage(true);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    
+    if (isAgentLoggedIn) {
+      setShowRegisterPage(true);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } else {
+      setShowRolesModal(true);
+    }
   };
 
   const handleOpenRegisterForm = () => {
     setSelectedServiceType('administracion');
     setInitialCalculatorState(null);
-    setShowRegisterPage(true);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    
+    if (isAgentLoggedIn) {
+      setShowRegisterPage(true);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } else {
+      setShowRolesModal(true);
+    }
   };
 
   return (
@@ -82,7 +98,16 @@ export default function App() {
 
       {/* Main Sections */}
       <main>
-        {showRegisterPage ? (
+        {showScheduleVisit ? (
+          <div className="pt-24 animate-fade-in">
+            <ScheduleVisitForm 
+              onBack={() => {
+                setShowScheduleVisit(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        ) : showRegisterPage ? (
           /* Independent, gamified property registration view with live accounting/yield computations */
           <div className="pt-24 animate-fade-in">
             <RegisterPropertyForm 
@@ -134,6 +159,24 @@ export default function App() {
 
       {/* Footer Branded Layout */}
       <Footer />
+
+      {/* Modals & Portals */}
+      {showRolesModal && (
+        <LoginRolesModal 
+          onClose={() => setShowRolesModal(false)}
+          onSelectAgent={() => {
+            setIsAgentLoggedIn(true);
+            setShowRolesModal(false);
+            setShowRegisterPage(true);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          onSelectOwner={() => {
+            setShowRolesModal(false);
+            setShowScheduleVisit(true);
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+        />
+      )}
 
     </div>
   );

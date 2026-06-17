@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Home, Calculator, Phone, Menu, X, Landmark, Layers } from 'lucide-react';
+import { Home, Calculator, Phone, Menu, X, Landmark, Layers, User } from 'lucide-react';
 
 interface NavbarProps {
   onScrollTo: (sectionId: string) => void;
@@ -82,13 +82,6 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
 
           {/* Action buttons */}
           <div className="hidden lg:flex items-center space-x-4">
-            <button
-              id="cta-navbar-register"
-              onClick={onOpenRegisterForm}
-              className="bg-brand-gold hover:bg-brand-gold-dark text-stone-950 font-semibold px-4 py-2 rounded-md text-sm transition-all shadow-md active:scale-95 cursor-pointer"
-            >
-              Registrar Mi Inmueble
-            </button>
             <a
               id="cta-navbar-whatsapp"
               href="https://wa.me/573000000000?text=Hola%20Gold%20Life,%20quiero%20conocer%20más%20sobre%20el%20portafolio%20de%20servicios."
@@ -99,6 +92,14 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
               <Phone className="w-4 h-4 text-brand-gold" />
               <span>WhatsApp</span>
             </a>
+            <button
+              id="cta-navbar-login"
+              onClick={onOpenRegisterForm}
+              className="bg-brand-gold hover:bg-brand-gold-dark text-stone-950 font-semibold px-4 py-2 rounded-md text-sm transition-all shadow-md active:scale-95 cursor-pointer flex items-center space-x-1.5"
+            >
+              <User className="w-4 h-4" />
+              <span>Acceso Portal</span>
+            </button>
           </div>
 
           {/* Mobile menu button */}
@@ -136,18 +137,20 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
                 onOpenRegisterForm();
                 setIsOpen(false);
               }}
-              className="w-full bg-brand-gold hover:bg-brand-gold-dark text-stone-950 font-semibold py-3 px-4 rounded-md text-center text-sm transition-all block cursor-pointer"
+              className="w-full bg-brand-gold hover:bg-brand-gold-dark text-stone-950 font-semibold py-3 px-4 rounded-md flex items-center justify-center space-x-2 text-sm transition-all cursor-pointer"
             >
-              Registrar Mi Inmueble
+              <User className="w-4 h-4" />
+              <span>Acceso Portal</span>
             </button>
             <a
               id="mobile-cta-whatsapp"
               href="https://wa.me/573000000000?text=Hola%20Gold%20Life,%20quiero%20conocer%20más%20sobre%20el%20portafolio%20de%20servicios."
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-stone-100 border border-stone-250 text-stone-700 hover:text-stone-900 py-3 px-4 rounded-md text-center text-sm transition-all block cursor-pointer"
+              className="w-full bg-stone-100 border border-stone-250 text-stone-700 hover:text-stone-900 py-3 px-4 rounded-md flex items-center justify-center space-x-2 text-sm transition-all cursor-pointer"
             >
-              Contactar por WhatsApp
+              <Phone className="w-4 h-4 text-brand-gold" />
+              <span>Contactar por WhatsApp</span>
             </a>
           </div>
         </div>
