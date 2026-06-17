@@ -110,6 +110,10 @@ export function numberToWordsSpanish(num: number): string {
   
   if (!cleanResult) return 'Cero pesos COP';
 
+  if (cleanResult.endsWith('millón') || cleanResult.endsWith('millones')) {
+    cleanResult += ' de';
+  }
+
   // Capitalize first letter
   const formatted = cleanResult.charAt(0).toUpperCase() + cleanResult.slice(1);
   return `${formatted} pesos COP`;

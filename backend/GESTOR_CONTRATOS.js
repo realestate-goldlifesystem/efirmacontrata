@@ -1626,7 +1626,12 @@ function numeroALetras(numero) {
     resultado += convertirCentenas(numero);
   }
 
-  return resultado.trim() + ' PESOS M/CTE';
+  let cleanResult = resultado.trim().replace(/\s+/g, ' ');
+  if (cleanResult.endsWith('MILLON') || cleanResult.endsWith('MILLONES')) {
+    cleanResult += ' DE';
+  }
+
+  return cleanResult + ' PESOS M/CTE';
 
   function convertirCentenas(n) {
     let output = '';
