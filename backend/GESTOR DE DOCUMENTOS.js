@@ -444,23 +444,7 @@ function doGet(e) {
         result = { success: true, direccion: dir, pago_completado: pago_completado };
         break;
 
-      case 'base':
-        result = { success: true, message: 'Endpoint base activo' };
-        break;
 
-      case 'getFormStructure':
-        try {
-          const form = FormApp.openById('1UZ7_3GpL-NR-Kt0cNWkalOqNscs2Fp8h2py1GE557g4');
-          const items = form.getItems();
-          result = { 
-            success: true, 
-            titles: items.map(i => i.getTitle()),
-            types: items.map(i => i.getType().toString())
-          };
-        } catch (err) {
-          result = { success: false, error: err.message };
-        }
-        break;
 
       case 'getMultimediaData':
         if (typeof handleGetMultimediaData === 'function') {
@@ -479,20 +463,7 @@ function doGet(e) {
         return HtmlService.createHtmlOutput('<h2>Módulo de Rollback no disponible</h2>');
 
       // ... otros casos ...
-      case 'test':
-        result = {
-          success: true,
-          message: 'API funcionando correctamente',
-          version: DOCS_CONFIG.VERSION,
-        };
-        break;
 
-      case 'setCreds':
-        const props = PropertiesService.getScriptProperties();
-        props.setProperty('OCR_CLIENT_EMAIL', 'ocr-vision@real-estate-ocr-468904.iam.gserviceaccount.com');
-        props.setProperty('OCR_PRIVATE_KEY', '-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCzUR0SyBcGYgJD\\n8M/V9KORYzis/xcujzFCfzbbr3hHbbGD9zOV1z3PJjMnAo0Zku2dyS+Voy6wZAcv\\nPWL6LfdYLQ+ubZ0F6xQM+1VFCeMglPU9jT4OmlYplCiaj1mQsOFa4rvW+A9mzBct\\nC5TKMlJsqmlAfIf6n7+cHFuxbWVayZ4vZ2fodP4Msvdk34+YTWJlnpnyJI5UJc+1\\n+0oCjL1oyn/5Dc7vULtIzvOfCZQdnDj3M/NUY8QpK3rd123Ht/OaqqXwChtZWyHP\\nPox60TeHhraj//TKp9wOUz0TsjHJfwlxLCoKNXIV1c5j8ZrZY7CQXXL3RuPqS3ax\\n51TIHlPNAgMBAAECggEARvwDtdUmpDy1J98S72A2Rg4QuA8NRr2hovDILyQhyajn\\nXlXEAnuf+LpnAnjUkXyj+tPTNfnQuDwIyg8TePUsVqgT7plu0RJzsAXohfl5g4Lk\\nKDcbC13WYQRJJJI9wvT6aOebs2gkdK2zOP4+KuLL1T+KheAmVjTZ/bsOI0kql8rR\\n2mzs//H/n98DlP0F7cuwELB4u/Un3653+emE+QS0c6Yb4+QCjBiIzKL9ci2VxuIE\\nUQvm4DJfpFjUXs295CBJpf8eNii9RGWj5E08e4Ph8Dx5Qzv3mXIoavneWikfTvIw\\nm9tSsCI54/E3/Qv+CXyfMUd6irpcE47o6/QMLa9jQwKBgQDbJyL94/4/s2jaPFvq\\nRT0KGyDx8ALZG9A6A+ilwOQqp66xG3APC+ROesvGFPs3fjYq15d6x2yZ/ml2vB91\\nGp+DM3m/PDSEDa4vT1uXSE4j8qhTwcpIqdt9/NhW6pxuNIpHQhxeYc6rXw5jzYZe\\nvUqi/FAXWHvCvH0R09gOAJcEJwKBgQDRd1bO3ZShvnDdSkt//0ReRFuW0xlOqvAp\\n/fCcAwCfQ1De5UZCVkMGy/jOZO3QYTcQTvu/jU2vdhZfQLJk71Mz7T1cpao6g6F1\\nYkmVO4H2P7jZlXZPzEFQix14K8i31XSloGWLZUDZkb1oB3ynvGAsBpk2jjjJA0Rk\\nFFEkMjTc6wKBgEZgfRY3f1CJluRueb3z2jRCngPT5bY+/lGDK9T+6sbf7nOlsgjC\\n8uBZAtNrrXkWqOJ9NYISRMf3MXsV0qxSjmMdxr0o4lx94DAFNg6RA7b7mB69nu5S\\nzc/ZwMe4s9+YM8fKbT3J/wp9jitytvH5q9xHVpkIq0XQLgHpm/pzKgwFAoGAbGqp\\ner8DjEgm4NLwixqTx3r4MPOoeKhPUFzIleptD2r+4y3dZl4bQpeqLg4MOfT6z8N\\nkjzQBc5IPBsfetDIrurPROHWXxz8d+ZckapQVSWcRrpul1TwRYELysRWypfoHUYM\\n6P6Kd1JQx8SAR81ftcngiXVJfPl875P4f5Sg+esCgYEA0jNbUHnCOIV0uzGnkU0A\\nz3bk8jof/Sc1SU0tJ9nqG66mbu1iluoYNXZLRrs8jk5gwiQvsSXH5TE4AIX5F8Rn\\nihsIbqeBkEOnLx8b37Ooue1FPr0YRb1IxynBenZPNy3u+m5DHPjAgan521puZmxS\\nJkDqJOHGbt+vbiWxJrRSr48=\\n-----END PRIVATE KEY-----\\n');
-        result = { success: true, message: 'Credenciales de Google Cloud Vision guardadas exitosamente' };
-        break;
 
       case 'obtenerContrato':
         result = handleObtenerContrato(e);
@@ -502,11 +473,7 @@ function doGet(e) {
         result = handleObtenerEstadoAprobaciones(e);
         break;
 
-      case 'test-inquilinos':
-        return ContentService.createTextOutput(JSON.stringify({
-          success: true,
-          data: obtenerRegistrosInquilinos()
-        })).setMimeType(ContentService.MimeType.JSON);
+
 
       default:
         result = {
