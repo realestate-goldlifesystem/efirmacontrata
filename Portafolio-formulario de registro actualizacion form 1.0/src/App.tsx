@@ -16,7 +16,7 @@ import PartnersAndContact from './components/PartnersAndContact';
 import Footer from './components/Footer';
 
 export default function App() {
-  const [selectedServiceType, setSelectedServiceType] = useState<'corretaje' | 'administracion' | 'venta' | null>(null);
+  const [selectedServiceType, setSelectedServiceType] = useState<'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta' | null>(null);
   const [showRegisterPage, setShowRegisterPage] = useState(false);
   const [initialCalculatorState, setInitialCalculatorState] = useState<{
     rentPrice: number;
@@ -45,7 +45,7 @@ export default function App() {
   };
 
   const handleSelectServiceType = (
-    service: 'corretaje' | 'administracion' | 'venta',
+    service: 'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta',
     details?: {
       rentPrice: number;
       isMultiProperty: boolean;

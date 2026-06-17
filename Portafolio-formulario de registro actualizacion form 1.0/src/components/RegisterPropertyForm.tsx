@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, FormEvent, useEffect } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import { 
   CheckCircle2, Send, Mail, User, ShieldCheck, 
   ArrowLeft, ArrowRight, Calculator, MapPin, 
@@ -27,7 +27,7 @@ const UPZ_BARRIOS: Record<string, string[]> = {
 };
 
 interface RegisterPropertyFormProps {
-  selectedServiceType: 'corretaje' | 'administracion' | 'venta' | null;
+  selectedServiceType: 'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta' | null;
   initialCalculatorState?: {
     rentPrice: number;
     isMultiProperty: boolean;
@@ -193,12 +193,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   };
 
   // Interactive computed variables for the Dynamic Live Calculator panel
-  const includesHoa = formData.serviceType !== 'venta';
   const priceGeneralVal = parseNum(formData.priceGeneral);
-  const priceHoaVal = includesHoa ? parseNum(formData.priceHoaPlena) : 0;
+  const priceHoaVal = parseNum(formData.priceHoaPlena);
   
   // Real Rent is General Rent minus HOA if HOA is paid separately
-  const baseCanon = includesHoa ? Math.max(0, priceGeneralVal - priceHoaVal) : priceGeneralVal;
+  const baseCanon = Math.max(0, priceGeneralVal - priceHoaVal);
   const policyCost = priceGeneralVal * 0.50; // 50% of total arriendo (canon + administration)
 
   // Calcs by business type
@@ -1598,8 +1597,8 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       <div className="p-3 bg-brand-gold/10 border border-brand-gold rounded-xl text-xs space-y-2 animate-fade-in">
                         <span className="font-extrabold text-[#8A631F] block uppercase tracking-wide">AVALÚO ECONÓMICO FINAL</span>
                         
-                        {formData.serviceType !== 'venta' && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-3">
+                          {formData.serviceType !== 'venta' && (
                             <div>
                               <label className="text-[10px] text-stone-605 block mb-1">PRECIO PROMOCIÓN GENERAL (Renta + Administración)</label>
                               <input 
@@ -1611,19 +1610,19 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 En letras: <strong className="text-stone-800 font-sans font-medium">{numberToWordsSpanish(priceGeneralVal)}</strong>
                               </p>
                             </div>
-                            <div>
-                              <label className="text-[10px] text-stone-605 block mb-1">CUOTA DE ADMINISTRACIÓN PLENA</label>
-                              <input 
-                                type="text" value={new Intl.NumberFormat('es-CO').format(priceHoaVal)}
-                                onChange={e => setFormData({ ...formData, priceHoaPlena: e.target.value.replace(/\D/g, '') })}
-                                placeholder="Ej. 350.000" className="w-full bg-white border rounded-lg p-2.5 font-bold font-mono"
-                              />
-                              <p className="text-[9px] text-[#8A631F] italic leading-snug mt-1">
-                                En letras: <strong className="text-stone-800 font-sans font-medium">{numberToWordsSpanish(priceHoaVal)}</strong>
-                              </p>
-                            </div>
+                          )}
+                          <div>
+                            <label className="text-[10px] text-stone-605 block mb-1">CUOTA DE ADMINISTRACIÓN PLENA</label>
+                            <input 
+                              type="text" value={new Intl.NumberFormat('es-CO').format(priceHoaVal)}
+                              onChange={e => setFormData({ ...formData, priceHoaPlena: e.target.value.replace(/\D/g, '') })}
+                              placeholder="Ej. 350.000" className="w-full bg-white border rounded-lg p-2.5 font-bold font-mono"
+                            />
+                            <p className="text-[9px] text-[#8A631F] italic leading-snug mt-1">
+                              En letras: <strong className="text-stone-800 font-sans font-medium">{numberToWordsSpanish(priceHoaVal)}</strong>
+                            </p>
                           </div>
-                        )}
+                        </div>
 
                         {(formData.serviceType === 'venta' || formData.serviceType === 'vendi-renta' || formData.serviceType === 'admi-venta') && (
                           <div className="border-t border-brand-gold/20 pt-2 animate-fade-in">

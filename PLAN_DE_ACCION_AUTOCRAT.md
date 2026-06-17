@@ -46,9 +46,9 @@ Esta pestaña sigue siendo el "cerebro" que indica qué columna de Excel (`<<TIP
 ## 3. Lista de Tareas para Asegurar el 100% de Integración
 
 - [x] **Vigilancia, Zonas y Vías:** Se agregaron los campos extra y se mapearon a sus columnas exactas (Residencial, Comercial, Industrial, Campestre, etc).
-- [x] **Traducción de Precios a Letras:** Se integró la función `numberToWordsSpanish` que pasa todo de número a letra para los contratos (Venta, General y Administración).
-- [ ] **Validación y Pruebas Reales:** Hacer un envío del formulario en vivo (tipo Vendi-Renta) para observar si la fila cae completa y si los PDFs se autogeneran con ambos valores en letra y en número.
-- [ ] **Verificación de Tags en Contratos:** Si un campo se muestra en blanco en los PDFs (ej. en la carpeta de Drive `17gAoQX9DQ8AaGT0_qHLYu7T1orh62v7c`), se debe revisar el archivo de Job Settings para confirmar que el Tag sea idéntico al Header.
+- [x] **Traducción de Precios a Letras:** Se integró la función `numberToWordsSpanish` que pasa todo de número a letra para los contratos (Venta, General y Administración) incluyendo validación gramatical.
+- [x] **Validación y Pruebas Reales:** Hacer un envío del formulario en vivo (tipo Vendi-Renta) para observar si la fila cae completa y si los PDFs se autogeneran con ambos valores en letra y en número. ¡Completado exitosamente!
+- [x] **Verificación de Tags en Contratos:** Si un campo se muestra en blanco en los PDFs (ej. en la carpeta de Drive `17gAoQX9DQ8AaGT0_qHLYu7T1orh62v7c`), se debe revisar el archivo de Job Settings para confirmar que el Tag sea idéntico al Header. ¡Todo el mapeo fue validado con éxito!
 
 > **💡 Nota Técnica:** Si en algún momento necesitas extraer toda la estructura del formulario o las columnas actualizadas, puedes llamar al endpoint `getFormStructure` de la API en el Gestor de Documentos.
 

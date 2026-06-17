@@ -426,6 +426,15 @@ function doGet(e) {
         return handleObtenerDocumentosPanel(e);
 
       
+      case 'read_doc':
+        try {
+          var doc = DocumentApp.openById(e.parameter.docId || datos.docId);
+          result = { success: true, text: doc.getBody().getText() };
+        } catch(err) {
+          result = { success: false, error: err.toString() };
+        }
+        break;
+
       case 'verificarPagoMP':
         var cdrPagoMP = e.parameter.cdr;
         if (!cdrPagoMP) {
