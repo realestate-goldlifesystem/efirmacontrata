@@ -453,10 +453,11 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
           {onBack && (
             <button
               onClick={onBack}
-              className="inline-flex items-center space-x-2 bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 rounded-xl px-4 py-2 text-xs font-bold transition-all shadow-xs cursor-pointer"
+              className="fixed top-24 right-4 sm:right-8 z-40 inline-flex items-center space-x-2 bg-white/90 backdrop-blur-sm text-stone-700 hover:text-brand-gold hover:bg-white border border-stone-200 px-4 py-2 rounded-full shadow-md transition-all font-semibold text-sm cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4 text-brand-gold-dark" />
-              <span>Volver</span>
+              <span className="hidden sm:inline">Cerrar Sesión</span>
+              <span className="sm:hidden">Salir</span>
             </button>
           )}
         </div>

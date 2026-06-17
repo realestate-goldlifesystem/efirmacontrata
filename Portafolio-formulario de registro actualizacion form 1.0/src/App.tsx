@@ -115,6 +115,7 @@ export default function App() {
               initialCalculatorState={initialCalculatorState}
               onBack={() => {
                 setShowRegisterPage(false);
+                setIsAgentLoggedIn(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
             />

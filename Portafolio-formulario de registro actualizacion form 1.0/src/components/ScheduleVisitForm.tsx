@@ -43,10 +43,11 @@ Quedo atento para coordinar la fecha y hora de la visita con un agente especiali
       <div className="max-w-2xl mx-auto relative z-10">
         <button
           onClick={onBack}
-          className="inline-flex items-center space-x-2 text-stone-500 hover:text-stone-900 mb-8 transition-colors font-semibold"
+          className="fixed top-24 left-4 sm:left-8 z-50 inline-flex items-center space-x-2 bg-white/90 backdrop-blur-sm text-stone-700 hover:text-brand-gold hover:bg-white border border-stone-200 px-4 py-2 rounded-full shadow-md transition-all font-semibold text-sm"
         >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Volver al inicio</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span className="hidden sm:inline">Volver al inicio</span>
+          <span className="sm:hidden">Volver</span>
         </button>
 
         <div className="bg-white rounded-3xl shadow-xl border border-stone-200 overflow-hidden">
