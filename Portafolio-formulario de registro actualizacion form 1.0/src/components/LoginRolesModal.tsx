@@ -1,5 +1,7 @@
-import { X, UserCheck, Home, ArrowRight, ShieldCheck, Mail } from 'lucide-react';
+import { X, UserCheck, Home, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 interface LoginRolesModalProps {
   onClose: () => void;
@@ -9,16 +11,25 @@ interface LoginRolesModalProps {
 
 export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner }: LoginRolesModalProps) {
   const [showAgentLogin, setShowAgentLogin] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleMockGoogleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.toLowerCase().trim() === 'realestate.goldlifesystem@gmail.com') {
-      onSelectAgent();
-    } else {
-      alert("Acceso denegado. Este correo no cuenta con permisos de administrador.");
+  const handleGoogleSuccess = (credentialResponse: any) => {
+    if (credentialResponse.credential) {
+      try {
+        const decoded = jwtDecode<{ email: string }>(credentialResponse.credential);
+        if (decoded.email.toLowerCase().trim() === 'realestate.goldlifesystem@gmail.com') {
+          onSelectAgent();
+        } else {
+          alert("Acceso denegado. Este correo no cuenta con permisos de administrador.");
+        }
+      } catch (err) {
+        console.error("Error decoding JWT", err);
+        alert("Error procesando las credenciales de Google.");
+      }
     }
+  };
+
+  const handleGoogleError = () => {
+    console.log('Login Failed');
+    alert("Error al intentar iniciar sesión con Google.");
   };
 
   return (
@@ -105,27 +116,19 @@ export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner 
                   <p className="text-xs text-stone-500 mt-1">Ingresa con tus credenciales corporativas</p>
                 </div>
 
-                <form onSubmit={handleMockGoogleLogin} className="space-y-4">
-                  <div>
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Correo electrónico de administrador"
-                      className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full bg-brand-gold text-stone-950 font-bold py-3 px-4 rounded-xl transition-all shadow-md active:scale-95 hover:bg-brand-gold-dark"
-                  >
-                    Ingresar al Sistema
-                  </button>
-                  <p className="text-[10px] text-center text-stone-400">
-                    Solo los agentes autorizados por Gold Life pueden acceder al sistema de registro.
-                  </p>
-                </form>
+                <div className="flex justify-center my-6">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    theme="filled_black"
+                    shape="pill"
+                    text="signin_with"
+                    auto_select={true}
+                  />
+                </div>
+                <p className="text-[10px] text-center text-stone-400 mt-4">
+                  Solo los agentes autorizados por Gold Life pueden acceder al sistema de registro.
+                </p>
               </div>
             )}
           </div>
