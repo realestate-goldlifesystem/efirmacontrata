@@ -210,6 +210,15 @@ function handleFinalizeMultimedia(datos) {
         }
     }
 
+    // Renombrar automáticamente DNG y HEIC a JPG en la carpeta de fotos (síncrono y rápido)
+    if (fotosFolder) {
+        try {
+            renombrarDNGaJPG(fotosFolder);
+        } catch(e) {
+            console.error("Error renombrando fotos inline:", e);
+        }
+    }
+
     return {
         success: true,
         urls: {
@@ -218,6 +227,31 @@ function handleFinalizeMultimedia(datos) {
             youtube: youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null
         }
     };
+}
+
+/**
+ * Renombra archivos .DNG y .HEIC a .JPG dentro de una carpeta específica.
+ */
+function renombrarDNGaJPG(folder) {
+    const extensions = ['.DNG', '.HEIC'];
+    const queryParts = extensions.map(ext => `title contains '${ext}'`);
+    const query = `(${queryParts.join(' or ')}) and trashed = false`;
+    const files = folder.searchFiles(query);
+    
+    let count = 0;
+    while (files.hasNext()) {
+        const file = files.next();
+        const name = file.getName();
+        const upperName = name.toUpperCase();
+        const matchedExt = extensions.find(ext => upperName.endsWith(ext));
+        
+        if (matchedExt) {
+            const newName = name.slice(0, -matchedExt.length) + '.JPG';
+            file.setName(newName);
+            count++;
+        }
+    }
+    console.log(`✅ ${count} fotos renombradas a .JPG en la carpeta ${folder.getName()}`);
 }
 
 /**

@@ -32,16 +32,13 @@ function instalarActivadores() {
 
 /**
  * Instala el trigger para AutoRename DNG -> JPG
+ * [DEPRECADO] - Ahora se renombra síncronamente al finalizar la carga multimedia.
+ * Ejecute esta función para LIMPIAR triggers huérfanos del pasado.
  */
 function instalarTriggerAutoRename() {
     desinstalarTriggerAutoRename(); // Limpieza previa
 
-    ScriptApp.newTrigger('autoRenameDNGtoJPG')
-        .timeBased()
-        .everyMinutes(1)
-        .create();
-
-    SpreadsheetApp.getUi().alert('✅ AutoRename activado: Se ejecutará cada 1 minuto (Casi en tiempo real).');
+    SpreadsheetApp.getUi().alert('✅ Triggers de AutoRename eliminados. Ahora el renombrado es instantáneo al subir las fotos.');
 }
 
 /**
