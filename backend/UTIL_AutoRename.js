@@ -27,12 +27,21 @@ const CONFIG_AUTORENAME = {
  * romper los triggers ya creados en el servidor de Apps Script.
  */
 function autoRenameDNGtoJPG() {
-    const lock = LockService.getScriptLock();
-    // Intentar obtener el bloqueo por 1 segundo. Si ya hay otro corriendo, salir.
-    if (!lock.tryLock(1000)) {
-        console.warn('⚠️ autoRenameDNGtoJPG ya está corriendo. Saliendo para evitar congestión de Apps Script.');
-        return;
+    const props = PropertiesService.getScriptProperties();
+    const lockKey = 'LOCK_AUTORENAME';
+    const lastRunStr = props.getProperty(lockKey);
+    
+    if (lastRunStr) {
+        const lastRun = parseInt(lastRunStr, 10);
+        // Si el bloqueo tiene menos de 5 minutos, consideramos que está corriendo
+        if (new Date().getTime() - lastRun < 5 * 60 * 1000) {
+            console.warn('⚠️ autoRenameDNGtoJPG ya está corriendo. Saliendo para evitar congestión de Apps Script.');
+            return;
+        }
     }
+    
+    // Adquirir bloqueo lógico
+    props.setProperty(lockKey, new Date().getTime().toString());
 
     const startTime = new Date().getTime();
     console.log(`🔄 Iniciando AutoRename Multimedia (${CONFIG_AUTORENAME.EXTENSIONS_TARGET.join(', ')}) -> JPG...`);
@@ -53,7 +62,7 @@ function autoRenameDNGtoJPG() {
     } catch (e) {
         console.error(`❌ Error crítico en AutoRename: ${e.toString()}`);
     } finally {
-        lock.releaseLock();
+        props.deleteProperty(lockKey);
     }
 }
 
