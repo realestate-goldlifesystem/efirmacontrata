@@ -691,15 +691,34 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             />
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setCedulaStatus('searching');
-                                setTimeout(() => {
-                                  // Mock simulation: If ends in '1' simulate found, else not found
-                                  setCedulaStatus(cedulaInput.endsWith('1') ? 'found' : 'not_found');
-                                  if (cedulaInput.endsWith('1')) {
-                                    setFormData(p => ({ ...p, name: 'CARLOS ALBERTO PEREZ', documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
+                                try {
+                                  const response = await fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
+                                    method: 'POST',
+                                    body: JSON.stringify({ accion: 'consultarPropietario', cedula: cedulaInput }),
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                                  });
+                                  const data = await response.json();
+                                  if (data.success && data.propietario) {
+                                    setCedulaStatus('found');
+                                    setFormData(p => ({ 
+                                      ...p, 
+                                      name: data.propietario.nombre, 
+                                      documentNumber: data.propietario.numeroDocumento, 
+                                      confirmDocumentNumber: data.propietario.numeroDocumento,
+                                      email: data.propietario.email || '',
+                                      confirmEmail: data.propietario.email || '',
+                                      phone: data.propietario.celular || '',
+                                      confirmPhone: data.propietario.celular || ''
+                                    }));
+                                  } else {
+                                    setCedulaStatus('not_found');
                                   }
-                                }, 1500);
+                                } catch (error) {
+                                  console.error("Error validando cédula:", error);
+                                  setCedulaStatus('not_found');
+                                }
                               }}
                               disabled={cedulaInput.length < 5 || cedulaStatus === 'searching'}
                               className="bg-[#11100c] text-brand-gold px-6 py-3 rounded-xl font-bold shadow-md hover:bg-black transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
