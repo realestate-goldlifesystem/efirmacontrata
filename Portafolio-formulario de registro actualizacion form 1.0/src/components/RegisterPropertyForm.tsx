@@ -39,9 +39,11 @@ interface RegisterPropertyFormProps {
 }
 
 export default function RegisterPropertyForm({ selectedServiceType, initialCalculatorState, onBack }: RegisterPropertyFormProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [cedulaInput, setCedulaInput] = useState('');
+  const [cedulaStatus, setCedulaStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>('idle');
 
   // Form State containing exact variables requested by the JSON Form
   const [formData, setFormData] = useState({
@@ -224,6 +226,9 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 
   // Step Navigations
   const canGoToNext = () => {
+    if (currentStep === 0) {
+      return cedulaInput.length > 5;
+    }
     if (currentStep === 1) {
       return formData.address.trim() !== '' && formData.city.trim() !== '';
     }
@@ -468,7 +473,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
         </div>
 
         {/* Progress gamification bar */}
-        {!submitted && (
+        {!submitted && currentStep > 0 && (
           <div className="mb-10 max-w-4xl mx-auto">
             <div className="flex justify-between text-[10px] sm:text-xs font-mono mb-4 px-2">
               {['Ubicación', 'Físico', 'Extras', 'Propietario', 'Negocio', 'Precios'].map((label, idx) => {
@@ -657,6 +662,107 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
               <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-5">
                   
+                  {/* STEP 0: Identificación Inicial */}
+                  {currentStep === 0 && (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                      <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
+                        <div className="size-12 rounded-xl bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20">
+                          <User className="w-6 h-6 text-brand-gold-dark" />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-black text-stone-900 tracking-tight">Validación del Propietario</h4>
+                          <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-0.5">Identificación del Cliente</p>
+                        </div>
+                      </div>
+
+                      <div className="p-6 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+                        <div>
+                          <label className="text-xs text-stone-600 font-bold block mb-2">INGRESE LA CÉDULA DEL PROPIETARIO</label>
+                          <div className="flex gap-3">
+                            <input 
+                              type="number" 
+                              value={cedulaInput}
+                              onChange={(e) => {
+                                setCedulaInput(e.target.value);
+                                setCedulaStatus('idle');
+                              }}
+                              placeholder="Ej. 1020304050"
+                              className="flex-1 bg-white border border-stone-200 rounded-xl p-3 text-sm font-bold shadow-sm focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCedulaStatus('searching');
+                                setTimeout(() => {
+                                  // Mock simulation: If ends in '1' simulate found, else not found
+                                  setCedulaStatus(cedulaInput.endsWith('1') ? 'found' : 'not_found');
+                                  if (cedulaInput.endsWith('1')) {
+                                    setFormData(p => ({ ...p, name: 'CARLOS ALBERTO PEREZ', documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
+                                  }
+                                }, 1500);
+                              }}
+                              disabled={cedulaInput.length < 5 || cedulaStatus === 'searching'}
+                              className="bg-[#11100c] text-brand-gold px-6 py-3 rounded-xl font-bold shadow-md hover:bg-black transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
+                            >
+                              {cedulaStatus === 'searching' ? 'Buscando...' : 'Buscar'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {cedulaStatus === 'not_found' && (
+                          <div className="animate-in slide-in-from-top-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                            <strong>Propietario no encontrado.</strong> Parece ser un cliente nuevo en la base de datos de Gold Life. Continuemos con el registro completo.
+                            <div className="mt-3">
+                              <button
+                                type="button"
+                                onClick={() => setCurrentStep(1)}
+                                className="w-full bg-brand-gold text-stone-900 font-bold py-3 rounded-xl shadow-md hover:bg-brand-gold-dark transition-all"
+                              >
+                                Continuar como Nuevo Registro
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {cedulaStatus === 'found' && (
+                          <div className="animate-in slide-in-from-top-2 space-y-4">
+                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-3 text-sm text-emerald-800">
+                              <ShieldCheck className="w-5 h-5 shrink-0 mt-0.5" />
+                              <div>
+                                <strong>¡Cliente Identificado!</strong>
+                                <p className="mt-1 font-mono text-xs">{formData.name} ya existe en el sistema.</p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 gap-3">
+                              <button type="button" onClick={() => setCurrentStep(1)} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
+                                <div>
+                                  <h5 className="font-bold text-stone-900 group-hover:text-brand-gold transition-colors">Nuevo Inmueble</h5>
+                                  <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Añadir una nueva propiedad al portafolio de este cliente.</p>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-brand-gold" />
+                              </button>
+                              <button type="button" onClick={() => alert("Renovación de Contrato: La lógica del backend se activará aquí en la Fase 1.")} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
+                                <div>
+                                  <h5 className="font-bold text-stone-900 group-hover:text-blue-600 transition-colors">Renovación de Contrato</h5>
+                                  <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Renovar contrato existente sin volver a pedir datos.</p>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-blue-500" />
+                              </button>
+                              <button type="button" onClick={() => alert("Cambio de Negocio: La lógica del backend se activará aquí en la Fase 1.")} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
+                                <div>
+                                  <h5 className="font-bold text-stone-900 group-hover:text-emerald-600 transition-colors">Cambio de Modelo de Negocio</h5>
+                                  <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Ej: Pasar de Corretaje a Administración.</p>
+                                </div>
+                                <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-emerald-500" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* STEP 1: Destinación y Ubicación */}
                   {currentStep === 1 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -1768,18 +1874,27 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                 </div>
 
                 {/* Footer buttons of form */}
-                <div className="pt-6 border-t border-stone-100 flex items-center justify-between mt-8 gap-4">
-                  {currentStep > 1 ? (
-                    <button
-                      type="button" onClick={handlePrevStep}
-                      className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl text-xs transition-colors border border-stone-300 cursor-pointer shadow-xs active:scale-95"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Volver</span>
-                    </button>
-                  ) : <div />}
+                {currentStep > 0 && (
+                  <div className="pt-6 border-t border-stone-100 flex items-center justify-between mt-8 gap-4">
+                    {currentStep > 1 ? (
+                      <button
+                        type="button" onClick={handlePrevStep}
+                        className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl text-xs transition-colors border border-stone-300 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Volver</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button" onClick={() => setCurrentStep(0)}
+                        className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl text-xs transition-colors border border-stone-300 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Cambiar Cédula</span>
+                      </button>
+                    )}
 
-                  {currentStep < 7 ? (
+                    {currentStep < 6 ? (
                     <button
                       type="button" onClick={handleNextStep}
                       disabled={!canGoToNext()}
@@ -1801,7 +1916,8 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       )}
                     </button>
                   )}
-                </div>
+                  </div>
+                )}
 
               </form>
             ) : (
