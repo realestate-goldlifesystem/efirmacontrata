@@ -436,48 +436,67 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
   };
 
   return (
-    <section id="registro" className="min-h-screen py-10 bg-stone-50 text-stone-800 relative">
-      <div className="absolute top-10 left-10 w-80 h-80 bg-brand-gold/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#8A631F]/5 rounded-full blur-[120px] pointer-events-none" />
+    <section id="registro" className="min-h-screen py-12 bg-gradient-to-b from-[#11100c] to-[#1a1814] text-stone-800 relative font-sans">
+      {/* Luxury Ambient Glows */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-gold/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
+      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#8A631F]/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Superior Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 pb-4 border-b border-stone-200 gap-4">
-          <div className="text-left">
-            <span className="text-xs uppercase font-mono tracking-widest text-[#8A631F] font-bold block">Gold Life Real Estate</span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight mt-1 font-sans">
-              Registro de Inmuebles Digital
-            </h2>
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-10 pb-6 border-b border-white/10 gap-4">
+          <div className="text-left flex items-center gap-4">
+            <div className="size-14 bg-gradient-to-br from-brand-gold to-[#8A631F] rounded-2xl flex items-center justify-center shadow-lg shadow-brand-gold/20 p-3">
+               <Building2 className="w-full h-full text-[#11100c]" />
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-brand-gold font-bold block mb-1">Gold Life Real Estate</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+                Registro de Inmuebles
+              </h2>
+            </div>
           </div>
           {onBack && (
             <button
               onClick={onBack}
-              className="fixed top-24 right-4 sm:right-8 z-40 inline-flex items-center space-x-2 bg-white/90 backdrop-blur-sm text-stone-700 hover:text-brand-gold hover:bg-white border border-stone-200 px-4 py-2 rounded-full shadow-md transition-all font-semibold text-sm cursor-pointer"
+              className="inline-flex items-center space-x-2 bg-white/5 hover:bg-white/10 backdrop-blur-md text-stone-300 hover:text-brand-gold border border-white/10 px-6 py-3 rounded-full shadow-lg transition-all font-semibold text-sm cursor-pointer group"
             >
-              <ArrowLeft className="w-4 h-4 text-brand-gold-dark" />
-              <span className="hidden sm:inline">Cerrar Sesión</span>
-              <span className="sm:hidden">Salir</span>
+              <ArrowLeft className="w-4 h-4 text-brand-gold group-hover:-translate-x-1 transition-transform" />
+              <span>Volver al Portal</span>
             </button>
           )}
         </div>
 
         {/* Progress gamification bar */}
         {!submitted && (
-          <div className="mb-8 max-w-4xl mx-auto">
-            <div className="grid grid-cols-6 gap-2 text-[10px] sm:text-xs font-mono text-stone-500 mb-2 text-center">
-              {['1. Ubicación', '2. Físico', '3. Datos Extra', '4. Propietario', '5. Negocio', '6. Precios'].map((label, idx) => (
-                <span key={idx} className={`font-semibold transition-all ${currentStep === idx + 1 ? 'text-[#8A631F]' : ''}`}>
-                  {label}
-                </span>
-              ))}
+          <div className="mb-10 max-w-4xl mx-auto">
+            <div className="flex justify-between text-[10px] sm:text-xs font-mono mb-4 px-2">
+              {['Ubicación', 'Físico', 'Extras', 'Propietario', 'Negocio', 'Precios'].map((label, idx) => {
+                const isActive = currentStep === idx + 1;
+                const isPast = currentStep > idx + 1;
+                return (
+                  <div key={idx} className="flex flex-col items-center gap-2 relative z-10 w-16">
+                    <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all duration-500 ${
+                      isActive ? 'bg-brand-gold border-brand-gold text-[#11100c] shadow-[0_0_15px_rgba(212,175,55,0.4)] scale-110' : 
+                      isPast ? 'bg-[#2a261b] border-brand-gold text-brand-gold' : 
+                      'bg-[#1a1814] border-[#363025] text-stone-600'
+                    }`}>
+                      {isPast ? <Check className="w-4 h-4" /> : idx + 1}
+                    </div>
+                    <span className={`font-bold transition-all whitespace-nowrap ${isActive ? 'text-brand-gold' : 'text-stone-500'}`}>
+                      {label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden shadow-inner">
+            <div className="relative w-full bg-[#2a261b] h-1.5 rounded-full overflow-hidden shadow-inner -mt-[42px] z-0 mx-auto max-w-[calc(100%-4rem)]">
               <div 
-                className="bg-gradient-to-r from-brand-gold to-brand-gold-dark h-full transition-all duration-300" 
-                style={{ width: `${(currentStep / 6) * 100}%` }}
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-brand-gold to-[#f9e596] transition-all duration-700 ease-out shadow-[0_0_10px_rgba(212,175,55,0.5)]" 
+                style={{ width: `${((currentStep - 1) / 5) * 100}%` }}
               />
             </div>
+            <div className="h-10" /> {/* Spacer for the negative margin */}
           </div>
         )}
 
@@ -485,8 +504,11 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* LEFT COLUMN: Dynamic Interactive Cost and Yield Calculator Sheet */}
-          <div className="lg:col-span-4 bg-stone-900 text-stone-200 rounded-2xl p-6 flex flex-col justify-between border border-stone-800 shadow-xl relative overflow-hidden text-left">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-gold to-brand-gold-dark" />
+          <div className="lg:col-span-4 bg-[#181611]/80 backdrop-blur-xl rounded-[2rem] p-8 flex flex-col justify-between border border-[#363025] shadow-2xl shadow-brand-gold/5 relative overflow-hidden text-left group transition-all">
+            {/* Glossy top highlight */}
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-brand-gold to-transparent opacity-50" />
+            <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-brand-gold/10 to-transparent opacity-30" />
+
             
             {/* Real-time simulations adapt instantly to active variables and inputs */}
             <div className="space-y-6">
@@ -630,18 +652,23 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
           </div>
 
           {/* RIGHT COLUMN: The 6-Step Registration Wizard Form */}
-          <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-2xl border border-stone-200 flex flex-col justify-between shadow-sm text-left">
+          <div className="lg:col-span-8 bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left">
             {!submitted ? (
               <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-5">
                   
                   {/* STEP 1: Destinación y Ubicación */}
                   {currentStep === 1 && (
-                    <div className="space-y-4 animate-fade-in">
-                      <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
-                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">1</span>
-                        Destinación y Ubicación del Inmueble
-                      </h4>
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                      <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
+                        <div className="size-12 rounded-xl bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20">
+                          <MapPin className="w-6 h-6 text-brand-gold-dark" />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-black text-stone-900 tracking-tight">Ubicación del Inmueble</h4>
+                          <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-0.5">Paso 1 de 6</p>
+                        </div>
+                      </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
