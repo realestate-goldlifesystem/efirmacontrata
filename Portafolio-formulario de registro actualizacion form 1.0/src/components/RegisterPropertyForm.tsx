@@ -769,6 +769,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                   const data = await response.json();
                                   if (data.success && data.propietario) {
                                     setCedulaStatus('found');
+                                    setOwnerProperties(data.inmuebles || []);
                                     setFormData(p => ({ 
                                       ...p, 
                                       name: data.propietario.nombre, 
