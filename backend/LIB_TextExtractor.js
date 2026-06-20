@@ -63,7 +63,7 @@ function procesarYGuardarDescripcion(sheet, row, carpetaReg) {
     var precioVentaFormat = '';
     if (colPrecioVenta > 0 && colTipoNegocio > 0) {
         var tipoNeg = String(sheet.getRange(row, colTipoNegocio).getValue() || '');
-        if (tipoNeg.includes('Vendi-Renta') || tipoNeg.includes('Admi-Venta')) {
+        if (tipoNeg.includes('Vendi-Renta') || tipoNeg.includes('Admi-Venta') || tipoNeg.includes('Venta')) {
             var precioCrudo = sheet.getRange(row, colPrecioVenta).getValue();
             var numStr = String(precioCrudo).replace(/[^\d]/g, '');
             if (numStr) {

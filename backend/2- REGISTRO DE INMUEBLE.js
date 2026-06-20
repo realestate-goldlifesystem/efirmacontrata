@@ -444,6 +444,13 @@ function procesarTipo12_Renovacion(sheet, row, datos) {
   Logger.log('📦 Moviendo archivos de Autocrat...');
   moverArchivosAutocratTipo12(sheet, row, regFolder);
 
+  // 8.5. Extraer descripción de Autocrat (NUEVO)
+  try {
+    procesarYGuardarDescripcion(sheet, row, regFolder);
+  } catch (e) {
+    Logger.log('⚠️ Error no bloqueante en extracción descripción: ' + e.message);
+  }
+
   // 9. Implementar Fase 1 del Rollback: Backup y Transferencia
   var filaOriginal = datos.tipoRegistro.filaOriginal;
   if (filaOriginal > 0) {
@@ -458,7 +465,7 @@ function procesarTipo12_Renovacion(sheet, row, datos) {
     respaldarDatosFila(sheet, filaOriginal, idRegistro);
     
     // 9.2 Transferir precios y limpiar candado multimedia
-    transferirPreciosRenovacion(sheet, filaOriginal, row);
+    transferirPreciosRenovacion(sheet, filaOriginal, row, datos.reutilizarMultimedia);
     
     // 9.2.1 Transferir características del formulario (zonas, estrato, áreas, etc)
     transferirCaracteristicasFormulario(sheet, filaOriginal, datos);
@@ -645,7 +652,7 @@ function procesarTipo13_CambioTipoNegocio(sheet, row, datos) {
     respaldarDatosFila(sheet, filaOriginal, idRegistro, spatialData);
     
     // Transferir precios actualizados del nuevo formulario
-    transferirPreciosRenovacion(sheet, filaOriginal, row);
+    transferirPreciosRenovacion(sheet, filaOriginal, row, datos.reutilizarMultimedia);
 
     // Transferir características del formulario (zonas, estrato, áreas, etc)
     transferirCaracteristicasFormulario(sheet, filaOriginal, datos);
@@ -1595,12 +1602,20 @@ function respaldarDatosFila(sheet, filaOriginal, idRegistro, extraData) {
   Logger.log('💾 Backup guardado para rollback usando ID: ' + idRegistro);
 }
 
-function transferirPreciosRenovacion(sheet, filaOriginal, filaTemp) {
+function transferirPreciosRenovacion(sheet, filaOriginal, filaTemp, reutilizarMultimedia) {
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var rowTemp = sheet.getRange(filaTemp, 1, 1, sheet.getLastColumn()).getValues()[0];
   
   Logger.log('💸 Transfiriendo precios...');
-  ['PRECIO DE PROMOCION GENERAL', 'PRECIO DE PROMOCION EN VENTA', 'CANON DE ARRENDAMIENTO'].forEach(function(h) {
+  [
+    'PRECIO DE PROMOCION GENERAL', 
+    'PRECIO DE PROMOCION GENERAL EN LETRA',
+    'PRECIO DE PROMOCION EN VENTA', 
+    'PRECIO DE PROMOCION EN VENTA EN LETRA',
+    'CANON DE ARRENDAMIENTO', 
+    'PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)',
+    'PRECIO DE ADMINISTRACION PLENA EN LETRA'
+  ].forEach(function(h) {
     var col = headers.indexOf(h);
     if (col !== -1 && rowTemp[col] !== "" && rowTemp[col] !== undefined) {
       sheet.getRange(filaOriginal, col + 1).setValue(rowTemp[col]);
@@ -1611,24 +1626,30 @@ function transferirPreciosRenovacion(sheet, filaOriginal, filaTemp) {
   // Y guardarlo en memoria para la Fase 4 (Reutilización Multimedia)
   var colYT = headers.indexOf('LINK DEL VIDEO DEL INMUEBLE');
   if (colYT !== -1) {
-    var oldLink = sheet.getRange(filaOriginal, colYT + 1).getValue();
-    if (oldLink) {
-      // Necesitamos el ID DE REGISTRO
-      var colId = headers.indexOf('ID DE REGISTRO');
-      var idRegistro = colId !== -1 ? sheet.getRange(filaOriginal, colId + 1).getValue() : '';
-      if (idRegistro) {
-        PropertiesService.getScriptProperties().setProperty('MULTIMEDIA_PREVIO_' + idRegistro, oldLink);
+    if (reutilizarMultimedia === 'SI') {
+      Logger.log('🔒 Candado Multimedia activado (Se mantiene el Link de YT original)');
+    } else {
+      var oldLink = sheet.getRange(filaOriginal, colYT + 1).getValue();
+      if (oldLink) {
+        // Necesitamos el ID DE REGISTRO
+        var colId = headers.indexOf('ID DE REGISTRO');
+        var idRegistro = colId !== -1 ? sheet.getRange(filaOriginal, colId + 1).getValue() : '';
+        if (idRegistro) {
+          PropertiesService.getScriptProperties().setProperty('MULTIMEDIA_PREVIO_' + idRegistro, oldLink);
+        }
       }
+      
+      sheet.getRange(filaOriginal, colYT + 1).clearContent();
+      Logger.log('🔓 Candado Multimedia abierto (Link YT guardado y borrado temporalmente)');
     }
-    
-    sheet.getRange(filaOriginal, colYT + 1).clearContent();
-    Logger.log('🔓 Candado Multimedia abierto (Link YT guardado y borrado temporalmente)');
   }
 }
 
 function transferirCaracteristicasFormulario(sheet, filaOriginal, datos) {
   Logger.log('📋 Transfiriendo características del formulario a la fila original...');
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var filaTemp = datos.fila;
+  var rowTemp = sheet.getRange(filaTemp, 1, 1, sheet.getLastColumn()).getValues()[0];
   
   // Columnas excluidas que no se deben sobrescribir en la fila original
   var columnasExcluidas = [
@@ -1658,13 +1679,8 @@ function transferirCaracteristicasFormulario(sheet, filaOriginal, datos) {
       continue;
     }
     
-    // Si la propiedad existe en datos, copiarla
-    var value = null;
-    if (datos.hasOwnProperty(rawHeader)) {
-      value = datos[rawHeader];
-    } else if (datos.hasOwnProperty(trimmedHeader)) {
-      value = datos[trimmedHeader];
-    }
+    // Leer el valor real de la fila temporal
+    var value = rowTemp[i];
     
     if (value !== null && value !== undefined && value !== '') {
       sheet.getRange(filaOriginal, i + 1).setValue(value);

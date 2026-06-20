@@ -89,6 +89,13 @@ function onFormSubmitInmueble(e) {
 
     // PASO 9: Guardar datos para Archivo 2
     Logger.log('💾 Guardando datos para procesamiento posterior...');
+    
+    var propMultimediaKey = 'REUTILIZAR_MULTIMEDIA_ROW_' + row;
+    var reutilizarMultimedia = PropertiesService.getScriptProperties().getProperty(propMultimediaKey);
+    if (reutilizarMultimedia) {
+      PropertiesService.getScriptProperties().deleteProperty(propMultimediaKey);
+    }
+
     var datosParaParte2 = {
       fila: row,
       cdr: cdr,
@@ -97,6 +104,7 @@ function onFormSubmitInmueble(e) {
       rprFolderId: resultadoRPR.folderId,
       rprCodigo: resultadoRPR.codigo,
       datosInmueble: datosInmueble,
+      reutilizarMultimedia: reutilizarMultimedia,
       timestamp: tiempoInicio
     };
 

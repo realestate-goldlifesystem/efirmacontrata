@@ -403,6 +403,20 @@ function doGet(e) {
     let result;
 
     switch (accion) {
+      case 'buscarPropietario':
+        if (!e.parameter.cedula) {
+          result = { success: false, message: 'Cédula requerida' };
+        } else {
+          result = handleBuscarPropietario(e.parameter.cedula);
+        }
+        break;
+
+      case 'estadoCita':
+        if (typeof handleEstadoCitaGet === 'function') {
+          return handleEstadoCitaGet(e.parameter.idCita, e.parameter.nuevoEstado);
+        }
+        return HtmlService.createHtmlOutput('Módulo cron no cargado');
+
       case 'verificarLink':
         // Devolvemos DIRECTAMENTE el objeto, corsResponse lo envolverá
         const cdr = e.parameter.cdr;
@@ -503,6 +517,71 @@ function doGet(e) {
   }
 }
 
+function handleBuscarPropietario(cedula) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    if (!sheet) return { success: false, message: 'Hoja no encontrada' };
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { success: true, propietario: null, inmuebles: [] };
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const datos = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+
+    const colCedula = headers.indexOf('Número de documento');
+    const colNombre = headers.indexOf('NOMBRES Y APELLIDOS DEL PROPIETARIO');
+    const colEmail = headers.indexOf('Correo electrónico');
+    const colCelular = headers.indexOf('Celular');
+    const colPaisExp = headers.indexOf('País de expedición');
+    const colLugarExp = headers.indexOf('Lugar de expedición');
+    
+    const colIdRegistro = headers.indexOf('ID DE REGISTRO');
+    const colCDR = headers.indexOf('CODIGO DE REGISTRO');
+    const colDireccion = headers.indexOf('Ingrese la Dirección del inmueble');
+    const colTipoNegocio = headers.indexOf('TIPO DE NEGOCIO');
+
+    let propietarioEncontrado = null;
+    let inmuebles = [];
+
+    // Recorremos de abajo hacia arriba para tener los datos más recientes
+    for (let i = datos.length - 1; i >= 0; i--) {
+      const row = datos[i];
+      if (colCedula >= 0 && String(row[colCedula]).trim() === String(cedula).trim()) {
+        if (!propietarioEncontrado) {
+          propietarioEncontrado = {
+            numeroDocumento: String(row[colCedula]),
+            nombre: colNombre >= 0 ? row[colNombre] : '',
+            email: colEmail >= 0 ? row[colEmail] : '',
+            celular: colCelular >= 0 ? row[colCelular] : '',
+            paisExpedicion: colPaisExp >= 0 ? row[colPaisExp] : '',
+            lugarExpedicion: colLugarExp >= 0 ? row[colLugarExp] : ''
+          };
+        }
+        inmuebles.push({
+          idRegistro: colIdRegistro >= 0 ? row[colIdRegistro] : '',
+          cdr: colCDR >= 0 ? row[colCDR] : '',
+          direccion: colDireccion >= 0 ? row[colDireccion] : '',
+          tipoNegocio: colTipoNegocio >= 0 ? row[colTipoNegocio] : ''
+        });
+      }
+    }
+
+    if (!propietarioEncontrado) {
+      return { success: true, propietario: null, inmuebles: [] };
+    }
+
+    return { 
+      success: true, 
+      propietario: propietarioEncontrado, 
+      inmuebles: inmuebles 
+    };
+
+  } catch (error) {
+    Logger.log('Error en handleBuscarPropietario: ' + error.toString());
+    return { success: false, message: error.message };
+  }
+}
+
 function doPost(e) {
   try {
     const datosJson = e.postData.contents;
@@ -511,6 +590,20 @@ function doPost(e) {
     let result;
 
     switch (accion) {
+      case 'obtenerDisponibilidad':
+        if (typeof obtenerDisponibilidad === 'function') {
+          result = obtenerDisponibilidad(datos.fecha);
+        } else {
+          result = { success: false, error: 'API_AGENDA no cargada' };
+        }
+        break;
+      case 'agendarCita':
+        if (typeof agendarCita === 'function') {
+          result = agendarCita(datos);
+        } else {
+          result = { success: false, error: 'API_AGENDA no cargada' };
+        }
+        break;
       case 'payment':
         if (typeof handleMercadoPagoWebhook === 'function') {
           result = handleMercadoPagoWebhook(datos);
@@ -542,6 +635,9 @@ function doPost(e) {
         break;
       case 'procesarValidacionPropietario':
         result = handleProcesarValidacionPropietario(datos);
+        break;
+      case 'consultarPropietario':
+        result = handleConsultarPropietario(datos);
         break;
       case 'actualizarCampoValidacion':
         result = handleActualizarCampoValidacion(datos);
@@ -645,6 +741,12 @@ function handleRegistrarInmueble(datos) {
 
     // Obtener la fila recién insertada
     const lastRow = sheet.getLastRow();
+
+    // Candado Multimedia (Paso C.1 del plan)
+    if (datos.reutilizarMultimedia === 'SI') {
+      const propMultimediaKey = 'REUTILIZAR_MULTIMEDIA_ROW_' + lastRow;
+      PropertiesService.getScriptProperties().setProperty(propMultimediaKey, 'SI');
+    }
 
     // Encolar de forma asíncrona la fila para procesamiento pesado en segundo plano
     const propKey = 'PENDING_REGISTRATION_ROW_' + lastRow;
@@ -4657,3 +4759,68 @@ function obtenerIdRegistro(cdr) {
 // ==========================================
 // FIN DEL ARCHIVO
 // ==========================================
+
+// =========================================
+// FUNCIÓN PARA CONSULTAR PROPIETARIO POR CÉDULA
+// =========================================
+function handleConsultarPropietario(datos) {
+  var cedula = datos.cedula;
+  if (!cedula) return { success: false, message: 'Cédula no proporcionada' };
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+  if (!sheet) return { success: false, message: 'No se encontró la hoja de inmuebles.' };
+  
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return { success: false, message: 'Base de datos vacía' };
+  
+  var headers = data[0];
+  
+  var indexCedula = headers.indexOf('Número de documento');
+  var indexNombre = headers.indexOf('NOMBRES Y APELLIDOS DEL PROPIETARIO');
+  var indexEmail = headers.indexOf('Correo electrónico');
+  var indexCelular = headers.indexOf('Celular');
+  
+  if (indexCedula === -1) return { success: false, message: 'No se encontró la columna de documento' };
+  
+  var propietario = null;
+  var inmuebles = [];
+
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (row[indexCedula] && row[indexCedula].toString().trim() === cedula.toString().trim()) {
+      if (!propietario) {
+        propietario = {
+          nombre: row[indexNombre] || '',
+          numeroDocumento: row[indexCedula] || '',
+          email: row[indexEmail] || '',
+          celular: row[indexCelular] || ''
+        };
+      }
+      
+      var dir = row[headers.indexOf('Ingrese la Dirección del inmueble')];
+      if (dir) {
+        var inmuebleObj = {};
+        for (var h = 0; h < headers.length; h++) {
+          var headerName = headers[h].toString().trim();
+          if (headerName) {
+            inmuebleObj[headerName] = row[h] !== undefined ? row[h] : '';
+          }
+        }
+        // También inyectar campos normalizados para facilidad del frontend
+        inmuebleObj.direccion = dir;
+        inmuebleObj.tipoNegocio = row[headers.indexOf('TIPO DE NEGOCIO')] || '';
+        inmuebleObj.apto = row[headers.indexOf('N° de inmueble')] || '';
+        inmuebleObj.torre = row[headers.indexOf('N° o Letra de la Torre')] || '';
+        
+        inmuebles.push(inmuebleObj);
+      }
+    }
+  }
+
+  if (propietario) {
+    return { success: true, propietario: propietario, inmuebles: inmuebles };
+  } else {
+    return { success: false, message: 'No se encontraron resultados' };
+  }
+}

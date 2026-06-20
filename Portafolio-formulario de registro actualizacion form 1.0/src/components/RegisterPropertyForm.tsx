@@ -44,6 +44,10 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const [loading, setLoading] = useState(false);
   const [cedulaInput, setCedulaInput] = useState('');
   const [cedulaStatus, setCedulaStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>('idle');
+  const [ownerProperties, setOwnerProperties] = useState<any[]>([]);
+  const [activeFlow, setActiveFlow] = useState<'normal' | 'renovacion' | 'cambio_negocio'>('normal');
+  const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(null);
+  const [reutilizarMultimedia, setReutilizarMultimedia] = useState<'SI' | 'NO'>('SI');
 
   // Form State containing exact variables requested by the JSON Form
   const [formData, setFormData] = useState({
@@ -165,6 +169,56 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
 
+  const selectProperty = (index: number) => {
+    setSelectedPropertyIndex(index);
+    const prop = ownerProperties[index];
+    if (prop) {
+      setFormData(prev => {
+        const next = { ...prev };
+        
+        // Copiar todas las propiedades del objeto retornado si coinciden con el estado
+        Object.keys(prop).forEach(key => {
+          if (next.hasOwnProperty(key)) {
+            (next as any)[key] = prop[key];
+          }
+        });
+        
+        // Mapear campos normalizados para asegurar consistencia
+        next.address = prop["Ingrese la Dirección del inmueble"] || prop.direccion || '';
+        next.propertyNumber = prop["N° de inmueble"] || prop.apto || '';
+        next.towerLetter = prop["N° o Letra de la Torre"] || prop.torre || '';
+        next.destination = prop["Define el propósito de tu inmueble"] || prop.destination || 'Vivienda';
+        next.propertyType = prop["Selecciona el tipo de inmueble"] || prop.propertyType || 'Apartamento';
+        next.area = prop["Area  M²"] || prop.area || '';
+        next.roomsCount = prop["N° de Habitaciones"] || prop.roomsCount || '1';
+        next.bathroomsCount = prop["N° de Baños"] || prop.bathroomsCount || '1';
+        next.estrato = prop["¿Cual es el estrato?"] || prop.estrato || '4';
+        next.propertyAge = prop["Antiguedad del Inmueble"] || prop.propertyAge || '';
+        next.floorNumber = prop["N° de piso"] || prop.floorNumber || '';
+        next.priceGeneral = prop["PRECIO DE PROMOCION GENERAL"] || prop.priceGeneral || '1800000';
+        next.priceHoaPlena = prop["PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)"] || prop.priceHoaPlena || '350000';
+        next.priceVenta = prop["PRECIO DE PROMOCION EN VENTA"] || prop.priceVenta || '450000000';
+        next.hasPorteriaAndAdmin = prop["¿El inmueble dispone de portería y administración para realizar un acta de notificación de promoción inmobiliaria he ingreso?"] || prop.hasPorteriaAndAdmin || 'SI';
+        next.porteriaBuildingName = prop["NOMBRE DEL INMUEBLE/ADMINISTRACION"] || prop.porteriaBuildingName || '';
+        next.porteriaAutoSendEmail = prop["¿Desea enviar el acta notificación de gestión inmobiliaria a la administración desde este formulario también?"] || prop.porteriaAutoSendEmail || 'SI';
+        next.porteriaAdminEmail = prop["Correo electrónico de la administración"] || prop.porteriaAdminEmail || '';
+        
+        // Si es flujo de renovación, mantener el tipo de negocio del inmueble
+        if (activeFlow === 'renovacion') {
+          const rawType = prop["TIPO DE NEGOCIO"] || prop.tipoNegocio || 'Administración';
+          let mappedType: any = 'administracion';
+          if (rawType.includes('Corretaje')) mappedType = 'corretaje';
+          else if (rawType.includes('Venta')) mappedType = 'venta';
+          else if (rawType.includes('Admi-Venta')) mappedType = 'admi-venta';
+          else if (rawType.includes('Vendi-Renta')) mappedType = 'vendi-renta';
+          next.serviceType = mappedType;
+        }
+        
+        return next;
+      });
+    }
+  };
+
   const parseNum = (val: string): number => {
     const clean = val.replace(/[^0-9]/g, '');
     return clean ? parseInt(clean, 10) : 0;
@@ -262,9 +316,21 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   };
 
   const handleNextStep = () => {
-    if (canGoToNext()) setCurrentStep(p => Math.min(7, p + 1));
+    if (canGoToNext()) {
+      if (currentStep === 4 && cedulaStatus === 'found' && activeFlow === 'normal') {
+        setCurrentStep(6);
+      } else {
+        setCurrentStep(p => Math.min(7, p + 1));
+      }
+    }
   };
-  const handlePrevStep = () => setCurrentStep(p => Math.max(1, p - 1));
+  const handlePrevStep = () => {
+    if (currentStep === 6 && cedulaStatus === 'found' && activeFlow === 'normal') {
+      setCurrentStep(4);
+    } else {
+      setCurrentStep(p => Math.max(1, p - 1));
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     if (e.key === 'Enter') {
@@ -310,6 +376,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     try {
       const payload = {
         accion: 'registrarInmueble',
+        reutilizarMultimedia: reutilizarMultimedia,
         "Fecha de registro del inmueble.": formData.registrationDate,
         "Define el propósito de tu inmueble": formData.destination,
         "Selecciona la localidad del inmueble": formData.localidad,
@@ -754,21 +821,21 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             </div>
                             
                             <div className="grid grid-cols-1 gap-3">
-                              <button type="button" onClick={() => setCurrentStep(1)} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('normal'); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-brand-gold transition-colors">Nuevo Inmueble</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Añadir una nueva propiedad al portafolio de este cliente.</p>
                                 </div>
                                 <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-brand-gold" />
                               </button>
-                              <button type="button" onClick={() => alert("Renovación de Contrato: La lógica del backend se activará aquí en la Fase 1.")} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('renovacion'); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-blue-600 transition-colors">Renovación de Contrato</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Renovar contrato existente sin volver a pedir datos.</p>
                                 </div>
                                 <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-blue-500" />
                               </button>
-                              <button type="button" onClick={() => alert("Cambio de Negocio: La lógica del backend se activará aquí en la Fase 1.")} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('cambio_negocio'); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-emerald-600 transition-colors">Cambio de Modelo de Negocio</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Ej: Pasar de Corretaje a Administración.</p>
@@ -782,107 +849,463 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                     </div>
                   )}
 
-                  {/* STEP 1: Destinación y Ubicación */}
+                  {/* STEP 1: Selección o Ubicación */}
                   {currentStep === 1 && (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                      <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
-                        <div className="size-12 rounded-xl bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20">
-                          <MapPin className="w-6 h-6 text-brand-gold-dark" />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-black text-stone-900 tracking-tight">Ubicación del Inmueble</h4>
-                          <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-0.5">Paso 1 de 6</p>
-                        </div>
-                      </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-xs text-stone-600 font-bold block mb-1">FECHA DE REGISTRO</label>
-                          <input 
-                            type="date" required value={formData.registrationDate}
-                            onChange={e => setFormData({ ...formData, registrationDate: e.target.value })}
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-stone-600 font-bold block mb-1">PROPÓSITO (DESTINACIÓN)</label>
-                          <select 
-                            value={formData.destination} 
-                            onChange={e => setFormData({ ...formData, destination: e.target.value })}
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                          >
-                            <option value="Vivienda">Vivienda</option>
-                            <option value="Comercio">Comercio</option>
-                            <option value="Mixto">Mixto</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="text-xs text-stone-600 font-bold block mb-1">LOCALIDAD</label>
-                          <select 
-                            value={formData.localidad}
-                            onChange={e => setFormData({ ...formData, localidad: e.target.value })}
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                          >
-                            <option value="Usaquén">Usaquén</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-stone-600 font-bold block mb-1">UPZ DE USAQUÉN</label>
-                          <select 
-                            value={formData.upz}
-                            onChange={e => setFormData({ ...formData, upz: e.target.value, barrio: UPZ_BARRIOS[e.target.value][0] })}
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                          >
-                            {Object.keys(UPZ_BARRIOS).map(u => <option key={u} value={u}>{u}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs text-stone-600 font-bold block mb-1">BARRIO</label>
-                          <select 
-                            value={formData.barrio}
-                            onChange={e => setFormData({ ...formData, barrio: e.target.value })}
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                          >
-                            {UPZ_BARRIOS[formData.upz]?.map(b => <option key={b} value={b}>{b}</option>)}
-                            <option value="Otro">Otro (Escribir abajo)</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {formData.barrio === 'Otro' && (
-                        <div className="animate-fade-in">
-                          <label className="text-xs text-stone-600 font-bold block mb-1">ESCRIBA EL BARRIO DEL INMUEBLE</label>
-                          <input 
-                            type="text" required value={formData.customBarrio}
-                            onChange={e => setFormData({ ...formData, customBarrio: e.target.value })}
-                            placeholder="Escribe el nombre del barrio"
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-mono"
-                          />
+                      {/* SUB-FLOW: Property Selector for Existing Owners */}
+                      {activeFlow !== 'normal' && selectedPropertyIndex === null && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
+                            <div className="size-12 rounded-xl bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20">
+                              <Building2 className="w-6 h-6 text-brand-gold-dark" />
+                            </div>
+                            <div>
+                              <h4 className="text-xl font-black text-stone-900 tracking-tight">Seleccionar Inmueble</h4>
+                              <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-0.5">
+                                {activeFlow === 'renovacion' ? 'Renovación de Contrato' : 'Cambio de Modelo de Negocio'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {ownerProperties.length === 0 ? (
+                            <div className="p-6 text-center text-stone-500 text-sm bg-stone-50 rounded-2xl border border-stone-200">
+                              No hay inmuebles registrados para este propietario en la base de datos.
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {ownerProperties.map((prop, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => selectProperty(idx)}
+                                  className="p-5 bg-stone-50 border border-stone-200 rounded-2xl hover:border-brand-gold text-left transition-all hover:shadow-md group flex flex-col justify-between"
+                                >
+                                  <div>
+                                    <strong className="text-stone-900 block text-sm group-hover:text-brand-gold transition-colors">
+                                      {prop["Ingrese la Dirección del inmueble"] || prop.direccion || 'Dirección no especificada'}
+                                    </strong>
+                                    <span className="text-xs text-stone-500 mt-1 block">
+                                      {prop["N° o Letra de la Torre"] ? `Torre ${prop["N° o Letra de la Torre"]} - ` : ''}Apto/Inmueble: {prop["N° de inmueble"] || prop.apto || ''}
+                                    </span>
+                                    <span className="inline-block mt-3 text-[10px] font-bold px-2 py-0.5 bg-stone-200 rounded text-stone-700 uppercase tracking-wider">
+                                      {prop["TIPO DE NEGOCIO"] || prop.tipoNegocio || 'Sin Tipo'}
+                                    </span>
+                                  </div>
+                                  <div className="border-t border-stone-200 mt-4 pt-3 flex justify-between items-center text-xs w-full">
+                                    <span className="text-stone-500">Valor actual:</span>
+                                    <strong className="font-mono text-stone-850">
+                                      {prop["TIPO DE NEGOCIO"] === 'Venta' 
+                                        ? FORMAT_COP(parseNum(prop["PRECIO DE PROMOCION EN VENTA"] || '0'))
+                                        : FORMAT_COP(parseNum(prop["PRECIO DE PROMOCION GENERAL"] || '0'))}
+                                    </strong>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-xs text-stone-600 font-bold block mb-1">DIRECCIÓN DEL INMUEBLE</label>
-                          <input 
-                            type="text" required value={formData.address}
-                            onChange={e => setFormData({ ...formData, address: e.target.value })}
-                            placeholder="Calle 123 N° 45-67 Apto 101"
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                          />
+                      {/* SUB-FLOW: Simplified Renovation Form */}
+                      {activeFlow === 'renovacion' && selectedPropertyIndex !== null && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
+                            <div className="size-12 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                              <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div>
+                              <h4 className="text-xl font-black text-stone-900 tracking-tight">Detalles de Renovación</h4>
+                              <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-0.5">Paso Único de Renovación</p>
+                            </div>
+                          </div>
+
+                          <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-2 text-xs">
+                            <strong className="text-stone-800 uppercase font-mono text-[10px] tracking-wider block">Inmueble Seleccionado</strong>
+                            <p className="font-bold text-sm text-stone-900">{formData.address}</p>
+                            <p className="text-stone-600">
+                              {formData.towerLetter ? `Torre ${formData.towerLetter} - ` : ''}Inmueble: {formData.propertyNumber} ({formData.propertyType})
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">NUEVO CANON DE ARRENDAMIENTO (Renta + Administración)</label>
+                              <input 
+                                type="text" 
+                                value={new Intl.NumberFormat('es-CO').format(priceGeneralVal)} 
+                                onChange={e => setFormData({ ...formData, priceGeneral: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Ej. 1.900.000" 
+                                className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                              />
+                              <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
+                                En letras: <strong>{numberToWordsSpanish(priceGeneralVal).toUpperCase()}</strong>
+                              </p>
+                            </div>
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">NUEVA ADMINISTRACIÓN (HOA)</label>
+                              <input 
+                                type="text" 
+                                value={new Intl.NumberFormat('es-CO').format(priceHoaVal)} 
+                                onChange={e => setFormData({ ...formData, priceHoaPlena: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Ej. 380.000" 
+                                className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                              />
+                              <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
+                                En letras: <strong>{numberToWordsSpanish(priceHoaVal).toUpperCase()}</strong>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
+                            <label className="text-xs text-stone-700 font-bold block mb-1">¿REUTILIZAR CONTENIDO MULTIMEDIA ANTERIOR?</label>
+                            <div className="flex gap-4">
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                  type="radio" 
+                                  name="reutilizarMultimedia" 
+                                  value="SI" 
+                                  checked={reutilizarMultimedia === 'SI'} 
+                                  onChange={() => setReutilizarMultimedia('SI')}
+                                  className="w-4 h-4 text-brand-gold cursor-pointer"
+                                />
+                                <span className="text-xs text-stone-900 font-semibold">SÍ (Reutilizar fotos y video de YouTube)</span>
+                              </label>
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                  type="radio" 
+                                  name="reutilizarMultimedia" 
+                                  value="NO" 
+                                  checked={reutilizarMultimedia === 'NO'} 
+                                  onChange={() => setReutilizarMultimedia('NO')}
+                                  className="w-4 h-4 text-brand-gold cursor-pointer"
+                                />
+                                <span className="text-xs text-stone-900 font-semibold">NO (Subir nuevo material)</span>
+                              </label>
+                            </div>
+                            <p className="text-[10px] text-stone-500 leading-relaxed">
+                              Si selecciona SÍ, el enlace de YouTube anterior se mantendrá bloqueado y asociado a la propiedad. Si selecciona NO, el campo de video se abrirá temporalmente en el panel para subir nuevo material.
+                            </p>
+                          </div>
+
+                          <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl">
+                            <label className="flex items-start space-x-3.5 cursor-pointer select-none">
+                              <input 
+                                type="checkbox" required checked={formData.hasNoEmbargo}
+                                onChange={e => setFormData({ ...formData, hasNoEmbargo: e.target.checked })}
+                                className="w-5 h-5 text-brand-gold border-stone-300 bg-white rounded mt-0.5 cursor-pointer"
+                              />
+                              <span className="text-xs text-stone-750 leading-relaxed font-semibold">
+                                Yo, <strong>{formData.name || 'Propietario'}</strong>, garantizo bajo juramento que el inmueble propuesto se halla <strong>100% libre de embargos vigentes, litigios judiciales</strong> o impedimentos.
+                              </span>
+                            </label>
+                          </div>
                         </div>
-                        <div>
-                          <label className="text-xs text-stone-600 font-bold block mb-1">CIUDAD DEL INMUEBLE</label>
-                          <input 
-                            type="text" required value={formData.city}
-                            onChange={e => setFormData({ ...formData, city: e.target.value })}
-                            className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                          />
+                      )}
+
+                      {/* SUB-FLOW: Simplified Change of Business Model Form */}
+                      {activeFlow === 'cambio_negocio' && selectedPropertyIndex !== null && (
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
+                            <div className="size-12 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                              <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <div>
+                              <h4 className="text-xl font-black text-stone-900 tracking-tight">Cambio de Modelo de Negocio</h4>
+                              <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-0.5">Paso Único de Reconfiguración</p>
+                            </div>
+                          </div>
+
+                          <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-2 text-xs">
+                            <strong className="text-stone-805 uppercase font-mono text-[10px] tracking-wider block">Inmueble Seleccionado</strong>
+                            <p className="font-bold text-sm text-stone-900">{formData.address}</p>
+                            <p className="text-stone-600">
+                              {formData.towerLetter ? `Torre ${formData.towerLetter} - ` : ''}Inmueble: {formData.propertyNumber} ({formData.propertyType})
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4">
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">NUEVO MODELO DE NEGOCIO DESTINO</label>
+                              <select 
+                                value={formData.serviceType} 
+                                onChange={e => setFormData({ ...formData, serviceType: e.target.value as any })}
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs cursor-pointer font-bold"
+                              >
+                                <option value="administracion">Servicio de Administración (Recaudo + Seguro)</option>
+                                <option value="corretaje">Servicio de Corretaje (Colocación Simple)</option>
+                                <option value="venta">Servicio de Venta Integral</option>
+                                <option value="vendi-renta">Vendi-Renta (Doble promoción)</option>
+                                <option value="admi-venta">Admi-Venta (Administración con opción de venta)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* Dynamic commissions and pricing configurations */}
+                          <div className="p-5 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+                            <strong className="text-stone-900 block text-xs font-bold font-mono tracking-wider uppercase border-b pb-2">PARÁMETROS ECONÓMICOS</strong>
+
+                            {/* VENTA component parameters */}
+                            {(formData.serviceType === 'venta' || formData.serviceType === 'admi-venta' || formData.serviceType === 'vendi-renta') && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in border-b border-stone-200 pb-4">
+                                <div>
+                                  <label className="text-xs text-stone-600 font-bold block mb-1">PRECIO DE VENTA PROYECTADO</label>
+                                  <input 
+                                    type="text" 
+                                    value={new Intl.NumberFormat('es-CO').format(sellPriceVal)} 
+                                    onChange={e => setFormData({ ...formData, priceVenta: e.target.value.replace(/\D/g, '') })}
+                                    placeholder="Ej. 450.000.000" 
+                                    className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                                  />
+                                  <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
+                                    En letras: <strong>{numberToWordsSpanish(sellPriceVal).toUpperCase()}</strong>
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-stone-600 font-bold block mb-1">COMISIÓN DE CORRETAJE VENTA</label>
+                                  <select 
+                                    value={formData.serviceType === 'admi-venta' ? formData.admiVentaSalesCommissionSelector : formData.salesCommissionSelector} 
+                                    onChange={e => {
+                                      const val = e.target.value;
+                                      if (formData.serviceType === 'admi-venta') {
+                                        setFormData({ ...formData, admiVentaSalesCommissionSelector: val });
+                                      } else {
+                                        setFormData({ ...formData, salesCommissionSelector: val });
+                                      }
+                                    }}
+                                    className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold"
+                                  >
+                                    <option value="3%">3% (TRES POR CIENTO)</option>
+                                    <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
+                                    <option value="2%">2% (DOS POR CIENTO)</option>
+                                    <option value="1.5%">1.5% (UNO PUNTO CINCO POR CIENTO)</option>
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* ARRIENDO component parameters */}
+                            {(formData.serviceType === 'administracion' || formData.serviceType === 'corretaje' || formData.serviceType === 'admi-venta' || formData.serviceType === 'vendi-renta') && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in border-b border-stone-200 pb-4">
+                                <div>
+                                  <label className="text-xs text-stone-600 font-bold block mb-1">CANON DE ARRENDAMIENTO (Renta + Admin)</label>
+                                  <input 
+                                    type="text" 
+                                    value={new Intl.NumberFormat('es-CO').format(priceGeneralVal)} 
+                                    onChange={e => setFormData({ ...formData, priceGeneral: e.target.value.replace(/\D/g, '') })}
+                                    placeholder="Ej. 1.800.000" 
+                                    className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                                  />
+                                  <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
+                                    En letras: <strong>{numberToWordsSpanish(priceGeneralVal).toUpperCase()}</strong>
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-stone-600 font-bold block mb-1">CUOTA DE ADMINISTRACIÓN (HOA)</label>
+                                  <input 
+                                    type="text" 
+                                    value={new Intl.NumberFormat('es-CO').format(priceHoaVal)} 
+                                    onChange={e => setFormData({ ...formData, priceHoaPlena: e.target.value.replace(/\D/g, '') })}
+                                    placeholder="Ej. 350.000" 
+                                    className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                                  />
+                                  <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
+                                    En letras: <strong>{numberToWordsSpanish(priceHoaVal).toUpperCase()}</strong>
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Administration Commission selection */}
+                            {(formData.serviceType === 'administracion' || formData.serviceType === 'admi-venta') && (
+                              <div className="animate-fade-in pb-2">
+                                <label className="text-xs text-stone-600 font-bold block mb-1">COMISIÓN GESTIÓN MENSUAL (ADMINISTRACIÓN)</label>
+                                <select 
+                                  value={formData.serviceType === 'admi-venta' ? formData.admiVentaAdminPercentSelector : formData.adminPercentSelector} 
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    if (formData.serviceType === 'admi-venta') {
+                                      setFormData({ ...formData, admiVentaAdminPercentSelector: val });
+                                    } else {
+                                      setFormData({ ...formData, adminPercentSelector: val });
+                                    }
+                                  }}
+                                  className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold"
+                                >
+                                  <option value="8.5% desde el primer mes">8.5% desde el primer mes (Preferencial)</option>
+                                  <option value="9.1% desde el segundo mes">9.1% desde el segundo mes</option>
+                                </select>
+                              </div>
+                            )}
+
+                            {/* Corretaje Commission */}
+                            {(formData.serviceType === 'corretaje' || formData.serviceType === 'vendi-renta') && (
+                              <div className="animate-fade-in pb-2">
+                                <label className="text-xs text-stone-600 font-bold block mb-1">PORCENTAJE COMISIÓN CORRETAJE SIMPLE</label>
+                                <input 
+                                  type="text" 
+                                  value={formData.serviceType === 'vendi-renta' ? formData.vendiRentaArriendoPercent : formData.corretajePercent} 
+                                  onChange={e => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    if (formData.serviceType === 'vendi-renta') {
+                                      setFormData({ ...formData, vendiRentaArriendoPercent: val });
+                                    } else {
+                                      setFormData({ ...formData, corretajePercent: val });
+                                    }
+                                  }}
+                                  placeholder="100" 
+                                  className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
+                            <label className="text-xs text-stone-700 font-bold block mb-1">¿REUTILIZAR CONTENIDO MULTIMEDIA ANTERIOR?</label>
+                            <div className="flex gap-4">
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                  type="radio" 
+                                  name="reutilizarMultimediaCD" 
+                                  value="SI" 
+                                  checked={reutilizarMultimedia === 'SI'} 
+                                  onChange={() => setReutilizarMultimedia('SI')}
+                                  className="w-4 h-4 text-brand-gold cursor-pointer"
+                                />
+                                <span className="text-xs text-stone-900 font-semibold">SÍ (Reutilizar fotos y video de YouTube)</span>
+                              </label>
+                              <label className="flex items-center space-x-2 cursor-pointer">
+                                <input 
+                                  type="radio" 
+                                  name="reutilizarMultimediaCD" 
+                                  value="NO" 
+                                  checked={reutilizarMultimedia === 'NO'} 
+                                  onChange={() => setReutilizarMultimedia('NO')}
+                                  className="w-4 h-4 text-brand-gold cursor-pointer"
+                                />
+                                <span className="text-xs text-stone-900 font-semibold">NO (Subir nuevo material)</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl">
+                            <label className="flex items-start space-x-3.5 cursor-pointer select-none">
+                              <input 
+                                type="checkbox" required checked={formData.hasNoEmbargo}
+                                onChange={e => setFormData({ ...formData, hasNoEmbargo: e.target.checked })}
+                                className="w-5 h-5 text-brand-gold border-stone-300 bg-white rounded mt-0.5 cursor-pointer"
+                              />
+                              <span className="text-xs text-stone-750 leading-relaxed font-semibold">
+                                Yo, <strong>{formData.name || 'Propietario'}</strong>, garantizo bajo juramento que el inmueble propuesto se halla <strong>100% libre de embargos vigentes, litigios judiciales</strong> o impedimentos.
+                              </span>
+                            </label>
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {/* STANDARD FLOW: Step 1 Location Form */}
+                      {activeFlow === 'normal' && (
+                        <>
+                          <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
+                            <div className="size-12 rounded-xl bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20">
+                              <MapPin className="w-6 h-6 text-brand-gold-dark" />
+                            </div>
+                            <div>
+                              <h4 className="text-xl font-black text-stone-900 tracking-tight">Ubicación del Inmueble</h4>
+                              <p className="text-xs font-semibold text-stone-500 uppercase tracking-widest mt-0.5">Paso 1 de 7</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">FECHA DE REGISTRO</label>
+                              <input 
+                                type="date" required value={formData.registrationDate}
+                                onChange={e => setFormData({ ...formData, registrationDate: e.target.value })}
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">PROPÓSITO (DESTINACIÓN)</label>
+                              <select 
+                                value={formData.destination} 
+                                onChange={e => setFormData({ ...formData, destination: e.target.value })}
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                              >
+                                <option value="Vivienda">Vivienda</option>
+                                <option value="Comercio">Comercio</option>
+                                <option value="Mixto">Mixto</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">LOCALIDAD</label>
+                              <select 
+                                value={formData.localidad}
+                                onChange={e => setFormData({ ...formData, localidad: e.target.value })}
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                              >
+                                <option value="Usaquén">Usaquén</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">UPZ DE USAQUÉN</label>
+                              <select 
+                                value={formData.upz}
+                                onChange={e => setFormData({ ...formData, upz: e.target.value, barrio: UPZ_BARRIOS[e.target.value][0] })}
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                              >
+                                {Object.keys(UPZ_BARRIOS).map(u => <option key={u} value={u}>{u}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">BARRIO</label>
+                              <select 
+                                value={formData.barrio}
+                                onChange={e => setFormData({ ...formData, barrio: e.target.value })}
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                              >
+                                {UPZ_BARRIOS[formData.upz]?.map(b => <option key={b} value={b}>{b}</option>)}
+                                <option value="Otro">Otro (Escribir abajo)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {formData.barrio === 'Otro' && (
+                            <div className="animate-fade-in">
+                              <label className="text-xs text-stone-600 font-bold block mb-1">ESCRIBA EL BARRIO DEL INMUEBLE</label>
+                              <input 
+                                type="text" required value={formData.customBarrio}
+                                onChange={e => setFormData({ ...formData, customBarrio: e.target.value })}
+                                placeholder="Escribe el nombre del barrio"
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-mono"
+                              />
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">DIRECCIÓN DEL INMUEBLE</label>
+                              <input 
+                                type="text" required value={formData.address}
+                                onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                placeholder="Calle 123 N° 45-67 Apto 101"
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-stone-600 font-bold block mb-1">CIUDAD DEL INMUEBLE</label>
+                              <input 
+                                type="text" required value={formData.city}
+                                onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -1895,46 +2318,79 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                 {/* Footer buttons of form */}
                 {currentStep > 0 && (
                   <div className="pt-6 border-t border-stone-100 flex items-center justify-between mt-8 gap-4">
-                    {currentStep > 1 ? (
-                      <button
-                        type="button" onClick={handlePrevStep}
-                        className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl text-xs transition-colors border border-stone-300 cursor-pointer shadow-xs active:scale-95"
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Volver</span>
-                      </button>
+                    {activeFlow !== 'normal' ? (
+                      <>
+                        <button
+                          type="button" 
+                          onClick={() => {
+                            setActiveFlow('normal');
+                            setSelectedPropertyIndex(null);
+                            setCurrentStep(0);
+                          }}
+                          className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl text-xs transition-colors border border-stone-300 cursor-pointer shadow-xs active:scale-95 animate-fade-in"
+                        >
+                          <ArrowLeft className="w-4 h-4" />
+                          <span>Volver</span>
+                        </button>
+                        {selectedPropertyIndex !== null && (
+                          <button
+                            type="submit" 
+                            disabled={loading || !formData.hasNoEmbargo}
+                            className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold-dark disabled:bg-stone-250 disabled:text-stone-400 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95 animate-fade-in"
+                          >
+                            {loading ? <span>Procesando...</span> : (
+                              <>
+                                <Send className="w-4 h-4 text-stone-950" />
+                                <span>Confirmar Transacción</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </>
                     ) : (
-                      <button
-                        type="button" onClick={() => setCurrentStep(0)}
-                        className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl text-xs transition-colors border border-stone-300 cursor-pointer shadow-xs active:scale-95"
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Cambiar Cédula</span>
-                      </button>
-                    )}
+                      <>
+                        {currentStep > 1 ? (
+                          <button
+                            type="button" onClick={handlePrevStep}
+                            className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl text-xs transition-colors border border-stone-300 cursor-pointer shadow-xs active:scale-95"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Volver</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button" onClick={() => setCurrentStep(0)}
+                            className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 px-5 rounded-xl text-xs transition-colors border border-stone-300 cursor-pointer shadow-xs active:scale-95"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Cambiar Cédula</span>
+                          </button>
+                        )}
 
-                    {currentStep < 6 ? (
-                    <button
-                      type="button" onClick={handleNextStep}
-                      disabled={!canGoToNext()}
-                      className="inline-flex items-center space-x-1.5 bg-stone-900 hover:bg-stone-850 disabled:bg-stone-250 disabled:text-stone-400 text-brand-gold font-bold py-3 px-5 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
-                    >
-                      <span>Siguiente</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  ) : (
-                    <button
-                      type="submit" disabled={loading || !formData.hasNoEmbargo}
-                      className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold-dark disabled:bg-stone-250 disabled:text-stone-400 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
-                    >
-                      {loading ? <span>Validando...</span> : (
-                        <>
-                          <Send className="w-4 h-4 text-stone-950" />
-                          <span>Enviar Registro</span>
-                        </>
-                      )}
-                    </button>
-                  )}
+                        {currentStep < 7 ? (
+                          <button
+                            type="button" onClick={handleNextStep}
+                            disabled={!canGoToNext()}
+                            className="inline-flex items-center space-x-1.5 bg-stone-900 hover:bg-stone-850 disabled:bg-stone-250 disabled:text-stone-400 text-brand-gold font-bold py-3 px-5 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
+                          >
+                            <span>Siguiente</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            type="submit" disabled={loading || !formData.hasNoEmbargo}
+                            className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold-dark disabled:bg-stone-250 disabled:text-stone-400 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
+                          >
+                            {loading ? <span>Validando...</span> : (
+                              <>
+                                <Send className="w-4 h-4 text-stone-950" />
+                                <span>Enviar Registro</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
 
