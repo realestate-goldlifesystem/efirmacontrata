@@ -219,8 +219,9 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     }
   };
 
-  const parseNum = (val: string): number => {
-    const clean = val.replace(/[^0-9]/g, '');
+  const parseNum = (val: any): number => {
+    if (val === undefined || val === null) return 0;
+    const clean = String(val).replace(/[^0-9]/g, '');
     return clean ? parseInt(clean, 10) : 0;
   };
 
