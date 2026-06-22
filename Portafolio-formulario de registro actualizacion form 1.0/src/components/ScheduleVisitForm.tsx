@@ -174,15 +174,15 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
         <div className="bg-white rounded-3xl shadow-xl border border-stone-200 overflow-hidden flex flex-col md:flex-row">
           
           {/* LADO IZQUIERDO: DETALLES Y HORARIO */}
-          <div className="bg-brand-dark-deep p-8 md:w-5/12 text-white relative">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
+          <div className="bg-stone-950 p-8 md:w-5/12 text-white relative border-r border-stone-200/20">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
             
             <div className="relative z-10">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-gold/20 rounded-full mb-6">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-gold/10 rounded-full mb-6 ring-1 ring-brand-gold/30">
                 <CalendarCheck className="w-7 h-7 text-brand-gold" />
               </div>
-              <h2 className="text-3xl font-extrabold font-serif italic mb-2">Agendar Visita</h2>
-              <p className="text-stone-300 text-sm mb-10 leading-relaxed">
+              <h2 className="text-3xl font-extrabold font-serif italic mb-2 tracking-tight text-white">Agendar Visita</h2>
+              <p className="text-stone-400 text-sm mb-10 leading-relaxed font-light">
                 Elige el momento perfecto para que uno de nuestros Agentes Premium evalúe tu propiedad de manera presencial o atienda tu requerimiento.
               </p>
 
@@ -202,15 +202,15 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-brand-gold block mb-2 tracking-wider">2. HORARIOS DISPONIBLES</label>
+                  <label className="text-xs font-bold text-brand-gold block mb-2 tracking-widest uppercase">2. Horarios Disponibles</label>
                   
                   {isLoadingSlots ? (
-                    <div className="flex items-center justify-center py-6 text-stone-400 bg-stone-800/30 rounded-xl border border-stone-700 border-dashed">
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    <div className="flex items-center justify-center py-6 text-stone-400 bg-stone-900/50 rounded-xl border border-stone-800">
+                      <Loader2 className="w-5 h-5 animate-spin mr-2 text-brand-gold" />
                       <span className="text-sm">Buscando en agenda...</span>
                     </div>
                   ) : slotMessage ? (
-                    <div className="text-center py-6 text-stone-400 bg-stone-800/30 rounded-xl border border-stone-700 border-dashed px-4 text-sm">
+                    <div className="text-center py-6 text-stone-400 bg-stone-900/50 rounded-xl border border-stone-800 px-4 text-sm">
                       {slotMessage}
                     </div>
                   ) : availableSlots.length > 0 ? (
@@ -222,17 +222,17 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
                           onClick={() => setSelectedSlot(slot)}
                           className={`py-2 px-3 rounded-lg text-sm font-semibold border transition-all flex items-center justify-center ${
                             selectedSlot?.timestamp === slot.timestamp
-                              ? 'bg-brand-gold text-stone-900 border-brand-gold shadow-md scale-[1.02]'
-                              : 'bg-stone-800/50 text-stone-300 border-stone-600 hover:border-brand-gold/50 hover:bg-stone-800'
+                              ? 'bg-brand-gold text-stone-950 border-brand-gold shadow-[0_0_15px_rgba(212,175,55,0.3)] scale-[1.02]'
+                              : 'bg-stone-900/60 text-stone-300 border-stone-800 hover:border-brand-gold/50 hover:bg-stone-800'
                           }`}
                         >
-                          <Clock className="w-3 h-3 mr-2 opacity-70" />
+                          <Clock className={`w-3 h-3 mr-2 ${selectedSlot?.timestamp === slot.timestamp ? 'opacity-100' : 'opacity-50'}`} />
                           {slot.horaAmPm}
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-6 text-stone-500 bg-stone-800/30 rounded-xl border border-stone-700 border-dashed text-sm italic">
+                    <div className="text-center py-6 text-stone-500 bg-stone-900/50 rounded-xl border border-stone-800 text-sm font-light">
                       Selecciona una fecha primero
                     </div>
                   )}
