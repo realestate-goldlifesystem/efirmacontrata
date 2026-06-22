@@ -85,7 +85,7 @@ export default function PartnersAndContact({ onOpenRegisterForm }: PartnersAndCo
             {/* WhatsApp Box */}
             <a
               id="contact-whatsapp-block"
-              href="https://wa.me/573000000000?text=Hola%20Gold%20Life,%20quiero%20conocer%2520las%2520coberturas%2520de%2520sus%2520p%C3%B3lizas%2520de%22arrendamientos."
+              href="https://wa.me/573177623878?text=Hola%20Gold%20Life,%20quiero%20conocer%2520las%2520coberturas%2520de%2520sus%2520p%C3%B3lizas%2520de%22arrendamientos."
               target="_blank"
               rel="noopener noreferrer"
               className="bg-white hover:bg-stone-50 border border-stone-200 p-6 sm:p-8 rounded-xl text-left transition-all hover:scale-102 flex flex-col justify-between group cursor-pointer shadow-sm hover:shadow-md"

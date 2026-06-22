@@ -7,8 +7,9 @@ import React, { useState, FormEvent, useEffect } from 'react';
 import { 
   CheckCircle2, Send, Mail, User, ShieldCheck, 
   ArrowLeft, ArrowRight, Calculator, MapPin, 
-  Building2, Check, Info, DollarSign, Briefcase, Percent 
+  Building2, Check, Info, DollarSign, Briefcase, Percent, Maximize 
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { numberToWordsSpanish } from '../lib/numberToWords';
 import CountryMap from './CountryMap';
 import FeaturesGridSelector from './FeaturesGridSelector';
@@ -219,6 +220,29 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     }
   };
 
+  const resetPropertyFields = () => {
+    setFormData(prev => ({
+      ...prev,
+      address: '',
+      propertyNumber: '',
+      towerLetter: '',
+      destination: 'Vivienda',
+      propertyType: 'Apartamento',
+      area: '',
+      roomsCount: '1',
+      bathroomsCount: '1',
+      estrato: '4',
+      propertyAge: '',
+      floorNumber: '',
+      priceGeneral: '1800000',
+      priceHoaPlena: '350000',
+      priceVenta: '450000000',
+      hasPorteriaAndAdmin: 'SI',
+      porteriaBuildingName: '',
+      porteriaAdminEmail: ''
+    }));
+  };
+
   const parseNum = (val: any): number => {
     if (val === undefined || val === null) return 0;
     const clean = String(val).replace(/[^0-9]/g, '');
@@ -285,11 +309,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
       return cedulaInput.length > 5;
     }
     if (currentStep === 1) {
-      return formData.address.trim() !== '' && formData.city.trim() !== '';
+      return String(formData.address || '').trim() !== '' && String(formData.city || '').trim() !== '';
     }
     if (currentStep === 2) {
-      if (formData.area.trim() === '' || formData.propertyAge.trim() === '') return false;
-      const count = parseInt(formData.roomsCount) || 1;
+      if (String(formData.area || '').trim() === '' || String(formData.propertyAge || '').trim() === '') return false;
+      const count = parseInt(String(formData.roomsCount)) || 1;
       if (count >= 1 && !formData.bedPrincipal) return false;
       if (count >= 2 && !formData.bedSecondary) return false;
       if (count >= 3 && !formData.bedTertiary) return false;
@@ -298,17 +322,17 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
       return true;
     }
     if (currentStep === 3) {
-      return formData.propertyNumber.trim() !== '';
+      return String(formData.propertyNumber || '').trim() !== '';
     }
     if (currentStep === 4) {
       return true; // Any required fields on step 4? No
     }
     if (currentStep === 5) {
-      return formData.name.trim() !== '' && 
+      return String(formData.name || '').trim() !== '' && 
              formData.documentNumber === formData.confirmDocumentNumber &&
-             isPhoneValid(formData.phone, formData.countryCode) && 
+             isPhoneValid(String(formData.phone || ''), formData.countryCode) && 
              formData.phone === formData.confirmPhone &&
-             formData.email.toLowerCase() === formData.confirmEmail.toLowerCase();
+             String(formData.email || '').toLowerCase() === String(formData.confirmEmail || '').toLowerCase();
     }
     if (currentStep === 6) {
       return formData.clausesAccepted;
@@ -505,7 +529,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 🔒 Garantía sin Embargos: Sí, Confirmado.
 
 Por favor, revisemos este registro para la firma del acuerdo oficial.`;
-    return `https://wa.me/573000000000?text=${encodeURIComponent(textMsg)}`;
+    return `https://wa.me/573177623878?text=${encodeURIComponent(textMsg)}`;
   };
 
   return (
@@ -803,7 +827,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             <div className="mt-3">
                               <button
                                 type="button"
-                                onClick={() => setCurrentStep(1)}
+                                onClick={() => { resetPropertyFields(); setCurrentStep(1); }}
                                 className="w-full bg-brand-gold text-stone-900 font-bold py-3 rounded-xl shadow-md hover:bg-brand-gold-dark transition-all"
                               >
                                 Continuar como Nuevo Registro
@@ -823,21 +847,21 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             </div>
                             
                             <div className="grid grid-cols-1 gap-3">
-                              <button type="button" onClick={() => { setActiveFlow('normal'); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('normal'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-brand-gold transition-colors">Nuevo Inmueble</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Añadir una nueva propiedad al portafolio de este cliente.</p>
                                 </div>
                                 <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-brand-gold" />
                               </button>
-                              <button type="button" onClick={() => { setActiveFlow('renovacion'); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('renovacion'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-blue-600 transition-colors">Renovación de Contrato</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Renovar contrato existente sin volver a pedir datos.</p>
                                 </div>
                                 <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-blue-500" />
                               </button>
-                              <button type="button" onClick={() => { setActiveFlow('cambio_negocio'); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('cambio_negocio'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-emerald-600 transition-colors">Cambio de Modelo de Negocio</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Ej: Pasar de Corretaje a Administración.</p>
@@ -1330,13 +1354,51 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             {["Apartamento", "Apartaestudio", "Casa", "Local", "Oficina", "Bodega", "Lote", "Edificio", "Casa Lote", "Casa Campestre"].map(opt => <option key={opt} value={opt}>{opt}</option>)}
                           </select>
                         </div>
-                        <div>
-                          <label className="text-[10px] text-stone-500 font-bold block mb-0.5">ÁREA M²</label>
-                          <input 
-                            type="number" required value={formData.area} 
-                            onChange={e => setFormData({ ...formData, area: e.target.value })}
-                            placeholder="M² de área" className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2 text-xs"
-                          />
+                        <div className="relative group">
+                          <label className="text-[10px] text-stone-500 font-bold mb-0.5 flex justify-between items-end">
+                            ÁREA M²
+                            <AnimatePresence>
+                              {formData.area && parseInt(String(formData.area)) > 0 && (
+                                 <motion.span 
+                                   initial={{ scale: 0, opacity: 0 }}
+                                   animate={{ scale: 1, opacity: 1 }}
+                                   exit={{ scale: 0, opacity: 0 }}
+                                   className="text-[#B5945B] text-[8px] font-mono tracking-wider uppercase"
+                                 >
+                                    {parseInt(String(formData.area)) > 100 ? 'Amplio ✨' : 'Compacto'}
+                                 </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </label>
+                          <div className="relative">
+                            <motion.input 
+                              whileFocus={{ scale: 1.02, borderColor: '#B5945B', backgroundColor: '#fff' }}
+                              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                              type="number" required value={formData.area} 
+                              onChange={e => setFormData({ ...formData, area: e.target.value })}
+                              placeholder="Ej. 65" className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2 text-xs pr-8 outline-none z-10 relative shadow-sm"
+                            />
+                            <motion.div
+                              animate={{ 
+                                scale: formData.area && parseInt(String(formData.area)) > 0 ? 1.15 : 1,
+                                rotate: formData.area && parseInt(String(formData.area)) > 0 ? 90 : 0
+                              }}
+                              transition={{ type: "spring", stiffness: 200, damping: 12 }}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20"
+                            >
+                              <Maximize className={`w-3.5 h-3.5 transition-colors duration-300 ${formData.area && parseInt(String(formData.area)) > 0 ? 'text-[#B5945B]' : 'text-stone-300'}`} />
+                            </motion.div>
+                          </div>
+                          
+                          {/* Luxury progress bar based on area */}
+                          <div className="h-1 w-full bg-stone-100 rounded-full mt-1.5 overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min((parseInt(String(formData.area || '0')) / 200) * 100, 100)}%` }}
+                              transition={{ type: "spring", stiffness: 50, damping: 15 }}
+                              className="h-full bg-gradient-to-r from-[#B5945B] to-[#D4AF37]"
+                            />
+                          </div>
                         </div>
                         <div>
                           <label className="text-[10px] text-stone-500 font-bold block mb-0.5">N° HABITACIONES</label>
@@ -1380,7 +1442,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               <option value="Dormitorio principal: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
                             </select>
                           </div>
-                          {parseInt(formData.roomsCount) >= 2 && (
+                          {parseInt(String(formData.roomsCount)) >= 2 && (
                             <div className="animate-fade-in">
                               <span className="text-[10px] font-mono text-[#8A631F] block">HABITACIÓN SECUNDARIA</span>
                               <select 
@@ -1398,7 +1460,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               </select>
                             </div>
                           )}
-                          {parseInt(formData.roomsCount) >= 3 && (
+                          {parseInt(String(formData.roomsCount)) >= 3 && (
                             <div className="animate-fade-in">
                               <span className="text-[10px] font-mono text-[#8A631F] block">HABITACIÓN TERCIARIA</span>
                               <select 
@@ -1416,7 +1478,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               </select>
                             </div>
                           )}
-                          {parseInt(formData.roomsCount) >= 4 && (
+                          {parseInt(String(formData.roomsCount)) >= 4 && (
                             <div className="animate-fade-in">
                               <span className="text-[10px] font-mono text-[#8A631F] block">HABITACIÓN CUATERNARIA</span>
                               <select 
@@ -1434,7 +1496,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               </select>
                             </div>
                           )}
-                          {parseInt(formData.roomsCount) >= 5 && (
+                          {parseInt(String(formData.roomsCount)) >= 5 && (
                             <div className="animate-fade-in">
                               <span className="text-[10px] font-mono text-[#8A631F] block">HABITACIÓN QUINARIA</span>
                               <select 
@@ -1968,7 +2030,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               type="email" required value={formData.confirmEmail} 
                               onChange={e => setFormData({ ...formData, confirmEmail: e.target.value })}
                               placeholder="Confirma correo" className={`w-full border rounded-xl py-3 px-4 text-xs focus:outline-none ${
-                                formData.confirmEmail ? (formData.email.toLowerCase() === formData.confirmEmail.toLowerCase() ? 'border-emerald-500' : 'border-rose-400') : 'bg-stone-50 border-stone-200'
+                                formData.confirmEmail ? (String(formData.email || '').toLowerCase() === String(formData.confirmEmail || '').toLowerCase() ? 'border-emerald-500' : 'border-rose-400') : 'bg-stone-50 border-stone-200'
                               }`}
                             />
                           </div>
@@ -1982,10 +2044,10 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       )}
 
                       {/* VIP Card preview rendering dynamically */}
-                      {formData.name.trim() !== '' && (
+                      {String(formData.name || '').trim() !== '' && (
                         <div className="p-4 bg-stone-900 border border-brand-gold/20 rounded-xl text-brand-gold font-mono space-y-2 text-xs">
                           <strong className="text-white">PRE-REGISTRO CLIENTE VIP</strong>
-                          <div>CLIENTE: <span className="text-white font-sans">{formData.name.toUpperCase()}</span></div>
+                          <div>CLIENTE: <span className="text-white font-sans">{String(formData.name || '').toUpperCase()}</span></div>
                           <div className="flex justify-between border-t border-stone-850 pt-1 text-[10px] text-stone-400">
                             <span>DOCUMENTO: {formData.documentType} {formData.documentNumber}</span>
                             <span>ESTADO: VERIFICADO</span>

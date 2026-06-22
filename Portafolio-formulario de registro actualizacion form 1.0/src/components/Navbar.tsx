@@ -84,7 +84,7 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
           <div className="hidden lg:flex items-center space-x-4">
             <a
               id="cta-navbar-whatsapp"
-              href="https://wa.me/573000000000?text=Hola%20Gold%20Life,%20quiero%20conocer%20más%20sobre%20el%20portafolio%20de%20servicios."
+              href="https://wa.me/573177623878?text=Hola%20Gold%20Life,%20quiero%20conocer%20más%20sobre%20el%20portafolio%20de%20servicios."
               target="_blank"
               rel="noopener noreferrer"
               className="border border-stone-300 text-stone-700 hover:text-brand-gold hover:border-brand-gold hover:bg-brand-dark px-4 py-2 rounded-md text-sm transition-all cursor-pointer flex items-center space-x-1"
@@ -144,7 +144,7 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
             </button>
             <a
               id="mobile-cta-whatsapp"
-              href="https://wa.me/573000000000?text=Hola%20Gold%20Life,%20quiero%20conocer%20más%20sobre%20el%20portafolio%20de%20servicios."
+              href="https://wa.me/573177623878?text=Hola%20Gold%20Life,%20quiero%20conocer%20más%20sobre%20el%20portafolio%20de%20servicios."
               target="_blank"
               rel="noopener noreferrer"
               className="w-full bg-stone-100 border border-stone-250 text-stone-700 hover:text-stone-900 py-3 px-4 rounded-md flex items-center justify-center space-x-2 text-sm transition-all cursor-pointer"
