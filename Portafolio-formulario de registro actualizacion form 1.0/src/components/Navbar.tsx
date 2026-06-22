@@ -51,10 +51,10 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20 lg:h-24 transition-all">
           {/* Logo Brand */}
-          <div className="flex-shrink-0 cursor-pointer flex items-center h-14" onClick={() => handleNavClick('inicio')}>
-            <img src={logoImg} alt="Gold Life Real Estate" className="h-full w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform" />
+          <div className="flex-shrink-0 cursor-pointer flex items-center h-16 lg:h-20" onClick={() => handleNavClick('inicio')}>
+            <img src={logoImg} alt="Gold Life Real Estate" className="h-full w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform scale-110 origin-left" />
           </div>
 
           {/* Desktop Navigation Links */}
