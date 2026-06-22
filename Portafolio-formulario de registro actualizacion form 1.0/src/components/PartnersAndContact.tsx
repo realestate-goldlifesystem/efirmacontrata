@@ -110,7 +110,7 @@ export default function PartnersAndContact({ onOpenRegisterForm }: PartnersAndCo
             {/* Telephone Call Box */}
             <a
               id="contact-phone-block"
-              href="tel:+573000000000"
+              href="tel:+573177623878"
               className="bg-white hover:bg-stone-50 border border-stone-200 p-6 sm:p-8 rounded-xl text-left transition-all hover:scale-102 flex flex-col justify-between group cursor-pointer shadow-sm hover:shadow-md"
             >
               <div className="space-y-4">
