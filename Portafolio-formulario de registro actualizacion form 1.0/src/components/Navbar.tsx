@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { Home, Calculator, Phone, Menu, X, Landmark, Layers, User } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 interface NavbarProps {
   onScrollTo: (sectionId: string) => void;
@@ -52,15 +53,8 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo Brand */}
-          <div className="flex-shrink-0 cursor-pointer flex items-center space-x-2" onClick={() => handleNavClick('inicio')}>
-            <div className="relative">
-              <span className="text-2xl font-bold tracking-wider text-brand-gold font-sans">
-                GOLD<span className="text-stone-900 font-light text-xl">Life</span>
-              </span>
-              <span className="absolute -bottom-2.5 left-0 text-[8px] tracking-[0.4em] text-brand-gold-dark uppercase font-mono font-medium">
-                Real Estate
-              </span>
-            </div>
+          <div className="flex-shrink-0 cursor-pointer flex items-center h-14" onClick={() => handleNavClick('inicio')}>
+            <img src={logoImg} alt="Gold Life Real Estate" className="h-full w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform" />
           </div>
 
           {/* Desktop Navigation Links */}
