@@ -174,43 +174,43 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
         <div className="bg-white rounded-3xl shadow-xl border border-stone-200 overflow-hidden flex flex-col md:flex-row">
           
           {/* LADO IZQUIERDO: DETALLES Y HORARIO */}
-          <div className="bg-stone-950 p-8 md:w-5/12 text-white relative border-r border-stone-200/20">
+          <div className="bg-brand-dark-deep p-8 md:w-5/12 text-stone-900 relative border-r border-stone-200/50">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10"></div>
             
             <div className="relative z-10">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-gold/10 rounded-full mb-6 ring-1 ring-brand-gold/30">
-                <CalendarCheck className="w-7 h-7 text-brand-gold" />
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-white rounded-full mb-6 ring-1 ring-brand-gold/30 shadow-sm">
+                <CalendarCheck className="w-7 h-7 text-brand-gold-dark" />
               </div>
-              <h2 className="text-3xl font-extrabold font-serif italic mb-2 tracking-tight text-white">Agendar Visita</h2>
-              <p className="text-stone-400 text-sm mb-10 leading-relaxed font-light">
+              <h2 className="text-3xl font-extrabold font-serif italic mb-2 tracking-tight text-stone-900">Agendar Visita</h2>
+              <p className="text-stone-600 text-sm mb-10 leading-relaxed font-light">
                 Elige el momento perfecto para que uno de nuestros Agentes Premium evalúe tu propiedad de manera presencial o atienda tu requerimiento.
               </p>
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-xs font-bold text-brand-gold block mb-2 tracking-wider">1. SELECCIONA LA FECHA</label>
+                  <label className="text-xs font-bold text-brand-gold-dark block mb-2 tracking-widest uppercase">1. SELECCIONA LA FECHA</label>
                   <div className="relative">
-                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-500" />
                     <input
                       type="date"
                       min={minDateString}
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 bg-stone-800/50 border border-stone-600 rounded-xl focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all text-white text-sm"
+                      className="w-full pl-12 pr-4 py-3 bg-white border border-stone-200 rounded-xl focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all text-stone-800 text-sm shadow-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-brand-gold block mb-2 tracking-widest uppercase">2. Horarios Disponibles</label>
+                  <label className="text-xs font-bold text-brand-gold-dark block mb-2 tracking-widest uppercase">2. Horarios Disponibles</label>
                   
                   {isLoadingSlots ? (
-                    <div className="flex items-center justify-center py-6 text-stone-400 bg-stone-900/50 rounded-xl border border-stone-800">
-                      <Loader2 className="w-5 h-5 animate-spin mr-2 text-brand-gold" />
+                    <div className="flex items-center justify-center py-6 text-stone-500 bg-white/50 rounded-xl border border-stone-200 shadow-sm">
+                      <Loader2 className="w-5 h-5 animate-spin mr-2 text-brand-gold-dark" />
                       <span className="text-sm">Buscando en agenda...</span>
                     </div>
                   ) : slotMessage ? (
-                    <div className="text-center py-6 text-stone-400 bg-stone-900/50 rounded-xl border border-stone-800 px-4 text-sm">
+                    <div className="text-center py-6 text-stone-600 bg-white/50 rounded-xl border border-stone-200 px-4 text-sm shadow-sm">
                       {slotMessage}
                     </div>
                   ) : availableSlots.length > 0 ? (
@@ -222,17 +222,17 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
                           onClick={() => setSelectedSlot(slot)}
                           className={`py-2 px-3 rounded-lg text-sm font-semibold border transition-all flex items-center justify-center ${
                             selectedSlot?.timestamp === slot.timestamp
-                              ? 'bg-brand-gold text-stone-950 border-brand-gold shadow-[0_0_15px_rgba(212,175,55,0.3)] scale-[1.02]'
-                              : 'bg-stone-900/60 text-stone-300 border-stone-800 hover:border-brand-gold/50 hover:bg-stone-800'
+                              ? 'bg-brand-gold text-stone-900 border-brand-gold shadow-md scale-[1.02]'
+                              : 'bg-white text-stone-600 border-stone-200 hover:border-brand-gold/50 hover:text-brand-gold-dark shadow-sm'
                           }`}
                         >
-                          <Clock className={`w-3 h-3 mr-2 ${selectedSlot?.timestamp === slot.timestamp ? 'opacity-100' : 'opacity-50'}`} />
+                          <Clock className={`w-3 h-3 mr-2 ${selectedSlot?.timestamp === slot.timestamp ? 'opacity-100 text-stone-900' : 'opacity-50 text-stone-500'}`} />
                           {slot.horaAmPm}
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-6 text-stone-500 bg-stone-900/50 rounded-xl border border-stone-800 text-sm font-light">
+                    <div className="text-center py-6 text-stone-500 bg-white/50 rounded-xl border border-stone-200 text-sm font-light shadow-sm">
                       Selecciona una fecha primero
                     </div>
                   )}
