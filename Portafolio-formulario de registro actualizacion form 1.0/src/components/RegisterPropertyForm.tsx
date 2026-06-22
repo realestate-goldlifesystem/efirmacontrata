@@ -533,7 +533,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
   };
 
   return (
-    <section id="registro" className="min-h-screen py-12 bg-gradient-to-b from-[#11100c] to-[#1a1814] text-stone-800 relative font-sans">
+    <section id="registro" className="min-h-screen py-12 bg-brand-dark-deep text-stone-800 relative font-sans">
       {/* Luxury Ambient Glows */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-gold/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#8A631F]/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
@@ -541,14 +541,14 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Superior Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-10 pb-6 border-b border-white/10 gap-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-10 pb-6 border-b border-stone-200 gap-4">
           <div className="text-left flex items-center gap-4">
             <div className="size-14 bg-gradient-to-br from-brand-gold to-[#8A631F] rounded-2xl flex items-center justify-center shadow-lg shadow-brand-gold/20 p-3">
                <Building2 className="w-full h-full text-[#11100c]" />
             </div>
             <div>
-              <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-brand-gold font-bold block mb-1">Gold Life Real Estate</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-brand-gold-dark font-bold block mb-1">Gold Life Real Estate</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tight">
                 Registro de Inmuebles
               </h2>
             </div>
@@ -556,9 +556,9 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
           {onBack && (
             <button
               onClick={onBack}
-              className="inline-flex items-center space-x-2 bg-white/5 hover:bg-white/10 backdrop-blur-md text-stone-300 hover:text-brand-gold border border-white/10 px-6 py-3 rounded-full shadow-lg transition-all font-semibold text-sm cursor-pointer group"
+              className="inline-flex items-center space-x-2 bg-white border-stone-200 hover:bg-stone-50 backdrop-blur-md text-stone-600 hover:text-brand-gold-dark border border-stone-200 px-6 py-3 rounded-full shadow-lg transition-all font-semibold text-sm cursor-pointer group"
             >
-              <ArrowLeft className="w-4 h-4 text-brand-gold group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft className="w-4 h-4 text-brand-gold-dark group-hover:-translate-x-1 transition-transform" />
               <span>Volver al Portal</span>
             </button>
           )}
@@ -575,19 +575,19 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                   <div key={idx} className="flex flex-col items-center gap-2 relative z-10 w-16">
                     <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all duration-500 ${
                       isActive ? 'bg-brand-gold border-brand-gold text-[#11100c] shadow-[0_0_15px_rgba(212,175,55,0.4)] scale-110' : 
-                      isPast ? 'bg-[#2a261b] border-brand-gold text-brand-gold' : 
-                      'bg-[#1a1814] border-[#363025] text-stone-600'
+                      isPast ? 'bg-stone-100 border-brand-gold text-brand-gold-dark' : 
+                      'bg-white border-stone-200 text-stone-600'
                     }`}>
                       {isPast ? <Check className="w-4 h-4" /> : idx + 1}
                     </div>
-                    <span className={`font-bold transition-all whitespace-nowrap ${isActive ? 'text-brand-gold' : 'text-stone-500'}`}>
+                    <span className={`font-bold transition-all whitespace-nowrap ${isActive ? 'text-brand-gold-dark' : 'text-stone-500'}`}>
                       {label}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div className="relative w-full bg-[#2a261b] h-1.5 rounded-full overflow-hidden shadow-inner -mt-[42px] z-0 mx-auto max-w-[calc(100%-4rem)]">
+            <div className="relative w-full bg-stone-100 h-1.5 rounded-full overflow-hidden shadow-inner -mt-[42px] z-0 mx-auto max-w-[calc(100%-4rem)]">
               <div 
                 className="absolute top-0 left-0 h-full bg-gradient-to-r from-brand-gold to-[#f9e596] transition-all duration-700 ease-out shadow-[0_0_10px_rgba(212,175,55,0.5)]" 
                 style={{ width: `${((currentStep - 1) / 5) * 100}%` }}
@@ -601,7 +601,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* LEFT COLUMN: Dynamic Interactive Cost and Yield Calculator Sheet */}
-          <div className="lg:col-span-4 bg-[#181611]/80 backdrop-blur-xl rounded-[2rem] p-8 flex flex-col justify-between border border-[#363025] shadow-2xl shadow-brand-gold/5 relative overflow-hidden text-left group transition-all">
+          <div className="lg:col-span-4 bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 flex flex-col justify-between border border-stone-200 shadow-2xl shadow-brand-gold/5 relative overflow-hidden text-left group transition-all">
             {/* Glossy top highlight */}
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-brand-gold to-transparent opacity-50" />
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-brand-gold/10 to-transparent opacity-30" />
@@ -609,9 +609,9 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
             
             {/* Real-time simulations adapt instantly to active variables and inputs */}
             <div className="space-y-6">
-              <div className="flex items-center space-x-2 pb-3 border-b border-stone-800">
-                <Calculator className="w-5 h-5 text-brand-gold" />
-                <h3 className="text-sm font-bold uppercase tracking-widest text-white font-sans">
+              <div className="flex items-center space-x-2 pb-3 border-b border-stone-200">
+                <Calculator className="w-5 h-5 text-brand-gold-dark" />
+                <h3 className="text-sm font-bold uppercase tracking-widest text-stone-900 font-sans">
                   Simulación de Rendimientos
                 </h3>
               </div>
@@ -619,25 +619,25 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
               {/* Dynamic calculations display depending on serviceType */}
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-mono tracking-widest text-[#B5945B]">MODELO DE NEGOCIO ACTIVO</span>
-                  <p className="text-xs font-bold text-white capitalize flex items-center space-x-1.5">
-                    <Briefcase className="w-3.5 h-3.5 text-brand-gold" />
+                  <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold-dark-dark">MODELO DE NEGOCIO ACTIVO</span>
+                  <p className="text-xs font-bold text-stone-900 capitalize flex items-center space-x-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-brand-gold-dark" />
                     <span>Gold {formData.serviceType.toUpperCase()}</span>
                   </p>
                 </div>
 
-                <div className="bg-stone-800/60 p-3 rounded-lg border border-stone-800 space-y-2 text-xs">
+                <div className="bg-stone-50 p-3 rounded-lg border border-stone-200 space-y-2 text-xs">
                   {formData.serviceType !== 'venta' && (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-stone-400">Arriendo Mensual:</span>
-                        <strong className="text-stone-200 font-mono">{FORMAT_COP(priceGeneralVal)}</strong>
+                        <span className="text-stone-500">Arriendo Mensual:</span>
+                        <strong className="text-stone-800 font-mono">{FORMAT_COP(priceGeneralVal)}</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-stone-400">Cuota Administración (HOA):</span>
-                        <strong className="text-stone-200 font-mono">-{FORMAT_COP(priceHoaVal)}</strong>
+                        <span className="text-stone-500">Cuota Administración (HOA):</span>
+                        <strong className="text-stone-800 font-mono">-{FORMAT_COP(priceHoaVal)}</strong>
                       </div>
-                      <div className="flex justify-between border-t border-stone-800 pt-1 text-[#B5945B]">
+                      <div className="flex justify-between border-t border-stone-200 pt-1 text-brand-gold-dark-dark">
                         <span>Canon Neto:</span>
                         <strong className="font-mono">{FORMAT_COP(baseCanon)}</strong>
                       </div>
@@ -645,7 +645,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                   )}
 
                   {formData.serviceType === 'venta' && (
-                    <div className="flex justify-between text-[#B5945B]">
+                    <div className="flex justify-between text-brand-gold-dark-dark">
                       <span>Estimado de Venta:</span>
                       <strong className="font-mono">{FORMAT_COP(sellPriceVal)}</strong>
                     </div>
@@ -653,8 +653,8 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                 </div>
 
                 {/* Specific returns projections */}
-                <div className="p-3 bg-stone-850 border border-stone-800 rounded-lg space-y-2">
-                  <span className="text-[11px] uppercase font-mono text-stone-400 tracking-wider">RETORNO LÍQUIDO SIMULADO</span>
+                <div className="p-3 bg-stone-850 border border-stone-200 rounded-lg space-y-2">
+                  <span className="text-[11px] uppercase font-mono text-stone-500 tracking-wider">RETORNO LÍQUIDO SIMULADO</span>
                   
                   {formData.serviceType === 'administracion' && (
                     <div className="space-y-2 text-xs">
@@ -662,7 +662,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         <span>Comisión ({finalAdminPercent}%):</span>
                         <span className="text-rose-400 font-mono">-{FORMAT_COP(adminMonthlyFee)}</span>
                       </div>
-                      <div className="flex justify-between text-base font-bold text-emerald-400 border-t border-stone-800 pt-2">
+                      <div className="flex justify-between text-base font-bold text-emerald-400 border-t border-stone-200 pt-2">
                         <span>Mensual Neto:</span>
                         <span className="font-mono">{FORMAT_COP(adminNetProceeds)}</span>
                       </div>
@@ -681,7 +681,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           <span>✓ Activo</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-base font-bold text-emerald-400 border-t border-stone-800 pt-2">
+                      <div className="flex justify-between text-base font-bold text-emerald-400 border-t border-stone-200 pt-2">
                         <span>Ingreso Libre inicial:</span>
                         <span className="font-mono">{FORMAT_COP(baseCanon - corretajeFee)}</span>
                       </div>
@@ -694,7 +694,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         <span>Comisión de Venta ({sellCommissionPercent}%):</span>
                         <span className="text-rose-400 font-mono">-{FORMAT_COP(sellCommissionFee)}</span>
                       </div>
-                      <div className="flex justify-between text-base font-bold text-emerald-400 border-t border-stone-800 pt-2">
+                      <div className="flex justify-between text-base font-bold text-emerald-400 border-t border-stone-200 pt-2">
                         <span>Procedencia Líquida:</span>
                         <span className="font-mono">{FORMAT_COP(sellPriceVal - sellCommissionFee)}</span>
                       </div>
@@ -708,7 +708,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           <span>Renta Mensual Neta:</span>
                           <strong>{FORMAT_COP(adminNetProceeds)}</strong>
                         </div>
-                        <div className="flex justify-between text-brand-gold">
+                        <div className="flex justify-between text-brand-gold-dark">
                           <span>Firma Venta ({sellCommissionPercent}%):</span>
                           <strong>-{FORMAT_COP(sellCommissionFee)}</strong>
                         </div>
@@ -723,7 +723,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           <span>Arriendo neto:</span>
                           <strong>{FORMAT_COP(baseCanon - corretajeFee)}</strong>
                         </div>
-                        <div className="flex justify-between text-brand-gold">
+                        <div className="flex justify-between text-brand-gold-dark">
                           <span>Firma de Venta ({sellCommissionPercent}%):</span>
                           <strong>-{FORMAT_COP(sellCommissionFee)}</strong>
                         </div>
@@ -734,7 +734,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
 
                 {/* Country Map integration */}
                 <div className="pt-2 border-t border-stone-805/70 flex flex-col items-center">
-                  <span className="text-[9px] text-stone-400 font-mono tracking-widest block mb-1">FOCO GEOGRÁFICO DE REGISTRO</span>
+                  <span className="text-[9px] text-stone-500 font-mono tracking-widest block mb-1">FOCO GEOGRÁFICO DE REGISTRO</span>
                   <div className="w-full max-h-[140px] flex items-center justify-center">
                     <CountryMap countryCode={formData.countryCode as any} />
                   </div>
@@ -742,7 +742,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
               </div>
             </div>
 
-            <div className="pt-6 border-t border-stone-800 mt-6 flex items-center justify-between text-[10px] text-stone-500 font-mono">
+            <div className="pt-6 border-t border-stone-200 mt-6 flex items-center justify-between text-[10px] text-stone-500 font-mono">
               <span>🛡️ GOLD LIFE COBERTURA 100%</span>
               <span>BOGOTÁ</span>
             </div>
@@ -759,7 +759,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
                       <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
                         <div className="size-12 rounded-xl bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20">
-                          <User className="w-6 h-6 text-brand-gold-dark" />
+                          <User className="w-6 h-6 text-brand-gold-dark-dark" />
                         </div>
                         <div>
                           <h4 className="text-xl font-black text-stone-900 tracking-tight">Validación del Propietario</h4>
@@ -814,7 +814,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 }
                               }}
                               disabled={cedulaInput.length < 5 || cedulaStatus === 'searching'}
-                              className="bg-[#11100c] text-brand-gold px-6 py-3 rounded-xl font-bold shadow-md hover:bg-black transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
+                              className="bg-stone-900 text-brand-gold-dark px-6 py-3 rounded-xl font-bold shadow-md hover:bg-black transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
                             >
                               {cedulaStatus === 'searching' ? 'Buscando...' : 'Buscar'}
                             </button>
@@ -828,7 +828,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               <button
                                 type="button"
                                 onClick={() => { resetPropertyFields(); setCurrentStep(1); }}
-                                className="w-full bg-brand-gold text-stone-900 font-bold py-3 rounded-xl shadow-md hover:bg-brand-gold-dark transition-all"
+                                className="w-full bg-brand-gold text-stone-900 font-bold py-3 rounded-xl shadow-md hover:bg-brand-gold transition-all"
                               >
                                 Continuar como Nuevo Registro
                               </button>
@@ -849,24 +849,24 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             <div className="grid grid-cols-1 gap-3">
                               <button type="button" onClick={() => { setActiveFlow('normal'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
                                 <div>
-                                  <h5 className="font-bold text-stone-900 group-hover:text-brand-gold transition-colors">Nuevo Inmueble</h5>
+                                  <h5 className="font-bold text-stone-900 group-hover:text-brand-gold-dark transition-colors">Nuevo Inmueble</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Añadir una nueva propiedad al portafolio de este cliente.</p>
                                 </div>
-                                <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-brand-gold" />
+                                <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-brand-gold-dark" />
                               </button>
                               <button type="button" onClick={() => { setActiveFlow('renovacion'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-blue-600 transition-colors">Renovación de Contrato</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Renovar contrato existente sin volver a pedir datos.</p>
                                 </div>
-                                <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-blue-500" />
+                                <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-blue-500" />
                               </button>
                               <button type="button" onClick={() => { setActiveFlow('cambio_negocio'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-emerald-600 transition-colors">Cambio de Modelo de Negocio</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Ej: Pasar de Corretaje a Administración.</p>
                                 </div>
-                                <ArrowRight className="w-5 h-5 text-stone-300 group-hover:text-emerald-500" />
+                                <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-emerald-500" />
                               </button>
                             </div>
                           </div>
@@ -884,7 +884,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         <div className="space-y-6">
                           <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
                             <div className="size-12 rounded-xl bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20">
-                              <Building2 className="w-6 h-6 text-brand-gold-dark" />
+                              <Building2 className="w-6 h-6 text-brand-gold-dark-dark" />
                             </div>
                             <div>
                               <h4 className="text-xl font-black text-stone-900 tracking-tight">Seleccionar Inmueble</h4>
@@ -908,7 +908,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                   className="p-5 bg-stone-50 border border-stone-200 rounded-2xl hover:border-brand-gold text-left transition-all hover:shadow-md group flex flex-col justify-between"
                                 >
                                   <div>
-                                    <strong className="text-stone-900 block text-sm group-hover:text-brand-gold transition-colors">
+                                    <strong className="text-stone-900 block text-sm group-hover:text-brand-gold-dark transition-colors">
                                       {prop["Ingrese la Dirección del inmueble"] || prop.direccion || 'Dirección no especificada'}
                                     </strong>
                                     <span className="text-xs text-stone-500 mt-1 block">
@@ -993,7 +993,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                   value="SI" 
                                   checked={reutilizarMultimedia === 'SI'} 
                                   onChange={() => setReutilizarMultimedia('SI')}
-                                  className="w-4 h-4 text-brand-gold cursor-pointer"
+                                  className="w-4 h-4 text-brand-gold-dark cursor-pointer"
                                 />
                                 <span className="text-xs text-stone-900 font-semibold">SÍ (Reutilizar fotos y video de YouTube)</span>
                               </label>
@@ -1004,7 +1004,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                   value="NO" 
                                   checked={reutilizarMultimedia === 'NO'} 
                                   onChange={() => setReutilizarMultimedia('NO')}
-                                  className="w-4 h-4 text-brand-gold cursor-pointer"
+                                  className="w-4 h-4 text-brand-gold-dark cursor-pointer"
                                 />
                                 <span className="text-xs text-stone-900 font-semibold">NO (Subir nuevo material)</span>
                               </label>
@@ -1019,7 +1019,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               <input 
                                 type="checkbox" required checked={formData.hasNoEmbargo}
                                 onChange={e => setFormData({ ...formData, hasNoEmbargo: e.target.checked })}
-                                className="w-5 h-5 text-brand-gold border-stone-300 bg-white rounded mt-0.5 cursor-pointer"
+                                className="w-5 h-5 text-brand-gold-dark border-stone-300 bg-white rounded mt-0.5 cursor-pointer"
                               />
                               <span className="text-xs text-stone-750 leading-relaxed font-semibold">
                                 Yo, <strong>{formData.name || 'Propietario'}</strong>, garantizo bajo juramento que el inmueble propuesto se halla <strong>100% libre de embargos vigentes, litigios judiciales</strong> o impedimentos.
@@ -1196,7 +1196,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                   value="SI" 
                                   checked={reutilizarMultimedia === 'SI'} 
                                   onChange={() => setReutilizarMultimedia('SI')}
-                                  className="w-4 h-4 text-brand-gold cursor-pointer"
+                                  className="w-4 h-4 text-brand-gold-dark cursor-pointer"
                                 />
                                 <span className="text-xs text-stone-900 font-semibold">SÍ (Reutilizar fotos y video de YouTube)</span>
                               </label>
@@ -1207,7 +1207,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                   value="NO" 
                                   checked={reutilizarMultimedia === 'NO'} 
                                   onChange={() => setReutilizarMultimedia('NO')}
-                                  className="w-4 h-4 text-brand-gold cursor-pointer"
+                                  className="w-4 h-4 text-brand-gold-dark cursor-pointer"
                                 />
                                 <span className="text-xs text-stone-900 font-semibold">NO (Subir nuevo material)</span>
                               </label>
@@ -1219,7 +1219,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               <input 
                                 type="checkbox" required checked={formData.hasNoEmbargo}
                                 onChange={e => setFormData({ ...formData, hasNoEmbargo: e.target.checked })}
-                                className="w-5 h-5 text-brand-gold border-stone-300 bg-white rounded mt-0.5 cursor-pointer"
+                                className="w-5 h-5 text-brand-gold-dark border-stone-300 bg-white rounded mt-0.5 cursor-pointer"
                               />
                               <span className="text-xs text-stone-750 leading-relaxed font-semibold">
                                 Yo, <strong>{formData.name || 'Propietario'}</strong>, garantizo bajo juramento que el inmueble propuesto se halla <strong>100% libre de embargos vigentes, litigios judiciales</strong> o impedimentos.
@@ -1234,7 +1234,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         <>
                           <div className="flex items-center gap-4 border-b border-stone-100 pb-4">
                             <div className="size-12 rounded-xl bg-brand-gold/10 flex items-center justify-center border border-brand-gold/20">
-                              <MapPin className="w-6 h-6 text-brand-gold-dark" />
+                              <MapPin className="w-6 h-6 text-brand-gold-dark-dark" />
                             </div>
                             <div>
                               <h4 className="text-xl font-black text-stone-900 tracking-tight">Ubicación del Inmueble</h4>
@@ -1363,7 +1363,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                    initial={{ scale: 0, opacity: 0 }}
                                    animate={{ scale: 1, opacity: 1 }}
                                    exit={{ scale: 0, opacity: 0 }}
-                                   className="text-[#B5945B] text-[8px] font-mono tracking-wider uppercase"
+                                   className="text-brand-gold-dark-dark text-[8px] font-mono tracking-wider uppercase"
                                  >
                                     {parseInt(String(formData.area)) > 100 ? 'Amplio ✨' : 'Compacto'}
                                  </motion.span>
@@ -1386,7 +1386,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               transition={{ type: "spring", stiffness: 200, damping: 12 }}
                               className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20"
                             >
-                              <Maximize className={`w-3.5 h-3.5 transition-colors duration-300 ${formData.area && parseInt(String(formData.area)) > 0 ? 'text-[#B5945B]' : 'text-stone-300'}`} />
+                              <Maximize className={`w-3.5 h-3.5 transition-colors duration-300 ${formData.area && parseInt(String(formData.area)) > 0 ? 'text-brand-gold-dark-dark' : 'text-stone-600'}`} />
                             </motion.div>
                           </div>
                           
@@ -1581,7 +1581,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 <button 
                                   key={opt} type="button" 
                                   onClick={() => setFormData({ ...formData, fridgeWaterPoint: opt })}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${formData.fridgeWaterPoint === opt ? 'bg-stone-900 text-brand-gold' : 'bg-stone-200'}`}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${formData.fridgeWaterPoint === opt ? 'bg-stone-900 text-brand-gold-dark' : 'bg-stone-200'}`}
                                 >
                                   {opt}
                                 </button>
@@ -1617,7 +1617,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 <button 
                                   key={opt} type="button" 
                                   onClick={() => setFormData({ ...formData, washingGasPoint: opt })}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${formData.washingGasPoint === opt ? 'bg-stone-900 text-brand-gold' : 'bg-stone-200'}`}
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${formData.washingGasPoint === opt ? 'bg-stone-900 text-brand-gold-dark' : 'bg-stone-200'}`}
                                 >
                                   {opt}
                                 </button>
@@ -1897,7 +1897,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         <div>
                           <label className="text-xs text-stone-600 font-bold block mb-1">NOMBRES Y APELLIDOS</label>
                           <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
                             <input 
                               type="text" required value={formData.name} 
                               onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -2008,7 +2008,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         <div>
                           <label className="text-xs text-stone-600 font-bold block mb-1">CORREO ELECTRÓNICO</label>
                           <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 w-4 h-4" />
                             <input 
                               type="email" required value={formData.email} 
                               onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -2045,10 +2045,10 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
 
                       {/* VIP Card preview rendering dynamically */}
                       {String(formData.name || '').trim() !== '' && (
-                        <div className="p-4 bg-stone-900 border border-brand-gold/20 rounded-xl text-brand-gold font-mono space-y-2 text-xs">
-                          <strong className="text-white">PRE-REGISTRO CLIENTE VIP</strong>
-                          <div>CLIENTE: <span className="text-white font-sans">{String(formData.name || '').toUpperCase()}</span></div>
-                          <div className="flex justify-between border-t border-stone-850 pt-1 text-[10px] text-stone-400">
+                        <div className="p-4 bg-stone-900 border border-brand-gold/20 rounded-xl text-brand-gold-dark font-mono space-y-2 text-xs">
+                          <strong className="text-stone-900">PRE-REGISTRO CLIENTE VIP</strong>
+                          <div>CLIENTE: <span className="text-stone-900 font-sans">{String(formData.name || '').toUpperCase()}</span></div>
+                          <div className="flex justify-between border-t border-stone-850 pt-1 text-[10px] text-stone-500">
                             <span>DOCUMENTO: {formData.documentType} {formData.documentNumber}</span>
                             <span>ESTADO: VERIFICADO</span>
                           </div>
@@ -2366,7 +2366,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           <input 
                             type="checkbox" required checked={formData.hasNoEmbargo}
                             onChange={e => setFormData({ ...formData, hasNoEmbargo: e.target.checked })}
-                            className="w-5 h-5 text-brand-gold border-stone-300 bg-white rounded mt-0.5"
+                            className="w-5 h-5 text-brand-gold-dark border-stone-300 bg-white rounded mt-0.5"
                           />
                           <span className="text-xs text-stone-700 leading-relaxed">
                             Yo, <strong>{formData.name || 'Propietario'}</strong>, garantizo bajo juramento que el inmueble propuesto se halla <strong>100% libre de embargos vigentes, litigios judiciales</strong>, sucesiones pendientes, u deudas que impidan la comercialización inmediata.
@@ -2400,7 +2400,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           <button
                             type="submit" 
                             disabled={loading || !formData.hasNoEmbargo}
-                            className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold-dark disabled:bg-stone-250 disabled:text-stone-400 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95 animate-fade-in"
+                            className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold disabled:bg-stone-250 disabled:text-stone-500 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95 animate-fade-in"
                           >
                             {loading ? <span>Procesando...</span> : (
                               <>
@@ -2435,7 +2435,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           <button
                             type="button" onClick={handleNextStep}
                             disabled={!canGoToNext()}
-                            className="inline-flex items-center space-x-1.5 bg-stone-900 hover:bg-stone-850 disabled:bg-stone-250 disabled:text-stone-400 text-brand-gold font-bold py-3 px-5 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
+                            className="inline-flex items-center space-x-1.5 bg-stone-900 hover:bg-stone-850 disabled:bg-stone-250 disabled:text-stone-500 text-brand-gold-dark font-bold py-3 px-5 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
                           >
                             <span>Siguiente</span>
                             <ArrowRight className="w-4 h-4" />
@@ -2443,7 +2443,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         ) : (
                           <button
                             type="submit" disabled={loading || !formData.hasNoEmbargo}
-                            className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold-dark disabled:bg-stone-250 disabled:text-stone-400 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
+                            className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold disabled:bg-stone-250 disabled:text-stone-500 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
                           >
                             {loading ? <span>Validando...</span> : (
                               <>
@@ -2482,7 +2482,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                   <a
                     href={getWhatsAppSubmitLink()}
                     target="_blank" rel="noopener noreferrer"
-                    className="inline-flex w-full bg-brand-gold hover:bg-brand-gold-dark text-stone-950 font-bold py-3.5 px-6 rounded-xl shadow-md cursor-pointer items-center justify-center space-x-1.5 text-xs transition-all active:scale-95 font-sans"
+                    className="inline-flex w-full bg-brand-gold hover:bg-brand-gold text-stone-950 font-bold py-3.5 px-6 rounded-xl shadow-md cursor-pointer items-center justify-center space-x-1.5 text-xs transition-all active:scale-95 font-sans"
                   >
                     <Send className="w-4 h-4 text-stone-950" />
                     <span>Despachar por WhatsApp</span>
