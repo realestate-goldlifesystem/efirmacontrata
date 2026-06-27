@@ -30,7 +30,7 @@ export default function App() {
 
   const [showRolesModal, setShowRolesModal] = useState(false);
   const [showScheduleVisit, setShowScheduleVisit] = useState(false);
-  const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(true); // TODO: Revert to false after testing
+  const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(false); 
 
   const scrollToSection = (sectionId: string) => {
     if (showRegisterPage) {

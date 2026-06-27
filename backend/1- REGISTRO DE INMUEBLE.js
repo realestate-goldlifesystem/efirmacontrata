@@ -241,6 +241,20 @@ function generarCodigoRegistro(sheet, row) {
   var torre = sheet.getRange(row, torreCol).getValue();
   var apto = sheet.getRange(row, aptoCol).getValue();
 
+  // SALVAGUARDA DE LA FECHA DE REGISTRO
+  // Google Forms siempre inyecta la marca temporal en la Columna 1. Si "CODIGO DE REGISTRO" está en esa columna,
+  // debemos salvar la fecha en otra columna llamada "Marca temporal" antes de sobreescribirla.
+  try {
+    var col1Valor = sheet.getRange(row, 1).getValue();
+    var marcaTemporalCol = getColumnByName(sheet, 'Marca temporal');
+    if (marcaTemporalCol && marcaTemporalCol !== cdrCol) {
+      // Solo sobreescribir si la columna de Marca temporal está vacía para esa fila (o para asegurar)
+      sheet.getRange(row, marcaTemporalCol).setValue(col1Valor);
+    }
+  } catch(e) {
+    Logger.log("No se pudo salvaguardar la Marca temporal: " + e.message);
+  }
+
   // Generar fecha
   var date = new Date();
   var formattedDate = Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd-MM-yyyy');

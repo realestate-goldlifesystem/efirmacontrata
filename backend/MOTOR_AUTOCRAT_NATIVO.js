@@ -80,6 +80,22 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
         var regex = new RegExp('<<' + tag + '>>', 'g');
         result = result.replace(regex, value);
       });
+      
+      // FALLBACK: Si quedaron etiquetas <<...>> en el string (como en el nombre de archivo),
+      // buscar directamente el nombre de la etiqueta en los headers.
+      var missingTags = result.match(/<<([^>]+)>>/g);
+      if (missingTags) {
+        missingTags.forEach(function(matchTag) {
+          var headerName = matchTag.replace('<<', '').replace('>>', '');
+          var colIndex = headers.indexOf(headerName);
+          if (colIndex !== -1) {
+            var val = rowData[colIndex];
+            if (val === null || val === undefined) val = '';
+            result = result.replace(new RegExp(matchTag, 'g'), val.toString());
+          }
+        });
+      }
+      
       return result;
     }
     

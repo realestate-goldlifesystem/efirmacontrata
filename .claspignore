@@ -12,6 +12,9 @@ package-lock.json
 creds.json
 real-estate-ocr-468904-38d35bfd32d6.json
 
+
+
+
 # === FRONTEND (Vive en GitHub Pages — NO va a Apps Script) ===
 frontend/**
 frontend/

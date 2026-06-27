@@ -291,6 +291,7 @@ function limpiarTexto(texto, numGarajes, tieneDeposito, codigoRegistro, precioVe
         .replace(/\t/g, ' ')
         .replace(/\s+/g, ' ') // Unificar espacios
         .replace(/[\uFFFD\uFFFC]/g, '') // Eliminar caracteres rotos de extracción PDF (emojis partidos como cuadros o signos de interrogación)
+        .replace(/^\s*(?:P[aá]gina\s+)?\d+\s+de\s+\d+\s*/i, '') // Eliminar artefactos de paginación del PDF (ej: "2 de 4") al inicio
         .trim();
 
     // 2. Mapa de sustituciones (Emojis y correcciones)
