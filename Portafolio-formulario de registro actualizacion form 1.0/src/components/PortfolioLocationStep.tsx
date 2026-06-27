@@ -44,7 +44,7 @@ export const PortfolioLocationStep: React.FC<LocationStepProps> = ({ formData, s
       const script = document.createElement('script');
       script.id = 'google-maps-script';
       // NOTA: Reemplazar con clave API real si esta no funciona
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDppOCGMciDpRHVAH4nuBIdKaDlu7zgy_E&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
