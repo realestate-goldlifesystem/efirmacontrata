@@ -48,6 +48,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const [cedulaStatus, setCedulaStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>('idle');
   const [validatedCedula, setValidatedCedula] = useState('');
   const [revalidatingCedula, setRevalidatingCedula] = useState(false);
+  const [shakeErrors, setShakeErrors] = useState(false);
   const [ownerProperties, setOwnerProperties] = useState<any[]>([]);
   const [activeFlow, setActiveFlow] = useState<'normal' | 'renovacion' | 'cambio_negocio'>('normal');
   const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(null);
@@ -355,11 +356,21 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 
   const handleNextStep = () => {
     if (canGoToNext()) {
+      setShakeErrors(false);
       if (currentStep === 4 && cedulaStatus === 'found' && activeFlow === 'normal') {
         setCurrentStep(6);
       } else {
         setCurrentStep(p => Math.min(7, p + 1));
       }
+    } else {
+      setShakeErrors(true);
+      setTimeout(() => setShakeErrors(false), 800);
+      setTimeout(() => {
+        const errorElements = document.querySelectorAll('.animate-shake');
+        if (errorElements.length > 0) {
+          errorElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
     }
   };
   const handlePrevStep = () => {
@@ -770,7 +781,16 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
           <div className={`${currentStep === 7 ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
             {!submitted ? (
               <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
-                <div className="space-y-5">
+                <div className="space-y-5 relative overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentStep}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      className="w-full"
+                    >
                   
                   {/* STEP 0: Identificación Inicial */}
                   {currentStep === 0 && (
@@ -1343,13 +1363,12 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             />
                             <motion.div
                               animate={{ 
-                                scale: formData.area && parseInt(String(formData.area)) > 0 ? 1.15 : 1,
-                                rotate: formData.area && parseInt(String(formData.area)) > 0 ? 90 : 0
+                                scale: formData.area && parseInt(String(formData.area)) > 0 ? 1.15 : 1
                               }}
                               transition={{ type: "spring", stiffness: 200, damping: 12 }}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none z-20"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-20"
                             >
-                              <Maximize className={`w-3.5 h-3.5 transition-colors duration-300 ${formData.area && parseInt(String(formData.area)) > 0 ? 'text-brand-gold-dark-dark' : 'text-stone-600'}`} />
+                              <span className={`font-mono font-bold text-xs transition-colors duration-300 ${formData.area && parseInt(String(formData.area)) > 0 ? 'text-brand-gold-dark-dark' : 'text-stone-400'}`}>m²</span>
                             </motion.div>
                           </div>
                           
@@ -1931,11 +1950,21 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               <option value="Pasaporte">PAS</option>
                               <option value="NIT">N.I.T</option>
                             </select>
-                            <input 
-                              type="text" required value={formData.documentNumber}
-                              onChange={e => setFormData({ ...formData, documentNumber: e.target.value.replace(/\D/g, '') })}
-                              placeholder="Número documento" className="w-full bg-stone-50 border border-stone-200 rounded-xl py-3 px-3 text-xs font-mono"
-                            />
+                            <div className="relative w-full">
+                              <input 
+                                type="text" required value={new Intl.NumberFormat('es-CO').format(Number(formData.documentNumber || 0)).replace(/^0$/, '')}
+                                onChange={e => setFormData({ ...formData, documentNumber: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Número documento" className={`w-full bg-stone-50 border rounded-xl py-3 px-3 text-xs font-mono pr-10 transition-colors ${
+                                  formData.documentNumber.length > 5 ? 'border-emerald-500 bg-emerald-50/30' :
+                                  (shakeErrors && !formData.documentNumber) ? 'border-red-500 bg-red-50 animate-shake' : 'border-stone-200 focus:border-stone-400'
+                                }`}
+                              />
+                              {formData.documentNumber.length > 5 && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 animate-in zoom-in duration-300">
+                                  <Check className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1945,19 +1974,22 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           <div>
                             <label className="text-xs text-stone-600 font-bold block mb-1 flex justify-between">
                               <span>REPETIR DOCUMENTO</span>
-                              {formData.confirmDocumentNumber && (
-                                <span className={`text-[10px] font-bold ${formData.documentNumber === formData.confirmDocumentNumber ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                  {formData.documentNumber === formData.confirmDocumentNumber ? '✓ Coincide' : '✗ Diferente'}
-                                </span>
-                              )}
                             </label>
-                            <input 
-                              type="text" required value={formData.confirmDocumentNumber}
-                              onChange={e => setFormData({ ...formData, confirmDocumentNumber: e.target.value.replace(/\D/g, '') })}
-                              placeholder="Confirma documento" className={`w-full border rounded-xl py-3 px-4 text-xs font-mono focus:outline-none ${
-                                formData.confirmDocumentNumber ? (formData.documentNumber === formData.confirmDocumentNumber ? 'border-emerald-500' : 'border-rose-400') : 'bg-stone-50 border-[stone-200]'
-                              }`}
-                            />
+                            <div className="relative">
+                              <input 
+                                type="text" required value={new Intl.NumberFormat('es-CO').format(Number(formData.confirmDocumentNumber || 0)).replace(/^0$/, '')}
+                                onChange={e => setFormData({ ...formData, confirmDocumentNumber: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Confirma documento" className={`w-full border rounded-xl py-3 px-4 text-xs font-mono focus:outline-none pr-10 transition-colors ${
+                                  formData.confirmDocumentNumber ? (formData.documentNumber === formData.confirmDocumentNumber ? 'border-emerald-500 bg-emerald-50/30' : 'border-rose-400 bg-rose-50/30') : 
+                                  (shakeErrors && !formData.confirmDocumentNumber) ? 'border-red-500 bg-red-50 animate-shake' : 'bg-stone-50 border-stone-200'
+                                }`}
+                              />
+                              {formData.confirmDocumentNumber && formData.documentNumber === formData.confirmDocumentNumber && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 animate-in zoom-in duration-300">
+                                  <Check className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
@@ -2027,7 +2059,11 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="text-xs text-stone-600 font-bold block mb-1">CELULAR (WHATSAPP)</label>
-                          <div className="flex bg-stone-50 border border-stone-200 rounded-xl focus-within:border-stone-400 transition-colors">
+                          <div className={`flex border rounded-xl transition-colors relative ${
+                            formData.phone && isPhoneValid(String(formData.phone || ''), formData.countryCode) ? 'border-emerald-500 bg-emerald-50/30' : 
+                            (shakeErrors && !formData.phone) ? 'border-red-500 bg-red-50 animate-shake' : 
+                            'bg-stone-50 border-stone-200 focus-within:border-stone-400'
+                          }`}>
                             <PhoneCountrySelector 
                               value={formData.countryCode} 
                               onChange={code => setFormData({ ...formData, countryCode: code })} 
@@ -2035,27 +2071,35 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             <input 
                               type="tel" required value={formData.phone} maxLength={ALL_COUNTRIES.find(c => c.code === formData.countryCode)?.maxLength || 10}
                               onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '') })}
-                              placeholder="Celular" className="w-full bg-transparent py-3 px-3 text-xs font-mono font-bold outline-none"
+                              placeholder="Celular" className="w-full bg-transparent py-3 px-3 text-xs font-mono font-bold outline-none pr-10"
                             />
+                            {formData.phone && isPhoneValid(String(formData.phone || ''), formData.countryCode) && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 animate-in zoom-in duration-300">
+                                <Check className="w-4 h-4" />
+                              </div>
+                            )}
                           </div>
                         </div>
                         {formData.phone.length > 0 && (
-                          <div className="animate-fade-in">
+                          <div className="animate-fade-in relative">
                             <label className="text-xs text-stone-600 font-bold block mb-1 flex justify-between">
                               <span>CONFIRMAR CELULAR</span>
-                              {formData.confirmPhone && (
-                                <span className={`text-[10px] font-bold ${formData.phone === formData.confirmPhone ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                  {formData.phone === formData.confirmPhone ? '✓ Coincide' : '✗ Diferente'}
-                                </span>
-                              )}
                             </label>
-                            <input 
-                              type="tel" required value={formData.confirmPhone} maxLength={ALL_COUNTRIES.find(c => c.code === formData.countryCode)?.maxLength || 10}
-                              onChange={e => setFormData({ ...formData, confirmPhone: e.target.value.replace(/\D/g, '') })}
-                              placeholder="Confirma celular" className={`w-full border rounded-xl py-3 px-4 text-xs font-mono focus:outline-none ${
-                                formData.confirmPhone ? (formData.phone === formData.confirmPhone ? 'border-emerald-500' : 'border-rose-400') : 'bg-stone-50 border-stone-200'
-                              }`}
-                            />
+                            <div className="relative">
+                              <input 
+                                type="tel" required value={formData.confirmPhone} maxLength={ALL_COUNTRIES.find(c => c.code === formData.countryCode)?.maxLength || 10}
+                                onChange={e => setFormData({ ...formData, confirmPhone: e.target.value.replace(/\D/g, '') })}
+                                placeholder="Confirma celular" className={`w-full border rounded-xl py-3 px-4 text-xs font-mono focus:outline-none pr-10 transition-colors ${
+                                  formData.confirmPhone ? (formData.phone === formData.confirmPhone ? 'border-emerald-500 bg-emerald-50/30' : 'border-rose-400 bg-rose-50/30') : 
+                                  (shakeErrors && !formData.confirmPhone) ? 'border-red-500 bg-red-50 animate-shake' : 'bg-stone-50 border-stone-200 focus:border-stone-400'
+                                }`}
+                              />
+                              {formData.confirmPhone && formData.phone === formData.confirmPhone && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 animate-in zoom-in duration-300">
+                                  <Check className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2433,6 +2477,8 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                     </div>
                   )}
 
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
 
                 {/* Footer buttons of form */}
