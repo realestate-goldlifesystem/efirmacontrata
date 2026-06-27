@@ -41,11 +41,13 @@ interface RegisterPropertyFormProps {
 }
 
 export default function RegisterPropertyForm({ selectedServiceType, initialCalculatorState, onBack }: RegisterPropertyFormProps) {
-  const [currentStep, setCurrentStep] = useState(1); // TODO: Revertir a 0 tras pruebas
+  const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cedulaInput, setCedulaInput] = useState('');
   const [cedulaStatus, setCedulaStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>('idle');
+  const [validatedCedula, setValidatedCedula] = useState('');
+  const [revalidatingCedula, setRevalidatingCedula] = useState(false);
   const [ownerProperties, setOwnerProperties] = useState<any[]>([]);
   const [activeFlow, setActiveFlow] = useState<'normal' | 'renovacion' | 'cambio_negocio'>('normal');
   const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(null);
@@ -340,6 +342,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     if (currentStep === 5) {
       return String(formData.name || '').trim() !== '' && 
              formData.documentNumber === formData.confirmDocumentNumber &&
+             formData.documentNumber === validatedCedula &&
              isPhoneValid(String(formData.phone || ''), formData.countryCode) && 
              formData.phone === formData.confirmPhone &&
              String(formData.email || '').toLowerCase() === String(formData.confirmEmail || '').toLowerCase();
@@ -842,7 +845,12 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             <div className="mt-3">
                               <button
                                 type="button"
-                                onClick={() => { resetPropertyFields(); setCurrentStep(1); }}
+                                onClick={() => { 
+                                  resetPropertyFields(); 
+                                  setValidatedCedula(cedulaInput);
+                                  setFormData(p => ({ ...p, documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
+                                  setCurrentStep(1); 
+                                }}
                                 className="w-full bg-brand-gold text-stone-900 font-bold py-3 rounded-xl shadow-md hover:bg-brand-gold transition-all"
                               >
                                 Continuar como Nuevo Registro
@@ -862,21 +870,21 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             </div>
                             
                             <div className="grid grid-cols-1 gap-3">
-                              <button type="button" onClick={() => { setActiveFlow('normal'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('normal'); setSelectedPropertyIndex(null); setValidatedCedula(cedulaInput); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-brand-gold-dark transition-colors">Nuevo Inmueble</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Añadir una nueva propiedad al portafolio de este cliente.</p>
                                 </div>
                                 <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-brand-gold-dark" />
                               </button>
-                              <button type="button" onClick={() => { setActiveFlow('renovacion'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('renovacion'); resetPropertyFields(); setSelectedPropertyIndex(null); setValidatedCedula(cedulaInput); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-blue-600 transition-colors">Renovación de Contrato</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Renovar contrato existente sin volver a pedir datos.</p>
                                 </div>
                                 <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-blue-500" />
                               </button>
-                              <button type="button" onClick={() => { setActiveFlow('cambio_negocio'); resetPropertyFields(); setSelectedPropertyIndex(null); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
+                              <button type="button" onClick={() => { setActiveFlow('cambio_negocio'); resetPropertyFields(); setSelectedPropertyIndex(null); setValidatedCedula(cedulaInput); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
                                 <div>
                                   <h5 className="font-bold text-stone-900 group-hover:text-emerald-600 transition-colors">Cambio de Modelo de Negocio</h5>
                                   <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Ej: Pasar de Corretaje a Administración.</p>
@@ -909,7 +917,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             </div>
                           </div>
                           
-                          {ownerProperties.length === 0 ? (
+                  {ownerProperties.length === 0 ? (
                             <div className="p-6 text-center text-stone-500 text-sm bg-stone-50 rounded-2xl border border-stone-200">
                               No hay inmuebles registrados para este propietario en la base de datos.
                             </div>
@@ -919,7 +927,11 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 <button
                                   key={idx}
                                   type="button"
-                                  onClick={() => selectProperty(idx)}
+                                  onClick={() => {
+                                    setValidatedCedula(cedulaInput);
+                                    setFormData(p => ({ ...p, documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
+                                    selectProperty(idx);
+                                  }}
                                   className="p-5 bg-stone-50 border border-stone-200 rounded-2xl hover:border-brand-gold text-left transition-all hover:shadow-md group flex flex-col justify-between"
                                 >
                                   <div>
@@ -1965,6 +1977,50 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               />
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                      {formData.documentNumber === formData.confirmDocumentNumber && formData.documentNumber !== validatedCedula && formData.documentNumber.length > 5 && (
+                        <div className="animate-in slide-in-from-top-2 p-4 bg-amber-50 border border-amber-200 rounded-xl mt-4">
+                          <p className="text-xs text-amber-800 font-bold mb-3">Has modificado el documento de identidad. Debes validarlo nuevamente para continuar.</p>
+                          <button
+                            type="button"
+                            disabled={revalidatingCedula}
+                            onClick={async () => {
+                              setRevalidatingCedula(true);
+                              try {
+                                const response = await fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
+                                  method: 'POST',
+                                  body: JSON.stringify({ accion: 'consultarPropietario', cedula: formData.documentNumber }),
+                                  headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                                });
+                                const data = await response.json();
+                                setValidatedCedula(formData.documentNumber);
+                                
+                                if (data.success && data.propietario) {
+                                  setCedulaInput(formData.documentNumber);
+                                  setCedulaStatus('found');
+                                  setOwnerProperties(data.inmuebles || []);
+                                  setFormData(p => ({ 
+                                    ...p, 
+                                    name: data.propietario.nombre, 
+                                    email: data.propietario.email || '',
+                                    confirmEmail: data.propietario.email || '',
+                                    phone: data.propietario.celular || '',
+                                    confirmPhone: data.propietario.celular || ''
+                                  }));
+                                  setCurrentStep(0);
+                                }
+                              } catch (error) {
+                                console.error("Error validando cédula:", error);
+                              } finally {
+                                setRevalidatingCedula(false);
+                              }
+                            }}
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl shadow-md transition-all text-xs uppercase tracking-wider"
+                          >
+                            {revalidatingCedula ? 'Validando...' : 'Re-Validar Documento'}
+                          </button>
                         </div>
                       )}
 
