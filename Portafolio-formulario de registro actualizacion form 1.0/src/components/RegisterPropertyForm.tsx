@@ -40,7 +40,7 @@ interface RegisterPropertyFormProps {
 }
 
 export default function RegisterPropertyForm({ selectedServiceType, initialCalculatorState, onBack }: RegisterPropertyFormProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1); // TODO: Revertir a 0 tras pruebas
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cedulaInput, setCedulaInput] = useState('');
@@ -59,9 +59,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     localidad: 'Usaquén',
     upz: 'LOS CEDROS',
     barrio: 'CEDRITOS',
+    barrioComercial: '',
     customBarrio: '',
     address: '',
     city: 'Bogotá',
+    country: 'Colombia',
 
     // Step 2: Detalles Físicos y Dimensiones
     propertyType: 'Apartamento', // Apartamento, Apartaestudio, Casa, Local etc.
@@ -106,6 +108,9 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     sectorWayType: '',
     propertyDesign: '',
     additionalDescription: '',
+    allowsPets: 'NO',
+    petTypes: 'Todas las mascotas',
+    customPetType: '',
 
     // Step 4: Datos Propietario (Confirmaciones avanzadas integradas)
     name: '',
@@ -224,6 +229,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     setFormData(prev => ({
       ...prev,
       address: '',
+      country: 'Colombia',
       propertyNumber: '',
       towerLetter: '',
       destination: 'Vivienda',
@@ -239,7 +245,10 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
       priceVenta: '450000000',
       hasPorteriaAndAdmin: 'SI',
       porteriaBuildingName: '',
-      porteriaAdminEmail: ''
+      porteriaAdminEmail: '',
+      allowsPets: 'NO',
+      petTypes: 'Todas las mascotas',
+      customPetType: ''
     }));
   };
 
@@ -407,6 +416,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "Selecciona la localidad del inmueble": formData.localidad,
         "Selecciona la UPZ  de tu inmueble": formData.upz,
         "Escriba el barrio del inmueble": formData.barrio === 'Otro' ? formData.customBarrio : formData.barrio,
+        "BARRIO COMERCIAL": formData.barrioComercial || '',
         "Ingrese la Dirección del inmueble": formData.address,
         "Ingrese la Ciudad del inmueble": formData.city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase(),
         "Selecciona el tipo de inmueble": formData.propertyType,
@@ -448,6 +458,8 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
         "¿En que tipo de via se encuentra el inmueble?": formData.sectorWayType,
         "¿Cual es el tipo de diseño que tiene el inmueble?": formData.propertyDesign,
         "Otro Externo": formData.otherExternal,
+        "¿Se permite mascota?": formData.allowsPets,
+        "Que tipo de mascotas": formData.allowsPets === 'SI' ? (formData.petTypes === 'Editar' ? formData.customPetType : formData.petTypes) : '',
         "INGRESE A CONTINUACIÓN UNA DESCRIPCIÓN ADICIONAL DEL INMUEBLE": formData.additionalDescription,
         "¿El inmueble dispone de portería y administración para realizar un acta de notificación de promoción inmobiliaria he ingreso?": formData.hasPorteriaAndAdmin,
         "NOMBRE DEL INMUEBLE/ADMINISTRACION": formData.hasPorteriaAndAdmin === 'SI' ? formData.porteriaBuildingName.toUpperCase() : '',
@@ -601,7 +613,8 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* LEFT COLUMN: Dynamic Interactive Cost and Yield Calculator Sheet */}
-          <div className="lg:col-span-4 bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 flex flex-col justify-between border border-stone-200 shadow-2xl shadow-brand-gold/5 relative overflow-hidden text-left group transition-all">
+          {currentStep === 6 && (
+            <div className="lg:col-span-4 bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 flex flex-col justify-between border border-stone-200 shadow-2xl shadow-brand-gold/5 relative overflow-hidden text-left group transition-all">
             {/* Glossy top highlight */}
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-brand-gold to-transparent opacity-50" />
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-brand-gold/10 to-transparent opacity-30" />
@@ -747,9 +760,10 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
               <span>BOGOTÁ</span>
             </div>
           </div>
+          )}
 
           {/* RIGHT COLUMN: The 6-Step Registration Wizard Form */}
-          <div className="lg:col-span-8 bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left">
+          <div className={`${currentStep === 6 ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
             {!submitted ? (
               <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-5">
@@ -1873,7 +1887,56 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         </div>
                       </div>
 
-                      <div className="pt-4 border-t border-stone-100">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-stone-100 mt-4">
+                        <div>
+                          <label className="text-[11px] text-stone-500 font-bold block mb-1">¿SE PERMITEN MASCOTAS?</label>
+                          <div className="flex gap-2">
+                            {["SI", "NO"].map(opt => (
+                              <button
+                                key={opt} type="button"
+                                onClick={() => setFormData({ ...formData, allowsPets: opt })}
+                                className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                                  formData.allowsPets === opt 
+                                    ? 'bg-stone-900 text-brand-gold-dark border-stone-900' 
+                                    : 'bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {formData.allowsPets === 'SI' && (
+                          <div className="animate-fade-in">
+                            <label className="text-[11px] text-stone-500 font-bold block mb-1">¿QUÉ TIPO DE MASCOTAS?</label>
+                            <select 
+                              value={formData.petTypes} 
+                              onChange={e => setFormData({ ...formData, petTypes: e.target.value })} 
+                              className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs mb-2"
+                            >
+                              <option value="Todas las mascotas">Todas las mascotas</option>
+                              <option value="Solo perros">Solo perros</option>
+                              <option value="Solo gatos">Solo gatos</option>
+                              <option value="Solo perros y gatos">Solo perros y gatos</option>
+                              <option value="Editar">Editar (Especificar otra)</option>
+                            </select>
+                            
+                            {formData.petTypes === 'Editar' && (
+                              <input 
+                                type="text" 
+                                value={formData.customPetType}
+                                onChange={e => setFormData({ ...formData, customPetType: e.target.value })}
+                                placeholder="Ej. Perros pequeños, aves..."
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs animate-fade-in"
+                                autoFocus
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pt-4 border-t border-stone-100 mt-4">
                         <label className="text-xs text-stone-600 font-bold block mb-1">OTROS COMENTARIOS O DESCRIPCIÓN ADICIONAL</label>
                         <textarea 
                           rows={3} value={formData.additionalDescription}
