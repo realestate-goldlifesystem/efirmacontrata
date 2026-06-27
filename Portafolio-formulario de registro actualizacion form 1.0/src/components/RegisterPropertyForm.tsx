@@ -14,6 +14,7 @@ import { numberToWordsSpanish } from '../lib/numberToWords';
 import CountryMap from './CountryMap';
 import FeaturesGridSelector from './FeaturesGridSelector';
 import PhoneCountrySelector, { ALL_COUNTRIES } from './PhoneCountrySelector';
+import { PortfolioLocationStep } from './PortfolioLocationStep';
 
 const UPZ_BARRIOS: Record<string, string[]> = {
   'LOS CEDROS': ["CEDRITOS", "LOS CEDROS", "BELMIRA", "EL CONTADOR", "LISBOA", "ACACIAS", "ANTIGUA", "CEDRO GOLF"],
@@ -1279,71 +1280,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <label className="text-xs text-stone-600 font-bold block mb-1">LOCALIDAD</label>
-                              <select 
-                                value={formData.localidad}
-                                onChange={e => setFormData({ ...formData, localidad: e.target.value })}
-                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                              >
-                                <option value="Usaquén">Usaquén</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-xs text-stone-600 font-bold block mb-1">UPZ DE USAQUÉN</label>
-                              <select 
-                                value={formData.upz}
-                                onChange={e => setFormData({ ...formData, upz: e.target.value, barrio: UPZ_BARRIOS[e.target.value][0] })}
-                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                              >
-                                {Object.keys(UPZ_BARRIOS).map(u => <option key={u} value={u}>{u}</option>)}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-xs text-stone-600 font-bold block mb-1">BARRIO</label>
-                              <select 
-                                value={formData.barrio}
-                                onChange={e => setFormData({ ...formData, barrio: e.target.value })}
-                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                              >
-                                {UPZ_BARRIOS[formData.upz]?.map(b => <option key={b} value={b}>{b}</option>)}
-                                <option value="Otro">Otro (Escribir abajo)</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          {formData.barrio === 'Otro' && (
-                            <div className="animate-fade-in">
-                              <label className="text-xs text-stone-600 font-bold block mb-1">ESCRIBA EL BARRIO DEL INMUEBLE</label>
-                              <input 
-                                type="text" required value={formData.customBarrio}
-                                onChange={e => setFormData({ ...formData, customBarrio: e.target.value })}
-                                placeholder="Escribe el nombre del barrio"
-                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs font-mono"
-                              />
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-xs text-stone-600 font-bold block mb-1">DIRECCIÓN DEL INMUEBLE</label>
-                              <input 
-                                type="text" required value={formData.address}
-                                onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                placeholder="Calle 123 N° 45-67 Apto 101"
-                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                              />
-                            </div>
-                            <div>
-                              <label className="text-xs text-stone-600 font-bold block mb-1">CIUDAD DEL INMUEBLE</label>
-                              <input 
-                                type="text" required value={formData.city}
-                                onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
-                              />
-                            </div>
-                          </div>
+                          <PortfolioLocationStep formData={formData} setFormData={setFormData} />
                         </>
                       )}
                     </div>
