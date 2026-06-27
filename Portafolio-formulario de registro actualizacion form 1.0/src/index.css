@@ -22,3 +22,24 @@
 .animate-shake {
   animation: shake 0.4s ease-in-out;
 }
+
+/* Feedback Visual Global - Inputs Completados */
+#registro-form input[data-filled="true"]:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(:focus),
+#registro-form select[data-filled="true"]:not(:focus),
+#registro-form textarea[data-filled="true"]:not(:focus) {
+  border-color: #34d399 !important; /* emerald-400 */
+  background-color: rgba(236, 253, 245, 0.4) !important; /* emerald-50 slightly transparent */
+  box-shadow: 0 0 0 1px #34d399 !important;
+  color: #1c1917 !important;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Feedback Visual Global - Focus */
+#registro-form input:focus, 
+#registro-form select:focus, 
+#registro-form textarea:focus {
+  border-color: #D4AF37 !important; /* brand-gold-light */
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25) !important;
+  outline: none !important;
+  transition: all 0.2s ease-in-out;
+}

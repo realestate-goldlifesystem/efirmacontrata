@@ -179,6 +179,45 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
 
+  // UI/UX: Visual feedback interactivo para campos llenos
+  useEffect(() => {
+    const handleInput = (e: Event) => {
+      const target = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+      if (!target || typeof target.matches !== 'function' || !target.matches('#registro-form input, #registro-form select, #registro-form textarea')) return;
+      if (target.type === 'checkbox' || target.type === 'radio' || target.type === 'file') return;
+      if (target.value && target.value.trim() !== '') {
+        target.setAttribute('data-filled', 'true');
+      } else {
+        target.removeAttribute('data-filled');
+      }
+    };
+    
+    document.addEventListener('input', handleInput);
+    document.addEventListener('change', handleInput);
+    return () => {
+      document.removeEventListener('input', handleInput);
+      document.removeEventListener('change', handleInput);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Forzar re-evaluación al cambiar de paso (por nuevos componentes)
+    const timeout = setTimeout(() => {
+      document.querySelectorAll('#registro-form input, #registro-form select, #registro-form textarea').forEach(el => {
+        const target = el as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+        if (target.type === 'checkbox' || target.type === 'radio' || target.type === 'file') return;
+        if (target.value && target.value.trim() !== '') {
+          target.setAttribute('data-filled', 'true');
+        } else {
+          target.removeAttribute('data-filled');
+        }
+      });
+    }, 100);
+    return () => clearTimeout(timeout);
+  }, [currentStep, formData.serviceType, ownerProperties]);
+
+
+
   const selectProperty = (index: number) => {
     setSelectedPropertyIndex(index);
     const prop = ownerProperties[index];
@@ -780,7 +819,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
           {/* RIGHT COLUMN: The 6-Step Registration Wizard Form */}
           <div className={`${currentStep === 7 ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
             {!submitted ? (
-              <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
+              <form id="registro-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-5 relative overflow-hidden">
                   <AnimatePresence mode="wait">
                     <motion.div
