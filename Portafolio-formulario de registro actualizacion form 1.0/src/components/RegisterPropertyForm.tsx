@@ -810,14 +810,14 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           <label className="text-xs text-stone-600 font-bold block mb-2">INGRESE LA CÉDULA DEL PROPIETARIO</label>
                           <div className="flex gap-3">
                             <input 
-                              type="number" 
-                              value={cedulaInput}
+                              type="text" 
+                              value={new Intl.NumberFormat('es-CO').format(Number(cedulaInput || 0)).replace(/^0$/, '')}
                               onChange={(e) => {
-                                setCedulaInput(e.target.value);
+                                setCedulaInput(e.target.value.replace(/\D/g, ''));
                                 setCedulaStatus('idle');
                               }}
                               placeholder="Ej. 1020304050"
-                              className="flex-1 bg-white border border-stone-200 rounded-xl p-3 text-sm font-bold shadow-sm focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all"
+                              className="flex-1 bg-white border border-stone-200 rounded-xl p-3 text-sm font-mono font-bold shadow-sm focus:border-brand-gold focus:ring-1 focus:ring-brand-gold transition-all outline-none"
                             />
                             <button
                               type="button"
