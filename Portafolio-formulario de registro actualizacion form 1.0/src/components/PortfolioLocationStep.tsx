@@ -139,8 +139,8 @@ export const PortfolioLocationStep: React.FC<LocationStepProps> = ({ formData, s
       const types = comp.types;
       if (types.includes("route")) googleStreet = comp.long_name;
       if (types.includes("street_number")) googleNumber = comp.long_name;
-      if (types.includes("neighborhood") || types.includes("sublocality_level_1")) googleNeighborhood = comp.long_name;
-      if (types.includes("sublocality") || types.includes("political")) googleLocality = comp.long_name;
+      if (types.includes("neighborhood") || types.includes("sublocality_level_2")) googleNeighborhood = comp.long_name;
+      if (types.includes("sublocality_level_1") || types.includes("sublocality")) googleLocality = comp.long_name;
       if (types.includes("locality")) googleCity = comp.long_name;
       if (types.includes("administrative_area_level_1")) googleDepartment = comp.long_name;
     });
