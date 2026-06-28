@@ -65,9 +65,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(null);
   const [reutilizarMultimedia, setReutilizarMultimedia] = useState<'SI' | 'NO'>('SI');
 
-  // Form State containing exact variables requested by the JSON Form
-  const [formData, setFormData] = useState(() => {
-    const defaultData = {
+const getInitialFormData = (selectedServiceType: string | null | undefined, initialCalculatorState: any) => ({
     gridAnswers: {} as Record<string, string>,
     // Step 1: Destino y Ubicación
     registrationDate: new Date().toISOString().split('T')[0],
@@ -174,7 +172,12 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     porteriaAuthType: 'GENERAL', // GENERAL, ADMINISTRACION
     porteriaAuthAgentGeneral: 'El cual recoge las llaves en portería y después de la visita las deja nuevamente allí',
     porteriaAuthAgentAdmin: 'Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí'
-    };
+});
+
+  // Form State containing exact variables requested by the JSON Form
+  const [formData, setFormData] = useState(() => {
+    const defaultData = getInitialFormData(selectedServiceType, initialCalculatorState);
+
 
     try {
       const savedData = localStorage.getItem('registerPropertyFormData');
@@ -633,7 +636,9 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 
 Queremos confirmarte que el registro inicial de tu inmueble en ${formData.address} (${formData.barrio}, ${formData.city}) ha sido procesado con éxito en nuestro sistema bajo el modelo de *Gold ${formData.serviceType.toUpperCase()}*.
 
-En breve, un consultor especializado se pondrá en contacto contigo para avanzar con la firma del acuerdo oficial y los siguientes pasos.
+En este momento acabamos de enviarte a tu correo electrónico (${formData.email}) el acuerdo oficial (Acta) para que puedas revisarlo y firmarlo de forma digital. Por favor revisa tu bandeja de entrada o la carpeta de spam.
+
+Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización de tu propiedad.
 
 ¡Gracias por confiar en nosotros! 🤝`;
 
@@ -2855,7 +2860,20 @@ En breve, un consultor especializado se pondrá en contacto contigo para avanzar
 
                   <button
                     onClick={() => {
-                      window.location.reload();
+                      setFormData(getInitialFormData(selectedServiceType, initialCalculatorState));
+                      setCurrentStep(0);
+                      setSubmitted(false);
+                      setCedulaInput('');
+                      setCedulaStatus('idle');
+                      setValidatedCedula('');
+                      setOwnerProperties([]);
+                      setActiveFlow('normal');
+                      setSelectedPropertyIndex(null);
+                      setReutilizarMultimedia('SI');
+                      try {
+                        localStorage.removeItem('registerPropertyFormData');
+                        localStorage.removeItem('registerPropertyCurrentStep');
+                      } catch (e) {}
                     }}
                     className="block text-xs text-stone-500 hover:text-stone-900 underline mx-auto cursor-pointer"
                   >
