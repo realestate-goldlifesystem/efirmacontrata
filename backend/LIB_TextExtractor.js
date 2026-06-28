@@ -319,6 +319,12 @@ function limpiarTexto(texto, numGarajes, tieneDeposito, codigoRegistro, precioVe
         // Dormitorios
         { pattern: /Dormitorio principal:/gi, replacement: 'Dormitorio principal:' },
         { pattern: /Dormitorio secundario:/gi, replacement: '\n\nDormitorio secundario:' },
+        { pattern: /Dormitorio terciario:/gi, replacement: '\n\nDormitorio terciario:' },
+        { pattern: /Dormitorio Cuaternario:/gi, replacement: '\n\nDormitorio Cuaternario:' },
+        { pattern: /Dormitorio Quinario:/gi, replacement: '\n\nDormitorio Quinario:' },
+
+        // Mascotas (Limpiando el "3 de 4" heredado de forms)
+        { pattern: /Mascotas:\s*(?:3 de 4)?/gi, replacement: '\n\n🐾 Mascotas:' },
 
         // Cierre
         { pattern: /todo está a tu alcance/gi, replacement: '\n\ntodo está a tu alcance' },
