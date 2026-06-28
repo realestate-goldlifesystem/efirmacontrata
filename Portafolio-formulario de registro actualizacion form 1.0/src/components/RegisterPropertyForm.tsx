@@ -43,7 +43,14 @@ interface RegisterPropertyFormProps {
 }
 
 export default function RegisterPropertyForm({ selectedServiceType, initialCalculatorState, onBack }: RegisterPropertyFormProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    try {
+      const savedStep = localStorage.getItem('registerPropertyCurrentStep');
+      return savedStep ? parseInt(savedStep, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cedulaInput, setCedulaInput] = useState('');
@@ -59,7 +66,8 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const [reutilizarMultimedia, setReutilizarMultimedia] = useState<'SI' | 'NO'>('SI');
 
   // Form State containing exact variables requested by the JSON Form
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => {
+    const defaultData = {
     gridAnswers: {} as Record<string, string>,
     // Step 1: Destino y Ubicación
     registrationDate: new Date().toISOString().split('T')[0],
@@ -166,7 +174,29 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     porteriaAuthType: 'GENERAL', // GENERAL, ADMINISTRACION
     porteriaAuthAgentGeneral: 'El cual recoge las llaves en portería y después de la visita las deja nuevamente allí',
     porteriaAuthAgentAdmin: 'Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí'
+    };
+
+    try {
+      const savedData = localStorage.getItem('registerPropertyFormData');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        return { ...defaultData, ...parsed };
+      }
+    } catch (e) {
+      console.error("Error cargando el formulario guardado", e);
+    }
+    return defaultData;
   });
+
+  // Guardar automáticamente el progreso
+  useEffect(() => {
+    try {
+      localStorage.setItem('registerPropertyFormData', JSON.stringify(formData));
+      localStorage.setItem('registerPropertyCurrentStep', currentStep.toString());
+    } catch (e) {
+      console.error("No se pudo guardar el progreso localmente", e);
+    }
+  }, [formData, currentStep]);
 
   // Sync prop changes and initial values
   useEffect(() => {
@@ -578,6 +608,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
       const data = await response.json();
       if (data.success) {
         setSubmitted(true);
+        // Limpiar el localStorage al terminar con éxito
+        try {
+          localStorage.removeItem('registerPropertyFormData');
+          localStorage.removeItem('registerPropertyCurrentStep');
+        } catch (e) {}
       } else {
         alert("Error al registrar: " + data.message);
       }
@@ -2382,17 +2417,25 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
 
                       {/* VIP Card preview rendering dynamically */}
                       {String(formData.name || '').trim() !== '' && (
-                        <div className="p-4 bg-stone-900 border border-brand-gold/20 rounded-xl text-brand-gold-dark font-mono space-y-2 text-xs shadow-lg relative overflow-hidden group hover:border-brand-gold/50 transition-colors">
-                          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                            <Star className="w-16 h-16" />
+                        <div className="p-5 bg-[#1c1917] border border-[#d4af37] rounded-xl shadow-lg relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Star className="w-16 h-16 text-[#d4af37]" />
                           </div>
-                          <strong className="text-stone-900 font-sans tracking-widest text-[10px] bg-brand-gold px-2 py-0.5 rounded-full inline-block mb-1">PRE-REGISTRO CLIENTE VIP</strong>
-                          <div>CLIENTE: <span className="text-white font-sans text-sm block mt-0.5">{String(formData.name || '').toUpperCase()}</span></div>
-                          <div className="flex justify-between border-t border-stone-800 pt-2 mt-2 text-[10px] text-stone-400">
-                            <span>{formData.documentType} {formData.documentNumber}</span>
-                            <span className="text-emerald-400 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> VERIFICADO
-                            </span>
+                          <div className="relative z-10 flex flex-col space-y-3">
+                            <div>
+                              <span className="text-[#1c1917] font-black tracking-widest text-[10px] bg-[#d4af37] px-2.5 py-1 rounded-sm inline-block mb-2 uppercase">Pre-Registro Cliente VIP</span>
+                              <div className="text-[10px] text-[#bda043] font-bold mb-0.5 tracking-wider">CLIENTE TITULAR:</div>
+                              <div className="text-white font-bold text-lg uppercase tracking-wide">{String(formData.name).trim()}</div>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-stone-800 pt-3 mt-1 text-xs">
+                              <div className="text-stone-300">
+                                <span className="text-stone-500 mr-1 text-[10px]">DOC:</span>
+                                <span className="font-mono font-medium">{formData.documentType} {formData.documentNumber}</span>
+                              </div>
+                              <div className="text-emerald-400 flex items-center gap-1.5 font-bold text-[10px] tracking-widest">
+                                <CheckCircle2 className="w-4 h-4" /> <span>VERIFICADO</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
