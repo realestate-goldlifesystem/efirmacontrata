@@ -19,7 +19,13 @@ import ScheduleVisitForm from './components/ScheduleVisitForm';
 
 export default function App() {
   const [selectedServiceType, setSelectedServiceType] = useState<'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta' | null>(null);
-  const [showRegisterPage, setShowRegisterPage] = useState(false);
+  const [showRegisterPage, setShowRegisterPage] = useState(() => {
+    try {
+      return !!localStorage.getItem('registerPropertyCurrentStep');
+    } catch {
+      return false;
+    }
+  });
   const [initialCalculatorState, setInitialCalculatorState] = useState<{
     rentPrice: number;
     isMultiProperty: boolean;
@@ -30,7 +36,13 @@ export default function App() {
 
   const [showRolesModal, setShowRolesModal] = useState(false);
   const [showScheduleVisit, setShowScheduleVisit] = useState(false);
-  const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(false); 
+  const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(() => {
+    try {
+      return !!localStorage.getItem('registerPropertyCurrentStep');
+    } catch {
+      return false;
+    }
+  }); 
 
   const scrollToSection = (sectionId: string) => {
     if (showRegisterPage) {
