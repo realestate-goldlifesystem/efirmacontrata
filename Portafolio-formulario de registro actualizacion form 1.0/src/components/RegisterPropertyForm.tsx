@@ -1399,102 +1399,6 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
 
                           <PortfolioLocationStep formData={formData} setFormData={setFormData} />
 
-                          {/* Act of notification choices MOVED HERE FROM STEP 7 */}
-                          <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3 mt-4 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-3 opacity-10">
-                              <Key className="w-16 h-16" />
-                            </div>
-                            <div className="flex items-center gap-2 mb-2 relative z-10">
-                              <Key className="w-4 h-4 text-brand-gold-dark" />
-                              <h5 className="font-bold text-sm text-stone-900">Control de Acceso y Llaves</h5>
-                            </div>
-                            
-                            <div className="relative z-10">
-                              <label className="text-[10px] text-stone-600 font-bold block mb-1">¿EL CONJUNTO/EDIFICIO DISPONE DE PORTERÍA?</label>
-                              <select 
-                                value={formData.hasPorteriaAndAdmin} 
-                                onChange={e => setFormData({ ...formData, hasPorteriaAndAdmin: e.target.value })}
-                                className="bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer w-full transition-colors outline-none"
-                              >
-                                <option value="SI">SÍ, dispone de portería para autorizaciones</option>
-                                <option value="NO">NO, ingreso independiente/libre</option>
-                              </select>
-                            </div>
-
-                            <AnimatePresence>
-                              {formData.hasPorteriaAndAdmin === 'SI' && (
-                                <motion.div 
-                                  initial={{ height: 0, opacity: 0 }} 
-                                  animate={{ height: 'auto', opacity: 1 }} 
-                                  exit={{ height: 0, opacity: 0 }}
-                                  className="space-y-4 pt-3 mt-3 border-t border-stone-200 relative z-10 overflow-hidden"
-                                >
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                      <label className="text-[10px] text-stone-600 font-bold block mb-1">NOMBRE DE COPROPIEDAD / CONJUNTO</label>
-                                      <input 
-                                        type="text" required value={formData.porteriaBuildingName}
-                                        onChange={e => setFormData({ ...formData, porteriaBuildingName: e.target.value })}
-                                        placeholder="Ej: CONJUNTO ALTOS DEL MORAL" className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs outline-none transition-colors"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-[10px] text-stone-600 font-bold block mb-1">¿ENVIAR ACTA A LA ADMINISTRACIÓN?</label>
-                                      <select 
-                                        value={formData.porteriaAutoSendEmail} 
-                                        onChange={e => setFormData({ ...formData, porteriaAutoSendEmail: e.target.value })}
-                                        className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer outline-none transition-colors"
-                                      >
-                                        <option value="SI">SÍ, enviar acta también a la admón</option>
-                                        <option value="NO">NO, solo enviar a mi correo</option>
-                                      </select>
-                                    </div>
-                                  </div>
-
-                                  {formData.porteriaAutoSendEmail === 'SI' && (
-                                    <div className="animate-fade-in">
-                                      <label className="text-[10px] text-stone-600 font-bold block mb-1">CORREO DE LA ADMINISTRACIÓN</label>
-                                      <input 
-                                        type="email" required value={formData.porteriaAdminEmail}
-                                        onChange={e => setFormData({ ...formData, porteriaAdminEmail: e.target.value })}
-                                        placeholder="admin@edificio.com" className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs outline-none transition-colors"
-                                      />
-                                    </div>
-                                  )}
-
-                                  <div>
-                                    {(formData.serviceType === 'administracion' || formData.serviceType === 'admi-venta') ? (
-                                      <div className="animate-fade-in">
-                                        <label className="text-[10px] text-stone-500 font-bold block mb-1">AUTORIZACIÓN SIENDO EL NUEVO ADMINISTRADOR</label>
-                                        <select 
-                                          value={formData.porteriaAuthAgentAdmin} 
-                                          onChange={e => setFormData({ ...formData, porteriaAuthAgentAdmin: e.target.value })}
-                                          className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer outline-none transition-colors"
-                                        >
-                                          <option value="Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Administrador recoge y entrega</option>
-                                          <option value="Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves">Administrador con copias</option>
-                                          <option value="Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados">Administrador con acompañamiento</option>
-                                        </select>
-                                      </div>
-                                    ) : (
-                                      <div className="animate-fade-in">
-                                        <label className="text-[10px] text-stone-500 font-bold block mb-1">AUTORIZACIÓN DE LLAVES CON AGENTE (GENERAL)</label>
-                                        <select 
-                                          value={formData.porteriaAuthAgentGeneral} 
-                                          onChange={e => setFormData({ ...formData, porteriaAuthAgentGeneral: e.target.value })}
-                                          className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer outline-none transition-colors"
-                                        >
-                                          <option value="El cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Recoge llaves en portería y devuelve</option>
-                                          <option value="Disponiendo de copia de las llaves">Dispone de copia de llaves</option>
-                                          <option value="Con acompañamiento de mi parte en las visitas de interesados">Acompañamiento personal visitas</option>
-                                        </select>
-                                      </div>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
                         </>
                       )}
                     </div>
@@ -2598,6 +2502,102 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                         )}
                       </div>
 
+                          {/* Act of notification choices MOVED HERE FROM STEP 7 */}
+                          <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3 mt-4 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-3 opacity-10">
+                              <Key className="w-16 h-16" />
+                            </div>
+                            <div className="flex items-center gap-2 mb-2 relative z-10">
+                              <Key className="w-4 h-4 text-brand-gold-dark" />
+                              <h5 className="font-bold text-sm text-stone-900">Control de Acceso y Llaves</h5>
+                            </div>
+                            
+                            <div className="relative z-10">
+                              <label className="text-[10px] text-stone-600 font-bold block mb-1">¿EL CONJUNTO/EDIFICIO DISPONE DE PORTERÍA?</label>
+                              <select 
+                                value={formData.hasPorteriaAndAdmin} 
+                                onChange={e => setFormData({ ...formData, hasPorteriaAndAdmin: e.target.value })}
+                                className="bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer w-full transition-colors outline-none"
+                              >
+                                <option value="SI">SÍ, dispone de portería para autorizaciones</option>
+                                <option value="NO">NO, ingreso independiente/libre</option>
+                              </select>
+                            </div>
+
+                            <AnimatePresence>
+                              {formData.hasPorteriaAndAdmin === 'SI' && (
+                                <motion.div 
+                                  initial={{ height: 0, opacity: 0 }} 
+                                  animate={{ height: 'auto', opacity: 1 }} 
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="space-y-4 pt-3 mt-3 border-t border-stone-200 relative z-10 overflow-hidden"
+                                >
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-[10px] text-stone-600 font-bold block mb-1">NOMBRE DE COPROPIEDAD / CONJUNTO</label>
+                                      <input 
+                                        type="text" required value={formData.porteriaBuildingName}
+                                        onChange={e => setFormData({ ...formData, porteriaBuildingName: e.target.value })}
+                                        placeholder="Ej: CONJUNTO ALTOS DEL MORAL" className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs outline-none transition-colors"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] text-stone-600 font-bold block mb-1">¿ENVIAR ACTA A LA ADMINISTRACIÓN?</label>
+                                      <select 
+                                        value={formData.porteriaAutoSendEmail} 
+                                        onChange={e => setFormData({ ...formData, porteriaAutoSendEmail: e.target.value })}
+                                        className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer outline-none transition-colors"
+                                      >
+                                        <option value="SI">SÍ, enviar acta también a la admón</option>
+                                        <option value="NO">NO, solo enviar a mi correo</option>
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  {formData.porteriaAutoSendEmail === 'SI' && (
+                                    <div className="animate-fade-in">
+                                      <label className="text-[10px] text-stone-600 font-bold block mb-1">CORREO DE LA ADMINISTRACIÓN</label>
+                                      <input 
+                                        type="email" required value={formData.porteriaAdminEmail}
+                                        onChange={e => setFormData({ ...formData, porteriaAdminEmail: e.target.value })}
+                                        placeholder="admin@edificio.com" className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs outline-none transition-colors"
+                                      />
+                                    </div>
+                                  )}
+
+                                  <div>
+                                    {(formData.serviceType === 'administracion' || formData.serviceType === 'admi-venta') ? (
+                                      <div className="animate-fade-in">
+                                        <label className="text-[10px] text-stone-500 font-bold block mb-1">AUTORIZACIÓN SIENDO EL NUEVO ADMINISTRADOR</label>
+                                        <select 
+                                          value={formData.porteriaAuthAgentAdmin} 
+                                          onChange={e => setFormData({ ...formData, porteriaAuthAgentAdmin: e.target.value })}
+                                          className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer outline-none transition-colors"
+                                        >
+                                          <option value="Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Administrador recoge y entrega</option>
+                                          <option value="Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves">Administrador con copias</option>
+                                          <option value="Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados">Administrador con acompañamiento</option>
+                                        </select>
+                                      </div>
+                                    ) : (
+                                      <div className="animate-fade-in">
+                                        <label className="text-[10px] text-stone-500 font-bold block mb-1">AUTORIZACIÓN DE LLAVES CON AGENTE (GENERAL)</label>
+                                        <select 
+                                          value={formData.porteriaAuthAgentGeneral} 
+                                          onChange={e => setFormData({ ...formData, porteriaAuthAgentGeneral: e.target.value })}
+                                          className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer outline-none transition-colors"
+                                        >
+                                          <option value="El cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Recoge llaves en portería y devuelve</option>
+                                          <option value="Disponiendo de copia de las llaves">Dispone de copia de llaves</option>
+                                          <option value="Con acompañamiento de mi parte en las visitas de interesados">Acompañamiento personal visitas</option>
+                                        </select>
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                       {/* Checkbox Aceptación */}
                       <div className="p-4 bg-stone-900 rounded-2xl border border-stone-800 hover:border-brand-gold/50 transition-colors">
                         <label className="flex items-center space-x-3 cursor-pointer select-none">
