@@ -403,16 +403,19 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     }
     if (currentStep === 2) {
       if (String(formData.area || '').trim() === '' || String(formData.propertyAge || '').trim() === '') return false;
+      return true;
+    }
+    if (currentStep === 3) {
+      if (String(formData.propertyNumber || '').trim() === '') return false;
+      
       const count = parseInt(String(formData.roomsCount)) || 1;
       if (count >= 1 && !formData.bedPrincipal) return false;
       if (count >= 2 && !formData.bedSecondary) return false;
       if (count >= 3 && !formData.bedTertiary) return false;
       if (count >= 4 && !formData.bedQuaternary) return false;
       if (count >= 5 && !formData.bedQuinary) return false;
+      
       return true;
-    }
-    if (currentStep === 3) {
-      return String(formData.propertyNumber || '').trim() !== '';
     }
     if (currentStep === 4) {
       return true; // Any required fields on step 4? No
