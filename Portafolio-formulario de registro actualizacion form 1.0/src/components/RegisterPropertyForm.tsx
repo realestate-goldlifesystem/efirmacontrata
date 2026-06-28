@@ -626,20 +626,18 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   };
 
   const getWhatsAppSubmitLink = () => {
-    const textMsg = `Hola Gold Life Real Estate, completé el registro inteligente de mi propiedad:
+    const prefix = ALL_COUNTRIES.find(c => c.code === formData.countryCode)?.prefix?.replace('+', '') || '57';
+    const clientPhone = `${prefix}${formData.phone}`;
+    
+    const textMsg = `Hola ${formData.name.split(' ')[0]}, somos Gold Life Real Estate. 🏢✨
 
-👤 Propietario: ${formData.name}
-🪪 ID: ${formData.documentType} N° ${formData.documentNumber} (Expedida en ${formData.documentCityOfExpedition})
-📞 Celular: ${formData.phone}
-✉️ Correo: ${formData.email}
-📍 Dirección: ${formData.address}, ${formData.city} (UPZ: ${formData.upz}, Barrio: ${formData.barrio})
-🏡 Tipo: ${formData.propertyType} (${formData.area}m², ${formData.roomsCount} Hab, ${formData.bathroomsCount} Baños, Estrato ${formData.estrato})
-💰 Avalúo: ${formData.serviceType === 'venta' ? FORMAT_COP(sellPriceVal) : FORMAT_COP(priceGeneralVal)}
-⚙️ Modelo Negocio: ${formData.serviceType.toUpperCase()}
-🔒 Garantía sin Embargos: Sí, Confirmado.
+Queremos confirmarte que el registro inicial de tu inmueble en ${formData.address} (${formData.barrio}, ${formData.city}) ha sido procesado con éxito en nuestro sistema bajo el modelo de *Gold ${formData.serviceType.toUpperCase()}*.
 
-Por favor, revisemos este registro para la firma del acuerdo oficial.`;
-    return `https://wa.me/573177623878?text=${encodeURIComponent(textMsg)}`;
+En breve, un consultor especializado se pondrá en contacto contigo para avanzar con la firma del acuerdo oficial y los siguientes pasos.
+
+¡Gracias por confiar en nosotros! 🤝`;
+
+    return `https://wa.me/${clientPhone}?text=${encodeURIComponent(textMsg)}`;
   };
 
   return (
@@ -2838,10 +2836,10 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                   <span className="text-[10px] uppercase font-mono tracking-widest text-[#8A631F] font-bold block">Gold Life Real Estate</span>
                   <h4 className="text-xl font-black text-stone-900">¡Registro Completado!</h4>
                   <p className="text-stone-605 text-xs font-light leading-relaxed">
-                    Excelente, <strong>{formData.name}</strong>. Hemos procesado e ingresado los datos específicos para <strong>{formData.address}, {formData.city}</strong> con éxito.
+                    Excelente, el registro de <strong>{formData.address}, {formData.city}</strong> a nombre de <strong>{formData.name}</strong> ha sido ingresado al sistema.
                   </p>
                   <p className="text-stone-605 text-xs font-light leading-relaxed">
-                    Despacha el extracto resumen oficial por WhatsApp para agendar tu consultoría de inmediato.
+                    Envíale ahora mismo la confirmación oficial a tu cliente por WhatsApp.
                   </p>
                 </div>
 
@@ -2852,7 +2850,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                     className="inline-flex w-full bg-brand-gold hover:bg-brand-gold text-stone-950 font-bold py-3.5 px-6 rounded-xl shadow-md cursor-pointer items-center justify-center space-x-1.5 text-xs transition-all active:scale-95 font-sans"
                   >
                     <Send className="w-4 h-4 text-stone-950" />
-                    <span>Despachar por WhatsApp</span>
+                    <span>Enviar Confirmación al Cliente</span>
                   </a>
 
                   <button
