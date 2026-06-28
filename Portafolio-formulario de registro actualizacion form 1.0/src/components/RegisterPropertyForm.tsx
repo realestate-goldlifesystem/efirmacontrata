@@ -161,6 +161,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 
     isMultiProperty: initialCalculatorState?.isMultiProperty || false,
     isUpsellActive: initialCalculatorState?.isUpsellActive || false,
+    leasePolicyCustomDiscount: '32',
     hasNoEmbargo: false,
 
     // Step 6: Precios y Autorizaciones Portería
@@ -380,8 +381,11 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const adminMonthlyFee = (baseCanon * finalAdminPercent) / 100;
   const adminNetProceeds = (baseCanon - adminMonthlyFee) + priceHoaVal;
 
-  const corretajeDiscountPercent = isMulti ? 40 : 32;
-  const baseCorretajeFee = baseCanon * (parseNum(formData.corretajePercent || '100') / 100);
+  const corretajeDiscountPercent = formData.leasePolicyCustomDiscount 
+    ? parseFloat(formData.leasePolicyCustomDiscount) || 0 
+    : (isMulti ? 40 : 32);
+  const corretajePercentStr = formData.serviceType === 'vendi-renta' ? formData.vendiRentaArriendoPercent : formData.corretajePercent;
+  const baseCorretajeFee = baseCanon * (parseNum(corretajePercentStr || '100') / 100);
   const corretajeFee = formData.isUpsellActive 
     ? baseCorretajeFee * (1 - corretajeDiscountPercent / 100) 
     : baseCorretajeFee;
@@ -713,7 +717,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* LEFT COLUMN: Dynamic Interactive Cost and Yield Calculator Sheet */}
-          {currentStep === 8 && (
+          {currentStep >= 5 && (
             <div className="lg:col-span-4 bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 flex flex-col justify-between border border-stone-200 shadow-2xl shadow-brand-gold/5 relative overflow-hidden text-left group transition-all">
             {/* Glossy top highlight */}
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-brand-gold to-transparent opacity-50" />
@@ -862,8 +866,8 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
           </div>
           )}
 
-          {/* RIGHT COLUMN: The 6-Step Registration Wizard Form */}
-          <div className={`${currentStep === 8 ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
+          {/* RIGHT COLUMN: The Registration Wizard Form */}
+          <div className={`${currentStep >= 5 ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
             {!submitted ? (
               <form id="registro-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-5 relative overflow-hidden">
@@ -2479,9 +2483,38 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                 <option value="3%">3% (TRES POR CIENTO)</option>
                                 <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
                                 <option value="2%">2% (DOS POR CIENTO)</option>
-                                <option value="1.5%">1.5% (UNO PUNTO CINCO POR CIENTO)</option>
                               </select>
                             </div>
+                          </div>
+                        )}
+
+                        {(formData.serviceType === 'corretaje' || formData.serviceType === 'vendi-renta') && (
+                          <div className="pt-2 border-t border-brand-gold/20">
+                            <label className="flex items-center space-x-3 cursor-pointer select-none mb-3">
+                              <input 
+                                type="checkbox" checked={formData.isUpsellActive}
+                                onChange={e => setFormData({ 
+                                  ...formData, 
+                                  isUpsellActive: e.target.checked,
+                                  leasePolicyCustomDiscount: e.target.checked ? '32' : formData.leasePolicyCustomDiscount
+                                })}
+                                className="w-5 h-5 text-brand-gold border-stone-300 rounded focus:ring-brand-gold"
+                              />
+                              <span className="text-xs text-stone-700 font-bold">
+                                El cliente tomará póliza de arrendamiento (Aplica descuento)
+                              </span>
+                            </label>
+
+                            {formData.isUpsellActive && (
+                              <div className="animate-fade-in bg-stone-50 p-3 rounded-xl border border-stone-200 flex items-center space-x-3 mt-2">
+                                <label className="text-[10px] text-stone-600 font-bold whitespace-nowrap">DESCUENTO A APLICAR (%)</label>
+                                <input 
+                                  type="text" value={formData.leasePolicyCustomDiscount}
+                                  onChange={e => setFormData({ ...formData, leasePolicyCustomDiscount: e.target.value.replace(/\D/g, '') })}
+                                  placeholder="32" className="bg-white border border-stone-200 focus:border-brand-gold rounded-lg px-3 py-2 text-xs w-24 font-mono font-bold outline-none transition-colors"
+                                />
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -2597,9 +2630,9 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                           onChange={e => setFormData({ ...formData, porteriaAuthAgentAdmin: e.target.value })}
                                           className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs cursor-pointer outline-none transition-colors"
                                         >
-                                          <option value="Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Administrador recoge y entrega</option>
-                                          <option value="Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves">Administrador con copias</option>
-                                          <option value="Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados">Administrador con acompañamiento</option>
+                                          <option value="Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí">Administrador recoge llaves y entrega de nuevo a propietario</option>
+                                          <option value="Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves">Administrador dispone copias de llaves</option>
+                                          <option value="Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados">Administrador va al inmueble con acompañamiento del propietario/delegado</option>
                                         </select>
                                       </div>
                                     ) : (
