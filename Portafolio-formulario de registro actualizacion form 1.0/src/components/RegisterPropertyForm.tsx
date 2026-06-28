@@ -2497,8 +2497,8 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                     newCorretaje = Math.max(0, newCorretaje - discount);
                                     newVendiRenta = Math.max(0, newVendiRenta - discount);
                                   } else {
-                                    newCorretaje = newCorretaje + discount;
-                                    newVendiRenta = newVendiRenta + discount;
+                                    newCorretaje = Math.min(100, newCorretaje + discount);
+                                    newVendiRenta = Math.min(100, newVendiRenta + discount);
                                   }
 
                                   setFormData({ 
