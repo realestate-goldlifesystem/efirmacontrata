@@ -2857,8 +2857,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
 
                   <button
                     onClick={() => {
-                      setSubmitted(false);
-                      setCurrentStep(1);
+                      window.location.reload();
                     }}
                     className="block text-xs text-stone-500 hover:text-stone-900 underline mx-auto cursor-pointer"
                   >
