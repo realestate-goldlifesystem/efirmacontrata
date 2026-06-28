@@ -440,7 +440,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
       if (currentStep === 4 && cedulaStatus === 'found' && activeFlow === 'normal') {
         setCurrentStep(6);
       } else {
-        setCurrentStep(p => Math.min(7, p + 1));
+        setCurrentStep(p => Math.min(8, p + 1));
       }
     } else {
       setShakeErrors(true);
@@ -680,7 +680,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
         {!submitted && currentStep > 0 && (
           <div className="mb-10 max-w-4xl mx-auto">
             <div className="flex justify-between text-[10px] sm:text-xs font-mono mb-4 px-2">
-              {['Ubicación', 'Físico', 'Extras', 'Propietario', 'Negocio', 'Precios'].map((label, idx) => {
+              {['Ubicación', 'Físico', 'Extras', 'Propietario', 'Negocio', 'Llaves', 'Precios'].map((label, idx) => {
                 const isActive = currentStep === idx + 1;
                 const isPast = currentStep > idx + 1;
                 return (
@@ -702,7 +702,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
             <div className="relative w-full bg-stone-100 h-1.5 rounded-full overflow-hidden shadow-inner -mt-[42px] z-0 mx-auto max-w-[calc(100%-4rem)]">
               <div 
                 className="absolute top-0 left-0 h-full bg-gradient-to-r from-brand-gold to-[#f9e596] transition-all duration-700 ease-out shadow-[0_0_10px_rgba(212,175,55,0.5)]" 
-                style={{ width: `${((currentStep - 1) / 5) * 100}%` }}
+                style={{ width: `${((currentStep - 1) / 6) * 100}%` }}
               />
             </div>
             <div className="h-10" /> {/* Spacer for the negative margin */}
@@ -713,7 +713,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* LEFT COLUMN: Dynamic Interactive Cost and Yield Calculator Sheet */}
-          {currentStep === 7 && (
+          {currentStep === 8 && (
             <div className="lg:col-span-4 bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 flex flex-col justify-between border border-stone-200 shadow-2xl shadow-brand-gold/5 relative overflow-hidden text-left group transition-all">
             {/* Glossy top highlight */}
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-brand-gold to-transparent opacity-50" />
@@ -863,7 +863,7 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
           )}
 
           {/* RIGHT COLUMN: The 6-Step Registration Wizard Form */}
-          <div className={`${currentStep === 7 ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
+          <div className={`${currentStep === 8 ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
             {!submitted ? (
               <form id="registro-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-5 relative overflow-hidden">
@@ -2501,9 +2501,32 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           </div>
                         )}
                       </div>
+                      
+                      {/* Checkbox Aceptación */}
+                      <div className="p-4 bg-stone-900 rounded-2xl border border-stone-800 hover:border-brand-gold/50 transition-colors">
+                        <label className="flex items-center space-x-3 cursor-pointer select-none">
+                          <input 
+                            type="checkbox" checked={formData.clausesAccepted}
+                            onChange={e => setFormData({ ...formData, clausesAccepted: e.target.checked })}
+                            className="w-5 h-5 text-brand-gold border-stone-700 bg-stone-800 rounded focus:ring-brand-gold focus:ring-offset-stone-900 cursor-pointer"
+                          />
+                          <span className="text-xs text-white font-bold leading-normal">
+                            He leído detenidamente y <span className="text-brand-gold">ACEPTO</span> las cláusulas estipuladas del modelo de promoción solicitado.
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
 
-                          {/* Act of notification choices MOVED HERE FROM STEP 7 */}
-                          <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3 mt-4 relative overflow-hidden">
+                  {/* STEP 7: Control de Autorización y Llaves */}
+                  {currentStep === 7 && (
+                    <div className="space-y-6 animate-fade-in">
+                      <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">7</span>
+                        Control de Autorización y Llaves de Inmueble
+                      </h4>
+
+                      <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3 relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-3 opacity-10">
                               <Key className="w-16 h-16" />
                             </div>
@@ -2598,27 +2621,14 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                               )}
                             </AnimatePresence>
                           </div>
-                      {/* Checkbox Aceptación */}
-                      <div className="p-4 bg-stone-900 rounded-2xl border border-stone-800 hover:border-brand-gold/50 transition-colors">
-                        <label className="flex items-center space-x-3 cursor-pointer select-none">
-                          <input 
-                            type="checkbox" checked={formData.clausesAccepted}
-                            onChange={e => setFormData({ ...formData, clausesAccepted: e.target.checked })}
-                            className="w-5 h-5 text-brand-gold border-stone-700 bg-stone-800 rounded focus:ring-brand-gold focus:ring-offset-stone-900 cursor-pointer"
-                          />
-                          <span className="text-xs text-white font-bold leading-normal">
-                            He leído detenidamente y <span className="text-brand-gold">ACEPTO</span> las cláusulas estipuladas del modelo de promoción solicitado.
-                          </span>
-                        </label>
-                      </div>
                     </div>
                   )}
 
-                  {/* STEP 7: Precios y Finalización */}
-                  {currentStep === 7 && (
+                  {/* STEP 8: Precios y Finalización */}
+                  {currentStep === 8 && (
                     <div className="space-y-6 animate-fade-in">
                       <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
-                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">7</span>
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">8</span>
                         Precios de Comercialización y Declaraciones
                       </h4>
 
@@ -2756,13 +2766,13 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           </button>
                         )}
 
-                        {currentStep < 7 ? (
+                        {currentStep < 8 ? (
                           <button
                             type="button" onClick={handleNextStep}
                             disabled={!canGoToNext()}
-                            className="inline-flex items-center space-x-1.5 bg-stone-900 hover:bg-stone-850 disabled:bg-stone-250 disabled:text-stone-500 text-brand-gold-dark font-bold py-3 px-5 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
+                            className="bg-brand-gold-dark hover:bg-[#8A631F] text-white px-8 py-3.5 rounded-full font-bold shadow-lg shadow-brand-gold/30 hover:shadow-brand-gold/50 transition-all flex items-center justify-center space-x-2 w-full sm:w-auto hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
                           >
-                            <span>{currentStep === 6 ? 'Ir a Precios' : 'Siguiente'}</span>
+                            <span>{currentStep === 7 ? 'Ir a Precios' : 'Siguiente'}</span>
                             <ArrowRight className="w-4 h-4" />
                           </button>
                         ) : (
