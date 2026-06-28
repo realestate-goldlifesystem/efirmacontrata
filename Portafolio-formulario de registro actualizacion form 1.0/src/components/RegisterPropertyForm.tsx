@@ -1,3 +1,134 @@
+                      {/* Card 4: Camas (Accordion) */}
+                      {parseInt(String(formData.roomsCount)) > 0 && (
+                        <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                          <button 
+                            type="button"
+                            onClick={() => setShowBeds(!showBeds)}
+                            className="w-full p-4 flex items-center justify-between bg-stone-50 hover:bg-stone-100 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <BedDouble className="w-5 h-5 text-brand-gold-dark" />
+                              <h5 className="font-bold text-sm text-stone-900">Distribución de Camas Sugeridas</h5>
+                              {formData.bedPrincipal && (
+                                <span className="ml-2 bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Configurado</span>
+                              )}
+                            </div>
+                            {showBeds ? <ChevronUp className="w-5 h-5 text-stone-500" /> : <ChevronDown className="w-5 h-5 text-stone-500" />}
+                          </button>
+                          
+                          <AnimatePresence>
+                            {showBeds && (
+                              <motion.div 
+                                initial={{ height: 0 }} 
+                                animate={{ height: 'auto' }} 
+                                exit={{ height: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="p-4 bg-white border-t border-stone-200 space-y-4">
+                                  <p className="text-xs text-stone-500 italic">Configure qué cama cabe en cada habitación con sus mesas de noche para sugerir al cliente potencial.</p>
+                                  
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                                    <div>
+                                      <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN PRINCIPAL</span>
+                                      <select 
+                                        value={formData.bedPrincipal} 
+                                        onChange={e => setFormData({ ...formData, bedPrincipal: e.target.value })}
+                                        className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
+                                      >
+                                        <option value="">No configurar...</option>
+                                        <option value="Dormitorio principal: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                        <option value="Dormitorio principal: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                        <option value="Dormitorio principal: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                        <option value="Dormitorio principal: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                        <option value="Dormitorio principal: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                        <option value="Dormitorio principal: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
+                                      </select>
+                                    </div>
+
+                                    {parseInt(String(formData.roomsCount)) >= 2 && (
+                                      <div>
+                                        <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN SECUNDARIA</span>
+                                        <select 
+                                          value={formData.bedSecondary} 
+                                          onChange={e => setFormData({ ...formData, bedSecondary: e.target.value })}
+                                          className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
+                                        >
+                                          <option value="">No configurar...</option>
+                                          <option value="Dormitorio secundario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                          <option value="Dormitorio secundario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                          <option value="Dormitorio secundario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                          <option value="Dormitorio secundario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                          <option value="Dormitorio secundario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                          <option value="Dormitorio secundario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
+                                        </select>
+                                      </div>
+                                    )}
+
+                                    {parseInt(String(formData.roomsCount)) >= 3 && (
+                                      <div>
+                                        <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN TERCIARIA</span>
+                                        <select 
+                                          value={formData.bedTertiary} 
+                                          onChange={e => setFormData({ ...formData, bedTertiary: e.target.value })}
+                                          className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
+                                        >
+                                          <option value="">No configurar...</option>
+                                          <option value="Dormitorio terciario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                          <option value="Dormitorio terciario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                          <option value="Dormitorio terciario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                          <option value="Dormitorio terciario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                          <option value="Dormitorio terciario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                          <option value="Dormitorio terciario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
+                                        </select>
+                                      </div>
+                                    )}
+
+                                    {parseInt(String(formData.roomsCount)) >= 4 && (
+                                      <div>
+                                        <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN CUATERNARIA</span>
+                                        <select 
+                                          value={formData.bedQuaternary} 
+                                          onChange={e => setFormData({ ...formData, bedQuaternary: e.target.value })}
+                                          className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
+                                        >
+                                          <option value="">No configurar...</option>
+                                          <option value="Dormitorio Cuaternario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                          <option value="Dormitorio Cuaternario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                          <option value="Dormitorio Cuaternario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                          <option value="Dormitorio Cuaternario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                          <option value="Dormitorio Cuaternario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                          <option value="Dormitorio Cuaternario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
+                                        </select>
+                                      </div>
+                                    )}
+
+                                    {parseInt(String(formData.roomsCount)) >= 5 && (
+                                      <div>
+                                        <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN QUINARIA</span>
+                                        <select 
+                                          value={formData.bedQuinary} 
+                                          onChange={e => setFormData({ ...formData, bedQuinary: e.target.value })}
+                                          className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
+                                        >
+                                          <option value="">No configurar...</option>
+                                          <option value="Dormitorio Quinario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
+                                          <option value="Dormitorio Quinario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
+                                          <option value="Dormitorio Quinario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
+                                          <option value="Dormitorio Quinario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
+                                          <option value="Dormitorio Quinario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
+                                          <option value="Dormitorio Quinario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
+                                        </select>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
+
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -59,7 +190,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const [revalidatingCedula, setRevalidatingCedula] = useState(false);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
   const [shakeErrors, setShakeErrors] = useState(false);
-  const [showBeds, setShowBeds] = useState(false);
+  const [showBeds, setShowBeds] = useState(true);
   const [ownerProperties, setOwnerProperties] = useState<any[]>([]);
   const [activeFlow, setActiveFlow] = useState<'normal' | 'renovacion' | 'cambio_negocio'>('normal');
   const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(null);
@@ -403,18 +534,16 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
     }
     if (currentStep === 2) {
       if (String(formData.area || '').trim() === '' || String(formData.propertyAge || '').trim() === '') return false;
-      return true;
-    }
-    if (currentStep === 3) {
-      if (String(formData.propertyNumber || '').trim() === '') return false;
-      
       const count = parseInt(String(formData.roomsCount)) || 1;
       if (count >= 1 && !formData.bedPrincipal) return false;
       if (count >= 2 && !formData.bedSecondary) return false;
       if (count >= 3 && !formData.bedTertiary) return false;
       if (count >= 4 && !formData.bedQuaternary) return false;
       if (count >= 5 && !formData.bedQuinary) return false;
-      
+      return true;
+    }
+    if (currentStep === 3) {
+      if (String(formData.propertyNumber || '').trim() === '') return false;
       return true;
     }
     if (currentStep === 4) {
@@ -1878,136 +2007,6 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                           </div>
                         </div>
                       </div>
-
-                      {/* Card 4: Camas (Accordion) */}
-                      {parseInt(String(formData.roomsCount)) > 0 && (
-                        <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-sm">
-                          <button 
-                            type="button"
-                            onClick={() => setShowBeds(!showBeds)}
-                            className="w-full p-4 flex items-center justify-between bg-stone-50 hover:bg-stone-100 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <BedDouble className="w-5 h-5 text-brand-gold-dark" />
-                              <h5 className="font-bold text-sm text-stone-900">Distribución de Camas Sugeridas</h5>
-                              {formData.bedPrincipal && (
-                                <span className="ml-2 bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Configurado</span>
-                              )}
-                            </div>
-                            {showBeds ? <ChevronUp className="w-5 h-5 text-stone-500" /> : <ChevronDown className="w-5 h-5 text-stone-500" />}
-                          </button>
-                          
-                          <AnimatePresence>
-                            {showBeds && (
-                              <motion.div 
-                                initial={{ height: 0 }} 
-                                animate={{ height: 'auto' }} 
-                                exit={{ height: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="p-4 bg-white border-t border-stone-200 space-y-4">
-                                  <p className="text-xs text-stone-500 italic">Configure qué cama cabe en cada habitación con sus mesas de noche para sugerir al cliente potencial.</p>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                                    <div>
-                                      <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN PRINCIPAL</span>
-                                      <select 
-                                        value={formData.bedPrincipal} 
-                                        onChange={e => setFormData({ ...formData, bedPrincipal: e.target.value })}
-                                        className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
-                                      >
-                                        <option value="">No configurar...</option>
-                                        <option value="Dormitorio principal: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
-                                        <option value="Dormitorio principal: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
-                                        <option value="Dormitorio principal: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
-                                        <option value="Dormitorio principal: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
-                                        <option value="Dormitorio principal: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
-                                        <option value="Dormitorio principal: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
-                                      </select>
-                                    </div>
-
-                                    {parseInt(String(formData.roomsCount)) >= 2 && (
-                                      <div>
-                                        <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN SECUNDARIA</span>
-                                        <select 
-                                          value={formData.bedSecondary} 
-                                          onChange={e => setFormData({ ...formData, bedSecondary: e.target.value })}
-                                          className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
-                                        >
-                                          <option value="">No configurar...</option>
-                                          <option value="Dormitorio secundario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
-                                          <option value="Dormitorio secundario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
-                                          <option value="Dormitorio secundario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
-                                          <option value="Dormitorio secundario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
-                                          <option value="Dormitorio secundario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
-                                          <option value="Dormitorio secundario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
-                                        </select>
-                                      </div>
-                                    )}
-
-                                    {parseInt(String(formData.roomsCount)) >= 3 && (
-                                      <div>
-                                        <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN TERCIARIA</span>
-                                        <select 
-                                          value={formData.bedTertiary} 
-                                          onChange={e => setFormData({ ...formData, bedTertiary: e.target.value })}
-                                          className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
-                                        >
-                                          <option value="">No configurar...</option>
-                                          <option value="Dormitorio terciario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
-                                          <option value="Dormitorio terciario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
-                                          <option value="Dormitorio terciario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
-                                          <option value="Dormitorio terciario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
-                                          <option value="Dormitorio terciario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
-                                          <option value="Dormitorio terciario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
-                                        </select>
-                                      </div>
-                                    )}
-
-                                    {parseInt(String(formData.roomsCount)) >= 4 && (
-                                      <div>
-                                        <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN CUATERNARIA</span>
-                                        <select 
-                                          value={formData.bedQuaternary} 
-                                          onChange={e => setFormData({ ...formData, bedQuaternary: e.target.value })}
-                                          className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
-                                        >
-                                          <option value="">No configurar...</option>
-                                          <option value="Dormitorio Cuaternario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
-                                          <option value="Dormitorio Cuaternario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
-                                          <option value="Dormitorio Cuaternario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
-                                          <option value="Dormitorio Cuaternario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
-                                          <option value="Dormitorio Cuaternario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
-                                          <option value="Dormitorio Cuaternario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
-                                        </select>
-                                      </div>
-                                    )}
-
-                                    {parseInt(String(formData.roomsCount)) >= 5 && (
-                                      <div>
-                                        <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN QUINARIA</span>
-                                        <select 
-                                          value={formData.bedQuinary} 
-                                          onChange={e => setFormData({ ...formData, bedQuinary: e.target.value })}
-                                          className="w-full bg-stone-50 border border-stone-200 focus:border-brand-gold rounded-xl p-2.5 text-[11px] outline-none transition-colors"
-                                        >
-                                          <option value="">No configurar...</option>
-                                          <option value="Dormitorio Quinario: Cama individual (sencilla) + Mesas de noche (0.90 m + 0.60 m x 2) en total: 2.10 m">Cama sencilla (2.10 m)</option>
-                                          <option value="Dormitorio Quinario: Cama semidoble + Mesas de noche (1.20 m + 0.60 m x 2) en total: 2.40 m">Cama semidoble (2.40 m)</option>
-                                          <option value="Dormitorio Quinario: Cama doble (matrimonial) + Mesas de noche (1.35 m + 0.60 m x 2) en total: 2.55 m">Cama doble (2.55 m)</option>
-                                          <option value="Dormitorio Quinario: Cama queen + Mesas de noche (1.50 m + 0.60 m x 2) en total: 2.70 m">Cama queen (2.70 m)</option>
-                                          <option value="Dormitorio Quinario: Cama king + Mesas de noche (2.00 m + 0.60 m x 2) en total: 3.20 m">Cama king (3.20 m)</option>
-                                          <option value="Dormitorio Quinario: Cama súper king + Mesas de noche (2.20 m + 0.60 m x 2) en total: 3.40 m">Cama súper king (3.40 m)</option>
-                                        </select>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      )}
 
                       {/* Zonas y Características Internas List */}
                       <div className="pt-4 border-t border-stone-100 mt-4 bg-white p-4 rounded-2xl border border-stone-200">
