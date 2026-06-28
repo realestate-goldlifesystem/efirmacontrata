@@ -1627,34 +1627,18 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                       </div>
                       {/* Card 4: Camas (Accordion) */}
                       {parseInt(String(formData.roomsCount)) > 0 && (
-                        <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-sm">
-                          <button 
-                            type="button"
-                            onClick={() => setShowBeds(!showBeds)}
-                            className="w-full p-4 flex items-center justify-between bg-stone-50 hover:bg-stone-100 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <BedDouble className="w-5 h-5 text-brand-gold-dark" />
-                              <h5 className="font-bold text-sm text-stone-900">Distribución de Camas Sugeridas</h5>
-                              {formData.bedPrincipal && (
-                                <span className="ml-2 bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Configurado</span>
-                              )}
-                            </div>
-                            {showBeds ? <ChevronUp className="w-5 h-5 text-stone-500" /> : <ChevronDown className="w-5 h-5 text-stone-500" />}
-                          </button>
+                        <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <BedDouble className="w-4 h-4 text-brand-gold-dark" />
+                            <h5 className="font-bold text-sm text-stone-900">Distribución de Camas Sugeridas</h5>
+                            {formData.bedPrincipal && (
+                              <span className="ml-2 bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Configurado</span>
+                            )}
+                          </div>
                           
-                          <AnimatePresence>
-                            {showBeds && (
-                              <motion.div 
-                                initial={{ height: 0 }} 
-                                animate={{ height: 'auto' }} 
-                                exit={{ height: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="p-4 bg-white border-t border-stone-200 space-y-4">
-                                  <p className="text-xs text-stone-500 italic">Configure qué cama cabe en cada habitación con sus mesas de noche para sugerir al cliente potencial.</p>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                          <p className="text-xs text-stone-500 italic">Configure qué cama cabe en cada habitación con sus mesas de noche para sugerir al cliente potencial.</p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                                     <div>
                                       <span className="text-[10px] font-bold text-stone-600 block mb-1">HABITACIÓN PRINCIPAL</span>
                                       <select 
@@ -1748,10 +1732,6 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                                       </div>
                                     )}
                                   </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
                         </div>
                       )}
                     </div>
