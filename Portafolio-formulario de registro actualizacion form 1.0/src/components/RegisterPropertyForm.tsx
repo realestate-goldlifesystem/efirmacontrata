@@ -161,7 +161,6 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 
     isMultiProperty: initialCalculatorState?.isMultiProperty || false,
     isUpsellActive: initialCalculatorState?.isUpsellActive || false,
-    leasePolicyCustomDiscount: '32',
     hasNoEmbargo: false,
 
     // Step 6: Precios y Autorizaciones Portería
@@ -381,14 +380,9 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const adminMonthlyFee = (baseCanon * finalAdminPercent) / 100;
   const adminNetProceeds = (baseCanon - adminMonthlyFee) + priceHoaVal;
 
-  const corretajeDiscountPercent = formData.leasePolicyCustomDiscount 
-    ? parseFloat(formData.leasePolicyCustomDiscount) || 0 
-    : (isMulti ? 40 : 32);
+  const corretajeDiscountPercent = isMulti ? 40 : 32;
   const corretajePercentStr = formData.serviceType === 'vendi-renta' ? formData.vendiRentaArriendoPercent : formData.corretajePercent;
-  const baseCorretajeFee = baseCanon * (parseNum(corretajePercentStr || '100') / 100);
-  const corretajeFee = formData.isUpsellActive 
-    ? baseCorretajeFee * (1 - corretajeDiscountPercent / 100) 
-    : baseCorretajeFee;
+  const corretajeFee = baseCanon * (parseNum(corretajePercentStr || '100') / 100);
 
   const sellPriceVal = parseNum(formData.priceVenta);
   const sellPercentStr = formData.serviceType === 'admi-venta' 
@@ -2493,28 +2487,33 @@ Por favor, revisemos este registro para la firma del acuerdo oficial.`;
                             <label className="flex items-center space-x-3 cursor-pointer select-none mb-3">
                               <input 
                                 type="checkbox" checked={formData.isUpsellActive}
-                                onChange={e => setFormData({ 
-                                  ...formData, 
-                                  isUpsellActive: e.target.checked,
-                                  leasePolicyCustomDiscount: e.target.checked ? '32' : formData.leasePolicyCustomDiscount
-                                })}
+                                onChange={e => {
+                                  const isChecked = e.target.checked;
+                                  const discount = formData.isMultiProperty ? 40 : 32;
+                                  let newCorretaje = Number(formData.corretajePercent) || 100;
+                                  let newVendiRenta = Number(formData.vendiRentaArriendoPercent) || 100;
+
+                                  if (isChecked) {
+                                    newCorretaje = Math.max(0, newCorretaje - discount);
+                                    newVendiRenta = Math.max(0, newVendiRenta - discount);
+                                  } else {
+                                    newCorretaje = newCorretaje + discount;
+                                    newVendiRenta = newVendiRenta + discount;
+                                  }
+
+                                  setFormData({ 
+                                    ...formData, 
+                                    isUpsellActive: isChecked,
+                                    corretajePercent: newCorretaje.toString(),
+                                    vendiRentaArriendoPercent: newVendiRenta.toString()
+                                  });
+                                }}
                                 className="w-5 h-5 text-brand-gold border-stone-300 rounded focus:ring-brand-gold"
                               />
                               <span className="text-xs text-stone-700 font-bold">
                                 El cliente tomará póliza de arrendamiento (Aplica descuento)
                               </span>
                             </label>
-
-                            {formData.isUpsellActive && (
-                              <div className="animate-fade-in bg-stone-50 p-3 rounded-xl border border-stone-200 flex items-center space-x-3 mt-2">
-                                <label className="text-[10px] text-stone-600 font-bold whitespace-nowrap">DESCUENTO A APLICAR (%)</label>
-                                <input 
-                                  type="text" value={formData.leasePolicyCustomDiscount}
-                                  onChange={e => setFormData({ ...formData, leasePolicyCustomDiscount: e.target.value.replace(/\D/g, '') })}
-                                  placeholder="32" className="bg-white border border-stone-200 focus:border-brand-gold rounded-lg px-3 py-2 text-xs w-24 font-mono font-bold outline-none transition-colors"
-                                />
-                              </div>
-                            )}
                           </div>
                         )}
 
