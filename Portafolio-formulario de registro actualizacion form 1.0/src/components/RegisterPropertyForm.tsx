@@ -430,6 +430,17 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
              String(formData.email || '').toLowerCase() === String(formData.confirmEmail || '').toLowerCase();
     }
     if (currentStep === 6) {
+      if (formData.hasPorteriaAndAdmin === 'SI') {
+        if (!String(formData.porteriaBuildingName || '').trim()) return false;
+        if (formData.porteriaAutoSendEmail === 'SI' && !String(formData.porteriaAdminEmail || '').trim()) return false;
+      }
+      return true;
+    }
+    if (currentStep === 7) {
+      return true; // Precios de comercialización no tienen campos requeridos que bloqueen, o sí? no
+    }
+    // Paso 8 usa el botón de Finalizar y no next step, pero por si acaso
+    if (currentStep === 8) {
       return formData.clausesAccepted;
     }
     return true;
@@ -2769,7 +2780,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                         {selectedPropertyIndex !== null && (
                           <button
                             type="submit" 
-                            disabled={loading || !formData.hasNoEmbargo}
+                            disabled={loading || !formData.hasNoEmbargo || !formData.clausesAccepted}
                             className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold disabled:bg-stone-250 disabled:text-stone-500 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95 animate-fade-in"
                           >
                             {loading ? <span>Procesando...</span> : (
@@ -2812,7 +2823,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                           </button>
                         ) : (
                           <button
-                            type="submit" disabled={loading || !formData.hasNoEmbargo}
+                            type="submit" disabled={loading || !formData.hasNoEmbargo || !formData.clausesAccepted}
                             className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold disabled:bg-stone-250 disabled:text-stone-500 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95"
                           >
                             {loading ? <span>Validando...</span> : (
