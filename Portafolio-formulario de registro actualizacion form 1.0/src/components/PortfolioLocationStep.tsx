@@ -190,6 +190,9 @@ export const PortfolioLocationStep: React.FC<LocationStepProps> = ({ formData, s
       }
     }
 
+    // Asegurar que no haya espacios alrededor del guion (Ej. "134B - 18" -> "134B-18")
+    shortAddress = shortAddress.replace(/\s*-\s*/g, '-');
+
     // Llamar al Hook Extractor (IDECA/Nominatim)
     const resolucion = await resolveLocation(lat, lng, googleCity, googleDepartment, googleNeighborhood, googleLocality);
 
