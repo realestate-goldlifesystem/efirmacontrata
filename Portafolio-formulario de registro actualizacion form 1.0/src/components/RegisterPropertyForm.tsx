@@ -521,11 +521,11 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
       return true;
     }
     if (currentStep === 7) {
-      return true; // Precios de comercialización no tienen campos requeridos que bloqueen, o sí? no
+      return formData.clausesAccepted;
     }
     // Paso 8 usa el botón de Finalizar y no next step, pero por si acaso
     if (currentStep === 8) {
-      return formData.clausesAccepted;
+      return true;
     }
     return true;
   };
@@ -778,32 +778,32 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
         {!submitted && currentStep > 0 && (
           <div className="mb-10 max-w-4xl mx-auto">
             <div className="flex justify-between text-[10px] sm:text-xs font-mono mb-4 px-2">
-              {['Ubicación', 'Físico', 'Extras', 'Propietario', 'Negocio', 'Llaves', 'Precios'].map((label, idx) => {
+              {['Ubicación', 'Físico', 'Int/Ext', 'Entorno', 'Propietario', 'Llaves', 'Negocio', 'Precios'].map((label, idx) => {
                 const isActive = currentStep === idx + 1;
                 const isPast = currentStep > idx + 1;
                 return (
-                  <div key={idx} className="flex flex-col items-center gap-2 relative z-10 w-16">
-                    <div className={`size-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all duration-500 ${
+                  <div key={idx} className="flex flex-col items-center gap-2 relative z-10 w-12 sm:w-16">
+                    <div className={`size-6 sm:size-8 rounded-full flex items-center justify-center font-bold text-[10px] sm:text-xs border-2 transition-all duration-500 ${
                       isActive ? 'bg-brand-gold border-brand-gold text-[#11100c] shadow-[0_0_15px_rgba(212,175,55,0.4)] scale-110' : 
                       isPast ? 'bg-stone-100 border-brand-gold text-brand-gold-dark' : 
                       'bg-white border-stone-200 text-stone-600'
                     }`}>
-                      {isPast ? <Check className="w-4 h-4" /> : idx + 1}
+                      {isPast ? <Check className="w-3 h-3 sm:w-4 sm:h-4" /> : idx + 1}
                     </div>
-                    <span className={`font-bold transition-all whitespace-nowrap ${isActive ? 'text-brand-gold-dark' : 'text-stone-500'}`}>
+                    <span className={`font-bold transition-all text-center leading-tight ${isActive ? 'text-brand-gold-dark' : 'text-stone-500'}`}>
                       {label}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div className="relative w-full bg-stone-100 h-1.5 rounded-full overflow-hidden shadow-inner -mt-[42px] z-0 mx-auto max-w-[calc(100%-4rem)]">
+            <div className="relative w-full bg-stone-100 h-1.5 rounded-full overflow-hidden shadow-inner -mt-[48px] sm:-mt-[42px] z-0 mx-auto max-w-[calc(100%-3rem)]">
               <div 
                 className="absolute top-0 left-0 h-full bg-gradient-to-r from-brand-gold to-[#f9e596] transition-all duration-700 ease-out shadow-[0_0_10px_rgba(212,175,55,0.5)]" 
-                style={{ width: `${((currentStep - 1) / 6) * 100}%` }}
+                style={{ width: `${((currentStep - 1) / 7) * 100}%` }}
               />
             </div>
-            <div className="h-10" /> {/* Spacer for the negative margin */}
+            <div className="h-12 sm:h-10" /> {/* Spacer for the negative margin */}
           </div>
         )}
 
@@ -2453,11 +2453,11 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                     </div>
                   )}
 
-                  {/* STEP 8: Cláusulas y Porcentajes de Negocio */}
-                  {currentStep === 8 && (
+                  {/* STEP 7: Cláusulas y Porcentajes de Negocio */}
+                  {currentStep === 7 && (
                     <div className="space-y-6 animate-fade-in">
                       <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
-                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">8</span>
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">7</span>
                         Cláusulas Legales y Comisión de Acuerdos
                       </h4>
 
@@ -2782,11 +2782,11 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                     </div>
                   )}
 
-                  {/* STEP 7: Precios y Finalización */}
-                  {currentStep === 7 && (
+                  {/* STEP 8: Precios y Finalización */}
+                  {currentStep === 8 && (
                     <div className="space-y-6 animate-fade-in">
                       <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
-                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">7</span>
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">8</span>
                         Precios de Comercialización y Declaraciones
                       </h4>
 
