@@ -68,6 +68,8 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
 const getInitialFormData = (selectedServiceType: string | null | undefined, initialCalculatorState: any) => ({
     gridAnswers: {} as Record<string, string>,
     // Step 1: Destino y Ubicación
+    isCiencuadras: false,
+    ciencuadrasCode: '',
     registrationDate: new Date().toISOString().split('T')[0],
     destination: 'Vivienda', // Vivienda, Comercio, Mixto
     localidad: 'Usaquén',
@@ -400,6 +402,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
       return cedulaInput.length > 5;
     }
     if (currentStep === 1) {
+      if (formData.isCiencuadras && !String(formData.ciencuadrasCode || '').trim()) return false;
       return String(formData.address || '').trim() !== '' && String(formData.city || '').trim() !== '';
     }
     if (currentStep === 2) {
@@ -518,6 +521,8 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
       const payload = {
         accion: 'registrarInmueble',
         reutilizarMultimedia: reutilizarMultimedia,
+        "¿Viene de Ciencuadras?": formData.isCiencuadras ? 'SI' : 'NO',
+        "Código Ciencuadras": formData.isCiencuadras ? formData.ciencuadrasCode : '',
         "Fecha de registro del inmueble.": formData.registrationDate,
         "Define el propósito de tu inmueble": formData.destination,
         "Selecciona la localidad del inmueble": formData.localidad,
@@ -1392,7 +1397,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                               <input 
                                 type="date" required value={formData.registrationDate}
                                 onChange={e => setFormData({ ...formData, registrationDate: e.target.value })}
-                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs outline-none"
                               />
                             </div>
                             <div>
@@ -1400,13 +1405,39 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                               <select 
                                 value={formData.destination} 
                                 onChange={e => setFormData({ ...formData, destination: e.target.value })}
-                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs"
+                                className="w-full bg-stone-50 border border-stone-200 rounded-xl p-3 text-xs outline-none cursor-pointer"
                               >
                                 <option value="Vivienda">Vivienda</option>
                                 <option value="Comercio">Comercio</option>
                                 <option value="Mixto">Mixto</option>
                               </select>
                             </div>
+                          </div>
+
+                          <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
+                            <label className="flex items-center space-x-3 cursor-pointer select-none">
+                              <input 
+                                type="checkbox" checked={formData.isCiencuadras}
+                                onChange={e => setFormData({ ...formData, isCiencuadras: e.target.checked })}
+                                className="w-5 h-5 text-brand-gold border-stone-300 rounded focus:ring-brand-gold cursor-pointer"
+                              />
+                              <span className="text-xs text-stone-700 font-bold">
+                                ¿Este inmueble proviene de alianza con Ciencuadras?
+                              </span>
+                            </label>
+                            
+                            {formData.isCiencuadras && (
+                              <div className="animate-fade-in pt-2">
+                                <label className="text-xs text-stone-600 font-bold block mb-1">CÓDIGO DE INVENTARIO CIENCUADRAS</label>
+                                <input 
+                                  type="text" required={formData.isCiencuadras}
+                                  value={formData.ciencuadrasCode}
+                                  onChange={e => setFormData({ ...formData, ciencuadrasCode: e.target.value })}
+                                  placeholder="Ej: CC-12345"
+                                  className="w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs outline-none transition-colors"
+                                />
+                              </div>
+                            )}
                           </div>
 
                           <PortfolioLocationStep formData={formData} setFormData={setFormData} />
