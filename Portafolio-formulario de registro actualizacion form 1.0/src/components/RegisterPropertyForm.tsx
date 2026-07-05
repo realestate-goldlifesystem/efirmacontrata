@@ -222,6 +222,48 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
 
+  // Limpieza de Estados Huérfanos en Tiempo Real (Payload Sanitization UI)
+  useEffect(() => {
+    setFormData(prev => {
+      let next = { ...prev };
+      let changed = false;
+
+      const rooms = parseInt(String(prev.roomsCount)) || 0;
+      if (rooms < 1 && next.bedPrincipal !== '') { next.bedPrincipal = ''; changed = true; }
+      if (rooms < 2 && next.bedSecondary !== '') { next.bedSecondary = ''; changed = true; }
+      if (rooms < 3 && next.bedTertiary !== '') { next.bedTertiary = ''; changed = true; }
+      if (rooms < 4 && next.bedQuaternary !== '') { next.bedQuaternary = ''; changed = true; }
+      if (rooms < 5 && next.bedQuinary !== '') { next.bedQuinary = ''; changed = true; }
+
+      if (prev.idTypeDescription !== 'Torre y número' && next.towerLetter !== '') {
+        next.towerLetter = ''; changed = true;
+      }
+      if (prev.garagesCount === 'Ningun') {
+        if (next.garageServitude !== 'Independiente') { next.garageServitude = 'Independiente'; changed = true; }
+        if (next.garageCovered !== 'Cubierto') { next.garageCovered = 'Cubierto'; changed = true; }
+        if (next.garageAssignedNumber !== '') { next.garageAssignedNumber = ''; changed = true; }
+      }
+      if (prev.hasDeposit !== 'Depositoㅤ' && next.depositNumber !== '') {
+        next.depositNumber = ''; changed = true;
+      }
+      if (!prev.internalFeatures.includes('Otro') && next.otherInternal !== '') {
+        next.otherInternal = ''; changed = true;
+      }
+      if (!prev.externalFeatures.includes('Otro') && next.otherExternal !== '') {
+        next.otherExternal = ''; changed = true;
+      }
+
+      return changed ? next : prev;
+    });
+  }, [
+    formData.roomsCount,
+    formData.idTypeDescription,
+    formData.garagesCount,
+    formData.hasDeposit,
+    formData.internalFeatures,
+    formData.externalFeatures
+  ]);
+
   // UI/UX: Visual feedback interactivo para campos llenos
   useEffect(() => {
     const handleInput = (e: Event) => {
