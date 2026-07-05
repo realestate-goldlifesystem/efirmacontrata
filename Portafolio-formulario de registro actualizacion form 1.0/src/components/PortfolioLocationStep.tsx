@@ -155,6 +155,24 @@ export const PortfolioLocationStep: React.FC<LocationStepProps> = ({ formData, s
       shortAddress = formattedAddress.split(',')[0].trim();
     }
 
+    // ============================================================================
+    // 🚨 DIRECTIVA CRÍTICA DE NORMALIZACIÓN LEGAL COLOMBIANA 🚨
+    // Toda modificación a este bloque debe respetar ESTRICTAMENTE las reglas de:
+    // 1. IGAC (Instituto Geográfico Agustín Codazzi) y Catastros Locales.
+    // 2. DANE (Departamento Administrativo Nacional de Estadística).
+    // 3. SNR (Superintendencia de Notariado y Registro).
+    // 4. Operadores postales oficiales (4-72) y DIAN.
+    //
+    // REGLAS ABSOLUTAS PARA CONTRATOS Y FOLIOS DE MATRÍCULA:
+    // - Las abreviaturas deben ser las estandarizadas (ej. Cra, Cl, Av, AK, AC).
+    // - Las letras asociadas a las vías/placas (A, B, C) DEBEN IR EN MAYÚSCULAS 
+    //   para evitar ambigüedades jurídicas y notariales.
+    // - Palabras clave como 'BIS', 'SUR', 'ESTE' DEBEN IR EN MAYÚSCULAS CERRADAS.
+    // - El símbolo universal a usar es el numeral (#) y no "No.", "Nro.", etc.
+    // - Las letras y sufijos van pegados a su respectivo número (Ej: 134B, no 134 B).
+    // - No deben existir espacios rodeando el guion separador (Ej: #134B-18).
+    // ============================================================================
+    
     // Normalizar abreviaturas comunes (Estándar Catastral para Servicios Públicos)
     shortAddress = shortAddress
       .replace(/Avenida Carrera/gi, 'AK')
