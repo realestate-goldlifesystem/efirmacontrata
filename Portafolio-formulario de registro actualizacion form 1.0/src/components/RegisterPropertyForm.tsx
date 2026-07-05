@@ -253,6 +253,39 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         next.otherExternal = ''; changed = true;
       }
 
+      // Ciencuadras
+      if (!prev.isCiencuadras && next.ciencuadrasCode !== '') {
+        next.ciencuadrasCode = ''; changed = true;
+      }
+
+      // Barrio Comercial
+      if (prev.barrio !== 'Otro' && next.customBarrio !== '') {
+        next.customBarrio = ''; changed = true;
+      }
+
+      // Mascotas
+      if (prev.allowsPets !== 'SI') {
+        if (next.petTypes !== 'Todas las mascotas') { next.petTypes = 'Todas las mascotas'; changed = true; }
+        if (next.customPetType !== '') { next.customPetType = ''; changed = true; }
+      } else if (prev.petTypes !== 'Editar' && next.customPetType !== '') {
+        next.customPetType = ''; changed = true;
+      }
+
+      // Portería y Administración
+      if (prev.hasPorteriaAndAdmin !== 'SI') {
+        if (next.porteriaBuildingName !== '') { next.porteriaBuildingName = ''; changed = true; }
+        if (next.porteriaAutoSendEmail !== 'SI') { next.porteriaAutoSendEmail = 'SI'; changed = true; }
+        if (next.porteriaAdminEmail !== '') { next.porteriaAdminEmail = ''; changed = true; }
+        if (next.porteriaAuthAgentGeneral !== 'El cual recoge las llaves en portería y después de la visita las deja nuevamente allí') { 
+          next.porteriaAuthAgentGeneral = 'El cual recoge las llaves en portería y después de la visita las deja nuevamente allí'; changed = true; 
+        }
+        if (next.porteriaAuthAgentAdmin !== 'Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí') { 
+          next.porteriaAuthAgentAdmin = 'Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí'; changed = true; 
+        }
+      } else if (prev.porteriaAutoSendEmail !== 'SI' && next.porteriaAdminEmail !== '') {
+        next.porteriaAdminEmail = ''; changed = true;
+      }
+
       return changed ? next : prev;
     });
   }, [
@@ -261,7 +294,13 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
     formData.garagesCount,
     formData.hasDeposit,
     formData.internalFeatures,
-    formData.externalFeatures
+    formData.externalFeatures,
+    formData.isCiencuadras,
+    formData.barrio,
+    formData.allowsPets,
+    formData.petTypes,
+    formData.hasPorteriaAndAdmin,
+    formData.porteriaAutoSendEmail
   ]);
 
   // UI/UX: Visual feedback interactivo para campos llenos
