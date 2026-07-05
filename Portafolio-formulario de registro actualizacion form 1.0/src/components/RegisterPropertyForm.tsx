@@ -811,7 +811,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* LEFT COLUMN: Dynamic Interactive Cost and Yield Calculator Sheet */}
-          {[7, 8].includes(currentStep) && (
+          {(currentStep === 8 && !submitted) && (
             <div className="lg:col-span-4 bg-white/95 backdrop-blur-xl rounded-[2rem] p-8 flex flex-col justify-between border border-stone-200 shadow-2xl shadow-brand-gold/5 relative overflow-hidden text-left group transition-all">
             {/* Glossy top highlight */}
             <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-brand-gold to-transparent opacity-50" />
@@ -961,7 +961,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
           )}
 
           {/* RIGHT COLUMN: The Registration Wizard Form */}
-          <div className={`${[7, 8].includes(currentStep) ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
+          <div className={`${(currentStep === 8 && !submitted) ? 'lg:col-span-8' : 'lg:col-span-12'} bg-white/95 backdrop-blur-2xl p-8 sm:p-10 rounded-[2rem] border border-white/20 shadow-2xl shadow-black/20 flex flex-col justify-between text-left transition-all duration-500 ease-in-out`}>
             {!submitted ? (
               <form id="registro-form" onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-5 relative overflow-hidden">
