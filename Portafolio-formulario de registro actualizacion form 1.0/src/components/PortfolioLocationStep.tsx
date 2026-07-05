@@ -172,7 +172,18 @@ export const PortfolioLocationStep: React.FC<LocationStepProps> = ({ formData, s
       .replace(/#\s*#/g, '#')  // Eliminar dobles numerales
       .replace(/#\s+/g, '#')   // Eliminar espacio DESPUÉS del numeral
       .replace(/\s+#/g, ' #')  // Asegurar un solo espacio ANTES del numeral
+      .replace(/No\s/gi, '#')  // Reemplazar No por numeral
+      .replace(/Nro/gi, '#')   // Reemplazar Nro por numeral
       .trim();
+
+    // Obligar a MAYÚSCULAS las letras anexas a números y palabras clave
+    shortAddress = shortAddress
+      .replace(/\b([a-z])\b/g, (match) => match.toUpperCase()) // Letras sueltas a mayúscula (a -> A)
+      .replace(/(\d)\s+([a-zA-Z])\b/g, '$1$2') // Pegar letra al número (10 A -> 10A)
+      .replace(/bis/gi, 'BIS')
+      .replace(/sur/gi, 'SUR')
+      .replace(/este/gi, 'ESTE')
+      .replace(/(\d)([a-z])/g, (m, p1, p2) => `${p1}${p2.toUpperCase()}`); // (10a -> 10A)
 
     // Heurística de Placa Colombiana (Distancia en metros):
     // Si Google Maps arroja la placa todo junto (Ej. #1712), en Colombia los últimos 
