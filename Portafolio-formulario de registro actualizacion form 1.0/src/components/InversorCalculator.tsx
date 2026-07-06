@@ -463,24 +463,36 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
                 <div className="absolute top-0 right-0 bg-sky-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">ESTRATEGIA 1</div>
                 <strong className="text-sky-400 block mb-1">1. Factor Multiplicador (Reajuste Fiscal - Art. 73 E.T.):</strong> 
                 Permite tomar el valor original de compra y multiplicarlo por el índice anual fijado por el gobierno. Esto actualiza el costo del inmueble a valor presente, reduciendo drásticamente la utilidad gravable sobre la que pagas el 15%.
+                <div className="mt-2 bg-stone-950/50 p-2.5 rounded-lg text-xs text-stone-400 border border-stone-800/50">
+                  <span className="text-sky-400 font-semibold block mb-0.5">Ejemplo Numérico:</span> Compraste en 2010 por $100M. El factor de actualización hoy es 3.5. Tu nuevo costo fiscal es $350M. Si vendes en $400M, pagas 15% sobre $50M (Pagas $7.5M), NO sobre $300M (Pagarías $45M).
+                </div>
               </li>
 
               <li className="bg-emerald-900/10 border border-emerald-800/30 p-4 rounded-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-emerald-700/50 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">ESTRATEGIA 2</div>
                 <strong className="text-emerald-400 block mb-1">2. Avalúo Catastral como Costo Fiscal (Art. 72 E.T.):</strong> 
                 Puedes usar el avalúo catastral (o autoavalúo) del año anterior a la venta como tu "costo de compra" si este es mayor al costo real reajustado. (Debe haber sido declarado en renta).
+                <div className="mt-2 bg-stone-950/50 p-2.5 rounded-lg text-xs text-stone-400 border border-stone-800/50">
+                  <span className="text-emerald-400 font-semibold block mb-0.5">Ejemplo Numérico:</span> Compraste en $150M hace años. Vas a vender en $300M, pero el avalúo catastral del año pasado fue de $250M. Usas $250M como costo, pagando 15% solo sobre $50M (Pagas $7.5M), en vez de pagar sobre $150M.
+                </div>
               </li>
 
               <li className="bg-brand-gold/5 border border-brand-gold/20 p-4 rounded-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-brand-gold/30 text-brand-gold text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">ESTRATEGIA 3</div>
                 <strong className="text-brand-gold block mb-1">3. Capitalizar Remodelaciones y Gastos Notariales (Art. 69 E.T.):</strong> 
                 Suma al costo fiscal todas las mejoras, remodelaciones, ampliaciones y los gastos de notaría y registro de cuando compraste. <strong>Requisito vital:</strong> Solo valen las facturas electrónicas bancarizadas a nombre del propietario.
+                <div className="mt-2 bg-stone-950/50 p-2.5 rounded-lg text-xs text-stone-400 border border-stone-800/50">
+                  <span className="text-brand-gold font-semibold block mb-0.5">Ejemplo Numérico:</span> Compraste en $200M y le invertiste $50M en pisos y cocina (con facturas electrónicas válidas), más $3M en notaría original. Tu nuevo costo fiscal inicial sube directamente a $253M.
+                </div>
               </li>
               
               <li className="bg-purple-900/10 border border-purple-800/30 p-4 rounded-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-purple-700/50 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">ESTRATEGIA 4</div>
                 <strong className="text-purple-400 block mb-1">4. Cuentas AFC (Art. 311-1 E.T.):</strong> 
                 Si vendes tu casa de habitación (poseída por más de 2 años) y depositas el dinero en una cuenta AFC o lo usas para pagar crédito hipotecario, puedes eximir hasta <strong>5.000 UVT (aprox. $235 millones)</strong> de la Ganancia Ocasional restante.
+                <div className="mt-2 bg-stone-950/50 p-2.5 rounded-lg text-xs text-stone-400 border border-stone-800/50">
+                  <span className="text-purple-400 font-semibold block mb-0.5">Ejemplo Numérico:</span> Después de aplicar la Estrategia 1, te quedó una utilidad gravable de $100M. Si los depositas en tu cuenta AFC, tu utilidad exenta cubre los $100M enteros. ¡Pagas $0 de impuesto final!
+                </div>
               </li>
             </ul>
           </div>
