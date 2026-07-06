@@ -2005,7 +2005,135 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
             </div>
           </div>
         </div>
+        </div>
       )}
+
+      {activeTab === 'vendedor' && (() => {
+        const salePrice = propertyValue; // We can use the same propertyValue state as the sale price
+        const purchasePrice = sellerPurchaseValue;
+        const yearsOwned = sellerYearsOwned;
+        
+        // Mitigación Tributaria
+        const isMitigated = yearsOwned >= 2;
+        const UVT = 47065;
+        const maxExencion = 5000 * UVT; // $235,325,000
+        
+        const gananciaBruta = Math.max(0, salePrice - purchasePrice);
+        const exencion = isMitigated ? Math.min(gananciaBruta, maxExencion) : 0;
+        const gananciaGravable = gananciaBruta - exencion;
+        const gananciaOcasional = gananciaGravable * 0.15; // 15% rate
+        
+        const comisionReal = salePrice * (commissionRate / 100);
+        const retefuente = salePrice * (sellerRetencionRate / 100); // Usually 1%
+        const notaria = salePrice * (sellerNotariaRate / 100); // Usually 0.27%
+        
+        const totalGastos = comisionReal + retefuente + notaria + gananciaOcasional;
+        const netoRecibido = salePrice - totalGastos;
+        
+        return (
+          <div className="w-full lg:w-7/12 animate-fade-in p-6 mx-auto space-y-6 flex-1">
+            <h2 className="text-2xl font-light text-white mb-2">Simulador para Vendedores</h2>
+            <p className="text-stone-400 text-sm mb-6">Calcula tus ganancias netas después de impuestos, notaría y comisiones. Analiza el impacto de la exención de Ganancia Ocasional.</p>
+            
+            {/* INGRESO DE DATOS */}
+            <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5">
+              <h3 className="text-brand-gold font-semibold mb-4 flex items-center gap-2">
+                <DollarSign className="w-4 h-4" /> 1. Datos de la Propiedad
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <CurrencyInput 
+                  label="Valor de Venta (Actual)"
+                  value={propertyValue}
+                  onChange={setPropertyValue}
+                />
+                <CurrencyInput 
+                  label="Costo Fiscal (Valor de Compra)"
+                  value={sellerPurchaseValue}
+                  onChange={setSellerPurchaseValue}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-stone-950 p-3 rounded-xl border border-stone-800">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-xs text-stone-400">Años de Posesión</label>
+                    <div className="text-xs font-semibold text-brand-gold">{yearsOwned} años</div>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" max="20" step="1"
+                    value={sellerYearsOwned}
+                    onChange={(e) => setSellerYearsOwned(Number(e.target.value))}
+                    className="w-full accent-brand-gold h-1.5 bg-stone-800 rounded-lg appearance-none cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* RESULTADOS */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              <div className="bg-stone-900 border border-stone-800 rounded-2xl p-5">
+                <p className="text-stone-400 text-[10px] uppercase tracking-widest mb-1">Neto Estimado (En tu bolsillo)</p>
+                <h2 className="text-3xl font-light text-emerald-400 mb-4">
+                  {formatCurrency(netoRecibido)}
+                </h2>
+                <div className="space-y-2 pt-4 border-t border-stone-800 text-xs text-stone-300">
+                  <div className="flex justify-between"><span>Precio de Venta:</span> <span className="text-white font-medium">{formatCurrency(salePrice)}</span></div>
+                  <div className="flex justify-between text-stone-500"><span>Gastos Notariales (Aprox {sellerNotariaRate}%):</span> <span>-{formatCurrency(notaria)}</span></div>
+                  <div className="flex justify-between text-stone-500"><span>Retención en la Fuente ({sellerRetencionRate}%):</span> <span>-{formatCurrency(retefuente)}</span></div>
+                  <div className="flex justify-between text-stone-500"><span>Comisión Inmobiliaria ({commissionRate}%):</span> <span>-{formatCurrency(comisionReal)}</span></div>
+                  <div className="flex justify-between text-rose-400 font-medium"><span>Imp. Ganancia Ocasional:</span> <span>-{formatCurrency(gananciaOcasional)}</span></div>
+                </div>
+              </div>
+
+              {/* AFC MITIGATION CARD */}
+              <div className="bg-sky-900/10 border border-sky-800/30 rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between">
+                <div className="absolute top-0 right-0 bg-sky-900/40 text-sky-300 text-[9px] font-bold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg border-b border-l border-sky-800/30">
+                  LEGAL & TRIBUTARIO
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-sky-400 mb-2 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5" /> Plan de Mitigación Tributaria
+                  </h4>
+                  <p className="text-xs text-stone-300 leading-relaxed mb-3">
+                    Al vender tu casa de habitación y tenerla por más de 2 años, puedes <strong>eximir hasta 5.000 UVT (Aprox. $235M)</strong> de Ganancia Ocasional depositando en una <strong>Cuenta AFC</strong>.
+                  </p>
+                  
+                  <div className="bg-stone-950/50 p-3 rounded-lg border border-sky-900/20 text-xs mb-4">
+                    <div className="flex justify-between mb-1.5">
+                      <span className="text-stone-400">Ganancia Bruta Estimada:</span>
+                      <span className="text-stone-200">{formatCurrency(gananciaBruta)}</span>
+                    </div>
+                    {isMitigated ? (
+                      <div className="flex justify-between mb-1.5">
+                        <span className="text-stone-400">Exención AFC Aplicada:</span>
+                        <span className="text-emerald-400 font-bold">-{formatCurrency(exencion)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between mb-1.5">
+                        <span className="text-stone-400">Exención AFC:</span>
+                        <span className="text-rose-400 text-[10px]">(Requiere 2+ años de posesión)</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-stone-800/50 pt-2 mt-1">
+                      <span className="text-stone-300 font-bold">Base Gravable (15%):</span>
+                      <span className="text-white font-bold">{formatCurrency(gananciaGravable)}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <button 
+                  onClick={() => setShowMitigationModal(true)}
+                  className="w-full py-2 bg-sky-900/20 hover:bg-sky-900/40 border border-sky-800/50 rounded-lg text-sky-300 text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  <Info className="w-4 h-4" /> Ver más estrategias fiscales
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
