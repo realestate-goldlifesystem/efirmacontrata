@@ -275,7 +275,8 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
     };
 
     // 2. Extraer valores del Excel
-    const colLoc = findCol(['escriba el barrio del inmueble', 'barrio', 'localidad']);
+    const colLoc = findCol(['selecciona la localidad del inmueble', 'localidad']);
+    const colBarrio = findCol(['escriba el barrio del inmueble', 'barrio']);
     const colHab = findCol(['habitacion', 'habitaciones']);
     const colBan = findCol(['bano', 'baño']);
     const colArea = findCol(['area', 'área']);
@@ -316,13 +317,16 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
     else if (String(garajes).toLowerCase().includes('comunal')) garajes = 'COM';
     
     let localidadVal = colLoc !== -1 ? (rowData[colLoc] || '') : '';
-    if (localidadVal) {
+    
+    let barrioVal = colBarrio !== -1 ? (rowData[colBarrio] || '') : '';
+    if (barrioVal) {
         // Transformar LISBOA a Lisboa, CEDRITOS a Cedritos
-        localidadVal = String(localidadVal).toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+        barrioVal = String(barrioVal).toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
     }
 
     const mapReemplazos = {
         '{{Localidad}}': localidadVal,
+        '{{Barrio}}': barrioVal,
         '{{#H}}': colHab !== -1 ? (String(rowData[colHab]).replace(/[^0-9]/g, '') || '') : '',
         '{{#B}}': colBan !== -1 ? (String(rowData[colBan]).replace(/[^0-9]/g, '') || '') : '',
         '{{#M}}': colArea !== -1 ? (String(rowData[colArea]).replace(/[^0-9]/g, '') || '') : '',
