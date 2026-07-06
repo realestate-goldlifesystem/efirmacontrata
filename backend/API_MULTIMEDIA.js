@@ -359,7 +359,11 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
 
     // 4. Reemplazar Textos
     for (let tag in mapReemplazos) {
-        slideToKeep.replaceAllText(tag, String(mapReemplazos[tag]));
+        let val = mapReemplazos[tag];
+        // En Apps Script, replaceAllText falla silenciosamente si se le pasa un string vacío ""
+        // Por eso, si está vacío, lo reemplazamos con un espacio en blanco " " para que la llave desaparezca
+        val = (val === '' || val === null || val === undefined) ? ' ' : String(val);
+        slideToKeep.replaceAllText(tag, val);
     }
     
     // 5. Reemplazar Imagen
