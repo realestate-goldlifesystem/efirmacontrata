@@ -16,6 +16,7 @@ import PartnersAndContact from './components/PartnersAndContact';
 import Footer from './components/Footer';
 import LoginRolesModal from './components/LoginRolesModal';
 import ScheduleVisitForm from './components/ScheduleVisitForm';
+import AgentDashboard from './components/AgentDashboard';
 
 export default function App() {
   const [selectedServiceType, setSelectedServiceType] = useState<'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta' | null>(null);
@@ -36,6 +37,7 @@ export default function App() {
 
   const [showRolesModal, setShowRolesModal] = useState(false);
   const [showScheduleVisit, setShowScheduleVisit] = useState(false);
+  const [showCalculatorPage, setShowCalculatorPage] = useState(false);
   const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(() => {
     try {
       return !!localStorage.getItem('registerPropertyCurrentStep');
@@ -80,7 +82,7 @@ export default function App() {
     }
     
     if (isAgentLoggedIn) {
-      setShowRegisterPage(true);
+      setShowRegisterPage(true); // Direct to form if they clicked a specific package
       window.scrollTo({ top: 0, behavior: 'instant' });
     } else {
       setShowRolesModal(true);
@@ -92,7 +94,9 @@ export default function App() {
     setInitialCalculatorState(null);
     
     if (isAgentLoggedIn) {
-      setShowRegisterPage(true);
+      // Just let them see the dashboard instead of forcing the form
+      setShowRegisterPage(false);
+      setShowCalculatorPage(false);
       window.scrollTo({ top: 0, behavior: 'instant' });
     } else {
       setShowRolesModal(true);
@@ -119,6 +123,20 @@ export default function App() {
               }}
             />
           </div>
+        ) : showCalculatorPage ? (
+          <div className="pt-24 animate-fade-in flex items-center justify-center min-h-[60vh]">
+            {/* TODO: Implementar InversorCalculator */}
+            <div className="text-center text-white bg-stone-900 p-12 rounded-3xl border border-brand-gold">
+              <h2 className="text-3xl font-light text-brand-gold mb-4">Calculadora en Construcción 🚧</h2>
+              <p className="text-stone-400 mb-8">Estamos forjando la herramienta de cálculo más potente del mercado PropTech.</p>
+              <button 
+                onClick={() => setShowCalculatorPage(false)}
+                className="px-6 py-2 bg-brand-gold text-stone-950 font-semibold rounded-full hover:bg-amber-400 transition"
+              >
+                Volver al Panel
+              </button>
+            </div>
+          </div>
         ) : showRegisterPage ? (
           /* Independent, gamified property registration view with live accounting/yield computations */
           <div className="pt-24 animate-fade-in">
@@ -127,8 +145,25 @@ export default function App() {
               initialCalculatorState={initialCalculatorState}
               onBack={() => {
                 setShowRegisterPage(false);
-                setIsAgentLoggedIn(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        ) : isAgentLoggedIn ? (
+          <div className="pt-24 animate-fade-in">
+            <AgentDashboard 
+              onOpenForm={() => {
+                setShowRegisterPage(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onOpenCalculator={() => {
+                setShowCalculatorPage(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onLogout={() => {
+                setIsAgentLoggedIn(false);
+                setShowRegisterPage(false);
+                setShowCalculatorPage(false);
               }}
             />
           </div>
@@ -180,7 +215,9 @@ export default function App() {
           onSelectAgent={() => {
             setIsAgentLoggedIn(true);
             setShowRolesModal(false);
-            setShowRegisterPage(true);
+            // Ya no forzamos showRegisterPage(true), dejamos que caiga en el Dashboard
+            setShowRegisterPage(false);
+            setShowCalculatorPage(false);
             window.scrollTo({ top: 0, behavior: 'instant' });
           }}
           onSelectOwner={() => {
