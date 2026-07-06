@@ -2005,7 +2005,6 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
             </div>
           </div>
         </div>
-        </div>
       )}
 
       {activeTab === 'vendedor' && (() => {
