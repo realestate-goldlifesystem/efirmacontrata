@@ -659,6 +659,12 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         <strong>Filtro de seguridad:</strong> Pre-calificamos la capacidad económica y crédito pre-aprobado de cada interesado antes de programar cualquier visita al inmueble.
                       </p>
                     </div>
+                    <div className="flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-3 rounded-lg text-xs text-sky-800">
+                      <Check className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                      <p className="leading-normal font-sans">
+                        <strong>Plan de Mitigación Tributaria (Cuentas AFC):</strong> Te orientamos legalmente para que, al vender tu casa de habitación (poseída por +2 años), puedas eximir hasta <strong>5.000 UVT (Aprox. $235 millones)</strong> del impuesto de Ganancia Ocasional (15%) depositando el dinero en una cuenta AFC.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -775,6 +781,14 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                             <span className="text-emerald-700 font-bold font-mono">$0 (Ahorrada)</span>
                           </div>
                         </div>
+
+                        {/* AFC Benefit */}
+                        <div className="mt-3 flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-3 rounded-lg text-xs text-sky-800">
+                          <Check className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                          <p className="leading-normal font-sans">
+                            <strong>Plan de Mitigación Tributaria:</strong> Puedes eximir hasta 5.000 UVT del 15% de Ganancia Ocasional invirtiendo en cuenta AFC.
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -890,6 +904,14 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                             <span>Fase de arrendamiento:</span>
                             <span className="text-emerald-700 font-semibold">Transferida a nuevo dueño</span>
                           </div>
+                        </div>
+
+                        {/* AFC Benefit */}
+                        <div className="mt-3 flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-3 rounded-lg text-xs text-sky-800">
+                          <Check className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                          <p className="leading-normal font-sans">
+                            <strong>Plan de Mitigación Tributaria:</strong> Puedes eximir hasta 5.000 UVT del 15% de Ganancia Ocasional invirtiendo en cuenta AFC.
+                          </p>
                         </div>
                       </div>
                     )}
