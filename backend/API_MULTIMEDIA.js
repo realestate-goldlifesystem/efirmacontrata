@@ -299,7 +299,7 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
         precioFinal = formatCurrency(precioGen);
     } else {
         // Venta
-        let baseVenta = rowData[headers.indexOf('TIPO DE NEGOCIO')].includes('Admi-Venta') || rowData[headers.indexOf('TIPO DE NEGOCIO')].includes('Vendi-Renta') ? precioVen : precioGen;
+        let baseVenta = precioVen;
         precioFinal = formatCurrency(baseVenta);
         
         // Calcular +20%
