@@ -125,14 +125,7 @@ export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner 
                     text="signin_with"
                     auto_select={true}
                   />
-                  
-                  {/* BOTÓN TEMPORAL PARA DESARROLLO LOCAL */}
-                  <button 
-                    onClick={onSelectAgent}
-                    className="mt-2 text-xs text-brand-gold underline hover:text-amber-500"
-                  >
-                    (Dev) Entrar directo sin Google
-                  </button>
+
                 </div>
                 <p className="text-[10px] text-center text-stone-400 mt-4">
                   Solo los agentes autorizados por Gold Life pueden acceder al sistema de registro.

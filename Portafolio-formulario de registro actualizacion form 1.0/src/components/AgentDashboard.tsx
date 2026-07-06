@@ -14,10 +14,10 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout 
       {/* Botón de Logout en la esquina superior */}
       <button 
         onClick={onLogout}
-        className="absolute top-6 right-6 flex items-center gap-2 text-stone-400 hover:text-brand-gold transition-colors"
+        className="absolute top-4 right-4 md:top-8 md:right-8 flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all z-50 shadow-md hover:shadow-brand-gold/10"
       >
-        <LogOut className="w-5 h-5" />
-        <span>Cerrar Sesión</span>
+        <LogOut className="w-4 h-4 md:w-5 md:h-5" />
+        <span className="text-sm md:text-base font-medium">Cerrar Sesión</span>
       </button>
 
       <div className="text-center mb-12 max-w-2xl">
