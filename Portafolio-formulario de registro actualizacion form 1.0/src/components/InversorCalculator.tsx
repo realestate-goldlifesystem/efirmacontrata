@@ -451,18 +451,37 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
       
       {showMitigationModal && (
         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
-          <div className="bg-stone-900 border border-stone-700 w-full max-w-lg rounded-2xl p-6 relative">
+          <div className="bg-stone-900 border border-stone-700 w-full max-w-2xl rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto">
             <button onClick={() => setShowMitigationModal(false)} className="absolute top-4 right-4 text-stone-500 hover:text-white"><X /></button>
-            <h2 className="text-xl font-bold text-white mb-4">Plan de Mitigación Tributaria</h2>
-            <p className="text-stone-400 text-sm mb-4">Estrategias recomendadas para reducir la carga fiscal:</p>
+            <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+              <ShieldCheck className="w-6 h-6 text-sky-400" /> Plan de Mitigación Tributaria
+            </h2>
+            <p className="text-stone-400 text-sm mb-6">4 estrategias legales (Estatuto Tributario) para reducir el impuesto de Ganancia Ocasional al vender tu inmueble:</p>
+            
             <ul className="space-y-4 text-sm text-stone-300">
-              <li className="bg-sky-900/20 border border-sky-800/50 p-3 rounded-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-sky-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">NUEVO</div>
-                <strong className="text-sky-400 block mb-1">Cuentas AFC (Ahorro al Fomento de la Construcción):</strong> 
-                Si vendes tu casa de habitación (poseída por más de 2 años) y depositas el dinero en una cuenta AFC o lo usas para pagar un crédito hipotecario, puedes eximir hasta <strong>5.000 UVT (aprox. $235 millones de pesos)</strong> de la Ganancia Ocasional, según el Art. 311-1 del Estatuto Tributario.
+              <li className="bg-sky-900/20 border border-sky-800/50 p-4 rounded-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-sky-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">ESTRATEGIA 1</div>
+                <strong className="text-sky-400 block mb-1">1. Factor Multiplicador (Reajuste Fiscal - Art. 73 E.T.):</strong> 
+                Permite tomar el valor original de compra y multiplicarlo por el índice anual fijado por el gobierno. Esto actualiza el costo del inmueble a valor presente, reduciendo drásticamente la utilidad gravable sobre la que pagas el 15%.
               </li>
-              <li>• <strong className="text-brand-gold">Costos de mejoras:</strong> Documente remodelaciones con facturas para aumentar el valor fiscal de adquisición y reducir la ganancia bruta.</li>
-              <li>• <strong className="text-brand-gold">Gastos notariales:</strong> Asegúrese de que los gastos de escrituración y comisiones sean reportados correctamente.</li>
+
+              <li className="bg-emerald-900/10 border border-emerald-800/30 p-4 rounded-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-emerald-700/50 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">ESTRATEGIA 2</div>
+                <strong className="text-emerald-400 block mb-1">2. Avalúo Catastral como Costo Fiscal (Art. 72 E.T.):</strong> 
+                Puedes usar el avalúo catastral (o autoavalúo) del año anterior a la venta como tu "costo de compra" si este es mayor al costo real reajustado. (Debe haber sido declarado en renta).
+              </li>
+
+              <li className="bg-brand-gold/5 border border-brand-gold/20 p-4 rounded-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-brand-gold/30 text-brand-gold text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">ESTRATEGIA 3</div>
+                <strong className="text-brand-gold block mb-1">3. Capitalizar Remodelaciones y Gastos Notariales (Art. 69 E.T.):</strong> 
+                Suma al costo fiscal todas las mejoras, remodelaciones, ampliaciones y los gastos de notaría y registro de cuando compraste. <strong>Requisito vital:</strong> Solo valen las facturas electrónicas bancarizadas a nombre del propietario.
+              </li>
+              
+              <li className="bg-purple-900/10 border border-purple-800/30 p-4 rounded-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-purple-700/50 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">ESTRATEGIA 4</div>
+                <strong className="text-purple-400 block mb-1">4. Cuentas AFC (Art. 311-1 E.T.):</strong> 
+                Si vendes tu casa de habitación (poseída por más de 2 años) y depositas el dinero en una cuenta AFC o lo usas para pagar crédito hipotecario, puedes eximir hasta <strong>5.000 UVT (aprox. $235 millones)</strong> de la Ganancia Ocasional restante.
+              </li>
             </ul>
           </div>
         </div>
