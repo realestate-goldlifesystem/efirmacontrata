@@ -317,6 +317,10 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
     else if (String(garajes).toLowerCase().includes('comunal')) garajes = 'COM';
     
     let localidadVal = colLoc !== -1 ? (rowData[colLoc] || '') : '';
+    if (localidadVal) {
+        // Transformar SANTA FE a Santa Fe
+        localidadVal = String(localidadVal).toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    }
     
     let barrioVal = colBarrio !== -1 ? (rowData[colBarrio] || '') : '';
     if (barrioVal) {
