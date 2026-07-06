@@ -21,13 +21,7 @@ import InversorCalculator from './components/InversorCalculator';
 
 export default function App() {
   const [selectedServiceType, setSelectedServiceType] = useState<'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta' | null>(null);
-  const [showRegisterPage, setShowRegisterPage] = useState(() => {
-    try {
-      return !!localStorage.getItem('registerPropertyCurrentStep');
-    } catch {
-      return false;
-    }
-  });
+  const [showRegisterPage, setShowRegisterPage] = useState(false);
   const [initialCalculatorState, setInitialCalculatorState] = useState<{
     rentPrice: number;
     isMultiProperty: boolean;
@@ -41,7 +35,7 @@ export default function App() {
   const [showCalculatorPage, setShowCalculatorPage] = useState(false);
   const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(() => {
     try {
-      return !!localStorage.getItem('registerPropertyCurrentStep');
+      return localStorage.getItem('agentLoggedIn') === 'true';
     } catch {
       return false;
     }
@@ -153,6 +147,7 @@ export default function App() {
               }}
               onLogout={() => {
                 setIsAgentLoggedIn(false);
+                try { localStorage.removeItem('agentLoggedIn'); } catch {}
                 setShowRegisterPage(false);
                 setShowCalculatorPage(false);
               }}
@@ -205,6 +200,7 @@ export default function App() {
           onClose={() => setShowRolesModal(false)}
           onSelectAgent={() => {
             setIsAgentLoggedIn(true);
+            try { localStorage.setItem('agentLoggedIn', 'true'); } catch {}
             setShowRolesModal(false);
             // Ya no forzamos showRegisterPage(true), dejamos que caiga en el Dashboard
             setShowRegisterPage(false);
