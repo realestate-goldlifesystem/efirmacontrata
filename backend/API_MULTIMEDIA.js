@@ -275,8 +275,8 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
     };
 
     // 2. Extraer valores del Excel
-    const colLoc = findCol(['selecciona la localidad del inmueble', 'localidad']);
-    const colBarrio = findCol(['escriba el barrio del inmueble', 'barrio']);
+    const colLoc = findCol(['selecciona la localidad del inmueble']);
+    const colBarrio = findCol(['escriba el barrio del inmueble']);
     const colHab = findCol(['habitacion', 'habitaciones']);
     const colBan = findCol(['bano', 'baño']);
     const colArea = findCol(['area', 'área']);
