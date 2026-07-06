@@ -681,6 +681,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO": formData.serviceType === 'corretaje' ? `${formData.corretajePercent}%` : '',
         "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE ": formData.serviceType === 'administracion' ? formData.adminPercentSelector : '',
         "(Porcentaje en números)": formData.serviceType === 'venta' ? formData.salesCommissionSelector : '',
+        "(1%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '1%' ? 'UNO' : '',
         "(1.5%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '1.5%' ? 'UNO PUNTO CINCO' : '',
         "(2%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '2%' ? 'DOS' : '',
         "(2.5%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '2.5%' ? 'DOS PUNTO CINCO' : '',
@@ -690,6 +691,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         
         "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE (Admi-Venta)": formData.serviceType === 'admi-venta' ? formData.admiVentaAdminPercentSelector : '',
         "(Porcentaje en números) (A-V)": formData.serviceType === 'admi-venta' ? formData.admiVentaSalesCommissionSelector : formData.serviceType === 'vendi-renta' ? formData.salesCommissionSelector : '',
+        "(1%)  (Porcentaje en letras)  (A-V)": (formData.serviceType === 'admi-venta' && formData.admiVentaSalesCommissionSelector === '1%') || (formData.serviceType === 'vendi-renta' && formData.salesCommissionSelector === '1%') ? 'UNO' : '',
         "(1.5%)  (Porcentaje en letras)  (A-V)": (formData.serviceType === 'admi-venta' && formData.admiVentaSalesCommissionSelector === '1.5%') || (formData.serviceType === 'vendi-renta' && formData.salesCommissionSelector === '1.5%') ? 'UNO PUNTO CINCO' : '',
         "(2%)  (Porcentaje en letras)  (A-V)": (formData.serviceType === 'admi-venta' && formData.admiVentaSalesCommissionSelector === '2%') || (formData.serviceType === 'vendi-renta' && formData.salesCommissionSelector === '2%') ? 'DOS' : '',
         "(2.5%)  (Porcentaje en letras) (A-V)": (formData.serviceType === 'admi-venta' && formData.admiVentaSalesCommissionSelector === '2.5%') || (formData.serviceType === 'vendi-renta' && formData.salesCommissionSelector === '2.5%') ? 'DOS PUNTO CINCO' : '',
@@ -1335,6 +1337,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                     <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
                                     <option value="2%">2% (DOS POR CIENTO)</option>
                                     <option value="1.5%">1.5% (UNO PUNTO CINCO POR CIENTO)</option>
+                                    {(formData.isCiencuadras && formData.serviceType === 'venta') && <option value="1%">1% (UNO POR CIENTO)</option>}
                                   </select>
                                 </div>
                               </div>
@@ -2575,6 +2578,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                 <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
                                 <option value="2%">2% (DOS POR CIENTO)</option>
                                 <option value="1.5%">1.5% (UNO PUNTO CINCO POR CIENTO)</option>
+                                {(formData.isCiencuadras && formData.serviceType === 'venta') && <option value="1%">1% (UNO POR CIENTO)</option>}
                               </select>
                             </div>
                           </div>
@@ -2655,6 +2659,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                               <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
                               <option value="2%">2% (DOS POR CIENTO)</option>
                               <option value="1.5%">1.5% (UNO PUNTO CINCO POR CIENTO)</option>
+                              {(formData.isCiencuadras && formData.serviceType === 'venta') && <option value="1%">1% (UNO POR CIENTO)</option>}
                             </select>
                           </div>
                         )}
