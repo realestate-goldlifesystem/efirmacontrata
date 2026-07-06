@@ -17,6 +17,7 @@ import Footer from './components/Footer';
 import LoginRolesModal from './components/LoginRolesModal';
 import ScheduleVisitForm from './components/ScheduleVisitForm';
 import AgentDashboard from './components/AgentDashboard';
+import InversorCalculator from './components/InversorCalculator';
 
 export default function App() {
   const [selectedServiceType, setSelectedServiceType] = useState<'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta' | null>(null);
@@ -124,18 +125,8 @@ export default function App() {
             />
           </div>
         ) : showCalculatorPage ? (
-          <div className="pt-24 animate-fade-in flex items-center justify-center min-h-[60vh]">
-            {/* TODO: Implementar InversorCalculator */}
-            <div className="text-center text-white bg-stone-900 p-12 rounded-3xl border border-brand-gold">
-              <h2 className="text-3xl font-light text-brand-gold mb-4">Calculadora en Construcción 🚧</h2>
-              <p className="text-stone-400 mb-8">Estamos forjando la herramienta de cálculo más potente del mercado PropTech.</p>
-              <button 
-                onClick={() => setShowCalculatorPage(false)}
-                className="px-6 py-2 bg-brand-gold text-stone-950 font-semibold rounded-full hover:bg-amber-400 transition"
-              >
-                Volver al Panel
-              </button>
-            </div>
+          <div className="pt-28 pb-12 animate-fade-in px-4">
+            <InversorCalculator onBack={() => setShowCalculatorPage(false)} />
           </div>
         ) : showRegisterPage ? (
           /* Independent, gamified property registration view with live accounting/yield computations */

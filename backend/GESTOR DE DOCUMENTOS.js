@@ -425,6 +425,14 @@ function doGet(e) {
         result = verificarEstadoLink(cdr, tipo, docs);
         break;
 
+      case 'obtenerTasasSFC':
+        if (typeof obtenerTasasParaFrontend === 'function') {
+           result = JSON.parse(obtenerTasasParaFrontend());
+        } else {
+           result = [];
+        }
+        break;
+
       case 'obtenerRegistrosInquilinos':
         return handleObtenerRegistrosInquilinos(); // Estos ya retornan ContentService, revisar si necesitan CORS
 

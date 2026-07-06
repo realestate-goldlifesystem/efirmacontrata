@@ -192,3 +192,25 @@ function limpiarScriptProperties() {
     SpreadsheetApp.getUi().alert(`🧹 Limpieza completa: Se eliminaron ${keysDeleted} claves obsoletas del ScriptProperties.`);
   }
 }
+
+/**
+ * Instala el Cron Job Semanal para sincronizar las tasas desde la SFC
+ */
+function instalarTriggerSincroTasasSFC() {
+    const fnName = 'sincroTasasSFC';
+    const triggers = ScriptApp.getProjectTriggers();
+    
+    // Limpiar si ya existía para evitar duplicados
+    triggers.forEach(t => {
+        if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
+    });
+
+    // Se ejecutará cada semana (Los lunes a las 2 AM aprox)
+    ScriptApp.newTrigger(fnName)
+        .timeBased()
+        .onWeekDay(ScriptApp.WeekDay.MONDAY)
+        .atHour(2)
+        .create();
+
+    SpreadsheetApp.getUi().alert('✅ Cron Trigger de SFC activado (Ejecución Semanal: Lunes 2:00 AM).');
+}

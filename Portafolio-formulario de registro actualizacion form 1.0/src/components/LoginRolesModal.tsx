@@ -116,7 +116,7 @@ export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner 
                   <p className="text-xs text-stone-500 mt-1">Ingresa con tus credenciales corporativas</p>
                 </div>
 
-                <div className="flex justify-center my-6">
+                <div className="flex flex-col items-center gap-4 my-6">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}
@@ -125,6 +125,14 @@ export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner 
                     text="signin_with"
                     auto_select={true}
                   />
+                  
+                  {/* BOTÓN TEMPORAL PARA DESARROLLO LOCAL */}
+                  <button 
+                    onClick={onSelectAgent}
+                    className="mt-2 text-xs text-brand-gold underline hover:text-amber-500"
+                  >
+                    (Dev) Entrar directo sin Google
+                  </button>
                 </div>
                 <p className="text-[10px] text-center text-stone-400 mt-4">
                   Solo los agentes autorizados por Gold Life pueden acceder al sistema de registro.
