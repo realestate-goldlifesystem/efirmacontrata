@@ -7,12 +7,14 @@ const CONFIG_MULTIMEDIA = {
     TEMPLATE_SLIDES_ID: '1ysnlqmrb36y5vsT6FWBQ2rDBVhguLEBTDLPOY1UK7DI',
     // Array de IDs de las diapositivas para rotación (Round-Robin)
     SLIDE_IDS_ARRIENDO: [
+        'g3a8b30d3462_0_32', // Original
         'g3f37a897bb7_0_77',
         'g3f37a897bb7_0_94',
         'g3f37a897bb7_0_111',
         'g3f37a897bb7_0_128'
     ],
     SLIDE_IDS_VENTA: [
+        'g3a8b30d3462_0_63', // Original
         'g3f37a897bb7_0_0',
         'g3f37a897bb7_0_18',
         'g3f37a897bb7_0_36',
