@@ -19,12 +19,20 @@ const blockMessage = document.getElementById('block-message');
 
 const step1 = document.getElementById('step-1');
 const step2 = document.getElementById('step-2');
+const step3 = document.getElementById('step-3');
 const dot1 = document.getElementById('dot-1');
 const dot2 = document.getElementById('dot-2');
+const dot3 = document.getElementById('dot-3');
 
-const btnNext = document.getElementById('btn-next');
-const btnBack = document.getElementById('btn-back');
+const btnNext1 = document.getElementById('btn-next-1');
+const btnNext2 = document.getElementById('btn-next-2');
+const btnBack1 = document.getElementById('btn-back-1');
+const btnBack2 = document.getElementById('btn-back-2');
 const btnUpload = document.getElementById('btn-upload');
+
+const top10Grid = document.getElementById('top10-grid');
+const top10Counter = document.getElementById('top10-counter');
+let selectedTop10Indices = new Set();
 
 const videoDropZone = document.getElementById('video-drop-zone');
 const videoInput = document.getElementById('video-input');
@@ -133,19 +141,118 @@ function handleSubirNuevo() {
 
 
 // Navegación Pasos
-btnNext.addEventListener('click', () => {
+btnNext1.addEventListener('click', () => {
     step1.classList.remove('active');
     step2.classList.add('active');
     dot1.classList.remove('active');
     dot2.classList.add('active');
+    renderTop10Grid();
 });
 
-btnBack.addEventListener('click', () => {
+btnBack1.addEventListener('click', () => {
     step2.classList.remove('active');
     step1.classList.add('active');
     dot2.classList.remove('active');
     dot1.classList.add('active');
 });
+
+btnNext2.addEventListener('click', () => {
+    step2.classList.remove('active');
+    step3.classList.add('active');
+    dot2.classList.remove('active');
+    dot3.classList.add('active');
+});
+
+btnBack2.addEventListener('click', () => {
+    step3.classList.remove('active');
+    step2.classList.add('active');
+    dot3.classList.remove('active');
+    dot2.classList.add('active');
+});
+
+// Lógica de Renderizado y Selección TOP 10
+function renderTop10Grid() {
+    top10Grid.innerHTML = '';
+    selectedTop10Indices.clear();
+    
+    // Por defecto, la foto índice 0 siempre es TOP 10 (Portada)
+    if (selectedPhotos.length > 0) {
+        selectedTop10Indices.add(0);
+    }
+    
+    selectedPhotos.forEach((file, index) => {
+        const card = document.createElement('div');
+        card.className = 'photo-card top10-card';
+        card.style.cursor = 'pointer';
+        card.style.transition = 'all 0.2s';
+        
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.loading = "lazy";
+        
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.inset = '0';
+        overlay.style.border = '3px solid transparent';
+        overlay.style.transition = 'all 0.2s';
+        
+        const badge = document.createElement('div');
+        badge.style.position = 'absolute';
+        badge.style.top = '5px';
+        badge.style.left = '5px';
+        badge.style.background = 'rgba(0,0,0,0.7)';
+        badge.style.color = 'white';
+        badge.style.fontSize = '12px';
+        badge.style.fontWeight = 'bold';
+        badge.style.padding = '3px 8px';
+        badge.style.borderRadius = '4px';
+        badge.textContent = index === 0 ? 'PORTADA' : `#${index + 1}`;
+        
+        card.appendChild(img);
+        card.appendChild(overlay);
+        card.appendChild(badge);
+        
+        // Estado inicial
+        if (selectedTop10Indices.has(index)) {
+            overlay.style.border = '3px solid var(--primary)';
+            badge.style.background = 'var(--primary)';
+            badge.style.color = '#000';
+            if (index !== 0) badge.textContent = '⭐ TOP';
+        }
+        
+        card.onclick = () => {
+            if (index === 0) return; // La portada no se puede desseleccionar
+            
+            if (selectedTop10Indices.has(index)) {
+                selectedTop10Indices.delete(index);
+                overlay.style.border = '3px solid transparent';
+                badge.style.background = 'rgba(0,0,0,0.7)';
+                badge.style.color = 'white';
+                badge.textContent = `#${index + 1}`;
+            } else {
+                const maxAllowed = Math.min(10, selectedPhotos.length);
+                if (selectedTop10Indices.size >= maxAllowed) return; // No dejar seleccionar más
+                
+                selectedTop10Indices.add(index);
+                overlay.style.border = '3px solid var(--primary)';
+                badge.style.background = 'var(--primary)';
+                badge.style.color = '#000';
+                badge.textContent = '⭐ TOP';
+            }
+            updateTop10Counter();
+        };
+        
+        top10Grid.appendChild(card);
+    });
+    
+    updateTop10Counter();
+}
+
+function updateTop10Counter() {
+    const maxAllowed = Math.min(10, selectedPhotos.length);
+    top10Counter.textContent = `Seleccionadas: ${selectedTop10Indices.size} / ${maxAllowed}`;
+    btnNext2.disabled = selectedTop10Indices.size !== maxAllowed;
+}
 
 // Lógica Video
 videoDropZone.addEventListener('click', () => videoInput.click());
@@ -234,7 +341,7 @@ function updateBadges() {
 
 function updateSelectedPhotosArray() {
     selectedPhotos = Array.from(photoGrid.children).map(card => card.fileRef);
-    btnNext.disabled = selectedPhotos.length === 0;
+    btnNext1.disabled = selectedPhotos.length === 0;
 }
 
 // Sortable
@@ -264,11 +371,11 @@ btnUpload.addEventListener('click', async () => {
         progressFill.style.width = '0%';
         const youtubeId = await uploadVideoToYouTube(selectedVideo, progressPercentage, progressFill);
         
-        // 2. Subir Fotos a Google Drive
+        // 2. Subir Fotos a Google Drive y organizar TOP 10
         progressLabel.textContent = 'Subiendo Fotografías a Drive...';
         progressPercentage.textContent = '';
         progressFill.style.width = '0%';
-        const photoIds = await uploadPhotosToDrive(selectedPhotos, progressLabel, progressFill);
+        const photoIds = await uploadPhotosToDrive(selectedPhotos, selectedTop10Indices, progressLabel, progressFill);
         
         // 3. Notificar a Apps Script para generar plantillas
         progressLabel.textContent = 'Creando plantillas PDF/PNG... (puede tardar un minuto)';
@@ -372,23 +479,26 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
     }
 }
 
-async function uploadPhotosToDrive(photosArray, labelEl, fillEl) {
+async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
     if (!userToken || !propertyData || !propertyData.fotosFolderId) {
         throw new Error("No hay carpeta de fotografías asignada en el CRM.");
     }
     
     const uploadedIds = [];
+    const top10UploadedMeta = []; // Para guardar los ids que necesitamos copiar al top 10
+    
     let idx = 1;
     const total = photosArray.length;
 
+    // 1. Subir todas a la carpeta principal
     for (const item of photosArray) {
         const file = item.file || item;
         labelEl.textContent = `Subiendo foto ${idx} de ${total} a Drive...`;
         fillEl.style.width = Math.round((idx / total) * 100) + '%';
         
-        // Forma "multipart" de Google Drive API (Sube archivo y nombre al mismo tiempo)
+        const photoName = idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`;
         const metadata = {
-            name: idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`,
+            name: photoName,
             parents: [propertyData.fotosFolderId]
         };
         
@@ -405,10 +515,51 @@ async function uploadPhotosToDrive(photosArray, labelEl, fillEl) {
         if (res.ok) {
             const data = await res.json();
             uploadedIds.push(data.id);
+            
+            // Si esta foto (índice 0-based) es del TOP 10, la anotamos
+            if (top10Indices.has(idx - 1)) {
+                top10UploadedMeta.push({ id: data.id, name: photoName });
+            }
         } else {
             console.error("Error subiendo foto:", await res.text());
         }
         idx++;
+    }
+    
+    // 2. Crear subcarpeta "TOP 10" y copiar fotos
+    if (top10UploadedMeta.length > 0) {
+        labelEl.textContent = 'Organizando subcarpeta TOP 10...';
+        fillEl.style.width = '100%';
+        
+        // Crear carpeta
+        const folderMeta = {
+            name: 'TOP 10',
+            mimeType: 'application/vnd.google-apps.folder',
+            parents: [propertyData.fotosFolderId]
+        };
+        
+        const resFolder = await fetch('https://www.googleapis.com/drive/v3/files', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(folderMeta)
+        });
+        
+        if (resFolder.ok) {
+            const folderData = await resFolder.json();
+            const top10FolderId = folderData.id;
+            
+            // Copiar archivos
+            for (const meta of top10UploadedMeta) {
+                await fetch(`https://www.googleapis.com/drive/v3/files/${meta.id}/copy`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: meta.name,
+                        parents: [top10FolderId]
+                    })
+                });
+            }
+        }
     }
     
     return uploadedIds;

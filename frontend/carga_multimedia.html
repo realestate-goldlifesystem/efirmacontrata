@@ -299,8 +299,9 @@
             background: var(--border-color);
             display: flex; align-items: center; justify-content: center;
             font-weight: bold; color: var(--text-muted);
+            transition: all 0.3s;
         }
-        .step-dot.active { background: var(--primary); color: #000; }
+        .step-dot.active { background: var(--primary); color: #000; box-shadow: 0 0 10px var(--primary); }
 
         /* Progress bars */
         .progress-container { display: none; margin-top: 20px; }
@@ -366,29 +367,48 @@
             <div class="steps-indicator" id="steps-indicator">
                 <div class="step-dot active" id="dot-1">1</div>
                 <div class="step-dot" id="dot-2">2</div>
+                <div class="step-dot" id="dot-3">3</div>
             </div>
 
             <!-- PASO 1: FOTOS -->
             <div id="step-1" class="step-section active">
-                <h2 class="section-title">Paso 1: Fotografías</h2>
+                <h2 class="section-title">Paso 1: Ordenar Fotografías</h2>
                 <p style="font-size: clamp(13px, 2vw, 15px); color: var(--text-muted); margin-bottom: 15px;">
-                    Arrastra para reordenar. La primera foto será la <strong>PORTADA</strong>.
+                    Arrastra las fotos para decidir su orden. La primera foto será siempre la <strong>PORTADA</strong>.
                 </p>
                 
                 <div class="drop-zone" id="photo-drop-zone">
                     <div class="icon">🖼️</div>
-                    <p>Arrastra tus fotografías aquí</p>
+                    <p>Arrastra todas tus fotografías aquí</p>
                     <input type="file" id="photo-input" accept="image/jpeg, image/png, image/heic" multiple style="display: none;">
                 </div>
 
                 <div id="photo-grid"></div>
 
-                <button id="btn-next" class="btn-primary" disabled>Siguiente Paso 👉</button>
+                <button id="btn-next-1" class="btn-primary" disabled>Siguiente: Elegir TOP 10 👉</button>
             </div>
 
-            <!-- PASO 2: VIDEO -->
+            <!-- PASO 2: SELECCIÓN TOP 10 -->
             <div id="step-2" class="step-section">
-                <h2 class="section-title">Paso 2: Video Recorrido</h2>
+                <h2 class="section-title">Paso 2: Selección TOP 10</h2>
+                <div style="background: rgba(212, 175, 55, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0; color: var(--primary); font-weight: bold; font-size: 18px;" id="top10-counter">Seleccionadas: 0 / 10</p>
+                    <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 13px;">Haz clic en las fotos que formarán el TOP 10 para campañas. La portada ya está incluida. El orden está bloqueado según el Paso 1.</p>
+                </div>
+
+                <div id="top10-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 20px;">
+                    <!-- Se llena con JS -->
+                </div>
+
+                <div class="btn-row">
+                    <button id="btn-back-1" class="btn-secondary">👈 Volver al Paso 1</button>
+                    <button id="btn-next-2" class="btn-primary" disabled>Siguiente: Subir Video 👉</button>
+                </div>
+            </div>
+
+            <!-- PASO 3: VIDEO -->
+            <div id="step-3" class="step-section">
+                <h2 class="section-title">Paso 3: Video Recorrido</h2>
                 <div class="drop-zone" id="video-drop-zone">
                     <div class="icon">🎥</div>
                     <p>Haz clic o arrastra tu video aquí (Hasta 5GB)</p>
@@ -397,7 +417,7 @@
                 </div>
                 
                 <div class="btn-row">
-                    <button id="btn-back" class="btn-secondary">👈 Volver</button>
+                    <button id="btn-back-2" class="btn-secondary">👈 Volver al Paso 2</button>
                     <button id="btn-upload" class="btn-primary" disabled>🚀 PROCESAR Y SUBIR</button>
                 </div>
 
