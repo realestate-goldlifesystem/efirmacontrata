@@ -32,7 +32,7 @@ const btnUpload = document.getElementById('btn-upload');
 
 const top10Grid = document.getElementById('top10-grid');
 const top10Counter = document.getElementById('top10-counter');
-let selectedTop10Indices = new Set();
+let selectedTop10Indices = [];
 
 const videoDropZone = document.getElementById('video-drop-zone');
 const videoInput = document.getElementById('video-input');
@@ -173,11 +173,11 @@ btnBack2.addEventListener('click', () => {
 // Lógica de Renderizado y Selección TOP 10
 function renderTop10Grid() {
     top10Grid.innerHTML = '';
-    selectedTop10Indices.clear();
+    selectedTop10Indices = [];
     
-    // Por defecto, la foto índice 0 siempre es TOP 10 (Portada)
+    // Por defecto, la foto índice 0 siempre es TOP 1 (Portada)
     if (selectedPhotos.length > 0) {
-        selectedTop10Indices.add(0);
+        selectedTop10Indices.push(0);
     }
     
     selectedPhotos.forEach((file, index) => {
@@ -212,46 +212,62 @@ function renderTop10Grid() {
         card.appendChild(overlay);
         card.appendChild(badge);
         
-        // Estado inicial
-        if (selectedTop10Indices.has(index)) {
-            overlay.style.border = '3px solid var(--primary)';
-            badge.style.background = 'var(--primary)';
-            badge.style.color = '#000';
-            if (index !== 0) badge.textContent = '⭐ TOP';
-        }
+        // Asignamos variables al card para poder actualizarlos luego
+        card.overlayRef = overlay;
+        card.badgeRef = badge;
+        card.originalIndex = index;
         
         card.onclick = () => {
             if (index === 0) return; // La portada no se puede desseleccionar
             
-            if (selectedTop10Indices.has(index)) {
-                selectedTop10Indices.delete(index);
-                overlay.style.border = '3px solid transparent';
-                badge.style.background = 'rgba(0,0,0,0.7)';
-                badge.style.color = 'white';
-                badge.textContent = `#${index + 1}`;
+            const pos = selectedTop10Indices.indexOf(index);
+            if (pos !== -1) {
+                selectedTop10Indices.splice(pos, 1);
             } else {
                 const maxAllowed = Math.min(10, selectedPhotos.length);
-                if (selectedTop10Indices.size >= maxAllowed) return; // No dejar seleccionar más
-                
-                selectedTop10Indices.add(index);
-                overlay.style.border = '3px solid var(--primary)';
-                badge.style.background = 'var(--primary)';
-                badge.style.color = '#000';
-                badge.textContent = '⭐ TOP';
+                if (selectedTop10Indices.length >= maxAllowed) return; // No dejar seleccionar más
+                selectedTop10Indices.push(index);
             }
+            
+            // Re-evaluar visuales de todos
+            updateAllTop10Visuals();
             updateTop10Counter();
         };
         
         top10Grid.appendChild(card);
     });
     
+    updateAllTop10Visuals();
     updateTop10Counter();
+}
+
+function updateAllTop10Visuals() {
+    Array.from(top10Grid.children).forEach(card => {
+        const idx = card.originalIndex;
+        const pos = selectedTop10Indices.indexOf(idx);
+        
+        if (pos !== -1) {
+            card.overlayRef.style.border = '3px solid var(--primary)';
+            card.badgeRef.style.background = 'var(--primary)';
+            card.badgeRef.style.color = '#000';
+            if (idx === 0) {
+                card.badgeRef.textContent = '⭐ PORTADA (TOP 1)';
+            } else {
+                card.badgeRef.textContent = `⭐ TOP ${pos + 1}`;
+            }
+        } else {
+            card.overlayRef.style.border = '3px solid transparent';
+            card.badgeRef.style.background = 'rgba(0,0,0,0.7)';
+            card.badgeRef.style.color = 'white';
+            card.badgeRef.textContent = `#${idx + 1}`;
+        }
+    });
 }
 
 function updateTop10Counter() {
     const maxAllowed = Math.min(10, selectedPhotos.length);
-    top10Counter.textContent = `Seleccionadas: ${selectedTop10Indices.size} / ${maxAllowed}`;
-    btnNext2.disabled = selectedTop10Indices.size !== maxAllowed;
+    top10Counter.textContent = `Seleccionadas: ${selectedTop10Indices.length} / ${maxAllowed}`;
+    btnNext2.disabled = selectedTop10Indices.length !== maxAllowed;
 }
 
 // Lógica Video
@@ -517,8 +533,12 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
             uploadedIds.push(data.id);
             
             // Si esta foto (índice 0-based) es del TOP 10, la anotamos
-            if (top10Indices.has(idx - 1)) {
-                top10UploadedMeta.push({ id: data.id, name: photoName });
+            const topPos = top10Indices.indexOf(idx - 1);
+            if (topPos !== -1) {
+                // Renombramos con el orden en que fue elegida
+                const topRank = topPos + 1;
+                const newName = `TOP_${topRank}_${photoName}`;
+                top10UploadedMeta.push({ id: data.id, name: newName });
             }
         } else {
             console.error("Error subiendo foto:", await res.text());
