@@ -437,8 +437,16 @@ btnUpload.addEventListener('click', async () => {
     }
 });
 
+let uploadedYoutubeId = null;
+
 async function uploadVideoToYouTube(file, percentText, fillBar) {
     if (!userToken) throw new Error("Sesión de Google expirada.");
+
+    if (uploadedYoutubeId) {
+        percentText.textContent = '100% (Recuperado)';
+        fillBar.style.width = '100%';
+        return uploadedYoutubeId;
+    }
 
     // YouTube requiere mínimo Título, Descripción y estado Privado
     let title = `Inmueble ${currentCdr}`;
@@ -500,6 +508,7 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
                 console.error('Error en playlists:', err);
             }
             
+            uploadedYoutubeId = videoData.id;
             return videoData.id;
         } else {
             throw new Error('Falló la subida de un pedazo del video: ' + await chunkRes.text());
