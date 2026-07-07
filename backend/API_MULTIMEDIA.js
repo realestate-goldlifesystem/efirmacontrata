@@ -5,8 +5,19 @@
 const CONFIG_MULTIMEDIA = {
     // ID base del archivo de plantillas
     TEMPLATE_SLIDES_ID: '1ysnlqmrb36y5vsT6FWBQ2rDBVhguLEBTDLPOY1UK7DI',
-    SLIDE_ID_ARRIENDO: 'g3a8b30d3462_0_32',
-    SLIDE_ID_VENTA: 'g3a8b30d3462_0_63'
+    // Array de IDs de las diapositivas para rotación (Round-Robin)
+    SLIDE_IDS_ARRIENDO: [
+        'g3f37a897bb7_0_77',
+        'g3f37a897bb7_0_94',
+        'g3f37a897bb7_0_111',
+        'g3f37a897bb7_0_128'
+    ],
+    SLIDE_IDS_VENTA: [
+        'g3f37a897bb7_0_0',
+        'g3f37a897bb7_0_18',
+        'g3f37a897bb7_0_36',
+        'g3f37a897bb7_0_54'
+    ]
 };
 
 /**
@@ -188,11 +199,23 @@ function handleFinalizeMultimedia(datos) {
     folderId = folderId ? folderId[1] : null;
     let fotosFolder = DriveApp.getFolderById(folderId).getFoldersByName("FOTOGRAFÍAS").next();
 
+    // Memoria persistente para el orden de las plantillas
+    const props = PropertiesService.getScriptProperties();
+    let idxArriendo = parseInt(props.getProperty('IDX_TEMPLATE_ARRIENDO') || '0', 10);
+    let idxVenta = parseInt(props.getProperty('IDX_TEMPLATE_VENTA') || '0', 10);
+
     if (esArriendo) {
-        urlArriendo = generarPortada(rowData, headers, CONFIG_MULTIMEDIA.SLIDE_ID_ARRIENDO, portadaId, fotosFolder, 'Arriendo', cdrEncontrado);
+        // Selecciona la plantilla actual y calcula la siguiente
+        let slideIdArr = CONFIG_MULTIMEDIA.SLIDE_IDS_ARRIENDO[idxArriendo % CONFIG_MULTIMEDIA.SLIDE_IDS_ARRIENDO.length];
+        urlArriendo = generarPortada(rowData, headers, slideIdArr, portadaId, fotosFolder, 'Arriendo', cdrEncontrado);
+        props.setProperty('IDX_TEMPLATE_ARRIENDO', String(idxArriendo + 1));
     }
+    
     if (esVenta) {
-        urlVenta = generarPortada(rowData, headers, CONFIG_MULTIMEDIA.SLIDE_ID_VENTA, portadaId, fotosFolder, 'Venta', cdrEncontrado);
+        // Selecciona la plantilla actual y calcula la siguiente
+        let slideIdVen = CONFIG_MULTIMEDIA.SLIDE_IDS_VENTA[idxVenta % CONFIG_MULTIMEDIA.SLIDE_IDS_VENTA.length];
+        urlVenta = generarPortada(rowData, headers, slideIdVen, portadaId, fotosFolder, 'Venta', cdrEncontrado);
+        props.setProperty('IDX_TEMPLATE_VENTA', String(idxVenta + 1));
     }
 
     // Escribir en Excel
