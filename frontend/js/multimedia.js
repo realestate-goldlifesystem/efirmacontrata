@@ -373,7 +373,7 @@ new Sortable(photoGrid, {
 // Subida
 btnUpload.addEventListener('click', async () => {
     btnUpload.style.display = 'none';
-    btnBack.style.display = 'none';
+    btnBack2.style.display = 'none';
     const progressContainer = document.getElementById('progress-container');
     const progressLabel = document.getElementById('progress-label');
     const progressPercentage = document.getElementById('progress-percentage');
@@ -420,7 +420,7 @@ btnUpload.addEventListener('click', async () => {
     } catch (e) {
         alert('❌ Error durante la subida: ' + e.message);
         btnUpload.style.display = 'block';
-        btnBack.style.display = 'block';
+        btnBack2.style.display = 'block';
         progressContainer.style.display = 'none';
     }
 });
