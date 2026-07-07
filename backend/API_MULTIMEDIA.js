@@ -5,6 +5,9 @@
 const CONFIG_MULTIMEDIA = {
     // ID base del archivo de plantillas
     TEMPLATE_SLIDES_ID: '1ysnlqmrb36y5vsT6FWBQ2rDBVhguLEBTDLPOY1UK7DI',
+    // Plantilla exclusiva para miniatura (16:9)
+    TEMPLATE_SLIDES_YT: '1fZgoMtOYWHgtOIauCjQzjaemQqZv8sDh7ohU4ngLB88',
+    SLIDE_ID_YT: 'g3f1f8779d53_0_68',
     // Array de IDs de las diapositivas para rotación (Round-Robin)
     SLIDE_IDS_ARRIENDO: [
         'g3a8b30d3462_0_32', // Original
@@ -157,6 +160,7 @@ function handleFinalizeMultimedia(datos) {
     const id = datos.id || datos.cdr;
     const youtubeId = datos.youtubeId; // p.ej. 'dQw4w9WgXcQ'
     const portadaId = datos.portadaId; // ID en Drive de la foto principal
+    const userToken = datos.userToken; // Token para cambiar la portada en YouTube
 
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("1.1 - INMUEBLES REGISTRADOS");
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
@@ -220,6 +224,32 @@ function handleFinalizeMultimedia(datos) {
         props.setProperty('IDX_TEMPLATE_VENTA', String(idxVenta + 1));
     }
 
+    // Generar Miniatura para YouTube (16:9)
+    if (youtubeId && userToken) {
+        try {
+            // Generamos el PNG de la miniatura
+            const resYt = generarPortada(rowData, headers, CONFIG_MULTIMEDIA.SLIDE_ID_YT, portadaId, fotosFolder, 'YouTube', cdrEncontrado, CONFIG_MULTIMEDIA.TEMPLATE_SLIDES_YT);
+            
+            // Descargar el PNG y mandarlo a YouTube Data API
+            const pngBlob = DriveApp.getFileById(resYt.id).getBlob();
+            const setThumbnailUrl = `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${youtubeId}`;
+            
+            UrlFetchApp.fetch(setThumbnailUrl, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${userToken}` },
+                contentType: 'image/png',
+                payload: pngBlob
+            });
+            console.log(`✅ Miniatura actualizada en YouTube para video ${youtubeId}`);
+            
+            // Borrar el archivo de Drive porque ya se subió a YouTube
+            DriveApp.getFileById(resYt.id).setTrashed(true);
+            
+        } catch(e) {
+            console.error("Error seteando miniatura de YouTube:", e);
+        }
+    }
+
     // Escribir en Excel
     if (youtubeId) {
         const linkYtCol = headers.indexOf('LINK DEL VIDEO DEL INMUEBLE');
@@ -247,8 +277,8 @@ function handleFinalizeMultimedia(datos) {
     return {
         success: true,
         urls: {
-            arriendo: urlArriendo,
-            venta: urlVenta,
+            arriendo: urlArriendo ? urlArriendo.url : null,
+            venta: urlVenta ? urlVenta.url : null,
             youtube: youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null
         }
     };
@@ -280,13 +310,17 @@ function renombrarDNGaJPG(folder) {
 }
 
 /**
- * Función interna para clonar y exportar PDF/PNG de Slide
+ * Abre una copia temporal de la presentación indicada, limpia los slides que no sean el objetivo,
+ * reemplaza tags y el fondo, exporta como PNG a targetFolder y devuelve la URL y el ID.
+ * @param {string} customPresId Opcional, por si se usa un archivo distinto a TEMPLATE_SLIDES_ID.
  */
-function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetFolder, tipo, cdr) {
-    // 1. Duplicar la presentación maestra
-    const masterFile = DriveApp.getFileById(CONFIG_MULTIMEDIA.TEMPLATE_SLIDES_ID);
-    const tempFile = masterFile.makeCopy(`TEMP_PORTADA_${tipo}_${cdr}`, targetFolder);
-    const presId = tempFile.getId();
+function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetFolder, tipo, cdr, customPresId) {
+    const presId = customPresId || CONFIG_MULTIMEDIA.TEMPLATE_SLIDES_ID;
+    
+    // 1. Crear copia temporal del archivo maestro
+    const originalFile = DriveApp.getFileById(presId);
+    const tempFile = originalFile.makeCopy(`TEMP_PORTADA_${tipo}_${cdr}`, targetFolder);
+    const tempPresId = tempFile.getId();
     
     // Función auxiliar para búsqueda flexible de columnas
     const findCol = (searchStrs) => {
@@ -366,7 +400,7 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
         '{{VALOR+20}}': precioMas20
     };
 
-    const pres = SlidesApp.openById(presId);
+    const pres = SlidesApp.openById(tempPresId);
     let slideToKeep = null;
     
     // 3. Eliminar slides innecesarios
@@ -391,11 +425,11 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
         slideToKeep.replaceAllText(tag, val);
     }
     
-    // 5. Reemplazar Imagen
+    // 5. Reemplazar Imágenes
     if (portadaDriveId) {
         const portadaBlob = DriveApp.getFileById(portadaDriveId).getBlob();
         const images = slideToKeep.getImages();
-        let targetImg = null;
+        let replacedCount = 0;
         let maxArea = 0;
         let largestImg = null;
 
@@ -406,8 +440,8 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
             // Buscar por Título o Descripción en Texto Alternativo
             if (tituloImagen.includes('PlantillaBase') || tituloImagen.includes('FondoPrincipal') ||
                 descImagen.includes('PlantillaBase') || descImagen.includes('FondoPrincipal')) {
-                targetImg = img;
-                break;
+                img.replace(portadaBlob);
+                replacedCount++;
             }
 
             // Guardar la más grande como respaldo
@@ -419,20 +453,16 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
         }
         
         // Si no la encuentra por nombre, asume que la imagen más grande es el fondo
-        if (!targetImg && largestImg) {
-            targetImg = largestImg;
-        }
-
-        if (targetImg) {
-            targetImg.replace(portadaBlob);
+        if (replacedCount === 0 && largestImg) {
+            largestImg.replace(portadaBlob);
         }
     }
     
     pres.saveAndClose();
     
     // 6. Exportar PNG
-    const urlParams = `export/png?id=${presId}&pageid=${targetSlideId}`;
-    const url = `https://docs.google.com/presentation/d/${presId}/${urlParams}`;
+    const urlParams = `export/png?id=${tempPresId}&pageid=${targetSlideId}`;
+    const url = `https://docs.google.com/presentation/d/${tempPresId}/${urlParams}`;
     
     const token = ScriptApp.getOAuthToken();
     const response = UrlFetchApp.fetch(url, {
@@ -447,7 +477,10 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
     // Eliminar temporal
     tempFile.setTrashed(true);
     
-    return pngFile.getUrl();
+    return {
+        url: pngFile.getUrl(),
+        id: pngFile.getId()
+    };
 }
 
 /**

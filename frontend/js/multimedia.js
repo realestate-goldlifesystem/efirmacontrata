@@ -611,7 +611,8 @@ async function notifyBackend(youtubeId, photoIds) {
         accion: 'finalizeMultimedia',
         id: currentCdr,
         youtubeId: youtubeId,
-        portadaId: photoIds.length > 0 ? photoIds[0] : null
+        portadaId: photoIds.length > 0 ? photoIds[0] : null,
+        userToken: userToken
     };
     
     const res = await fetch(APPS_SCRIPT_URL, {
