@@ -526,39 +526,39 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
         idx++;
     }
     
-    // 2. Crear subcarpeta "TOP 10" y copiar fotos
+    // 2. Buscar subcarpeta "TOP 10" existente y copiar fotos
     if (top10UploadedMeta.length > 0) {
         labelEl.textContent = 'Organizando subcarpeta TOP 10...';
         fillEl.style.width = '100%';
         
-        // Crear carpeta
-        const folderMeta = {
-            name: 'TOP 10',
-            mimeType: 'application/vnd.google-apps.folder',
-            parents: [propertyData.fotosFolderId]
-        };
-        
-        const resFolder = await fetch('https://www.googleapis.com/drive/v3/files', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify(folderMeta)
+        // Buscar la carpeta "TOP 10" (creada previamente por el backend)
+        const q = `mimeType='application/vnd.google-apps.folder' and name='TOP 10' and '${propertyData.fotosFolderId}' in parents and trashed=false`;
+        const resSearch = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id)`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${userToken}` }
         });
         
-        if (resFolder.ok) {
-            const folderData = await resFolder.json();
-            const top10FolderId = folderData.id;
-            
-            // Copiar archivos
-            for (const meta of top10UploadedMeta) {
-                await fetch(`https://www.googleapis.com/drive/v3/files/${meta.id}/copy`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: meta.name,
-                        parents: [top10FolderId]
-                    })
-                });
+        if (resSearch.ok) {
+            const searchData = await resSearch.json();
+            if (searchData.files && searchData.files.length > 0) {
+                const top10FolderId = searchData.files[0].id;
+                
+                // Copiar archivos a la carpeta existente
+                for (const meta of top10UploadedMeta) {
+                    await fetch(`https://www.googleapis.com/drive/v3/files/${meta.id}/copy`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: meta.name,
+                            parents: [top10FolderId]
+                        })
+                    });
+                }
+            } else {
+                console.error("No se encontró la carpeta 'TOP 10' preexistente en Drive.");
             }
+        } else {
+            console.error("Error buscando la carpeta TOP 10:", await resSearch.text());
         }
     }
     
