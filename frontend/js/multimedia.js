@@ -371,6 +371,15 @@ new Sortable(photoGrid, {
 });
 
 // Subida
+let isUploading = false;
+
+window.addEventListener('beforeunload', (e) => {
+    if (isUploading) {
+        e.preventDefault();
+        e.returnValue = 'La subida está en progreso. Si sales, se cancelará.';
+    }
+});
+
 btnUpload.addEventListener('click', async () => {
     btnUpload.style.display = 'none';
     btnBack2.style.display = 'none';
@@ -380,6 +389,7 @@ btnUpload.addEventListener('click', async () => {
     const progressFill = document.getElementById('progress-fill');
     
     progressContainer.style.display = 'block';
+    isUploading = true;
     
     try {
         // 1. Subir Video a YouTube (Resumable Upload)
@@ -399,6 +409,7 @@ btnUpload.addEventListener('click', async () => {
         await notifyBackend(youtubeId, photoIds);
         
         // 4. Éxito!
+        isUploading = false;
         workspace.style.display = 'none';
         successScreen.style.display = 'block';
         
@@ -418,6 +429,7 @@ btnUpload.addEventListener('click', async () => {
         }
         
     } catch (e) {
+        isUploading = false;
         alert('❌ Error durante la subida: ' + e.message);
         btnUpload.style.display = 'block';
         btnBack2.style.display = 'block';
