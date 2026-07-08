@@ -1146,8 +1146,8 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                   .map((prop, idx) => ({ prop, idx }))
                                   .filter(({ prop }) => {
                                     const term = propertySearchTerm.toLowerCase();
-                                    const address = (prop["Ingrese la Dirección del inmueble"] || prop.direccion || '').toLowerCase();
-                                    const idReg = (String(prop["ID DE REGISTRO"] || prop.idRegistro || '')).toLowerCase();
+                                    const address = String(prop["Ingrese la Dirección del inmueble"] || prop.direccion || '').toLowerCase();
+                                    const idReg = String(prop["ID DE REGISTRO"] || prop.idRegistro || '').toLowerCase();
                                     return address.includes(term) || idReg.includes(term);
                                   })
                                   .map(({ prop, idx }) => (
