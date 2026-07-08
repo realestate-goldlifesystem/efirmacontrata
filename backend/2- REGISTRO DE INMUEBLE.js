@@ -424,7 +424,7 @@ function procesarTipo12_Renovacion(sheet, row, datos) {
   Logger.log(`📁 Carpeta creada: ${resultadoAnio.nombre}`);
 
   // 7. Copiar estructura completa de XXXX
-  Logger.log('📂 Copiando jerarquía completa desde XXXX...');
+  Logger.log(`📋 Copiando estructura de año (carpetas y archivos)...`);
   copiarEstructuraAnio(carpetaXXXX, carpetaNuevoAnio);
   Logger.log('✅ Estructura copiada');
 
@@ -496,9 +496,15 @@ function determinarNombreNuevoAnio(carpetaEntregas) {
 
 function copiarEstructuraAnio(carpetaOrigen, carpetaDestino) {
   try {
-    // NO copiar archivos, solo estructura de carpetas vacías
-    var folders = carpetaOrigen.getFolders();
+    // 1. Copiar archivos en el nivel actual
+    var files = carpetaOrigen.getFiles();
+    while (files.hasNext()) {
+      var file = files.next();
+      file.makeCopy(file.getName(), carpetaDestino);
+    }
 
+    // 2. Copiar estructura de subcarpetas
+    var folders = carpetaOrigen.getFolders();
     while (folders.hasNext()) {
       var folder = folders.next();
       var nombreSubcarpeta = folder.getName();
