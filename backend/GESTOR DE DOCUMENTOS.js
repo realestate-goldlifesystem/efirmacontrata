@@ -760,13 +760,31 @@ function handleRegistrarInmueble(datos) {
     const propKey = 'PENDING_REGISTRATION_ROW_' + lastRow;
     PropertiesService.getScriptProperties().setProperty(propKey, 'true');
 
-    // Programar el trigger asíncrono para ejecutar la cola en 1 segundo
-    ScriptApp.newTrigger('procesarRegistrosPendientes')
-      .timeBased()
-      .after(1000)
-      .create();
-
-    Logger.log(`⏳ Registro encolado asíncronamente para la fila ${lastRow}. Trigger programado.`);
+    // Limpiar triggers existentes de esta misma función para evitar el límite de 20
+    try {
+      const triggers = ScriptApp.getProjectTriggers();
+      let triggerCount = 0;
+      triggers.forEach(trigger => {
+        if (trigger.getHandlerFunction() === 'procesarRegistrosPendientes') {
+          ScriptApp.deleteTrigger(trigger);
+        } else {
+          triggerCount++;
+        }
+      });
+      
+      // Solo creamos si no estamos en el límite total (por seguridad)
+      if (triggerCount < 19) {
+        ScriptApp.newTrigger('procesarRegistrosPendientes')
+          .timeBased()
+          .after(1000)
+          .create();
+        Logger.log(`⏳ Registro encolado asíncronamente para la fila ${lastRow}. Trigger programado.`);
+      } else {
+        Logger.log(`⚠️ Límite de triggers alcanzado. El registro se encoló pero el trigger no pudo ser creado.`);
+      }
+    } catch(err) {
+      Logger.log(`⚠️ Error al manejar triggers: ${err.message}`);
+    }
 
     return { 
       success: true, 

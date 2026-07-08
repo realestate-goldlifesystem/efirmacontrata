@@ -116,3 +116,80 @@ function obtenerTasasParaFrontend() {
   
   return JSON.stringify(result);
 }
+
+// ==========================================
+// SINCRONIZACIÓN DE IPC (ÍNDICE DE PRECIOS AL CONSUMIDOR)
+// ==========================================
+
+/**
+ * Consulta la API de inflación (usaremos Banco Mundial como ejemplo sólido JSON, 
+ * aunque tenga algo de retraso, la lógica de validación lo soluciona)
+ * y lo guarda ultra rápido en la memoria de Apps Script.
+ */
+function sincroIPC() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const currentYear = new Date().getFullYear();
+    const targetYear = (currentYear - 1).toString(); // En 2026 buscamos el IPC de 2025
+    
+    // 1. CRUCE DE MEMORIA: Verificamos si YA logramos conseguir el de este año
+    const anioGuardado = props.getProperty('IPC_ANIO_REGISTRADO');
+    if (anioGuardado === targetYear) {
+      Logger.log(`✅ IPC del ${targetYear} ya estaba guardado en memoria. Cancelando búsqueda redundante.`);
+      return; 
+    }
+
+    // 2. CONSULTA A LA API (Banco Mundial como ejemplo JSON estructural)
+    // El indicador FP.CPI.TOTL.ZG es "Inflation, consumer prices (annual %)"
+    const url = "http://api.worldbank.org/v2/country/CO/indicator/FP.CPI.TOTL.ZG?format=json"; 
+    
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (response.getResponseCode() !== 200) {
+      Logger.log("⚠️ Error al consultar IPC: " + response.getContentText());
+      return;
+    }
+    
+    const responseData = JSON.parse(response.getContentText());
+    
+    // La API del Banco Mundial devuelve la data en el segundo elemento del arreglo: responseData[1]
+    if (responseData && responseData.length > 1 && Array.isArray(responseData[1])) {
+      
+      const apiData = responseData[1];
+      
+      // Buscar el registro exacto del año que necesitamos (targetYear)
+      // Como viene ordenado descendente, el más reciente suele ser el primero, pero lo buscamos por seguridad.
+      const registroObjetivo = apiData.find(item => item.date === targetYear && item.value !== null);
+      
+      if (registroObjetivo) {
+        // 3. ¡BINGO! Encontramos el dato oficial
+        // Lo redondeamos a 2 decimales por estética
+        const ipcActual = parseFloat(registroObjetivo.value).toFixed(2); 
+        
+        // 4. GUARDAR EN MEMORIA (Cero latencia al consultar después y auto-apagado)
+        props.setProperty('IPC_ACTUAL', ipcActual.toString());
+        props.setProperty('IPC_ANIO_REGISTRADO', targetYear);
+        props.setProperty('IPC_ULTIMA_ACTUALIZACION', new Date().toISOString());
+        
+        Logger.log(`🎯 ¡ÉXITO! IPC del ${targetYear} encontrado (${ipcActual}%). El robot se apagará hasta el otro año.`);
+      } else {
+        // La API aún no tiene el dato de este año (nos devolvió el del año antepasado).
+        Logger.log(`⏳ La API aún no ha publicado el IPC de ${targetYear}. El robot lo volverá a intentar mañana.`);
+      }
+      
+    } else {
+      Logger.log("⚠️ La estructura de la API no es la esperada.");
+    }
+  } catch(e) {
+    Logger.log("🛑 Error crítico en sincroIPC: " + e.message);
+  }
+}
+
+/**
+ * Función pública para que el Gestor de Contratos o cualquier otro módulo 
+ * consuma el IPC instantáneamente sin hacer llamados externos.
+ */
+function getIPCGlobal() {
+  const ipc = PropertiesService.getScriptProperties().getProperty('IPC_ACTUAL');
+  // Si por alguna razón no existe, devolvemos 0 para que no rompa las calculadoras
+  return ipc ? parseFloat(ipc) : 0; 
+}

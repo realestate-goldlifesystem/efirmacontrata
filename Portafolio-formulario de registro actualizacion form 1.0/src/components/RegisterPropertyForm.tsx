@@ -64,7 +64,7 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const [activeFlow, setActiveFlow] = useState<'normal' | 'renovacion' | 'cambio_negocio'>('normal');
   const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(null);
   const [reutilizarMultimedia, setReutilizarMultimedia] = useState<'SI' | 'NO'>('SI');
-
+  const [propertySearchTerm, setPropertySearchTerm] = useState('');
 const getInitialFormData = (selectedServiceType: string | null | undefined, initialCalculatorState: any) => ({
     gridAnswers: {} as Record<string, string>,
     // Step 1: Destino y Ubicación
@@ -360,6 +360,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         next.address = prop["Ingrese la Dirección del inmueble"] || prop.direccion || '';
         next.propertyNumber = prop["N° de inmueble"] || prop.apto || '';
         next.towerLetter = prop["N° o Letra de la Torre"] || prop.torre || '';
+        next.idTypeDescription = next.towerLetter.trim() !== '' ? 'Torre y número' : 'Número';
         next.destination = prop["Define el propósito de tu inmueble"] || prop.destination || 'Vivienda';
         next.propertyType = prop["Selecciona el tipo de inmueble"] || prop.propertyType || 'Apartamento';
         next.area = prop["Area  M²"] || prop.area || '';
@@ -1212,32 +1213,53 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-xs text-stone-600 font-bold block mb-1">NUEVO CANON DE ARRENDAMIENTO (Renta + Administración)</label>
-                              <input 
-                                type="text" 
-                                value={new Intl.NumberFormat('es-CO').format(priceGeneralVal)} 
-                                onChange={e => setFormData({ ...formData, priceGeneral: e.target.value.replace(/\D/g, '') })}
-                                placeholder="Ej. 1.900.000" 
-                                className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
-                              />
-                              <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
-                                En letras: <strong>{numberToWordsSpanish(priceGeneralVal).toUpperCase()}</strong>
-                              </p>
-                            </div>
-                            <div>
-                              <label className="text-xs text-stone-600 font-bold block mb-1">NUEVA ADMINISTRACIÓN (HOA)</label>
-                              <input 
-                                type="text" 
-                                value={new Intl.NumberFormat('es-CO').format(priceHoaVal)} 
-                                onChange={e => setFormData({ ...formData, priceHoaPlena: e.target.value.replace(/\D/g, '') })}
-                                placeholder="Ej. 380.000" 
-                                className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
-                              />
-                              <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
-                                En letras: <strong>{numberToWordsSpanish(priceHoaVal).toUpperCase()}</strong>
-                              </p>
-                            </div>
+                            {(formData.serviceType === 'venta' || formData.serviceType === 'admi-venta' || formData.serviceType === 'vendi-renta') && (
+                              <div>
+                                <label className="text-xs text-stone-600 font-bold block mb-1">NUEVO PRECIO DE VENTA</label>
+                                <input 
+                                  type="text" 
+                                  value={new Intl.NumberFormat('es-CO').format(parseInt(formData.priceVenta || '0') || 0)} 
+                                  onChange={e => setFormData({ ...formData, priceVenta: e.target.value.replace(/\D/g, '') })}
+                                  placeholder="Ej. 450.000.000" 
+                                  className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                                />
+                                <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
+                                  En letras: <strong>{numberToWordsSpanish(parseInt(formData.priceVenta || '0') || 0).toUpperCase()}</strong>
+                                </p>
+                              </div>
+                            )}
+
+                            {(formData.serviceType === 'administracion' || formData.serviceType === 'corretaje' || formData.serviceType === 'admi-venta' || formData.serviceType === 'vendi-renta') && (
+                              <div>
+                                <label className="text-xs text-stone-600 font-bold block mb-1">NUEVO CANON DE ARRENDAMIENTO (Renta + Administración)</label>
+                                <input 
+                                  type="text" 
+                                  value={new Intl.NumberFormat('es-CO').format(parseInt(formData.priceGeneral || '0') || 0)} 
+                                  onChange={e => setFormData({ ...formData, priceGeneral: e.target.value.replace(/\D/g, '') })}
+                                  placeholder="Ej. 1.900.000" 
+                                  className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                                />
+                                <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
+                                  En letras: <strong>{numberToWordsSpanish(parseInt(formData.priceGeneral || '0') || 0).toUpperCase()}</strong>
+                                </p>
+                              </div>
+                            )}
+
+                            {(formData.serviceType !== 'venta' || parseInt(formData.priceHoaPlena || '0') > 0) && (
+                              <div>
+                                <label className="text-xs text-stone-600 font-bold block mb-1">NUEVA ADMINISTRACIÓN (HOA)</label>
+                                <input 
+                                  type="text" 
+                                  value={new Intl.NumberFormat('es-CO').format(parseInt(formData.priceHoaPlena || '0') || 0)} 
+                                  onChange={e => setFormData({ ...formData, priceHoaPlena: e.target.value.replace(/\D/g, '') })}
+                                  placeholder="Ej. 380.000" 
+                                  className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold font-mono"
+                                />
+                                <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
+                                  En letras: <strong>{numberToWordsSpanish(parseInt(formData.priceHoaPlena || '0') || 0).toUpperCase()}</strong>
+                                </p>
+                              </div>
+                            )}
                           </div>
 
                           <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
@@ -2922,7 +2944,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                         {selectedPropertyIndex !== null && (
                           <button
                             type="submit" 
-                            disabled={loading || !formData.hasNoEmbargo || !formData.clausesAccepted}
+                            disabled={loading || !formData.hasNoEmbargo}
                             className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold disabled:bg-stone-250 disabled:text-stone-500 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95 animate-fade-in"
                           >
                             {loading ? <span>Procesando...</span> : (

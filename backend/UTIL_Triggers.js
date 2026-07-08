@@ -193,6 +193,20 @@ function limpiarScriptProperties() {
   }
 }
 
+function limpiarTriggersHuerfanos() {
+  var triggers = ScriptApp.getProjectTriggers();
+  var count = 0;
+  triggers.forEach(function(t) {
+    var f = t.getHandlerFunction();
+    if (f === 'continuarRegistroInmuebleParte2' || f === 'continuarRegistroInmuebleParte3') {
+      ScriptApp.deleteTrigger(t);
+      count++;
+    }
+  });
+  if (typeof SpreadsheetApp !== 'undefined') SpreadsheetApp.getUi().alert('🧹 Se limpiaron ' + count + ' activadores atascados.');
+  console.log('🧹 Se limpiaron ' + count + ' activadores atascados.');
+}
+
 /**
  * Instala el Cron Job Semanal para sincronizar las tasas desde la SFC
  */

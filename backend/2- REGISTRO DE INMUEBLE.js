@@ -14,6 +14,9 @@ function continuarRegistroInmuebleParte2() {
   Logger.log('🟢 ARCHIVO 2 - INICIO DEL PROCESAMIENTO DIFERIDO');
   Logger.log('🟢 ═══════════════════════════════════════════════════');
 
+  // ELIMINAR EL TRIGGER INMEDIATAMENTE PARA EVITAR EXCEDER LÍMITES
+  eliminarTriggerActual('continuarRegistroInmuebleParte2');
+
   var lock = LockService.getScriptLock();
   try {
     // Intentar adquirir bloqueo para evitar que varias instancias procesen la misma cola concurrentemente
@@ -43,7 +46,6 @@ function continuarRegistroInmuebleParte2() {
 
     if (procesosPendientes.length === 0) {
       Logger.log('⚠️ No hay procesos pendientes para Archivo 2');
-      eliminarTriggerActual('continuarRegistroInmuebleParte2');
       lock.releaseLock();
       return;
     }
@@ -65,33 +67,24 @@ function continuarRegistroInmuebleParte2() {
     // Limpiar datos después de procesar
     props.deleteProperty('PROCESO_PARTE2_' + datos.fila);
 
-    // PASO 2.5: Si se encoló algo para la Parte 3, crear el trigger correspondiente
-    var todasPropiedadesPost = props.getProperties();
-    var tieneParte3 = false;
-    for (var k in todasPropiedadesPost) {
-      if (k.startsWith('PROCESO_PARTE3_')) {
-        tieneParte3 = true;
-        break;
-      }
-    }
-    if (tieneParte3) {
-      Logger.log('⏰ Programando ejecución de Archivo 2 (Parte 3 - OCR & Firma)...');
-      ScriptApp.newTrigger('continuarRegistroInmuebleParte3')
-        .timeBased()
-        .after(1000)
-        .create();
+    // PASO 3: Re-evaluar TODA la cola (Parte 2 y Parte 3)
+    var todasPropiedadesFinal = props.getProperties();
+    var procesosRestantesParte2 = 0;
+    var procesosRestantesParte3 = 0;
+    
+    for (var k in todasPropiedadesFinal) {
+      if (k.startsWith('PROCESO_PARTE2_')) procesosRestantesParte2++;
+      if (k.startsWith('PROCESO_PARTE3_')) procesosRestantesParte3++;
     }
 
-    // PASO 3: Si hay más registros pendientes, programamos otro trigger y salimos
-    if (procesosPendientes.length > 1) {
-      Logger.log(`⏳ Quedan ${procesosPendientes.length - 1} registros. Reprogramando Parte 2 para el siguiente registro...`);
-      ScriptApp.newTrigger('continuarRegistroInmuebleParte2')
-        .timeBased()
-        .after(1000)
-        .create();
-    } else {
-      // PASO 3: Eliminar trigger temporal si terminamos
-      eliminarTriggerActual('continuarRegistroInmuebleParte2');
+    if (procesosRestantesParte2 > 0) {
+      Logger.log(`⏳ Quedan ${procesosRestantesParte2} registros en cola de Parte 2. Reprogramando...`);
+      ScriptApp.newTrigger('continuarRegistroInmuebleParte2').timeBased().after(1000).create();
+    }
+    
+    if (procesosRestantesParte3 > 0) {
+      Logger.log(`⏰ Hay ${procesosRestantesParte3} registros en cola de Parte 3. Reprogramando...`);
+      ScriptApp.newTrigger('continuarRegistroInmuebleParte3').timeBased().after(1000).create();
     }
 
     var tiempoTotal = (new Date().getTime() - tiempoInicio) / 1000;
@@ -1233,10 +1226,28 @@ function obtenerCarpetaAnioMasReciente(entregasFolder) {
 // BORRAR FILA TEMPORAL
 // ==========================================
 
-function borrarFilaTemporal(sheet, row) {
+function borrarFilaTemporal(sheet, row, cdr) {
   try {
     sheet.deleteRow(row);
     Logger.log(`✅ Fila ${row} eliminada exitosamente`);
+    
+    if (cdr) {
+      var match = cdr.toString().match(/REG_\d{2}-\d{2}-\d{4}-([ACV]{1,2}|VR)(\d+)/);
+      if (match) {
+        var tipo = match[1];
+        var seqTemp = parseInt(match[2], 10);
+        var props = PropertiesService.getScriptProperties();
+        var key = 'MAX_SEQ_' + tipo;
+        var seqActualStr = props.getProperty(key);
+        if (seqActualStr) {
+          var seqActual = parseInt(seqActualStr, 10);
+          if (seqTemp === seqActual) {
+            props.setProperty(key, (seqActual - 1).toString());
+            Logger.log(`🔄 Récord de secuencia ${tipo} retrocedido a ${seqActual - 1}`);
+          }
+        }
+      }
+    }
   } catch (error) {
     Logger.log(`⚠️ Error al borrar fila ${row}: ${error.message}`);
   }
@@ -1551,6 +1562,59 @@ function transferirPreciosRenovacion(sheet, filaOriginal, filaTemp, reutilizarMu
       
       sheet.getRange(filaOriginal, colYT + 1).clearContent();
       Logger.log('🔓 Candado Multimedia abierto (Link YT guardado y borrado temporalmente)');
+      
+      // Vaciar la carpeta de FOTOGRAFÍAS y TOP 10
+      try {
+        var colCarpeta = headers.indexOf('LINK CARPETA DE CONTENIDO');
+        if (colCarpeta !== -1) {
+          var folderUrl = sheet.getRange(filaOriginal, colCarpeta + 1).getValue();
+          if (!folderUrl) {
+            var formula = sheet.getRange(filaOriginal, colCarpeta + 1).getFormula();
+            if (formula && formula.toUpperCase().includes("HYPERLINK")) {
+              var matchFormula = formula.match(/HYPERLINK\("([^"]+)"/i);
+              if (matchFormula) folderUrl = matchFormula[1];
+            }
+          }
+          
+          var folderId = null;
+          if (folderUrl) {
+            var match = folderUrl.match(/id=([a-zA-Z0-9_-]+)/) || folderUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+            if (match) folderId = match[1];
+          }
+          
+          if (folderId) {
+            var cdrFolder = DriveApp.getFolderById(folderId);
+            
+            // Vaciar FOTOGRAFÍAS
+            var fotosFolders = cdrFolder.getFoldersByName("FOTOGRAFÍAS");
+            if (fotosFolders.hasNext()) {
+              var fFolder = fotosFolders.next();
+              var files = fFolder.getFiles();
+              var fotosBorradas = 0;
+              while (files.hasNext()) {
+                files.next().setTrashed(true);
+                fotosBorradas++;
+              }
+              Logger.log('🗑️ Se enviaron a la papelera ' + fotosBorradas + ' archivos de FOTOGRAFÍAS.');
+            }
+            
+            // Vaciar TOP 10
+            var topFolders = cdrFolder.getFoldersByName("TOP 10");
+            if (topFolders.hasNext()) {
+              var tFolder = topFolders.next();
+              var topFiles = tFolder.getFiles();
+              var topBorradas = 0;
+              while (topFiles.hasNext()) {
+                topFiles.next().setTrashed(true);
+                topBorradas++;
+              }
+              Logger.log('🗑️ Se enviaron a la papelera ' + topBorradas + ' archivos de TOP 10.');
+            }
+          }
+        }
+      } catch (e) {
+        Logger.log('⚠️ Error al intentar vaciar FOTOGRAFÍAS/TOP 10: ' + e.message);
+      }
     }
   }
 }
@@ -1615,6 +1679,9 @@ function continuarRegistroInmuebleParte3() {
   Logger.log('🟢 ARCHIVO 2 - INICIO DEL PROCESAMIENTO OCR Y FIRMA (PARTE 3)');
   Logger.log('🟢 ═══════════════════════════════════════════════════');
 
+  // ELIMINAR EL TRIGGER INMEDIATAMENTE PARA EVITAR EXCEDER LÍMITES
+  eliminarTriggerActual('continuarRegistroInmuebleParte3');
+
   var lock = LockService.getScriptLock();
   try {
     try {
@@ -1641,7 +1708,6 @@ function continuarRegistroInmuebleParte3() {
 
     if (procesosPendientes.length === 0) {
       Logger.log('⚠️ No hay procesos pendientes para Parte 3');
-      eliminarTriggerActual('continuarRegistroInmuebleParte3');
       lock.releaseLock();
       return;
     }
@@ -1707,7 +1773,7 @@ function continuarRegistroInmuebleParte3() {
         var email = colEmail !== -1 ? sheet.getRange(filaOriginal, colEmail + 1).getValue() : '';
         if (email) programarTriggersRollback(idRegistro, email);
       }
-      borrarFilaTemporal(sheet, row);
+      borrarFilaTemporal(sheet, row, datos.cdr);
 
     } else if (tipo === 'TIPO_4') {
       // Caso 3: Cambio de Negocio (Mover, transferir, notificar y borrar temporal)
@@ -1754,20 +1820,29 @@ function continuarRegistroInmuebleParte3() {
         var email = colEmail !== -1 ? sheet.getRange(filaOriginal, colEmail + 1).getValue() : '';
         if (email) programarTriggersRollback(idRegistro, email);
       }
-      borrarFilaTemporal(sheet, row);
+      borrarFilaTemporal(sheet, row, datos.cdr);
     }
 
-    // 3. LIMPIAR COLA Y EVALUAR SIGUIENTES REGISTROS
+    // 3. LIMPIAR COLA Y EVALUAR SIGUIENTES REGISTROS (Re-evaluando llegadas tardías)
     props.deleteProperty('PROCESO_PARTE3_' + row);
 
-    if (procesosPendientes.length > 1) {
-      Logger.log(`⏳ Quedan ${procesosPendientes.length - 1} registros en la Parte 3. Programando siguiente ejecución...`);
-      ScriptApp.newTrigger('continuarRegistroInmuebleParte3')
-        .timeBased()
-        .after(1000)
-        .create();
-    } else {
-      eliminarTriggerActual('continuarRegistroInmuebleParte3');
+    var propsFinal = props.getProperties();
+    var procesosRestantesParte2 = 0;
+    var procesosRestantesParte3 = 0;
+    
+    for (var key in propsFinal) {
+      if (key.startsWith('PROCESO_PARTE2_')) procesosRestantesParte2++;
+      if (key.startsWith('PROCESO_PARTE3_')) procesosRestantesParte3++;
+    }
+
+    if (procesosRestantesParte3 > 0) {
+      Logger.log(`⏳ Quedan ${procesosRestantesParte3} registros en la Parte 3. Reprogramando...`);
+      ScriptApp.newTrigger('continuarRegistroInmuebleParte3').timeBased().after(1000).create();
+    }
+    
+    if (procesosRestantesParte2 > 0) {
+      Logger.log(`⏰ Hay ${procesosRestantesParte2} registros en la Parte 2 que llegaron tarde. Reprogramando...`);
+      ScriptApp.newTrigger('continuarRegistroInmuebleParte2').timeBased().after(1000).create();
     }
 
     var tiempoTotal = (new Date().getTime() - tiempoInicio) / 1000;

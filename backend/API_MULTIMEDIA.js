@@ -27,9 +27,9 @@ const CONFIG_MULTIMEDIA = {
 
 /**
  * Función llamada por doGet ('action=getMultimediaData')
- * Retorna la descripción del inmueble y el ID de la carpeta de fotografías.
  */
 function handleGetMultimediaData(params) {
+
     const id = params.id || params.cdr; // Soporte para ambos parámetros
     if (!id) throw new Error("Falta el parámetro ID");
 
@@ -224,6 +224,8 @@ function handleFinalizeMultimedia(datos) {
         props.setProperty('IDX_TEMPLATE_VENTA', String(idxVenta + 1));
     }
 
+    let thumbnailStatus = "Not attempted";
+    
     // Generar Miniatura para YouTube (16:9)
     if (youtubeId && userToken) {
         try {
@@ -232,21 +234,30 @@ function handleFinalizeMultimedia(datos) {
             
             // Descargar el PNG y mandarlo a YouTube Data API
             const pngBlob = DriveApp.getFileById(resYt.id).getBlob();
-            const setThumbnailUrl = `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${youtubeId}`;
+            const setThumbnailUrl = `https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId=${youtubeId}&uploadType=media`;
             
-            UrlFetchApp.fetch(setThumbnailUrl, {
+            const ytResponse = UrlFetchApp.fetch(setThumbnailUrl, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${userToken}` },
                 contentType: 'image/png',
-                payload: pngBlob
+                payload: pngBlob,
+                muteHttpExceptions: true
             });
-            console.log(`✅ Miniatura actualizada en YouTube para video ${youtubeId}`);
+            
+            if (ytResponse.getResponseCode() >= 200 && ytResponse.getResponseCode() < 300) {
+                console.log(`✅ Miniatura actualizada en YouTube para video ${youtubeId}`);
+                thumbnailStatus = "Success";
+            } else {
+                thumbnailStatus = `Error ${ytResponse.getResponseCode()}: ${ytResponse.getContentText()}`;
+                console.error("Error YouTube API:", thumbnailStatus);
+            }
             
             // Borrar el archivo de Drive porque ya se subió a YouTube
             DriveApp.getFileById(resYt.id).setTrashed(true);
             
         } catch(e) {
             console.error("Error seteando miniatura de YouTube:", e);
+            thumbnailStatus = `Exception: ${e.message}`;
         }
     }
 
@@ -279,7 +290,8 @@ function handleFinalizeMultimedia(datos) {
         urls: {
             arriendo: urlArriendo ? urlArriendo.url : null,
             venta: urlVenta ? urlVenta.url : null,
-            youtube: youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null
+            youtube: youtubeId ? `https://youtube.com/watch?v=${youtubeId}` : null,
+            thumbnailStatus: thumbnailStatus
         }
     };
 }
@@ -416,13 +428,56 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
     
     if (!slideToKeep) throw new Error("No se encontró el slide objetivo en la plantilla");
 
+    // 3.5 Ocultar elementos condicionales y centrar el resto
+    let garajesVal = String(garajes).trim();
+    if (garajesVal === '0' || garajesVal === '') {
+        const elements = slideToKeep.getPageElements();
+        let habGroup = null, banoGroup = null, areaGroup = null;
+        
+        for (let i = elements.length - 1; i >= 0; i--) {
+            const el = elements[i];
+            try {
+                const title = el.getTitle() || '';
+                const desc = el.getDescription() || '';
+                const tagStr = title + desc;
+                
+                if (tagStr.includes('OcultarSiSinGaraje')) {
+                    el.remove();
+                } else if (tagStr.includes('ItemHabitacion')) {
+                    habGroup = el;
+                } else if (tagStr.includes('ItemBano')) {
+                    banoGroup = el;
+                } else if (tagStr.includes('ItemArea')) {
+                    areaGroup = el;
+                }
+            } catch(e) {
+                // Silencioso
+            }
+        }
+        
+        // Si encontró los 3 grupos, los centra matemáticamente
+        if (habGroup && banoGroup && areaGroup) {
+            try {
+                const slideWidth = pres.getPageWidth();
+                // Posiciones: 25%, 50% y 75% del ancho de la diapositiva
+                habGroup.setLeft((slideWidth * 0.25) - (habGroup.getWidth() / 2));
+                banoGroup.setLeft((slideWidth * 0.50) - (banoGroup.getWidth() / 2));
+                areaGroup.setLeft((slideWidth * 0.75) - (areaGroup.getWidth() / 2));
+            } catch(e) {
+                console.error("Error centrando grupos: " + e.message);
+            }
+        }
+    }
+
     // 4. Reemplazar Textos
     for (let tag in mapReemplazos) {
         let val = mapReemplazos[tag];
-        // En Apps Script, replaceAllText falla silenciosamente si se le pasa un string vacío ""
-        // Por eso, si está vacío, lo reemplazamos con un espacio en blanco " " para que la llave desaparezca
         val = (val === '' || val === null || val === undefined) ? ' ' : String(val);
-        slideToKeep.replaceAllText(tag, val);
+        try {
+            slideToKeep.replaceAllText(tag, val);
+        } catch(e) {
+            console.error("Error en replaceAllText para tag " + tag + ": " + e.message);
+        }
     }
     
     // 5. Reemplazar Imágenes
@@ -440,8 +495,12 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
             // Buscar por Título o Descripción en Texto Alternativo
             if (tituloImagen.includes('PlantillaBase') || tituloImagen.includes('FondoPrincipal') ||
                 descImagen.includes('PlantillaBase') || descImagen.includes('FondoPrincipal')) {
-                img.replace(portadaBlob);
-                replacedCount++;
+                try {
+                    img.replace(portadaBlob);
+                    replacedCount++;
+                } catch(e) {
+                    console.error("Error reemplazando img por titulo: " + e.message);
+                }
             }
 
             // Guardar la más grande como respaldo
@@ -454,7 +513,11 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
         
         // Si no la encuentra por nombre, asume que la imagen más grande es el fondo
         if (replacedCount === 0 && largestImg) {
-            largestImg.replace(portadaBlob);
+            try {
+                largestImg.replace(portadaBlob);
+            } catch(e) {
+                console.error("Error en largestImg.replace: " + e.message);
+            }
         }
     }
     
