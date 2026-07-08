@@ -357,9 +357,9 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         });
         
         // Mapear campos normalizados para asegurar consistencia
-        next.address = prop["Ingrese la Dirección del inmueble"] || prop.direccion || '';
-        next.propertyNumber = prop["N° de inmueble"] || prop.apto || '';
-        next.towerLetter = prop["N° o Letra de la Torre"] || prop.torre || '';
+        next.address = String(prop["Ingrese la Dirección del inmueble"] || prop.direccion || '');
+        next.propertyNumber = String(prop["N° de inmueble"] || prop.apto || '');
+        next.towerLetter = String(prop["N° o Letra de la Torre"] || prop.torre || '');
         next.idTypeDescription = next.towerLetter.trim() !== '' ? 'Torre y número' : 'Número';
         next.destination = prop["Define el propósito de tu inmueble"] || prop.destination || 'Vivienda';
         next.propertyType = prop["Selecciona el tipo de inmueble"] || prop.propertyType || 'Apartamento';
@@ -379,7 +379,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         
         // Si es flujo de renovación, mantener el tipo de negocio del inmueble
         if (activeFlow === 'renovacion') {
-          const rawType = prop["TIPO DE NEGOCIO"] || prop.tipoNegocio || 'Administración';
+          const rawType = String(prop["TIPO DE NEGOCIO"] || prop.tipoNegocio || 'Administración');
           let mappedType: any = 'administracion';
           if (rawType.includes('Corretaje')) mappedType = 'corretaje';
           else if (rawType.includes('Venta')) mappedType = 'venta';
