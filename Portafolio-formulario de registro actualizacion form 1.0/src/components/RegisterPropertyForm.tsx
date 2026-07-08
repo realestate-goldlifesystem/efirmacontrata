@@ -1127,29 +1127,53 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                               No hay inmuebles registrados para este propietario en la base de datos.
                             </div>
                           ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {ownerProperties.map((prop, idx) => (
-                                <button
-                                  key={idx}
-                                  type="button"
-                                  onClick={() => {
-                                    setValidatedCedula(cedulaInput);
-                                    setFormData(p => ({ ...p, documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
-                                    selectProperty(idx);
-                                  }}
-                                  className="p-5 bg-stone-50 border border-stone-200 rounded-2xl hover:border-brand-gold text-left transition-all hover:shadow-md group flex flex-col justify-between"
-                                >
-                                  <div>
-                                    <strong className="text-stone-900 block text-sm group-hover:text-brand-gold-dark transition-colors">
-                                      {prop["Ingrese la Dirección del inmueble"] || prop.direccion || 'Dirección no especificada'}
-                                    </strong>
-                                    <span className="text-xs text-stone-500 mt-1 block">
-                                      {prop["N° o Letra de la Torre"] ? `Torre ${prop["N° o Letra de la Torre"]} - ` : ''}Apto/Inmueble: {prop["N° de inmueble"] || prop.apto || ''}
-                                    </span>
-                                    <span className="inline-block mt-3 text-[10px] font-bold px-2 py-0.5 bg-stone-200 rounded text-stone-700 uppercase tracking-wider">
-                                      {prop["TIPO DE NEGOCIO"] || prop.tipoNegocio || 'Sin Tipo'}
-                                    </span>
-                                  </div>
+                            <div className="space-y-4">
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  placeholder="Buscar por Dirección o ID de Registro..."
+                                  value={propertySearchTerm}
+                                  onChange={(e) => setPropertySearchTerm(e.target.value)}
+                                  className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all text-sm"
+                                />
+                                <div className="absolute right-4 top-3 text-stone-400">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {ownerProperties
+                                  .map((prop, idx) => ({ prop, idx }))
+                                  .filter(({ prop }) => {
+                                    const term = propertySearchTerm.toLowerCase();
+                                    const address = (prop["Ingrese la Dirección del inmueble"] || prop.direccion || '').toLowerCase();
+                                    const idReg = (String(prop["ID DE REGISTRO"] || prop.idRegistro || '')).toLowerCase();
+                                    return address.includes(term) || idReg.includes(term);
+                                  })
+                                  .map(({ prop, idx }) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                      setValidatedCedula(cedulaInput);
+                                      setFormData(p => ({ ...p, documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
+                                      selectProperty(idx);
+                                    }}
+                                    className="p-5 bg-stone-50 border border-stone-200 rounded-2xl hover:border-brand-gold text-left transition-all hover:shadow-md group flex flex-col justify-between relative"
+                                  >
+                                    <div>
+                                      <strong className="text-stone-900 block text-sm group-hover:text-brand-gold-dark transition-colors pr-20">
+                                        {prop["Ingrese la Dirección del inmueble"] || prop.direccion || 'Dirección no especificada'}
+                                      </strong>
+                                      <div className="absolute top-4 right-4 bg-stone-200 text-stone-600 text-[10px] px-2 py-1 rounded font-mono font-bold">
+                                        ID: {prop["ID DE REGISTRO"] || prop.idRegistro || 'N/A'}
+                                      </div>
+                                      <span className="text-xs text-stone-500 mt-1 block">
+                                        {prop["N° o Letra de la Torre"] ? `Torre ${prop["N° o Letra de la Torre"]} - ` : ''}Apto/Inmueble: {prop["N° de inmueble"] || prop.apto || ''}
+                                      </span>
+                                      <span className="inline-block mt-3 text-[10px] font-bold px-2 py-0.5 bg-stone-200 rounded text-stone-700 uppercase tracking-wider">
+                                        {prop["TIPO DE NEGOCIO"] || prop.tipoNegocio || 'Sin Tipo'}
+                                      </span>
+                                    </div>
                                   <div className="border-t border-stone-200 mt-4 pt-3 flex justify-between items-center text-xs w-full">
                                     <span className="text-stone-500">Valor actual:</span>
                                     <strong className="font-mono text-stone-850">
@@ -1158,8 +1182,9 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                         : FORMAT_COP(parseNum(prop["PRECIO DE PROMOCION GENERAL"] || '0'))}
                                     </strong>
                                   </div>
-                                </button>
-                              ))}
+                                  </button>
+                                  ))}
+                              </div>
                             </div>
                           )}
                         </div>
