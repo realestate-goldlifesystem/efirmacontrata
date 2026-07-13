@@ -176,7 +176,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout 
             <Building2 className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
           </div>
           <div className="flex flex-col items-center relative z-10">
-            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Portafolio VIP</h2>
+            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Portafolio de Inmuebles</h2>
             <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
               Accede al catálogo de inmuebles publicados. Genera y comparte PDFs interactivos.
             </p>
