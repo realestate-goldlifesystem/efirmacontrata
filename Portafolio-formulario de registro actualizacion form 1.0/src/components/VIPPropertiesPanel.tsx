@@ -155,7 +155,7 @@ export default function VIPPropertiesPanel() {
       );
     } else if (isArriendo) {
       return (
-        <div className="bg-brand-gold/10 p-3 rounded-lg border border-brand-gold/20 h-full flex flex-col justify-center">
+        <div className="bg-brand-gold/10 p-3 rounded-lg border border-brand-gold/20 flex flex-col justify-center">
           <span className="text-xs text-brand-gold uppercase tracking-wider font-bold block mb-1">Total Arriendo</span>
           <span className="text-2xl text-white font-black">{formatMoney(p.precioGeneral)}</span>
           {p.precioAdmin && <span className="block text-xs text-stone-400 mt-2">Incluye Admin: {formatMoney(p.precioAdmin)}</span>}
@@ -163,7 +163,7 @@ export default function VIPPropertiesPanel() {
       );
     } else {
       return (
-        <div className="bg-stone-800 p-3 rounded-lg border border-stone-700 h-full flex flex-col justify-center">
+        <div className="bg-stone-800 p-3 rounded-lg border border-stone-700 flex flex-col justify-center">
           <span className="text-xs text-stone-400 uppercase tracking-wider font-bold block mb-1">Valor Venta</span>
           <span className="text-2xl text-white font-black">{formatMoney(p.precioVenta)}</span>
         </div>
@@ -872,10 +872,10 @@ export default function VIPPropertiesPanel() {
           {filteredProperties.map(prop => (
             <div 
               key={prop.idRegistro} 
-              className={`bg-stone-900 rounded-3xl overflow-hidden border transition-all duration-300 group ${selectedIds.has(prop.idRegistro) ? 'border-brand-gold ring-1 ring-brand-gold shadow-[0_0_20px_rgba(212,175,55,0.15)]' : 'border-stone-800 hover:border-stone-600'}`}
+              className={`bg-stone-900 rounded-3xl overflow-hidden border flex flex-col h-full transition-all duration-300 group ${selectedIds.has(prop.idRegistro) ? 'border-brand-gold ring-1 ring-brand-gold shadow-[0_0_20px_rgba(212,175,55,0.15)]' : 'border-stone-800 hover:border-stone-600'}`}
             >
               {/* Imagen y Selector */}
-              <div className="relative aspect-[4/3] bg-stone-950 overflow-hidden cursor-pointer" onClick={() => toggleSelection(prop.idRegistro)}>
+              <div className="relative aspect-[16/10] bg-stone-950 overflow-hidden cursor-pointer" onClick={() => toggleSelection(prop.idRegistro)}>
                 {prop.imageUrl ? (
                   <img src={prop.imageUrl} alt={prop.direccion} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" />
                 ) : (
@@ -904,7 +904,7 @@ export default function VIPPropertiesPanel() {
               </div>
 
               {/* Info Container */}
-              <div className="p-5 flex flex-col h-[calc(100%-75%)]">
+              <div className="p-5 flex flex-col flex-1">
                 
                 <h3 className="text-white font-bold text-lg mb-1 line-clamp-1 flex items-center gap-2">
                   {prop.barrio || prop.ciudad || 'Ubicación Pendiente'}
@@ -927,12 +927,12 @@ export default function VIPPropertiesPanel() {
                 </div>
 
                 {/* Precios */}
-                <div className="mb-6 flex-grow">
+                <div className="mb-6">
                   {getPriceDisplay(prop)}
                 </div>
 
                 {/* Botones de Acción Individuales */}
-                <div className="grid grid-cols-4 gap-2 pt-4 border-t border-stone-800/50">
+                <div className="grid grid-cols-4 gap-2 pt-4 border-t border-stone-800/50 mt-auto">
                   <button 
                     onClick={() => copyToClipboard(prop)}
                     title="Copiar Resumen WhatsApp"
