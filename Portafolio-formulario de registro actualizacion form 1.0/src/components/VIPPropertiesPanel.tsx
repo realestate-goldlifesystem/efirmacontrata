@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import logoImg from '../assets/logo.png';
+import coverBgImg from '../assets/cover-bg.png';
 
 interface VIPProperty {
   idRegistro: string;
@@ -255,37 +256,49 @@ export default function VIPPropertiesPanel() {
       );
       setDebugLogs(prev => [...prev, `[PDF] ${images.filter(Boolean).length}/${propsToRender.length} imagenes ok`]);
 
-      // Descargar el logo local y obtener sus dimensiones
+      const loadLocalImage = async (url: string) => {
+        try {
+          const resp = await fetch(url);
+          const blob = await resp.blob();
+          return await new Promise<{b64: string, w: number, h: number} | null>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+               const b64 = reader.result as string;
+               const img = new Image();
+               img.onload = () => resolve({ b64, w: img.width, h: img.height });
+               img.onerror = () => resolve(null);
+               img.src = b64;
+            };
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        } catch { return null; }
+      };
+
+      // Descargar logo y fondo de portada locales
       let logoBase64: string | null = null;
-      let logoW = 0;
-      let logoH = 0;
-      try {
-        const resp = await fetch(logoImg);
-        const blob = await resp.blob();
-        logoBase64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-             const b64 = reader.result as string;
-             const img = new Image();
-             img.onload = () => {
-                logoW = img.width;
-                logoH = img.height;
-                resolve(b64);
-             };
-             img.onerror = () => resolve(null);
-             img.src = b64;
-          };
-          reader.onerror = () => resolve(null);
-          reader.readAsDataURL(blob);
-        });
-      } catch (e) {
-        console.error("[PDF] No se pudo cargar el logo:", e);
-      }
+      let logoW = 0, logoH = 0;
+      const logoData = await loadLocalImage(logoImg);
+      if (logoData) { logoBase64 = logoData.b64; logoW = logoData.w; logoH = logoData.h; }
+
+      let coverBgBase64: string | null = null;
+      const coverData = await loadLocalImage(coverBgImg);
+      if (coverData) { coverBgBase64 = coverData.b64; }
 
       // ========== PORTADA PREMIUM ==========
-      // Fondo oscuro
-      doc.setFillColor(18, 18, 20); // Gris muy oscuro
+      // Fondo oscuro (base)
+      doc.setFillColor(18, 18, 20); 
       doc.rect(0, 0, pageW, pageH, 'F');
+      
+      // Imagen de fondo fotográfica
+      if (coverBgBase64) {
+        doc.addImage(coverBgBase64, 'PNG', 0, 0, pageW, pageH);
+        // Oscurecemos la imagen un 65% para que resalten los textos y dorados
+        doc.setFillColor(10, 10, 12);
+        doc.setGState(new (doc as any).GState({ opacity: 0.65 }));
+        doc.rect(0, 0, pageW, pageH, 'F');
+        doc.setGState(new (doc as any).GState({ opacity: 1 }));
+      }
 
       // Marco dorado fino
       doc.setDrawColor(...GOLD);
