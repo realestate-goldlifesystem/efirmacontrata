@@ -1,0 +1,1 @@
+const url = 'https://images.weserv.nl/?url=' + encodeURIComponent('https://drive.google.com/uc?id=1g_TQkFUmJnrUOjd7_HsZckatEPVLCT7h&export=view'); fetch(url).then(res => { console.log('CORS:', res.headers.get('access-control-allow-origin')); }).catch(console.error);  

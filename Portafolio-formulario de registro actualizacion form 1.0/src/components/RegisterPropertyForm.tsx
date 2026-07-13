@@ -17,6 +17,7 @@ import CountryMap from './CountryMap';
 import FeaturesGridSelector from './FeaturesGridSelector';
 import PhoneCountrySelector, { ALL_COUNTRIES } from './PhoneCountrySelector';
 import { PortfolioLocationStep } from './PortfolioLocationStep';
+import { ErrorBoundary } from './ErrorBoundary';
 
 const UPZ_BARRIOS: Record<string, string[]> = {
   'LOS CEDROS': ["CEDRITOS", "LOS CEDROS", "BELMIRA", "EL CONTADOR", "LISBOA", "ACACIAS", "ANTIGUA", "CEDRO GOLF"],
@@ -746,7 +747,8 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
   };
 
   return (
-    <section id="registro" className="min-h-screen py-12 bg-brand-dark-deep text-stone-800 relative font-sans">
+    <ErrorBoundary>
+      <section id="registro" className="min-h-screen py-12 bg-brand-dark-deep text-stone-800 relative font-sans">
       {/* Luxury Ambient Glows */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-gold/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-[#8A631F]/10 rounded-full blur-[150px] pointer-events-none mix-blend-screen" />
@@ -3062,6 +3064,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
         </div>
 
       </div>
-    </section>
+      </section>
+    </ErrorBoundary>
   );
 }

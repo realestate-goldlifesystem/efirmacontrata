@@ -1,0 +1,1 @@
+const url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://drive.google.com/uc?id=1g_TQkFUmJnrUOjd7_HsZckatEPVLCT7h&export=view'); fetch(url).then(res => { console.log('allorigins Status:', res.status); }).catch(console.error);  

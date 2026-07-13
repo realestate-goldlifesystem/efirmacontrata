@@ -1,0 +1,1 @@
+const url = 'https://drive.google.com/uc?id=1g_TQkFUmJnrUOjd7_HsZckatEPVLCT7h&export=view'; fetch(url).then(async res => { const blob = await res.blob(); console.log('Size:', blob.size); }).catch(console.error);  

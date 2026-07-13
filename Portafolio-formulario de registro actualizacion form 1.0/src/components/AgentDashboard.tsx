@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Calculator, ClipboardList, LogOut, Landmark, X } from 'lucide-react';
+import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft } from 'lucide-react';
+import VIPPropertiesPanel from './VIPPropertiesPanel';
 
 interface AgentDashboardProps {
   onOpenForm: () => void;
@@ -9,6 +10,22 @@ interface AgentDashboardProps {
 
 export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout }: AgentDashboardProps) {
   const [showSasModal, setShowSasModal] = useState(false);
+  const [activeView, setActiveView] = useState<'menu' | 'portafolio'>('menu');
+
+  if (activeView === 'portafolio') {
+    return (
+      <div className="min-h-screen bg-brand-dark animate-fade-in pb-20 relative">
+        <button 
+          onClick={() => setActiveView('menu')}
+          className="fixed top-24 left-4 md:left-8 z-50 flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all shadow-md"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium hidden md:inline">Volver al Panel</span>
+        </button>
+        <VIPPropertiesPanel />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 bg-brand-dark animate-fade-in relative">
@@ -139,6 +156,22 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout 
           <h2 className="text-2xl font-semibold text-white mb-3">Estrategias SAS</h2>
           <p className="text-stone-400 text-center">
             Módulo educativo de ingeniería financiera, aportes en especie y liquidez corporativa.
+          </p>
+        </button>
+
+        {/* Tarjeta de Portafolio VIP */}
+        <button 
+          onClick={() => setActiveView('portafolio')}
+          className="group flex flex-col items-center justify-center p-12 bg-stone-900 border border-brand-gold/30 rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-[0_0_30px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.2)] hover:-translate-y-2 relative overflow-hidden md:col-span-3 lg:col-span-1"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-gold/10 rounded-full blur-2xl group-hover:bg-brand-gold/20 transition-colors" />
+          <div className="w-24 h-24 mb-6 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors relative z-10 border border-brand-gold/20">
+            <Building2 className="w-12 h-12 text-brand-gold" />
+          </div>
+          <h2 className="text-2xl font-semibold text-white mb-3 relative z-10 text-center">Portafolio VIP</h2>
+          <p className="text-stone-400 text-center relative z-10">
+            Accede al catálogo de inmuebles publicados. Genera y comparte PDFs interactivos con tus clientes.
           </p>
         </button>
 

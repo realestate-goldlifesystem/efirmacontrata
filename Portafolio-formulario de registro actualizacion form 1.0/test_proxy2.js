@@ -1,0 +1,1 @@
+const url = 'https://corsproxy.io/?' + encodeURIComponent('https://drive.google.com/thumbnail?id=1g_TQkFUmJnrUOjd7_HsZckatEPVLCT7h&sz=w800'); fetch(url).then(res => { console.log('Status:', res.status); console.log('Type:', res.headers.get('content-type')); }).catch(console.error);  
