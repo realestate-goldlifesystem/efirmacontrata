@@ -183,7 +183,7 @@ export default function VIPPropertiesPanel() {
   // ============================================================
   // GENERADOR PDF PREMIUM CON jsPDF DIRECTO
   // ============================================================
-  const generatePDF = async (singleProperty?: VIPProperty) => {
+  const generatePDF = async (singleProperty?: VIPProperty, forceDownload = false) => {
     setIsGeneratingPdf(true);
     setDebugLogs(["[PDF] Iniciando generacion premium..."]);
     setShowDebug(true);
@@ -747,10 +747,10 @@ export default function VIPPropertiesPanel() {
       // ---- Compartir o Descargar ----
       try {
         const pdfFileObj = new File([pdfBlob], filename, { type: 'application/pdf' });
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFileObj] })) {
+        if (!forceDownload && navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFileObj] })) {
           await navigator.share({ files: [pdfFileObj], title: 'Portafolio Gold Life', text: 'Seleccion exclusiva de inmuebles Gold Life Real Estate.' });
           setDebugLogs(prev => [...prev, `[PDF] Compartido!`]);
-        } else throw new Error("no share");
+        } else throw new Error("no share or forced download");
       } catch {
         const url = URL.createObjectURL(pdfBlob);
         const a = document.createElement('a');
@@ -855,16 +855,26 @@ export default function VIPPropertiesPanel() {
             <div className="w-10 h-10 rounded-full bg-brand-gold flex items-center justify-center text-stone-950 font-black text-lg">
               {selectedIds.size}
             </div>
-            <span className="text-white font-medium">Inmuebles seleccionados para el Portafolio</span>
+            <span className="text-stone-900 font-bold">Inmuebles seleccionados para el Portafolio</span>
           </div>
-          <button 
-            onClick={() => generatePDF()}
-            disabled={isGeneratingPdf}
-            className="w-full sm:w-auto bg-brand-gold text-stone-950 px-8 py-3 rounded-xl font-bold hover:bg-white hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-gold/20 disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {isGeneratingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <Share2 className="w-5 h-5" />}
-            {isGeneratingPdf ? 'Generando PDF...' : 'Generar PDF y Compartir'}
-          </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <button 
+              onClick={() => generatePDF()}
+              disabled={isGeneratingPdf}
+              className="w-full sm:w-auto bg-brand-gold text-stone-950 px-6 py-3 rounded-xl font-bold hover:bg-yellow-500 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-gold/20 disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {isGeneratingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="text-xl leading-none">📤</span>}
+              {isGeneratingPdf ? 'Generando PDF...' : 'Generar PDF y Compartir'}
+            </button>
+            <button 
+              onClick={() => generatePDF(undefined, true)}
+              disabled={isGeneratingPdf}
+              className="w-full sm:w-auto bg-stone-900 text-brand-gold border border-stone-700 px-6 py-3 rounded-xl font-bold hover:bg-stone-800 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {isGeneratingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+              {isGeneratingPdf ? 'Generando...' : 'Descargar Solo'}
+            </button>
+          </div>
         </div>
       )}
 
