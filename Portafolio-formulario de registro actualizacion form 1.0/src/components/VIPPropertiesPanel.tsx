@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Building2, Search, Filter, Loader2, MapPin, Bed, Bath, Car, 
-  Youtube, Facebook, FileText, Share2, Download, Copy, Check, Lock, ChevronDown, CheckSquare, Square
+  Youtube, Facebook, FileText, Share2, Download, Copy, Check, Lock, ChevronDown, CheckSquare, Square,
+  LayoutGrid, List
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import logoImg from '../assets/logo.png';
@@ -56,6 +57,7 @@ export default function VIPPropertiesPanel() {
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   // Debug panel para diagnosticar PDF
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
@@ -798,11 +800,11 @@ export default function VIPPropertiesPanel() {
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-white flex items-center gap-3">
+          <h1 className="text-3xl md:text-4xl font-black text-stone-900 flex items-center gap-3">
             <Building2 className="w-8 h-8 text-brand-gold" />
             Portafolio VIP
           </h1>
-          <p className="text-stone-400 mt-2 text-sm max-w-xl">
+          <p className="text-stone-600 mt-2 text-sm max-w-xl">
             Catálogo global de inmuebles publicados. Selecciona propiedades para generar un portafolio PDF elegante y enviarlo al instante.
           </p>
         </div>
@@ -820,15 +822,31 @@ export default function VIPPropertiesPanel() {
         </div>
       </div>
 
-      <div className="relative mb-8 max-w-2xl">
-        <Search className="w-5 h-5 text-stone-500 absolute left-4 top-1/2 -translate-y-1/2" />
-        <input 
-          type="text" 
-          placeholder="Buscar por Dirección, Barrio o ID de Registro..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-stone-900 border border-stone-700 text-white pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:border-brand-gold transition-colors placeholder:text-stone-600 shadow-inner"
-        />
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-8 max-w-3xl">
+        <div className="relative flex-1 w-full">
+          <Search className="w-5 h-5 text-stone-500 absolute left-4 top-1/2 -translate-y-1/2" />
+          <input 
+            type="text" 
+            placeholder="Buscar por Dirección, Barrio o ID de Registro..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-stone-900 border border-stone-700 text-white pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:border-brand-gold transition-colors placeholder:text-stone-600 shadow-inner"
+          />
+        </div>
+        <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0 self-stretch items-center h-full">
+          <button 
+            onClick={() => setViewMode('grid')}
+            className={`p-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'grid' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
+          >
+            <LayoutGrid className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`p-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
+          >
+            <List className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {selectedIds.size > 0 && (
@@ -867,7 +885,7 @@ export default function VIPPropertiesPanel() {
         <div className="text-center py-20 border-2 border-dashed border-stone-800 rounded-3xl">
           <p className="text-stone-500 text-lg">No se encontraron inmuebles que coincidan con la búsqueda.</p>
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProperties.map(prop => (
             <div 
@@ -965,6 +983,107 @@ export default function VIPPropertiesPanel() {
                     </a>
                   )}
                 </div>
+              </div>
+
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="hidden md:flex items-center px-4 py-3 bg-stone-900 rounded-xl text-xs font-bold text-stone-500 uppercase tracking-wider border border-stone-800">
+            <div className="w-12 text-center">Sel</div>
+            <div className="w-24 px-2">ID</div>
+            <div className="w-1/4 px-2">Ubicación</div>
+            <div className="w-1/5 px-2">Características</div>
+            <div className="w-28 px-2">Negocio</div>
+            <div className="flex-1 px-2 text-right">Precio General</div>
+            <div className="w-28 text-center px-2">Acciones</div>
+          </div>
+
+          {filteredProperties.map(prop => (
+            <div 
+              key={prop.idRegistro} 
+              className={`bg-stone-900 rounded-2xl overflow-hidden border transition-all duration-200 flex flex-col md:flex-row items-center p-3 gap-2 ${selectedIds.has(prop.idRegistro) ? 'border-brand-gold ring-1 ring-brand-gold shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'border-stone-800 hover:border-stone-600'}`}
+            >
+              <div className="w-full md:w-12 flex items-center justify-between md:justify-center mb-2 md:mb-0 px-2 md:px-0">
+                <span className="md:hidden text-stone-500 text-xs font-bold uppercase">Seleccionar</span>
+                <button 
+                  onClick={() => toggleSelection(prop.idRegistro)}
+                  className={`w-7 h-7 shrink-0 rounded-md flex items-center justify-center border-2 transition-colors ${selectedIds.has(prop.idRegistro) ? 'bg-brand-gold border-brand-gold text-stone-950' : 'bg-stone-950 border-stone-700 text-transparent hover:border-stone-500'}`}
+                >
+                  <Check className="w-4 h-4" strokeWidth={3} />
+                </button>
+              </div>
+
+              <div className="w-full md:w-24 px-2 shrink-0 font-mono text-xs font-bold text-stone-400 flex items-center justify-between md:block">
+                <span className="md:hidden text-stone-500 text-xs font-bold uppercase">ID</span>
+                {prop.idRegistro}
+              </div>
+
+              <div className="w-full md:w-1/4 px-2 shrink-0 flex items-center gap-3">
+                <div className="w-12 h-12 rounded bg-stone-950 overflow-hidden shrink-0 border border-stone-800 hidden md:block">
+                  {prop.imageUrl ? (
+                    <img src={prop.imageUrl} alt="thmb" className="w-full h-full object-cover opacity-80" />
+                  ) : (
+                    <Building2 className="w-full h-full p-3 text-stone-700 opacity-50" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-sm line-clamp-1">{prop.barrio || prop.ciudad || 'Pendiente'}</h3>
+                  <p className="text-stone-500 text-[10px] line-clamp-1 flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-2.5 h-2.5" /> {prop.direccion}
+                  </p>
+                </div>
+              </div>
+
+              <div className="w-full md:w-1/5 px-2 shrink-0 flex items-center gap-2 mt-2 md:mt-0">
+                <div className="flex items-center gap-1.5 text-[11px] text-stone-300 font-medium bg-stone-950 border border-stone-800 px-2 py-1 rounded-md">
+                  <Bed className="w-3 h-3 text-stone-500" /> {prop.habitaciones}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-stone-300 font-medium bg-stone-950 border border-stone-800 px-2 py-1 rounded-md">
+                  <Bath className="w-3 h-3 text-stone-500" /> {prop.banos}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-stone-300 font-medium bg-stone-950 border border-stone-800 px-2 py-1 rounded-md">
+                  <Car className="w-3 h-3 text-stone-500" /> {prop.garajes}
+                </div>
+              </div>
+
+              <div className="w-full md:w-28 px-2 shrink-0 flex items-center justify-between md:block mt-2 md:mt-0">
+                <span className="md:hidden text-stone-500 text-xs font-bold uppercase">Negocio</span>
+                <span className="inline-block px-2 py-1 rounded bg-stone-800/80 text-[9px] font-black tracking-widest uppercase text-brand-gold border border-brand-gold/30">
+                  {prop.tipoNegocio}
+                </span>
+              </div>
+
+              <div className="w-full md:flex-1 px-2 flex items-center justify-between md:justify-end mt-2 md:mt-0">
+                <span className="md:hidden text-stone-500 text-xs font-bold uppercase">Precio</span>
+                <div className="text-right">
+                  <div className="text-base font-black text-white">
+                    {formatMoney(prop.precioGeneral || prop.precioVenta)}
+                  </div>
+                  {(prop.precioGeneral && prop.precioVenta && prop.precioVenta !== prop.precioGeneral) && (
+                    <div className="text-[10px] text-stone-500 line-through">
+                      {formatMoney(prop.precioVenta)}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="w-full md:w-28 px-2 flex items-center gap-2 justify-center shrink-0 mt-3 md:mt-0 border-t border-stone-800 pt-3 md:border-0 md:pt-0">
+                <button 
+                  onClick={() => copyToClipboard(prop)}
+                  title="Copiar Resumen WhatsApp"
+                  className="bg-stone-800 hover:bg-stone-700 text-stone-400 rounded-lg w-9 h-9 flex items-center justify-center transition-colors"
+                >
+                  {copiedId === prop.idRegistro ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                </button>
+                <button 
+                  onClick={() => generatePDF(prop)}
+                  title="Generar PDF Individual"
+                  className="bg-stone-800 hover:bg-brand-gold hover:text-stone-950 text-stone-400 rounded-lg w-9 h-9 flex items-center justify-center transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
               </div>
 
             </div>
