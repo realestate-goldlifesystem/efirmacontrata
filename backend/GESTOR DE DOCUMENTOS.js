@@ -647,6 +647,9 @@ function doPost(e) {
       case 'consultarPropietario':
         result = handleConsultarPropietario(datos);
         break;
+      case 'obtenerInmueblesVip':
+        result = handleObtenerInmueblesVip(datos);
+        break;
       case 'actualizarCampoValidacion':
         result = handleActualizarCampoValidacion(datos);
         break;
@@ -708,13 +711,21 @@ function doPost(e) {
 
     return corsResponse(result);
 
-  } catch (error) {
+} catch (error) {
     Logger.log('Error en doPost: ' + error.toString());
     return corsResponse({
       success: false,
       message: error.message
     });
   }
+}
+
+function getUrlFromCell(row, col, data, formulas) {
+  const formula = formulas[row][col];
+  if (formula && formula.startsWith('=HYPERLINK("')) {
+    return formula.split('"')[1];
+  }
+  return data[row][col];
 }
 
 // ==========================================
@@ -4848,5 +4859,116 @@ function handleConsultarPropietario(datos) {
     return { success: true, propietario: propietario, inmuebles: inmuebles };
   } else {
     return { success: false, message: 'No se encontraron resultados' };
+  }
+}
+
+function handleObtenerInmueblesVip(datos) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    if (!sheet) return { success: false, error: "No se encontró la hoja" };
+    
+    const dataRange = sheet.getDataRange();
+    const data = dataRange.getValues();
+    const formulas = dataRange.getFormulas();
+    const headers = data[0].map(h => String(h).trim().toUpperCase());
+    
+    const idxEstado = headers.indexOf('ESTADO DEL INMUEBLE');
+    const idxDir = headers.indexOf('INGRESE LA DIRECCIÓN DEL INMUEBLE');
+    const idxHabitaciones = headers.indexOf('N° DE HABITACIONES');
+    const idxBanos = headers.indexOf('N° DE BAÑOS');
+    const idxGarajes = headers.indexOf('N° DE GARAJES');
+    const idxIdRegistro = headers.indexOf('ID DE REGISTRO');
+    const idxNegocio = headers.indexOf('TIPO DE NEGOCIO');
+    const idxYt = headers.indexOf('LINK DEL VIDEO DEL INMUEBLE');
+    const idxFb = headers.indexOf('LINK DEL INMUEBLE PUBLICADO');
+    const idxDocFirmado = headers.indexOf('DOCUMENTO FIRMADO');
+    const idxCarpeta = headers.indexOf('LINK CARPETA DE CONTENIDO');
+    const idxPrecioVenta = headers.indexOf('PRECIO DE PROMOCION EN VENTA');
+    const idxPrecioGeneral = headers.indexOf('PRECIO DE PROMOCION GENERAL');
+    const idxPrecioAdmin = headers.indexOf('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)');
+    const idxCiudad = headers.indexOf('INGRESE LA CIUDAD DEL INMUEBLE');
+    const idxUpz = headers.indexOf('SELECCIONA LA UPZ  DE TU INMUEBLE');
+    const idxArea = headers.findIndex(h => h.includes('AREA') || h.includes('ÁREA') || h.includes('METRAJE') || h.includes('M2'));
+
+    const idxBarrios = [];
+    for (let h = 0; h < headers.length; h++) {
+        if (headers[h].includes('SELECCIONA EL BARRIO') || headers[h].includes('BARRIO COMERCIAL') || headers[h].includes('ESCRIBA EL BARRIO')) {
+            idxBarrios.push(h);
+        }
+    }
+
+    const inmuebles = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const estado = String(row[idxEstado] || '').toUpperCase();
+      
+      if (estado.includes('PUBLICADO VENTA') || estado.includes('PUBLICADO ARRIENDO') || estado.includes('PUBLICADO VENTA/RENTA')) {
+        let imageUrl = '';
+        let folderLink = row[idxCarpeta];
+        const formula = formulas[i][idxCarpeta];
+        if (formula && formula.toUpperCase().includes("HYPERLINK")) {
+          const matchFormula = formula.match(/HYPERLINK\("([^"]+)"/i);
+          if (matchFormula) folderLink = matchFormula[1];
+        }
+
+        if (folderLink && typeof folderLink === 'string') {
+          const match = folderLink.match(/(?:id=|folders\/|d\/)([a-zA-Z0-9_-]{25,})/);
+          if (match && match[1]) {
+            try {
+              const mainFolder = DriveApp.getFolderById(match[1]);
+              const photoFolders = mainFolder.getFoldersByName('FOTOGRAFÍAS');
+              if (photoFolders.hasNext()) {
+                const photoFolder = photoFolders.next();
+                const files = photoFolder.getFiles();
+                while (files.hasNext()) {
+                  const f = files.next();
+                  const mimeType = String(f.getMimeType());
+                  if (mimeType.includes('image/')) {
+                    imageUrl = 'https://drive.google.com/thumbnail?id=' + f.getId() + '&sz=w800';
+                    break;
+                  }
+                }
+              }
+            } catch (e) {
+              // Ignore drive access error per row
+            }
+          }
+        }
+
+        let barrioFinal = '';
+        for (let b of idxBarrios) {
+            if (row[b] && String(row[b]).trim() !== '') {
+                barrioFinal = String(row[b]).trim();
+                break;
+            }
+        }
+
+        inmuebles.push({
+          direccion: row[idxDir] || '',
+          habitaciones: row[idxHabitaciones] || '0',
+          banos: row[idxBanos] || '0',
+          garajes: idxGarajes !== -1 ? (row[idxGarajes] || '0') : '0',
+          ciudad: idxCiudad !== -1 ? (row[idxCiudad] || '') : '',
+          upz: idxUpz !== -1 ? (row[idxUpz] || '') : '',
+          area: idxArea !== -1 ? (row[idxArea] || '') : '',
+          barrio: barrioFinal,
+          idRegistro: row[idxIdRegistro] || '',
+          tipoNegocio: row[idxNegocio] || '',
+          youtube: row[idxYt] || '',
+          facebook: row[idxFb] || '',
+          documentoFirmado: row[idxDocFirmado] || '',
+          precioVenta: row[idxPrecioVenta] || '',
+          precioGeneral: row[idxPrecioGeneral] || '',
+          precioAdmin: idxPrecioAdmin !== -1 ? (row[idxPrecioAdmin] || '') : '',
+          estado: estado,
+          imageUrl: imageUrl
+        });
+      }
+    }
+    
+    return { success: true, inmuebles: inmuebles };
+  } catch (error) {
+    return { success: false, error: String(error) };
   }
 }
