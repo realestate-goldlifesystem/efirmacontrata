@@ -568,11 +568,26 @@ export default function VIPPropertiesPanel() {
           
           drawLineIcon(m.type, circleX, circleY, 3.5);
 
-          // Número Grande (Derecha del icono)
+          // Normalizar valores comunes
+          let val = String(m.value || '0').trim();
+          if (/ning/i.test(val)) val = '0'; // Ninguno, Ningun -> 0
+
+          // Número (Derecha del icono) con Auto-scaling
           doc.setTextColor(255, 255, 255);
-          doc.setFontSize(26);
           doc.setFont('times', 'normal'); 
-          doc.text(m.value, circleX + 13, sec2Y + 3);
+          let fSize = 26;
+          doc.setFontSize(fSize);
+          
+          // Ancho máximo disponible (para 4 columnas es aprox 28mm)
+          const maxTextW = 26; 
+          while (doc.getTextWidth(val) > maxTextW && fSize > 8) {
+            fSize -= 2;
+            doc.setFontSize(fSize);
+          }
+          
+          // Ajustar la posición Y ligeramente si la fuente se redujo mucho para que quede centrado
+          const yOffset = fSize < 20 ? 1 : 3;
+          doc.text(val, circleX + 13, sec2Y + yOffset);
           
           // Etiqueta (Debajo del número)
           doc.setTextColor(180, 180, 180);
