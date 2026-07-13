@@ -24,6 +24,7 @@ interface VIPProperty {
   documentoFirmado: string;
   imageUrl: string;
   estado: string;
+  area: string;
 }
 
 // Helper: descarga una imagen como base64 data URL via proxy weserv.nl
@@ -386,236 +387,250 @@ export default function VIPPropertiesPanel() {
         setDebugLogs(prev => [...prev, `[PDF] Ficha ${i + 1}: ${p.idRegistro}`]);
         doc.addPage();
 
-        // Fondo completo
-        doc.setFillColor(...DARK);
+        // ===== DISEÑO ÉLITE (SOTHEBY'S / CHRISTIE'S) =====
+        const MARGIN = 8;
+        const contentW = pageW - MARGIN * 2;
+        const imgH = contentW; // Cuadrado perfecto 1:1 (ej. 1080x1080)
+
+        // Fondo global (Gris muy oscuro / Negro)
+        doc.setFillColor(28, 29, 31);
         doc.rect(0, 0, pageW, pageH, 'F');
 
-        // ===== IMAGEN CUADRADA 1:1 PERFECTA =====
-        const PHOTO_H = pageW; // 210x210mm = cuadrado perfecto, sin estiramiento
+        // Marco Dorado (Golden Frame)
+        doc.setDrawColor(...GOLD); // 212, 175, 55
+        doc.setLineWidth(0.8);
+        doc.rect(MARGIN - 0.4, MARGIN - 0.4, contentW + 0.8, pageH - MARGIN * 2 + 0.8, 'S');
+
+        // ===== IMAGEN 1:1 =====
         if (imgData) {
           try {
-            doc.addImage(imgData, 'JPEG', 0, 0, pageW, PHOTO_H);
+            doc.addImage(imgData, 'JPEG', MARGIN, MARGIN, contentW, imgH);
           } catch {
-            doc.setFillColor(...CARD);
-            doc.rect(0, 0, pageW, PHOTO_H, 'F');
-            doc.setTextColor(...GRAY);
-            doc.setFontSize(10);
-            doc.text('Fotografía no disponible', pageW / 2, PHOTO_H / 2, { align: 'center' });
+            doc.setFillColor(40, 40, 40);
+            doc.rect(MARGIN, MARGIN, contentW, imgH, 'F');
           }
         } else {
-          doc.setFillColor(30, 30, 30);
-          doc.rect(0, 0, pageW, PHOTO_H, 'F');
-          doc.setTextColor(...GRAY2);
-          doc.setFontSize(9);
-          doc.text('Sin Fotografía', pageW / 2, PHOTO_H / 2, { align: 'center' });
+          doc.setFillColor(40, 40, 40);
+          doc.rect(MARGIN, MARGIN, contentW, imgH, 'F');
+          doc.setTextColor(100, 100, 100);
+          doc.setFontSize(10);
+          doc.text('Fotografía no disponible', pageW / 2, MARGIN + imgH / 2, { align: 'center' });
         }
 
-        // Determinar tipo de negocio
+        // ===== PANEL INFERIOR =====
+        const panelY = MARGIN + imgH;
+        const panelH = pageH - panelY - MARGIN;
+
+        // Fondo del panel (Ligeramente más oscuro o textura)
+        doc.setFillColor(24, 25, 26);
+        doc.rect(MARGIN, panelY, contentW, panelH, 'F');
+
+        // Línea divisoria gruesa dorada entre foto y panel
+        doc.setFillColor(...GOLD);
+        doc.rect(MARGIN, panelY, contentW, 1.5, 'F');
+
+        // --- SECCIÓN 1: TÍTULO Y PRECIO ---
+        const sec1Y = panelY + 9; // Subimos más la primera sección
+
         const isVenta = p.estado.includes('VENTA') || p.tipoNegocio.includes('VENTA');
         const isArriendo = p.estado.includes('ARRIENDO') || p.estado.includes('RENTA') || p.tipoNegocio.includes('ARRIENDO') || p.tipoNegocio.includes('ADMI-');
         const isMixto = (isVenta && isArriendo) || p.tipoNegocio.includes('VENDI') || p.tipoNegocio.includes('ADMI-VENTA');
-        const tipoLabel = isMixto ? 'VENTA & ARRIENDO' : isVenta ? 'EN VENTA' : 'EN ARRIENDO';
 
-        // ===== BADGE: TIPO + ID — esquina superior izquierda =====
-        const badgeText = `${tipoLabel}  ·  ${p.idRegistro}`;
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        const badgeTxtW = doc.getTextWidth(badgeText);
-        const badgePad = 5;
-        const badgeTotalW = badgeTxtW + badgePad * 2;
+        // TIPO (Tracking simulado con espacios)
+        doc.setTextColor(...GOLD);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'normal');
+        const tipoText = (isMixto ? 'APARTAMENTO VENTA/ARRIENDO' : isVenta ? 'APARTAMENTO EN VENTA' : 'APARTAMENTO EN ARRIENDO').split('').join(' ');
+        doc.text(tipoText, MARGIN + 8, sec1Y);
 
-        doc.setGState(new (doc as any).GState({ opacity: 0.85 }));
-        doc.setFillColor(0, 0, 0);
-        doc.roundedRect(mg, 8, badgeTotalW, 8, 1.5, 1.5, 'F');
-        doc.setGState(new (doc as any).GState({ opacity: 1 }));
+        // TÍTULO (Barrio) - Fuente SERIF gigante y elegante
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(38);
+        doc.setFont('times', 'normal'); // Serif
+        const barrio = (p.barrio || p.ciudad || 'UBICACIÓN').toUpperCase();
+        doc.text(barrio, MARGIN + 7, sec1Y + 11);
+
+        // UBICACIÓN (Pin + Dirección)
+        const pinX = MARGIN + 10;
+        const pinY = sec1Y + 18;
+        doc.setFillColor(255, 255, 255);
+        doc.circle(pinX, pinY - 1.5, 1.2, 'F');
+        doc.triangle(pinX - 1.2, pinY - 1.2, pinX + 1.2, pinY - 1.2, pinX, pinY + 1.5, 'F');
+        doc.setFillColor(24, 25, 26); // hueco del pin
+        doc.circle(pinX, pinY - 1.5, 0.5, 'F');
+
+        doc.setTextColor(220, 220, 220);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(String(p.direccion || 'Sin dirección'), MARGIN + 14, sec1Y + 19);
+
+        // Ciudad (Gris)
+        if (p.ciudad) {
+          doc.setTextColor(140, 140, 140);
+          doc.setFontSize(7);
+          doc.text(`${p.ciudad.toUpperCase()}  •  ${(p.upz || 'ZONA').toUpperCase()}`, MARGIN + 14, sec1Y + 24);
+        }
+
+        // Línea dorada sutil bajo la ubicación
         doc.setDrawColor(...GOLD);
         doc.setLineWidth(0.3);
-        doc.roundedRect(mg, 8, badgeTotalW, 8, 1.5, 1.5, 'S');
+        doc.line(MARGIN + 12, sec1Y + 29, MARGIN + 40, sec1Y + 29);
+
+        // SEPARADOR VERTICAL MEDIO
+        const midX = MARGIN + contentW * 0.53;
+        doc.setDrawColor(60, 60, 60);
+        doc.setLineWidth(0.3);
+        doc.line(midX, sec1Y, midX, sec1Y + 24);
+
+        // PRECIO (Derecha)
         doc.setTextColor(...GOLD);
-        doc.text(tipoLabel, mg + badgePad, 13.5);
-        doc.setTextColor(200, 200, 200);
-        doc.text(`  ·  ${p.idRegistro}`, mg + badgePad + doc.getTextWidth(tipoLabel), 13.5);
-
-        // ===== VIDEO TOUR link — zona clicable sobre imagen =====
-        if (p.youtube) {
-          doc.link(0, 0, pageW, PHOTO_H, { url: p.youtube });
-        }
-
-        // ========================================================
-        // PANEL DE INFORMACIÓN — 87mm (A4: 297-210=87)
-        // Diseño limpio tipo Sotheby's International Realty
-        // ========================================================
-        const panelY = PHOTO_H;
-        const panelH = pageH - panelY;
-        const FOOTER_H = 5;
-        const PX = 12; // padding horizontal
-
-        // Fondo panel
-        doc.setFillColor(14, 14, 14);
-        doc.rect(0, panelY, pageW, panelH, 'F');
-
-        // Línea dorada de separación foto/panel
-        doc.setFillColor(...GOLD);
-        doc.rect(0, panelY, pageW, 0.8, 'F');
-
-        // Acento lateral izquierdo fino
-        doc.setFillColor(...GOLD);
-        doc.rect(0, panelY, 2.5, panelH - FOOTER_H, 'F');
-
-        // ====== FILA 1: Ubicación (izq) + Precio (der) ======
-        let yInfo = panelY + 7;
-
-        // -- IZQUIERDA: Barrio grande --
-        doc.setTextColor(...WHITE);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        const barrio = (p.barrio || p.ciudad || 'Ubicación').toUpperCase();
-        doc.text(barrio, PX, yInfo);
-
-        // Dirección debajo — legible
-        yInfo += 6;
-        doc.setTextColor(180, 180, 180);
-        doc.setFontSize(8.5);
+        doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        doc.text(p.direccion, PX, yInfo, { maxWidth: 120 });
+        const priceLabel = isMixto ? 'PRECIO DE VENTA/ARRIENDO' : isArriendo ? 'PRECIO DE ARRIENDO' : 'PRECIO DE VENTA';
+        doc.text(priceLabel, midX + 8, sec1Y + 4);
 
-        // Ciudad · UPZ
-        if (p.ciudad) {
-          yInfo += 5;
-          doc.setTextColor(120, 120, 120);
-          doc.setFontSize(7);
-          doc.text(`${p.ciudad}${p.upz ? '  ·  ' + p.upz : ''}`, PX, yInfo);
-        }
-
-        // -- DERECHA: Precio --
-        const priceLabel = isMixto ? 'ARRIENDO' : isArriendo ? 'TOTAL ARRIENDO' : 'PRECIO DE VENTA';
         const mainPrice = (isArriendo || isMixto) ? fmt(p.precioGeneral) : fmt(p.precioVenta);
-        const priceBlockX = pageW - PX;
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(26);
+        doc.setFont('times', 'bold'); // Serif para números elegantes
+        doc.text(mainPrice || '-', midX + 8, sec1Y + 14);
 
-        doc.setTextColor(...GOLD);
-        doc.setFontSize(6.5);
-        doc.setFont('helvetica', 'bold');
-        doc.text(priceLabel, priceBlockX, panelY + 7, { align: 'right' });
-
-        // Línea decorativa bajo label
-        doc.setDrawColor(...GOLD2);
-        doc.setLineWidth(0.3);
-        doc.line(priceBlockX - 65, panelY + 9, priceBlockX, panelY + 9);
-
-        // Precio grande
-        doc.setTextColor(...WHITE);
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(mainPrice || '-', priceBlockX, panelY + 16, { align: 'right' });
-
-        // Admin
+        // Admin (opcional si es renta)
         if ((isArriendo || isMixto) && fmt(p.precioAdmin)) {
-          doc.setTextColor(130, 130, 130);
-          doc.setFontSize(6.5);
+          doc.setTextColor(150, 150, 150);
+          doc.setFontSize(7);
           doc.setFont('helvetica', 'normal');
-          doc.text(`Incl. Admin: ${fmt(p.precioAdmin)}`, priceBlockX, panelY + 21, { align: 'right' });
+          doc.text(`Incl. Admin: ${fmt(p.precioAdmin)}`, midX + 8, sec1Y + 20);
         }
 
-        // Precio venta adicional (mixto)
-        if (isMixto && fmt(p.precioVenta)) {
-          doc.setTextColor(140, 120, 50);
-          doc.setFontSize(6);
-          doc.setFont('helvetica', 'bold');
-          doc.text('VENTA', priceBlockX, panelY + 26, { align: 'right' });
-          doc.setTextColor(200, 200, 200);
-          doc.setFontSize(10);
-          doc.text(fmt(p.precioVenta) || '-', priceBlockX, panelY + 32, { align: 'right' });
-        }
 
-        // ====== SEPARADOR HORIZONTAL ======
-        const sepY = panelY + 37;
-        doc.setDrawColor(40, 40, 40);
-        doc.setLineWidth(0.3);
-        doc.line(PX, sepY, pageW - PX, sepY);
+        // --- SECCIÓN 2: MÉTRICAS (Líneas finas) ---
+        const sec2Y = sec1Y + 41; // Espacio generoso desde arriba
+        const numMetrics = 4; // Añadimos Área
+        const metricW = contentW / numMetrics;
 
-        // ====== FILA 2: Métricas — tipografía pura, elegante ======
-        // Sin iconos dibujados — solo números grandes y labels claros
-        // Estilo: "3  HABITACIONES  |  2  BAÑOS  |  1  GARAJE"
-        const metricsY = sepY + 4;
+        const drawLineIcon = (type: string, cx: number, cy: number, sz: number) => {
+          doc.setDrawColor(...GOLD);
+          doc.setLineWidth(0.4);
+          if (type === 'BED') {
+            doc.roundedRect(cx - sz, cy - sz*0.5, sz*2, sz, 0.5, 0.5, 'S'); 
+            doc.line(cx - sz, cy, cx + sz, cy); 
+            doc.rect(cx - sz*0.8, cy - sz*0.4, sz*0.7, sz*0.3, 'S'); 
+            doc.rect(cx + sz*0.1, cy - sz*0.4, sz*0.7, sz*0.3, 'S'); 
+            doc.line(cx - sz*0.8, cy + sz*0.5, cx - sz*0.8, cy + sz*0.8); 
+            doc.line(cx + sz*0.8, cy + sz*0.5, cx + sz*0.8, cy + sz*0.8); 
+          } else if (type === 'BATH') {
+            doc.line(cx - sz*0.9, cy, cx + sz*0.9, cy); 
+            doc.line(cx - sz*0.8, cy + sz*0.6, cx + sz*0.8, cy + sz*0.6); 
+            doc.line(cx - sz*0.9, cy, cx - sz*0.8, cy + sz*0.6); 
+            doc.line(cx + sz*0.9, cy, cx + sz*0.8, cy + sz*0.6); 
+            doc.line(cx - sz*0.7, cy, cx - sz*0.7, cy - sz*0.8); 
+            doc.line(cx - sz*0.7, cy - sz*0.8, cx - sz*0.2, cy - sz*0.8); 
+            doc.line(cx - sz*0.2, cy - sz*0.8, cx - sz*0.2, cy - sz*0.6); 
+            doc.circle(cx - sz*0.2, cy - sz*0.5, sz*0.15, 'S'); 
+          } else if (type === 'CAR') {
+            doc.roundedRect(cx - sz*0.8, cy - sz*0.1, sz*1.6, sz*0.5, 0.5, 0.5, 'S'); 
+            doc.line(cx - sz*0.6, cy - sz*0.1, cx - sz*0.4, cy - sz*0.6); 
+            doc.line(cx + sz*0.6, cy - sz*0.1, cx + sz*0.4, cy - sz*0.6); 
+            doc.line(cx - sz*0.4, cy - sz*0.6, cx + sz*0.4, cy - sz*0.6); 
+            doc.circle(cx - sz*0.5, cy + sz*0.4, sz*0.25, 'S'); 
+            doc.circle(cx + sz*0.5, cy + sz*0.4, sz*0.25, 'S'); 
+          } else if (type === 'AREA') {
+            const d = sz * 1.1; // Rombo
+            doc.line(cx, cy - d, cx + d, cy);
+            doc.line(cx + d, cy, cx, cy + d);
+            doc.line(cx, cy + d, cx - d, cy);
+            doc.line(cx - d, cy, cx, cy - d);
+            doc.setFontSize(4.5);
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.text("m2", cx, cy + 1.5, { align: 'center' });
+          }
+        };
+
         const metrics = [
-          { value: p.habitaciones || '0', label: 'Habitaciones' },
-          { value: p.banos || '0', label: 'Baños' },
-          { value: p.garajes || '0', label: 'Garajes' },
+          { value: String(p.habitaciones || '0'), label: 'HABITACIONES', type: 'BED' },
+          { value: String(p.banos || '0'), label: 'BAÑOS', type: 'BATH' },
+          { value: String(p.area || '0'), label: 'ÁREA', type: 'AREA' },
+          { value: String(p.garajes || '0'), label: 'GARAJES', type: 'CAR' },
         ];
-        const metricsTotalW = pageW - PX * 2;
-        const metricColW = metricsTotalW / metrics.length;
 
         metrics.forEach((m, idx) => {
-          const cx = PX + metricColW * idx + metricColW / 2;
+          const colX = MARGIN + metricW * idx;
+          const cx = colX + metricW / 2;
+          
+          // Círculo del icono (Izquierda)
+          const circleX = cx - 18;
+          const circleY = sec2Y;
+          doc.setDrawColor(...GOLD);
+          doc.setLineWidth(0.4);
+          doc.circle(circleX, circleY, 7, 'S');
+          
+          drawLineIcon(m.type, circleX, circleY, 3.5);
 
-          // Número grande dorado
-          doc.setTextColor(...GOLD);
-          doc.setFontSize(20);
-          doc.setFont('helvetica', 'bold');
-          doc.text(m.value, cx, metricsY + 10, { align: 'center' });
-
-          // Label debajo — LEGIBLE
-          doc.setTextColor(160, 160, 160);
-          doc.setFontSize(8);
+          // Número Grande (Derecha del icono)
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(26);
+          doc.setFont('times', 'normal'); 
+          doc.text(m.value, circleX + 13, sec2Y + 3);
+          
+          // Etiqueta (Debajo del número)
+          doc.setTextColor(180, 180, 180);
+          doc.setFontSize(6);
           doc.setFont('helvetica', 'normal');
-          doc.text(m.label, cx, metricsY + 16, { align: 'center' });
-
-          // Separador vertical entre columnas (excepto última)
+          doc.text(m.label, circleX + 13, sec2Y + 8);
+          
+          // Separador Vertical
           if (idx < metrics.length - 1) {
-            doc.setDrawColor(50, 50, 50);
-            doc.setLineWidth(0.2);
-            const divX = PX + metricColW * (idx + 1);
-            doc.line(divX, metricsY + 2, divX, metricsY + 15);
+            doc.setDrawColor(60, 60, 60);
+            doc.setLineWidth(0.3);
+            doc.line(colX + metricW, sec2Y - 6, colX + metricW, sec2Y + 8);
           }
         });
 
-        // ====== SEPARADOR INFERIOR ======
-        const sep2Y = metricsY + 22;
-        doc.setDrawColor(40, 40, 40);
-        doc.setLineWidth(0.3);
-        doc.line(PX, sep2Y, pageW - PX, sep2Y);
+        // --- SECCIÓN 3: BOTONES ---
+        const btnY = sec2Y + 18; // Botones con buen margen inferior
+        const btnW = (contentW - 10) / 2;
+        const btnH = 13;
 
-        // ====== FILA 3: Botones de links ======
-        const btnY = sep2Y + 4;
-        const BTN_H = 10;
-        const linkActions: [string, string, [number,number,number]][] = [];
-        if (p.youtube)  linkActions.push(['VER VIDEO TOUR', p.youtube, GOLD]);
-        if (p.facebook) linkActions.push(['VER EN FACEBOOK', p.facebook, [66, 133, 244]]);
-
-        if (linkActions.length > 0) {
-          const totalBtnsW = pageW - PX * 2;
-          const gap = 6;
-          const btnW = linkActions.length === 1
-            ? Math.min(totalBtnsW, 100)
-            : (totalBtnsW - gap) / 2;
-          let bx = PX;
-
-          linkActions.forEach(([label, url, color]) => {
-            // Fondo
-            doc.setFillColor(22, 22, 22);
-            doc.roundedRect(bx, btnY, btnW, BTN_H, 2, 2, 'F');
-            // Borde
-            doc.setDrawColor(...color);
-            doc.setLineWidth(0.4);
-            doc.roundedRect(bx, btnY, btnW, BTN_H, 2, 2, 'S');
-            // Texto
-            doc.setTextColor(...color);
-            doc.setFontSize(8);
-            doc.setFont('helvetica', 'bold');
-            doc.text(label, bx + btnW / 2, btnY + BTN_H * 0.65, { align: 'center' });
-            doc.link(bx, btnY, btnW, BTN_H, { url });
-            bx += btnW + gap;
-          });
-        }
-
-        // ====== PIE DE PÁGINA dorado ======
-        doc.setFillColor(...GOLD);
-        doc.rect(0, pageH - FOOTER_H, pageW, FOOTER_H, 'F');
-        doc.setTextColor(10, 10, 10);
-        doc.setFontSize(5.5);
+        // BOTÓN 1: VIDEO TOUR (Fondo dorado)
+        doc.setFillColor(212, 175, 55); 
+        doc.roundedRect(MARGIN + 2, btnY, btnW - 2, btnH, 1.5, 1.5, 'F');
+        doc.setTextColor(24, 25, 26);
+        doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
-        doc.text('Gold Life Real Estate · Portafolio VIP Confidencial', PX, pageH - 1.2);
-        doc.text(`${i + 2} / ${propsToRender.length + 1}`, pageW - PX, pageH - 1.2, { align: 'right' });
+        doc.text("VER VIDEO TOUR", MARGIN + btnW / 2 + 5, btnY + 8, { align: 'center' });
+        
+        // Icono Play
+        const playX = MARGIN + btnW / 2 - 25;
+        const playY = btnY + btnH / 2;
+        doc.setDrawColor(24, 25, 26);
+        doc.setLineWidth(0.4);
+        doc.circle(playX, playY, 3.5, 'S');
+        doc.setFillColor(24, 25, 26);
+        doc.triangle(playX - 1, playY - 1.5, playX - 1, playY + 1.5, playX + 1.5, playY, 'F');
+        if (p.youtube) doc.link(MARGIN + 2, btnY, btnW - 2, btnH, { url: p.youtube });
+
+        // BOTÓN 2: FACEBOOK (Fondo oscuro, borde dorado)
+        const btn2X = MARGIN + btnW + 8;
+        doc.setFillColor(32, 33, 35);
+        doc.roundedRect(btn2X, btnY, btnW - 2, btnH, 1.5, 1.5, 'F');
+        doc.setDrawColor(212, 175, 55);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(btn2X, btnY, btnW - 2, btnH, 1.5, 1.5, 'S');
+        doc.setTextColor(255, 255, 255);
+        doc.text("VER EN FACEBOOK", btn2X + btnW / 2 + 4, btnY + 8, { align: 'center' });
+        
+        // Icono FB
+        const fbX = btn2X + btnW / 2 - 27;
+        const fbY = btnY + btnH / 2;
+        doc.setFillColor(255, 255, 255);
+        doc.circle(fbX, fbY, 3.5, 'F');
+        doc.setTextColor(32, 33, 35);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text("f", fbX, fbY + 3, { align: 'center' });
+        if (p.facebook) doc.link(btn2X, btnY, btnW - 2, btnH, { url: p.facebook });
       }
 
       // ---- Blob ----
