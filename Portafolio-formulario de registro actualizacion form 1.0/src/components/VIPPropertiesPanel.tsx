@@ -329,10 +329,10 @@ export default function VIPPropertiesPanel() {
       doc.setFont('helvetica', 'normal'); 
       doc.text('SELECCIÓN EXCLUSIVA', pageW / 2, textStartY, { align: 'center' });
       
-      // DE INMUEBLES VIP (con líneas a los lados)
+      // DE INMUEBLES (con líneas a los lados)
       doc.setFontSize(14);
       doc.setTextColor(...GOLD);
-      const textVip = 'DE INMUEBLES VIP';
+      const textVip = 'DE INMUEBLES';
       const textVipW = doc.getTextWidth(textVip);
       doc.text(textVip, pageW / 2, textStartY + 8, { align: 'center' });
       
