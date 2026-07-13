@@ -795,6 +795,7 @@ export default function VIPPropertiesPanel() {
       }
 
       setDebugLogs(prev => [...prev, `[PDF] EXITOSO!`]);
+      setSelectedIds(new Set()); // Limpiar selección automáticamente
       setTimeout(() => setShowDebug(false), 6000);
     } catch (err: any) {
       setDebugLogs(prev => [...prev, `[PDF] ERROR: ${err?.message}`]);
