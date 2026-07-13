@@ -105,27 +105,27 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout 
 
       <div className="text-center mb-12 max-w-2xl mt-20 md:mt-0">
         <h1 className="text-4xl md:text-5xl font-light text-brand-gold mb-4">
-          Panel de Agente VIP
+          Panel de Agente
         </h1>
         <p className="text-stone-400 text-lg">
           Selecciona la herramienta que necesitas usar con tu cliente.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
+      <div className="grid grid-cols-2 gap-4 md:gap-6 w-full max-w-5xl">
         
         {/* Tarjeta de la Calculadora */}
         <button 
           onClick={onOpenCalculator}
-          className="group flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left p-6 md:p-8 bg-stone-900 border border-stone-800 rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-6"
+          className="group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-20 h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-            <Calculator className="w-10 h-10 text-brand-gold" />
+          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
+            <Calculator className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl md:text-2xl font-semibold text-white mb-2">Calculadora Inmobiliaria</h2>
-            <p className="text-stone-400 text-sm md:text-base leading-relaxed">
+          <div className="flex flex-col items-center">
+            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Calculadora Inmobiliaria</h2>
+            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
               Simulador avanzado de crédito, retorno de inversión, flujo de caja y rentabilidad.
             </p>
           </div>
@@ -134,15 +134,15 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout 
         {/* Tarjeta del Formulario */}
         <button 
           onClick={onOpenForm}
-          className="group flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left p-6 md:p-8 bg-stone-900 border border-stone-800 rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-6"
+          className="group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-20 h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-            <ClipboardList className="w-10 h-10 text-brand-gold" />
+          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
+            <ClipboardList className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl md:text-2xl font-semibold text-white mb-2">Registro de Inmuebles</h2>
-            <p className="text-stone-400 text-sm md:text-base leading-relaxed">
+          <div className="flex flex-col items-center">
+            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Registro de Inmuebles</h2>
+            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
               Captación de propiedades, generación de contratos y checklist de exclusividad.
             </p>
           </div>
@@ -151,15 +151,15 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout 
         {/* Tarjeta de Estrategias SAS */}
         <button 
           onClick={() => setShowSasModal(true)}
-          className="group flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left p-6 md:p-8 bg-stone-900 border border-stone-800 rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-6"
+          className="group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-20 h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-            <Landmark className="w-10 h-10 text-brand-gold" />
+          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
+            <Landmark className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl md:text-2xl font-semibold text-white mb-2">Estrategias SAS</h2>
-            <p className="text-stone-400 text-sm md:text-base leading-relaxed">
+          <div className="flex flex-col items-center">
+            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Estrategias SAS</h2>
+            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
               Módulo educativo de ingeniería financiera, aportes en especie y liquidez corporativa.
             </p>
           </div>
@@ -168,17 +168,17 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout 
         {/* Tarjeta de Portafolio VIP */}
         <button 
           onClick={() => setActiveView('portafolio')}
-          className="group flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left p-6 md:p-8 bg-stone-900 border border-brand-gold/30 rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-[0_0_30px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.2)] hover:-translate-y-2 relative overflow-hidden"
+          className="group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-brand-gold/30 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-[0_0_30px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.2)] hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-gold/10 rounded-full blur-2xl group-hover:bg-brand-gold/20 transition-colors" />
-          <div className="w-20 h-20 shrink-0 mb-4 sm:mb-0 sm:mr-6 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors relative z-10 border border-brand-gold/20">
-            <Building2 className="w-10 h-10 text-brand-gold" />
+          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors relative z-10 border border-brand-gold/20">
+            <Building2 className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
           </div>
-          <div className="flex-1 relative z-10">
-            <h2 className="text-xl md:text-2xl font-semibold text-white mb-2">Portafolio VIP</h2>
-            <p className="text-stone-400 text-sm md:text-base leading-relaxed">
-              Accede al catálogo de inmuebles publicados. Genera y comparte PDFs interactivos con tus clientes.
+          <div className="flex flex-col items-center relative z-10">
+            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Portafolio VIP</h2>
+            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
+              Accede al catálogo de inmuebles publicados. Genera y comparte PDFs interactivos.
             </p>
           </div>
         </button>
