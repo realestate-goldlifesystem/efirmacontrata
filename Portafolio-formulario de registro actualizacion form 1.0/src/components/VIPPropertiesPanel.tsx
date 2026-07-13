@@ -557,10 +557,9 @@ export default function VIPPropertiesPanel() {
 
         metrics.forEach((m, idx) => {
           const colX = MARGIN + metricW * idx;
-          const cx = colX + metricW / 2;
           
-          // Círculo del icono (Izquierda)
-          const circleX = cx - 18;
+          // Círculo del icono (Ajustado para 4 columnas)
+          const circleX = colX + 15;
           const circleY = sec2Y;
           doc.setDrawColor(...GOLD);
           doc.setLineWidth(0.4);
@@ -578,8 +577,8 @@ export default function VIPPropertiesPanel() {
           let fSize = 26;
           doc.setFontSize(fSize);
           
-          // Ancho máximo disponible (para 4 columnas es aprox 28mm)
-          const maxTextW = 26; 
+          // Ancho máximo disponible dentro de la columna
+          const maxTextW = 20; 
           while (doc.getTextWidth(val) > maxTextW && fSize > 8) {
             fSize -= 2;
             doc.setFontSize(fSize);
