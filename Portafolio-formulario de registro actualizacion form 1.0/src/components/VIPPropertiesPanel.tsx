@@ -130,16 +130,16 @@ export default function VIPPropertiesPanel() {
     return true;
   });
 
+  const formatMoney = (val: string) => {
+      const num = parseInt(String(val).replace(/\D/g, ''), 10);
+      if (isNaN(num)) return val;
+      return '$' + num.toLocaleString('es-CO');
+  };
+
   const getPriceDisplay = (p: VIPProperty) => {
     const isVenta = p.estado.includes('VENTA') && !p.estado.includes('RENTA');
     const isArriendo = p.estado.includes('ARRIENDO');
     const isMixto = p.estado.includes('VENTA/RENTA');
-
-    const formatMoney = (val: string) => {
-        const num = parseInt(String(val).replace(/\D/g, ''), 10);
-        if (isNaN(num)) return val;
-        return '$' + num.toLocaleString('es-CO');
-    };
 
     if (isMixto) {
       return (
@@ -1058,11 +1058,21 @@ export default function VIPPropertiesPanel() {
               <div className="w-full md:flex-1 px-2 flex items-center justify-between md:justify-end mt-2 md:mt-0">
                 <span className="md:hidden text-stone-500 text-xs font-bold uppercase">Precio</span>
                 <div className="text-right">
-                  <div className="text-base font-black text-white">
-                    {formatMoney(prop.precioGeneral || prop.precioVenta)}
-                  </div>
-                  {(prop.precioGeneral && prop.precioVenta && prop.precioVenta !== prop.precioGeneral) && (
-                    <div className="text-[10px] text-stone-500 line-through">
+                  {prop.estado.includes('VENTA/RENTA') ? (
+                    <>
+                      <div className="text-sm font-black text-brand-gold">
+                        Arriendo: {formatMoney(prop.precioGeneral)}
+                      </div>
+                      <div className="text-[11px] font-bold text-stone-400">
+                        Venta: {formatMoney(prop.precioVenta)}
+                      </div>
+                    </>
+                  ) : prop.estado.includes('ARRIENDO') ? (
+                    <div className="text-base font-black text-brand-gold">
+                      {formatMoney(prop.precioGeneral)}
+                    </div>
+                  ) : (
+                    <div className="text-base font-black text-white">
                       {formatMoney(prop.precioVenta)}
                     </div>
                   )}
