@@ -283,44 +283,35 @@ export default function VIPPropertiesPanel() {
       }
 
       // ========== PORTADA PREMIUM ==========
-      // Fondo oscuro degradado (simulado con rects layered)
-      doc.setFillColor(10, 10, 10);
+      // Fondo oscuro
+      doc.setFillColor(18, 18, 20); // Gris muy oscuro
       doc.rect(0, 0, pageW, pageH, 'F');
 
-      // Acento diagonal decorativo esquina sup-izq (triángulo dorado)
-      doc.setFillColor(...GOLD);
-      doc.setGState(new (doc as any).GState({ opacity: 0.08 }));
-      doc.triangle(0, 0, 70, 0, 0, 90, 'F');
-      doc.setGState(new (doc as any).GState({ opacity: 1 }));
+      // Marco dorado fino
+      doc.setDrawColor(...GOLD);
+      doc.setLineWidth(0.4);
+      doc.rect(6, 6, pageW - 12, pageH - 12, 'S');
 
-      // Banda superior dorada
-      doc.setFillColor(...GOLD);
-      doc.rect(0, 0, pageW, 3, 'F');
-
-      // Línea lateral izquierda dorada decorativa
-      doc.setFillColor(...GOLD);
-      doc.rect(0, 3, 2, pageH - 5, 'F');
-
-      // Banda inferior dorada
-      doc.setFillColor(...GOLD);
-      doc.rect(0, pageH - 3, pageW, 3, 'F');
+      // Línea diagonal decorativa en la esquina superior izquierda
+      doc.setLineWidth(1.5);
+      doc.line(0, 40, 40, 0);
+      doc.setLineWidth(0.4); // restaurar
 
       // ---- Tarjeta logo (fondo blanco redondeado, centrado) ----
-      const logoCardW = 130;
-      const logoCardH = 55;
+      const logoCardW = 100;
+      const logoCardH = 45;
       const logoCardX = (pageW - logoCardW) / 2;
-      const logoCardY = 35;
+      const logoCardY = 30;
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(logoCardX, logoCardY, logoCardW, logoCardH, 6, 6, 'F');
-      // Borde dorado suave alrededor de la tarjeta
-      doc.setDrawColor(...GOLD2);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(logoCardX, logoCardY, logoCardW, logoCardH, 6, 6, 'S');
+      doc.roundedRect(logoCardX, logoCardY, logoCardW, logoCardH, 5, 5, 'F');
+      // Borde dorado sutil (como brillo)
+      doc.setDrawColor(...GOLD);
+      doc.setLineWidth(0.8);
+      doc.roundedRect(logoCardX, logoCardY, logoCardW, logoCardH, 5, 5, 'S');
 
       if (logoBase64 && logoW > 0) {
-        // Logo dentro de la tarjeta, manteniendo proporciones
-        const maxLogoW = logoCardW - 20;
-        const maxLogoH = logoCardH - 14;
+        const maxLogoW = logoCardW - 16;
+        const maxLogoH = logoCardH - 10;
         const ratio = logoW / logoH;
         let drawW = maxLogoW;
         let drawH = drawW / ratio;
@@ -331,53 +322,139 @@ export default function VIPPropertiesPanel() {
       }
 
       // ---- Subtitulo portada ----
-      // Linea decorativa dorada
-      doc.setDrawColor(...GOLD);
-      doc.setLineWidth(0.8);
-      doc.line(mg + 25, logoCardY + logoCardH + 12, pageW - mg - 25, logoCardY + logoCardH + 12);
-
-      doc.setTextColor(...WHITE);
-      doc.setFontSize(19);
-      doc.setFont('helvetica', 'bold');
-      doc.text('SELECCIÓN EXCLUSIVA', pageW / 2, logoCardY + logoCardH + 25, { align: 'center' });
-      doc.setFontSize(13);
-      doc.setFont('helvetica', 'normal');
+      const textStartY = logoCardY + logoCardH + 25;
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'normal'); 
+      doc.text('SELECCIÓN EXCLUSIVA', pageW / 2, textStartY, { align: 'center' });
+      
+      // DE INMUEBLES VIP (con líneas a los lados)
+      doc.setFontSize(14);
       doc.setTextColor(...GOLD);
-      doc.text('DE INMUEBLES VIP', pageW / 2, logoCardY + logoCardH + 35, { align: 'center' });
-
-      doc.setTextColor(100, 100, 100);
-      doc.setFontSize(8);
-      doc.text('Portafolio preparado exclusivamente para usted', pageW / 2, logoCardY + logoCardH + 45, { align: 'center' });
-
-      // Separador con ornamento central
-      const sepY = logoCardY + logoCardH + 57;
-      doc.setDrawColor(55, 55, 55);
+      const textVip = 'DE INMUEBLES VIP';
+      const textVipW = doc.getTextWidth(textVip);
+      doc.text(textVip, pageW / 2, textStartY + 8, { align: 'center' });
+      
+      doc.setDrawColor(...GOLD);
       doc.setLineWidth(0.3);
-      doc.line(mg + 10, sepY, pageW / 2 - 8, sepY);
-      doc.line(pageW / 2 + 8, sepY, pageW - mg - 10, sepY);
-      doc.setFillColor(...GOLD);
-      doc.circle(pageW / 2, sepY, 2, 'F');
+      doc.line(pageW / 2 - textVipW / 2 - 12, textStartY + 6.5, pageW / 2 - textVipW / 2 - 4, textStartY + 6.5);
+      doc.line(pageW / 2 + textVipW / 2 + 4, textStartY + 6.5, pageW / 2 + textVipW / 2 + 12, textStartY + 6.5);
 
-      // Contador de inmuebles
-      const cntY = sepY + 18;
+      doc.setTextColor(180, 180, 180);
+      doc.setFontSize(8);
+      doc.text('Portafolio preparado exclusivamente para usted', pageW / 2, textStartY + 18, { align: 'center' });
+
+      // ---- Separador con Icono Central ----
+      const sepY = textStartY + 35;
+      doc.setDrawColor(...GOLD);
+      doc.setLineWidth(0.3);
+      doc.line(40, sepY, pageW / 2 - 9, sepY);
+      doc.line(pageW / 2 + 9, sepY, pageW - 40, sepY);
+      
+      // Círculo dorado central
+      doc.circle(pageW / 2, sepY, 8, 'S');
+      // Icono de edificio simplificado dentro del círculo
+      const bX = pageW / 2;
+      const bY = sepY;
+      doc.setDrawColor(...GOLD);
+      doc.setLineWidth(0.3);
+      // Base
+      doc.line(bX - 3.5, bY + 4, bX + 3.5, bY + 4);
+      // Edificio centro
+      doc.rect(bX - 1.5, bY - 4, 3, 8, 'S');
+      // Edificio izq
+      doc.rect(bX - 3.5, bY - 1, 2, 5, 'S');
+      // Edificio der
+      doc.rect(bX + 1.5, bY - 2, 2, 6, 'S');
+      // Puerta
+      doc.rect(bX - 0.5, bY + 2, 1, 2, 'S');
+
+      // ---- Contador de inmuebles ----
+      const cntY = sepY + 20;
       doc.setTextColor(...GOLD);
       doc.setFontSize(40);
       doc.setFont('helvetica', 'bold');
       doc.text(`${propsToRender.length}`, pageW / 2, cntY, { align: 'center' });
-      doc.setTextColor(...GRAY);
-      doc.setFontSize(9);
+      
+      doc.setTextColor(200, 200, 200);
+      doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text(`inmueble${propsToRender.length > 1 ? 's' : ''} seleccionado${propsToRender.length > 1 ? 's' : ''}`, pageW / 2, cntY + 8, { align: 'center' });
+      doc.text(`INMUEBLE${propsToRender.length > 1 ? 'S' : ''} SELECCIONADO${propsToRender.length > 1 ? 'S' : ''}`, pageW / 2, cntY + 8, { align: 'center' });
 
       // Fecha
-      doc.setTextColor(60, 60, 60);
-      doc.setFontSize(7.5);
-      doc.text(new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }), pageW / 2, cntY + 17, { align: 'center' });
+      doc.setTextColor(140, 140, 140);
+      doc.setFontSize(8);
+      const dateText = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.text(dateText, pageW / 2, cntY + 18, { align: 'center' });
 
-      // Pie portada
-      doc.setTextColor(50, 50, 50);
+      // ---- Iconos inferiores (Exclusividad, Seguridad, Calidad, Confianza) ----
+      const iconY = pageH - 45;
+      const iconSpacing = (pageW - 40) / 4;
+      const startX = 20 + iconSpacing / 2;
+      
+      const drawDiamond = (x: number, y: number) => {
+        doc.line(x - 4, y - 2, x + 4, y - 2); 
+        doc.line(x - 4, y - 2, x - 6, y);     
+        doc.line(x + 4, y - 2, x + 6, y);     
+        doc.line(x - 6, y, x, y + 5);         
+        doc.line(x + 6, y, x, y + 5);         
+        doc.line(x - 4, y - 2, x, y + 5);     
+        doc.line(x + 4, y - 2, x, y + 5);     
+        doc.line(x - 6, y, x + 6, y);         
+      };
+      
+      const drawShield = (x: number, y: number) => {
+        doc.line(x - 5, y - 4, x + 5, y - 4);
+        doc.line(x - 5, y - 4, x - 5, y);
+        doc.line(x + 5, y - 4, x + 5, y);
+        doc.line(x - 5, y, x, y + 5);
+        doc.line(x + 5, y, x, y + 5);
+        doc.line(x - 2, y, x - 0.5, y + 1.5);
+        doc.line(x - 0.5, y + 1.5, x + 3, y - 2);
+      };
+      
+      const drawCrown = (x: number, y: number) => {
+        doc.line(x - 5, y + 3, x + 5, y + 3); 
+        doc.line(x - 5, y + 3, x - 6, y - 3); 
+        doc.line(x + 5, y + 3, x + 6, y - 3); 
+        doc.line(x - 6, y - 3, x - 2, y);     
+        doc.line(x + 6, y - 3, x + 2, y);     
+        doc.line(x - 2, y, x, y - 4);         
+        doc.line(x + 2, y, x, y - 4);         
+        doc.circle(x - 6, y - 4, 0.5, 'S');
+        doc.circle(x + 6, y - 4, 0.5, 'S');
+        doc.circle(x, y - 5, 0.5, 'S');
+      };
+      
+      const drawHandshake = (x: number, y: number) => {
+        doc.line(x - 6, y + 1, x - 2, y - 1);
+        doc.line(x + 6, y + 1, x + 2, y - 1);
+        doc.ellipse(x, y - 1, 3, 2, 'S'); 
+        doc.line(x - 1, y, x + 1, y + 2); 
+      };
+
+      const bottomIcons = [
+        { label: 'EXCLUSIVIDAD', draw: drawDiamond },
+        { label: 'SEGURIDAD', draw: drawShield },
+        { label: 'CALIDAD', draw: drawCrown },
+        { label: 'CONFIANZA', draw: drawHandshake }
+      ];
+
+      doc.setDrawColor(...GOLD);
+      doc.setLineWidth(0.3);
+      bottomIcons.forEach((item, idx) => {
+        const x = startX + idx * iconSpacing;
+        item.draw(x, iconY);
+        doc.setTextColor(200, 200, 200);
+        doc.setFontSize(6);
+        doc.text(item.label, x, iconY + 12, { align: 'center' });
+      });
+
+      // ---- Pie portada ----
+      doc.setTextColor(100, 100, 100);
       doc.setFontSize(6.5);
-      doc.text('Documento Confidencial · Gold Life Real Estate · Vida de Oro', pageW / 2, pageH - 8, { align: 'center' });
+      doc.text('DOCUMENTO CONFIDENCIAL   •   GOLD LIFE REAL ESTATE   •   VIDA DE ORO', pageW / 2, pageH - 12, { align: 'center' });
 
       // ========== FICHAS DE INMUEBLES ==========
       for (let i = 0; i < propsToRender.length; i++) {
