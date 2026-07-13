@@ -67,6 +67,18 @@ export default function VIPPropertiesPanel() {
   const [tipoFiltro, setTipoFiltro] = useState<'Todos' | 'Venta' | 'Arriendo' | 'Mixto'>('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Filtros Avanzados
+  const [showFilters, setShowFilters] = useState(false);
+  const [filtrosAvanzados, setFiltrosAvanzados] = useState({
+    habitaciones: '',
+    banos: '',
+    garajes: '',
+    ciudad: '',
+    barrio: '',
+    precioMin: '',
+    precioMax: ''
+  });
+  
   // Estado para la generacion de PDF
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
@@ -127,6 +139,29 @@ export default function VIPPropertiesPanel() {
       if (!matchDir && !matchBarrio && !matchId) return false;
     }
     
+    // Filtros Avanzados
+    if (filtrosAvanzados.habitaciones && parseInt(p.habitaciones || '0') < parseInt(filtrosAvanzados.habitaciones)) return false;
+    if (filtrosAvanzados.banos && parseInt(p.banos || '0') < parseInt(filtrosAvanzados.banos)) return false;
+    if (filtrosAvanzados.garajes && parseInt(p.garajes || '0') < parseInt(filtrosAvanzados.garajes)) return false;
+    if (filtrosAvanzados.ciudad && !p.ciudad.toLowerCase().includes(filtrosAvanzados.ciudad.toLowerCase())) return false;
+    if (filtrosAvanzados.barrio && !p.barrio.toLowerCase().includes(filtrosAvanzados.barrio.toLowerCase())) return false;
+    
+    if (filtrosAvanzados.precioMin || filtrosAvanzados.precioMax) {
+      // Determinar qué precio evaluar basado en si es venta o renta
+      let precioVal = 0;
+      if (p.estado.includes('VENTA')) {
+        precioVal = parseInt(String(p.precioVenta || '0').replace(/\D/g, ''));
+      } else {
+        precioVal = parseInt(String(p.precioGeneral || '0').replace(/\D/g, ''));
+      }
+      
+      const min = parseInt(filtrosAvanzados.precioMin.replace(/\D/g, ''));
+      const max = parseInt(filtrosAvanzados.precioMax.replace(/\D/g, ''));
+      
+      if (!isNaN(min) && min > 0 && precioVal < min) return false;
+      if (!isNaN(max) && max > 0 && precioVal > max) return false;
+    }
+
     return true;
   });
 
@@ -798,31 +833,48 @@ export default function VIPPropertiesPanel() {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-stone-900 flex items-center gap-3">
             <Building2 className="w-8 h-8 text-brand-gold" />
-            Portafolio VIP
+            Portafolio de Inmuebles
           </h1>
           <p className="text-stone-600 mt-2 text-sm max-w-xl">
             Catálogo global de inmuebles publicados. Selecciona propiedades para generar un portafolio PDF elegante y enviarlo al instante.
           </p>
         </div>
         
-        <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0 overflow-x-auto">
-          {(['Todos', 'Venta', 'Arriendo', 'Mixto'] as const).map(tipo => (
-            <button
-              key={tipo}
-              onClick={() => setTipoFiltro(tipo)}
-              className={`px-6 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all ${tipoFiltro === tipo ? 'bg-brand-gold text-stone-950 shadow-lg' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0 overflow-x-auto w-full sm:w-auto">
+            {(['Todos', 'Venta', 'Arriendo', 'Mixto'] as const).map(tipo => (
+              <button
+                key={tipo}
+                onClick={() => setTipoFiltro(tipo)}
+                className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all flex-1 sm:flex-none ${tipoFiltro === tipo ? 'bg-brand-gold text-stone-950 shadow-lg' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              >
+                {tipo}
+              </button>
+            ))}
+          </div>
+          
+          <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0 w-full sm:w-auto justify-center sm:justify-start">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-3 px-6 sm:px-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'grid' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
             >
-              {tipo}
+              <LayoutGrid className="w-5 h-5" />
             </button>
-          ))}
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`p-3 px-6 sm:px-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-8 max-w-3xl">
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
         <div className="relative flex-1 w-full">
           <Search className="w-5 h-5 text-stone-500 absolute left-4 top-1/2 -translate-y-1/2" />
           <input 
@@ -833,21 +885,93 @@ export default function VIPPropertiesPanel() {
             className="w-full bg-stone-900 border border-stone-700 text-white pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:border-brand-gold transition-colors placeholder:text-stone-600 shadow-inner"
           />
         </div>
-        <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0 self-stretch items-center h-full">
-          <button 
-            onClick={() => setViewMode('grid')}
-            className={`p-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'grid' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
-          >
-            <LayoutGrid className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => setViewMode('list')}
-            className={`p-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
-          >
-            <List className="w-5 h-5" />
-          </button>
-        </div>
+        <button 
+          onClick={() => setShowFilters(!showFilters)}
+          className={`flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold transition-all w-full sm:w-auto shrink-0 ${showFilters ? 'bg-brand-gold text-stone-950' : 'bg-stone-900 border border-stone-800 text-white hover:border-brand-gold'}`}
+        >
+          <Filter className="w-5 h-5" />
+          {showFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}
+        </button>
       </div>
+
+      {/* Panel de Filtros Avanzados */}
+      {showFilters && (
+        <div className="bg-white border border-stone-200 rounded-2xl p-6 mb-8 shadow-sm animate-fade-in grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Habitaciones (Min)</label>
+            <input 
+              type="number" min="0"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="Ej. 2"
+              value={filtrosAvanzados.habitaciones} onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, habitaciones: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Baños (Min)</label>
+            <input 
+              type="number" min="0"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="Ej. 1"
+              value={filtrosAvanzados.banos} onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, banos: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Garajes (Min)</label>
+            <input 
+              type="number" min="0"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="Ej. 1"
+              value={filtrosAvanzados.garajes} onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, garajes: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Ciudad</label>
+            <input 
+              type="text"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="Ej. Bogotá"
+              value={filtrosAvanzados.ciudad} onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, ciudad: e.target.value})}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Barrio / Localidad</label>
+            <input 
+              type="text"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="Ej. Usaquén, Chapinero..."
+              value={filtrosAvanzados.barrio} onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, barrio: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Precio Mínimo</label>
+            <input 
+              type="text"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="$0"
+              value={filtrosAvanzados.precioMin} 
+              onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, precioMin: formatMoney(e.target.value)})}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Precio Máximo</label>
+            <input 
+              type="text"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="Sin límite"
+              value={filtrosAvanzados.precioMax} 
+              onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, precioMax: formatMoney(e.target.value)})}
+            />
+          </div>
+          <div className="sm:col-span-2 md:col-span-4 flex justify-end">
+            <button 
+              onClick={() => setFiltrosAvanzados({habitaciones: '', banos: '', garajes: '', ciudad: '', barrio: '', precioMin: '', precioMax: ''})}
+              className="text-stone-500 hover:text-red-500 text-sm font-bold transition-colors"
+            >
+              Limpiar Filtros
+            </button>
+          </div>
+        </div>
+      )}
 
       {selectedIds.size > 0 && (
         <div className="bg-brand-gold/10 border border-brand-gold/30 rounded-2xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in shadow-xl shadow-brand-gold/5 sticky top-24 z-40 backdrop-blur-md">
