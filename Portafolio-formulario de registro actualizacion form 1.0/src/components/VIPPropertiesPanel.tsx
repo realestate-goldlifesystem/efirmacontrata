@@ -874,19 +874,18 @@ export default function VIPPropertiesPanel() {
         </div>
       )}
 
-      <div className="sticky top-[90px] md:top-[100px] lg:top-[110px] xl:top-[120px] z-40 bg-brand-dark pt-4 pb-6 -mx-4 px-4 md:-mx-8 md:px-8 shadow-sm mb-6 transition-all duration-300">
-        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-6">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-black text-stone-900 flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-brand-gold" />
-            Portafolio de Inmuebles
-          </h1>
-          <p className="text-stone-600 mt-2 text-sm max-w-xl">
-            Catálogo global de inmuebles publicados. Selecciona propiedades para generar un portafolio PDF elegante y enviarlo al instante.
-          </p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="mb-6">
+        <h1 className="text-3xl md:text-4xl font-black text-stone-900 flex items-center gap-3">
+          <Building2 className="w-8 h-8 text-brand-gold" />
+          Portafolio de Inmuebles
+        </h1>
+        <p className="text-stone-600 mt-2 text-sm max-w-xl">
+          Catálogo global de inmuebles publicados. Selecciona propiedades para generar un portafolio PDF elegante y enviarlo al instante.
+        </p>
+      </div>
+
+      <div className="sticky top-[90px] md:top-[100px] lg:top-[110px] xl:top-[120px] z-40 bg-brand-dark pt-4 pb-4 -mx-4 px-4 md:-mx-8 md:px-8 shadow-sm mb-4 transition-all duration-300">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
           <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0 overflow-x-auto w-full sm:w-auto">
             {(['Todos', 'Venta', 'Arriendo', 'Mixto'] as const).map(tipo => (
               <button
@@ -899,7 +898,6 @@ export default function VIPPropertiesPanel() {
             ))}
           </div>
         </div>
-      </div>
 
       <div className="flex flex-row items-center gap-2 mb-4">
         <div className="relative flex-1">
