@@ -142,7 +142,15 @@ export default function VIPPropertiesPanel() {
     // Filtros Avanzados
     if (filtrosAvanzados.habitaciones && parseInt(p.habitaciones || '0') < parseInt(filtrosAvanzados.habitaciones)) return false;
     if (filtrosAvanzados.banos && parseInt(p.banos || '0') < parseInt(filtrosAvanzados.banos)) return false;
-    if (filtrosAvanzados.garajes && parseInt(p.garajes || '0') < parseInt(filtrosAvanzados.garajes)) return false;
+    
+    if (filtrosAvanzados.garajes) {
+      if (filtrosAvanzados.garajes === 'Comunal' && p.garajes !== 'Comunal') return false;
+      else if (filtrosAvanzados.garajes === 'Ningun' && p.garajes !== 'Ningun' && p.garajes !== '0' && p.garajes !== '') return false;
+      else if (!isNaN(parseInt(filtrosAvanzados.garajes))) {
+        if (parseInt(p.garajes || '0') < parseInt(filtrosAvanzados.garajes)) return false;
+      }
+    }
+
     if (filtrosAvanzados.ciudad && !p.ciudad.toLowerCase().includes(filtrosAvanzados.ciudad.toLowerCase())) return false;
     if (filtrosAvanzados.barrio && !p.barrio.toLowerCase().includes(filtrosAvanzados.barrio.toLowerCase())) return false;
     
@@ -946,13 +954,25 @@ export default function VIPPropertiesPanel() {
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Garajes (Min)</label>
-            <input 
-              type="number" min="0"
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
-              placeholder="Ej. 1"
-              value={filtrosAvanzados.garajes} onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, garajes: e.target.value})}
-            />
+            <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Garajes (Min / Tipo)</label>
+            <select 
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none appearance-none" 
+              value={filtrosAvanzados.garajes} 
+              onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, garajes: e.target.value})}
+            >
+              <option value="">Cualquiera</option>
+              <option value="Comunal">Comunal</option>
+              <option value="Ningun">Sin garaje</option>
+              <option value="1">1 o más</option>
+              <option value="2">2 o más</option>
+              <option value="3">3 o más</option>
+              <option value="4">4 o más</option>
+              <option value="5">5 o más</option>
+              <option value="6">6 o más</option>
+              <option value="7">7 o más</option>
+              <option value="8">8 o más</option>
+              <option value="9">9 o más</option>
+            </select>
           </div>
           <div>
             <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Ciudad</label>
