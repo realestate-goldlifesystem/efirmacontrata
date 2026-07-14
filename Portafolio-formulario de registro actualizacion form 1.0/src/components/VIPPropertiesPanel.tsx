@@ -874,7 +874,8 @@ export default function VIPPropertiesPanel() {
         </div>
       )}
 
-      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-8">
+      <div className="sticky top-20 md:top-24 z-40 bg-brand-dark pt-2 pb-6 -mx-4 px-4 md:-mx-8 md:px-8 shadow-sm mb-6 transition-all duration-300">
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-stone-900 flex items-center gap-3">
             <Building2 className="w-8 h-8 text-brand-gold" />
@@ -937,7 +938,7 @@ export default function VIPPropertiesPanel() {
 
       {/* Panel de Filtros Avanzados */}
       {showFilters && (
-        <div className="bg-white border border-stone-200 rounded-2xl p-6 mb-8 shadow-sm animate-fade-in grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white border border-stone-200 rounded-2xl p-6 shadow-sm animate-fade-in grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
           <div>
             <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Habitaciones (Min)</label>
             <input 
@@ -1035,9 +1036,10 @@ export default function VIPPropertiesPanel() {
           </div>
         </div>
       )}
+      </div>
 
       {selectedIds.size > 0 && (
-        <div className="bg-brand-gold/10 border border-brand-gold/30 rounded-2xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in shadow-xl shadow-brand-gold/5 sticky top-24 z-40 backdrop-blur-md">
+        <div className="bg-brand-gold/10 border border-brand-gold/30 rounded-2xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in shadow-xl shadow-brand-gold/5 sticky top-[280px] z-50 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-brand-gold flex items-center justify-center text-stone-950 font-black text-lg">
               {selectedIds.size}
