@@ -125,8 +125,8 @@ export default function VIPPropertiesPanel() {
       const isArriendo = p.estado.includes('ARRIENDO');
       const isMixto = p.estado.includes('VENTA/RENTA');
       
-      if (tipoFiltro === 'Venta' && !isVenta) return false;
-      if (tipoFiltro === 'Arriendo' && !isArriendo) return false;
+      if (tipoFiltro === 'Venta' && !isVenta && !isMixto) return false;
+      if (tipoFiltro === 'Arriendo' && !isArriendo && !isMixto) return false;
       if (tipoFiltro === 'Mixto' && !isMixto) return false;
     }
     
