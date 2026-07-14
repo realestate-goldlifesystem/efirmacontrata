@@ -1096,20 +1096,20 @@ export default function VIPPropertiesPanel() {
                 </p>
 
                 {/* Características Píldoras */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <div className="bg-stone-950 border border-stone-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  <div className="bg-stone-950 border border-stone-800 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
                     <Bed className="w-3.5 h-3.5 text-stone-500" /> {prop.habitaciones}
                   </div>
-                  <div className="bg-stone-950 border border-stone-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
+                  <div className="bg-stone-950 border border-stone-800 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
                     <Bath className="w-3.5 h-3.5 text-stone-500" /> {prop.banos}
                   </div>
                   {prop.area && prop.area !== '0' && prop.area !== '' && (
-                    <div className="bg-stone-950 border border-stone-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
+                    <div className="bg-stone-950 border border-stone-800 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
                       <Maximize className="w-3.5 h-3.5 text-stone-500" /> {prop.area} m²
                     </div>
                   )}
-                  <div className="bg-stone-950 border border-stone-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
-                    <Car className="w-3.5 h-3.5 text-stone-500" /> {prop.garajes}
+                  <div className="bg-stone-950 border border-stone-800 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
+                    <Car className="w-3.5 h-3.5 text-stone-500" /> {prop.garajes === 'Ningun' ? '0' : prop.garajes === 'Comunal' ? 'Com' : prop.garajes}
                   </div>
                 </div>
 
