@@ -898,21 +898,6 @@ export default function VIPPropertiesPanel() {
               </button>
             ))}
           </div>
-          
-          <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0 w-full sm:w-auto justify-center sm:justify-start">
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-3 px-6 sm:px-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'grid' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={() => setViewMode('list')}
-              className={`p-3 px-6 sm:px-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
-            >
-              <List className="w-5 h-5" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -927,13 +912,31 @@ export default function VIPPropertiesPanel() {
             className="w-full bg-stone-900 border border-stone-700 text-white pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:border-brand-gold transition-colors placeholder:text-stone-600 shadow-inner"
           />
         </div>
-        <button 
-          onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold transition-all w-full sm:w-auto shrink-0 ${showFilters ? 'bg-brand-gold text-stone-950' : 'bg-stone-900 border border-stone-800 text-white hover:border-brand-gold'}`}
-        >
-          <Filter className="w-5 h-5" />
-          {showFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}
-        </button>
+        <div className="flex items-stretch gap-2 w-full sm:w-auto shrink-0 h-[58px]">
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 rounded-2xl font-bold transition-all ${showFilters ? 'bg-brand-gold text-stone-950' : 'bg-stone-900 border border-stone-800 text-white hover:border-brand-gold'}`}
+          >
+            <Filter className="w-5 h-5 shrink-0" />
+            <span className="hidden sm:inline">{showFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}</span>
+            <span className="sm:hidden">{showFilters ? 'Ocultar' : 'Filtros'}</span>
+          </button>
+
+          <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`px-4 sm:px-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'grid' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`px-4 sm:px-3 rounded-lg transition-colors flex items-center justify-center ${viewMode === 'list' ? 'bg-brand-gold shadow text-stone-950' : 'text-stone-500 hover:text-white'}`}
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Panel de Filtros Avanzados */}
