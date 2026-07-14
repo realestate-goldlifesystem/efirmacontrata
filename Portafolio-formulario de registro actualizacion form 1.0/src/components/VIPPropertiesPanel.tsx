@@ -154,8 +154,8 @@ export default function VIPPropertiesPanel() {
       }
     }
 
-    if (filtrosAvanzados.ciudad && p.ciudad !== filtrosAvanzados.ciudad) return false;
-    if (filtrosAvanzados.barrio && p.barrio !== filtrosAvanzados.barrio) return false;
+    if (filtrosAvanzados.ciudad && !p.ciudad.toLowerCase().includes(filtrosAvanzados.ciudad.toLowerCase())) return false;
+    if (filtrosAvanzados.barrio && !p.barrio.toLowerCase().includes(filtrosAvanzados.barrio.toLowerCase())) return false;
     
     if (filtrosAvanzados.precioMin || filtrosAvanzados.precioMax) {
       // Determinar qué precio evaluar basado en si es venta o renta
@@ -979,29 +979,31 @@ export default function VIPPropertiesPanel() {
           </div>
           <div>
             <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Ciudad</label>
-            <select 
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none appearance-none" 
+            <input 
+              type="text"
+              list="ciudades-list"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="Ej. Bogotá"
               value={filtrosAvanzados.ciudad} 
               onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, ciudad: e.target.value})}
-            >
-              <option value="">Cualquiera</option>
-              {uniqueCiudades.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            />
+            <datalist id="ciudades-list">
+              {uniqueCiudades.map(c => <option key={c} value={c} />)}
+            </datalist>
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Barrio / Localidad</label>
-            <select 
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none appearance-none" 
+            <input 
+              type="text"
+              list="barrios-list"
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
+              placeholder="Ej. Usaquén, Chapinero..."
               value={filtrosAvanzados.barrio} 
               onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, barrio: e.target.value})}
-            >
-              <option value="">Cualquiera</option>
-              {uniqueBarrios.map(b => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
+            />
+            <datalist id="barrios-list">
+              {uniqueBarrios.map(b => <option key={b} value={b} />)}
+            </datalist>
           </div>
           <div>
             <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Precio Mínimo</label>
