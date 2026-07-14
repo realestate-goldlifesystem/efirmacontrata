@@ -570,10 +570,32 @@ export default function VIPPropertiesPanel() {
         const tipoText = (isMixto ? 'APARTAMENTO VENTA/ARRIENDO' : isVenta ? 'APARTAMENTO EN VENTA' : 'APARTAMENTO EN ARRIENDO').split('').join(' ');
         doc.text(tipoText, MARGIN + 8, sec1Y);
 
-        // CODIGO DE INMUEBLE (Esquina superior derecha del panel)
-        doc.setTextColor(150, 150, 150);
+        // CODIGO DE INMUEBLE (Esfera / Pill 3D)
+        const idText = `Cod Inm: ${p.idRegistro || ''}`.toUpperCase();
         doc.setFontSize(6.5);
-        doc.text(`Cod Inm: ${p.idRegistro || ''}`.toUpperCase(), MARGIN + contentW - 8, sec1Y, { align: 'right' });
+        doc.setFont('helvetica', 'bold');
+        const textWidth = doc.getTextWidth(idText);
+        const pillW = textWidth + 8;
+        const pillH = 6;
+        const pillX = MARGIN + contentW - 2 - pillW;
+        const pillY = sec1Y - 4.5;
+        
+        // Sombra exterior oscura
+        doc.setFillColor(15, 15, 15);
+        doc.roundedRect(pillX + 0.5, pillY + 0.5, pillW, pillH, 3, 3, 'F');
+        // Borde dorado oscuro / Cuerpo principal
+        doc.setFillColor(160, 120, 30);
+        doc.roundedRect(pillX, pillY, pillW, pillH, 3, 3, 'F');
+        // Centro más brillante (Efecto biselado/esfera 3D)
+        doc.setFillColor(230, 190, 70);
+        doc.roundedRect(pillX + 0.4, pillY + 0.4, pillW - 0.8, pillH - 0.8, 2.6, 2.6, 'F');
+        // Reflejo superior (Highlight) para dar el efecto de cristal/esfera
+        doc.setFillColor(255, 240, 180);
+        doc.roundedRect(pillX + 1, pillY + 0.6, pillW - 2, 1.2, 0.6, 0.6, 'F');
+
+        // Texto
+        doc.setTextColor(30, 30, 30);
+        doc.text(idText, pillX + pillW / 2, sec1Y - 0.5, { align: 'center' });
 
         // TÍTULO (Barrio) - Fuente SERIF gigante y elegante
         doc.setTextColor(255, 255, 255);
