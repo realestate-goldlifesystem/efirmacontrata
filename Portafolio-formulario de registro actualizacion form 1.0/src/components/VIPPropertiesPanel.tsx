@@ -874,7 +874,7 @@ export default function VIPPropertiesPanel() {
         </div>
       )}
 
-      <div className="sticky top-20 md:top-24 z-40 bg-brand-dark pt-2 pb-6 -mx-4 px-4 md:-mx-8 md:px-8 shadow-sm mb-6 transition-all duration-300">
+      <div className="sticky top-[90px] md:top-[100px] lg:top-[110px] xl:top-[120px] z-40 bg-brand-dark pt-4 pb-6 -mx-4 px-4 md:-mx-8 md:px-8 shadow-sm mb-6 transition-all duration-300">
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-6">
         <div>
           <h1 className="text-3xl md:text-4xl font-black text-stone-900 flex items-center gap-3">
