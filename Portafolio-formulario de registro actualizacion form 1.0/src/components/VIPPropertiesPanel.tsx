@@ -570,6 +570,11 @@ export default function VIPPropertiesPanel() {
         const tipoText = (isMixto ? 'APARTAMENTO VENTA/ARRIENDO' : isVenta ? 'APARTAMENTO EN VENTA' : 'APARTAMENTO EN ARRIENDO').split('').join(' ');
         doc.text(tipoText, MARGIN + 8, sec1Y);
 
+        // CODIGO DE INMUEBLE (Esquina superior derecha del panel)
+        doc.setTextColor(150, 150, 150);
+        doc.setFontSize(6.5);
+        doc.text(`Cod Inm: ${p.idRegistro || ''}`.toUpperCase(), MARGIN + contentW - 8, sec1Y, { align: 'right' });
+
         // TÍTULO (Barrio) - Fuente SERIF gigante y elegante
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(38);
@@ -752,7 +757,7 @@ export default function VIPPropertiesPanel() {
         doc.triangle(playX - 1, playY - 1.5, playX - 1, playY + 1.5, playX + 1.5, playY, 'F');
         if (p.youtube) doc.link(MARGIN + 2, btnY, btnW - 2, btnH, { url: p.youtube });
 
-        // BOTÓN 2: FACEBOOK (Fondo oscuro, borde dorado)
+        // BOTÓN 2: FOTOGRAFÍAS (Fondo oscuro, borde dorado)
         const btn2X = MARGIN + btnW + 8;
         doc.setFillColor(32, 33, 35);
         doc.roundedRect(btn2X, btnY, btnW - 2, btnH, 1.5, 1.5, 'F');
@@ -760,17 +765,19 @@ export default function VIPPropertiesPanel() {
         doc.setLineWidth(0.4);
         doc.roundedRect(btn2X, btnY, btnW - 2, btnH, 1.5, 1.5, 'S');
         doc.setTextColor(255, 255, 255);
-        doc.text("VER EN FACEBOOK", btn2X + btnW / 2 + 4, btnY + 8, { align: 'center' });
+        doc.text("VER FOTOGRAFÍAS", btn2X + btnW / 2 + 4, btnY + 8, { align: 'center' });
         
-        // Icono FB
+        // Icono Cámara
         const fbX = btn2X + btnW / 2 - 27;
         const fbY = btnY + btnH / 2;
         doc.setFillColor(255, 255, 255);
         doc.circle(fbX, fbY, 3.5, 'F');
-        doc.setTextColor(32, 33, 35);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.text("f", fbX, fbY + 3, { align: 'center' });
+        doc.setDrawColor(32, 33, 35);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(fbX - 1.5, fbY - 1, 3, 2.2, 0.3, 0.3, 'S'); // body
+        doc.circle(fbX, fbY + 0.1, 0.7, 'S'); // lens
+        doc.line(fbX - 0.5, fbY - 1.5, fbX + 0.5, fbY - 1.5); // flash
+        
         if (p.facebook) doc.link(btn2X, btnY, btnW - 2, btnH, { url: p.facebook });
       }
 
