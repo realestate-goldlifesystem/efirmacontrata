@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Building2, Search, Filter, Loader2, MapPin, Bed, Bath, Car, 
+  Building2, Search, Filter, Loader2, MapPin, Bed, Bath, Car, Maximize,
   Youtube, Facebook, FileText, Share2, Download, Copy, Check, Lock, ChevronDown, CheckSquare, Square,
   LayoutGrid, List
 } from 'lucide-react';
@@ -1103,6 +1103,11 @@ export default function VIPPropertiesPanel() {
                   <div className="bg-stone-950 border border-stone-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
                     <Bath className="w-3.5 h-3.5 text-stone-500" /> {prop.banos}
                   </div>
+                  {prop.area && prop.area !== '0' && prop.area !== '' && (
+                    <div className="bg-stone-950 border border-stone-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
+                      <Maximize className="w-3.5 h-3.5 text-stone-500" /> {prop.area} m²
+                    </div>
+                  )}
                   <div className="bg-stone-950 border border-stone-800 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
                     <Car className="w-3.5 h-3.5 text-stone-500" /> {prop.garajes}
                   </div>
