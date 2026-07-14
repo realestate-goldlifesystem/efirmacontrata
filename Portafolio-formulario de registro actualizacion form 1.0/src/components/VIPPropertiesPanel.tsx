@@ -118,6 +118,9 @@ export default function VIPPropertiesPanel() {
     setSelectedIds(newSet);
   };
 
+  const uniqueCiudades = Array.from(new Set(properties.map(p => p.ciudad).filter(c => c && c.trim() !== ''))).sort();
+  const uniqueBarrios = Array.from(new Set(properties.map(p => p.barrio).filter(b => b && b.trim() !== ''))).sort();
+
   const filteredProperties = properties.filter(p => {
     // Filtro por tipo
     if (tipoFiltro !== 'Todos') {
@@ -151,8 +154,8 @@ export default function VIPPropertiesPanel() {
       }
     }
 
-    if (filtrosAvanzados.ciudad && !p.ciudad.toLowerCase().includes(filtrosAvanzados.ciudad.toLowerCase())) return false;
-    if (filtrosAvanzados.barrio && !p.barrio.toLowerCase().includes(filtrosAvanzados.barrio.toLowerCase())) return false;
+    if (filtrosAvanzados.ciudad && p.ciudad !== filtrosAvanzados.ciudad) return false;
+    if (filtrosAvanzados.barrio && p.barrio !== filtrosAvanzados.barrio) return false;
     
     if (filtrosAvanzados.precioMin || filtrosAvanzados.precioMax) {
       // Determinar qué precio evaluar basado en si es venta o renta
@@ -976,21 +979,29 @@ export default function VIPPropertiesPanel() {
           </div>
           <div>
             <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Ciudad</label>
-            <input 
-              type="text"
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
-              placeholder="Ej. Bogotá"
-              value={filtrosAvanzados.ciudad} onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, ciudad: e.target.value})}
-            />
+            <select 
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none appearance-none" 
+              value={filtrosAvanzados.ciudad} 
+              onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, ciudad: e.target.value})}
+            >
+              <option value="">Cualquiera</option>
+              {uniqueCiudades.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Barrio / Localidad</label>
-            <input 
-              type="text"
-              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none" 
-              placeholder="Ej. Usaquén, Chapinero..."
-              value={filtrosAvanzados.barrio} onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, barrio: e.target.value})}
-            />
+            <select 
+              className="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2 focus:border-brand-gold focus:outline-none appearance-none" 
+              value={filtrosAvanzados.barrio} 
+              onChange={(e) => setFiltrosAvanzados({...filtrosAvanzados, barrio: e.target.value})}
+            >
+              <option value="">Cualquiera</option>
+              {uniqueBarrios.map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-bold text-stone-500 uppercase mb-2">Precio Mínimo</label>
