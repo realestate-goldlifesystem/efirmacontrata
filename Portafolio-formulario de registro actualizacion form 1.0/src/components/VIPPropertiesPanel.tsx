@@ -901,8 +901,8 @@ export default function VIPPropertiesPanel() {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
-        <div className="relative flex-1 w-full">
+      <div className="flex flex-row items-center gap-2 mb-4">
+        <div className="relative flex-1">
           <Search className="w-5 h-5 text-stone-500 absolute left-4 top-1/2 -translate-y-1/2" />
           <input 
             type="text" 
@@ -912,14 +912,14 @@ export default function VIPPropertiesPanel() {
             className="w-full bg-stone-900 border border-stone-700 text-white pl-12 pr-4 py-4 rounded-2xl focus:outline-none focus:border-brand-gold transition-colors placeholder:text-stone-600 shadow-inner"
           />
         </div>
-        <div className="flex items-stretch gap-2 w-full sm:w-auto shrink-0 h-[58px]">
+        <div className="flex items-stretch gap-2 shrink-0 h-[58px]">
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 rounded-2xl font-bold transition-all ${showFilters ? 'bg-brand-gold text-stone-950' : 'bg-stone-900 border border-stone-800 text-white hover:border-brand-gold'}`}
+            className={`flex items-center justify-center gap-2 px-4 sm:px-6 rounded-2xl font-bold transition-all ${showFilters ? 'bg-brand-gold text-stone-950' : 'bg-stone-900 border border-stone-800 text-white hover:border-brand-gold'}`}
+            title="Filtros Avanzados"
           >
             <Filter className="w-5 h-5 shrink-0" />
             <span className="hidden sm:inline">{showFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}</span>
-            <span className="sm:hidden">{showFilters ? 'Ocultar' : 'Filtros'}</span>
           </button>
 
           <div className="flex bg-stone-900 border border-stone-800 rounded-xl p-1 shrink-0">
