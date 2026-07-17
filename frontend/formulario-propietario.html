@@ -675,6 +675,12 @@
               <span>🏡 Certificado de Tradición y Libertad *</span>
               <span id="certTradicionName" class="file-name"></span>
             </label>
+            <div style="text-align: center; margin-top: 5px; font-size: 0.85rem;">
+              <span style="color: #a1a1aa;">¿No tienes tu certificado o está vencido? </span>
+              <a href="https://certificados.supernotariado.gov.co/certificado" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline; font-weight: 500;">
+                Cómpralo actualizado aquí
+              </a>
+            </div>
           </div>
 
           <div class="progressive-hidden" id="prog-prop-1-4">
@@ -928,7 +934,15 @@
         <div class="ocr-icon">⚠️</div>
         <h3>No se pudo verificar</h3>
         <p id="ocrErrorMsg">No se pudo leer el documento. Puedes continuar, pero verifica manualmente la vigencia.</p>
-        <button class="btn-cerrar-modal" onclick="cerrarModalOCR(true)">Continuar de todas formas</button>
+        <p style="font-size:0.90rem; color:#a1a1aa; margin-bottom:1rem;">Asegúrate de haber cargado el PDF original del Certificado de Libertad y Tradición. Si no lo tienes o está vencido:</p>
+        <a href="https://certificados.supernotariado.gov.co/certificado" target="_blank" rel="noopener" class="btn-snr">
+          🌐 Comprar Certificado en SNR
+        </a>
+        <br>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+          <button class="btn-cerrar-modal" style="background: rgba(16, 185, 129, 0.2); border-color: var(--success); color: #34d399;" onclick="cerrarModalOCR(true)">Continuar de todas formas</button>
+          <button class="btn-cerrar-modal" onclick="cerrarModalOCR()">Subir otro archivo</button>
+        </div>
       </div>
     </div>
   </div>

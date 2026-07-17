@@ -18,14 +18,19 @@ async function validarSheet() {
     console.log(' -', s.properties.title, '| hidden:', s.properties.hidden || false);
   });
 
-  // 2. Encabezados de PAGOS_RECIBIDOS
+  // 2. Últimos 50 registros de PAGOS_RECIBIDOS
   try {
     const pagos = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: 'PAGOS_RECIBIDOS!A1:F5'
+      range: 'PAGOS_RECIBIDOS!A1:E500' // Leer hasta 500 filas
     });
-    console.log('\n=== PAGOS_RECIBIDOS (primeras 5 filas) ===');
-    (pagos.data.values || []).forEach((row, i) => console.log(`Fila ${i}:`, row));
+    console.log('\n=== PAGOS_RECIBIDOS (últimos 50 registros) ===');
+    const rows = pagos.data.values || [];
+    console.log('Total registros:', rows.length - 1);
+    const last50 = rows.slice(-50);
+    last50.forEach((row, i) => {
+      console.log(`Row ${rows.length - last50.length + i}: Fecha: ${row[0]} | PaymentID: ${row[1]} | CDR: ${row[2]} | Monto: ${row[3]} | Estado: ${row[4]}`);
+    });
   } catch(e) {
     console.log('PAGOS_RECIBIDOS error:', e.message);
   }

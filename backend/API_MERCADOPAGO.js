@@ -28,6 +28,7 @@ function crearPreferenciaPago(datos) {
         pending: "https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/formulario-inquilino.html?status=pending"
       },
       auto_return: "approved",
+      notification_url: ScriptApp.getService().getUrl(),
       external_reference: datos.cdr || 'TEST-CDR'
     };
 
@@ -128,7 +129,7 @@ function auditorDeContratosVencidos() {
       if (estadoPago === 'APROBADO') {
         const minutesDiff = (now - fechaPago) / (1000 * 60);
         
-        if (minutesDiff >= 2) {
+        if (minutesDiff >= 2880) { // 48 horas (48 * 60 minutos)
           // Buscar el estado documental del CDR en la hoja de inmuebles
           let estadoDocumental = '';
           for (let j = 1; j < dataInmuebles.length; j++) {

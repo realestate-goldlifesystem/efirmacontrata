@@ -613,6 +613,8 @@ function doPost(e) {
         }
         break;
       case 'payment':
+      case 'payment.created':
+      case 'payment.updated':
         if (typeof handleMercadoPagoWebhook === 'function') {
           result = handleMercadoPagoWebhook(datos);
         } else {
@@ -4889,7 +4891,13 @@ function handleObtenerInmueblesVip(datos) {
     const idxPrecioAdmin = headers.indexOf('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)');
     const idxCiudad = headers.indexOf('INGRESE LA CIUDAD DEL INMUEBLE');
     const idxUpz = headers.indexOf('SELECCIONA LA UPZ  DE TU INMUEBLE');
-    const idxArea = headers.findIndex(h => h.includes('AREA') || h.includes('ÁREA') || h.includes('METRAJE') || h.includes('M2'));
+    let idxArea = headers.indexOf('AREA  M²');
+    if (idxArea === -1) {
+      idxArea = headers.findIndex(h => h.includes('AREA') && (h.includes('M') || h.includes('2') || h.includes('²')));
+    }
+    if (idxArea === -1) {
+      idxArea = headers.findIndex(h => h === 'AREA' || h === 'ÁREA' || h === 'METRAJE');
+    }
 
     const idxBarrios = [];
     for (let h = 0; h < headers.length; h++) {
@@ -4944,7 +4952,14 @@ function handleObtenerInmueblesVip(datos) {
             }
         }
 
-        inmuebles.push({
+          let docFirmadoLink = row[idxDocFirmado] || '';
+          const formulaDoc = formulas[i][idxDocFirmado];
+          if (formulaDoc && formulaDoc.toUpperCase().includes("HYPERLINK")) {
+            const matchFormula = formulaDoc.match(/HYPERLINK\("([^"]+)"/i);
+            if (matchFormula) docFirmadoLink = matchFormula[1];
+          }
+
+          inmuebles.push({
           direccion: row[idxDir] || '',
           habitaciones: row[idxHabitaciones] || '0',
           banos: row[idxBanos] || '0',
@@ -4957,7 +4972,7 @@ function handleObtenerInmueblesVip(datos) {
           tipoNegocio: row[idxNegocio] || '',
           youtube: row[idxYt] || '',
           facebook: row[idxFb] || '',
-          documentoFirmado: row[idxDocFirmado] || '',
+          documentoFirmado: docFirmadoLink,
           precioVenta: row[idxPrecioVenta] || '',
           precioGeneral: row[idxPrecioGeneral] || '',
           precioAdmin: idxPrecioAdmin !== -1 ? (row[idxPrecioAdmin] || '') : '',
