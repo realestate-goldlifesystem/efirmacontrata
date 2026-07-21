@@ -1,150 +1,210 @@
-# 📜 MANUAL MAESTRO DE ARQUITECTURA Y LÓGICA - E-FirmaContrata v3.1
+# 📜 MANUAL MAESTRO Y DOCUMENTACIÓN ULTRA DETALLADA - E-FIRMACONTRATA v3.1
 **Real Estate Gold Life System**
 
-Este documento centraliza, especifica y detalla de manera absoluta toda la arquitectura, lógica, flujos de datos, estados, componentes y reglas de negocio del sistema **E-FirmaContrata**.
+> **Estado del Sistema:** Producción Activa  
+> **Despliegue Apps Script Backend:** Versión Activa `@HEAD` (URL `/exec`)  
+> **ID de Implementación en Config (`config.js`):** `AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW`  
+> **Frontend:** GitHub Pages (`https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/`)
 
 ---
 
 ## 🎯 1. Objetivo General del Sistema
-Automatizar el proceso **end-to-end (de principio a fin)** de la recolección de datos, validación documental (vía OCR), revisión colaborativa y generación definitiva de contratos de arrendamiento, corretaje y venta, culminando en la preparación exacta para la firma electrónica externa (VíaFirma).
+
+Automatizar el proceso **end-to-end (de principio a fin)** de recolección de datos, pago inicial del estudio, validación documental (vía OCR con Google Cloud Vision), revisión colaborativa mediante bitácora transparente y generación definitiva de contratos (Arrendamiento, Corretaje, Compraventa) en PDF Original, culminando en la entrega oficial para la firma electrónica externa (VíaFirma).
 
 ---
 
 ## 🏗️ 2. Arquitectura de Componentes
 
-El sistema está dividido en módulos frontend (vistas web para clientes y administrador) y módulos backend (Google Apps Script).
+### 🖥️ A. Frontend (Interfaces de Usuario en GitHub Pages)
+1. **Formulario de Inquilino (`formulario-inquilino.html`)**: Recoge datos del inquilino, codeudores y procesa la preferencia de pago vía Mercado Pago.
+2. **Formulario de Propietario (`formulario-propietario.html`)**: Recoge datos del propietario, inmueble y Certificado de Tradición y Libertad (con enlace directo de compra a la SNR `https://certificados.supernotariado.gov.co/certificado`).
+3. **Panel de Validación (`panel_validacion.html`)**: "Centro de Mando" exclusivo del administrador (desplegado como Sidebar en Google Sheets). Controla las aprobaciones, la generación de borradores y el despacho de correos.
+4. **Validador Transparente (`validador-de-contratos.html`)**: Portal público colaborativo donde Inquilino, Propietario y Codeudores visualizan el borrador en Google Docs, revisan la bitácora de comentarios y aprueban o solicitan correcciones.
+5. **Popups de Correo (`popup_email_inquilino.html`, `popup_email_propietario.html`)**: Modales del administrador en Google Sheets para iniciar las solicitudes a las partes.
 
-### 🖥️ A. Frontend (Interfaces de Usuario)
-1. **Formularios de Recolección (`formulario-inquilino.html`, `formulario-propietario.html`)**: Interfaces donde las partes suben sus documentos.
-2. **Panel de Validación (`panel_validacion.html`)**: El "Centro de Mando" exclusivo del administrador. Se despliega como un *Sidebar* en Google Sheets. Controla todo el ciclo de vida del contrato.
-3. **Validador Externo (`validador-de-contratos.html`)**: Página pública (pero segura) donde el Inquilino, Propietario y Codeudores leen el borrador del contrato y lo aprueban o rechazan.
-4. **Revisión de Contrato (`revision-contrato.html`)**: Interfaz dedicada para que el Administrador revise las correcciones solicitadas por las partes y genere nuevas versiones del borrador.
-5. **Popups de Correo**: Interfaces (`popup_email_inquilino.html`, `popup_email_propietario.html`) que le permiten al administrador disparar manualmente correos con enlaces únicos de carga documental a las partes.
-
-### ⚙️ B. Backend (Scripts de Procesamiento)
-1. **`GESTOR DE DOCUMENTOS.js`**: Maneja la recepción de archivos, evaluación del estado documental y almacenamiento en Drive.
-2. **`GESTOR_CONTRATOS.js`**: El corazón del sistema. Ejecuta la creación de documentos (makeCopy), conversión a PDF, manejo de carpetas dinámicas, y envío de correos de aprobación y entrega final.
-3. **`GESTOR DE ESTADOS.js` & `ESTADOS DOCUMENTALES.js`**: Centralizan las lógicas que determinan si un inquilino o propietario ya cumplió sus requisitos.
-4. **`API_MULTIMEDIA.js` & `OCR-HANDLER.js`**: Conexión con Google Cloud Vision API para extraer texto de las cédulas y certificados de tradición, convirtiéndolos a texto plano.
-5. **`UTIL_JerarquiaCarpetas.js`**: Garantiza que todo documento se guarde en la estructura exacta requerida por la empresa.
+### ⚙️ B. Backend (Google Apps Script)
+1. **`GESTOR DE DOCUMENTOS.js`**: Maneja la recepción de formularios, almacenamiento en Drive y lógica de actualización de estados documentales.
+2. **`GESTOR_CONTRATOS.js`**: Motor maestro de contratos. Clona plantillas, inyecta datos desde "El Cerebro", genera borradores, envía correos de revisión y convierte el documento final a PDF Original.
+3. **`API_MERCADOPAGO.js`**: Crea preferencias de pago, procesa el webhook `notification_url`, registra pagos en `PAGOS_RECIBIDOS` y ejecuta el cron de auditoría de reembolsos (`auditorDeContratosVencidos`).
+4. **`API_MULTIMEDIA.js` & `OCR-HANDLER.js`**: Integración con Google Cloud Vision API para lectura de Cédulas y Certificados de Tradición y Libertad.
+5. **`UTIL_JerarquiaCarpetas.js`**: Estructura de directorios estandarizada en Google Drive por Inmueble y Año.
 
 ---
 
-## 🔄 3. Flujo Lógico y Ciclo de Vida Completo
+## 🔍 3. Análisis de la Garantía de Reembolso Mercado Pago (48 Horas)
 
-### FASE 1: Activación y Recolección Documental 📥
-1. **Disparador Inicial (`UTIL_Triggers.js`)**: El flujo de E-FirmaContrata nace en la hoja de cálculo de Google Sheets. Cuando el administrador cambia la columna "ESTADO DEL INMUEBLE" a `ESTUDIO APROBADO`, el trigger `onEdit` detecta este cambio automáticamente.
-2. **Levantamiento de Interfaz Inicial (Popups)**:
-   - El backend invoca inmediatamente una interfaz flotante en la pantalla del administrador: `popup_email_inquilino.html` (o `popup_email_propietario.html` según corresponda).
-   - Desde esta interfaz, el administrador confirma el envío del formulario.
-3. **Despacho de Correos Transaccionales**:
-   - Al confirmar en el popup, el backend empaqueta una URL encriptada (con el CDR como llave) y la inyecta en una plantilla de correo estético (`email_notificacion.html`).
-   - El correo llega al Inquilino/Propietario dándole la bienvenida e invitándolo a su portal de carga segura.
-4. **Interacción del Usuario Final (Frontend `formulario-inquilino.html` / `formulario-propietario.html`)**:
-   - El Inquilino o Propietario abre la URL. La vista web (Frontend) procesa sus datos.
-   - **Subida de Archivos**: Se adjuntan fotos de las cédulas (y Certificados de Tradición).
-   - Al presionar "Enviar", el frontend empaqueta los archivos en formato `Base64` y hace una llamada directa al Backend.
-5. **Recepción y Procesamiento en Backend (`GESTOR DE DOCUMENTOS.js` y `OCR-HANDLER.js`)**:
-   - El `GESTOR DE DOCUMENTOS` recibe los archivos.
-   - Pasa las imágenes por el **OCR** (`API_MULTIMEDIA.js`). Este cerebro extrae automáticamente:
-     * Inquilino/Codeudor: Nombres y Cédula.
-     * Propietario: Dirección, PIN y lista de propietarios vigentes.
-   - Archivos anexos (Sarlaft, Recibos) se guardan directamente en Drive.
-6. **Validación Automática de Estados**: El estado de los documentos de la persona pasa a `UPLOADED` en la base de datos (Sheets). Luego, el Administrador aprueba visualmente para pasarlos a `VALIDATED`.
+### 3.1 Regla de Negocio
+El cliente realiza el pago del estudio ($85.000 COP) al inicio del trámite. Mercado Pago ofrece una garantía de reembolso automático si el servicio no es entregado dentro de las **48 horas** (`minutesDiff >= 2880`).
 
-### FASE 2: Elaboración del Borrador y "El Cerebro" 🧠
-1. **Validación en Panel**: El Administrador abre el **Panel de Validación**. El sistema lee las columnas de estado. Si todos tienen documentos `VALIDATED`, el contrato se marca como "LISTO PARA GENERAR".
-2. **El Cerebro (Single Source of Truth)**: Toda la inyección de datos para rellenar las llaves del contrato proviene directamente del documento maestro llamado `DATOS DE ELABORACION` (Cerebro). Ya no se depende de las columnas frágiles de la hoja de cálculo, garantizando una sincronización total de campos como correos, celulares y números de cédula exactos.
-3. **Generación Dinámica**: 
-   - El sistema ubica la **Carpeta Maestra del Inmueble**.
-   - Navega internamente: `ENTREGAS DEL INMUEBLE` -> `[Año]` -> `DOCUMENTOS DE ENTREGA - INQUILINO` -> `2- CONTRATO DE ARRENDAMIENTO` (o Corretaje/Compraventa).
-   - El sistema clona la "Plantilla de Borrador" en esta ruta específica.
-   - Reemplaza todas las llaves (Ej. `{{NOMBRE_INQUILINO}}`) leyendo exclusivamente el Cerebro.
+### 3.2 Protección del Pago y Candado de Seguridad
+Para evitar reembolsos indebidos una vez que el administrador o el sistema ha generado el borrador o iniciado el envío a validación, el script `auditorDeContratosVencidos()` ejecuta la siguiente verificación:
 
-### FASE 3: Negociación y Aprobación Colaborativa (Bitácora Transparente) 🤝
-1. **Envío del Borrador**: Desde el panel, el Admin hace clic en "Enviar Borrador a Revisión". Esto despacha correos transaccionales estéticos a Inquilino, Propietario y Codeudores con su link personalizado.
-2. **El Semáforo de Firmas**: El panel de validación muestra tarjetas en tiempo real para Inquilino, Propietario y Codeudores, indicando quién falta por aprobar.
-3. **Portal de Revisión Transparente**:
-   - Cada parte entra a `validador-de-contratos.html`.
-   - Si una parte pide cambios, las demás partes pueden ver la **Bitácora Transparente** en tiempo real, garantizando total transparencia en la negociación (todos saben qué se objeta y por qué).
-   - Si todo está bien, le dan **"Aprobar"**.
-   - Si hay errores, escriben un comentario y le dan **"Solicitar Correcciones"**.
-4. **Ciclo de Corrección**:
-   - Si solicitan correcciones, el panel alerta al Admin ("EN REVISIÓN").
-   - El Admin lee la Bitácora centralizada, edita el Doc de Google Drive y genera una **Nueva Versión**.
-   - Todos los semáforos se reinician (vuelven a gris) y se envía un nuevo correo transaccional indicando "Hay una nueva versión de tu contrato".
-5. **Aprobación Total**: Cuando la última parte aprueba, el Estado Global del contrato pasa a verde: `APROBADO POR TODAS LAS PARTES`.
-
-### FASE 4: Cierre y PDF Original Definitivo 🔏
-1. **Botón Final**: El panel detecta que todos aprobaron y habilita el botón verde brillante: **"Generar y Descargar Original"**.
-2. **Creación del PDF**:
-   - El sistema busca el ID del Borrador aprobado.
-   - Hace una copia, cambia internamente la palabra "BORRADOR" por "ORIGINAL" en el encabezado.
-   - Lo convierte a formato inmodificable (PDF) en la misma carpeta exacta (`2- CONTRATO DE...`).
-3. **Distribución Inteligente de Correos**:
-   - **Administrador**: Recibe un email exclusivo con el PDF adjunto y un botón a Drive, indicando que el documento está listo para subir a VíaFirma.
-   - **Clientes (Propietario, Inquilino, Codeudor)**: Reciben un email de notificación que les avisa que el contrato ya fue generado y deben *estar atentos a su bandeja de entrada* esperando el correo oficial del proveedor de firmas electrónicas. (No se les adjunta PDF para evitar filtraciones informales).
-4. **Limpieza y Cierre Definitivo de UI (`panel_validacion.html`)**: 
-   - Al generarse el PDF exitosamente, el Frontend activa `google.script.host.close()`, lo que ocasiona un **apagado y cierre automático** de todo el Sidebar/Panel de Validación y sus subpaneles.
-   - Si el usuario decide volver a abrir el Panel de Validación, la lógica de backend (`obtenerContratosPendientes`) escanea los registros. Al detectar que este contrato ya posee el estado `CONTRATO ORIGINAL GENERADO`, el sistema tiene prohibido volver a renderizar esa tarjeta.
-   - Si no quedan más contratos pendientes en la bandeja, el sistema simplemente omite mostrar tarjetas, manteniendo la interfaz "Contratos" totalmente limpia (eliminando el antiguo comportamiento de "DEBUG-EMPTY").
+1. **Lectura Multicolumna Dinámica:** En la hoja `1.1 - INMUEBLES REGISTRADOS`, lee simultáneamente las 3 columnas de estado del inmueble:
+   * `ESTADO DEL INMUEBLE`
+   * `ESTADO DOCUMENTAL`
+   * `DETALLES DEL ESTADO DEL INMUEBLE`
+2. **Evaluación de Estado Seguro:** Combina los valores (`textoCombinado`) y verifica si contiene alguno de los términos clave:
+   * `"CONTRATO GENERADO"`, `"CONTRATO EN REVISION"`, `"BORRADOR ENVIADO"`, `"EN REVISION"`, `"CONTRATO APROBADO POR TODAS LAS PARTES"`, `"CONTRATO ORIGINAL GENERADO"`, `"READY_CONTRACT"`, `"CONTRACT_GENERATED"`, `"CONTRACT_REVIEW"`, `"CONTRACT_FINAL"`, `"COMPLETED"`, `"BORRADOR"`, `"CONTRATO"`.
+3. **Bloqueo del Reembolso:** Si `esEstadoSeguro = TRUE`, el bloque de devolución API a Mercado Pago **se ignora**. El dinero en `PAGOS_RECIBIDOS` permanece en estado **`APROBADO`** y queda definitivamente consolidado como ingreso para Gold Life System.
 
 ---
 
-## 🗂️ 4. Diccionario de Estados del Sistema (Taxonomía)
+## 🛠️ 4. Flujo Detallado Paso a Paso (Passes 1 a 6)
 
-El sistema opera bajo un riguroso esquema de estados en hojas de cálculo para mantener la lógica.
-
-### A. Estados de Inmueble (Flujo Principal)
-- `ESTUDIO APROBADO`: Fase donde las partes apenas subirán documentos.
-- `READY_CONTRACT` o `CONTRATO GENERADO`: Borrador creado con éxito, esperando envío a las partes.
-- `BORRADOR ENVIADO`: Se envió el link a las partes; se espera la lectura y validación de ellos.
-- `EN REVISION`: Alguna de las partes rechazó el contrato y exigió correcciones. El administrador debe accionar.
-- `APROBADO` o `CONTRATO APROBADO POR TODAS LAS PARTES`: Luz verde para generar el PDF final.
-- `CONTRATO ORIGINAL GENERADO`: Fase culminada, contrato en PDF, sale de la lista de pendientes.
-
-### B. Estados Documentales
-- `PENDIENTE`: Falta subir documentos.
-- `UPLOADED`: El cliente subió sus documentos (aún no validados por el admin).
-- `VALIDATED`: Todo en regla.
-- `REJECTED`: Hubo un error (ej. foto borrosa), el cliente debe re-subir.
-
-### C. Estados de la Bitácora de Negociación (Historial)
-- `CREADO`: Primer paso de un contrato.
-- `ENVIADO`: Cuando el admin despacha el link.
-- `APROBADO`: Cuando el Inquilino/Propietario le da click en "Sí, estoy de acuerdo".
-- `CORRECCION`: Cuando la parte objeta cláusulas.
+### 📌 PASO 1: Disparador Inicial y Envío de Enlace al Inquilino
+* **Acción Admin:** Cambia `ESTADO DEL INMUEBLE` a `ESTUDIO APROBADO` en Google Sheets.
+* **Backend (`UTIL_Triggers.js`):** El trigger `onEdit` detecta la edición y despliega `popup_email_inquilino.html`.
+* **Disparo de Email (`enviarEmailInquilinoInicial`):**
+  * **Asunto:** `Solicitud de Datos y Documentos para Contrato - [ID_REGISTRO]`
+  * **Título HTML:** `Bienvenido al Proceso de Arrendamiento`
+  * **Mensaje Principal:** *"Ha sido seleccionado para iniciar el proceso de arrendamiento del inmueble. Por favor ingrese al formulario seguro para completar sus datos y adjuntar su documentación."*
+  * **Botón:** `[ DILIGENCIAR FORMULARIO DE INQUILINO ]` ➡️ Enlaza a `formulario-inquilino.html?cdr=ID`
+* **Transición en Sheet:**
+  * `ESTADO DEL INMUEBLE`: `"SOLICITUD ENVIADA AL INQUILINO"`
+  * `ESTADO DOCUMENTAL`: `"PENDIENTE"`
+  * `DETALLES DEL ESTADO DEL INMUEBLE`: `"⏳ Esperando registro y documentación del inquilino"`
 
 ---
 
-## 📁 5. Estructura Exacta de Carpetas (Jerarquía Dinámica en Drive)
-
-El sistema NO puede arrojar archivos en cualquier parte. Utiliza lógica recursiva para hallar (o crear) la carpeta correcta basado en la ID del Registro.
-
-📂 **[CARPETA ROOT]** (ej. 1. INMUEBLES REGISTRADOS)
- └─ 📂 **`[ID DE REGISTRO]`** (Ej. REG_28-05-2026-C43_(Cra 8 #170-92)_TORRE-9_APTO-702)
-     └─ 📂 **`ENTREGAS DEL INMUEBLE`**
-         └─ 📂 **`[Año]`** (Ej. 2024, 2026)
-             └─ 📂 **`DOCUMENTOS DE ENTREGA - INQUILINO`**
-                 └─ 📂 **`2- CONTRATO DE ARRENDAMIENTO`** (o VENTA / CORRETAJE)
-                     ├─ 📄 Borrador_Contrato_... (GDoc)
-                     ├─ 📄 Contrato_Original_..._FINAL (GDoc)
-                     └─ 📄 Contrato_Original_..._FINAL.pdf (PDF Definitivo)
-
-> **Nota Técnica de Respaldo (Fallback)**: Si por errores de permisos el sistema no halla la carpeta del ID de Registro en Drive de forma global, utilizará la variable `CARPETA_CONTRATOS_ID` como ruta segura de rescate, y si esa falla, lo enviará a la Raíz para evitar interrupción del servicio. En el flujo Original (paso final), hereda exactamente la carpeta madre del borrador para precisión del 100%.
+### 📌 PASO 2: Formulario Inquilino, Pago en Mercado Pago y OCR Cédula
+* **Usuario:** Inquilino ingresa a `formulario-inquilino.html`.
+* **Pasarela de Pago:** El backend (`API_MERCADOPAGO.js`) genera la preferencia de Mercado Pago. El inquilino paga $85.000 COP.
+* **Procesamiento de Pago:** Webhook recibe el evento, guarda la transacción en la pestaña **`PAGOS_RECIBIDOS`** con estado **`APROBADO`**.
+* **Carga Documental:** Inquilino sube foto de Cédula y datos de Codeudores.
+* **OCR (`OCR-HANDLER.js`):** Extrae nombres, apellidos y número de documento.
+* **Transición en Sheet:**
+  * `ESTADO DEL INMUEBLE`: `"SOLICITUD ENVIADA AL INQUILINO"`
+  * `ESTADO DOCUMENTAL`: `"INQ_SUBMITTED"`
+  * `DETALLES DEL ESTADO DEL INMUEBLE`: `"📄 Formulario de inquilino diligenciado. Pendiente validación"`
 
 ---
 
-## 🤖 6. Automatizaciones y OCR Avanzado
-
-### Google Cloud Vision (Módulo OCR-HANDLER)
-1. Extrae Nombres, Apellidos y Cédula de las fotografías de **Cédulas Colombianas**.
-2. Extrae el PIN, Propietarios vigentes y la Dirección exacta leyendo el **Certificado de Tradición y Libertad**.
-3. **Lógica Multipropietario**: Si en la fase de lectura de tradición y libertad se detectan > 2 propietarios, el sistema debe alertar para diligenciar un formulario auxiliar de firmas escalonadas.
-4. **Optimización de Costos**: Se envía el `base64` directamente sin sobrecargar almacenamiento.
-
-### Webhooks y Wompi (Integración en Fase Actual)
-- El sistema tiene contemplada la lógica para bloquear formularios 2 y 3 hasta que el inquilino efectúe un pago exitoso validado por firma SHA-256 desde Wompi en el Formulario 1.
+### 📌 PASO 3: Validación del Inquilino y Solicitud al Propietario
+* **Acción Admin:** En `panel_validacion.html`, aprueba la documentación del inquilino.
+* **Disparo de Email (`enviarEmailPropietarioInicial`):**
+  * **Asunto:** `Solicitud de Documentación del Propietario - [ID_REGISTRO]`
+  * **Título HTML:** `Registro de Documentos del Propietario`
+  * **Mensaje Principal:** *"El estudio del inquilino ha sido aprobado. Requerimos completar la información del propietario y cargar el Certificado de Tradición y Libertad."*
+  * **Botón:** `[ DILIGENCIAR FORMULARIO DE PROPIETARIO ]` ➡️ Enlaza a `formulario-propietario.html?cdr=ID`
+* **Transición en Sheet:**
+  * `ESTADO DEL INMUEBLE`: `"SOLICITUD ENVIADA AL PROPIETARIO"`
+  * `ESTADO DOCUMENTAL`: `"INQ_VALIDATED"`
+  * `DETALLES DEL ESTADO DEL INMUEBLE`: `"✅ Documentos del inquilino aprobados. Pendiente formulario propietario"`
 
 ---
-**Fin del Documento Maestro - E-FirmaContrata v3.1**
+
+### 📌 PASO 4: Formulario Propietario, OCR Certificado SNR y Generación de Borrador
+* **Usuario:** Propietario entra a `formulario-propietario.html`.
+* **Certificado SNR:** Si el propietario no lo tiene o está vencido (>30 días), la interfaz provee el enlace directo: `https://certificados.supernotariado.gov.co/certificado`.
+* **OCR SNR (`OCR-HANDLER.js`):** Extrae dirección, PIN de la propiedad y nombres de propietarios registrados.
+* **Aprobación Admin:** En `panel_validacion.html`, el admin presiona **"📝 Generar Borrador"**.
+* **Ejecución Backend (`generarContrato(cdr, 'Borrador')`):**
+  1. Toma la plantilla de borrador.
+  2. Crea la copia en la carpeta del inmueble: `ENTREGAS DEL INMUEBLE -> [Año] -> DOCUMENTOS DE ENTREGA - INQUILINO -> 2- CONTRATO DE ARRENDAMIENTO`.
+  3. Reemplaza las etiquetas (`{{NOMBRE_INQUILINO}}`, `{{CANON}}`, etc.) desde "El Cerebro".
+* **Transición en Sheet:**
+  * `ESTADO DEL INMUEBLE`: `"CONTRATO GENERADO"`
+  * `ESTADO DOCUMENTAL`: `"CONTRACT_GENERATED"`
+  * `DETALLES DEL ESTADO DEL INMUEBLE`: `"📝 Borrador generado (Arrendamiento). ID: [DocID]"`
+
+---
+
+### 📌 PASO 5: Envío a Negociación y Bitácora Transparente
+* **Botón en Panel:** `<button onclick="enviarBorrador(...)">📧 Enviar Borrador a las Partes</button>`
+* **Función Backend:** `enviarBorradorAValidar(cdr, comentario_admin)`
+* **Transición en Sheet:**
+  * `ESTADO DEL INMUEBLE`: `"CONTRATO EN REVISION"`
+  * `ESTADO DOCUMENTAL`: `"CONTRACT_REVIEW"`
+  * `DETALLES DEL ESTADO DEL INMUEBLE`: `"📧 Enviado a las partes para revisión y aprobación."`
+
+#### ✉️ Plantillas de Correo de Revisión Enviadas a las Partes:
+
+##### A. Email al Inquilino (`enviarEmailRevisionInquilino`):
+* **Asunto:** `Borrador del Contrato de Arrendamiento para Revisión - [ID_REGISTRO]`
+* **Título HTML:** `Borrador del Contrato Listo para Revisión como Inquilino`
+* **Mensaje Principal:** *"El borrador de su contrato de arrendamiento está listo. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, aprobar el documento o solicitar cambios."*
+* **Mensaje Secundario:** *"Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas."*
+* **Botón:** `[ REVISAR Y VALIDAR BORRADOR DEL CONTRATO ]` ➡️ Enlaza a `validador-de-contratos.html?cdr=ID&rol=inquilino`
+
+##### B. Email al Propietario (`enviarEmailRevisionPropietario`):
+* **Asunto:** `Borrador del Contrato de Arrendamiento para Revisión - [ID_REGISTRO]`
+* **Título HTML:** `Borrador del Contrato Listo para Revisión como Propietario`
+* **Mensaje Principal:** *"El borrador del contrato de arrendamiento de su propiedad está listo para revisión. Por favor, ingrese a nuestro portal de validación transparente y verifique que todos los términos sean correctos."*
+* **Mensaje Secundario:** *"Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas."*
+* **Botón:** `[ REVISAR Y VALIDAR BORRADOR DEL CONTRATO ]` ➡️ Enlaza a `validador-de-contratos.html?cdr=ID&rol=propietario`
+
+##### C. Email al Codeudor (`enviarEmailRevisionCodeudor`):
+* **Asunto:** `Borrador del Contrato de Arrendamiento - Codeudor - [ID_REGISTRO]`
+* **Título HTML:** `Borrador del Contrato Listo para Revisión como Codeudor`
+* **Mensaje Principal:** *"Ha sido designado como codeudor en un contrato de arrendamiento. Por favor, ingrese a nuestro portal de validación transparente para revisar el borrador del contrato, sus responsabilidades y aprobar el documento."*
+* **Mensaje Secundario:** *"Como codeudor, usted responde solidariamente por el pago del canon y garantiza el cumplimiento del contrato. Nuestro sistema registrará su aprobación en la bitácora del contrato."*
+* **Botón:** `[ REVISAR Y VALIDAR BORRADOR DEL CONTRATO ]` ➡️ Enlaza a `validador-de-contratos.html?cdr=ID&rol=codeudor`
+
+---
+
+### 📌 PASO 6: Generación del PDF Original, Despacho Final y Auto-Apagado de UI
+* **Botón en Panel:** `<button id="btnGenerarOriginal" class="btn-success">🔏 Generar y Descargar Original</button>`
+* **Función Backend:** `generarContrato(cdr, 'Original')`
+* **Acciones Internas:**
+  1. Toma la ID del Borrador Aprobado.
+  2. Crea la versión definitiva sustituyendo "BORRADOR" por "ORIGINAL".
+  3. Convierte a PDF binario (`getAs(MimeType.PDF)`).
+  4. Guarda el PDF en Drive (`2- CONTRATO DE ARRENDAMIENTO`).
+
+#### ✉️ Plantillas de Correo de Despacho Final:
+
+##### A. Correo al Administrador (`enviarEmailFinalAdmin`):
+* **Asunto:** `PDF FINAL LISTO - Contrato Original de Arrendamiento - [ID_REGISTRO]`
+* **Título HTML:** `Contrato Original Definitivo Generado`
+* **Mensaje Principal:** *"El contrato de arrendamiento <strong>[ID]</strong> ha sido aprobado por todas las partes y el documento ORIGINAL en PDF ha sido generado exitosamente."*
+* **Mensaje Secundario:** *"El documento adjunto está listo para ser subido a la plataforma de firmas electrónicas (VíaFirma)."*
+* **Adjunto:** `Contrato_[Tipo]_[Nombre]_[ID].pdf` (Archivo PDF).
+* **Botón:** `[ VER PDF ORIGINAL EN DRIVE ]`
+
+##### B. Correo a los Clientes (Inquilino, Propietario, Codeudores):
+* **Asunto:** `Contrato Original Aprobado - Listo para Firma Electrónica: [ID_REGISTRO]`
+* **Título HTML:** `Contrato Original Definitivo Listo para Firma`
+* **Mensaje Principal:** *"El contrato de arrendamiento <strong>[ID]</strong> ha sido aprobado por todas las partes y el documento definitivo ha sido generado exitosamente en formato PDF Original."*
+* **Mensaje Secundario:** *"Por favor esté atento a su bandeja de entrada. Muy pronto recibirá el correo oficial de la plataforma de firmas electrónicas para proceder con la firma digital del documento."*
+
+#### 🛑 Cierre Definitivo de UI (`panel_validacion.html`):
+* **Transición Final:**
+  * `ESTADO DEL INMUEBLE`: `"CONTRATO ORIGINAL GENERADO"`
+  * `ESTADO DOCUMENTAL`: `"COMPLETED"`
+  * `DETALLES DEL ESTADO DEL INMUEBLE`: `"✅ PDF Final generado. ID: [FileID]"`
+* **Auto-Apagado de UI:** `google.script.host.close()` destruye automáticamente el Sidebar en Google Sheets, manteniendo limpia la bandeja de entrada del administrador.
+
+---
+
+## 📊 5. Tabla Maestra de Seguimiento de Estados en Google Sheets
+
+| # | Etapa / Evento | `ESTADO DEL INMUEBLE` | `ESTADO DOCUMENTAL` | `DETALLES DEL ESTADO DEL INMUEBLE` | Reembolso MP |
+| :-: | :--- | :--- | :--- | :--- | :-: |
+| **0** | Registro Inicial | `DISPONIBLE` / `REGISTRANDO` | `PENDIENTE` | `Inmueble habilitado para inicio de trámites` | N/A |
+| **1** | Disparador Inicial | `SOLICITUD ENVIADA AL INQUILINO` | `PENDIENTE` | `⏳ Esperando registro y documentación del inquilino` | Evalúa 48h |
+| **2** | Formulario Inquilino & Pago | `SOLICITUD ENVIADA AL INQUILINO` | `INQ_SUBMITTED` | `📄 Formulario de inquilino diligenciado. Pendiente validación` | Evalúa 48h |
+| **3** | Validación Inquilino | `SOLICITUD ENVIADA AL PROPIETARIO` | `INQ_VALIDATED` | `✅ Documentos del inquilino aprobados. Pendiente formulario propietario` | Evalúa 48h |
+| **4** | Formulario Propietario | `SOLICITUD ENVIADA AL PROPIETARIO` | `PROP_SUBMITTED` | `📄 Formulario del propietario diligenciado. Pendiente validación` | Evalúa 48h |
+| **5** | Validación Propietario | `READY_CONTRACT` | `READY_CONTRACT` | `🟢 Inquilino y Propietario validados. Listo para generar contrato.` | **BLOQUEADO** |
+| **6** | Generar Borrador | **`CONTRATO GENERADO`** | `CONTRACT_GENERATED` | `📝 Borrador generado (Arrendamiento). ID: [DocID]` | **BLOQUEADO** |
+| **7** | Enviar a Revisión | **`CONTRATO EN REVISION`** | `CONTRACT_REVIEW` | `📧 Enviado a las partes para revisión y aprobación.` | **BLOQUEADO** |
+| **8** | Objeción de Partes | **`EN REVISION`** | `PROP_CORRECTION` | `⚠️ Corrección solicitada por [Rol]: [Observaciones]` | **BLOQUEADO** |
+| **9** | Aprobación Total | **`CONTRATO APROBADO POR TODAS LAS PARTES`** | `CONTRACT_FINAL` | `✅ Contrato aprobado por todas las partes.` | **BLOQUEADO** |
+| **10**| PDF Original Final | **`CONTRATO ORIGINAL GENERADO`** | `COMPLETED` | `✅ PDF Final generado. ID: [FileID]` | **BLOQUEADO** |
+
+---
+
+## 📁 6. Jerarquía Dinámica de Carpetas en Google Drive
+
+📂 **[CARPETA PRINCIPAL DE INMUEBLES]**  
+ └─ 📂 **`REG_[FECHA]_[DIRECCION]`** (Carpeta del Inmueble)  
+     └─ 📂 **`ENTREGAS DEL INMUEBLE`**  
+         └─ 📂 **`2026`** (Año en curso)  
+             └─ 📂 **`DOCUMENTOS DE ENTREGA - INQUILINO`**  
+                 └─ 📂 **`2- CONTRATO DE ARRENDAMIENTO`**  
+                     ├─ 📄 `Borrador_Contrato_Arrendamiento_CL500666` (GDoc editable)  
+                     └─ 📄 `Contrato_Arrendamiento_CL500666_FINAL.pdf` (PDF Original inmodificable)
+
+---
+**Fin del Manual Maestro - E-FirmaContrata v3.1**
