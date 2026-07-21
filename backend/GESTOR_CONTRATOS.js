@@ -1519,6 +1519,15 @@ function actualizarEstadoContrato(cdr, estado, detalles) {
     const idRegCol = headers.indexOf('ID DE REGISTRO') + 1;
     const estadoCol = headers.indexOf('ESTADO DEL INMUEBLE') + 1;
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+    const estadoDocCol = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+
+    // Mapeo automático a ESTADO DOCUMENTAL
+    let estadoDocValor = null;
+    const estadoUpper = String(estado).toUpperCase();
+    if (estadoUpper.includes('GENERADO') && !estadoUpper.includes('ORIGINAL')) estadoDocValor = 'CONTRACT_GENERATED';
+    else if (estadoUpper.includes('REVISION') || estadoUpper.includes('ENVIADO')) estadoDocValor = 'CONTRACT_REVIEW';
+    else if (estadoUpper.includes('APROBADO')) estadoDocValor = 'CONTRACT_FINAL';
+    else if (estadoUpper.includes('ORIGINAL')) estadoDocValor = 'COMPLETED';
 
     for (let i = 2; i <= lastRow; i++) {
       const valorCDR = cdrCol > 0 ? sheet.getRange(i, cdrCol).getValue() : null;
@@ -1531,7 +1540,10 @@ function actualizarEstadoContrato(cdr, estado, detalles) {
         if (detallesCol > 0) {
           sheet.getRange(i, detallesCol).setValue(detalles);
         }
-        Logger.log(`Estado actualizado para CDR/ID ${cdr}: ${estado}`);
+        if (estadoDocCol > 0 && estadoDocValor) {
+          sheet.getRange(i, estadoDocCol).setValue(estadoDocValor);
+        }
+        Logger.log(`Estado actualizado para CDR/ID ${cdr}: ${estado} (Doc: ${estadoDocValor})`);
         break;
       }
     }
