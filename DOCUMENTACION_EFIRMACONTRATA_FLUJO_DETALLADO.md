@@ -195,25 +195,25 @@ necesitamos que complete el formulario con sus datos y documentos.
 #### 5.2 Correos Enviados a las Partes
 
 ##### A. Email al Inquilino (`enviarEmailRevisionInquilino`):
-* **Asunto:** `Contrato de Arrendamiento para Revisión - [ID_REGISTRO]`
-* **Título HTML:** `Contrato Listo para Revisión como Inquilino`
+* **Asunto:** `Borrador del Contrato de Arrendamiento para Revisión - [ID_REGISTRO]`
+* **Título HTML:** `Borrador del Contrato Listo para Revisión como Inquilino`
 * **Mensaje Principal:** *"El borrador de su contrato de arrendamiento está listo. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, aprobar el documento o solicitar cambios."*
 * **Mensaje Secundario:** *"Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas."*
-* **Botón:** `[ REVISAR Y VALIDAR CONTRATO ]` -> Enlaza a `validador-de-contratos.html?cdr=ID&rol=inquilino`
+* **Botón:** `[ REVISAR Y VALIDAR BORRADOR DEL CONTRATO ]` -> Enlaza a `validador-de-contratos.html?cdr=ID&rol=inquilino`
 
 ##### B. Email al Propietario (`enviarEmailRevisionPropietario`):
-* **Asunto:** `Contrato de Arrendamiento para Revisión - [ID_REGISTRO]`
-* **Título HTML:** `Contrato Listo para Revisión como Propietario`
-* **Mensaje Principal:** *"El contrato de arrendamiento de su propiedad está listo para revisión. Por favor, ingrese a nuestro portal de validación transparente y verifique que todos los términos sean correctos."*
+* **Asunto:** `Borrador del Contrato de Arrendamiento para Revisión - [ID_REGISTRO]`
+* **Título HTML:** `Borrador del Contrato Listo para Revisión como Propietario`
+* **Mensaje Principal:** *"El borrador del contrato de arrendamiento de su propiedad está listo para revisión. Por favor, ingrese a nuestro portal de validación transparente y verifique que todos los términos sean correctos."*
 * **Mensaje Secundario:** *"Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas."*
-* **Botón:** `[ REVISAR Y VALIDAR CONTRATO ]` -> Enlaza a `validador-de-contratos.html?cdr=ID&rol=propietario`
+* **Botón:** `[ REVISAR Y VALIDAR BORRADOR DEL CONTRATO ]` -> Enlaza a `validador-de-contratos.html?cdr=ID&rol=propietario`
 
 ##### C. Email al Codeudor (`enviarEmailRevisionCodeudor`):
-* **Asunto:** `Contrato de Arrendamiento - Codeudor - [ID_REGISTRO]`
-* **Título HTML:** `Contrato Listo para Revisión como Codeudor`
-* **Mensaje Principal:** *"Ha sido designado como codeudor en un contrato de arrendamiento. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, sus responsabilidades y aprobar el documento."*
+* **Asunto:** `Borrador del Contrato de Arrendamiento - Codeudor - [ID_REGISTRO]`
+* **Título HTML:** `Borrador del Contrato Listo para Revisión como Codeudor`
+* **Mensaje Principal:** *"Ha sido designado como codeudor en un contrato de arrendamiento. Por favor, ingrese a nuestro portal de validación transparente para revisar el borrador del contrato, sus responsabilidades y aprobar el documento."*
 * **Mensaje Secundario:** *"Como codeudor, usted responde solidariamente por el pago del canon y garantiza el cumplimiento del contrato. Nuestro sistema registrará su aprobación en la bitácora del contrato."*
-* **Botón:** `[ REVISAR Y ACEPTAR CODEUDORÍA ]` -> Enlaza a `validador-de-contratos.html?cdr=ID&rol=codeudor`
+* **Botón:** `[ REVISAR Y VALIDAR BORRADOR DEL CONTRATO ]` -> Enlaza a `validador-de-contratos.html?cdr=ID&rol=codeudor`
 
 #### 5.3 Interacción en `validador-de-contratos.html`
 * Renderiza el visor embebido de Google Docs.

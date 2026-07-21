@@ -1257,15 +1257,15 @@ function obtenerEstadosAprobacion(cdr) {
  */
 function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAprobacion) {
   const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-  const asunto = `Contrato de Arrendamiento para Revisión - ${displayId}`;
+  const asunto = `Borrador del Contrato de Arrendamiento para Revisión - ${displayId}`;
 
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
-  tpl.TITULO = 'Contrato Listo para Revisión como Inquilino';
+  tpl.TITULO = 'Borrador del Contrato Listo para Revisión como Inquilino';
   tpl.NOMBRE_CLIENTE = nombre;
   tpl.MENSAJE_PRINCIPAL = 'El borrador de su contrato de arrendamiento está listo. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, aprobar el documento o solicitar cambios.';
   tpl.MENSAJE_SECUNDARIO = 'Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas.';
   tpl.URL_ACCION = urlAprobacion;
-  tpl.TEXTO_BOTON = 'Revisar y Validar Contrato';
+  tpl.TEXTO_BOTON = 'Revisar y Validar Borrador del Contrato';
 
   const htmlBody = tpl.evaluate().getContent();
 
@@ -1283,15 +1283,15 @@ function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAproba
  */
 function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlAprobacion) {
   const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-  const asunto = `Contrato de Arrendamiento para Revisión - ${displayId}`;
+  const asunto = `Borrador del Contrato de Arrendamiento para Revisión - ${displayId}`;
 
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
-  tpl.TITULO = 'Contrato Listo para Revisión como Propietario';
+  tpl.TITULO = 'Borrador del Contrato Listo para Revisión como Propietario';
   tpl.NOMBRE_CLIENTE = nombre;
-  tpl.MENSAJE_PRINCIPAL = 'El contrato de arrendamiento de su propiedad está listo para revisión. Por favor, ingrese a nuestro portal de validación transparente y verifique que todos los términos sean correctos.';
+  tpl.MENSAJE_PRINCIPAL = 'El borrador del contrato de arrendamiento de su propiedad está listo para revisión. Por favor, ingrese a nuestro portal de validación transparente y verifique que todos los términos sean correctos.';
   tpl.MENSAJE_SECUNDARIO = 'Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas.';
   tpl.URL_ACCION = urlAprobacion;
-  tpl.TEXTO_BOTON = 'Revisar y Validar Contrato';
+  tpl.TEXTO_BOTON = 'Revisar y Validar Borrador del Contrato';
 
   const htmlBody = tpl.evaluate().getContent();
 
@@ -1309,15 +1309,15 @@ function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlApro
  */
 function enviarEmailRevisionCodeudor(email, nombre, cdr, urlContrato, urlAprobacion) {
   const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-  const asunto = `Contrato de Arrendamiento - Codeudor - ${displayId}`;
+  const asunto = `Borrador del Contrato de Arrendamiento - Codeudor - ${displayId}`;
 
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
-  tpl.TITULO = 'Contrato Listo para Revisión como Codeudor';
+  tpl.TITULO = 'Borrador del Contrato Listo para Revisión como Codeudor';
   tpl.NOMBRE_CLIENTE = nombre;
-  tpl.MENSAJE_PRINCIPAL = 'Ha sido designado como codeudor en un contrato de arrendamiento. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, sus responsabilidades y aprobar el documento.';
+  tpl.MENSAJE_PRINCIPAL = 'Ha sido designado como codeudor en un contrato de arrendamiento. Por favor, ingrese a nuestro portal de validación transparente para revisar el borrador del contrato, sus responsabilidades y aprobar el documento.';
   tpl.MENSAJE_SECUNDARIO = 'Como codeudor, usted responde solidariamente por el pago del canon y garantiza el cumplimiento del contrato. Nuestro sistema registrará su aprobación en la bitácora del contrato.';
   tpl.URL_ACCION = urlAprobacion;
-  tpl.TEXTO_BOTON = 'Revisar y Aceptar Codeudoría';
+  tpl.TEXTO_BOTON = 'Revisar y Validar Borrador del Contrato';
 
   const htmlBody = tpl.evaluate().getContent();
 
