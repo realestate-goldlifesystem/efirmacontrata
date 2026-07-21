@@ -104,10 +104,12 @@ function auditorDeContratosVencidos() {
     const sheetInmuebles = ss.getSheetByName('1.1 - INMUEBLES REGISTRADOS');
     if (!sheetPagos || !sheetInmuebles) return;
 
-    // Obtener headers de la hoja de inmuebles para encontrar la columna de CDR y ESTADO DOCUMENTAL
+    // Obtener headers de la hoja de inmuebles para encontrar las columnas de CDR y ESTADOS
     const headersInmuebles = sheetInmuebles.getRange(1, 1, 1, sheetInmuebles.getLastColumn()).getValues()[0];
     const colCdrInmuebles = headersInmuebles.indexOf('CODIGO DE REGISTRO');
+    const colEstadoInmuebles = headersInmuebles.indexOf('ESTADO DEL INMUEBLE');
     const colEstadoDocInmuebles = headersInmuebles.indexOf('ESTADO DOCUMENTAL');
+    const colDetallesInmuebles = headersInmuebles.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
     const dataInmuebles = sheetInmuebles.getDataRange().getValues();
 
     const dataPagos = sheetPagos.getDataRange().getValues();
@@ -115,8 +117,9 @@ function auditorDeContratosVencidos() {
 
     // Estados seguros (donde NO se debe reembolsar)
     const estadosSeguros = [
-      'READY_CONTRACT', 'CONTRACT_GENERATED', 
-      'CONTRACT_REVIEW', 'CONTRACT_FINAL', 'COMPLETED'
+      'READY_CONTRACT', 'CONTRACT_GENERATED', 'CONTRACT_REVIEW', 'CONTRACT_FINAL', 'COMPLETED',
+      'CONTRATO GENERADO', 'CONTRATO EN REVISION', 'BORRADOR ENVIADO', 'EN REVISION',
+      'APROBADO', 'CONTRATO APROBADO', 'CONTRATO ORIGINAL GENERADO', 'PROP_VALIDATED'
     ];
 
     for (let i = 1; i < dataPagos.length; i++) {
@@ -130,18 +133,26 @@ function auditorDeContratosVencidos() {
         const minutesDiff = (now - fechaPago) / (1000 * 60);
         
         if (minutesDiff >= 2880) { // 48 horas (48 * 60 minutos)
-          // Buscar el estado documental del CDR en la hoja de inmuebles
-          let estadoDocumental = '';
+          // Buscar el estado del CDR en la hoja de inmuebles revisando todas las columnas relevantes
+          let esEstadoSeguro = false;
           for (let j = 1; j < dataInmuebles.length; j++) {
-            if (colCdrInmuebles !== -1 && dataInmuebles[j][colCdrInmuebles] === cdr) {
-              estadoDocumental = dataInmuebles[j][colEstadoDocInmuebles] || '';
+            if (colCdrInmuebles !== -1 && String(dataInmuebles[j][colCdrInmuebles]).trim() === String(cdr).trim()) {
+              const valEstado = colEstadoInmuebles !== -1 ? String(dataInmuebles[j][colEstadoInmuebles] || '').toUpperCase() : '';
+              const valEstadoDoc = colEstadoDocInmuebles !== -1 ? String(dataInmuebles[j][colEstadoDocInmuebles] || '').toUpperCase() : '';
+              const valDetalles = colDetallesInmuebles !== -1 ? String(dataInmuebles[j][colDetallesInmuebles] || '').toUpperCase() : '';
+
+              const textoCombinado = `${valEstado} | ${valEstadoDoc} | ${valDetalles}`;
+
+              // Verificar si alguno de los estados seguros está presente en las columnas
+              esEstadoSeguro = estadosSeguros.some(st => textoCombinado.includes(st)) ||
+                               textoCombinado.includes('CONTRATO') ||
+                               textoCombinado.includes('BORRADOR');
               break;
             }
           }
 
-          // Si el estado NO es uno de los seguros, se asume que el propietario o admin no terminaron el proceso.
-          // Por lo tanto, se activa la Garantía de Satisfacción 100%.
-          if (!estadosSeguros.includes(estadoDocumental)) {
+          // Si el estado NO es uno de los seguros, se asume que no terminaron el proceso.
+          if (!esEstadoSeguro) {
             // Reembolsar usando MP API
             const url = 'https://api.mercadopago.com/v1/payments/' + paymentId + '/refunds';
             const options = {
