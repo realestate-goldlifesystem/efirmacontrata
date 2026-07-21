@@ -37,11 +37,27 @@ flowchart TD
     D --> E["5. panel_validacion.html (Sidebar Admin)"]
     E --> F["6. validador-de-contratos.html (Bitácora de Partes)"]
     F --> G["7. Generación PDF Original + Cierre UI"]
-```
+## 📊 4. Tabla Maestra de Seguimiento de Estados en Google Sheets
+
+A continuación se detalla el valor exacto que adquiere la columna **`ESTADO DEL INMUEBLE`** (junto a `ESTADO DOCUMENTAL` y `DETALLES DEL ESTADO DEL INMUEBLE`) durante cada fase y formulario del proceso:
+
+| Paso / Fase | Evento / Acción | `ESTADO DEL INMUEBLE` | `ESTADO DOCUMENTAL` | `DETALLES DEL ESTADO DEL INMUEBLE` |
+| :--- | :--- | :--- | :--- | :--- |
+| **0. Inicio** | Registro del Inmueble | `DISPONIBLE` / `REGISTRANDO` | `PENDIENTE` | `Inmueble habilitado para inicio de trámites` |
+| **1. Disparador Inicial** | Admin selecciona `ESTUDIO APROBADO` y confirma popup (`popup_email_inquilino.html`) | `SOLICITUD ENVIADA AL INQUILINO` | `PENDIENTE` | `⏳ Esperando registro y documentación del inquilino` |
+| **2. Formulario Inquilino** | Inquilino realiza pago en Mercado Pago y sube sus datos en `formulario-inquilino.html` | `SOLICITUD ENVIADA AL INQUILINO` | `INQ_SUBMITTED` | `📄 Formulario de inquilino diligenciado. Pendiente validación` |
+| **3. Validación Inquilino** | Admin aprueba al inquilino desde `panel_validacion.html` | `SOLICITUD ENVIADA AL PROPIETARIO` | `INQ_VALIDATED` | `✅ Documentos del inquilino aprobados. Pendiente formulario propietario` |
+| **4. Formulario Propietario** | Propietario sube sus datos y certificado en `formulario-propietario.html` | `SOLICITUD ENVIADA AL PROPIETARIO` | `PROP_SUBMITTED` | `📄 Formulario del propietario diligenciado. Pendiente validación` |
+| **5. Validación Propietario** | Admin aprueba al propietario en `panel_validacion.html` | `READY_CONTRACT` | `READY_CONTRACT` | `🟢 Inquilino y Propietario validados. Listo para generar contrato.` |
+| **6. Generar Borrador** | Admin presiona "📝 Generar Borrador" (`generarContrato(cdr, 'Borrador')`) | **`CONTRATO GENERADO`** | `CONTRACT_GENERATED` | `📝 Borrador generado (Arrendamiento). ID: [DocID]` |
+| **7. Enviar a Revisión** | Admin presiona "📧 Enviar Borrador" (`enviarBorradorAValidar(cdr)`) | **`CONTRATO EN REVISION`** | `CONTRACT_REVIEW` | `📧 Enviado a las partes para revisión y aprobación.` |
+| **8. Objeción Partes** | Alguna de las partes solicita cambios desde `validador-de-contratos.html` | **`EN REVISION`** / **`CORRECCION`** | `PROP_CORRECTION` / `INQ_CORRECTION` | `⚠️ Corrección solicitada por [Rol]: [Observaciones]` |
+| **9. Aprobación Partes** | Inquilino, Propietario y Codeudores aprueban en `validador-de-contratos.html` | **`CONTRATO APROBADO POR TODAS LAS PARTES`** | `CONTRACT_FINAL` | `✅ Contrato aprobado por todas las partes.` |
+| **10. PDF Final** | Admin presiona "🔏 Generar Original" (`generarContrato(cdr, 'Original')`) | **`CONTRATO ORIGINAL GENERADO`** | `COMPLETED` | `✅ PDF Final generado. ID: [FileID]` |
 
 ---
 
-## 🔀 3. Desglose Exhaustivo Paso a Paso
+## 🔀 5. Desglose Exhaustivo Paso a Paso
 
 ---
 
