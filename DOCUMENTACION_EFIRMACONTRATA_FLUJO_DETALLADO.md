@@ -181,9 +181,16 @@ necesitamos que complete el formulario con sus datos y documentos.
 #### 5.1 Despacho a Revisión
 * **Botón en Panel:** `<button onclick="enviarBorrador(...)">📧 Enviar Borrador a las Partes</button>`
 * **Función Backend:** `enviarBorradorAValidar(cdr, comentario_admin)`
-* **Transición de Estados en Google Sheets:**
+* **Actualización Sincronizada en Google Sheets (`1.1 - INMUEBLES REGISTRADOS`):**
   * **`ESTADO DEL INMUEBLE`**: `"CONTRATO EN REVISION"`
+  * **`ESTADO DOCUMENTAL`**: `"CONTRACT_REVIEW"`
   * **`DETALLES DEL ESTADO DEL INMUEBLE`**: `"📧 Enviado a las partes para revisión y aprobación."`
+
+> [!IMPORTANT]
+> **🔒 GARANTÍA DE RETENCIÓN DE PAGO Y PROTECCIÓN EN `PAGOS_RECIBIDOS`:**
+> 1. **Pestaña `PAGOS_RECIBIDOS`:** El registro en la fila correspondiente al CDR permanece intacto con su estado en Columna E como `'APROBADO'` (Monto $85.000 COP).
+> 2. **Comportamiento del Auditor (`auditorDeContratosVencidos()`):** Cada vez que se ejecuta el cron de 48 horas, consulta los 3 campos del inmueble. Al detectar la combinación (`CONTRATO EN REVISION` / `CONTRACT_REVIEW` / `📧 Enviado a las partes...`), la variable `esEstadoSeguro` toma el valor de `TRUE`.
+> 3. **Bloqueo del Reembolso:** Al ser `esEstadoSeguro = TRUE`, el bloque de código de devolución API de Mercado Pago se omite por completo. El dinero queda **definitivamente consolidado para Gold Life System**, ya que el servicio contratado (estudio + generación del borrador + envío a validación) fue cumplido satisfactoriamente.
 
 #### 5.2 Correos Enviados a las Partes
 
