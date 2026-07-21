@@ -1441,38 +1441,41 @@ function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
 /**
  * Enviar el PDF original al correo del administrador y de las partes
  */
+/**
+ * Enviar el PDF original al correo del administrador y de las partes
+ */
 function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
   try {
     const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-    const asunto = `PDF FINAL LISTO - Contrato ${displayId}`;
+    const asuntoAdmin = `PDF FINAL LISTO - Contrato Original de Arrendamiento ${displayId}`;
 
     const datosResult = recopilarDatosContrato(cdr);
     const datos = datosResult.success ? datosResult.data : null;
 
     // --- HTML PARA EL ADMINISTRADOR ---
     const tplAdmin = HtmlService.createTemplateFromFile('backend/email_notificacion');
-    tplAdmin.TITULO = 'Contrato Definitivo Generado';
+    tplAdmin.TITULO = 'Contrato Original Definitivo Generado';
     tplAdmin.NOMBRE_CLIENTE = 'Equipo GoldLife';
     tplAdmin.MENSAJE_PRINCIPAL = `El contrato de arrendamiento <strong>${displayId}</strong> ha sido aprobado por todas las partes y el documento ORIGINAL en PDF ha sido generado exitosamente.`;
     tplAdmin.MENSAJE_SECUNDARIO = 'El documento adjunto está listo para ser subido a la plataforma de firmas electrónicas (VíaFirma).';
     tplAdmin.URL_ACCION = urlPdf;
-    tplAdmin.TEXTO_BOTON = 'Ver PDF en Drive';
+    tplAdmin.TEXTO_BOTON = 'Ver PDF Original en Drive';
     const htmlBodyAdmin = tplAdmin.evaluate().getContent();
 
     const adminEmail = 'realestate.goldlifesystem@gmail.com';
     MailApp.sendEmail({
         to: adminEmail,
-        subject: asunto,
+        subject: asuntoAdmin,
         htmlBody: htmlBodyAdmin,
         attachments: [pdfBlob.setName(`${nombreContrato}.pdf`)]
     });
 
     // --- HTML PARA LOS CLIENTES (Sin PDF, sin botón) ---
     const tplClientes = HtmlService.createTemplateFromFile('backend/email_notificacion');
-    tplClientes.TITULO = 'Contrato Definitivo Generado';
-    tplClientes.NOMBRE_CLIENTE = 'Cliente';
-    tplClientes.MENSAJE_PRINCIPAL = `El contrato de arrendamiento <strong>${displayId}</strong> ha sido aprobado por todas las partes y el documento definitivo ha sido generado exitosamente.`;
-    tplClientes.MENSAJE_SECUNDARIO = 'Por favor esté atento a su bandeja de entrada. Muy pronto recibirá un correo oficial de la plataforma de firmas electrónicas para proceder con la firma digital del documento.';
+    tplClientes.TITULO = 'Contrato Original Definitivo Listo para Firma';
+    tplClientes.NOMBRE_CLIENTE = 'Estimado Cliente';
+    tplClientes.MENSAJE_PRINCIPAL = `El contrato de arrendamiento <strong>${displayId}</strong> ha sido aprobado por todas las partes y el documento definitivo ha sido generado exitosamente en formato PDF Original.`;
+    tplClientes.MENSAJE_SECUNDARIO = 'Por favor esté atento a su bandeja de entrada. Muy pronto recibirá el correo oficial de la plataforma de firmas electrónicas para proceder con la firma digital del documento.';
     tplClientes.URL_ACCION = ''; 
     tplClientes.TEXTO_BOTON = ''; 
     const htmlBodyClientes = tplClientes.evaluate().getContent();
@@ -1491,7 +1494,7 @@ function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
     emailsClientes.forEach(email => {
         MailApp.sendEmail({
             to: email,
-            subject: `Contrato Aprobado - Esperando Firma: ${displayId}`,
+            subject: `Contrato Original Aprobado - Listo para Firma Electrónica: ${displayId}`,
             htmlBody: htmlBodyClientes
         });
     });

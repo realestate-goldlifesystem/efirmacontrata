@@ -243,16 +243,19 @@ necesitamos que complete el formulario con sus datos y documentos.
 #### 6.2 Correos de Cierre y Despacho
 
 ##### A. Correo al Administrador (`enviarEmailFinalAdmin`):
-* **Asunto:** `PDF FINAL LISTO - Contrato [ID_REGISTRO]`
-* **Título HTML:** `Contrato Definitivo Generado`
-* **Mensaje:** *"El contrato de arrendamiento [ID] ha sido aprobado por todas las partes y el documento ORIGINAL en PDF ha sido generado exitosamente. El documento adjunto está listo para ser subido a VíaFirma."*
-* **Adjunto:** `Contrato_[Tipo]_[Nombre]_[ID].pdf` (Archivo PDF).
-* **Botón:** `[ VER PDF EN DRIVE ]`
+* **Asunto:** `PDF FINAL LISTO - Contrato Original de Arrendamiento - [ID_REGISTRO]`
+* **Título HTML:** `Contrato Original Definitivo Generado`
+* **Mensaje Principal:** *"El contrato de arrendamiento <strong>[ID]</strong> ha sido aprobado por todas las partes y el documento ORIGINAL en PDF ha sido generado exitosamente."*
+* **Mensaje Secundario:** *"El documento adjunto está listo para ser subido a la plataforma de firmas electrónicas (VíaFirma)."*
+* **Adjunto:** `Contrato_[Tipo]_[Nombre]_[ID].pdf` (Archivo PDF binario).
+* **Botón:** `[ VER PDF ORIGINAL EN DRIVE ]`
 
 ##### B. Correo a los Clientes (Inquilino, Propietario, Codeudores):
-* **Asunto:** `Contrato Aprobado - Esperando Firma: [ID_REGISTRO]`
-* **Título HTML:** `Contrato Definitivo Generado`
-* **Mensaje:** *"El contrato de arrendamiento [ID] ha sido aprobado por todas las partes y el documento definitivo ha sido generado exitosamente. Por favor esté atento a su bandeja de entrada. Muy pronto recibirá un correo oficial de la plataforma de firmas electrónicas para proceder con la firma digital del documento."*
+* **Asunto:** `Contrato Original Aprobado - Listo para Firma Electrónica: [ID_REGISTRO]`
+* **Título HTML:** `Contrato Original Definitivo Listo para Firma`
+* **Mensaje Principal:** *"El contrato de arrendamiento <strong>[ID]</strong> ha sido aprobado por todas las partes y el documento definitivo ha sido generado exitosamente en formato PDF Original."*
+* **Mensaje Secundario:** *"Por favor esté atento a su bandeja de entrada. Muy pronto recibirá el correo oficial de la plataforma de firmas electrónicas para proceder con la firma digital del documento."*
+* **Botón / Adjunto:** Sin adjunto ni botón (notificación oficial para firma).
 
 #### 6.3 Cierre Definitivo de Interfaz
 * **Transición Final de Estado en Google Sheets:**
