@@ -23,7 +23,7 @@ function ejecutarAgenteCaptador() {
     if (!githubToken) {
       ui.alert(
         '⚠️ Falta Configurar Token de GitHub',
-        'No se encontró la propiedad "GITHUB_PAT" en las Propiedades del Script.\n\nPor favor configúrala en Extensiones > Apps Script > Configuración del proyecto > Propiedades del script.',
+        'No se encontró la propiedad "GITHUB_PAT" en las Propiedades del Script.\n\nPor favor agregue la propiedad GITHUB_PAT en Extensiones > Apps Script > Configuración del proyecto > Propiedades del script.',
         ui.ButtonSet.OK
       );
       return;
