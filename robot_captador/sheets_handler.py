@@ -75,7 +75,12 @@ class SheetsHandler:
         return text.lower().strip()
 
     def load_existing_data(self):
-        """Lee la pestaña correspondiente, mapea columnas por nombre, desduplica y halla la ÚLTIMA fila al final."""
+        """
+        Lee la pestaña correspondiente:
+        - Fila 1: Nombres de columnas (Mapeo)
+        - Fila 2: Filtro (Reservado y omitido)
+        - Fila 3+: Datos reales (Escribir siempre al final)
+        """
         range_name = f"'{self.sheet_title}'!A1:Z3000"
         result = self.service.values().get(
             spreadsheetId=self.spreadsheet_id, range=range_name
@@ -84,7 +89,7 @@ class SheetsHandler:
         rows = result.get("values", [])
         print(f"[INFO] Cargas de Google Sheets ('{self.sheet_title}'): {len(rows)} filas leídas.")
 
-        # 1. Mapear nombres de columnas a sus índices (base 0)
+        # 1. Mapear nombres de columnas a sus índices (base 0) desde la Fila 1
         self.col_map = {}
         if rows:
             header_row = rows[0]
@@ -102,11 +107,11 @@ class SheetsHandler:
         col_celular = get_col("celular") if get_col("celular") is not None else 2
         col_link = get_col("link del inmueble publicado") if get_col("link del inmueble publicado") is not None else 5
 
-        last_row_with_data = 1 # Empezar en la fila de encabezados
+        last_row_with_data = 2 # Fila 2 reservada para Filtro
         last_row_data_n = 0
 
         for idx, row in enumerate(rows, start=1):
-            if idx <= 1: # Omitir encabezado (fila 1)
+            if idx <= 2: # Omitir Fila 1 (Nombres) y Fila 2 (Filtro)
                 continue
 
             val_a = row[col_n].strip() if len(row) > col_n and row[col_n] else ""
@@ -128,12 +133,12 @@ class SheetsHandler:
                     if num_a > last_row_data_n:
                         last_row_data_n = num_a
 
-        # Escribir SIEMPRE al final de la tabla
-        self.target_row_index = last_row_with_data + 1
+        # Escribir SIEMPRE a partir de la Fila 3 al final de la tabla
+        self.target_row_index = max(3, last_row_with_data + 1)
         self.max_n = last_row_data_n
 
         print(f"[INFO] Registros existentes en '{self.sheet_title}': {len(self.existing_phones)} teléfonos, {len(self.existing_links)} links.")
-        print(f"[INFO] Última fila con datos: {last_row_with_data} (Último n: {self.max_n}). Próxima fila a escribir: Fila {self.target_row_index}")
+        print(f"[INFO] Última fila ocupada con datos: {last_row_with_data} (Último n: {self.max_n}). Próxima fila a escribir: Fila {self.target_row_index}")
 
     def is_duplicate(self, phone, link):
         """Verifica si el teléfono o el link ya fueron procesados previamente."""
@@ -146,7 +151,7 @@ class SheetsHandler:
 
     def append_captacion(self, captacion_data):
         """
-        Inserta un nuevo registro siempre al final de la tabla respetando el consecutivo n.
+        Inserta un nuevo registro a partir de la Fila 3 en adelante.
         """
         phone = captacion_data.get("phone", "")
         link = captacion_data.get("link", "")
@@ -209,6 +214,6 @@ class SheetsHandler:
         return True
 
 if __name__ == "__main__":
-    print("[TEST] Probando SheetsHandler append al final...")
+    print("[TEST] Probando SheetsHandler omitiendo Fila 1 (Nombres) y Fila 2 (Filtro)...")
     handler = SheetsHandler(mode="arriendo")
     print("[TEST] Lectura y cálculo de fila final exitoso.")
