@@ -195,12 +195,25 @@ class SheetsHandler:
             "values": [row_data]
         }
 
-        self.service.values().update(
-            spreadsheetId=self.spreadsheet_id,
-            range=range_to_update,
-            valueInputOption="USER_ENTERED",
-            body=body
-        ).execute()
+        try:
+            self.service.values().update(
+                spreadsheetId=self.spreadsheet_id,
+                range=range_to_update,
+                valueInputOption="USER_ENTERED",
+                body=body
+            ).execute()
+        except Exception as e:
+            if "exceeds grid limits" in str(e):
+                print(f"[WARN] Límite de filas alcanzado en la fila {self.target_row_index}. Expandiendo el Sheet automáticamente...")
+                self.service.values().append(
+                    spreadsheetId=self.spreadsheet_id,
+                    range=f"'{self.sheet_title}'!A1",
+                    valueInputOption="USER_ENTERED",
+                    insertDataOption="INSERT_ROWS",
+                    body=body
+                ).execute()
+            else:
+                raise e
 
         print(f"[OK] REGISTRO GUARDADO EN GOOGLE SHEETS ('{self.sheet_title}') [Fila {self.target_row_index} | n: {new_n}] -> {captacion_data.get('owner_name')} | {phone} | {captacion_data.get('location')}")
 
