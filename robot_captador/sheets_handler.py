@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import unicodedata
 from datetime import datetime
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -43,6 +44,15 @@ def get_spanish_date_str():
     year = now.year
     return f"{day}-{month}-{year}"
 
+def col_to_letter(col_idx):
+    """Convierte un índice de columna base-0 a letra de Excel (ej: 0 -> A, 15 -> P, 18 -> S)."""
+    result = ""
+    col_idx += 1
+    while col_idx > 0:
+        col_idx, remainder = divmod(col_idx - 1, 26)
+        result = chr(65 + remainder) + result
+    return result
+
 class SheetsHandler:
     def __init__(self, mode="arriendo"):
         self.mode = str(mode).lower()
@@ -53,13 +63,20 @@ class SheetsHandler:
         self.is_venta = "TRUE" if self.mode == "venta" else "FALSE"
         self.existing_phones = set()
         self.existing_links = set()
+        self.col_map = {}
         self.max_n = 0
         self.target_row_index = None # 1-indexed row position in Sheet
         self.load_existing_data()
 
+    def normalize_header(self, h):
+        if not h:
+            return ""
+        text = unicodedata.normalize('NFD', str(h)).encode('ascii', 'ignore').decode("utf-8")
+        return text.lower().strip()
+
     def load_existing_data(self):
-        """Lee la pestaña correspondiente para desduplicar y hallar la primera fila disponible."""
-        range_name = f"'{self.sheet_title}'!A1:P2000"
+        """Lee la pestaña correspondiente, mapea columnas por nombre y desduplica."""
+        range_name = f"'{self.sheet_title}'!A1:Z2000"
         result = self.service.values().get(
             spreadsheetId=self.spreadsheet_id, range=range_name
         ).execute()
@@ -67,21 +84,38 @@ class SheetsHandler:
         rows = result.get("values", [])
         print(f"[INFO] Cargas de Google Sheets ('{self.sheet_title}'): {len(rows)} filas leídas.")
 
+        # 1. Mapear nombres de columnas a sus índices (base 0)
+        self.col_map = {}
+        if rows:
+            header_row = rows[0]
+            for col_idx, col_name in enumerate(header_row):
+                norm_name = self.normalize_header(col_name)
+                if norm_name:
+                    self.col_map[norm_name] = col_idx
+
+        print(f"[INFO] Columnas mapeadas dinámicamente: {list(self.col_map.keys())}")
+
+        def get_col(name):
+            return self.col_map.get(self.normalize_header(name), None)
+
+        col_n = get_col("n") if get_col("n") is not None else 0
+        col_celular = get_col("celular") if get_col("celular") is not None else 2
+        col_link = get_col("link del inmueble publicado") if get_col("link del inmueble publicado") is not None else 5
+
         first_empty_slot = None
         last_row_data_n = 0
 
         for idx, row in enumerate(rows, start=1):
-            if idx <= 2: # Omitir encabezados (filas 1 y 2)
+            if idx <= 1: # Omitir encabezado (fila 1)
                 continue
 
-            val_a = row[0].strip() if len(row) > 0 and row[0] else ""
-            val_c = row[2].strip() if len(row) > 2 and row[2] else ""
+            val_a = row[col_n].strip() if len(row) > col_n and row[col_n] else ""
+            val_c = row[col_celular].strip() if len(row) > col_celular and row[col_celular] else ""
             cleaned_c = clean_phone(val_c)
             if cleaned_c:
                 self.existing_phones.add(cleaned_c)
 
-            # Extracción de LINK (Col F, índice 5)
-            val_f = row[5].strip() if len(row) > 5 and row[5] else ""
+            val_f = row[col_link].strip() if len(row) > col_link and row[col_link] else ""
             if val_f:
                 self.existing_links.add(val_f.lower())
 
@@ -117,9 +151,7 @@ class SheetsHandler:
 
     def append_captacion(self, captacion_data):
         """
-        Inserta un nuevo registro en la fila correspondiente de la pestaña activa.
-        captacion_data es un dict con los campos extraídos:
-        - phone, link, owner_name, property_type, bedrooms, price, location
+        Inserta un nuevo registro mapeando dinámicamente cada campo a su columna según el nombre.
         """
         phone = captacion_data.get("phone", "")
         link = captacion_data.get("link", "")
@@ -133,24 +165,31 @@ class SheetsHandler:
         new_n = str(self.max_n)
         date_str = get_spanish_date_str()
 
-        # Construcción de la fila de 16 columnas (A a P)
-        row_data = [
-            new_n,                                      # A: n
-            date_str,                                   # B: FECHA DE CONTACTO
-            clean_phone(phone),                        # C: CELULAR
-            self.is_arriendo,                           # D: ARRIENDO
-            self.is_venta,                              # E: VENTA
-            link,                                       # F: LINK DEL INMUEBLE PUBLICADO
-            "NUEVO",                                    # G: ESTADO DE LLAMADA
-            captacion_data.get("property_type", ""),   # H: TIPO DE INMUEBLE
-            captacion_data.get("owner_name", ""),      # I: NOMBRE DEL PROPIETARIO
-            "", "", "", "",                             # J, K, L, M: Detalles seguimiento, Wha, % Oferta A, % Oferta V
-            str(captacion_data.get("bedrooms", "")),   # N: habitaciones
-            captacion_data.get("price", ""),           # O: VALOR DE PROMOCIÓN
-            captacion_data.get("location", "")          # P: UBICACIÓN
-        ]
+        # Construcción dinámica basada en los nombres de columnas
+        max_idx = max(self.col_map.values()) if self.col_map else 18
+        row_data = [""] * (max_idx + 1)
 
-        range_to_update = f"'{self.sheet_title}'!A{self.target_row_index}:P{self.target_row_index}"
+        field_values = {
+            "n": new_n,
+            "fecha de contacto": date_str,
+            "celular": clean_phone(phone),
+            "arriendo": self.is_arriendo,
+            "venta": self.is_venta,
+            "link del inmueble publicado": link,
+            "estado de llamada": "NUEVO",
+            "tipo de inmueble": captacion_data.get("property_type", ""),
+            "nombre del propietario": captacion_data.get("owner_name", ""),
+            "habitaciones": str(captacion_data.get("bedrooms", "")),
+            "valor de promocion": captacion_data.get("price", ""),
+            "ubicacion": captacion_data.get("location", "")
+        }
+
+        for norm_key, val in field_values.items():
+            if norm_key in self.col_map:
+                row_data[self.col_map[norm_key]] = val
+
+        last_col_letter = col_to_letter(max_idx)
+        range_to_update = f"'{self.sheet_title}'!A{self.target_row_index}:{last_col_letter}{self.target_row_index}"
 
         body = {
             "values": [row_data]
@@ -163,7 +202,7 @@ class SheetsHandler:
             body=body
         ).execute()
 
-        print(f"[OK] REGISTRO GUARDADO EN GOOGLE SHEETS [Fila {self.target_row_index} | n: {new_n}] -> {captacion_data.get('owner_name')} | {phone} | {captacion_data.get('location')}")
+        print(f"[OK] REGISTRO GUARDADO EN GOOGLE SHEETS ('{self.sheet_title}') [Fila {self.target_row_index} | n: {new_n}] -> {captacion_data.get('owner_name')} | {phone} | {captacion_data.get('location')}")
 
         # Actualizar memoria interna
         if phone:
@@ -175,6 +214,6 @@ class SheetsHandler:
         return True
 
 if __name__ == "__main__":
-    print("[TEST] Probando SheetsHandler...")
-    handler = SheetsHandler()
-    print("[TEST] Conexión y lectura exitosa de Google Sheets.")
+    print("[TEST] Probando SheetsHandler dinámico...")
+    handler = SheetsHandler(mode="arriendo")
+    print("[TEST] Lectura y mapeo exitoso.")
