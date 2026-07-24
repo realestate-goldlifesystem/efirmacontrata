@@ -56,12 +56,13 @@ def is_natural_person(owner_dict):
     return True, "Calificado como Persona Natural"
 
 class FincaraizScraper:
-    def __init__(self, headless=True, max_items_per_run=30, mode="arriendo"):
+    def __init__(self, headless=True, max_items_per_run=30, mode="arriendo", bedrooms="all"):
         self.headless = headless
         self.max_items_per_run = max_items_per_run
         self.mode = str(mode).lower()
+        self.bedrooms = str(bedrooms).lower()
         self.sheets = SheetsHandler(mode=self.mode)
-        self.target_urls = config.get_target_urls(self.mode)
+        self.target_urls = config.get_target_urls(self.mode, self.bedrooms)
         self.processed_count = 0
 
     def run(self):
@@ -216,25 +217,31 @@ class FincaraizScraper:
 
             # Habitaciones
             bedrooms = listing_data.get("bedrooms", "")
-            if not bedrooms:
+            if not bedrooms or bedrooms == "0":
                 if "1-habitacion" in property_url: bedrooms = "1"
                 elif "2-habitaciones" in property_url: bedrooms = "2"
                 elif "3-habitaciones" in property_url: bedrooms = "3"
                 elif "4-habitaciones" in property_url: bedrooms = "4"
+                elif "5-habitaciones" in property_url: bedrooms = "5"
                 else: bedrooms = "1"
 
             # Ubicación
             locations = listing_data.get("locations", {})
-            zone = locations.get("zone", "")
-            location_name = locations.get("location", "")
-            city = locations.get("city", "Bogotá")
-
-            if zone and location_name:
-                location_str = f"{zone}, {location_name}, {city}"
-            elif location_name:
-                location_str = f"{location_name}, {city}"
+            if isinstance(locations, list) and locations:
+                loc_names = [l.get("name") for l in locations if isinstance(l, dict) and l.get("name")]
+                location_str = ", ".join(loc_names) if loc_names else "Bogotá"
+            elif isinstance(locations, dict):
+                zone = locations.get("zone", "")
+                location_name = locations.get("location", "")
+                city = locations.get("city", "Bogotá")
+                if zone and location_name:
+                    location_str = f"{zone}, {location_name}, {city}"
+                elif location_name:
+                    location_str = f"{location_name}, {city}"
+                else:
+                    location_str = f"{city}"
             else:
-                location_str = f"{city}"
+                location_str = str(locations or "Bogotá")
 
             # 4. Diligenciar Formulario de Contacto
             self.fill_contact_form(page)
@@ -302,8 +309,9 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Robot Captador Fincaraiz")
     parser.add_argument("--mode", choices=["arriendo", "venta"], default="arriendo", help="Modo de captación (arriendo o venta)")
+    parser.add_argument("--bedrooms", default="all", help="Filtro de habitaciones (1, 2, 3, 4, 5, all)")
     parser.add_argument("--max-items", type=int, default=30, help="Límite máximo de inmuebles a captar")
     args = parser.parse_args()
 
-    scraper = FincaraizScraper(headless=True, max_items_per_run=args.max_items, mode=args.mode)
+    scraper = FincaraizScraper(headless=True, max_items_per_run=args.max_items, mode=args.mode, bedrooms=args.bedrooms)
     scraper.run()
