@@ -205,13 +205,27 @@ class SheetsHandler:
         except Exception as e:
             if "exceeds grid limits" in str(e):
                 print(f"[WARN] Límite de filas alcanzado en la fila {self.target_row_index}. Expandiendo el Sheet automáticamente...")
-                self.service.values().append(
-                    spreadsheetId=self.spreadsheet_id,
-                    range=f"'{self.sheet_title}'!A1",
-                    valueInputOption="USER_ENTERED",
-                    insertDataOption="INSERT_ROWS",
-                    body=body
-                ).execute()
+                
+                # 1. Obtener el sheetId numerico
+                spreadsheet_info = self.service.get(spreadsheetId=self.spreadsheet_id).execute()
+                sheet_id = next((s['properties']['sheetId'] for s in spreadsheet_info['sheets'] if s['properties']['title'] == self.sheet_title), None)
+                
+                if sheet_id is not None:
+                    # 2. Agregar 10 filas fisicas al final
+                    self.service.batchUpdate(
+                        spreadsheetId=self.spreadsheet_id,
+                        body={"requests": [{"appendDimension": {"sheetId": sheet_id, "dimension": "ROWS", "length": 10}}]}
+                    ).execute()
+                    
+                    # 3. Re-intentar el update exacto
+                    self.service.values().update(
+                        spreadsheetId=self.spreadsheet_id,
+                        range=range_to_update,
+                        valueInputOption="USER_ENTERED",
+                        body=body
+                    ).execute()
+                else:
+                    raise Exception(f"No se pudo encontrar el sheetId para {self.sheet_title}")
             else:
                 raise e
 
