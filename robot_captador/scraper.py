@@ -154,7 +154,7 @@ class FincaraizScraper:
         try:
             all_hrefs = page.eval_on_selector_all("a[href]", "elements => elements.map(e => e.getAttribute('href'))")
             for h in set(all_hrefs):
-                if h and ("/apartaestudio-en-arriendo" in h or "/apartamento-en-arriendo" in h):
+                if h and ("/apartaestudio-en-" in h or "/apartamento-en-" in h):
                     full_url = h if h.startswith("http") else f"https://www.fincaraiz.com.co{h}"
                     if full_url not in links:
                         links.append(full_url)
