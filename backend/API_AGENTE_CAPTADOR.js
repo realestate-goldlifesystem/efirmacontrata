@@ -30,8 +30,8 @@ function ejecutarAgenteCaptador(modo) {
   template.tipoTexto = tipoTexto;
 
   var html = template.evaluate()
-    .setWidth(440)
-    .setHeight(230);
+    .setWidth(460)
+    .setHeight(215);
 
   ui.showModalDialog(html, '🚀 Agente Captador - Fincaraiz (' + tipoTexto + ')');
 }
