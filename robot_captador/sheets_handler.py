@@ -162,7 +162,7 @@ class SheetsHandler:
             return False
 
         self.max_n += 1
-        new_n = str(self.max_n)
+        new_n = str(self.target_row_index - 1)
         date_str = get_spanish_date_str()
 
         # Construcción dinámica basada en los nombres de columnas
