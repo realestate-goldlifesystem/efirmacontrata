@@ -1,7 +1,7 @@
 import os
 
 # Configuración Base del Robot Captador Fincaraiz
-SPREADSHEET_ID = "15U0fK1tZ0XpT2vVn3f5uL3gS4-xZ7W8v-9K_Y_Z_X_0"  # O el ID configurado
+SPREADSHEET_ID = "1jdPeOqQ2rRQNhlClAnFQFaNMxOl7HCI7oI1yG3_QRZc"  # O el ID configurado
 SERVICE_ACCOUNT_PATH = os.path.join(os.path.dirname(__file__), "real-estate-ocr-468904-38d35bfd32d6.json")
 
 # Pestañas de Destino en Google Sheets
