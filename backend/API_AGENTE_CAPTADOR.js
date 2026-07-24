@@ -23,7 +23,7 @@ function ejecutarAgenteCaptador() {
     if (!githubToken) {
       ui.alert(
         '⚠️ Falta Configurar Token de GitHub',
-        'No se encontró la propiedad "GITHUB_PAT" en las Propiedades del Script.\n\nPara que el botón active el robot en GitHub, necesitas agregar tu GitHub Token (PAT).\n\n¿Deseas agregarlo o verificar la configuración?',
+        'No se encontró la propiedad "GITHUB_PAT" en las Propiedades del Script.\n\nPor favor configúrala en Extensiones > Apps Script > Configuración del proyecto > Propiedades del script.',
         ui.ButtonSet.OK
       );
       return;
@@ -54,7 +54,7 @@ function ejecutarAgenteCaptador() {
         var errorMsg = res.getContentText();
         ui.alert(
           '❌ Error al activar el Robot (Código ' + code + ')',
-          'GitHub respondió:\n' + errorMsg + '\n\nVerifica que el token GITHUB_PAT tenga permisos de "repo" / "workflow" y apunte a ' + repoOwner + '/' + repoName + '.',
+          'GitHub respondió:\n' + errorMsg,
           ui.ButtonSet.OK
         );
       }
