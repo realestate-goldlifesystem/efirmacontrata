@@ -75,8 +75,8 @@ class SheetsHandler:
         return text.lower().strip()
 
     def load_existing_data(self):
-        """Lee la pestaña correspondiente, mapea columnas por nombre y desduplica."""
-        range_name = f"'{self.sheet_title}'!A1:Z2000"
+        """Lee la pestaña correspondiente, mapea columnas por nombre, desduplica y halla la ÚLTIMA fila al final."""
+        range_name = f"'{self.sheet_title}'!A1:Z3000"
         result = self.service.values().get(
             spreadsheetId=self.spreadsheet_id, range=range_name
         ).execute()
@@ -102,7 +102,7 @@ class SheetsHandler:
         col_celular = get_col("celular") if get_col("celular") is not None else 2
         col_link = get_col("link del inmueble publicado") if get_col("link del inmueble publicado") is not None else 5
 
-        first_empty_slot = None
+        last_row_with_data = 1 # Empezar en la fila de encabezados
         last_row_data_n = 0
 
         for idx, row in enumerate(rows, start=1):
@@ -122,23 +122,18 @@ class SheetsHandler:
             has_data = bool(cleaned_c or val_f)
 
             if has_data:
+                last_row_with_data = idx
                 if val_a.isdigit():
                     num_a = int(val_a)
                     if num_a > last_row_data_n:
                         last_row_data_n = num_a
-            else:
-                if first_empty_slot is None:
-                    first_empty_slot = idx
 
-        if first_empty_slot:
-            self.target_row_index = first_empty_slot
-        else:
-            self.target_row_index = len(rows) + 1
-
+        # Escribir SIEMPRE al final de la tabla
+        self.target_row_index = last_row_with_data + 1
         self.max_n = last_row_data_n
 
         print(f"[INFO] Registros existentes en '{self.sheet_title}': {len(self.existing_phones)} teléfonos, {len(self.existing_links)} links.")
-        print(f"[INFO] Último n con datos: {self.max_n}. Próxima fila a escribir: Fila {self.target_row_index}")
+        print(f"[INFO] Última fila con datos: {last_row_with_data} (Último n: {self.max_n}). Próxima fila a escribir: Fila {self.target_row_index}")
 
     def is_duplicate(self, phone, link):
         """Verifica si el teléfono o el link ya fueron procesados previamente."""
@@ -151,7 +146,7 @@ class SheetsHandler:
 
     def append_captacion(self, captacion_data):
         """
-        Inserta un nuevo registro mapeando dinámicamente cada campo a su columna según el nombre.
+        Inserta un nuevo registro siempre al final de la tabla respetando el consecutivo n.
         """
         phone = captacion_data.get("phone", "")
         link = captacion_data.get("link", "")
@@ -162,7 +157,7 @@ class SheetsHandler:
             return False
 
         self.max_n += 1
-        new_n = str(self.target_row_index - 1)
+        new_n = str(self.max_n)
         date_str = get_spanish_date_str()
 
         # Construcción dinámica basada en los nombres de columnas
@@ -214,6 +209,6 @@ class SheetsHandler:
         return True
 
 if __name__ == "__main__":
-    print("[TEST] Probando SheetsHandler dinámico...")
+    print("[TEST] Probando SheetsHandler append al final...")
     handler = SheetsHandler(mode="arriendo")
-    print("[TEST] Lectura y mapeo exitoso.")
+    print("[TEST] Lectura y cálculo de fila final exitoso.")
