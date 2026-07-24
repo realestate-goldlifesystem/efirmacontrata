@@ -20,7 +20,12 @@ function ejecutarAgenteCaptador(modo) {
   var esVenta = modo === 'venta';
   var tipoTexto = esVenta ? 'VENTA' : 'ARRIENDO';
 
-  var template = HtmlService.createTemplateFromFile('MODAL_HABITACIONES');
+  var template;
+  try {
+    template = HtmlService.createTemplateFromFile('backend/MODAL_HABITACIONES');
+  } catch (e) {
+    template = HtmlService.createTemplateFromFile('MODAL_HABITACIONES');
+  }
   template.modo = modo;
   template.tipoTexto = tipoTexto;
 
