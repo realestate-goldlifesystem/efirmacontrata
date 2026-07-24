@@ -16,8 +16,9 @@ function ejecutarAgenteCaptador() {
 
   if (respuesta === ui.Button.YES) {
     var githubToken = PropertiesService.getScriptProperties().getProperty('GITHUB_PAT');
-    var repoOwner = PropertiesService.getScriptProperties().getProperty('GITHUB_OWNER') || 'DLeoGutierrez';
-    var repoName = PropertiesService.getScriptProperties().getProperty('GITHUB_REPO') || 'Gold-Life-System';
+    var repoOwner = PropertiesService.getScriptProperties().getProperty('GITHUB_OWNER') || 'realestate-goldlifesystem';
+    var repoName = PropertiesService.getScriptProperties().getProperty('GITHUB_REPO') || 'efirmacontrata';
+
 
     if (githubToken) {
       try {
