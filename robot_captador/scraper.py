@@ -89,7 +89,7 @@ class FincaraizScraper:
                     break
 
                 # Recorrer páginas (/pagina1, /pagina2, /pagina3...)
-                max_pages = getattr(config, "MAX_PAGES_PER_SEARCH", 10)
+                max_pages = getattr(config, "MAX_PAGES_PER_SEARCH", 40)
                 for page_num in range(1, max_pages + 1):
                     if self.processed_count >= self.max_items_per_run:
                         break
@@ -108,12 +108,15 @@ class FincaraizScraper:
                         page.goto(search_url, wait_until="networkidle", timeout=45000)
                         time.sleep(3)
 
+                        # Detectar si Fincaraiz indica que no hay más resultados
+                        is_empty_page = page.query_selector("text='No se encontraron resultados para su búsqueda'")
+
                         # Obtener enlaces de inmuebles en el listado
                         listing_links = self.extract_listing_links(page)
                         print(f"📌 Encontrados {len(listing_links)} inmuebles en Pág {page_num}.")
 
-                        if not listing_links:
-                            print(f"ℹ️ No se encontraron enlaces en la Pág {page_num}. Finalizando paginación para esta categoría.")
+                        if is_empty_page or not listing_links:
+                            print(f"ℹ️ Fin de resultados alcanzado en la Pág {page_num} ('No se encontraron resultados'). Finalizando paginación para esta categoría.")
                             break
 
                         for link in listing_links:
