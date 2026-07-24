@@ -44,10 +44,13 @@ def get_spanish_date_str():
     return f"{day}-{month}-{year}"
 
 class SheetsHandler:
-    def __init__(self):
+    def __init__(self, mode="arriendo"):
+        self.mode = str(mode).lower()
         self.service = get_sheets_service()
         self.spreadsheet_id = config.SPREADSHEET_ID
-        self.sheet_title = config.SHEET_TITLE
+        self.sheet_title = config.get_sheet_title(self.mode)
+        self.is_arriendo = "FALSE" if self.mode == "venta" else "TRUE"
+        self.is_venta = "TRUE" if self.mode == "venta" else "FALSE"
         self.existing_phones = set()
         self.existing_links = set()
         self.max_n = 0
@@ -55,29 +58,23 @@ class SheetsHandler:
         self.load_existing_data()
 
     def load_existing_data(self):
-        """Lee la pestaña 1 - CAPTACIONES A para desduplicar y hallar la primera fila disponible."""
+        """Lee la pestaña correspondiente para desduplicar y hallar la primera fila disponible."""
         range_name = f"'{self.sheet_title}'!A1:P2000"
         result = self.service.values().get(
             spreadsheetId=self.spreadsheet_id, range=range_name
         ).execute()
 
         rows = result.get("values", [])
-        print(f"[INFO] Cargas de Google Sheets: {len(rows)} filas leídas.")
+        print(f"[INFO] Cargas de Google Sheets ('{self.sheet_title}'): {len(rows)} filas leídas.")
 
         first_empty_slot = None
+        last_row_data_n = 0
 
         for idx, row in enumerate(rows, start=1):
             if idx <= 2: # Omitir encabezados (filas 1 y 2)
                 continue
 
-            # Extracción del número N (Col A)
             val_a = row[0].strip() if len(row) > 0 and row[0] else ""
-            if val_a.isdigit():
-                num_a = int(val_a)
-                if num_a > self.max_n:
-                    self.max_n = num_a
-
-            # Extracción de CELULAR (Col C, índice 2)
             val_c = row[2].strip() if len(row) > 2 and row[2] else ""
             cleaned_c = clean_phone(val_c)
             if cleaned_c:
@@ -88,17 +85,26 @@ class SheetsHandler:
             if val_f:
                 self.existing_links.add(val_f.lower())
 
-            # Detectar la primera fila donde CELULAR (Col C) o LINK (Col F) estén vacíos
-            if not val_c and not val_f and first_empty_slot is None:
-                first_empty_slot = idx
+            has_data = bool(cleaned_c or val_f)
+
+            if has_data:
+                if val_a.isdigit():
+                    num_a = int(val_a)
+                    if num_a > last_row_data_n:
+                        last_row_data_n = num_a
+            else:
+                if first_empty_slot is None:
+                    first_empty_slot = idx
 
         if first_empty_slot:
             self.target_row_index = first_empty_slot
         else:
             self.target_row_index = len(rows) + 1
 
-        print(f"[INFO] Registros existentes: {len(self.existing_phones)} teléfonos, {len(self.existing_links)} links.")
-        print(f"[INFO] Último n registrado: {self.max_n}. Próxima fila a escribir: Fila {self.target_row_index}")
+        self.max_n = last_row_data_n
+
+        print(f"[INFO] Registros existentes en '{self.sheet_title}': {len(self.existing_phones)} teléfonos, {len(self.existing_links)} links.")
+        print(f"[INFO] Último n con datos: {self.max_n}. Próxima fila a escribir: Fila {self.target_row_index}")
 
     def is_duplicate(self, phone, link):
         """Verifica si el teléfono o el link ya fueron procesados previamente."""
@@ -111,7 +117,7 @@ class SheetsHandler:
 
     def append_captacion(self, captacion_data):
         """
-        Inserta un nuevo registro en la fila correspondiente de la pestaña 1 - CAPTACIONES A.
+        Inserta un nuevo registro en la fila correspondiente de la pestaña activa.
         captacion_data es un dict con los campos extraídos:
         - phone, link, owner_name, property_type, bedrooms, price, location
         """
@@ -132,8 +138,8 @@ class SheetsHandler:
             new_n,                                      # A: n
             date_str,                                   # B: FECHA DE CONTACTO
             clean_phone(phone),                        # C: CELULAR
-            "TRUE",                                     # D: ARRIENDO
-            "FALSE",                                    # E: VENTA
+            self.is_arriendo,                           # D: ARRIENDO
+            self.is_venta,                              # E: VENTA
             link,                                       # F: LINK DEL INMUEBLE PUBLICADO
             "NUEVO",                                    # G: ESTADO DE LLAMADA
             captacion_data.get("property_type", ""),   # H: TIPO DE INMUEBLE

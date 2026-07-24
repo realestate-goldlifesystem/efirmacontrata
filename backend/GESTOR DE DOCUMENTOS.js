@@ -27,7 +27,8 @@ function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
 
   ui.createMenu('🤖 Agente Captador')
-    .addItem('🚀 Iniciar Barrido de Fincaraiz Ahora', 'ejecutarAgenteCaptador')
+    .addItem('🚀 Iniciar Barrido de Arriendo Ahora', 'ejecutarAgenteCaptadorArriendo')
+    .addItem('🚀 Iniciar Barrido de Venta Ahora', 'ejecutarAgenteCaptadorVenta')
     .addToUi();
 
   ui.createMenu('🏠 E-FirmaContrata')

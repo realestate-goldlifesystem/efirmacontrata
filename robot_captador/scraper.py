@@ -56,14 +56,16 @@ def is_natural_person(owner_dict):
     return True, "Calificado como Persona Natural"
 
 class FincaraizScraper:
-    def __init__(self, headless=True, max_items_per_run=20):
+    def __init__(self, headless=True, max_items_per_run=30, mode="arriendo"):
         self.headless = headless
         self.max_items_per_run = max_items_per_run
-        self.sheets = SheetsHandler()
+        self.mode = str(mode).lower()
+        self.sheets = SheetsHandler(mode=self.mode)
+        self.target_urls = config.get_target_urls(self.mode)
         self.processed_count = 0
 
     def run(self):
-        print(f"[START] Iniciando Robot Captador Fincaraiz (Headless: {self.headless})...")
+        print(f"[START] Iniciando Robot Captador Fincaraiz | MODO: {self.mode.upper()} | Pestaña: {self.sheets.sheet_title} (Headless: {self.headless})...")
 
         with sync_playwright() as p:
             browser = p.chromium.launch(
@@ -83,7 +85,7 @@ class FincaraizScraper:
 
             page = context.new_page()
 
-            for base_search_url in config.TARGET_URLS:
+            for base_search_url in self.target_urls:
                 if self.processed_count >= self.max_items_per_run:
                     print(f"[STOP] Límite máximo de {self.max_items_per_run} captaciones alcanzado.")
                     break
@@ -297,5 +299,11 @@ class FincaraizScraper:
             pass
 
 if __name__ == "__main__":
-    scraper = FincaraizScraper(headless=True, max_items_per_run=30)
+    import argparse
+    parser = argparse.ArgumentParser(description="Robot Captador Fincaraiz")
+    parser.add_argument("--mode", choices=["arriendo", "venta"], default="arriendo", help="Modo de captación (arriendo o venta)")
+    parser.add_argument("--max-items", type=int, default=30, help="Límite máximo de inmuebles a captar")
+    args = parser.parse_args()
+
+    scraper = FincaraizScraper(headless=True, max_items_per_run=args.max_items, mode=args.mode)
     scraper.run()
