@@ -83,40 +83,60 @@ class FincaraizScraper:
 
             page = context.new_page()
 
-            for search_url in config.TARGET_URLS:
+            for base_search_url in config.TARGET_URLS:
                 if self.processed_count >= self.max_items_per_run:
                     print(f"[STOP] Límite máximo de {self.max_items_per_run} captaciones alcanzado.")
                     break
 
-                print(f"\n🌐 [NAVEGANDO SEARCH] -> {search_url}")
-                try:
-                    page.goto(search_url, wait_until="networkidle", timeout=45000)
-                    time.sleep(3)
+                # Recorrer páginas (/pagina1, /pagina2, /pagina3...)
+                max_pages = getattr(config, "MAX_PAGES_PER_SEARCH", 10)
+                for page_num in range(1, max_pages + 1):
+                    if self.processed_count >= self.max_items_per_run:
+                        break
 
-                    # Obtener enlaces de inmuebles en el listado
-                    listing_links = self.extract_listing_links(page)
-                    print(f"📌 Encontrados {len(listing_links)} inmuebles en este listado.")
+                    if page_num == 1:
+                        search_url = base_search_url
+                    else:
+                        if "?" in base_search_url:
+                            parts = base_search_url.split("?", 1)
+                            search_url = f"{parts[0]}/pagina{page_num}?{parts[1]}"
+                        else:
+                            search_url = f"{base_search_url}/pagina{page_num}"
 
-                    for link in listing_links:
-                        if self.processed_count >= self.max_items_per_run:
+                    print(f"\n🌐 [NAVEGANDO SEARCH - PÁG {page_num}] -> {search_url}")
+                    try:
+                        page.goto(search_url, wait_until="networkidle", timeout=45000)
+                        time.sleep(3)
+
+                        # Obtener enlaces de inmuebles en el listado
+                        listing_links = self.extract_listing_links(page)
+                        print(f"📌 Encontrados {len(listing_links)} inmuebles en Pág {page_num}.")
+
+                        if not listing_links:
+                            print(f"ℹ️ No se encontraron enlaces en la Pág {page_num}. Finalizando paginación para esta categoría.")
                             break
 
-                        # Verificación rápida de desduplicación por URL antes de navegar
-                        if link.lower().strip() in self.sheets.existing_links:
-                            print(f"[SKIP] Link ya registrado previamente en Google Sheets: {link}")
-                            continue
+                        for link in listing_links:
+                            if self.processed_count >= self.max_items_per_run:
+                                break
 
-                        print(f"\n🔍 [EVALUANDO INMUEBLE] -> {link}")
-                        captacion_data = self.process_property(page, link)
+                            # Verificación rápida de desduplicación por URL antes de navegar
+                            if link.lower().strip() in self.sheets.existing_links:
+                                print(f"[SKIP] Link ya registrado previamente en Google Sheets: {link}")
+                                continue
 
-                        if captacion_data:
-                            saved = self.sheets.append_captacion(captacion_data)
-                            if saved:
-                                self.processed_count += 1
-                                print(f"✨ Total captados exitosamente en esta sesión: {self.processed_count}")
+                            print(f"\n🔍 [EVALUANDO INMUEBLE] -> {link}")
+                            captacion_data = self.process_property(page, link)
 
-                except Exception as e:
-                    print(f"[ERROR] Fallo al procesar búsqueda {search_url}: {e}")
+                            if captacion_data:
+                                saved = self.sheets.append_captacion(captacion_data)
+                                if saved:
+                                    self.processed_count += 1
+                                    print(f"✨ Total captados exitosamente en esta sesión: {self.processed_count}")
+
+                    except Exception as e:
+                        print(f"[ERROR] Fallo al procesar búsqueda {search_url}: {e}")
+                        break
 
             browser.close()
             print(f"\n🎉 [FINALIZADO] Sesión terminada. Total inmuebles captados: {self.processed_count}")
