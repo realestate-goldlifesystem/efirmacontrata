@@ -26,6 +26,10 @@ const DOCS_CONFIG = {
 function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
 
+  ui.createMenu('🤖 Agente Captador')
+    .addItem('🚀 Iniciar Barrido de Fincaraiz Ahora', 'ejecutarAgenteCaptador')
+    .addToUi();
+
   ui.createMenu('🏠 E-FirmaContrata')
     .addItem('📋 Panel de Validación', 'abrirPanelValidacion')
     .addSeparator()
