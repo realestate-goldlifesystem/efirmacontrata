@@ -297,5 +297,5 @@ class FincaraizScraper:
             pass
 
 if __name__ == "__main__":
-    scraper = FincaraizScraper(headless=True, max_items_per_run=5)
+    scraper = FincaraizScraper(headless=True, max_items_per_run=30)
     scraper.run()
