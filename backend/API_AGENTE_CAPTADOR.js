@@ -15,41 +15,51 @@ function ejecutarAgenteCaptador() {
   );
 
   if (respuesta === ui.Button.YES) {
-    var githubToken = PropertiesService.getScriptProperties().getProperty('GITHUB_PAT');
-    var repoOwner = PropertiesService.getScriptProperties().getProperty('GITHUB_OWNER') || 'realestate-goldlifesystem';
-    var repoName = PropertiesService.getScriptProperties().getProperty('GITHUB_REPO') || 'efirmacontrata';
+    var scriptProps = PropertiesService.getScriptProperties();
+    var githubToken = scriptProps.getProperty('GITHUB_PAT');
+    var repoOwner = scriptProps.getProperty('GITHUB_OWNER') || 'realestate-goldlifesystem';
+    var repoName = scriptProps.getProperty('GITHUB_REPO') || 'efirmacontrata';
 
-
-    if (githubToken) {
-      try {
-        var url = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/workflows/scraper.yml/dispatches";
-        var options = {
-          "method": "post",
-          "headers": {
-            "Authorization": "Bearer " + githubToken,
-            "Accept": "application/vnd.github+json"
-          },
-          "payload": JSON.stringify({"ref": "main"}),
-          "muteHttpExceptions": true
-        };
-        var res = UrlFetchApp.fetch(url, options);
-        if (res.getResponseCode() === 204) {
-          ui.alert(
-            '🚀 ¡Barrido Iniciado con Éxito!',
-            'El Agente Captador está rastreando Fincaraiz en la nube.\n\nLos inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "1 - CAPTACIONES A".',
-            ui.ButtonSet.OK
-          );
-          return;
-        }
-      } catch (e) {
-        // En caso de error de red, continuar con aviso
-      }
+    if (!githubToken) {
+      ui.alert(
+        '⚠️ Falta Configurar Token de GitHub',
+        'No se encontró la propiedad "GITHUB_PAT" en las Propiedades del Script.\n\nPara que el botón active el robot en GitHub, necesitas agregar tu GitHub Token (PAT).\n\n¿Deseas agregarlo o verificar la configuración?',
+        ui.ButtonSet.OK
+      );
+      return;
     }
 
-    ui.alert(
-      '🚀 ¡Agente Captador Activado!',
-      'El barrido de Fincaraiz ha sido solicitado.\n\nLos inmuebles de propietarios directos comenzarán a escribirse en la pestaña "1 - CAPTACIONES A" en breve.',
-      ui.ButtonSet.OK
-    );
+    try {
+      var url = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/workflows/scraper.yml/dispatches";
+      var options = {
+        "method": "post",
+        "headers": {
+          "Authorization": "Bearer " + githubToken,
+          "Accept": "application/vnd.github+json",
+          "User-Agent": "AppsScript-Bot"
+        },
+        "payload": JSON.stringify({"ref": "main"}),
+        "muteHttpExceptions": true
+      };
+      var res = UrlFetchApp.fetch(url, options);
+      var code = res.getResponseCode();
+
+      if (code === 204) {
+        ui.alert(
+          '🚀 ¡Barrido Iniciado con Éxito!',
+          'El Agente Captador está rastreando Fincaraiz en la nube.\n\nLos inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "1 - CAPTACIONES A".',
+          ui.ButtonSet.OK
+        );
+      } else {
+        var errorMsg = res.getContentText();
+        ui.alert(
+          '❌ Error al activar el Robot (Código ' + code + ')',
+          'GitHub respondió:\n' + errorMsg + '\n\nVerifica que el token GITHUB_PAT tenga permisos de "repo" / "workflow" y apunte a ' + repoOwner + '/' + repoName + '.',
+          ui.ButtonSet.OK
+        );
+      }
+    } catch (e) {
+      ui.alert('❌ Error de Conexión', e.toString(), ui.ButtonSet.OK);
+    }
   }
 }
