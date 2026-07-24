@@ -88,9 +88,9 @@ class FincaraizScraper:
                     print(f"[STOP] Límite máximo de {self.max_items_per_run} captaciones alcanzado.")
                     break
 
-                # Recorrer páginas (/pagina1, /pagina2, /pagina3...)
-                max_pages = getattr(config, "MAX_PAGES_PER_SEARCH", 40)
-                for page_num in range(1, max_pages + 1):
+                # Recorrer páginas dinámicamente (/pagina1, /pagina2...) hasta que aparezca "No se encontraron resultados"
+                page_num = 1
+                while True:
                     if self.processed_count >= self.max_items_per_run:
                         break
 
@@ -136,6 +136,8 @@ class FincaraizScraper:
                                 if saved:
                                     self.processed_count += 1
                                     print(f"✨ Total captados exitosamente en esta sesión: {self.processed_count}")
+
+                        page_num += 1
 
                     except Exception as e:
                         print(f"[ERROR] Fallo al procesar búsqueda {search_url}: {e}")
