@@ -55,6 +55,49 @@ def is_natural_person(owner_dict):
 
     return True, "Calificado como Persona Natural"
 
+def _first_name(value):
+    """
+    Devuelve el 'name' de un nodo de ubicación de Fincaraiz.
+    Los nodos vienen como lista de objetos ([{'id':.., 'name':..}]) o como objeto suelto.
+    """
+    if isinstance(value, list):
+        for item in value:
+            if isinstance(item, dict) and item.get("name"):
+                return str(item["name"]).strip()
+    elif isinstance(value, dict) and value.get("name"):
+        return str(value["name"]).strip()
+    return ""
+
+def extract_location(locations):
+    """
+    Arma la ubicación legible a partir del nodo 'locations' del inmueble.
+
+    Estructura real de Fincaraiz:
+        locations = {
+            'location_main': {'name': 'El redil', 'location_type': 'neighbourhood'},
+            'neighbourhood': [{'name': 'La granja norte'}, ...],
+            'locality':      [{'name': 'Usaquen'}],
+            'city':          [{'name': 'Bogotá'}],
+            'zone':          [{'name': 'Zona norte'}], ...
+        }
+
+    Antes el código buscaba las claves 'location' y 'zone' como si fueran texto:
+    'location' no existe y 'city' es una LISTA, así que terminaba escribiendo el
+    volcado crudo del objeto en la hoja (`[{'id': '65d441f3-...`).
+    Ahora se prioriza el BARRIO, que es el dato útil para prospectar.
+    """
+    if not isinstance(locations, dict):
+        return _first_name(locations) or "Bogotá"
+
+    barrio = _first_name(locations.get("location_main")) or _first_name(locations.get("neighbourhood"))
+    localidad = _first_name(locations.get("locality")) or _first_name(locations.get("zone"))
+    ciudad = _first_name(locations.get("city")) or "Bogotá"
+
+    partes = [p for p in (barrio, localidad) if p]
+    if not partes:
+        return ciudad
+    return ", ".join(partes)
+
 class FincaraizScraper:
     def __init__(self, headless=True, max_items_per_run=30, mode="arriendo", bedrooms="all"):
         self.headless = headless
@@ -138,13 +181,18 @@ class FincaraizScraper:
                 time.sleep(2)
         return None, {}
 
-    def harvest_page(self, page, items, page_num, last_page):
+    def harvest_page(self, page, items, page_num, last_page, page_url=""):
         """
         Procesa los particulares de una página ya cargada.
         Devuelve False si se alcanzó el límite de captaciones de la corrida.
         """
         candidates = self.filter_particulares(items)
         print(f"\n🌐 Pág {page_num}/{last_page} | {len(items)} anuncios → {len(candidates)} de particulares")
+
+        # Dejar el link de la página en el log: permite abrirla a mano y ver
+        # exactamente de dónde salieron estos propietarios.
+        if candidates and page_url:
+            print(f"   🔗 Página con particulares: {page_url}")
 
         for link in candidates:
             if self.processed_count >= self.max_items_per_run:
@@ -197,7 +245,7 @@ class FincaraizScraper:
         print(f"📊 {paginator.get('total')} anuncios en {last_page} páginas reales "
               f"(la web solo muestra hasta 50). Se recorre de la {last_page} hacia la 1.")
 
-        if not self.harvest_page(page, items, 1, last_page):
+        if not self.harvest_page(page, items, 1, last_page, self.build_page_url(base_url, 1)):
             print(f"[STOP] Límite de {self.max_items_per_run} captaciones alcanzado.")
             return
 
@@ -240,7 +288,7 @@ class FincaraizScraper:
             self.pages_visited += 1
             self.listings_seen += len(items)
 
-            if not self.harvest_page(page, items, page_num, last_page):
+            if not self.harvest_page(page, items, page_num, last_page, self.build_page_url(base_url, page_num)):
                 print(f"[STOP] Límite de {self.max_items_per_run} captaciones alcanzado.")
                 return
 
@@ -380,23 +428,8 @@ class FincaraizScraper:
                 elif "5-habitaciones" in property_url: bedrooms = "5"
                 else: bedrooms = "1"
 
-            # Ubicación
-            locations = listing_data.get("locations", {})
-            if isinstance(locations, list) and locations:
-                loc_names = [l.get("name") for l in locations if isinstance(l, dict) and l.get("name")]
-                location_str = ", ".join(loc_names) if loc_names else "Bogotá"
-            elif isinstance(locations, dict):
-                zone = locations.get("zone", "")
-                location_name = locations.get("location", "")
-                city = locations.get("city", "Bogotá")
-                if zone and location_name:
-                    location_str = f"{zone}, {location_name}, {city}"
-                elif location_name:
-                    location_str = f"{location_name}, {city}"
-                else:
-                    location_str = f"{city}"
-            else:
-                location_str = str(locations or "Bogotá")
+            # Ubicación (barrio, localidad)
+            location_str = extract_location(listing_data.get("locations", {}))
 
             # 4. Diligenciar Formulario de Contacto
             self.fill_contact_form(page)
@@ -420,6 +453,15 @@ class FincaraizScraper:
 
             if not phone_num:
                 print("⚠️ No se pudo obtener el número telefónico de contacto.")
+                return None
+
+            # Desduplicación por celular APENAS se conoce el número, antes de
+            # seguir procesando. Un mismo propietario suele publicar varios
+            # inmuebles con links distintos, así que el filtro por link no basta.
+            is_dup, dup_reason = self.sheets.is_duplicate(phone_num, property_url)
+            if is_dup:
+                print(f"[SKIP] Propietario ya registrado -> {dup_reason}")
+                self.skipped_dup += 1
                 return None
 
             print(f"📞 Teléfono verificado: {phone_num}")

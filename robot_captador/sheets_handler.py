@@ -66,6 +66,7 @@ class SheetsHandler:
         self.col_map = {}
         self.max_n = 0
         self.target_row_index = None # 1-indexed row position in Sheet
+        self.sheet_id = None         # sheetId numérico, necesario para batchUpdate
         self.load_existing_data()
 
     def normalize_header(self, h):
@@ -140,6 +141,60 @@ class SheetsHandler:
         print(f"[INFO] Registros existentes en '{self.sheet_title}': {len(self.existing_phones)} teléfonos, {len(self.existing_links)} links.")
         print(f"[INFO] Última fila ocupada con datos: {last_row_with_data} (Último n: {self.max_n}). Próxima fila a escribir: Fila {self.target_row_index}")
 
+    def get_sheet_id(self):
+        """Obtiene (y cachea) el sheetId numérico de la pestaña destino."""
+        if self.sheet_id is None:
+            info = self.service.get(spreadsheetId=self.spreadsheet_id).execute()
+            self.sheet_id = next(
+                (s["properties"]["sheetId"] for s in info["sheets"]
+                 if s["properties"]["title"] == self.sheet_title),
+                None
+            )
+        return self.sheet_id
+
+    def get_sheet_row_count(self, sheet_id):
+        """Cantidad actual de filas físicas de la pestaña (para insertar al final)."""
+        info = self.service.get(spreadsheetId=self.spreadsheet_id).execute()
+        for s in info["sheets"]:
+            if s["properties"]["sheetId"] == sheet_id:
+                return s["properties"]["gridProperties"]["rowCount"]
+        return 0
+
+    def apply_row_format(self, target_row):
+        """
+        Copia el formato (bordes, colores, validaciones, formato de número) desde
+        una fila de referencia hacia la fila recién escrita.
+
+        Por qué hace falta: al escribir solo valores, las filas que nunca tuvieron
+        formato quedan peladas. Es lo que pasó desde la fila 592 en adelante,
+        cuando el Sheet se expandió con `appendDimension` (que agrega filas en
+        blanco sin heredar nada). Se usa una fila de referencia FIJA y conocida
+        como buena, no la anterior, para no propagar una fila ya rota.
+        """
+        sheet_id = self.get_sheet_id()
+        if sheet_id is None:
+            return
+
+        ref = config.FORMAT_REFERENCE_ROW
+        if target_row == ref:
+            return
+
+        try:
+            self.service.batchUpdate(
+                spreadsheetId=self.spreadsheet_id,
+                body={"requests": [{
+                    "copyPaste": {
+                        # 0-indexed y con fin exclusivo
+                        "source": {"sheetId": sheet_id, "startRowIndex": ref - 1, "endRowIndex": ref},
+                        "destination": {"sheetId": sheet_id, "startRowIndex": target_row - 1, "endRowIndex": target_row},
+                        "pasteType": "PASTE_FORMAT"
+                    }
+                }]}
+            ).execute()
+        except Exception as e:
+            # El formato es cosmético: si falla, el dato ya quedó guardado.
+            print(f"[WARN] No se pudo aplicar el formato a la fila {target_row}: {e}")
+
     def is_duplicate(self, phone, link):
         """Verifica si el teléfono o el link ya fueron procesados previamente."""
         cleaned = clean_phone(phone)
@@ -205,19 +260,31 @@ class SheetsHandler:
         except Exception as e:
             if "exceeds grid limits" in str(e):
                 print(f"[WARN] Límite de filas alcanzado en la fila {self.target_row_index}. Expandiendo el Sheet automáticamente...")
-                
-                # 1. Obtener el sheetId numerico
-                spreadsheet_info = self.service.get(spreadsheetId=self.spreadsheet_id).execute()
-                sheet_id = next((s['properties']['sheetId'] for s in spreadsheet_info['sheets'] if s['properties']['title'] == self.sheet_title), None)
-                
+
+                sheet_id = self.get_sheet_id()
+
                 if sheet_id is not None:
-                    # 2. Agregar 10 filas fisicas al final
+                    # Se usa insertDimension con inheritFromBefore en vez de
+                    # appendDimension: appendDimension agrega filas EN BLANCO sin
+                    # formato (eso dejó las filas 592+ sin bordes), mientras que
+                    # insertDimension hereda el formato de la fila anterior.
+                    last_row = self.get_sheet_row_count(sheet_id)
                     self.service.batchUpdate(
                         spreadsheetId=self.spreadsheet_id,
-                        body={"requests": [{"appendDimension": {"sheetId": sheet_id, "dimension": "ROWS", "length": 10}}]}
+                        body={"requests": [{
+                            "insertDimension": {
+                                "range": {
+                                    "sheetId": sheet_id,
+                                    "dimension": "ROWS",
+                                    "startIndex": last_row,
+                                    "endIndex": last_row + 10
+                                },
+                                "inheritFromBefore": True
+                            }
+                        }]}
                     ).execute()
-                    
-                    # 3. Re-intentar el update exacto
+
+                    # Re-intentar el update exacto
                     self.service.values().update(
                         spreadsheetId=self.spreadsheet_id,
                         range=range_to_update,
@@ -228,6 +295,9 @@ class SheetsHandler:
                     raise Exception(f"No se pudo encontrar el sheetId para {self.sheet_title}")
             else:
                 raise e
+
+        # Heredar el formato de la tabla (bordes, colores, validaciones)
+        self.apply_row_format(self.target_row_index)
 
         print(f"[OK] REGISTRO GUARDADO EN GOOGLE SHEETS ('{self.sheet_title}') [Fila {self.target_row_index} | n: {new_n}] -> {captacion_data.get('owner_name')} | {phone} | {captacion_data.get('location')}")
 

@@ -8,6 +8,12 @@ SERVICE_ACCOUNT_PATH = os.path.join(os.path.dirname(__file__), "real-estate-ocr-
 SHEET_TITLE_ARRIENDO = "1 - CAPTACIONES A"
 SHEET_TITLE_VENTA = "1 - CAPTACIONES V"
 
+# Fila que se usa como PLANTILLA de formato para las filas nuevas.
+# Debe ser una fila de datos con el formato correcto (bordes, colores,
+# validaciones). Se usa una fila fija y conocida como buena, no la anterior,
+# para no propagar el formato de una fila que ya haya quedado mal.
+FORMAT_REFERENCE_ROW = 3
+
 # Datos fijos para el formulario de Fincaraiz
 LEAD_NAME = "jose gomez perez"
 LEAD_PHONE = "3229763128"
