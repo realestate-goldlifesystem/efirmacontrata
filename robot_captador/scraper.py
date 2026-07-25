@@ -100,11 +100,15 @@ class FincaraizScraper:
                     if self.processed_count >= self.max_items_per_run:
                         break
 
-                    # Construir URL con parámetro de página
-                    if "?" in base_url:
-                        search_url = f"{base_url}&pagina={page_num}"
+                    # Construir URL con paginación en el path (formato Fincaraiz: /paginaX)
+                    if page_num == 1:
+                        search_url = base_url  # Página 1 usa la URL original
                     else:
-                        search_url = f"{base_url}?pagina={page_num}"
+                        if "?" in base_url:
+                            path_part, query_part = base_url.split("?", 1)
+                            search_url = f"{path_part}/pagina{page_num}?{query_part}"
+                        else:
+                            search_url = f"{base_url}/pagina{page_num}"
 
                     print(f"\n🌐 [NAVEGANDO SEARCH] Pág {page_num} -> {search_url}")
                     try:
