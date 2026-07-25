@@ -91,40 +91,32 @@ class FincaraizScraper:
 
             page = context.new_page()
 
-            for base_search_url in self.target_urls:
+            for base_url in self.target_urls:
                 if self.processed_count >= self.max_items_per_run:
                     print(f"[STOP] Límite máximo de {self.max_items_per_run} captaciones alcanzado.")
                     break
 
-                # Recorrer páginas dinámicamente (/pagina1, /pagina2...) hasta que aparezca "No se encontraron resultados"
-                page_num = 1
-                while True:
+                for page_num in range(1, 11):  # Recorre hasta 10 páginas por filtro/localidad
                     if self.processed_count >= self.max_items_per_run:
                         break
 
-                    if page_num == 1:
-                        search_url = base_search_url
+                    # Construir URL con parámetro de página
+                    if "?" in base_url:
+                        search_url = f"{base_url}&pagina={page_num}"
                     else:
-                        if "?" in base_search_url:
-                            parts = base_search_url.split("?", 1)
-                            search_url = f"{parts[0]}/pagina{page_num}?{parts[1]}"
-                        else:
-                            search_url = f"{base_search_url}/pagina{page_num}"
+                        search_url = f"{base_url}?pagina={page_num}"
 
-                    print(f"\n🌐 [NAVEGANDO SEARCH - PÁG {page_num}] -> {search_url}")
+                    print(f"\n🌐 [NAVEGANDO SEARCH] Pág {page_num} -> {search_url}")
                     try:
                         page.goto(search_url, wait_until="networkidle", timeout=45000)
                         time.sleep(3)
 
-                        # Detectar si Fincaraiz indica que no hay más resultados
-                        is_empty_page = page.query_selector("text='No se encontraron resultados para su búsqueda'")
-
                         # Obtener enlaces de inmuebles en el listado
                         listing_links = self.extract_listing_links(page)
-                        print(f"📌 Encontrados {len(listing_links)} inmuebles en Pág {page_num}.")
+                        print(f"📌 Encontrados {len(listing_links)} inmuebles en la página {page_num}.")
 
-                        if is_empty_page or not listing_links:
-                            print(f"ℹ️ Fin de resultados alcanzado en la Pág {page_num} ('No se encontraron resultados'). Finalizando paginación para esta categoría.")
+                        if not listing_links:
+                            print(f"ℹ️ No se encontraron más inmuebles en la página {page_num}. Pasando a la siguiente búsqueda.")
                             break
 
                         for link in listing_links:
@@ -145,10 +137,8 @@ class FincaraizScraper:
                                     self.processed_count += 1
                                     print(f"✨ Total captados exitosamente en esta sesión: {self.processed_count}")
 
-                        page_num += 1
-
                     except Exception as e:
-                        print(f"[ERROR] Fallo al procesar búsqueda {search_url}: {e}")
+                        print(f"[ERROR] Fallo al procesar página {page_num} ({search_url}): {e}")
                         break
 
             browser.close()
@@ -182,9 +172,9 @@ class FincaraizScraper:
             except Exception:
                 pass
 
-        try:
-            page.on("response", on_response)
+        page.on("response", on_response)
 
+        try:
             page.goto(property_url, wait_until="domcontentloaded", timeout=45000)
             time.sleep(2.5)
 
