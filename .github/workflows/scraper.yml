@@ -51,4 +51,4 @@ jobs:
           MODE="${{ github.event.inputs.mode || github.event.client_payload.mode || 'arriendo' }}"
           BEDROOMS="${{ github.event.inputs.bedrooms || github.event.client_payload.bedrooms || 'all' }}"
           echo "Ejecutando robot captador en modo: $MODE | Habitaciones: $BEDROOMS"
-          python robot_captador/scraper.py --mode "$MODE" --bedrooms "$BEDROOMS" --max-items 300
+          python robot_captador/scraper.py --mode "$MODE" --bedrooms "$BEDROOMS" --max-items 30
