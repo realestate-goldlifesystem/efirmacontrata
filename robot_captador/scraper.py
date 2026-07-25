@@ -280,7 +280,7 @@ class FincaraizScraper:
             }
 
         except Exception as e:
-            print(f"[ERROR] Excepción procesando {property_url}: {e}")
+            print(f"⚠️ [AVISO] Inmueble omitido (no disponible o tiempo de espera agotado): {property_url}")
             return None
 
     def fill_contact_form(self, page):
