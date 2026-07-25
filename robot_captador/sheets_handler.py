@@ -141,6 +141,24 @@ class SheetsHandler:
         print(f"[INFO] Registros existentes en '{self.sheet_title}': {len(self.existing_phones)} teléfonos, {len(self.existing_links)} links.")
         print(f"[INFO] Última fila ocupada con datos: {last_row_with_data} (Último n: {self.max_n}). Próxima fila a escribir: Fila {self.target_row_index}")
 
+    def build_whatsapp_formula(self, row_index):
+        """
+        Fórmula para la columna 'WHA': enlace clickeable al WhatsApp del propietario.
+
+        Apunta a la celda del celular de la misma fila (no al número quemado), así
+        el enlace se mantiene correcto si el número se corrige a mano después.
+        Si la celda del celular está vacía, la fórmula no muestra nada.
+        """
+        col_cel = self.col_map.get("celular")
+        if col_cel is None:
+            return ""
+        ref = f"{col_to_letter(col_cel)}{row_index}"
+        sep = config.FORMULA_ARG_SEPARATOR
+        return (
+            f'=IF({ref}=""{sep}""{sep}'
+            f'HYPERLINK("https://wa.me/{config.WHATSAPP_COUNTRY_CODE}"&{ref}{sep}"{config.WHATSAPP_EMOJI}"))'
+        )
+
     def get_sheet_id(self):
         """Obtiene (y cachea) el sheetId numérico de la pestaña destino."""
         if self.sheet_id is None:
@@ -236,7 +254,8 @@ class SheetsHandler:
             "nombre del propietario": captacion_data.get("owner_name", ""),
             "habitaciones": str(captacion_data.get("bedrooms", "")),
             "valor de promocion": captacion_data.get("price", ""),
-            "ubicacion": captacion_data.get("location", "")
+            "ubicacion": captacion_data.get("location", ""),
+            "wha": self.build_whatsapp_formula(self.target_row_index)
         }
 
         for norm_key, val in field_values.items():

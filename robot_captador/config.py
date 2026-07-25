@@ -14,6 +14,18 @@ SHEET_TITLE_VENTA = "1 - CAPTACIONES V"
 # para no propagar el formato de una fila que ya haya quedado mal.
 FORMAT_REFERENCE_ROW = 3
 
+# Columna "WHA": enlace directo a WhatsApp del propietario.
+# Se escribe como fórmula HYPERLINK apuntando a la celda del celular, así el
+# link sigue siendo correcto si algún día se corrige el número a mano.
+WHATSAPP_COUNTRY_CODE = "57"   # Colombia, sin el '+'
+WHATSAPP_EMOJI = "🟢"          # Texto visible del enlace
+
+# Separador de argumentos de las fórmulas del Sheet.
+# Depende de la configuración regional del archivo: el Sheet está en es_CO,
+# que usa punto y coma. Con coma las fórmulas devuelven #ERROR!.
+# Si algún día se cambia el idioma del Sheet a inglés, poner ",".
+FORMULA_ARG_SEPARATOR = ";"
+
 # Datos fijos para el formulario de Fincaraiz
 LEAD_NAME = "jose gomez perez"
 LEAD_PHONE = "3229763128"
