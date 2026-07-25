@@ -128,13 +128,18 @@ def extract_location(locations):
     return ", ".join(partes)
 
 class FincaraizScraper:
-    def __init__(self, headless=True, max_items_per_run=30, mode="arriendo", bedrooms="all"):
+    def __init__(self, headless=True, max_items_per_run=30, mode="arriendo", bedrooms="all", localidad=None):
         self.headless = headless
         self.max_items_per_run = max_items_per_run
         self.mode = str(mode).lower()
         self.bedrooms = str(bedrooms).lower()
         self.sheets = SheetsHandler(mode=self.mode)
-        self.target_urls = config.get_target_urls(self.mode, self.bedrooms)
+        self.localidad = localidad
+        if localidad:
+            self.target_urls = config.urls_de(self.mode, localidad, self.bedrooms)
+        else:
+            self.target_urls = config.get_target_urls(self.mode, self.bedrooms)
+        self.agotado = True   # se vuelve False si se alcanza la cuota
         self.processed_count = 0
         self.per_search_cap = max_items_per_run
         # Contadores de diagnóstico de la sesión
@@ -169,12 +174,10 @@ class FincaraizScraper:
 
             page = context.new_page()
 
-            # Cuota justa por sector: sin esto, el primer sector (Usaquén) se
-            # llevaba las 30 captaciones y Suba, Chapinero y sus zonas nunca se
-            # tocaban. Se reparte el tope entre las búsquedas de la corrida.
-            total_busquedas = max(1, len(self.target_urls))
-            self.per_search_cap = max(1, math.ceil(self.max_items_per_run / total_busquedas))
-            print(f"[INFO] {total_busquedas} búsquedas | cuota por sector: {self.per_search_cap} captaciones")
+            # La cuota es de la LOCALIDAD completa. Si tiene varias zonas
+            # (Chapinero son 4), se van recorriendo en orden hasta llenarla.
+            self.per_search_cap = self.max_items_per_run
+            print(f"[INFO] {len(self.target_urls)} zona(s) | cuota de la localidad: {self.max_items_per_run}")
 
             for base_url in self.target_urls:
                 if self.processed_count >= self.max_items_per_run:
@@ -552,34 +555,107 @@ class FincaraizScraper:
 
 if __name__ == "__main__":
     import argparse
+    from datetime import datetime
+    from sheets_handler import get_spanish_date_str
+
+    SEP = "=" * 70
+
     parser = argparse.ArgumentParser(description="Robot Captador Fincaraiz")
-    parser.add_argument("--mode", choices=["arriendo", "venta"], default="arriendo", help="Modo de captación (arriendo o venta)")
-    parser.add_argument("--bedrooms", default="all", help="Filtro de habitaciones (1, 2, 3, 4, 5, all)")
-    parser.add_argument("--max-items", type=int, default=30, help="Límite máximo de inmuebles a captar POR tipo de habitación")
+    parser.add_argument("--mode", choices=["arriendo", "venta"], default="arriendo",
+                        help="Modo de captación (arriendo o venta)")
+    parser.add_argument("--sector", default="all",
+                        help="Localidad objetivo: usaquen, suba, chapinero o all")
+    parser.add_argument("--bedrooms", default="all",
+                        help="Filtro de habitaciones (1, 2, 3, 4, 5, all)")
+    parser.add_argument("--max-items", type=int, default=30,
+                        help="Cuota de captaciones POR CADA combinación sector x habitaciones")
     parser.add_argument("--max-pages", type=int, default=None,
-                        help=f"Salvaguarda de páginas por búsqueda (default: {config.MAX_PAGES_PER_SEARCH}). "
-                             "Normalmente no se toca: el robot recorre desde la última página "
-                             "real de cada búsqueda hacia la 1.")
+                        help="Salvaguarda de páginas por búsqueda. Normalmente no se toca: "
+                             "el robot recorre desde la última página real hacia la 1.")
     args = parser.parse_args()
 
     if args.max_pages:
         config.MAX_PAGES_PER_SEARCH = args.max_pages
 
-    b_str = str(args.bedrooms).lower().strip()
-    if b_str in ["all", "todas", "0", ""]:
-        # Modo TODAS: Ejecutar 30 por cada tipo de habitación (1 a 5)
-        grand_total = 0
-        for bedroom_type in ["1", "2", "3", "4", "5"]:
-            print(f"\n{'='*60}")
-            print(f"🏠 INICIANDO BARRIDO DE {bedroom_type} HABITACIÓN(ES) | Máx: {args.max_items}")
-            print(f"{'='*60}")
-            scraper = FincaraizScraper(headless=True, max_items_per_run=args.max_items, mode=args.mode, bedrooms=bedroom_type)
+    localidades = config.get_localidades(args.sector)
+    habitaciones = config.get_bedrooms(args.bedrooms)
+    combinaciones = len(localidades) * len(habitaciones)
+
+    print("")
+    print(SEP)
+    print(f"🤖 ROBOT CAPTADOR | MODO: {args.mode.upper()}")
+    print(f"   Localidades  : {', '.join(localidades)}")
+    print(f"   Habitaciones : {', '.join(habitaciones)}")
+    print(f"   Cuota        : {args.max_items} por cada combinación")
+    print(f"   Combinaciones: {combinaciones}  (techo teórico: {combinaciones * args.max_items})")
+    print(SEP)
+
+    gran_total = 0
+    agotadas = []
+
+    # Sector por fuera y habitaciones por dentro: así, si la corrida se corta,
+    # queda una localidad terminada completa en vez de un pedazo de todas.
+    for localidad in localidades:
+        for hab in habitaciones:
+            inicio = datetime.now()
+            print("")
+            print(SEP)
+            print(f"📍 {localidad.upper()} | {hab} HABITACIÓN(ES) | Cuota: {args.max_items}")
+            print(SEP)
+
+            scraper = FincaraizScraper(
+                headless=True,
+                max_items_per_run=args.max_items,
+                mode=args.mode,
+                bedrooms=hab,
+                localidad=localidad,
+            )
             scraper.run()
-            grand_total += scraper.processed_count
-        print(f"\n{'='*60}")
-        print(f"🎯 GRAN TOTAL CAPTADO EN TODAS LAS HABITACIONES: {grand_total}")
-        print(f"{'='*60}")
-    else:
-        # Modo específico: Solo un tipo de habitación con max_items
-        scraper = FincaraizScraper(headless=True, max_items_per_run=args.max_items, mode=args.mode, bedrooms=args.bedrooms)
-        scraper.run()
+            gran_total += scraper.processed_count
+
+            minutos = round((datetime.now() - inicio).total_seconds() / 60, 1)
+
+            if scraper.agotado:
+                estado = "AGOTADA"
+                detalle = (f"Se recorrieron todas las páginas disponibles y solo se encontraron "
+                           f"{scraper.processed_count} de los {args.max_items} de la cuota. "
+                           f"No hay más propietarios nuevos en esta búsqueda.")
+                agotadas.append(f"{localidad} {hab} hab ({scraper.processed_count}/{args.max_items})")
+                print("")
+                print(f"⚠️  [AGOTADA] {detalle}")
+            else:
+                estado = "COMPLETA"
+                detalle = f"Cuota de {args.max_items} alcanzada."
+                print("")
+                print(f"✅ [COMPLETA] {detalle}")
+
+            # Se anota apenas termina cada combinación, no al final de todo, para
+            # que una corrida cortada a medias deje igual su rastro.
+            try:
+                scraper.sheets.registrar_bitacora([
+                    get_spanish_date_str(),
+                    inicio.strftime("%H:%M"),
+                    args.mode,
+                    localidad,
+                    hab,
+                    estado,
+                    scraper.processed_count,
+                    args.max_items,
+                    scraper.pages_visited,
+                    scraper.listings_seen,
+                    scraper.skipped_agency,
+                    scraper.skipped_dup,
+                    minutos,
+                    detalle,
+                ])
+            except Exception as e:
+                print(f"[WARN] No se pudo registrar en la bitácora: {e}")
+
+    print("")
+    print(SEP)
+    print(f"🎯 GRAN TOTAL CAPTADO: {gran_total}")
+    if agotadas:
+        print(f"⚠️  Combinaciones que se agotaron sin llenar la cuota ({len(agotadas)}):")
+        for a in agotadas:
+            print(f"     - {a}")
+    print(SEP)

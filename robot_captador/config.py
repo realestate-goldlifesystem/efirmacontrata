@@ -8,6 +8,10 @@ SERVICE_ACCOUNT_PATH = os.path.join(os.path.dirname(__file__), "real-estate-ocr-
 SHEET_TITLE_ARRIENDO = "1 - CAPTACIONES A"
 SHEET_TITLE_VENTA = "1 - CAPTACIONES V"
 
+# Pestaña donde el robot deja el registro de cada corrida. La crea sola si no
+# existe. De aquí lee el modal "Resumen de Captaciones" del menú del Sheet.
+SHEET_TITLE_BITACORA = "0 - BITACORA ROBOT"
+
 # Fila que se usa como PLANTILLA de formato para las filas nuevas.
 # Debe ser una fila de datos con el formato correcto (bordes, colores,
 # validaciones). Se usa una fila fija y conocida como buena, no la anterior,
@@ -85,14 +89,22 @@ STRICT_PARTICULAR_FILTER = True
 # 2 habitaciones) no incluye "chapinero/zona-nororiental" (194). Son listados
 # distintos y hay que pedirlos por separado.
 
-SECTORES = [
-    "usaquen",
-    "suba",
-    "chapinero",
-    "chapinero/zona-nororiental",
-    "chapinero-central",
-    "chapinero-alto",
-]
+# Una LOCALIDAD puede estar partida en varias zonas dentro de Fincaraiz.
+# Chapinero son 4 listados distintos que NO se contienen entre si; se agrupan
+# aqui porque para el usuario "Chapinero" es un solo sector y comparte su cuota.
+LOCALIDADES = {
+    "usaquen":   ["usaquen"],
+    "suba":      ["suba"],
+    "chapinero": [
+        "chapinero",
+        "chapinero/zona-nororiental",
+        "chapinero-central",
+        "chapinero-alto",
+    ],
+}
+
+# Lista plana de todas las zonas (se conserva por compatibilidad).
+SECTORES = [z for zonas in LOCALIDADES.values() for z in zonas]
 
 BEDROOM_SLUGS = {
     "1": "1-habitacion",
@@ -104,16 +116,27 @@ BEDROOM_SLUGS = {
 
 _BASE = "https://www.fincaraiz.com.co/{op}/apartamentos-y-apartaestudios/{sector}/bogota/{hab}"
 
-def _construir_urls(operacion):
-    """Genera la matriz completa sector x habitaciones para una operación."""
-    return [
-        _BASE.format(op=operacion, sector=sector, hab=slug)
-        for sector in SECTORES
-        for slug in BEDROOM_SLUGS.values()
-    ]
+def get_localidades(sector="all"):
+    """Localidades a recorrer. 'all' devuelve las tres."""
+    s = str(sector).lower().strip()
+    if not s or s in ("all", "todos", "todas"):
+        return list(LOCALIDADES.keys())
+    return [s] if s in LOCALIDADES else list(LOCALIDADES.keys())
 
-TARGET_URLS_ARRIENDO = _construir_urls("arriendo")
-TARGET_URLS_VENTA = _construir_urls("venta")
+def get_bedrooms(bedrooms="all"):
+    """Cantidades de habitaciones a recorrer. 'all' devuelve de 1 a 5."""
+    b = str(bedrooms).lower().strip()
+    if not b or b in ("all", "todas", "0"):
+        return list(BEDROOM_SLUGS.keys())
+    return [b] if b in BEDROOM_SLUGS else list(BEDROOM_SLUGS.keys())
+
+def urls_de(operacion, localidad, bedrooms):
+    """URLs de una combinacion concreta: una localidad y una cantidad de habitaciones."""
+    slug = BEDROOM_SLUGS.get(str(bedrooms), BEDROOM_SLUGS["1"])
+    return [
+        _BASE.format(op=operacion, sector=zona, hab=slug)
+        for zona in LOCALIDADES.get(localidad, [])
+    ]
 
 def get_target_urls(mode="arriendo", bedrooms="all"):
     """Retorna la lista de URLs según el modo (arriendo o venta) y filtro opcional de habitaciones."""

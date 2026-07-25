@@ -68,7 +68,8 @@ function obtenerResumenCaptaciones() {
         orden: _fechaOrdenable(etiqueta),
         arriendo: 0,
         venta: 0,
-        corridas: []
+        corridas: [],
+        combinaciones: []
       };
     }
     return mapa[etiqueta];
@@ -104,6 +105,31 @@ function obtenerResumenCaptaciones() {
       resultado.totalCaptaciones++;
     });
   });
+
+  // ---- 1b. Bitacora del robot: detalle por combinacion sector x habitaciones ----
+  var hojaBitacora = ss.getSheetByName('0 - BITACORA ROBOT');
+  if (hojaBitacora && hojaBitacora.getLastRow() > 1) {
+    var filas = hojaBitacora.getRange(2, 1, hojaBitacora.getLastRow() - 1,
+                                      hojaBitacora.getLastColumn()).getDisplayValues();
+    filas.forEach(function (f) {
+      var etiqueta = String(f[0]).trim();
+      if (!etiqueta) return;
+      var dia = asegurarDia(etiqueta);
+      if (!dia.combinaciones) dia.combinaciones = [];
+      dia.combinaciones.push({
+        hora: f[1],
+        modo: f[2],
+        sector: f[3],
+        habitaciones: f[4],
+        estado: f[5],
+        captados: Number(f[6]) || 0,
+        cuota: Number(f[7]) || 0,
+        paginas: Number(f[8]) || 0,
+        duracion: f[12],
+        detalle: f[13]
+      });
+    });
+  }
 
   // ---- 2. Corridas del workflow, desde GitHub ----
   var props = PropertiesService.getScriptProperties();
@@ -166,7 +192,11 @@ function obtenerResumenCaptaciones() {
 
   dias.forEach(function (d) {
     d.corridas.sort(function (a, b) { return a.hora < b.hora ? 1 : -1; });
+    d.combinaciones = d.combinaciones || [];
+    d.combinaciones.sort(function (a, b) { return a.hora < b.hora ? 1 : -1; });
     d.total = d.arriendo + d.venta;
+    d.agotadas = d.combinaciones.filter(function (c) { return c.estado === 'AGOTADA'; }).length;
+    d.completas = d.combinaciones.filter(function (c) { return c.estado === 'COMPLETA'; }).length;
   });
 
   resultado.dias = dias;
@@ -204,9 +234,10 @@ function ejecutarAgenteCaptador(modo) {
  * @param {string} modo - 'arriendo' o 'venta'
  * @param {string} bedrooms - '1', '2', '3', '4', '5' o 'all'
  */
-function dispararWorkflowConHabitaciones(modo, bedrooms) {
+function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
   modo = modo || 'arriendo';
   bedrooms = bedrooms || 'all';
+  sector = sector || 'all';
 
   var ui = SpreadsheetApp.getUi();
   var esVenta = modo === 'venta';
@@ -229,7 +260,11 @@ function dispararWorkflowConHabitaciones(modo, bedrooms) {
 
   try {
     var url = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/workflows/scraper.yml/dispatches";
-    var habTexto = (bedrooms === 'all') ? 'Todas las habitaciones (1 a 5+)' : bedrooms + ' Habitación(es)';
+    var habTexto = (bedrooms === 'all') ? 'Todas las habitaciones (1 a 5)' : bedrooms + ' Habitación(es)';
+    var sectorTexto = (sector === 'all') ? 'Usaquén, Suba y Chapinero' :
+                      sector.charAt(0).toUpperCase() + sector.slice(1);
+    var combinaciones = (sector === 'all' ? 3 : 1) * (bedrooms === 'all' ? 5 : 1);
+    var techo = combinaciones * 30;
 
     var options = {
       "method": "post",
@@ -242,7 +277,8 @@ function dispararWorkflowConHabitaciones(modo, bedrooms) {
         "ref": "main",
         "inputs": {
           "mode": modo,
-          "bedrooms": bedrooms
+          "bedrooms": bedrooms,
+          "sector": sector
         }
       }),
       "muteHttpExceptions": true

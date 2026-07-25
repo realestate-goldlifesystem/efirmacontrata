@@ -15,6 +15,16 @@ on:
         description: 'Filtro de habitaciones (1, 2, 3, 4, 5, all)'
         required: false
         default: 'all'
+      sector:
+        description: 'Localidad objetivo'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - usaquen
+          - suba
+          - chapinero
   repository_dispatch:
     types: [trigger-scraper]
   schedule:
@@ -50,5 +60,6 @@ jobs:
         run: |
           MODE="${{ github.event.inputs.mode || github.event.client_payload.mode || 'arriendo' }}"
           BEDROOMS="${{ github.event.inputs.bedrooms || github.event.client_payload.bedrooms || 'all' }}"
-          echo "Ejecutando robot captador en modo: $MODE | Habitaciones: $BEDROOMS"
-          python robot_captador/scraper.py --mode "$MODE" --bedrooms "$BEDROOMS" --max-items 30
+          SECTOR="${{ github.event.inputs.sector || github.event.client_payload.sector || 'all' }}"
+          echo "Ejecutando robot captador | Modo: $MODE | Sector: $SECTOR | Habitaciones: $BEDROOMS"
+          python robot_captador/scraper.py --mode "$MODE" --sector "$SECTOR" --bedrooms "$BEDROOMS" --max-items 30

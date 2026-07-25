@@ -81,6 +81,21 @@
         color: #ffffff;
         box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
       }
+      .seccion-label {
+        font-size: 11px; font-weight: 700; color: #334155;
+        text-transform: uppercase; letter-spacing: .3px;
+        margin: 2px 0 6px;
+      }
+      .sectores-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 6px; margin-bottom: 14px;
+      }
+      .resumen-plan {
+        font-size: 11px; color: #475569; background: #f8fafc;
+        border: 1.5px solid #e2e8f0; border-radius: 8px;
+        padding: 7px 10px; margin-bottom: 12px; line-height: 1.5;
+      }
+      .resumen-plan b { color: #0f172a; }
       .actions {
         display: flex;
         justify-content: flex-end;
@@ -112,6 +127,15 @@
     <div class="modal-title">🤖 Agente Captador Fincaraiz</div>
     <div class="modal-subtitle">Modo: <b><?= tipoTexto ?></b> | Selecciona habitaciones objetivo:</div>
     
+    <div class="seccion-label">Sector</div>
+    <div class="sectores-grid">
+      <button class="pill-btn sector-btn" onclick="selectSector('usaquen', this)">Usaqu&eacute;n</button>
+      <button class="pill-btn sector-btn" onclick="selectSector('suba', this)">Suba</button>
+      <button class="pill-btn sector-btn" onclick="selectSector('chapinero', this)">Chapinero</button>
+      <button class="pill-btn sector-btn active" onclick="selectSector('all', this)">Todos</button>
+    </div>
+
+    <div class="seccion-label">Habitaciones</div>
     <div class="pills-grid">
       <button class="pill-btn active" onclick="selectHab('1', this)">1 Hab</button>
       <button class="pill-btn" onclick="selectHab('2', this)">2 Habs</button>
@@ -120,7 +144,9 @@
       <button class="pill-btn" onclick="selectHab('5', this)">5 Habs</button>
     </div>
 
-    <button class="pill-full" onclick="selectHab('all', this)">✨ TODAS LAS HABITACIONES (1 a 5+ Habs)</button>
+    <button class="pill-full" onclick="selectHab('all', this)">✨ TODAS LAS HABITACIONES (1 a 5)</button>
+
+    <div class="resumen-plan" id="resumenPlan"></div>
 
     <div class="actions">
       <button class="btn btn-secondary" onclick="google.script.host.close()">Cancelar</button>
@@ -129,19 +155,55 @@
 
     <script>
       var selectedBedrooms = '1';
+      var selectedSector = 'all';
+
+      // Cada grupo limpia SOLO sus propios botones: antes se limpiaban todos
+      // los .pill-btn de la página y eso habría borrado la selección de sector.
+      function selectSector(val, btn) {
+        selectedSector = val;
+        document.querySelectorAll('.sector-btn').forEach(function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        pintarResumen();
+      }
 
       function selectHab(val, btn) {
         selectedBedrooms = val;
-        var btns = document.querySelectorAll('.pill-btn, .pill-full');
-        btns.forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.pills-grid .pill-btn, .pill-full').forEach(function (b) {
+          b.classList.remove('active');
+        });
         btn.classList.add('active');
+        pintarResumen();
+      }
+
+      function pintarResumen() {
+        var sectores = (selectedSector === 'all') ? 3 : 1;
+        var habs = (selectedBedrooms === 'all') ? 5 : 1;
+        var barridos = sectores * habs;
+        var techo = barridos * 30;
+
+        var nombreSector = { usaquen: 'Usaquén', suba: 'Suba', chapinero: 'Chapinero',
+                             all: 'Usaquén, Suba y Chapinero' }[selectedSector];
+        var nombreHab = (selectedBedrooms === 'all')
+          ? 'de 1 a 5 habitaciones'
+          : selectedBedrooms + ' habitación(es)';
+
+        var texto = 'Se harán <b>' + barridos + '</b> barrido' + (barridos === 1 ? '' : 's') +
+                    ' de 30 en ' + nombreSector + ', ' + nombreHab +
+                    '. Máximo <b>' + techo + '</b> captaciones.';
+
+        if (barridos >= 10) {
+          texto += '<br>Puede tardar <b>1 a 3 horas</b>; corre en la nube, puedes cerrar la hoja.';
+        }
+        document.getElementById('resumenPlan').innerHTML = texto;
       }
 
       function iniciar() {
         var primaryBtn = document.querySelector('.btn-primary');
         primaryBtn.disabled = true;
         primaryBtn.innerText = '⏳ Activando...';
-        
+
         google.script.run
           .withSuccessHandler(function() {
             google.script.host.close();
@@ -151,8 +213,10 @@
             primaryBtn.disabled = false;
             primaryBtn.innerText = '🚀 Iniciar Barrido';
           })
-          .dispararWorkflowConHabitaciones('<?= modo ?>', selectedBedrooms);
+          .dispararWorkflowConHabitaciones('<?= modo ?>', selectedBedrooms, selectedSector);
       }
+
+      pintarResumen();
     </script>
   </body>
 </html>

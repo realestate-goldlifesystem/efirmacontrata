@@ -201,6 +201,64 @@ class SheetsHandler:
             )
         return self.sheet_id
 
+    BITACORA_HEADERS = [
+        "FECHA", "HORA", "MODO", "SECTOR", "HABITACIONES", "ESTADO",
+        "CAPTADOS", "CUOTA", "PAGINAS", "ANUNCIOS VISTOS",
+        "INMOBILIARIAS", "DUPLICADOS", "DURACION (min)", "DETALLE"
+    ]
+
+    def registrar_bitacora(self, fila):
+        """
+        Anota el resultado de UNA combinación (sector x habitaciones) en la
+        pestaña de bitácora, creándola con sus encabezados si no existe.
+
+        Se escribe apenas termina cada combinación, no al final de todo, para
+        que una corrida cortada a medias deje igual su rastro.
+        """
+        titulo = config.SHEET_TITLE_BITACORA
+        try:
+            info = con_reintentos(
+                lambda: self.service.get(spreadsheetId=self.spreadsheet_id).execute(),
+                "lectura de pestañas"
+            )
+            existe = any(s["properties"]["title"] == titulo for s in info["sheets"])
+
+            if not existe:
+                con_reintentos(
+                    lambda: self.service.batchUpdate(
+                        spreadsheetId=self.spreadsheet_id,
+                        body={"requests": [{"addSheet": {"properties": {
+                            "title": titulo,
+                            "gridProperties": {"rowCount": 2000, "columnCount": len(self.BITACORA_HEADERS)}
+                        }}}]}
+                    ).execute(),
+                    "creación de la bitácora"
+                )
+                con_reintentos(
+                    lambda: self.service.values().update(
+                        spreadsheetId=self.spreadsheet_id,
+                        range=f"'{titulo}'!A1",
+                        valueInputOption="RAW",
+                        body={"values": [self.BITACORA_HEADERS]}
+                    ).execute(),
+                    "encabezados de la bitácora"
+                )
+                print(f"[INFO] Pestaña '{titulo}' creada.")
+
+            con_reintentos(
+                lambda: self.service.values().append(
+                    spreadsheetId=self.spreadsheet_id,
+                    range=f"'{titulo}'!A1",
+                    valueInputOption="USER_ENTERED",
+                    insertDataOption="INSERT_ROWS",
+                    body={"values": [fila]}
+                ).execute(),
+                "escritura en la bitácora"
+            )
+        except Exception as e:
+            # La bitácora es informativa: si falla, la captación ya quedó guardada.
+            print(f"[WARN] No se pudo escribir en la bitácora: {e}")
+
     def get_sheet_row_count(self, sheet_id):
         """Cantidad actual de filas físicas de la pestaña (para insertar al final)."""
         info = self.service.get(spreadsheetId=self.spreadsheet_id).execute()
