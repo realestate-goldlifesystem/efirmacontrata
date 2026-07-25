@@ -2,6 +2,7 @@ import sys
 import re
 import time
 import json
+import math
 import unicodedata
 from playwright.sync_api import sync_playwright
 import config
@@ -20,6 +21,35 @@ def normalize_text(text):
     text = unicodedata.normalize('NFD', text).encode('ascii', 'ignore').decode("utf-8")
     return text.lower().strip()
 
+def keyword_matches(keyword, norm_name, words):
+    """
+    Decide si una palabra de la lista negra realmente aparece en el nombre.
+
+    Antes se comparaba por substring puro, y eso rechazaba personas reales:
+    'pad' descartaba a "Blanca Isabel Padilla" (que está captada en la hoja),
+    y 'sas' descartaba a cualquier "Sasha" o "Casas".
+
+    Pero tampoco sirve exigir palabra exacta a todo: 'inmobiliaria' deberia
+    seguir atrapando "inmobiliarias", y 'asesor' a "asesores". Por eso:
+
+      - Con espacios o signos ('finca raiz', 's.a.s', 're/max') -> substring,
+        porque son inequívocas y los signos rompen la división por palabras.
+      - Palabras largas (6+) -> coincidencia exacta o su PLURAL. Se aceptan solo
+        los plurales y no cualquier prefijo, porque 'capital' con prefijo
+        rechazaba a "Capitalino".
+      - Palabras cortas ('sas', 'pad', 'houm') -> solo coincidencia exacta.
+    """
+    kw = normalize_text(keyword)
+    if not kw:
+        return False
+
+    if not kw.isalnum():          # tiene espacio, punto o barra
+        return kw in norm_name
+    if len(kw) >= 6:
+        variantes = {kw, kw + "s", kw + "es"}
+        return any(w in variantes for w in words)
+    return kw in words
+
 def is_natural_person(owner_dict):
     """
     Determina si un anunciante corresponde a una Persona Natural (Propietario Directo).
@@ -37,8 +67,7 @@ def is_natural_person(owner_dict):
 
     excluded_kw = getattr(config, "KEYWORD_BLACKLIST", getattr(config, "EXCLUDED_KEYWORDS", []))
     for keyword in excluded_kw:
-        norm_kw = normalize_text(keyword)
-        if norm_kw in words or norm_kw in norm_name:
+        if keyword_matches(keyword, norm_name, words):
             return False, f"Inmobiliaria/Empresa detectada por palabra clave '{keyword}' en '{name}'"
 
     # 2. Verificar tipo 'inmobiliaria' en API
@@ -107,6 +136,7 @@ class FincaraizScraper:
         self.sheets = SheetsHandler(mode=self.mode)
         self.target_urls = config.get_target_urls(self.mode, self.bedrooms)
         self.processed_count = 0
+        self.per_search_cap = max_items_per_run
         # Contadores de diagnóstico de la sesión
         self.pages_visited = 0
         self.listings_seen = 0
@@ -138,6 +168,13 @@ class FincaraizScraper:
             )
 
             page = context.new_page()
+
+            # Cuota justa por sector: sin esto, el primer sector (Usaquén) se
+            # llevaba las 30 captaciones y Suba, Chapinero y sus zonas nunca se
+            # tocaban. Se reparte el tope entre las búsquedas de la corrida.
+            total_busquedas = max(1, len(self.target_urls))
+            self.per_search_cap = max(1, math.ceil(self.max_items_per_run / total_busquedas))
+            print(f"[INFO] {total_busquedas} búsquedas | cuota por sector: {self.per_search_cap} captaciones")
 
             for base_url in self.target_urls:
                 if self.processed_count >= self.max_items_per_run:
@@ -197,6 +234,9 @@ class FincaraizScraper:
         for link in candidates:
             if self.processed_count >= self.max_items_per_run:
                 return False
+            if self.captured_this_search >= self.per_search_cap:
+                print(f"   ⏭️  Cuota de {self.per_search_cap} alcanzada en este sector. Pasando al siguiente.")
+                return True
 
             if link.lower().strip() in self.sheets.existing_links:
                 print(f"[SKIP] Link ya registrado en Google Sheets: {link}")
@@ -208,6 +248,7 @@ class FincaraizScraper:
 
             if captacion_data and self.sheets.append_captacion(captacion_data):
                 self.processed_count += 1
+                self.captured_this_search += 1
                 print(f"✨ Total captados en esta sesión: {self.processed_count}")
 
         return True
@@ -259,6 +300,8 @@ class FincaraizScraper:
 
             if self.processed_count >= self.max_items_per_run:
                 print(f"[STOP] Límite de {self.max_items_per_run} captaciones alcanzado.")
+                return
+            if self.captured_this_search >= self.per_search_cap:
                 return
 
             items, paginator = self.fetch_listing_page(page, base_url, page_num)

@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import time
 import unicodedata
 from datetime import datetime
 from google.oauth2 import service_account
@@ -12,6 +13,33 @@ if sys.platform == "win32":
         sys.stdout.reconfigure(encoding='utf-8')
     except Exception:
         pass
+
+def con_reintentos(operacion, descripcion="operación de Sheets"):
+    """
+    Ejecuta una llamada a la API de Sheets reintentando ante fallos pasajeros.
+
+    Sin esto, un 429 (demasiadas peticiones) o un 500 de Google tumbaba la
+    excepción hasta arriba y se perdía el resto de la búsqueda en curso.
+    Espera 2s, 4s y 8s entre intentos.
+    """
+    ultimo_error = None
+    for intento in range(1, 4):
+        try:
+            return operacion()
+        except Exception as e:
+            texto = str(e)
+            recuperable = any(c in texto for c in ("429", "500", "502", "503", "504",
+                                                   "rateLimitExceeded", "backendError",
+                                                   "internalError", "timed out"))
+            if not recuperable or intento == 3:
+                raise
+            ultimo_error = e
+            espera = 2 ** intento
+            print(f"[RETRY] {descripcion} falló (intento {intento}/3): {texto[:90]}")
+            print(f"        Reintentando en {espera}s...")
+            time.sleep(espera)
+    if ultimo_error:
+        raise ultimo_error
 
 MONTHS_ES = {
     1: "ene", 2: "feb", 3: "mar", 4: "abr", 5: "may", 6: "jun",
@@ -83,9 +111,12 @@ class SheetsHandler:
         - Fila 3+: Datos reales (Escribir siempre al final)
         """
         range_name = f"'{self.sheet_title}'!A1:Z3000"
-        result = self.service.values().get(
-            spreadsheetId=self.spreadsheet_id, range=range_name
-        ).execute()
+        result = con_reintentos(
+            lambda: self.service.values().get(
+                spreadsheetId=self.spreadsheet_id, range=range_name
+            ).execute(),
+            f"lectura de '{self.sheet_title}'"
+        )
 
         rows = result.get("values", [])
         print(f"[INFO] Cargas de Google Sheets ('{self.sheet_title}'): {len(rows)} filas leídas.")
@@ -270,12 +301,15 @@ class SheetsHandler:
         }
 
         try:
-            self.service.values().update(
-                spreadsheetId=self.spreadsheet_id,
-                range=range_to_update,
-                valueInputOption="USER_ENTERED",
-                body=body
-            ).execute()
+            con_reintentos(
+                lambda: self.service.values().update(
+                    spreadsheetId=self.spreadsheet_id,
+                    range=range_to_update,
+                    valueInputOption="USER_ENTERED",
+                    body=body
+                ).execute(),
+                f"escritura de la fila {self.target_row_index}"
+            )
         except Exception as e:
             if "exceeds grid limits" in str(e):
                 print(f"[WARN] Límite de filas alcanzado en la fila {self.target_row_index}. Expandiendo el Sheet automáticamente...")

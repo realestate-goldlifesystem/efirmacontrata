@@ -69,60 +69,51 @@ PAGE_ERROR_TOLERANCE = 3    # Páginas seguidas con error antes de abandonar la 
 # así el robot no gasta navegaciones abriendo inmobiliarias para descartarlas.
 STRICT_PARTICULAR_FILTER = True
 
-# URLs Objetivo de Búsqueda ARRIENDO
-# NOTA: se removió `?particular=true` porque Fincaraiz lo ignora por completo
-# (idéntico total de resultados con y sin el parámetro). El filtrado real de
-# particulares lo hace el robot leyendo owner.particular del listado.
-TARGET_URLS_ARRIENDO = [
-    # Usaquén (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/1-habitacion",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/2-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/3-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/4-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/5-habitaciones",
+# ---------------------------------------------------------------------------
+# MATRIZ DE BÚSQUEDA
+# ---------------------------------------------------------------------------
+# Antes las URLs estaban escritas a mano una por una, y por eso los sectores de
+# Chapinero solo tenían la de 1 habitación: para 2, 3, 4 y 5 el robot no miraba
+# nada. Medido el 25-jul-2026, ese hueco escondía miles de anuncios
+# (ej: venta en chapinero/zona-nororiental de 3 habitaciones = 886 anuncios).
+#
+# Ahora la matriz se genera a partir de estas dos listas. Para cubrir un sector
+# nuevo basta agregarlo a SECTORES y queda cubierto en arriendo y venta, en
+# todas las cantidades de habitaciones.
+#
+# NOTA: los sectores NO se contienen entre sí. "chapinero" (52 anuncios en
+# 2 habitaciones) no incluye "chapinero/zona-nororiental" (194). Son listados
+# distintos y hay que pedirlos por separado.
 
-    # Suba (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/1-habitacion",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/2-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/3-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/4-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/5-habitaciones",
-
-    # Chapinero y Sectores (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/1-habitacion",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/2-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/3-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/4-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/5-habitaciones",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/zona-nororiental/bogota/1-habitacion",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero-central/bogota/1-habitacion"
+SECTORES = [
+    "usaquen",
+    "suba",
+    "chapinero",
+    "chapinero/zona-nororiental",
+    "chapinero-central",
+    "chapinero-alto",
 ]
 
-# URLs Objetivo de Búsqueda VENTA (sin `?particular=true`, ver nota arriba)
-TARGET_URLS_VENTA = [
-    # Usaquén (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/1-habitacion",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/2-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/3-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/4-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/5-habitaciones",
+BEDROOM_SLUGS = {
+    "1": "1-habitacion",
+    "2": "2-habitaciones",
+    "3": "3-habitaciones",
+    "4": "4-habitaciones",
+    "5": "5-habitaciones",
+}
 
-    # Suba (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/1-habitacion",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/2-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/3-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/4-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/5-habitaciones",
+_BASE = "https://www.fincaraiz.com.co/{op}/apartamentos-y-apartaestudios/{sector}/bogota/{hab}"
 
-    # Chapinero y Sectores (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/1-habitacion",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/2-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/3-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/4-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/5-habitaciones",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/zona-nororiental/bogota/1-habitacion",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero-central/bogota/1-habitacion"
-]
+def _construir_urls(operacion):
+    """Genera la matriz completa sector x habitaciones para una operación."""
+    return [
+        _BASE.format(op=operacion, sector=sector, hab=slug)
+        for sector in SECTORES
+        for slug in BEDROOM_SLUGS.values()
+    ]
+
+TARGET_URLS_ARRIENDO = _construir_urls("arriendo")
+TARGET_URLS_VENTA = _construir_urls("venta")
 
 def get_target_urls(mode="arriendo", bedrooms="all"):
     """Retorna la lista de URLs según el modo (arriendo o venta) y filtro opcional de habitaciones."""
