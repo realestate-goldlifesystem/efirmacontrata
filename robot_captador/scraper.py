@@ -134,11 +134,13 @@ class FincaraizScraper:
         self.mode = str(mode).lower()
         self.bedrooms = str(bedrooms).lower()
         self.sheets = SheetsHandler(mode=self.mode)
-        self.localidad = localidad
-        if localidad:
-            self.target_urls = config.urls_de(self.mode, localidad, self.bedrooms)
-        else:
-            self.target_urls = config.get_target_urls(self.mode, self.bedrooms)
+        # Si no se especifica localidad, se recorren todas (comportamiento
+        # equivalente a --sector all).
+        self.localidad = localidad or "all"
+        urls = []
+        for loc in config.get_localidades(self.localidad):
+            urls.extend(config.urls_de(self.mode, loc, self.bedrooms))
+        self.target_urls = urls
         self.agotado = True   # se vuelve False si se alcanza la cuota
         self.processed_count = 0
         self.per_search_cap = max_items_per_run
@@ -186,6 +188,11 @@ class FincaraizScraper:
                 self.scrape_search(page, base_url)
 
             browser.close()
+
+            # AGOTADA = se recorrieron todas las páginas sin llenar la cuota.
+            # COMPLETA = se alcanzó la cuota y se paró por eso.
+            self.agotado = self.processed_count < self.max_items_per_run
+
             print(f"\n🎉 [FINALIZADO] Sesión terminada.")
             print(f"   Páginas de listado recorridas : {self.pages_visited}")
             print(f"   Anuncios vistos en listados   : {self.listings_seen}")
@@ -272,6 +279,7 @@ class FincaraizScraper:
         La barra de paginación de la web solo muestra hasta 50, pero es cosmética.
         """
         print(f"\n{'─'*70}\n🔎 [BÚSQUEDA] {base_url}")
+        self.captured_this_search = 0
 
         # --- Paso 1: la página 1 nos da lastPage y sus propios anuncios ---
         items, paginator = self.fetch_listing_page(page, base_url, 1)

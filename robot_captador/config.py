@@ -138,21 +138,6 @@ def urls_de(operacion, localidad, bedrooms):
         for zona in LOCALIDADES.get(localidad, [])
     ]
 
-def get_target_urls(mode="arriendo", bedrooms="all"):
-    """Retorna la lista de URLs según el modo (arriendo o venta) y filtro opcional de habitaciones."""
-    base_urls = TARGET_URLS_VENTA if str(mode).lower() == "venta" else TARGET_URLS_ARRIENDO
-    b_str = str(bedrooms).lower().strip()
-    if not b_str or b_str in ["all", "todas", "0"]:
-        return base_urls
-
-    filtered = []
-    target_pattern = f"/{b_str}-habitacio"
-    for url in base_urls:
-        if target_pattern in url:
-            filtered.append(url)
-    
-    return filtered if filtered else base_urls
-
 def get_sheet_title(mode="arriendo"):
     """Retorna la pestaña del Sheet según el modo (arriendo o venta)."""
     return SHEET_TITLE_VENTA if str(mode).lower() == "venta" else SHEET_TITLE_ARRIENDO
