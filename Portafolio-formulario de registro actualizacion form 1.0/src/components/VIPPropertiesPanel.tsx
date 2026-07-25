@@ -243,6 +243,13 @@ export default function VIPPropertiesPanel() {
       return '$' + num.toLocaleString('es-CO');
     };
 
+    // Helper: "3 Habitaciones" / "1 Habitación", null si viene en cero o vacío
+    const conteo = (val: string, icono: string, sing: string, plural: string) => {
+      const n = parseInt(String(val).replace(/\D/g, ''), 10);
+      if (isNaN(n) || n === 0) return null;
+      return `${icono} ${n} ${n === 1 ? sing : plural}`;
+    };
+
     // Helper: recorta imagen a proporción destino usando canvas (sin distorsión)
     const cropImageToRatio = (base64: string, destW: number, destH: number): Promise<string> => {
       return new Promise((resolve) => {
@@ -767,51 +774,127 @@ export default function VIPPropertiesPanel() {
           }
         });
 
+        // Construir enlace WhatsApp con mensaje personalizado por inmueble
+        const waTipo = isMixto ? 'Venta/Arriendo' : isArriendo ? 'Arriendo' : 'Venta';
+        const waValor = (isArriendo || isMixto) ? fmt(p.precioGeneral) : fmt(p.precioVenta);
+        // El sufijo /mes solo aplica a arriendo puro (en mixto el precio cubre ambos negocios)
+        const waPrecio = !waValor
+          ? 'Precio a consultar'
+          : (isArriendo && !isMixto) ? `${waValor}/mes` : waValor;
+
+        // Evita "Bogotá, Bogotá" cuando el barrio viene vacío o repite la ciudad
+        const waBarrio = (p.barrio || '').trim();
+        const waCiudad = (p.ciudad || '').trim();
+        const waUbicacion = waBarrio && waBarrio.toUpperCase() !== waCiudad.toUpperCase()
+          ? `${waBarrio}, ${waCiudad}`
+          : waCiudad;
+
+        // Omite las métricas que vengan en cero en lugar de imprimir "0 Garajes"
+        const waFicha = [
+          conteo(p.habitaciones, '🛏️', 'Habitación', 'Habitaciones'),
+          conteo(p.banos, '🛁', 'Baño', 'Baños'),
+          conteo(p.garajes, '🚗', 'Garaje', 'Garajes'),
+        ].filter(Boolean).join(' | ');
+
+        const waMsg = [
+          '🏡 ¡Hola Real Estate - Gold Life!',
+          '',
+          'Estoy interesado/a en el siguiente inmueble de su portafolio:',
+          '',
+          `🆔 Código: ${p.idRegistro}`,
+          `📍 Ubicación: ${waUbicacion}`,
+          ...(waFicha ? [waFicha] : []),
+          `💰 ${waTipo}: ${waPrecio}`,
+          '',
+          'Me gustaría coordinar una visita.',
+          '',
+          '¡Muchas gracias! 🙌',
+        ].join('\n');
+        const waUrl = `https://wa.me/573177623878?text=${encodeURIComponent(waMsg)}`;
+
         // --- SECCIÓN 3: BOTONES ---
+        // Solo se dibujan los que tienen enlace real y se reparten el ancho entre
+        // ellos, para que un inmueble sin video o sin fotos no muestre botones muertos.
         const btnY = sec2Y + 18; // Botones con buen margen inferior
-        const btnW = (contentW - 10) / 2;
+        const btnGap = 4;
         const btnH = 13;
+        const btnAreaX = MARGIN + 2;
+        const btnAreaW = contentW - 4; // 2mm de aire a cada lado
 
-        // BOTÓN 1: VIDEO TOUR (Fondo dorado)
-        doc.setFillColor(212, 175, 55); 
-        doc.roundedRect(MARGIN + 2, btnY, btnW - 2, btnH, 1.5, 1.5, 'F');
-        doc.setTextColor(24, 25, 26);
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.text("VER VIDEO TOUR", MARGIN + btnW / 2 + 5, btnY + 8, { align: 'center' });
-        
-        // Icono Play
-        const playX = MARGIN + btnW / 2 - 25;
-        const playY = btnY + btnH / 2;
-        doc.setDrawColor(24, 25, 26);
-        doc.setLineWidth(0.4);
-        doc.circle(playX, playY, 3.5, 'S');
-        doc.setFillColor(24, 25, 26);
-        doc.triangle(playX - 1, playY - 1.5, playX - 1, playY + 1.5, playX + 1.5, playY, 'F');
-        if (p.youtube) doc.link(MARGIN + 2, btnY, btnW - 2, btnH, { url: p.youtube });
+        const botones: { tipo: 'video' | 'fotos' | 'cita'; label: string; url: string }[] = [];
+        if (p.youtube) botones.push({ tipo: 'video', label: 'VER VIDEO TOUR', url: p.youtube });
+        if (p.facebook) botones.push({ tipo: 'fotos', label: 'VER FOTOGRAFÍAS', url: p.facebook });
+        botones.push({ tipo: 'cita', label: 'AGENDAR CITA', url: waUrl });
 
-        // BOTÓN 2: FOTOGRAFÍAS (Fondo oscuro, borde dorado)
-        const btn2X = MARGIN + btnW + 8;
-        doc.setFillColor(32, 33, 35);
-        doc.roundedRect(btn2X, btnY, btnW - 2, btnH, 1.5, 1.5, 'F');
-        doc.setDrawColor(212, 175, 55);
-        doc.setLineWidth(0.4);
-        doc.roundedRect(btn2X, btnY, btnW - 2, btnH, 1.5, 1.5, 'S');
-        doc.setTextColor(255, 255, 255);
-        doc.text("VER FOTOGRAFÍAS", btn2X + btnW / 2 + 4, btnY + 8, { align: 'center' });
-        
-        // Icono Cámara
-        const fbX = btn2X + btnW / 2 - 27;
-        const fbY = btnY + btnH / 2;
-        doc.setFillColor(255, 255, 255);
-        doc.circle(fbX, fbY, 3.5, 'F');
-        doc.setDrawColor(32, 33, 35);
-        doc.setLineWidth(0.4);
-        doc.roundedRect(fbX - 1.5, fbY - 1, 3, 2.2, 0.3, 0.3, 'S'); // body
-        doc.circle(fbX, fbY + 0.1, 0.7, 'S'); // lens
-        doc.line(fbX - 0.5, fbY - 1.5, fbX + 0.5, fbY - 1.5); // flash
-        
-        if (p.facebook) doc.link(btn2X, btnY, btnW - 2, btnH, { url: p.facebook });
+        const btnW = (btnAreaW - btnGap * (botones.length - 1)) / botones.length;
+
+        botones.forEach((b, bi) => {
+          const bx = btnAreaX + bi * (btnW + btnGap);
+          const cy = btnY + btnH / 2;
+
+          // Fondo segun tipo
+          if (b.tipo === 'video') {
+            doc.setFillColor(212, 175, 55); // Dorado
+            doc.roundedRect(bx, btnY, btnW, btnH, 1.5, 1.5, 'F');
+          } else if (b.tipo === 'fotos') {
+            doc.setFillColor(32, 33, 35);
+            doc.roundedRect(bx, btnY, btnW, btnH, 1.5, 1.5, 'F');
+            doc.setDrawColor(212, 175, 55);
+            doc.setLineWidth(0.4);
+            doc.roundedRect(bx, btnY, btnW, btnH, 1.5, 1.5, 'S');
+          } else {
+            doc.setFillColor(37, 211, 102); // Verde WhatsApp #25D366
+            doc.roundedRect(bx, btnY, btnW, btnH, 1.5, 1.5, 'F');
+          }
+
+          // Icono y texto se centran como un solo grupo, asi el boton queda
+          // equilibrado sin importar cuanto ancho le toque.
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'bold');
+          const iconR = 3;
+          const iconGap = 3.5;
+          const grupoW = iconR * 2 + iconGap + doc.getTextWidth(b.label);
+          const cx = bx + (btnW - grupoW) / 2 + iconR; // centro del icono
+
+          if (b.tipo === 'video') doc.setTextColor(24, 25, 26);
+          else doc.setTextColor(255, 255, 255);
+          doc.text(b.label, cx + iconR + iconGap, btnY + 8);
+
+          if (b.tipo === 'video') {
+            // Icono Play
+            doc.setDrawColor(24, 25, 26);
+            doc.setLineWidth(0.4);
+            doc.circle(cx, cy, iconR, 'S');
+            doc.setFillColor(24, 25, 26);
+            doc.triangle(cx - 0.8, cy - 1.3, cx - 0.8, cy + 1.3, cx + 1.3, cy, 'F');
+          } else if (b.tipo === 'fotos') {
+            // Icono Camara
+            doc.setFillColor(255, 255, 255);
+            doc.circle(cx, cy, iconR, 'F');
+            doc.setDrawColor(32, 33, 35);
+            doc.setLineWidth(0.4);
+            doc.roundedRect(cx - 1.5, cy - 1, 3, 2.2, 0.3, 0.3, 'S'); // body
+            doc.circle(cx, cy + 0.1, 0.7, 'S'); // lens
+            doc.line(cx - 0.5, cy - 1.5, cx + 0.5, cy - 1.5); // flash
+          } else {
+            // Icono WhatsApp: burbuja blanca con cola inferior izquierda y el
+            // auricular recortado en el verde del boton. La cola es lo que hace
+            // que se lea como WhatsApp y no como un telefono generico.
+            doc.setFillColor(255, 255, 255);
+            doc.circle(cx, cy, iconR, 'F');
+            doc.triangle(cx - 1.9, cy + 1.9, cx - 3.15, cy + 3.15, cx - 0.55, cy + 2.6, 'F');
+            doc.setLineCap('round');
+            doc.setDrawColor(37, 211, 102);
+            doc.setLineWidth(1.15);
+            doc.line(cx - 0.85, cy - 0.85, cx + 0.85, cy + 0.85);
+            doc.setFillColor(37, 211, 102);
+            doc.circle(cx - 0.9, cy - 0.9, 0.72, 'F');
+            doc.circle(cx + 0.9, cy + 0.9, 0.72, 'F');
+            doc.setLineCap('butt'); // restaura el cap para el resto del documento
+          }
+
+          doc.link(bx, btnY, btnW, btnH, { url: b.url });
+        });
       }
 
       // ---- Blob ----
