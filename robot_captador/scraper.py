@@ -35,8 +35,8 @@ def is_natural_person(owner_dict):
     norm_name = normalize_text(name)
     words = re.findall(r'\b\w+\b', norm_name)
 
-    # 1. Verificar lista negra de palabras clave
-    for keyword in config.EXCLUDED_KEYWORDS:
+    excluded_kw = getattr(config, "KEYWORD_BLACKLIST", getattr(config, "EXCLUDED_KEYWORDS", []))
+    for keyword in excluded_kw:
         norm_kw = normalize_text(keyword)
         if norm_kw in words or norm_kw in norm_name:
             return False, f"Inmobiliaria/Empresa detectada por palabra clave '{keyword}' en '{name}'"

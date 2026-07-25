@@ -29,6 +29,7 @@ KEYWORD_BLACKLIST = [
     "pad", "pads", "arriendos", "ventas", "comercializadora", "capital",
     "homie", "aptuno", "cobi", "houm", "lahaus", "habitea"
 ]
+EXCLUDED_KEYWORDS = KEYWORD_BLACKLIST
 
 # URLs Objetivo de Búsqueda ARRIENDO (con filtro ?particular=true)
 TARGET_URLS_ARRIENDO = [
