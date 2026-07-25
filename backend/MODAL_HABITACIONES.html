@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      html, body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background-color: #ffffff;
+        margin: 0;
+        padding: 14px 16px;
+        color: #1e293b;
+        overflow: hidden !important;
+        box-sizing: border-box;
+      }
+      *, *:before, *:after {
+        box-sizing: inherit;
+      }
+      .modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 2px;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .modal-subtitle {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 12px;
+      }
+      .pills-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .pill-btn {
+        padding: 8px 2px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: #f8fafc;
+        color: #475569;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s ease;
+      }
+      .pill-btn:hover {
+        border-color: #cbd5e1;
+        background-color: #f1f5f9;
+      }
+      .pill-btn.active {
+        border-color: #2563eb;
+        background-color: #eff6ff;
+        color: #1d4ed8;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
+      }
+      .pill-full {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        background-color: #f8fafc;
+        color: #334155;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s ease;
+        margin-bottom: 14px;
+      }
+      .pill-full:hover {
+        border-color: #cbd5e1;
+        background-color: #f1f5f9;
+      }
+      .pill-full.active {
+        border-color: #2563eb;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+      }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      .btn {
+        padding: 8px 16px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+      }
+      .btn-secondary {
+        background-color: #e2e8f0;
+        color: #475569;
+      }
+      .btn-primary {
+        background-color: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25);
+      }
+      .btn-primary:hover {
+        background-color: #1d4ed8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="modal-title">🤖 Agente Captador Fincaraiz</div>
+    <div class="modal-subtitle">Modo: <b><?= tipoTexto ?></b> | Selecciona habitaciones objetivo:</div>
+    
+    <div class="pills-grid">
+      <button class="pill-btn active" onclick="selectHab('1', this)">1 Hab</button>
+      <button class="pill-btn" onclick="selectHab('2', this)">2 Habs</button>
+      <button class="pill-btn" onclick="selectHab('3', this)">3 Habs</button>
+      <button class="pill-btn" onclick="selectHab('4', this)">4 Habs</button>
+      <button class="pill-btn" onclick="selectHab('5', this)">5 Habs</button>
+    </div>
+
+    <button class="pill-full" onclick="selectHab('all', this)">✨ TODAS LAS HABITACIONES (1 a 5+ Habs)</button>
+
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="google.script.host.close()">Cancelar</button>
+      <button class="btn btn-primary" onclick="iniciar()">🚀 Iniciar Barrido</button>
+    </div>
+
+    <script>
+      var selectedBedrooms = '1';
+
+      function selectHab(val, btn) {
+        selectedBedrooms = val;
+        var btns = document.querySelectorAll('.pill-btn, .pill-full');
+        btns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+      }
+
+      function iniciar() {
+        var primaryBtn = document.querySelector('.btn-primary');
+        primaryBtn.disabled = true;
+        primaryBtn.innerText = '⏳ Activando...';
+        
+        google.script.run
+          .withSuccessHandler(function() {
+            google.script.host.close();
+          })
+          .withFailureHandler(function(err) {
+            alert('Error: ' + err);
+            primaryBtn.disabled = false;
+            primaryBtn.innerText = '🚀 Iniciar Barrido';
+          })
+          .dispararWorkflowConHabitaciones('<?= modo ?>', selectedBedrooms);
+      }
+    </script>
+  </body>
+</html>
