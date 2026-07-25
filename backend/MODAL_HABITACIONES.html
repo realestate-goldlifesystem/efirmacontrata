@@ -9,7 +9,11 @@
         margin: 0;
         padding: 14px 16px;
         color: #1e293b;
-        overflow: hidden !important;
+        /* Antes era 'hidden', y al crecer el contenido (selector de sector y
+           resumen del plan) el modal recortaba los botones sin aviso.
+           Con 'auto' aparece scroll en vez de perderse contenido. */
+        overflow-x: hidden;
+        overflow-y: auto;
         box-sizing: border-box;
       }
       *, *:before, *:after {

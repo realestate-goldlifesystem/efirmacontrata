@@ -222,9 +222,12 @@ function ejecutarAgenteCaptador(modo) {
   template.modo = modo;
   template.tipoTexto = tipoTexto;
 
+  // Medido con el contenido mas alto posible ("Todos" + "Todas las
+  // habitaciones", que lleva el resumen del plan a 3 lineas): 364 px.
+  // Se deja margen para diferencias de renderizado de fuentes.
   var html = template.evaluate()
-    .setWidth(460)
-    .setHeight(215);
+    .setWidth(470)
+    .setHeight(420);
 
   ui.showModalDialog(html, '🚀 Agente Captador - Fincaraiz (' + tipoTexto + ')');
 }
