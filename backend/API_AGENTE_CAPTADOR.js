@@ -10,6 +10,169 @@ function ejecutarAgenteCaptadorVenta() {
   ejecutarAgenteCaptador('venta');
 }
 
+// ==========================================
+// RESUMEN DE CAPTACIONES
+// ==========================================
+
+var MESES_ES_CAPTADOR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var TZ_CAPTADOR = 'America/Bogota';
+
+/**
+ * Abre el modal con las tarjetas de resumen de las ultimas corridas del robot.
+ */
+function mostrarResumenCaptaciones() {
+  var template;
+  try {
+    template = HtmlService.createTemplateFromFile('backend/MODAL_RESUMEN');
+  } catch (e) {
+    template = HtmlService.createTemplateFromFile('MODAL_RESUMEN');
+  }
+
+  var html = template.evaluate().setWidth(580).setHeight(620);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Resumen de Captaciones');
+}
+
+/** Convierte una fecha a la misma forma que usa la hoja: 25-jul-2026 */
+function _fechaEtiqueta(fecha) {
+  var dd = Utilities.formatDate(fecha, TZ_CAPTADOR, 'dd');
+  var mm = parseInt(Utilities.formatDate(fecha, TZ_CAPTADOR, 'MM'), 10);
+  var yyyy = Utilities.formatDate(fecha, TZ_CAPTADOR, 'yyyy');
+  return dd + '-' + MESES_ES_CAPTADOR[mm - 1] + '-' + yyyy;
+}
+
+/** Pasa '25-jul-2026' a '2026-07-25' para poder ordenar cronologicamente. */
+function _fechaOrdenable(etiqueta) {
+  var partes = String(etiqueta).split('-');
+  if (partes.length !== 3) return '0000-00-00';
+  var mes = MESES_ES_CAPTADOR.indexOf(partes[1].toLowerCase()) + 1;
+  if (mes === 0) return '0000-00-00';
+  return partes[2] + '-' + (mes < 10 ? '0' + mes : mes) + '-' + partes[0];
+}
+
+/**
+ * Reune la informacion de las tarjetas combinando dos fuentes:
+ *   - El Sheet   : cuantos propietarios entraron cada dia (arriendo y venta).
+ *   - GitHub API : las corridas del workflow, con estado, duracion y enlace.
+ *
+ * Se agrupa POR DIA porque la columna FECHA DE CONTACTO solo guarda la fecha,
+ * sin hora: no se puede atribuir una captacion a una corrida especifica.
+ */
+function obtenerResumenCaptaciones() {
+  var resultado = { dias: [], totalCaptaciones: 0, avisoGithub: null };
+  var mapa = {};
+
+  function asegurarDia(etiqueta) {
+    if (!mapa[etiqueta]) {
+      mapa[etiqueta] = {
+        etiqueta: etiqueta,
+        orden: _fechaOrdenable(etiqueta),
+        arriendo: 0,
+        venta: 0,
+        corridas: []
+      };
+    }
+    return mapa[etiqueta];
+  }
+
+  // ---- 1. Captaciones por dia, desde las dos pestanas ----
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var pestanas = [['1 - CAPTACIONES A', 'arriendo'], ['1 - CAPTACIONES V', 'venta']];
+
+  pestanas.forEach(function (par) {
+    var hoja = ss.getSheetByName(par[0]);
+    if (!hoja) return;
+
+    var ultimaFila = hoja.getLastRow();
+    if (ultimaFila < 3) return;
+
+    var encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
+    var colFecha = -1;
+    for (var i = 0; i < encabezados.length; i++) {
+      if (String(encabezados[i]).toLowerCase().trim().indexOf('fecha de contacto') === 0) {
+        colFecha = i + 1;
+        break;
+      }
+    }
+    if (colFecha < 0) return;
+
+    var celdas = hoja.getRange(3, colFecha, ultimaFila - 2, 1).getDisplayValues();
+    celdas.forEach(function (fila) {
+      var etiqueta = String(fila[0]).trim();
+      if (!etiqueta) return;
+      var dia = asegurarDia(etiqueta);
+      dia[par[1]]++;
+      resultado.totalCaptaciones++;
+    });
+  });
+
+  // ---- 2. Corridas del workflow, desde GitHub ----
+  var props = PropertiesService.getScriptProperties();
+  var token = props.getProperty('GITHUB_PAT');
+  var owner = props.getProperty('GITHUB_OWNER') || 'realestate-goldlifesystem';
+  var repo = props.getProperty('GITHUB_REPO') || 'efirmacontrata';
+
+  if (!token) {
+    resultado.avisoGithub = 'Sin GITHUB_PAT configurado: solo se muestran las captaciones del Sheet.';
+  } else {
+    try {
+      var url = 'https://api.github.com/repos/' + owner + '/' + repo +
+                '/actions/workflows/scraper.yml/runs?per_page=40';
+      var res = UrlFetchApp.fetch(url, {
+        method: 'get',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/vnd.github+json',
+          'User-Agent': 'AppsScript-Bot'
+        },
+        muteHttpExceptions: true
+      });
+
+      if (res.getResponseCode() === 200) {
+        var corridas = JSON.parse(res.getContentText()).workflow_runs || [];
+        corridas.forEach(function (run) {
+          var inicio = new Date(run.run_started_at || run.created_at);
+          var dia = asegurarDia(_fechaEtiqueta(inicio));
+
+          var duracion = '';
+          if (run.updated_at && run.status === 'completed') {
+            var seg = Math.round((new Date(run.updated_at) - inicio) / 1000);
+            var min = Math.floor(seg / 60);
+            duracion = min > 0 ? (min + ' min ' + (seg % 60) + ' s') : (seg + ' s');
+          }
+
+          dia.corridas.push({
+            hora: Utilities.formatDate(inicio, TZ_CAPTADOR, 'HH:mm'),
+            estado: run.status === 'completed' ? (run.conclusion || 'desconocido') : run.status,
+            duracion: duracion,
+            manual: run.event !== 'schedule',
+            enlace: run.html_url || ''
+          });
+        });
+      } else {
+        resultado.avisoGithub = 'GitHub respondio ' + res.getResponseCode() +
+                                '. Se muestran solo las captaciones del Sheet.';
+      }
+    } catch (e) {
+      resultado.avisoGithub = 'No se pudo consultar GitHub: ' + e.toString();
+    }
+  }
+
+  // ---- 3. Ordenar dias de mas reciente a mas antiguo ----
+  var dias = [];
+  for (var clave in mapa) {
+    if (mapa.hasOwnProperty(clave)) dias.push(mapa[clave]);
+  }
+  dias.sort(function (a, b) { return a.orden < b.orden ? 1 : (a.orden > b.orden ? -1 : 0); });
+
+  dias.forEach(function (d) {
+    d.corridas.sort(function (a, b) { return a.hora < b.hora ? 1 : -1; });
+    d.total = d.arriendo + d.venta;
+  });
+
+  resultado.dias = dias;
+  return resultado;
+}
+
 /**
  * Muestra el Modal HTML estilizado con el selector de habitaciones
  * @param {string} modo - 'arriendo' o 'venta'

@@ -29,6 +29,8 @@ function onOpen(e) {
   ui.createMenu('🤖 Agente Captador')
     .addItem('🚀 Iniciar Barrido de Arriendo Ahora', 'ejecutarAgenteCaptadorArriendo')
     .addItem('🚀 Iniciar Barrido de Venta Ahora', 'ejecutarAgenteCaptadorVenta')
+    .addSeparator()
+    .addItem('📊 Resumen de Captaciones', 'mostrarResumenCaptaciones')
     .addToUi();
 
   ui.createMenu('🏠 E-FirmaContrata')
