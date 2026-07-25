@@ -81,7 +81,12 @@ class FincaraizScraper:
 
             context = browser.new_context(
                 viewport={"width": 1366, "height": 768},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                locale="es-CO",
+                extra_http_headers={
+                    "Accept-Language": "es-CO,es;q=0.9,en;q=0.8",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+                }
             )
 
             page = context.new_page()
@@ -177,9 +182,9 @@ class FincaraizScraper:
             except Exception:
                 pass
 
-        handler_id = page.on("response", on_response)
-
         try:
+            page.on("response", on_response)
+
             page.goto(property_url, wait_until="domcontentloaded", timeout=45000)
             time.sleep(2.5)
 
@@ -282,6 +287,11 @@ class FincaraizScraper:
         except Exception as e:
             print(f"⚠️ [AVISO] Inmueble omitido (no disponible o tiempo de espera agotado): {property_url}")
             return None
+        finally:
+            try:
+                page.remove_listener("response", on_response)
+            except Exception:
+                pass
 
     def fill_contact_form(self, page):
         """Diligencia el formulario de contacto con los datos del lead."""
