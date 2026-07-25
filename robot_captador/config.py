@@ -31,56 +31,79 @@ KEYWORD_BLACKLIST = [
 ]
 EXCLUDED_KEYWORDS = KEYWORD_BLACKLIST
 
-# URLs Objetivo de Búsqueda ARRIENDO (con filtro ?particular=true)
+# --- Configuración de Paginación ---
+# Fincaraiz pagina de a 21 anuncios con el formato /paginaN, y el JSON del listado
+# expone paginatorInfo.lastPage, así que no hay que sondear para hallar el final.
+#
+# El robot recorre DE ATRÁS HACIA ADELANTE (última página -> página 1) porque el
+# orden por "Popularidad" deja a los particulares al final del listado.
+# Medido en vivo (25-jul-2026):
+#   venta/suba/3-habitaciones    -> 2050 anuncios, 98 páginas, los 15 particulares en p97-p98
+#   arriendo/usaquen/2-habitac.  -> 525 anuncios, 25 páginas, 16 de 63 particulares en p25
+#
+# Ojo: la barra de paginación de la web solo muestra hasta 50 páginas, pero es
+# cosmética; el listado real puede ser mucho más largo (98 en el caso de venta).
+MAX_PAGES_PER_SEARCH = 150  # Salvaguarda contra bucles si el sitio se comporta raro
+PAGE_ERROR_TOLERANCE = 3    # Páginas seguidas con error antes de abandonar la búsqueda
+
+# Filtrar por owner.particular del listado ANTES de abrir el detalle.
+# El JSON del listado ya indica si el anunciante es particular o inmobiliaria,
+# así el robot no gasta navegaciones abriendo inmobiliarias para descartarlas.
+STRICT_PARTICULAR_FILTER = True
+
+# URLs Objetivo de Búsqueda ARRIENDO
+# NOTA: se removió `?particular=true` porque Fincaraiz lo ignora por completo
+# (idéntico total de resultados con y sin el parámetro). El filtrado real de
+# particulares lo hace el robot leyendo owner.particular del listado.
 TARGET_URLS_ARRIENDO = [
     # Usaquén (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/1-habitacion?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/2-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/3-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/4-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/5-habitaciones?particular=true",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/1-habitacion",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/2-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/3-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/4-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/usaquen/bogota/5-habitaciones",
 
     # Suba (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/1-habitacion?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/2-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/3-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/4-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/5-habitaciones?particular=true",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/1-habitacion",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/2-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/3-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/4-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/suba/bogota/5-habitaciones",
 
     # Chapinero y Sectores (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/1-habitacion?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/2-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/3-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/4-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/5-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/zona-nororiental/bogota/1-habitacion?particular=true",
-    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero-central/bogota/1-habitacion?particular=true"
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/1-habitacion",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/2-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/3-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/4-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/bogota/5-habitaciones",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero/zona-nororiental/bogota/1-habitacion",
+    "https://www.fincaraiz.com.co/arriendo/apartamentos-y-apartaestudios/chapinero-central/bogota/1-habitacion"
 ]
 
-# URLs Objetivo de Búsqueda VENTA (con filtro ?particular=true)
+# URLs Objetivo de Búsqueda VENTA (sin `?particular=true`, ver nota arriba)
 TARGET_URLS_VENTA = [
     # Usaquén (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/1-habitacion?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/2-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/3-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/4-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/5-habitaciones?particular=true",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/1-habitacion",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/2-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/3-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/4-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/usaquen/bogota/5-habitaciones",
 
     # Suba (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/1-habitacion?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/2-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/3-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/4-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/5-habitaciones?particular=true",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/1-habitacion",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/2-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/3-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/4-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/suba/bogota/5-habitaciones",
 
     # Chapinero y Sectores (1, 2, 3, 4 y 5 habitaciones)
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/1-habitacion?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/2-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/3-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/4-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/5-habitaciones?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/zona-nororiental/bogota/1-habitacion?particular=true",
-    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero-central/bogota/1-habitacion?particular=true"
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/1-habitacion",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/2-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/3-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/4-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/bogota/5-habitaciones",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero/zona-nororiental/bogota/1-habitacion",
+    "https://www.fincaraiz.com.co/venta/apartamentos-y-apartaestudios/chapinero-central/bogota/1-habitacion"
 ]
 
 def get_target_urls(mode="arriendo", bedrooms="all"):

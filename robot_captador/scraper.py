@@ -64,6 +64,11 @@ class FincaraizScraper:
         self.sheets = SheetsHandler(mode=self.mode)
         self.target_urls = config.get_target_urls(self.mode, self.bedrooms)
         self.processed_count = 0
+        # Contadores de diagnóstico de la sesión
+        self.pages_visited = 0
+        self.listings_seen = 0
+        self.skipped_agency = 0
+        self.skipped_dup = 0
 
     def run(self):
         print(f"[START] Iniciando Robot Captador Fincaraiz | MODO: {self.mode.upper()} | Pestaña: {self.sheets.sheet_title} (Headless: {self.headless})...")
@@ -95,58 +100,209 @@ class FincaraizScraper:
                 if self.processed_count >= self.max_items_per_run:
                     print(f"[STOP] Límite máximo de {self.max_items_per_run} captaciones alcanzado.")
                     break
-
-                for page_num in range(1, 11):  # Recorre hasta 10 páginas por filtro/localidad
-                    if self.processed_count >= self.max_items_per_run:
-                        break
-
-                    # Construir URL con paginación en el path (formato Fincaraiz: /paginaX)
-                    if page_num == 1:
-                        search_url = base_url  # Página 1 usa la URL original
-                    else:
-                        if "?" in base_url:
-                            path_part, query_part = base_url.split("?", 1)
-                            search_url = f"{path_part}/pagina{page_num}?{query_part}"
-                        else:
-                            search_url = f"{base_url}/pagina{page_num}"
-
-                    print(f"\n🌐 [NAVEGANDO SEARCH] Pág {page_num} -> {search_url}")
-                    try:
-                        page.goto(search_url, wait_until="networkidle", timeout=45000)
-                        time.sleep(3)
-
-                        # Obtener enlaces de inmuebles en el listado
-                        listing_links = self.extract_listing_links(page)
-                        print(f"📌 Encontrados {len(listing_links)} inmuebles en la página {page_num}.")
-
-                        if not listing_links:
-                            print(f"ℹ️ No se encontraron más inmuebles en la página {page_num}. Pasando a la siguiente búsqueda.")
-                            break
-
-                        for link in listing_links:
-                            if self.processed_count >= self.max_items_per_run:
-                                break
-
-                            # Verificación rápida de desduplicación por URL antes de navegar
-                            if link.lower().strip() in self.sheets.existing_links:
-                                print(f"[SKIP] Link ya registrado previamente en Google Sheets: {link}")
-                                continue
-
-                            print(f"\n🔍 [EVALUANDO INMUEBLE] -> {link}")
-                            captacion_data = self.process_property(page, link)
-
-                            if captacion_data:
-                                saved = self.sheets.append_captacion(captacion_data)
-                                if saved:
-                                    self.processed_count += 1
-                                    print(f"✨ Total captados exitosamente en esta sesión: {self.processed_count}")
-
-                    except Exception as e:
-                        print(f"[ERROR] Fallo al procesar página {page_num} ({search_url}): {e}")
-                        break
+                self.scrape_search(page, base_url)
 
             browser.close()
-            print(f"\n🎉 [FINALIZADO] Sesión terminada. Total inmuebles captados: {self.processed_count}")
+            print(f"\n🎉 [FINALIZADO] Sesión terminada.")
+            print(f"   Páginas de listado recorridas : {self.pages_visited}")
+            print(f"   Anuncios vistos en listados   : {self.listings_seen}")
+            print(f"   Descartados por inmobiliaria  : {self.skipped_agency}")
+            print(f"   Descartados por duplicado     : {self.skipped_dup}")
+            print(f"   ✅ Inmuebles captados          : {self.processed_count}")
+
+    def build_page_url(self, base_url, page_num):
+        """Construye la URL de la página N respetando el query string (formato Fincaraiz: /paginaN)."""
+        if page_num == 1:
+            return base_url
+        if "?" in base_url:
+            path_part, query_part = base_url.split("?", 1)
+            return f"{path_part}/pagina{page_num}?{query_part}"
+        return f"{base_url}/pagina{page_num}"
+
+    def fetch_listing_page(self, page, base_url, page_num):
+        """
+        Carga una página del listado con un reintento.
+        Devuelve (items, paginatorInfo), o (None, {}) si la página falló.
+        Ojo: [] es una respuesta válida (página vacía), None es un fallo de red.
+        """
+        url = self.build_page_url(base_url, page_num)
+        for attempt in (1, 2):
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                time.sleep(1.5)
+                return self.extract_listings(page)
+            except Exception as e:
+                if attempt == 2:
+                    print(f"[ERROR] Pág {page_num} falló tras 2 intentos ({type(e).__name__}: {e})")
+                    return None, {}
+                time.sleep(2)
+        return None, {}
+
+    def harvest_page(self, page, items, page_num, last_page):
+        """
+        Procesa los particulares de una página ya cargada.
+        Devuelve False si se alcanzó el límite de captaciones de la corrida.
+        """
+        candidates = self.filter_particulares(items)
+        print(f"\n🌐 Pág {page_num}/{last_page} | {len(items)} anuncios → {len(candidates)} de particulares")
+
+        for link in candidates:
+            if self.processed_count >= self.max_items_per_run:
+                return False
+
+            if link.lower().strip() in self.sheets.existing_links:
+                print(f"[SKIP] Link ya registrado en Google Sheets: {link}")
+                self.skipped_dup += 1
+                continue
+
+            print(f"\n🔍 [EVALUANDO INMUEBLE] -> {link}")
+            captacion_data = self.process_property(page, link)
+
+            if captacion_data and self.sheets.append_captacion(captacion_data):
+                self.processed_count += 1
+                print(f"✨ Total captados en esta sesión: {self.processed_count}")
+
+        return True
+
+    def scrape_search(self, page, base_url):
+        """
+        Recorre una búsqueda DE ATRÁS HACIA ADELANTE (última página → página 1).
+
+        Por qué al revés: Fincaraiz ordena por "Popularidad", que empuja los
+        anuncios de inmobiliarias al principio y deja a los particulares al final.
+        Medido en vivo: en venta/suba/3-habitaciones los 15 particulares están en
+        las páginas 97 y 98 de 98; en arriendo/usaquen/2-habitaciones, 16 de los
+        63 están en la página 25 de 25.
+
+        No hace falta sondear para encontrar el final: paginatorInfo.lastPage
+        viene en el JSON de cualquier página, así que la página 1 (que igual hay
+        que procesar) nos dice cuántas hay y de ahí se salta directo al final.
+        La barra de paginación de la web solo muestra hasta 50, pero es cosmética.
+        """
+        print(f"\n{'─'*70}\n🔎 [BÚSQUEDA] {base_url}")
+
+        # --- Paso 1: la página 1 nos da lastPage y sus propios anuncios ---
+        items, paginator = self.fetch_listing_page(page, base_url, 1)
+        if items is None:
+            print("[ABORT] No se pudo cargar la página 1. Se omite esta búsqueda.")
+            return
+        if not items:
+            print("🏁 Sin resultados en esta búsqueda.")
+            return
+
+        self.pages_visited += 1
+        self.listings_seen += len(items)
+
+        last_page = paginator.get("lastPage") or 1
+        print(f"📊 {paginator.get('total')} anuncios en {last_page} páginas reales "
+              f"(la web solo muestra hasta 50). Se recorre de la {last_page} hacia la 1.")
+
+        if not self.harvest_page(page, items, 1, last_page):
+            print(f"[STOP] Límite de {self.max_items_per_run} captaciones alcanzado.")
+            return
+
+        # --- Paso 2: descender desde la última página hasta la 2 ---
+        page_num = last_page
+        consecutive_errors = 0
+        guard = 0
+
+        while page_num >= 2 and guard < config.MAX_PAGES_PER_SEARCH:
+            guard += 1
+
+            if self.processed_count >= self.max_items_per_run:
+                print(f"[STOP] Límite de {self.max_items_per_run} captaciones alcanzado.")
+                return
+
+            items, paginator = self.fetch_listing_page(page, base_url, page_num)
+
+            if items is None:
+                consecutive_errors += 1
+                if consecutive_errors >= config.PAGE_ERROR_TOLERANCE:
+                    print(f"[ABORT] {consecutive_errors} páginas seguidas con error. Se abandona esta búsqueda.")
+                    return
+                page_num -= 1  # Se salta la página en vez de abortar la búsqueda
+                continue
+
+            consecutive_errors = 0
+
+            # Página vacía yendo hacia atrás NO significa fin: el inventario se
+            # movió entre requests. El propio sitio nos dice dónde está el nuevo
+            # final, así que saltamos allá en vez de bajar de a una.
+            if not items:
+                real_last = paginator.get("lastPage")
+                if real_last and real_last < page_num:
+                    print(f"⤵️ Pág {page_num} vacía; el sitio ahora reporta {real_last} páginas. Saltando allá.")
+                    page_num = real_last
+                else:
+                    page_num -= 1
+                continue
+
+            self.pages_visited += 1
+            self.listings_seen += len(items)
+
+            if not self.harvest_page(page, items, page_num, last_page):
+                print(f"[STOP] Límite de {self.max_items_per_run} captaciones alcanzado.")
+                return
+
+            page_num -= 1
+
+        if guard >= config.MAX_PAGES_PER_SEARCH:
+            print(f"[STOP] Tope de seguridad de {config.MAX_PAGES_PER_SEARCH} páginas alcanzado.")
+        else:
+            print(f"🏁 Búsqueda completa: se recorrió hasta la página 1.")
+
+    def extract_listings(self, page):
+        """
+        Lee los anuncios del listado desde el JSON embebido (__NEXT_DATA__).
+
+        Cada item ya trae owner.particular, owner.name, link, precio, habitaciones
+        y ubicación, lo que permite descartar inmobiliarias SIN abrir el detalle.
+        Devuelve (items, paginatorInfo).
+        """
+        try:
+            node = page.query_selector("#__NEXT_DATA__")
+            if node:
+                data = json.loads(node.inner_text())
+                search_fast = (
+                    data.get("props", {})
+                        .get("pageProps", {})
+                        .get("fetchResult", {})
+                        .get("searchFast", {})
+                ) or {}
+                return search_fast.get("data") or [], search_fast.get("paginatorInfo") or {}
+        except Exception as e:
+            print(f"⚠️ No se pudo leer el JSON del listado ({e}). Se usa el DOM como respaldo.")
+
+        # Respaldo: raspar enlaces del DOM si el JSON cambió de forma
+        return [{"link": l} for l in self.extract_listing_links(page)], {}
+
+    def filter_particulares(self, items):
+        """
+        Deja solo los anuncios de particulares usando los datos del propio listado.
+        Evita abrir el detalle de las inmobiliarias (que son ~80% del inventario).
+        """
+        links = []
+        for item in items:
+            link = item.get("link") or ""
+            if not link:
+                continue
+            full_url = link if link.startswith("http") else f"https://www.fincaraiz.com.co{link}"
+
+            owner = item.get("owner") or {}
+            if config.STRICT_PARTICULAR_FILTER and owner:
+                if owner.get("particular") is not True:
+                    self.skipped_agency += 1
+                    continue
+                # Segunda capa: nombre con términos comerciales pese a venir como particular
+                is_valid, reason = is_natural_person(owner)
+                if not is_valid:
+                    print(f"[FILTRO] {reason}")
+                    self.skipped_agency += 1
+                    continue
+
+            if full_url not in links:
+                links.append(full_url)
+        return links
 
     def extract_listing_links(self, page):
         """Extrae todas las URLs de los inmuebles en el listado actual."""
@@ -315,7 +471,14 @@ if __name__ == "__main__":
     parser.add_argument("--mode", choices=["arriendo", "venta"], default="arriendo", help="Modo de captación (arriendo o venta)")
     parser.add_argument("--bedrooms", default="all", help="Filtro de habitaciones (1, 2, 3, 4, 5, all)")
     parser.add_argument("--max-items", type=int, default=30, help="Límite máximo de inmuebles a captar POR tipo de habitación")
+    parser.add_argument("--max-pages", type=int, default=None,
+                        help=f"Salvaguarda de páginas por búsqueda (default: {config.MAX_PAGES_PER_SEARCH}). "
+                             "Normalmente no se toca: el robot recorre desde la última página "
+                             "real de cada búsqueda hacia la 1.")
     args = parser.parse_args()
+
+    if args.max_pages:
+        config.MAX_PAGES_PER_SEARCH = args.max_pages
 
     b_str = str(args.bedrooms).lower().strip()
     if b_str in ["all", "todas", "0", ""]:
