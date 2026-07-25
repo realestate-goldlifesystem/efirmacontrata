@@ -320,8 +320,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Robot Captador Fincaraiz")
     parser.add_argument("--mode", choices=["arriendo", "venta"], default="arriendo", help="Modo de captación (arriendo o venta)")
     parser.add_argument("--bedrooms", default="all", help="Filtro de habitaciones (1, 2, 3, 4, 5, all)")
-    parser.add_argument("--max-items", type=int, default=30, help="Límite máximo de inmuebles a captar")
+    parser.add_argument("--max-items", type=int, default=30, help="Límite máximo de inmuebles a captar POR tipo de habitación")
     args = parser.parse_args()
 
-    scraper = FincaraizScraper(headless=True, max_items_per_run=args.max_items, mode=args.mode, bedrooms=args.bedrooms)
-    scraper.run()
+    b_str = str(args.bedrooms).lower().strip()
+    if b_str in ["all", "todas", "0", ""]:
+        # Modo TODAS: Ejecutar 30 por cada tipo de habitación (1 a 5)
+        grand_total = 0
+        for bedroom_type in ["1", "2", "3", "4", "5"]:
+            print(f"\n{'='*60}")
+            print(f"🏠 INICIANDO BARRIDO DE {bedroom_type} HABITACIÓN(ES) | Máx: {args.max_items}")
+            print(f"{'='*60}")
+            scraper = FincaraizScraper(headless=True, max_items_per_run=args.max_items, mode=args.mode, bedrooms=bedroom_type)
+            scraper.run()
+            grand_total += scraper.processed_count
+        print(f"\n{'='*60}")
+        print(f"🎯 GRAN TOTAL CAPTADO EN TODAS LAS HABITACIONES: {grand_total}")
+        print(f"{'='*60}")
+    else:
+        # Modo específico: Solo un tipo de habitación con max_items
+        scraper = FincaraizScraper(headless=True, max_items_per_run=args.max_items, mode=args.mode, bedrooms=args.bedrooms)
+        scraper.run()
