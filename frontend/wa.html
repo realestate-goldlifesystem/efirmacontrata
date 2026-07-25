@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Abriendo WhatsApp... - Gold Life Real Estate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --gold-primary: #d4af37;
+      --black-primary: #0a0a0a;
+      --gray-dark: rgba(30, 30, 35, 0.8);
+      --text-light: #ffffff;
+      --wa-green: #25d366;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--black-primary);
+      color: var(--text-light);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      text-align: center;
+    }
+
+    .card {
+      max-width: 420px;
+      width: 100%;
+      padding: 36px 28px;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 18px;
+      background: var(--gray-dark);
+    }
+
+    h1 { font-size: 1.15rem; font-weight: 600; margin-bottom: 10px; }
+    p { font-size: 0.9rem; color: #b9b9b9; line-height: 1.5; }
+
+    .spinner {
+      width: 38px; height: 38px;
+      margin: 0 auto 20px;
+      border: 3px solid rgba(212, 175, 55, 0.25);
+      border-top-color: var(--gold-primary);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn {
+      display: none;
+      margin-top: 22px;
+      padding: 14px 22px;
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      background: var(--wa-green);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .btn.visible { display: block; }
+    .error { color: #ff8a8a; margin-top: 14px; font-size: 0.85rem; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <div class="spinner" id="spinner"></div>
+    <h1 id="titulo">Abriendo WhatsApp...</h1>
+    <p id="detalle">Te estamos conectando con Gold Life Real Estate.</p>
+    <a class="btn" id="btn" href="#">Abrir WhatsApp</a>
+    <p class="error" id="error"></p>
+  </div>
+
+  <script>
+    // Puente PDF -> WhatsApp.
+    //
+    // Por que existe: los visores de PDF entregan el enlace al sistema
+    // degradando los caracteres fuera del plano basico (todos los emojis
+    // viven ahi), asi que un wa.me con emojis directo en el PDF llega roto.
+    // Aqui el mensaje viaja en base64 (ASCII puro, que ningun visor toca) y
+    // el enlace final lo arma el navegador, donde los emojis sobreviven.
+    (function () {
+      var TELEFONO_POR_DEFECTO = '573177623878';
+
+      function decodificarBase64Url(txt) {
+        txt = txt.replace(/-/g, '+').replace(/_/g, '/');
+        while (txt.length % 4) { txt += '='; }
+        var binario = atob(txt);
+        var bytes = new Uint8Array(binario.length);
+        for (var i = 0; i < binario.length; i++) { bytes[i] = binario.charCodeAt(i); }
+        return new TextDecoder('utf-8').decode(bytes);
+      }
+
+      var params = new URLSearchParams(window.location.search);
+      var telefono = (params.get('t') || TELEFONO_POR_DEFECTO).replace(/\D/g, '');
+      var codificado = params.get('m');
+      var mensaje = '';
+
+      if (codificado) {
+        try {
+          mensaje = decodificarBase64Url(codificado);
+        } catch (e) {
+          mensaje = '';
+        }
+      }
+
+      var destino = 'https://wa.me/' + telefono +
+        (mensaje ? '?text=' + encodeURIComponent(mensaje) : '');
+
+      // El boton queda listo siempre, por si el navegador embebido del visor
+      // de PDF bloquea la redireccion automatica.
+      var btn = document.getElementById('btn');
+      btn.href = destino;
+
+      if (codificado && !mensaje) {
+        document.getElementById('error').textContent =
+          'No pudimos leer el mensaje del inmueble, pero puedes escribirnos igual.';
+      }
+
+      setTimeout(function () {
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('titulo').textContent = '¿No se abrió WhatsApp?';
+        document.getElementById('detalle').textContent =
+          'Toca el botón para continuar la conversación.';
+        btn.classList.add('visible');
+      }, 2500);
+
+      window.location.replace(destino);
+    })();
+  </script>
+
+  <noscript>
+    <p>Necesitas habilitar JavaScript, o escríbenos directamente al +57 317 762 3878.</p>
+  </noscript>
+</body>
+
+</html>

@@ -29,6 +29,21 @@ interface VIPProperty {
   area: string;
 }
 
+// Pagina puente que abre WhatsApp desde el PDF (frontend/wa.html en GitHub Pages).
+// No se enlaza wa.me directo porque los visores de PDF degradan los caracteres
+// fuera del plano basico al entregar el enlace al sistema, y ahi viven todos los
+// emojis: llegaban como "?" en el mensaje. Viajando en base64 (ASCII puro) el
+// texto sale intacto y el puente arma el enlace final ya dentro del navegador.
+const PUENTE_WHATSAPP = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/wa.html';
+
+// Helper: codifica un texto UTF-8 a base64 apto para URL (sin +, / ni =)
+function aBase64Url(texto: string): string {
+  const bytes = new TextEncoder().encode(texto);
+  let binario = '';
+  bytes.forEach(b => { binario += String.fromCharCode(b); });
+  return btoa(binario).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 // Helper: descarga una imagen como base64 data URL via proxy weserv.nl
 async function fetchImageAsBase64(originalUrl: string): Promise<string | null> {
   try {
@@ -810,7 +825,7 @@ export default function VIPPropertiesPanel() {
           '',
           '¡Muchas gracias! 🙌',
         ].join('\n');
-        const waUrl = `https://wa.me/573177623878?text=${encodeURIComponent(waMsg)}`;
+        const waUrl = `${PUENTE_WHATSAPP}?m=${aBase64Url(waMsg)}`;
 
         // --- SECCIÓN 3: BOTONES ---
         // Solo se dibujan los que tienen enlace real y se reparten el ancho entre
