@@ -245,11 +245,15 @@ class SheetsHandler:
                 )
                 print(f"[INFO] Pestaña '{titulo}' creada.")
 
+            # RAW y no USER_ENTERED: con USER_ENTERED, Sheets interpretaba
+            # "25-jul-2026" como fecha y "22:28" como hora, y los guardaba como
+            # números de serie (46228 / 0,9361...). Eso rompía el modal de
+            # resumen, que agrupa por la fecha leída como texto.
             con_reintentos(
                 lambda: self.service.values().append(
                     spreadsheetId=self.spreadsheet_id,
                     range=f"'{titulo}'!A1",
-                    valueInputOption="USER_ENTERED",
+                    valueInputOption="RAW",
                     insertDataOption="INSERT_ROWS",
                     body={"values": [fila]}
                 ).execute(),
