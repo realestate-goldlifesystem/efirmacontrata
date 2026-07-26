@@ -806,12 +806,14 @@ export default function VIPPropertiesPanel() {
           '',
           'Estoy interesado/a en el siguiente inmueble de su portafolio:',
           '',
-          `» Código: ${p.idRegistro}`,
+          // Los asteriscos hacen que WhatsApp muestre el codigo en negrita
+          `» CÓDIGO DEL INMUEBLE: *${p.idRegistro}*`,
+          '',
           `» Ubicación: ${waUbicacion}`,
           ...(waFicha ? [`» ${waFicha}`] : []),
           `» ${waTipo}: ${waPrecio}`,
           '',
-          'Me gustaría coordinar una visita.',
+          'Me gustaría coordinar una visita por favor.',
           '',
           '¡Muchas gracias!',
         ].join('\n');
