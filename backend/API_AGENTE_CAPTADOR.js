@@ -88,18 +88,27 @@ function obtenerResumenCaptaciones() {
 
     var encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
     var colFecha = -1;
+    var colCelular = -1;
     for (var i = 0; i < encabezados.length; i++) {
-      if (String(encabezados[i]).toLowerCase().trim().indexOf('fecha de contacto') === 0) {
-        colFecha = i + 1;
-        break;
-      }
+      var titulo = String(encabezados[i]).toLowerCase().trim();
+      if (colFecha < 0 && titulo.indexOf('fecha de contacto') === 0) colFecha = i + 1;
+      if (colCelular < 0 && titulo.indexOf('celular') === 0) colCelular = i + 1;
     }
-    if (colFecha < 0) return;
+    if (colFecha < 0 || colCelular < 0) return;
 
-    var celdas = hoja.getRange(3, colFecha, ultimaFila - 2, 1).getDisplayValues();
+    var anchoLectura = Math.max(colFecha, colCelular);
+    var celdas = hoja.getRange(3, 1, ultimaFila - 2, anchoLectura).getDisplayValues();
+
     celdas.forEach(function (fila) {
-      var etiqueta = String(fila[0]).trim();
+      // Una captacion se cuenta por el CELULAR, no por la fecha. La pestana de
+      // venta tenia 344 filas vacias con fecha puesta y ninguna otra cosa, y
+      // contarlas inflaba el total de 115 a 459.
+      var celular = String(fila[colCelular - 1] || '').trim();
+      if (!celular) return;
+
+      var etiqueta = String(fila[colFecha - 1] || '').trim();
       if (!etiqueta) return;
+
       var dia = asegurarDia(etiqueta);
       dia[par[1]]++;
       resultado.totalCaptaciones++;
