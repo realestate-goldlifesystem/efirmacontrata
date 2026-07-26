@@ -3,7 +3,7 @@ import sys
 import re
 import time
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import config
@@ -64,9 +64,25 @@ def clean_phone(phone_str):
         digits = digits[2:]
     return digits
 
+# Colombia es UTC-5 todo el año: no tiene horario de verano, así que un
+# desfase fijo es exacto y no depende de que el sistema tenga la base de
+# datos de zonas horarias instalada.
+TZ_COLOMBIA = timezone(timedelta(hours=-5))
+
+def ahora_colombia():
+    """
+    Hora actual en Colombia.
+
+    Importante para GitHub Actions: sus servidores corren en UTC, así que
+    datetime.now() adelantaba la fecha 5 horas. En la práctica el "día nuevo"
+    empezaba a las 7:00 PM hora Colombia, y los barridos de la noche quedaban
+    fechados al día siguiente, partidos entre dos tarjetas del modal.
+    """
+    return datetime.now(TZ_COLOMBIA)
+
 def get_spanish_date_str():
     """Genera la fecha actual en formato DD-mmm-YYYY (ej. 24-jul-2026)."""
-    now = datetime.now()
+    now = ahora_colombia()
     day = f"{now.day:02d}"
     month = MONTHS_ES[now.month]
     year = now.year

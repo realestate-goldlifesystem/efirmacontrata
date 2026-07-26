@@ -564,7 +564,7 @@ class FincaraizScraper:
 if __name__ == "__main__":
     import argparse
     from datetime import datetime
-    from sheets_handler import get_spanish_date_str
+    from sheets_handler import get_spanish_date_str, ahora_colombia
 
     SEP = "=" * 70
 
@@ -605,7 +605,7 @@ if __name__ == "__main__":
     # queda una localidad terminada completa en vez de un pedazo de todas.
     for localidad in localidades:
         for hab in habitaciones:
-            inicio = datetime.now()
+            inicio = ahora_colombia()
             print("")
             print(SEP)
             print(f"📍 {localidad.upper()} | {hab} HABITACIÓN(ES) | Cuota: {args.max_items}")
