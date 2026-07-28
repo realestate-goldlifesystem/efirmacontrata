@@ -13,7 +13,7 @@ investigado (patron de URL, deteccion de particular, revelado de telefono).
 import re
 import sys
 import time
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 import config
 from sheets_handler import SheetsHandler, ahora_colombia, get_spanish_date_str
@@ -206,18 +206,27 @@ def procesar_anuncio(page, context, url, estado_telefono):
         print("⚠️ [AVISO] Sin botón de WhatsApp visible, se omite.")
         return None
 
-    # El clic a veces abre pestaña nueva y a veces navega la misma pagina,
-    # a veces con retraso. En vez de rastrear popup/URL (inestable), se
-    # ESCUCHA de forma pasiva (crear_escucha_whatsapp, registrada una sola
-    # vez sobre el contexto completo) cualquier peticion real hacia
-    # api.whatsapp.com, sin abortar nada -- el flujo necesita completarse
-    # de verdad para que el numero aparezca.
+    # El clic puede abrir pestaña nueva (popup) o navegar la misma pagina,
+    # a veces con retraso. Se intenta primero detectar un popup explicito
+    # (mecanismo original, el unico que hasta ahora revelo numeros reales);
+    # si no abre ninguno en unos segundos, se asume que el flujo sigue en
+    # la misma pagina y se cae al respaldo: la escucha pasiva de peticiones
+    # (crear_escucha_whatsapp, registrada sobre el contexto completo) sigue
+    # activa en ambos casos y es la que realmente entrega el telefono+ID;
+    # aqui solo se usa expect_page para saber SI abrio popup o no.
     id_anuncio_actual = extraer_id_inmueble(url)
     estado_telefono["valor"] = None
     estado_telefono["id_anuncio"] = None
+    nueva_pagina = None
     try:
         boton.scroll_into_view_if_needed()
-        boton.click()
+        try:
+            with context.expect_page(timeout=5000) as info_pagina_nueva:
+                boton.click()
+            nueva_pagina = info_pagina_nueva.value
+            print("   [INFO] Popup detectado, esperando que revele el teléfono...")
+        except PlaywrightTimeoutError:
+            print("   [INFO] Sin popup (flujo en la misma página o sin respuesta).")
         for _ in range(75):  # hasta 15s esperando la peticion (el clic real a veces tarda)
             if estado_telefono["valor"]:
                 break
