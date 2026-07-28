@@ -206,6 +206,9 @@ function obtenerResumenCaptaciones() {
     d.total = d.arriendo + d.venta;
     d.agotadas = d.combinaciones.filter(function (c) { return c.estado === 'AGOTADA'; }).length;
     d.completas = d.combinaciones.filter(function (c) { return c.estado === 'COMPLETA'; }).length;
+    // SALTADA: la corrida automatica omitio esa combinacion porque ya habia
+    // suficientes leads en NUEVO sin llamar (logica de reposicion).
+    d.saltadas = d.combinaciones.filter(function (c) { return c.estado === 'SALTADA'; }).length;
   });
 
   resultado.dias = dias;

@@ -79,6 +79,11 @@
         background: #fffbeb; border: 1px solid #fde68a;
         border-radius: 999px; padding: 2px 8px; margin-left: 6px;
       }
+      .chip-saltadas {
+        font-size: 10px; font-weight: 700; color: #475569;
+        background: #f1f5f9; border: 1px solid #cbd5e1;
+        border-radius: 999px; padding: 2px 8px; margin-left: 6px;
+      }
       .combo {
         display: flex; align-items: center; gap: 6px;
         font-size: 11px; padding: 3px 0;
@@ -92,6 +97,7 @@
       }
       .badge.completa { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
       .badge.agotada  { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+      .badge.saltada  { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
       .titulo-mini {
         font-size: 10px; text-transform: uppercase; letter-spacing: .3px;
         color: #94a3b8; margin: 8px 0 2px;
@@ -99,6 +105,11 @@
       .nota-agotada {
         font-size: 10px; color: #92400e; background: #fffbeb;
         border-left: 3px solid #fbbf24; border-radius: 4px;
+        padding: 5px 8px; margin-top: 6px; line-height: 1.45;
+      }
+      .nota-saltada {
+        font-size: 10px; color: #475569; background: #f8fafc;
+        border-left: 3px solid #94a3b8; border-radius: 4px;
         padding: 5px 8px; margin-top: 6px; line-height: 1.45;
       }
       .aviso {
@@ -184,6 +195,10 @@
             chips.appendChild(crear('span', 'chip-agotadas', d.agotadas + ' agotada' +
                                     (d.agotadas === 1 ? '' : 's')));
           }
+          if (d.saltadas) {
+            chips.appendChild(crear('span', 'chip-saltadas', d.saltadas + ' saltada' +
+                                    (d.saltadas === 1 ? '' : 's')));
+          }
           top.appendChild(chips);
           card.appendChild(top);
 
@@ -198,22 +213,37 @@
             card.appendChild(crear('div', 'titulo-mini', 'Barridos'));
             d.combinaciones.forEach(function (c) {
               var fila = crear('div', 'combo');
-              var esAgotada = c.estado === 'AGOTADA';
-              fila.appendChild(crear('span', 'badge ' + (esAgotada ? 'agotada' : 'completa'),
-                                     esAgotada ? 'agotada' : 'completa'));
+              // Tres estados posibles, no dos. Antes se comparaba solo contra
+              // AGOTADA y todo lo demas se pintaba como "completa", asi que una
+              // combinacion SALTADA aparecia como si hubiera llenado su cuota.
+              var estado = (c.estado || '').toUpperCase();
+              var clase = estado === 'AGOTADA' ? 'agotada'
+                        : estado === 'SALTADA' ? 'saltada'
+                        : 'completa';
+              fila.appendChild(crear('span', 'badge ' + clase, clase));
               fila.appendChild(crear('span', 'combo-nombre',
                                      c.sector + ' · ' + c.habitaciones + ' hab'));
+              // Una saltada no barrio nada: mostrar "0/20" ahi confunde, porque
+              // el cero no es un resultado sino que ni siquiera se intento.
               fila.appendChild(crear('span', 'combo-cifra',
-                                     c.captados + '/' + c.cuota +
-                                     (c.paginas ? '  ·  ' + c.paginas + ' pág' : '') +
-                                     (c.duracion ? '  ·  ' + c.duracion + ' min' : '')));
+                                     estado === 'SALTADA'
+                                       ? 'no se barrio'
+                                       : c.captados + '/' + c.cuota +
+                                         (c.paginas ? '  ·  ' + c.paginas + ' pág' : '') +
+                                         (c.duracion ? '  ·  ' + c.duracion + ' min' : '')));
               card.appendChild(fila);
             });
 
             if (d.agotadas) {
               card.appendChild(crear('div', 'nota-agotada',
-                'Las marcadas como agotadas recorrieron todas sus páginas sin completar los 30: ' +
-                'no quedan más propietarios nuevos en esa búsqueda. El robot siguió con la siguiente.'));
+                'Las marcadas como agotadas recorrieron todas sus páginas sin llegar a la cuota: ' +
+                'no quedan más propietarios nuevos en esa búsqueda. Miguel siguió con la siguiente.'));
+            }
+            if (d.saltadas) {
+              card.appendChild(crear('div', 'nota-saltada',
+                'Las marcadas como saltadas ni se barrieron: ya había 5 o más inmuebles en NUEVO ' +
+                'para esa localidad y número de habitaciones, así que Miguel no acumuló más leads ' +
+                'sin llamar y pasó a la siguiente.'));
             }
           }
 
