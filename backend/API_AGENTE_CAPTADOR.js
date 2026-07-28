@@ -238,7 +238,7 @@ function ejecutarAgenteCaptador(modo) {
     .setWidth(470)
     .setHeight(420);
 
-  ui.showModalDialog(html, '🚀 Agente Captador - Fincaraiz (' + tipoTexto + ')');
+  ui.showModalDialog(html, '🚀 Miguel - Agente Captador Fincaraiz (' + tipoTexto + ')');
 }
 
 /**
@@ -302,7 +302,7 @@ function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
     if (code === 204) {
       ui.alert(
         '🚀 ¡Barrido de ' + tipoTexto + ' Iniciado!',
-        'El Agente Captador está rastreando Fincaraiz en la nube (' + tipoTexto + ' | ' + habTexto + ').\n\nLos inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "' + pestanaTexto + '".',
+        'Miguel está rastreando Fincaraiz en la nube (' + tipoTexto + ' | ' + habTexto + ').\n\nLos inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "' + pestanaTexto + '".',
         ui.ButtonSet.OK
       );
     } else {

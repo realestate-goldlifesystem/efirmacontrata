@@ -106,6 +106,18 @@ LOCALIDADES = {
 # Lista plana de todas las zonas (se conserva por compatibilidad).
 SECTORES = [z for zonas in LOCALIDADES.values() for z in zonas]
 
+# Letra que Miguel escribe en la columna "LOCALIDAD" del Sheet al capturar
+# cada fila. Reemplaza cualquier intento de adivinar la localidad a partir
+# del texto libre de UBICACIÓN (que trae el barrio, no la localidad).
+LOCALIDAD_LETRA = {"usaquen": "U", "suba": "S", "chapinero": "C"}
+
+# --- Lógica de reposición de inventario (barrido automático, --reponer) ---
+# Antes de capturar una combinación localidad x habitación, se cuenta cuántas
+# filas en estado NUEVO ya existen para esa combinación exacta (filtrando por
+# la columna LOCALIDAD). Si ya hay este umbral o más, se salta esa combinación
+# para no acumular más backlog del que se alcanza a llamar.
+UMBRAL_REPOSICION = 5
+
 BEDROOM_SLUGS = {
     "1": "1-habitacion",
     "2": "2-habitaciones",

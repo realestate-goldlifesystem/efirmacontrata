@@ -527,7 +527,8 @@ class FincaraizScraper:
                 "property_type": prop_type,
                 "bedrooms": bedrooms,
                 "price": price_str,
-                "location": location_str
+                "location": location_str,
+                "localidad": self.localidad
             }
 
         except Exception as e:
@@ -580,6 +581,11 @@ if __name__ == "__main__":
     parser.add_argument("--max-pages", type=int, default=None,
                         help="Salvaguarda de páginas por búsqueda. Normalmente no se toca: "
                              "el robot recorre desde la última página real hacia la 1.")
+    parser.add_argument("--reponer", action="store_true",
+                        help="Antes de cada combinación localidad x habitación, cuenta cuántas filas "
+                             "NUEVO ya existen (columna LOCALIDAD) y se salta si ya hay "
+                             f"{config.UMBRAL_REPOSICION} o más. Pensado para el barrido automático, "
+                             "no para pedidos manuales de un sector puntual.")
     args = parser.parse_args()
 
     if args.max_pages:
@@ -618,6 +624,34 @@ if __name__ == "__main__":
                 bedrooms=hab,
                 localidad=localidad,
             )
+
+            if args.reponer:
+                ya_tiene = scraper.sheets.contar_nuevos(localidad, hab)
+                if ya_tiene >= config.UMBRAL_REPOSICION:
+                    print(f"⏭️  [SALTADA] Ya hay {ya_tiene} en NUEVO para {localidad} "
+                          f"{hab} hab (umbral: {config.UMBRAL_REPOSICION}). No se captura.")
+                    try:
+                        scraper.sheets.registrar_bitacora([
+                            get_spanish_date_str(),
+                            inicio.strftime("%H:%M"),
+                            args.mode,
+                            localidad,
+                            hab,
+                            "SALTADA",
+                            0,
+                            args.max_items,
+                            0,
+                            0,
+                            0,
+                            0,
+                            round((ahora_colombia() - inicio).total_seconds() / 60, 1),
+                            f"Ya había {ya_tiene} en NUEVO para esta localidad+habitación "
+                            f"(umbral: {config.UMBRAL_REPOSICION}). No se hizo barrido.",
+                        ])
+                    except Exception as e:
+                        print(f"[WARN] No se pudo registrar en la bitácora: {e}")
+                    continue
+
             scraper.run()
             gran_total += scraper.processed_count
 

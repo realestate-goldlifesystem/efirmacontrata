@@ -26,7 +26,7 @@ const DOCS_CONFIG = {
 function onOpen(e) {
   const ui = SpreadsheetApp.getUi();
 
-  ui.createMenu('🤖 Agente Captador')
+  ui.createMenu('🤖 Miguel - Agente Captador')
     .addItem('🚀 Iniciar Barrido de Arriendo Ahora', 'ejecutarAgenteCaptadorArriendo')
     .addItem('🚀 Iniciar Barrido de Venta Ahora', 'ejecutarAgenteCaptadorVenta')
     .addSeparator()

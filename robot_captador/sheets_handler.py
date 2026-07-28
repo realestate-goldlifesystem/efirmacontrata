@@ -185,6 +185,10 @@ class SheetsHandler:
         self.target_row_index = max(3, last_row_with_data + 1)
         self.max_n = last_row_data_n
 
+        # Filas de datos crudas (sin encabezado ni fila de filtro), para poder
+        # contar por LOCALIDAD+HABITACIONES sin releer el Sheet otra vez.
+        self.rows = rows[2:]
+
         print(f"[INFO] Registros existentes en '{self.sheet_title}': {len(self.existing_phones)} teléfonos, {len(self.existing_links)} links.")
         print(f"[INFO] Última fila ocupada con datos: {last_row_with_data} (Último n: {self.max_n}). Próxima fila a escribir: Fila {self.target_row_index}")
 
@@ -322,6 +326,32 @@ class SheetsHandler:
             # El formato es cosmético: si falla, el dato ya quedó guardado.
             print(f"[WARN] No se pudo aplicar el formato a la fila {target_row}: {e}")
 
+    def contar_nuevos(self, localidad, habitacion):
+        """
+        Cuenta cuántas filas en estado NUEVO ya existen para una localidad y
+        cantidad de habitaciones exactas, usando la letra de la columna
+        LOCALIDAD (S/U/C) en vez de interpretar el texto libre de UBICACIÓN.
+
+        Usado por --reponer para decidir si vale la pena capturar más en esa
+        combinación o si ya hay suficiente backlog sin llamar.
+        """
+        letra = config.LOCALIDAD_LETRA.get(str(localidad).lower(), "")
+        col_estado = self.col_map.get("estado de llamada")
+        col_hab = self.col_map.get("habitaciones")
+        col_loc = self.col_map.get("localidad")
+        if not letra or col_estado is None or col_hab is None or col_loc is None:
+            return 0
+
+        hab_str = str(habitacion)
+        count = 0
+        for row in self.rows:
+            estado = row[col_estado].strip().upper() if len(row) > col_estado and row[col_estado] else ""
+            hab_val = row[col_hab].strip() if len(row) > col_hab and row[col_hab] else ""
+            loc_val = row[col_loc].strip().upper() if len(row) > col_loc and row[col_loc] else ""
+            if estado == "NUEVO" and hab_val == hab_str and loc_val == letra:
+                count += 1
+        return count
+
     def is_duplicate(self, phone, link):
         """Verifica si el teléfono o el link ya fueron procesados previamente."""
         cleaned = clean_phone(phone)
@@ -364,6 +394,7 @@ class SheetsHandler:
             "habitaciones": str(captacion_data.get("bedrooms", "")),
             "valor de promocion": captacion_data.get("price", ""),
             "ubicacion": captacion_data.get("location", ""),
+            "localidad": config.LOCALIDAD_LETRA.get(str(captacion_data.get("localidad", "")).lower(), ""),
             "wha": self.build_whatsapp_formula(self.target_row_index)
         }
 
