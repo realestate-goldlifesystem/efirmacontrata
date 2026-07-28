@@ -621,7 +621,7 @@ if __name__ == "__main__":
             scraper.run()
             gran_total += scraper.processed_count
 
-            minutos = round((datetime.now() - inicio).total_seconds() / 60, 1)
+            minutos = round((ahora_colombia() - inicio).total_seconds() / 60, 1)
 
             if scraper.agotado:
                 estado = "AGOTADA"
