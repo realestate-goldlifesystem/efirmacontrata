@@ -605,7 +605,11 @@ if __name__ == "__main__":
     print(SEP)
 
     gran_total = 0
-    agotadas = []
+    # Se guarda el desenlace de TODAS las combinaciones, no solo las agotadas.
+    # Antes solo se llevaba la lista de agotadas y el resumen final terminaba
+    # mostrando 7 de 15 combinaciones sin decir qué pasó con las otras 8, lo
+    # que hacía parecer que las que llenaron cuota no se habían contado.
+    resultados = []
 
     # Sector por fuera y habitaciones por dentro: así, si la corrida se corta,
     # queda una localidad terminada completa en vez de un pedazo de todas.
@@ -650,6 +654,7 @@ if __name__ == "__main__":
                         ])
                     except Exception as e:
                         print(f"[WARN] No se pudo registrar en la bitácora: {e}")
+                    resultados.append((localidad, hab, "SALTADA", 0, ya_tiene))
                     continue
 
             scraper.run()
@@ -662,7 +667,6 @@ if __name__ == "__main__":
                 detalle = (f"Se recorrieron todas las páginas disponibles y solo se encontraron "
                            f"{scraper.processed_count} de los {args.max_items} de la cuota. "
                            f"No hay más propietarios nuevos en esta búsqueda.")
-                agotadas.append(f"{localidad} {hab} hab ({scraper.processed_count}/{args.max_items})")
                 print("")
                 print(f"⚠️  [AGOTADA] {detalle}")
             else:
@@ -670,6 +674,8 @@ if __name__ == "__main__":
                 detalle = f"Cuota de {args.max_items} alcanzada."
                 print("")
                 print(f"✅ [COMPLETA] {detalle}")
+
+            resultados.append((localidad, hab, estado, scraper.processed_count, None))
 
             # Se anota apenas termina cada combinación, no al final de todo, para
             # que una corrida cortada a medias deje igual su rastro.
@@ -693,11 +699,30 @@ if __name__ == "__main__":
             except Exception as e:
                 print(f"[WARN] No se pudo registrar en la bitácora: {e}")
 
+    ICONO_ESTADO = {"COMPLETA": "✅", "AGOTADA": "⚠️", "SALTADA": "⏭️"}
+
     print("")
     print(SEP)
     print(f"🎯 GRAN TOTAL CAPTADO: {gran_total}")
-    if agotadas:
-        print(f"⚠️  Combinaciones que se agotaron sin llenar la cuota ({len(agotadas)}):")
-        for a in agotadas:
-            print(f"     - {a}")
+    print(SEP)
+    print(f"DETALLE DE LAS {len(resultados)} COMBINACIONES:")
+    print("")
+
+    for localidad, hab, estado, captados, ya_tenia in resultados:
+        icono = ICONO_ESTADO.get(estado, "  ")
+        etiqueta = f"{localidad} {hab} hab".ljust(20)
+        if estado == "SALTADA":
+            nota = f"ya tenía {ya_tenia} en NUEVO (umbral: {config.UMBRAL_REPOSICION})"
+        else:
+            nota = f"{captados}/{args.max_items} captados"
+        print(f"  {icono} {estado.ljust(8)} {etiqueta} {nota}")
+
+    # Conteo por estado: deja claro de un vistazo que las tres categorías
+    # suman el total de combinaciones y que ninguna se quedó sin reportar.
+    print("")
+    for estado in ("COMPLETA", "AGOTADA", "SALTADA"):
+        del_estado = [r for r in resultados if r[2] == estado]
+        if del_estado:
+            capturado = sum(r[3] for r in del_estado)
+            print(f"  {ICONO_ESTADO[estado]} {estado.ljust(8)}: {len(del_estado)} combinación(es), {capturado} captados")
     print(SEP)
