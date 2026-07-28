@@ -25,6 +25,11 @@ on:
           - usaquen
           - suba
           - chapinero
+      reponer:
+        description: 'Reposición: saltar localidad+habitación con 5 o más NUEVO (cuota 20). Para probar el modo de la corrida automática sin esperar al cron.'
+        required: false
+        default: false
+        type: boolean
   repository_dispatch:
     types: [trigger-scraper]
   schedule:
@@ -66,6 +71,12 @@ jobs:
             MODE="${{ github.event.inputs.mode || github.event.client_payload.mode || 'arriendo' }}"
             BEDROOMS="${{ github.event.inputs.bedrooms || github.event.client_payload.bedrooms || 'all' }}"
             SECTOR="${{ github.event.inputs.sector || github.event.client_payload.sector || 'all' }}"
-            echo "Ejecutando robot captador | Modo: $MODE | Sector: $SECTOR | Habitaciones: $BEDROOMS"
-            python robot_captador/scraper.py --mode "$MODE" --sector "$SECTOR" --bedrooms "$BEDROOMS" --max-items 30
+            REPONER="${{ github.event.inputs.reponer }}"
+            if [ "$REPONER" = "true" ]; then
+              echo "Ejecutando robot captador (modo reposición manual) | Modo: $MODE | Sector: $SECTOR | Habitaciones: $BEDROOMS"
+              python robot_captador/scraper.py --mode "$MODE" --sector "$SECTOR" --bedrooms "$BEDROOMS" --max-items 20 --reponer
+            else
+              echo "Ejecutando robot captador | Modo: $MODE | Sector: $SECTOR | Habitaciones: $BEDROOMS"
+              python robot_captador/scraper.py --mode "$MODE" --sector "$SECTOR" --bedrooms "$BEDROOMS" --max-items 30
+            fi
           fi
