@@ -271,8 +271,16 @@ def recolectar_links(page, url_busqueda, max_paginas=10):
     verdad en vez de armar una URL con numero de pagina.
     """
     print(f"[INFO] Cargando listado: {url_busqueda}")
-    page.goto(url_busqueda, wait_until="domcontentloaded", timeout=45000)
-    time.sleep(2)
+    ruta_pedida = url_busqueda.split("?")[0].rstrip("/")
+    for intento_nav in range(3):
+        page.goto(url_busqueda, wait_until="domcontentloaded", timeout=45000)
+        time.sleep(2)
+        ruta_actual = page.url.split("?")[0].rstrip("/")
+        if ruta_actual == ruta_pedida:
+            break
+        print(f"⚠️ [AVISO] La URL real ({page.url}) no coincide con la pedida (intento {intento_nav+1}/3). Reintentando navegación...")
+    else:
+        print(f"⚠️ [AVISO] No se pudo navegar a la URL pedida tras 3 intentos, se sigue con lo que haya cargado: {page.url}")
 
     # Aceptar cookies si aparece el banner (solo la primera vez)
     try:
