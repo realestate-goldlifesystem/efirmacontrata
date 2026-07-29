@@ -19,7 +19,7 @@ import config
 from sheets_handler import SheetsHandler, ahora_colombia, get_spanish_date_str
 
 PESTANA_PRUEBA = "PRUEBA METROCUADRADO"
-BASE_URL = "https://www.metrocuadrado.com/apartamento-apartaestudio/{operacion}/{lugar}/{hab}-habitaciones/?search=form"
+BASE_URL = "https://www.metrocuadrado.com/apartamento-apartaestudio/{operacion}/{lugar}/{hab}-habitaciones"
 
 # Mismo endpoint y API key (publica, del propio JS del sitio) que usa el
 # buscador de Metrocuadrado para autocompletar. Se consulta en vivo cada vez
