@@ -270,61 +270,81 @@ def recolectar_links(page, url_busqueda, max_paginas=10):
     por estado de React, no cambia la URL -- por eso hay que darle clic de
     verdad en vez de armar una URL con numero de pagina.
     """
-    print(f"[INFO] Cargando listado: {url_busqueda}")
     ruta_pedida = url_busqueda.split("?")[0].rstrip("/")
-    for intento_nav in range(3):
+
+    def url_correcta():
+        return page.url.split("?")[0].rstrip("/") == ruta_pedida
+
+    for intento_general in range(3):
+        print(f"[INFO] Cargando listado: {url_busqueda}")
         page.goto(url_busqueda, wait_until="domcontentloaded", timeout=45000)
         time.sleep(2)
-        ruta_actual = page.url.split("?")[0].rstrip("/")
-        if ruta_actual == ruta_pedida:
-            break
-        print(f"⚠️ [AVISO] La URL real ({page.url}) no coincide con la pedida (intento {intento_nav+1}/3). Reintentando navegación...")
-    else:
-        print(f"⚠️ [AVISO] No se pudo navegar a la URL pedida tras 3 intentos, se sigue con lo que haya cargado: {page.url}")
+        if not url_correcta():
+            print(f"⚠️ [AVISO] La URL real ({page.url}) no coincide con la pedida (intento general {intento_general+1}/3). Reintentando desde cero...")
+            continue
 
-    # Aceptar cookies si aparece el banner (solo la primera vez)
-    try:
-        boton = page.query_selector('button:has-text("Aceptar")')
-        if boton:
-            boton.click()
-            time.sleep(0.5)
-    except Exception:
-        pass
-
-    todos_los_links = []
-    num_pagina = 1
-    while True:
-        _scroll_hasta_agotar(page)
-
-        links_pagina = page.eval_on_selector_all(
-            'a[href*="/inmueble/"]',
-            "els => [...new Set(els.map(e => e.href.split('?')[0]))]"
-        )
-        print(f"[INFO] --- Página {num_pagina}: {len(links_pagina)} anuncios ---")
-        for link in links_pagina:
-            print(f"    [pág. {num_pagina}] {link}")
-        todos_los_links.extend(links_pagina)
-
-        if num_pagina >= max_paginas:
-            print(f"[INFO] Tope de {max_paginas} páginas alcanzado, se detiene la paginación.")
-            break
-
-        boton_siguiente = page.query_selector('.rc-pagination-next:not(.rc-pagination-disabled)')
-        if not boton_siguiente:
-            break
-
+        # Aceptar cookies si aparece el banner (solo la primera vez)
         try:
-            boton_siguiente.click()
-            page.wait_for_timeout(1500)
-        except Exception as e:
-            print(f"⚠️ [AVISO] No se pudo pasar de página: {e}")
-            break
+            boton = page.query_selector('button:has-text("Aceptar")')
+            if boton:
+                boton.click()
+                time.sleep(0.5)
+        except Exception:
+            pass
 
-        num_pagina += 1
+        todos_los_links = []
+        num_pagina = 1
+        reiniciar = False
+        while True:
+            _scroll_hasta_agotar(page)
 
-    links_unicos = list(dict.fromkeys(todos_los_links))
-    print(f"[INFO] === Total páginas alcanzadas: {num_pagina} | {len(links_unicos)} anuncios únicos ===")
-    return links_unicos
+            # Una navegacion tardia (ej: el clic de WhatsApp de un anuncio
+            # anterior resolviendo con retraso) puede aterrizar de vuelta en
+            # una pagina de resultados VIEJA usando su propio "src_url" de
+            # referencia -- eso ya paso en una corrida real (un lugar chico
+            # termino leyendo el resultado de otro lugar completamente
+            # distinto). Se revisa la URL en CADA vuelta, no solo al
+            # principio, y si cambio se descarta todo y se reinicia limpio.
+            if not url_correcta():
+                print(f"⚠️ [AVISO] La página cambió sola durante la recolección ({page.url}). Descartando y reiniciando este lugar...")
+                reiniciar = True
+                break
+
+            links_pagina = page.eval_on_selector_all(
+                'a[href*="/inmueble/"]',
+                "els => [...new Set(els.map(e => e.href.split('?')[0]))]"
+            )
+            print(f"[INFO] --- Página {num_pagina}: {len(links_pagina)} anuncios ---")
+            for link in links_pagina:
+                print(f"    [pág. {num_pagina}] {link}")
+            todos_los_links.extend(links_pagina)
+
+            if num_pagina >= max_paginas:
+                print(f"[INFO] Tope de {max_paginas} páginas alcanzado, se detiene la paginación.")
+                break
+
+            boton_siguiente = page.query_selector('.rc-pagination-next:not(.rc-pagination-disabled)')
+            if not boton_siguiente:
+                break
+
+            try:
+                boton_siguiente.click()
+                page.wait_for_timeout(1500)
+            except Exception as e:
+                print(f"⚠️ [AVISO] No se pudo pasar de página: {e}")
+                break
+
+            num_pagina += 1
+
+        if reiniciar:
+            continue
+
+        links_unicos = list(dict.fromkeys(todos_los_links))
+        print(f"[INFO] === Total páginas alcanzadas: {num_pagina} | {len(links_unicos)} anuncios únicos ===")
+        return links_unicos
+
+    print(f"⚠️ [AVISO] No se pudo recolectar el listado tras 3 intentos generales, se omite: {url_busqueda}")
+    return []
 
 
 def procesar_anuncio(page, context, url, estado_telefono, localidad_buscada, lugar_buscado,
@@ -406,22 +426,21 @@ def procesar_anuncio(page, context, url, estado_telefono, localidad_buscada, lug
         print(f"⚠️ [AVISO] No se pudo hacer clic en WhatsApp: {e}")
         return None
     finally:
-        # Cerrar cualquier pestaña extra que el clic haya abierto (popup),
-        # y si la pagina PRINCIPAL quedo navegada fuera del anuncio (a veces
-        # pasa en vez de abrir popup), regresar a el explicitamente antes de
-        # seguir -- evita que una navegacion tardia choque con la carga del
-        # siguiente anuncio.
+        # Cerrar cualquier pestaña extra que el clic haya abierto (popup) --
+        # esto SI hace falta, para no ir acumulando pestañas. NO se intenta
+        # "regresar" (go_back) si la pagina principal quedo navegada fuera
+        # del anuncio: nunca hace falta, porque cada anuncio se visita
+        # navegando DIRECTO a su propia URL (la lista completa ya se saco
+        # de antemano en recolectar_links), nunca haciendo clic para volver
+        # al portal. Intentar "regresar" con el historial del navegador era
+        # justamente lo que podia aterrizar en cualquier pagina vieja
+        # impredecible si una navegacion tardia llegaba en mal momento.
         for otra in list(context.pages):
             if otra is not page:
                 try:
                     otra.close()
                 except Exception:
                     pass
-        try:
-            if page.url != url and "metrocuadrado.com" in page.url:
-                page.go_back(wait_until="domcontentloaded", timeout=8000)
-        except Exception:
-            pass
 
     telefono = estado_telefono["valor"]
     id_revelado = estado_telefono["id_anuncio"]
