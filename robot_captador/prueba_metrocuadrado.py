@@ -472,10 +472,12 @@ def main():
         lugares = obtener_lugares_dinamicos(context, BUSQUEDA)
         print(f"[INFO] {len(lugares)} lugares encontrados dinámicamente para '{BUSQUEDA}'.")
 
-        for lugar in lugares:
+        for idx, lugar in enumerate(lugares, start=1):
             if capturados >= CUOTA:
                 print(f"[STOP] Cuota de {CUOTA} alcanzada.")
                 break
+
+            print(f"\n[INFO] >>> Lugar {idx}/{len(lugares)}: {lugar} <<<")
 
             url_busqueda = BASE_URL.format(operacion=OPERACION, lugar=lugar, hab=HABITACIONES)
             links = recolectar_links(page, url_busqueda)
