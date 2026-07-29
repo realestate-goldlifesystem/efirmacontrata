@@ -518,6 +518,19 @@ def main():
             url_busqueda = BASE_URL.format(operacion=OPERACION, lugar=lugar, hab=HABITACIONES)
             links = recolectar_links(page, url_busqueda)
 
+            # Muchos barrios chicos quedan totalmente cubiertos por una
+            # busqueda mas amplia ya recorrida antes en esta misma corrida
+            # (ej: "usaquen" general, que se busca de primero) -- esto es
+            # normal y evita evaluar el mismo anuncio dos veces, no es un
+            # error. Se deja explicito en el log para no confundir.
+            ya_vistos = sum(1 for l in links if l.lower().strip() in vistos_en_esta_corrida)
+            nuevos = len(links) - ya_vistos
+            print(f"[INFO] De estos {len(links)} anuncios: {ya_vistos} ya se habían visto en un lugar anterior de esta misma corrida (se saltan sin evaluar, para no repetir trabajo) y {nuevos} son nuevos para evaluar.")
+
+            capturados_antes = capturados
+            evaluados_este_lugar = 0
+            saltados_duplicado_antes = saltados_duplicado
+
             for link in links:
                 if capturados >= CUOTA:
                     print(f"[STOP] Cuota de {CUOTA} alcanzada.")
@@ -531,6 +544,7 @@ def main():
                     continue
 
                 print(f"\n🔍 [EVALUANDO] ({lugar}) -> {link}")
+                evaluados_este_lugar += 1
                 datos = procesar_anuncio(page, context, link, estado_telefono, BUSQUEDA, lugar,
                                           HABITACIONES, OPERACION)
 
@@ -543,6 +557,11 @@ def main():
                 if sheets.append_captacion(datos):
                     capturados += 1
                     print(f"✨ Total capturados: {capturados}")
+
+            print(f"[RESUMEN LUGAR {idx}/{len(lugares)} - {lugar}] evaluados: {evaluados_este_lugar} | "
+                  f"capturados nuevos: {capturados - capturados_antes} | "
+                  f"saltados por duplicado (ya en el Sheet): {saltados_duplicado - saltados_duplicado_antes} | "
+                  f"total capturados hasta ahora: {capturados}")
 
         browser.close()
 
