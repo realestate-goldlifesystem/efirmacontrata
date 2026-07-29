@@ -226,7 +226,7 @@ def crear_escucha_whatsapp(estado_telefono):
     return handler
 
 
-def _scroll_hasta_agotar(page, max_intentos=60, estabilidad_requerida=3):
+def _scroll_hasta_agotar(page, max_intentos=60, estabilidad_requerida=3, intentos_minimos=5):
     """
     Hace scroll repetidamente hasta que el numero de anuncios cargados en el
     DOM deja de crecer durante `estabilidad_requerida` intentos seguidos (o
@@ -234,17 +234,24 @@ def _scroll_hasta_agotar(page, max_intentos=60, estabilidad_requerida=3):
     en paginas con mas contenido del esperado (se vio en logs: paginas
     seguidas reportando casi el mismo conteo, señal de que se cortaba el
     scroll antes de que la pagina terminara de cargar todo lo disponible).
+
+    Ojo: "estable en 0" NO cuenta como agotado -- se vio en logs reales que
+    la primera busqueda de una corrida a veces se lee ANTES de que el
+    listado termine de renderizar (recien navegado), y 0==0==0 durante los
+    primeros intentos se detectaba como "estable" y cortaba el scroll antes
+    de que cargara ningun anuncio real. Por eso se exige conteo > 0 Y un
+    minimo de intentos antes de aceptar la estabilidad como valida.
     """
     anterior = -1
     estable = 0
-    for _ in range(max_intentos):
+    for intento in range(max_intentos):
         page.evaluate("window.scrollBy(0, 900)")
         time.sleep(0.3)
         actual = page.eval_on_selector_all(
             'a[href*="/inmueble/"]',
             "els => new Set(els.map(e => e.href.split('?')[0])).size"
         )
-        if actual == anterior:
+        if actual == anterior and actual > 0 and intento >= intentos_minimos:
             estable += 1
             if estable >= estabilidad_requerida:
                 break
