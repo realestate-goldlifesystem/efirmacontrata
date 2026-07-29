@@ -75,6 +75,57 @@ PALABRAS_EMPRESA_METROCUADRADO = ["cia", "s en c", "realtors", "roastbeef"]
 # igual que un timeout: no es un dato valido de propietario.
 TELEFONO_BOT_METROCUADRADO = "3154587708"
 
+# Las 20 localidades de Bogota. El buscador de Metrocuadrado a veces
+# devuelve anuncios de OTRA localidad al buscar por un barrio puntual
+# (visto hoy: buscando "usaquen" salio un anuncio de "Engativa" y otro de
+# "Teusaquillo") -- probablemente porque rellena resultados con anuncios
+# cercanos cuando un barrio especifico tiene pocos. Se usa para descartar
+# esos casos comparando contra el texto de "Barrio comun" del anuncio.
+LOCALIDADES_BOGOTA = [
+    "usaquen", "chapinero", "santa fe", "san cristobal", "usme", "tunjuelito",
+    "bosa", "kennedy", "fontibon", "engativa", "suba", "barrios unidos",
+    "teusaquillo", "los martires", "antonio narino", "puente aranda",
+    "la candelaria", "rafael uribe uribe", "ciudad bolivar", "sumapaz",
+]
+
+
+def pertenece_a_otra_localidad(ubicacion, localidad_buscada):
+    """
+    True si el texto de ubicacion menciona explicitamente una localidad de
+    Bogota DISTINTA a la que se esta buscando (ej: se busco "usaquen" pero
+    el anuncio dice "Engativa").
+    """
+    norm = normalizar(ubicacion)
+    buscada_norm = normalizar(localidad_buscada)
+    for loc in LOCALIDADES_BOGOTA:
+        if loc == buscada_norm:
+            continue
+        if loc in norm:
+            return True
+    return False
+
+
+def extraer_habitaciones_de_url(url):
+    """
+    Cada anuncio trae su numero real de habitaciones incrustado en el slug
+    de su PROPIA url (ej: "...-1-habitaciones-1-banos/MC123"), generado por
+    Metrocuadrado -- no es el filtro de busqueda que nosotros pedimos, asi
+    que sirve para validar cuando el filtro de la busqueda falla (mismo
+    problema visto con el barrio: el filtro no es 100% exacto).
+    """
+    m = re.search(r'-(\d+)-habitaciones', url.lower())
+    return m.group(1) if m else None
+
+
+def extraer_operacion_de_url(url):
+    """La operacion (arriendo/venta) tambien viene en el slug de la propia url."""
+    u = url.lower()
+    if "/arriendo-" in u:
+        return "arriendo"
+    if "/venta-" in u:
+        return "venta"
+    return None
+
 
 def es_inmobiliaria(nombre):
     """
@@ -175,7 +226,43 @@ def crear_escucha_whatsapp(estado_telefono):
     return handler
 
 
-def recolectar_links(page, url_busqueda, max_scrolls=25):
+def _scroll_hasta_agotar(page, max_intentos=60, estabilidad_requerida=3):
+    """
+    Hace scroll repetidamente hasta que el numero de anuncios cargados en el
+    DOM deja de crecer durante `estabilidad_requerida` intentos seguidos (o
+    hasta un tope de seguridad). Un numero FIJO de scrolls se quedaba corto
+    en paginas con mas contenido del esperado (se vio en logs: paginas
+    seguidas reportando casi el mismo conteo, señal de que se cortaba el
+    scroll antes de que la pagina terminara de cargar todo lo disponible).
+    """
+    anterior = -1
+    estable = 0
+    for _ in range(max_intentos):
+        page.evaluate("window.scrollBy(0, 900)")
+        time.sleep(0.3)
+        actual = page.eval_on_selector_all(
+            'a[href*="/inmueble/"]',
+            "els => new Set(els.map(e => e.href.split('?')[0])).size"
+        )
+        if actual == anterior:
+            estable += 1
+            if estable >= estabilidad_requerida:
+                break
+        else:
+            estable = 0
+        anterior = actual
+
+
+def recolectar_links(page, url_busqueda, max_paginas=10):
+    """
+    Recolecta los links de un listado, agotando primero el scroll perezoso
+    de la pagina actual (hasta que deje de crecer, ver _scroll_hasta_agotar)
+    y despues avanzando por la paginacion (biblioteca "rc-pagination": boton
+    ".rc-pagination-next", se deshabilita con la clase
+    "rc-pagination-disabled" cuando ya no hay mas paginas). La paginacion es
+    por estado de React, no cambia la URL -- por eso hay que darle clic de
+    verdad en vez de armar una URL con numero de pagina.
+    """
     print(f"[INFO] Cargando listado: {url_busqueda}")
     page.goto(url_busqueda, wait_until="domcontentloaded", timeout=45000)
     time.sleep(2)
@@ -189,19 +276,57 @@ def recolectar_links(page, url_busqueda, max_scrolls=25):
     except Exception:
         pass
 
-    for _ in range(max_scrolls):
-        page.evaluate("window.scrollBy(0, 900)")
-        time.sleep(0.3)
+    todos_los_links = []
+    num_pagina = 1
+    while True:
+        _scroll_hasta_agotar(page)
 
-    links = page.eval_on_selector_all(
-        'a[href*="/inmueble/"]',
-        "els => [...new Set(els.map(e => e.href.split('?')[0]))]"
-    )
-    print(f"[INFO] {len(links)} anuncios encontrados en el listado.")
-    return links
+        links_pagina = page.eval_on_selector_all(
+            'a[href*="/inmueble/"]',
+            "els => [...new Set(els.map(e => e.href.split('?')[0]))]"
+        )
+        print(f"[INFO] --- Página {num_pagina}: {len(links_pagina)} anuncios ---")
+        for link in links_pagina:
+            print(f"    [pág. {num_pagina}] {link}")
+        todos_los_links.extend(links_pagina)
+
+        if num_pagina >= max_paginas:
+            print(f"[INFO] Tope de {max_paginas} páginas alcanzado, se detiene la paginación.")
+            break
+
+        boton_siguiente = page.query_selector('.rc-pagination-next:not(.rc-pagination-disabled)')
+        if not boton_siguiente:
+            break
+
+        try:
+            boton_siguiente.click()
+            page.wait_for_timeout(1500)
+        except Exception as e:
+            print(f"⚠️ [AVISO] No se pudo pasar de página: {e}")
+            break
+
+        num_pagina += 1
+
+    links_unicos = list(dict.fromkeys(todos_los_links))
+    print(f"[INFO] === Total páginas alcanzadas: {num_pagina} | {len(links_unicos)} anuncios únicos ===")
+    return links_unicos
 
 
-def procesar_anuncio(page, context, url, estado_telefono):
+def procesar_anuncio(page, context, url, estado_telefono, localidad_buscada, lugar_buscado,
+                      habitaciones_esperadas, operacion_esperada):
+    # Validar contra el propio slug del anuncio (dato real de Metrocuadrado,
+    # no nuestro filtro de busqueda) antes de siquiera cargar la pagina --
+    # mismo problema visto con el barrio: el filtro de busqueda no es exacto.
+    habitaciones_url = extraer_habitaciones_de_url(url)
+    if habitaciones_url and habitaciones_url != str(habitaciones_esperadas):
+        print(f"[DESCARTADO] Habitaciones no coinciden (se buscaban {habitaciones_esperadas}, el anuncio dice {habitaciones_url}) -> {url}")
+        return None
+
+    operacion_url = extraer_operacion_de_url(url)
+    if operacion_url and operacion_url != operacion_esperada:
+        print(f"[DESCARTADO] Operación no coincide (se buscaba {operacion_esperada}, el anuncio dice {operacion_url}) -> {url}")
+        return None
+
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=45000)
         time.sleep(1.5)
@@ -219,9 +344,14 @@ def procesar_anuncio(page, context, url, estado_telefono):
         print(f"[DESCARTADO] Inmobiliaria detectada: '{nombre}'")
         return None
 
+    barrio = extraer_campo(texto, r'Barrio común:\s*(.+)')
+
+    if pertenece_a_otra_localidad(barrio, localidad_buscada):
+        print(f"[DESCARTADO] Otra localidad detectada en '{barrio}' (se buscaba '{lugar_buscado}' dentro de {localidad_buscada}) -> {url}")
+        return None
+
     print(f"[ACEPTADO] '{nombre or '(sin nombre, probable particular)'}'")
 
-    barrio = extraer_campo(texto, r'Barrio común:\s*(.+)')
     precio = extraer_campo(texto, r'\$\s*([\d.,]+)\s*\n')
     tipo = "Apartaestudio" if "apartaestudio" in url.lower() else "Apartamento"
 
@@ -362,8 +492,9 @@ def main():
                     saltados_duplicado += 1
                     continue
 
-                print(f"\n🔍 [EVALUANDO] -> {link}")
-                datos = procesar_anuncio(page, context, link, estado_telefono)
+                print(f"\n🔍 [EVALUANDO] ({lugar}) -> {link}")
+                datos = procesar_anuncio(page, context, link, estado_telefono, BUSQUEDA, lugar,
+                                          HABITACIONES, OPERACION)
 
                 if datos is None:
                     # Distinguir "no se pudo" de "descartado por inmobiliaria" ya se

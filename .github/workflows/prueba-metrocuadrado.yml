@@ -30,4 +30,4 @@ jobs:
 
       - name: Run Prueba Metrocuadrado
         run: |
-          python robot_captador/prueba_metrocuadrado.py
+          python -u robot_captador/prueba_metrocuadrado.py
