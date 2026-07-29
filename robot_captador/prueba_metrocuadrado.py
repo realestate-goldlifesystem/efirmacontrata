@@ -19,10 +19,36 @@ import config
 from sheets_handler import SheetsHandler, ahora_colombia, get_spanish_date_str
 
 PESTANA_PRUEBA = "PRUEBA METROCUADRADO"
-BASE_URL = "https://www.metrocuadrado.com/apartamento-apartaestudio/{operacion}/bogota/{lugar}/{hab}-habitaciones/?search=form"
+BASE_URL = "https://www.metrocuadrado.com/apartamento-apartaestudio/{operacion}/{lugar}/{hab}-habitaciones/?search=form"
+
+# Mismo endpoint y API key (publica, del propio JS del sitio) que usa el
+# buscador de Metrocuadrado para autocompletar. Se consulta en vivo cada vez
+# que corre el bot -- no una lista fija -- para no quedar desactualizados si
+# el sitio agrega/quita/renombra barrios.
+API_URL_LOCATIONS = "https://www.metrocuadrado.com/rest-selector-option/selector/locations?location={query}"
+API_KEY_METROCUADRADO = "P1MfFHfQMOtL16Zpg36NcntJYCLFm8FqFfudnavl"
 
 # Reutiliza la misma logica de normalizacion de texto que ya usa Miguel para Fincaraiz
 sys_path_original = list(sys.path)
+
+
+def obtener_lugares_dinamicos(context, query):
+    """
+    Consulta en vivo el mismo endpoint que usa el buscador de Metrocuadrado
+    para "query" (ej: "usaquen") y devuelve los urlFragment (ej:
+    "bogota/bella-suiza-usaquen") de todos los barrios que arroje HOY --
+    en vez de depender de una lista fija que se puede quedar vieja o
+    incompleta si el sitio cambia.
+    """
+    url = API_URL_LOCATIONS.format(query=query)
+    resp = context.request.get(url, headers={"X-Api-Key": API_KEY_METROCUADRADO})
+    data = resp.json()
+    lugares = []
+    for n in data.get("neighborhoods", []):
+        frag = n.get("urlFragment")
+        if frag:
+            lugares.append(frag)
+    return lugares
 
 
 def normalizar(texto):
@@ -273,18 +299,18 @@ def procesar_anuncio(page, context, url, estado_telefono):
         "bedrooms": "1",
         "price": precio,
         "location": barrio,
-        "localidad": "usaquen",
+        # localidad la asigna quien llama (segun la busqueda usada, ej "usaquen")
     }
 
 
 def main():
     OPERACION = "arriendo"
-    LUGAR = "usaquen"
+    BUSQUEDA = "usaquen"
     HABITACIONES = "1"
     CUOTA = 20
 
     print("=" * 70)
-    print("🤖 PRUEBA MIGUEL-METROCUADRADO | Usaquén | 1 habitación | Arriendo")
+    print("🤖 PRUEBA MIGUEL-METROCUADRADO | Usaquén (dinámico) | 1 habitación | Arriendo")
     print(f"   Escribiendo en la pestaña: '{PESTANA_PRUEBA}'")
     print("=" * 70)
 
@@ -292,11 +318,10 @@ def main():
     sheets.sheet_title = PESTANA_PRUEBA
     sheets.load_existing_data()
 
-    url_busqueda = BASE_URL.format(operacion=OPERACION, lugar=LUGAR, hab=HABITACIONES)
-
     capturados = 0
     descartados_inmobiliaria = 0
     saltados_duplicado = 0
+    vistos_en_esta_corrida = set()
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -314,27 +339,41 @@ def main():
 
         page = context.new_page()
 
-        links = recolectar_links(page, url_busqueda)
+        lugares = obtener_lugares_dinamicos(context, BUSQUEDA)
+        print(f"[INFO] {len(lugares)} lugares encontrados dinámicamente para '{BUSQUEDA}'.")
 
-        for link in links:
+        for lugar in lugares:
             if capturados >= CUOTA:
                 print(f"[STOP] Cuota de {CUOTA} alcanzada.")
                 break
-            if link.lower().strip() in sheets.existing_links:
-                saltados_duplicado += 1
-                continue
 
-            print(f"\n🔍 [EVALUANDO] -> {link}")
-            datos = procesar_anuncio(page, context, link, estado_telefono)
+            url_busqueda = BASE_URL.format(operacion=OPERACION, lugar=lugar, hab=HABITACIONES)
+            links = recolectar_links(page, url_busqueda)
 
-            if datos is None:
-                # Distinguir "no se pudo" de "descartado por inmobiliaria" ya se
-                # imprime dentro de procesar_anuncio; aqui solo contamos si aplica
-                continue
+            for link in links:
+                if capturados >= CUOTA:
+                    print(f"[STOP] Cuota de {CUOTA} alcanzada.")
+                    break
+                link_norm = link.lower().strip()
+                if link_norm in vistos_en_esta_corrida:
+                    continue
+                vistos_en_esta_corrida.add(link_norm)
+                if link_norm in sheets.existing_links:
+                    saltados_duplicado += 1
+                    continue
 
-            if sheets.append_captacion(datos):
-                capturados += 1
-                print(f"✨ Total capturados: {capturados}")
+                print(f"\n🔍 [EVALUANDO] -> {link}")
+                datos = procesar_anuncio(page, context, link, estado_telefono)
+
+                if datos is None:
+                    # Distinguir "no se pudo" de "descartado por inmobiliaria" ya se
+                    # imprime dentro de procesar_anuncio; aqui solo contamos si aplica
+                    continue
+
+                datos["localidad"] = BUSQUEDA
+                if sheets.append_captacion(datos):
+                    capturados += 1
+                    print(f"✨ Total capturados: {capturados}")
 
         browser.close()
 
