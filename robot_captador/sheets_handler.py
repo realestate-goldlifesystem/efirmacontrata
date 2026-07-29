@@ -18,9 +18,10 @@ def con_reintentos(operacion, descripcion="operación de Sheets"):
     """
     Ejecuta una llamada a la API de Sheets reintentando ante fallos pasajeros.
 
-    Sin esto, un 429 (demasiadas peticiones) o un 500 de Google tumbaba la
-    excepción hasta arriba y se perdía el resto de la búsqueda en curso.
-    Espera 2s, 4s y 8s entre intentos.
+    Sin esto, un 429 (demasiadas peticiones), un 500 de Google, o un corte
+    de conexión/SSL transitorio tumbaba la excepción hasta arriba y se
+    perdía el resto de la búsqueda en curso. Espera 2s, 4s y 8s entre
+    intentos.
     """
     ultimo_error = None
     for intento in range(1, 4):
@@ -30,7 +31,11 @@ def con_reintentos(operacion, descripcion="operación de Sheets"):
             texto = str(e)
             recuperable = any(c in texto for c in ("429", "500", "502", "503", "504",
                                                    "rateLimitExceeded", "backendError",
-                                                   "internalError", "timed out"))
+                                                   "internalError", "timed out",
+                                                   "SSLEOFError", "SSLError",
+                                                   "ConnectionError", "ConnectionResetError",
+                                                   "BrokenPipeError", "RemoteDisconnected",
+                                                   "Connection aborted", "Connection reset"))
             if not recuperable or intento == 3:
                 raise
             ultimo_error = e
