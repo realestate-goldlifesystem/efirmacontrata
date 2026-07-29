@@ -470,7 +470,9 @@ def main():
         page = context.new_page()
 
         lugares = obtener_lugares_dinamicos(context, BUSQUEDA)
-        print(f"[INFO] {len(lugares)} lugares encontrados dinámicamente para '{BUSQUEDA}'.")
+        print(f"[INFO] {len(lugares)} lugares encontrados dinámicamente para '{BUSQUEDA}'. Lista completa (unica cosa que se busca, nada mas):")
+        for i, l in enumerate(lugares, start=1):
+            print(f"    {i}. {l}")
 
         for idx, lugar in enumerate(lugares, start=1):
             if capturados >= CUOTA:
