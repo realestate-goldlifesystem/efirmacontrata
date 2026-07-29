@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import ssl
 import time
 import unicodedata
 from datetime import datetime, timezone, timedelta
@@ -29,13 +30,14 @@ def con_reintentos(operacion, descripcion="operación de Sheets"):
             return operacion()
         except Exception as e:
             texto = str(e)
+            # Los codigos HTTP/mensajes de Google vienen como texto en str(e),
+            # pero los errores de red (SSL, conexion reseteada, etc.) NO
+            # incluyen el nombre de su propia clase en str(e) -- por eso esos
+            # se detectan por tipo (isinstance), no por texto.
             recuperable = any(c in texto for c in ("429", "500", "502", "503", "504",
                                                    "rateLimitExceeded", "backendError",
-                                                   "internalError", "timed out",
-                                                   "SSLEOFError", "SSLError",
-                                                   "ConnectionError", "ConnectionResetError",
-                                                   "BrokenPipeError", "RemoteDisconnected",
-                                                   "Connection aborted", "Connection reset"))
+                                                   "internalError", "timed out"))
+            recuperable = recuperable or isinstance(e, (ssl.SSLError, ConnectionError))
             if not recuperable or intento == 3:
                 raise
             ultimo_error = e
