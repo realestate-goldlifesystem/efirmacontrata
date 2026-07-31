@@ -31,6 +31,8 @@ function onOpen(e) {
     .addItem('🚀 Iniciar Barrido de Venta Ahora', 'ejecutarAgenteCaptadorVenta')
     .addSeparator()
     .addItem('📊 Resumen de Captaciones', 'mostrarResumenCaptaciones')
+    .addSeparator()
+    .addItem('🧪 Miguel Agente Captador M', 'ejecutarAgenteCaptadorMetrocuadrado')
     .addToUi();
 
   ui.createMenu('🏠 E-FirmaContrata')
