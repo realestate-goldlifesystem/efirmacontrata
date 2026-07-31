@@ -303,6 +303,22 @@ def recolectar_links(page, url_busqueda, max_paginas=10):
             print(f"[INFO] Metrocuadrado no tiene anuncios reales para este lugar (mostró recomendaciones genéricas de otras zonas). Se omite.")
             return []
 
+        # El boton ".rc-pagination-next" a veces sigue apareciendo habilitado
+        # DESPUES de la ultima pagina real -- se vio en vivo: dos lugares
+        # chicos distintos ("usaquen-chico", "maranta-usaquen") terminaron
+        # con el MISMO catalogo de "recomendados" (anuncios identicos, sin
+        # relacion con lo buscado) apenas se paso de la pagina real. Los
+        # NUMEROS de pagina mostrados (.rc-pagination-item) son mas
+        # confiables que el estado del boton -- nunca se avanza mas alla del
+        # numero mas alto mostrado ahi, aunque el boton "siguiente" parezca
+        # habilitado.
+        numeros_pagina = page.eval_on_selector_all(
+            '.rc-pagination-item',
+            "els => els.map(e => parseInt(e.textContent)).filter(n => !isNaN(n))"
+        )
+        max_pagina_real = max(numeros_pagina) if numeros_pagina else 1
+        print(f"[INFO] Páginas reales mostradas por el sitio para este lugar: {max_pagina_real}")
+
         todos_los_links = []
         num_pagina = 1
         reiniciar = False
@@ -332,6 +348,10 @@ def recolectar_links(page, url_busqueda, max_paginas=10):
 
             if num_pagina >= max_paginas:
                 print(f"[INFO] Tope de {max_paginas} páginas alcanzado, se detiene la paginación.")
+                break
+
+            if num_pagina >= max_pagina_real:
+                print(f"[INFO] Ya se llegó a la última página real ({max_pagina_real}), no se avanza más aunque el botón siga habilitado.")
                 break
 
             boton_siguiente = page.query_selector('.rc-pagination-next:not(.rc-pagination-disabled)')
