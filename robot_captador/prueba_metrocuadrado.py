@@ -292,6 +292,17 @@ def recolectar_links(page, url_busqueda, max_paginas=10):
         except Exception:
             pass
 
+        # Cuando este lugar+habitaciones no tiene NINGUN anuncio real,
+        # Metrocuadrado no dice "0 resultados" -- muestra "No encontramos lo
+        # que buscabas, pero te recomendamos..." y rellena con anuncios
+        # RANDOM de cualquier parte de Bogota (visto en vivo: "el-pedregal-
+        # usaquen" cayo aqui y broto un listado de 500+ anuncios sin
+        # relacion real con el lugar buscado). Se detecta ese texto y se
+        # trata como lugar vacio, en vez de recolectar esos anuncios random.
+        if "No encontramos lo que buscabas" in page.inner_text("body"):
+            print(f"[INFO] Metrocuadrado no tiene anuncios reales para este lugar (mostró recomendaciones genéricas de otras zonas). Se omite.")
+            return []
+
         todos_los_links = []
         num_pagina = 1
         reiniciar = False
