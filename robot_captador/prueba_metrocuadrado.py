@@ -303,24 +303,9 @@ def recolectar_links(page, url_busqueda, max_paginas=10):
             print(f"[INFO] Metrocuadrado no tiene anuncios reales para este lugar (mostró recomendaciones genéricas de otras zonas). Se omite.")
             return []
 
-        # El boton ".rc-pagination-next" a veces sigue apareciendo habilitado
-        # DESPUES de la ultima pagina real -- se vio en vivo: dos lugares
-        # chicos distintos ("usaquen-chico", "maranta-usaquen") terminaron
-        # con el MISMO catalogo de "recomendados" (anuncios identicos, sin
-        # relacion con lo buscado) apenas se paso de la pagina real. Los
-        # NUMEROS de pagina mostrados (.rc-pagination-item) son mas
-        # confiables que el estado del boton -- nunca se avanza mas alla del
-        # numero mas alto mostrado ahi, aunque el boton "siguiente" parezca
-        # habilitado.
-        numeros_pagina = page.eval_on_selector_all(
-            '.rc-pagination-item',
-            "els => els.map(e => parseInt(e.textContent)).filter(n => !isNaN(n))"
-        )
-        max_pagina_real = max(numeros_pagina) if numeros_pagina else 1
-        print(f"[INFO] Páginas reales mostradas por el sitio para este lugar: {max_pagina_real}")
-
         todos_los_links = []
         num_pagina = 1
+        max_pagina_real = None
         reiniciar = False
         while True:
             _scroll_hasta_agotar(page)
@@ -336,6 +321,27 @@ def recolectar_links(page, url_busqueda, max_paginas=10):
                 print(f"⚠️ [AVISO] La página cambió sola durante la recolección ({page.url}). Descartando y reiniciando este lugar...")
                 reiniciar = True
                 break
+
+            if max_pagina_real is None:
+                # El boton ".rc-pagination-next" a veces sigue apareciendo
+                # habilitado DESPUES de la ultima pagina real -- se vio en
+                # vivo: dos lugares chicos distintos ("usaquen-chico",
+                # "maranta-usaquen") terminaron con el MISMO catalogo de
+                # "recomendados" (anuncios identicos, sin relacion con lo
+                # buscado) apenas se paso de la pagina real. Los NUMEROS de
+                # pagina mostrados (.rc-pagination-item) son mas confiables
+                # que el estado del boton -- nunca se avanza mas alla del
+                # numero mas alto mostrado ahi. Se lee DESPUES de agotar el
+                # scroll de la pagina 1 (no antes): el control de paginacion
+                # puede tardar en terminar de renderizarse, y leerlo
+                # demasiado pronto devolvia "1" incluso en lugares con 2
+                # paginas reales (ej "usaquen" general).
+                numeros_pagina = page.eval_on_selector_all(
+                    '.rc-pagination-item',
+                    "els => els.map(e => parseInt(e.textContent)).filter(n => !isNaN(n))"
+                )
+                max_pagina_real = max(numeros_pagina) if numeros_pagina else 1
+                print(f"[INFO] Páginas reales mostradas por el sitio para este lugar: {max_pagina_real}")
 
             links_pagina = page.eval_on_selector_all(
                 'a[href*="/inmueble/"]',
