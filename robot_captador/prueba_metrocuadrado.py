@@ -6,7 +6,9 @@ UNICAMENTE en la pestana "PRUEBA METROCUADRADO" (copia de estructura de
 "1 - CAPTACIONES A" creada a proposito para esto). No dispara nada en las
 pestanas reales ni en el flujo automatico de GitHub Actions.
 
-Alcance de esta prueba: Usaquen, 1 habitacion, arriendo. Ver
+Alcance de esta prueba: Usaquen + Suba + Chapinero, las 5 habitaciones,
+arriendo. Cuota de 5 particulares por habitacion, repartida entre las 3
+localidades (no 5 por cada localidad por separado). Ver
 plan_implementacion_metrocuadrado.txt para el detalle completo de lo
 investigado (patron de URL, deteccion de particular, revelado de telefono).
 """
@@ -506,12 +508,13 @@ def procesar_anuncio(page, context, url, estado_telefono, localidad_buscada, lug
 
 def main():
     OPERACION = "arriendo"
-    BUSQUEDA = "usaquen"
-    HABITACIONES = "1"
-    CUOTA = 20
+    LOCALIDADES = ["usaquen", "suba", "chapinero"]
+    HABITACIONES_LISTA = ["1", "2", "3", "4", "5"]
+    CUOTA_POR_HABITACION = 5
 
     print("=" * 70)
-    print("🤖 PRUEBA MIGUEL-METROCUADRADO | Usaquén (dinámico) | 1 habitación | Arriendo")
+    print("🤖 PRUEBA MIGUEL-METROCUADRADO | Usaquén + Suba + Chapinero | 5 habitaciones | Arriendo")
+    print(f"   Cuota objetivo: {CUOTA_POR_HABITACION} por habitación, repartida entre las 3 localidades")
     print(f"   Escribiendo en la pestaña: '{PESTANA_PRUEBA}'")
     print("=" * 70)
 
@@ -519,10 +522,8 @@ def main():
     sheets.sheet_title = PESTANA_PRUEBA
     sheets.load_existing_data()
 
-    capturados = 0
-    descartados_inmobiliaria = 0
-    saltados_duplicado = 0
-    vistos_en_esta_corrida = set()
+    capturados_total = 0
+    saltados_duplicado_total = 0
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -540,74 +541,109 @@ def main():
 
         page = context.new_page()
 
-        lugares = obtener_lugares_dinamicos(context, BUSQUEDA)
-        print(f"[INFO] {len(lugares)} lugares encontrados dinámicamente para '{BUSQUEDA}'. Lista completa (unica cosa que se busca, nada mas):")
-        for i, l in enumerate(lugares, start=1):
-            print(f"    {i}. {l}")
+        # Lugares dinamicos por localidad, pedidos UNA sola vez -- se
+        # reutilizan para las 5 habitaciones, ya que solo cambia el filtro
+        # de habitaciones en la URL, no la lista de barrios de la localidad.
+        lugares_por_localidad = {}
+        for localidad in LOCALIDADES:
+            lugares = obtener_lugares_dinamicos(context, localidad)
+            lugares_por_localidad[localidad] = lugares
+            print(f"[INFO] {len(lugares)} lugares encontrados dinámicamente para '{localidad}'.")
 
-        for idx, lugar in enumerate(lugares, start=1):
-            if capturados >= CUOTA:
-                print(f"[STOP] Cuota de {CUOTA} alcanzada.")
-                break
+        for hab in HABITACIONES_LISTA:
+            print("")
+            print("=" * 70)
+            print(f"=== HABITACIÓN {hab} — cuota objetivo: {CUOTA_POR_HABITACION} (repartida entre localidades) ===")
+            print("=" * 70)
 
-            print(f"\n[INFO] >>> Lugar {idx}/{len(lugares)}: {lugar} <<<")
+            capturados_esta_hab = 0
+            saltados_duplicado_esta_hab = 0
+            vistos_en_esta_corrida = set()
+            localidades_con_aporte = []
 
-            url_busqueda = BASE_URL.format(operacion=OPERACION, lugar=lugar, hab=HABITACIONES)
-            links = recolectar_links(page, url_busqueda)
-
-            # Muchos barrios chicos quedan totalmente cubiertos por una
-            # busqueda mas amplia ya recorrida antes en esta misma corrida
-            # (ej: "usaquen" general, que se busca de primero) -- esto es
-            # normal y evita evaluar el mismo anuncio dos veces, no es un
-            # error. Se deja explicito en el log para no confundir.
-            ya_vistos = sum(1 for l in links if l.lower().strip() in vistos_en_esta_corrida)
-            nuevos = len(links) - ya_vistos
-            print(f"[INFO] De estos {len(links)} anuncios: {ya_vistos} ya se habían visto en un lugar anterior de esta misma corrida (se saltan sin evaluar, para no repetir trabajo) y {nuevos} son nuevos para evaluar.")
-
-            capturados_antes = capturados
-            evaluados_este_lugar = 0
-            saltados_duplicado_antes = saltados_duplicado
-
-            for link in links:
-                if capturados >= CUOTA:
-                    print(f"[STOP] Cuota de {CUOTA} alcanzada.")
+            for localidad in LOCALIDADES:
+                if capturados_esta_hab >= CUOTA_POR_HABITACION:
+                    print(f"[STOP] Cuota de {CUOTA_POR_HABITACION} para {hab} habitación(es) ya alcanzada, se salta '{localidad}'.")
                     break
-                link_norm = link.lower().strip()
-                if link_norm in vistos_en_esta_corrida:
-                    continue
-                vistos_en_esta_corrida.add(link_norm)
-                if link_norm in sheets.existing_links:
-                    saltados_duplicado += 1
-                    continue
 
-                print(f"\n🔍 [EVALUANDO] ({lugar}) -> {link}")
-                evaluados_este_lugar += 1
-                datos = procesar_anuncio(page, context, link, estado_telefono, BUSQUEDA, lugar,
-                                          HABITACIONES, OPERACION)
+                lugares = lugares_por_localidad[localidad]
+                print(f"\n[INFO] --- Localidad '{localidad}' para {hab} habitación(es): {len(lugares)} lugares ---")
+                capturados_antes_localidad = capturados_esta_hab
 
-                if datos is None:
-                    # Distinguir "no se pudo" de "descartado por inmobiliaria" ya se
-                    # imprime dentro de procesar_anuncio; aqui solo contamos si aplica
-                    continue
+                for idx, lugar in enumerate(lugares, start=1):
+                    if capturados_esta_hab >= CUOTA_POR_HABITACION:
+                        print(f"[STOP] Cuota de {CUOTA_POR_HABITACION} para {hab} habitación(es) ya alcanzada.")
+                        break
 
-                datos["localidad"] = BUSQUEDA
-                if sheets.append_captacion(datos):
-                    capturados += 1
-                    print(f"✨ Total capturados: {capturados}")
+                    print(f"\n[INFO] >>> Lugar {idx}/{len(lugares)} ({localidad}, {hab} hab): {lugar} <<<")
 
-            print(f"[RESUMEN LUGAR {idx}/{len(lugares)} - {lugar}] evaluados: {evaluados_este_lugar} | "
-                  f"capturados nuevos: {capturados - capturados_antes} | "
-                  f"saltados por duplicado (ya en el Sheet): {saltados_duplicado - saltados_duplicado_antes} | "
-                  f"total capturados hasta ahora: {capturados}")
+                    url_busqueda = BASE_URL.format(operacion=OPERACION, lugar=lugar, hab=hab)
+                    links = recolectar_links(page, url_busqueda)
+
+                    # Muchos barrios chicos quedan totalmente cubiertos por una
+                    # busqueda mas amplia ya recorrida antes en esta misma
+                    # habitacion (ej: "usaquen" general, que se busca de
+                    # primero) -- esto es normal y evita evaluar el mismo
+                    # anuncio dos veces, no es un error.
+                    ya_vistos = sum(1 for l in links if l.lower().strip() in vistos_en_esta_corrida)
+                    nuevos = len(links) - ya_vistos
+                    print(f"[INFO] De estos {len(links)} anuncios: {ya_vistos} ya se habían visto en un lugar anterior de esta misma habitación (se saltan sin evaluar) y {nuevos} son nuevos para evaluar.")
+
+                    capturados_antes_lugar = capturados_esta_hab
+                    evaluados_este_lugar = 0
+                    saltados_duplicado_antes_lugar = saltados_duplicado_esta_hab
+
+                    for link in links:
+                        if capturados_esta_hab >= CUOTA_POR_HABITACION:
+                            print(f"[STOP] Cuota de {CUOTA_POR_HABITACION} para {hab} habitación(es) ya alcanzada.")
+                            break
+                        link_norm = link.lower().strip()
+                        if link_norm in vistos_en_esta_corrida:
+                            continue
+                        vistos_en_esta_corrida.add(link_norm)
+                        if link_norm in sheets.existing_links:
+                            saltados_duplicado_esta_hab += 1
+                            continue
+
+                        print(f"\n🔍 [EVALUANDO] ({localidad} / {lugar}) -> {link}")
+                        evaluados_este_lugar += 1
+                        datos = procesar_anuncio(page, context, link, estado_telefono, localidad, lugar,
+                                                  hab, OPERACION)
+
+                        if datos is None:
+                            # Distinguir "no se pudo" de "descartado por inmobiliaria" ya se
+                            # imprime dentro de procesar_anuncio; aqui solo contamos si aplica
+                            continue
+
+                        datos["localidad"] = localidad
+                        if sheets.append_captacion(datos):
+                            capturados_esta_hab += 1
+                            capturados_total += 1
+                            print(f"✨ Capturados en {hab} hab: {capturados_esta_hab}/{CUOTA_POR_HABITACION} | Total corrida: {capturados_total}")
+
+                    print(f"[RESUMEN LUGAR {idx}/{len(lugares)} - {lugar}] evaluados: {evaluados_este_lugar} | "
+                          f"capturados nuevos: {capturados_esta_hab - capturados_antes_lugar} | "
+                          f"saltados por duplicado (ya en el Sheet): {saltados_duplicado_esta_hab - saltados_duplicado_antes_lugar}")
+
+                aporte_localidad = capturados_esta_hab - capturados_antes_localidad
+                print(f"[RESUMEN LOCALIDAD '{localidad}' - {hab} hab] aporte: {aporte_localidad} particulares")
+                if aporte_localidad > 0:
+                    localidades_con_aporte.append(localidad)
+
+            saltados_duplicado_total += saltados_duplicado_esta_hab
+            print("")
+            print(f"[RESUMEN HABITACIÓN {hab}] capturados: {capturados_esta_hab}/{CUOTA_POR_HABITACION} | "
+                  f"localidades usadas: {', '.join(localidades_con_aporte) if localidades_con_aporte else 'ninguna'} | "
+                  f"saltados por duplicado: {saltados_duplicado_esta_hab}")
 
         browser.close()
 
     print("")
     print("=" * 70)
-    print(f"🎯 RESULTADO DE LA PRUEBA")
-    print(f"   Particulares capturados : {capturados}")
-    print(f"   Saltados por duplicado  : {saltados_duplicado}")
-    print(f"   Pestaña destino         : {PESTANA_PRUEBA}")
+    print(f"🎯 RESULTADO FINAL DE LA PRUEBA")
+    print(f"   Particulares capturados (total) : {capturados_total}")
+    print(f"   Saltados por duplicado (total)  : {saltados_duplicado_total}")
+    print(f"   Pestaña destino                 : {PESTANA_PRUEBA}")
     print("=" * 70)
 
 
