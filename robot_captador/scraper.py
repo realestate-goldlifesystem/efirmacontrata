@@ -586,6 +586,10 @@ if __name__ == "__main__":
                              "NUEVO ya existen (columna LOCALIDAD) y se salta si ya hay "
                              f"{config.UMBRAL_REPOSICION} o más. Pensado para el barrido automático, "
                              "no para pedidos manuales de un sector puntual.")
+    parser.add_argument("--con-metrocuadrado", action="store_true", dest="con_metrocuadrado",
+                        help="Cuando una combinación queda AGOTADA en Fincaraiz, busca en Metrocuadrado "
+                             "(misma localidad y habitación) para intentar llenar la cuota restante. "
+                             "Apagado por defecto.")
     args = parser.parse_args()
 
     if args.max_pages:
@@ -675,7 +679,29 @@ if __name__ == "__main__":
                 print("")
                 print(f"✅ [COMPLETA] {detalle}")
 
-            resultados.append((localidad, hab, estado, scraper.processed_count, None))
+            # Respaldo: si Fincaraiz quedó AGOTADA, Metrocuadrado intenta llenar
+            # lo que falta en esa MISMA localidad+habitación. Envuelto en
+            # try/except a propósito -- este bucle no protege cada combinación,
+            # así que una falla aquí no debe tumbar el resto de Fincaraiz.
+            mc_capturados = 0
+            if scraper.agotado and args.con_metrocuadrado:
+                cuota_faltante = args.max_items - scraper.processed_count
+                try:
+                    from miguel_captador import buscar_metrocuadrado
+                    mc_capturados = buscar_metrocuadrado(
+                        scraper.sheets, localidad, hab, args.mode, cuota_faltante
+                    )
+                    if mc_capturados:
+                        print(f"↪️  [METROCUADRADO] {mc_capturados} particulares adicionales capturados como respaldo.")
+                        detalle += (f" Metrocuadrado (respaldo) aportó {mc_capturados} particular(es) "
+                                    f"adicional(es).")
+                except Exception as e:
+                    print(f"[WARN] Metrocuadrado (respaldo) falló, se sigue solo con Fincaraiz: {e}")
+
+            total_captados = scraper.processed_count + mc_capturados
+            gran_total += mc_capturados
+
+            resultados.append((localidad, hab, estado, total_captados, None))
 
             # Se anota apenas termina cada combinación, no al final de todo, para
             # que una corrida cortada a medias deje igual su rastro.
@@ -687,7 +713,7 @@ if __name__ == "__main__":
                     localidad,
                     hab,
                     estado,
-                    scraper.processed_count,
+                    total_captados,
                     args.max_items,
                     scraper.pages_visited,
                     scraper.listings_seen,
