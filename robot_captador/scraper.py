@@ -586,10 +586,6 @@ if __name__ == "__main__":
                              "NUEVO ya existen (columna LOCALIDAD) y se salta si ya hay "
                              f"{config.UMBRAL_REPOSICION} o más. Pensado para el barrido automático, "
                              "no para pedidos manuales de un sector puntual.")
-    parser.add_argument("--con-metrocuadrado", action="store_true", dest="con_metrocuadrado",
-                        help="Cuando una combinación queda AGOTADA en Fincaraiz, busca en Metrocuadrado "
-                             "(misma localidad y habitación) para intentar llenar la cuota restante. "
-                             "Apagado por defecto.")
     args = parser.parse_args()
 
     if args.max_pages:
@@ -684,7 +680,7 @@ if __name__ == "__main__":
             # try/except a propósito -- este bucle no protege cada combinación,
             # así que una falla aquí no debe tumbar el resto de Fincaraiz.
             mc_capturados = 0
-            if scraper.agotado and args.con_metrocuadrado:
+            if scraper.agotado:
                 cuota_faltante = args.max_items - scraper.processed_count
                 try:
                     from miguel_captador import buscar_metrocuadrado

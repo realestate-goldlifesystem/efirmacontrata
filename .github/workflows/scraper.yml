@@ -30,11 +30,6 @@ on:
         required: false
         default: false
         type: boolean
-      con_metrocuadrado:
-        description: 'Si una combinación queda AGOTADA en Fincaraiz, busca en Metrocuadrado (misma localidad y habitación) para intentar llenar la cuota restante. Apagado por defecto.'
-        required: false
-        default: false
-        type: boolean
   repository_dispatch:
     types: [trigger-scraper]
   schedule:
@@ -77,16 +72,11 @@ jobs:
             BEDROOMS="${{ github.event.inputs.bedrooms || github.event.client_payload.bedrooms || 'all' }}"
             SECTOR="${{ github.event.inputs.sector || github.event.client_payload.sector || 'all' }}"
             REPONER="${{ github.event.inputs.reponer }}"
-            CON_METROCUADRADO="${{ github.event.inputs.con_metrocuadrado }}"
-            MC_FLAG=""
-            if [ "$CON_METROCUADRADO" = "true" ]; then
-              MC_FLAG="--con-metrocuadrado"
-            fi
             if [ "$REPONER" = "true" ]; then
-              echo "Ejecutando robot captador (modo reposición manual) | Modo: $MODE | Sector: $SECTOR | Habitaciones: $BEDROOMS | Metrocuadrado: $CON_METROCUADRADO"
-              python robot_captador/scraper.py --mode "$MODE" --sector "$SECTOR" --bedrooms "$BEDROOMS" --max-items 20 --reponer $MC_FLAG
+              echo "Ejecutando robot captador (modo reposición manual) | Modo: $MODE | Sector: $SECTOR | Habitaciones: $BEDROOMS"
+              python robot_captador/scraper.py --mode "$MODE" --sector "$SECTOR" --bedrooms "$BEDROOMS" --max-items 20 --reponer
             else
-              echo "Ejecutando robot captador | Modo: $MODE | Sector: $SECTOR | Habitaciones: $BEDROOMS | Metrocuadrado: $CON_METROCUADRADO"
-              python robot_captador/scraper.py --mode "$MODE" --sector "$SECTOR" --bedrooms "$BEDROOMS" --max-items 30 $MC_FLAG
+              echo "Ejecutando robot captador | Modo: $MODE | Sector: $SECTOR | Habitaciones: $BEDROOMS"
+              python robot_captador/scraper.py --mode "$MODE" --sector "$SECTOR" --bedrooms "$BEDROOMS" --max-items 30
             fi
           fi
