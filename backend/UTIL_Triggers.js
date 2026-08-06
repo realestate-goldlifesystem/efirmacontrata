@@ -208,6 +208,66 @@ function limpiarTriggersHuerfanos() {
 }
 
 /**
+ * Instala el Cron Job para el Agente de Voz Andrea: revisa BUZÓN -> VOLVER A LLAMAR.
+ * Solo debe ejecutarse una vez desde el editor.
+ */
+function instalarTriggerRevisarBuzon() {
+  const fnName = 'revisarBuzonAndrea';
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(t => {
+    if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
+  });
+
+  ScriptApp.newTrigger(fnName)
+    .timeBased()
+    .everyMinutes(5)
+    .create();
+
+  SpreadsheetApp.getUi().alert('✅ Cron Trigger de BUZÓN activado (revisión cada 5 minutos).');
+}
+
+/**
+ * Pasa toda fila que esté en BUZÓN a VOLVER A LLAMAR, en las dos pestañas de
+ * captación del Agente de Voz Andrea. No deja mensaje en el buzón -- ese
+ * cuelgue ya lo hace el servicio de Cloud Run al detectar el contestador.
+ *
+ * La columna ESTADO DE LLAMADA es la H en las dos pestañas (mismo layout de
+ * 19 columnas, ver Robot Captador Fincaraiz/agente_voz_guion.md sección 2).
+ */
+function revisarBuzonAndrea() {
+  const PESTANAS_ANDREA = ['1 - CAPTACIONES V', '1 - CAPTACIONES A'];
+  const COL_ESTADO_LLAMADA = 8; // Columna H
+
+  PESTANAS_ANDREA.forEach(nombrePestana => {
+    try {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(nombrePestana);
+      if (!sheet) return;
+
+      const ultimaFila = sheet.getLastRow();
+      if (ultimaFila < 2) return;
+
+      const rango = sheet.getRange(2, COL_ESTADO_LLAMADA, ultimaFila - 1, 1);
+      const valores = rango.getValues();
+      let cambios = 0;
+
+      for (let i = 0; i < valores.length; i++) {
+        if (valores[i][0] === 'BUZÓN') {
+          valores[i][0] = 'VOLVER A LLAMAR';
+          cambios++;
+        }
+      }
+
+      if (cambios > 0) {
+        rango.setValues(valores);
+        Logger.log(`✅ revisarBuzonAndrea: ${cambios} fila(s) actualizadas en '${nombrePestana}'.`);
+      }
+    } catch (e) {
+      Logger.log(`❌ Error en revisarBuzonAndrea para '${nombrePestana}': ${e.message}`);
+    }
+  });
+}
+
+/**
  * Instala el Cron Job Semanal para sincronizar las tasas desde la SFC
  */
 function instalarTriggerSincroTasasSFC() {

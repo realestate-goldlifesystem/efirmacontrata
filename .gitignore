@@ -30,6 +30,13 @@ scratch_test_key.json
 *.key
 *.pem
 
+# --- Agente de Voz: variables de entorno locales (llaves reales para
+#     probar con ngrok, ver agente_voz_implementacion.md FASE 3).
+#     .env.example SI se sube -- son solo nombres, sin valores reales.
+.env
+.env.local
+!.env.example
+
 # --- Node ---
 node_modules/
 

@@ -1463,12 +1463,59 @@ function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
     const htmlBodyAdmin = tplAdmin.evaluate().getContent();
 
     const adminEmail = 'realestate.goldlifesystem@gmail.com';
+    
+    // 1. Primer Correo al Admin (PDF Adjunto)
     MailApp.sendEmail({
         to: adminEmail,
         subject: asuntoAdmin,
         htmlBody: htmlBodyAdmin,
         attachments: [pdfBlob.setName(`${nombreContrato}.pdf`)]
     });
+
+    // --- 2. SEGUNDO CORREO AL ADMINISTRADOR (Link para Cargar Contrato Autenticado) ---
+    try {
+        const urlLandingCarga = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/carga_contrato_autenticado.html?id=${encodeURIComponent(displayId)}`;
+        
+        const tplAdminCarga = HtmlService.createTemplateFromFile('backend/email_notificacion');
+        tplAdminCarga.TITULO = '📤 Cargar Contrato Autenticado / Notariado';
+        tplAdminCarga.NOMBRE_CLIENTE = 'Equipo GoldLife';
+        tplAdminCarga.MENSAJE_PRINCIPAL = `Una vez las partes firmen y autentiquen el contrato <strong>${displayId}</strong>, haz clic en el siguiente botón para subir la copia autenticada en Drive.`;
+        tplAdminCarga.MENSAJE_SECUNDARIO = 'Al cargar el contrato autenticado, el sistema configurará automáticamente los accesos a las carpetas de entrega e informará a las partes.';
+        tplAdminCarga.URL_ACCION = urlLandingCarga;
+        tplAdminCarga.TEXTO_BOTON = '📤 Cargar Contrato Autenticado';
+        const htmlBodyAdminCarga = tplAdminCarga.evaluate().getContent();
+
+        MailApp.sendEmail({
+            to: adminEmail,
+            subject: `📤 REQUERIDO: Cargar Contrato Autenticado - ${displayId}`,
+            htmlBody: htmlBodyAdminCarga
+        });
+
+        // Escribir celda ultra-compacta =HYPERLINK(..., "📤") en columna "CARGA DEL CONTRATO"
+        const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+        if (sheet) {
+            const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+            let colCarga = headers.indexOf('CARGA DEL CONTRATO') + 1;
+            if (colCarga === 0) colCarga = headers.indexOf('CARGAR CONTENIDO') + 1; // Fallback
+            
+            if (colCarga > 0) {
+                const lastRow = sheet.getLastRow();
+                const cdrCol = headers.indexOf('CODIGO DE REGISTRO') + 1;
+                const idRegCol = headers.indexOf('ID DE REGISTRO') + 1;
+
+                for (let r = 2; r <= lastRow; r++) {
+                    const vCDR = cdrCol > 0 ? sheet.getRange(r, cdrCol).getValue() : '';
+                    const vID = idRegCol > 0 ? sheet.getRange(r, idRegCol).getValue() : '';
+                    if (String(vCDR).trim() === String(displayId).trim() || String(vID).trim() === String(displayId).trim()) {
+                        sheet.getRange(r, colCarga).setFormula(`=HYPERLINK("${urlLandingCarga}"; "📤")`);
+                        break;
+                    }
+                }
+            }
+        }
+    } catch (eCarga) {
+        Logger.log('Error procesando segundo correo de carga al admin: ' + eCarga.toString());
+    }
 
     // --- HTML PARA LOS CLIENTES (Sin PDF, sin botón) ---
     const tplClientes = HtmlService.createTemplateFromFile('backend/email_notificacion');

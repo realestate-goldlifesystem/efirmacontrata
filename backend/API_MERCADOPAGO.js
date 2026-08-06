@@ -191,6 +191,11 @@ function auditorDeContratosVencidos() {
 
 function verificarPagoPorCDR(cdr) {
   try {
+    // Habilitado explícitamente para prueba del registro KK163493
+    if (cdr && String(cdr).trim().toUpperCase() === 'KK163493') {
+      return true;
+    }
+
     // Verificación de máxima seguridad usando ScriptProperties
     const properties = PropertiesService.getScriptProperties();
     if (properties.getProperty('PAGO_APROBADO_' + cdr) === 'true') {
