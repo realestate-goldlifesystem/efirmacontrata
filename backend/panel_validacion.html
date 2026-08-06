@@ -3392,9 +3392,38 @@
         // --- MANEJO DE DOCUMENTOS Y EVALUACION ---
 
         // Renderizar Document Tabs para la persona activa
-        // filterFn: función opcional para filtrar docs (ej: bancaria solo muestra CERT_BANCARIO)
+        // filterFn: función opcional para filtrar docs
         function renderDocumentTabs(personKey, filterFn) {
-            let docsList = documentosData[personKey] || [];
+            let docsList = [];
+            if (personKey === 'bancaria' || personKey === 'inmueble' || personKey === 'servicios') {
+                docsList = documentosData['propietario'] || [];
+            } else {
+                docsList = documentosData[personKey] || [];
+            }
+
+            // Categorización por sub-pestañas del propietario
+            if (personKey === 'propietario') {
+                docsList = docsList.filter(doc => {
+                    const n = (doc.nombre || '').toUpperCase();
+                    return !n.includes('SARLAFT') && !n.includes('BANC') && !n.includes('BANCO') && !n.includes('TRADICION') && !n.includes('LIBERTAD') && !n.includes('FACTURA');
+                });
+            } else if (personKey === 'bancaria') {
+                docsList = docsList.filter(doc => {
+                    const n = (doc.nombre || '').toUpperCase();
+                    return n.includes('BANC') || n.includes('BANCO');
+                });
+            } else if (personKey === 'inmueble') {
+                docsList = docsList.filter(doc => {
+                    const n = (doc.nombre || '').toUpperCase();
+                    return n.includes('SARLAFT') || n.includes('TRADICION') || n.includes('LIBERTAD');
+                });
+            } else if (personKey === 'servicios') {
+                docsList = docsList.filter(doc => {
+                    const n = (doc.nombre || '').toUpperCase();
+                    return n.includes('FACTURA');
+                });
+            }
+
             if (typeof filterFn === 'function') {
                 docsList = docsList.filter(filterFn);
             }
@@ -3411,9 +3440,10 @@
             let html = '';
 
             if (docsList.length === 0) {
+                documentoActual = null;
                 html = '<span style="color:#64748b; font-size:0.9rem; padding: 0.5rem;">No hay documentos registrados</span>';
                 document.getElementById('documentTabs').innerHTML = html;
-                document.getElementById('previewContent').innerHTML = '<div class="preview-placeholder"><p>Sin documentos</p></div>';
+                document.getElementById('previewContent').innerHTML = '<div class="preview-placeholder"><p>No hay documentos para esta pestaña</p></div>';
                 document.getElementById('evalDocActions').style.display = 'none';
                 document.getElementById('currentDocStatusBadge').style.display = 'none';
                 return;

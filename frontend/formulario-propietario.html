@@ -650,8 +650,10 @@
 
         <!-- Step 2: Documentos Básicos -->
         <div class="step-pane" data-pane="1">
-          <h3>Documentos del Propietario</h3>
-          <p class="muted">Cargue los documentos requeridos en formato PDF o imagen</p>
+          <h3>Carga de Documentación</h3>
+          <p class="muted">Cargue los documentos requeridos para la gestión del contrato</p>
+
+          <h4 style="color: var(--primary); margin: 1.25rem 0 0.75rem 0; font-size: 1rem; font-weight: 600;">🪪 Documentos de Identidad del Propietario</h4>
 
           <div class="file-upload" id="prog-prop-1-1">
             <input type="file" id="docFront" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
@@ -668,6 +670,8 @@
               <span id="docBackName" class="file-name"></span>
             </label>
           </div>
+
+          <h4 style="color: var(--primary); margin: 1.5rem 0 0.75rem 0; font-size: 1rem; font-weight: 600;" class="progressive-hidden" id="prog-prop-1-3-header">🏡 Información del Inmueble</h4>
 
           <div class="file-upload progressive-hidden" id="prog-prop-1-3">
             <input type="file" id="certTradicion" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
@@ -695,7 +699,7 @@
             <div class="file-upload disabled-upload" id="sarlaftUploadContainer">
               <input type="file" id="sarlaft" class="file-input" accept=".pdf" disabled>
               <label for="sarlaft" class="file-label" style="cursor: pointer;">
-                <span>📋 Formato SARLAFT *</span>
+                <span>📋 Formato SARLAFT (Información Inmueble) *</span>
                 <span id="sarlaftName" class="file-name"></span>
               </label>
             </div>
