@@ -428,6 +428,19 @@
         </div>
       </div>
 
+      <!-- Pantalla de verificación de pago: el desbloqueo SIEMPRE lo decide el backend, nunca la URL -->
+      <div id="verificandoPagoScreen" class="form-container" style="display: none; text-align: center; max-width: 550px; padding: 3rem 2rem;">
+        <div class="loader-spinner" style="width: 60px; height: 60px; border-width: 5px; margin: 0 auto 25px;"></div>
+        <h3 style="color: #fff; margin-bottom: 12px;">Verificando tu pago</h3>
+        <p id="verificandoPagoMsg" style="color: #9ca3af; font-size: 0.95rem; line-height: 1.5; margin-bottom: 0;">
+          Estamos confirmando tu pago con Mercado Pago, esto solo toma unos segundos...
+        </p>
+        <div id="verificandoPagoRetryBox" style="display: none; margin-top: 25px;">
+          <button type="button" class="btn btn-primary" onclick="reintentarVerificacionPago()">🔄 Verificar de nuevo</button>
+          <p style="color: #6b7280; font-size: 0.8rem; margin-top: 12px;">Si ya realizaste el pago y esto persiste, contáctanos con tu número de registro.</p>
+        </div>
+      </div>
+
       <!-- Form Container -->
       <div id="mainWizard" class="form-container" style="display: none;">
 
@@ -785,49 +798,32 @@
           }
         }
         
-        // SIEMPRE llamar a la API para verificar si el pago ya se realizó
-        if (state.cdr && typeof CONFIG !== "undefined" && CONFIG.API_URL) {
-          const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-          window[callbackName] = function(data) {
-            if (data && data.success) {
-              if (data.direccion && !dir && document.getElementById('displayDir')) {
-                document.getElementById('displayDir').textContent = data.direccion;
-              }
-              if (data.pago_completado && !state.modoCorreccion) {
-                window.mercadoPagoApproved = true;
-                const welcome = document.getElementById('welcomeScreen');
-                const payment = document.getElementById('paymentScreen');
-                const mainWiz = document.getElementById('mainWizard');
-                if (welcome) welcome.style.display = 'none';
-                if (payment) payment.style.display = 'none';
-                if (mainWiz) mainWiz.style.display = 'block';
-                showAlert('success', '¡Hemos verificado su pago en el sistema! Puede continuar con el formulario.');
-              }
-            }
-            delete window[callbackName];
-          };
-          const script = document.createElement('script');
-          script.src = CONFIG.API_URL + '?accion=obtenerDireccion&cdr=' + encodeURIComponent(state.cdr) + '&callback=' + callbackName;
-          document.body.appendChild(script);
-        }
-
         if (!state.cdr) {
           showAlert('warning', 'CDR no presente.');
           return;
         }
 
+        // El desbloqueo del formulario NUNCA se decide por lo que traiga la URL.
+        // Solo sirve para saber si venimos recién de Mercado Pago y así mostrar
+        // la pantalla de "confirmando pago" mientras se consulta al backend.
         const mpStatus = params.get('status');
         const mpCollectionStatus = params.get('collection_status');
-        if (mpStatus === 'success' || mpStatus === 'approved' || mpCollectionStatus === 'approved') {
-          // Si vino de MP con pago aprobado, pasarlo al wizard directamente
-          const welcome = document.getElementById('welcomeScreen');
-          const payment = document.getElementById('paymentScreen');
-          const mainWiz = document.getElementById('mainWizard');
-          if (welcome) welcome.style.display = 'none';
-          if (payment) payment.style.display = 'none';
-          if (mainWiz) mainWiz.style.display = 'block';
-          showAlert('success', '¡Pago verificado con éxito! Puede continuar con el formulario.');
+        const vieneDeMercadoPago = (mpStatus === 'success' || mpStatus === 'approved' || mpCollectionStatus === 'approved');
+
+        // Dejar la URL limpia: sin status/collection_status/payment_id/preference_id.
+        // Que no quede ahí un "texto mágico" que cualquiera pueda reescribir a mano.
+        if (mpStatus || mpCollectionStatus || params.get('payment_id') || params.get('preference_id')) {
+          const urlLimpia = window.location.pathname + '?cdr=' + encodeURIComponent(state.cdr) + (dir ? '&dir=' + encodeURIComponent(dir) : '');
+          window.history.replaceState({}, document.title, urlLimpia);
         }
+
+        if (mpStatus === 'failure') {
+          showAlert('danger', 'El pago no se pudo completar. Por favor intenta de nuevo.');
+        } else if (mpStatus === 'pending') {
+          showAlert('warning', 'Tu pago está pendiente de confirmación. Te avisaremos apenas se apruebe.');
+        }
+
+        iniciarVerificacionPago(state.cdr, vieneDeMercadoPago);
 
         if (state.modoCorreccion) {
           try {
@@ -860,6 +856,96 @@
       }
 
       init();
+
+      // --------- Verificación de pago (server-side, nunca por parámetro de URL) ----------
+      // El único que decide si el formulario se desbloquea es el backend (verificarPagoPorCDR,
+      // que a su vez lee lo que dejó el webhook real de Mercado Pago). La URL nunca es la fuente
+      // de verdad: como mucho nos dice "veníamos de MP" para mostrar una pantalla de espera
+      // mientras se confirma, pero jamás desbloquea nada por sí sola.
+      let verificacionPagoTimer = null;
+
+      function iniciarVerificacionPago(cdr, vieneDeMercadoPago) {
+        if (typeof CONFIG === "undefined" || !CONFIG.API_URL) return;
+        if (verificacionPagoTimer) { clearTimeout(verificacionPagoTimer); verificacionPagoTimer = null; }
+
+        if (vieneDeMercadoPago && !state.modoCorreccion) {
+          mostrarPantallaVerificandoPago(false);
+        }
+
+        // Si venimos de MP, reintentamos varias veces por si el webhook aún no ha llegado.
+        // Si no venimos de MP (visita normal al link), solo es un chequeo silencioso de una vez.
+        const maxIntentos = vieneDeMercadoPago ? 40 : 1; // ~2 minutos de espera si venimos de MP
+        let intentos = 0;
+
+        function chequear() {
+          intentos++;
+          const callbackName = 'jsonp_pago_' + Math.round(100000 * Math.random());
+          window[callbackName] = function (data) {
+            delete window[callbackName];
+
+            if (data && data.success) {
+              if (data.direccion && document.getElementById('displayDir') && !document.getElementById('displayDir').textContent) {
+                document.getElementById('displayDir').textContent = data.direccion;
+              }
+              if (data.pago_completado && !state.modoCorreccion) {
+                desbloquearWizardPorPago();
+                return;
+              }
+            }
+
+            if (intentos < maxIntentos) {
+              verificacionPagoTimer = setTimeout(chequear, 3000);
+            } else if (vieneDeMercadoPago) {
+              // Se agotaron los reintentos y el backend nunca confirmó el pago.
+              mostrarPantallaVerificandoPago(true);
+            }
+          };
+          const script = document.createElement('script');
+          script.src = CONFIG.API_URL + '?accion=obtenerDireccion&cdr=' + encodeURIComponent(cdr) + '&callback=' + callbackName;
+          document.body.appendChild(script);
+        }
+
+        chequear();
+      }
+
+      function mostrarPantallaVerificandoPago(tardando) {
+        const welcome = document.getElementById('welcomeScreen');
+        const payment = document.getElementById('paymentScreen');
+        const mainWiz = document.getElementById('mainWizard');
+        const verificando = document.getElementById('verificandoPagoScreen');
+        if (welcome) welcome.style.display = 'none';
+        if (payment) payment.style.display = 'none';
+        if (mainWiz) mainWiz.style.display = 'none';
+        if (!verificando) return;
+        verificando.style.display = 'block';
+
+        const msg = document.getElementById('verificandoPagoMsg');
+        const retryBox = document.getElementById('verificandoPagoRetryBox');
+        if (tardando) {
+          if (msg) msg.textContent = 'Tu pago está tardando más de lo normal en confirmarse. Puede tomar unos minutos adicionales.';
+          if (retryBox) retryBox.style.display = 'block';
+        } else {
+          if (msg) msg.textContent = 'Estamos confirmando tu pago con Mercado Pago, esto solo toma unos segundos...';
+          if (retryBox) retryBox.style.display = 'none';
+        }
+      }
+
+      function reintentarVerificacionPago() {
+        iniciarVerificacionPago(state.cdr, true);
+      }
+
+      function desbloquearWizardPorPago() {
+        window.mercadoPagoApproved = true;
+        const welcome = document.getElementById('welcomeScreen');
+        const payment = document.getElementById('paymentScreen');
+        const mainWiz = document.getElementById('mainWizard');
+        const verificando = document.getElementById('verificandoPagoScreen');
+        if (welcome) welcome.style.display = 'none';
+        if (payment) payment.style.display = 'none';
+        if (verificando) verificando.style.display = 'none';
+        if (mainWiz) mainWiz.style.display = 'block';
+        showAlert('success', '¡Pago verificado con éxito! Puede continuar con el formulario.');
+      }
 
       // Update XP Bar dynamically
       function updateMicroProgress() {
@@ -1915,30 +2001,6 @@
           if (btn) btn.disabled = !file;
         }
       };
-</script>
-
-<script>
-      // Handle MercadoPago Auto-Return Redirects
-      window.addEventListener('load', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const status = urlParams.get('status');
-        if (status === 'approved' || status === 'success') {
-          // Hide welcome screens
-          const welcome = document.getElementById('welcomeScreen');
-          const payment = document.getElementById('paymentScreen');
-          const wizard = document.getElementById('mainWizard');
-          
-          if(welcome) welcome.style.display = 'none';
-          if(payment) payment.style.display = 'none';
-          if(wizard) wizard.style.display = 'block';
-          
-          window.mercadoPagoApproved = true;
-          alert('¡Pago aprobado exitosamente! Por favor, completa el formulario a continuación.');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else if (status === 'failure' || status === 'rejected') {
-          alert('El pago fue rechazado. Por favor intenta nuevamente.');
-        }
-      });
 </script>
 </body>
 </html>
