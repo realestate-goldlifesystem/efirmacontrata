@@ -1927,17 +1927,46 @@
         const btnGoToPayment = document.getElementById('btnGoToPayment');
         if (btnGoToPayment) {
           btnGoToPayment.disabled = true;
+          btnGoToPayment.innerHTML = 'Verificando... <span class="loader-spinner"></span>';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const cdr = urlParams.get('cdr') || state.cdr || 'TEST-CDR';
+
+        // Reconfirmar contra el backend ANTES de abrir el checkout real. Sin esto, si el usuario
+        // hace clic más rápido de lo que tarda la verificación automática de fondo (iniciarVerificacionPago),
+        // igual termina viendo/pagando el checkout de Mercado Pago aunque el pago ya estuviera aprobado.
+        try {
+          const yaPagado = await new Promise((resolve) => {
+            const callbackName = 'jsonp_gopay_' + Math.round(100000 * Math.random());
+            window[callbackName] = function (data) {
+              delete window[callbackName];
+              resolve(!!(data && data.success && data.pago_completado));
+            };
+            const script = document.createElement('script');
+            script.onerror = () => { delete window[callbackName]; resolve(false); };
+            script.src = CONFIG.API_URL + '?accion=obtenerDireccion&cdr=' + encodeURIComponent(cdr) + '&callback=' + callbackName;
+            document.body.appendChild(script);
+          });
+
+          if (yaPagado && !state.modoCorreccion) {
+            desbloquearWizardPorPago();
+            if (btnGoToPayment) { btnGoToPayment.disabled = false; btnGoToPayment.innerHTML = 'Comenzar Ahora →'; }
+            return;
+          }
+        } catch (e) {
+          console.warn('No se pudo re-verificar el pago antes del checkout, se continúa al checkout normal:', e);
+        }
+
+        if (btnGoToPayment) {
           btnGoToPayment.innerHTML = 'Conectando... <span class="loader-spinner"></span>';
         }
-        
+
         try {
           // Immediately swap screens for a seamless transition
           document.getElementById('welcomeScreen').style.display = 'none';
           document.getElementById('paymentScreen').style.display = 'block';
           window.scrollTo({ top: 0, behavior: 'smooth' });
-
-          const urlParams = new URLSearchParams(window.location.search);
-          const cdr = urlParams.get('cdr') || 'TEST-CDR';
 
           const req = await fetch(CONFIG.API_URL, {
             method: 'POST',
