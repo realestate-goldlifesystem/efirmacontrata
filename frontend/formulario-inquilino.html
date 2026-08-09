@@ -785,6 +785,10 @@
         num: /^[0-9A-Za-z.-]{5,}$/
       };
 
+      // Debe existir ANTES de init() (que la usa al ejecutarse) para no caer en el
+      // "temporal dead zone" de let/const y tumbar todo el script con un ReferenceError.
+      let verificacionPagoTimer = null;
+
       // --------- Init ----------
       function init() {
         const params = new URLSearchParams(location.search);
@@ -862,7 +866,6 @@
       // que a su vez lee lo que dejó el webhook real de Mercado Pago). La URL nunca es la fuente
       // de verdad: como mucho nos dice "veníamos de MP" para mostrar una pantalla de espera
       // mientras se confirma, pero jamás desbloquea nada por sí sola.
-      let verificacionPagoTimer = null;
 
       function iniciarVerificacionPago(cdr, vieneDeMercadoPago) {
         if (typeof CONFIG === "undefined" || !CONFIG.API_URL) return;
