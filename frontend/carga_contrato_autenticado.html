@@ -705,55 +705,45 @@
                 ? CONFIG.API_URL
                 : 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
 
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', apiUrl, true);
-            // text/plain evita el preflight CORS; el doPost parsea el body como JSON.
-            xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+            // Progreso simulado (fetch no expone bytes de subida): sube gradual hasta 90%,
+            // se queda ahí esperando la respuesta del server, y salta a 100% al completar.
+            let simProgress = 0;
+            setProgress(0, 'Iniciando subida...');
+            const progressInterval = setInterval(function() {
+                simProgress += Math.random() * 6 + 2;
+                if (simProgress > 90) simProgress = 90;
+                setProgress(simProgress, simProgress < 40 ? 'Subiendo archivo...' : simProgress < 80 ? 'Guardando en Drive...' : 'Configurando permisos y notificando partes...');
+            }, 500);
 
-            // Progreso REAL de la subida (0-90% mientras sube, el 10% final es procesamiento server)
-            xhr.upload.onprogress = function(e) {
-                if (e.lengthComputable) {
-                    const pct = Math.min(90, (e.loaded / e.total) * 90);
-                    setProgress(pct, 'Subiendo archivo... ' + Math.round(e.loaded / 1024) + ' KB / ' + Math.round(e.total / 1024) + ' KB');
-                }
-            };
-            xhr.upload.onload = function() {
-                setProgress(92, 'Procesando en el servidor...');
-            };
-
-            xhr.onload = function() {
+            fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(res) {
+                clearInterval(progressInterval);
                 setProgress(100, 'Completado');
-                try {
-                    const res = JSON.parse(xhr.responseText);
-                    setTimeout(function() {
-                        Swal.close();
-                        if (res.success) {
-                            document.getElementById('section-upload').classList.remove('active');
-                            document.getElementById('section-success').classList.add('active');
-                            if (res.urlDrive) {
-                                document.getElementById('btnVerDrive').href = res.urlDrive;
-                            }
-                        } else {
-                            btn.disabled = false;
-                            Swal.fire('Error', res.message || 'No se pudo guardar el contrato', 'error');
+                setTimeout(function() {
+                    Swal.close();
+                    if (res.success) {
+                        document.getElementById('section-upload').classList.remove('active');
+                        document.getElementById('section-success').classList.add('active');
+                        if (res.urlDrive) {
+                            document.getElementById('btnVerDrive').href = res.urlDrive;
                         }
-                    }, 400);
-                } catch (e) {
-                    btn.disabled = false;
-                    Swal.fire('Error', 'Respuesta inválida del servidor: ' + xhr.responseText.substring(0, 200), 'error');
-                }
-            };
-            xhr.onerror = function() {
+                    } else {
+                        btn.disabled = false;
+                        Swal.fire('Error', res.message || 'No se pudo guardar el contrato', 'error');
+                    }
+                }, 400);
+            })
+            .catch(function(err) {
+                clearInterval(progressInterval);
                 btn.disabled = false;
-                Swal.fire('Error de red', 'No se pudo conectar con el servidor. Verifica tu conexión.', 'error');
-            };
-            xhr.ontimeout = function() {
-                btn.disabled = false;
-                Swal.fire('Tiempo agotado', 'La subida tardó demasiado. Intenta de nuevo.', 'error');
-            };
-
-            xhr.timeout = 180000; // 3 min
-            xhr.send(JSON.stringify(payload));
+                Swal.close();
+                Swal.fire('Error de red', 'No se pudo conectar con el servidor: ' + (err && err.message ? err.message : err), 'error');
+            });
         }
     </script>
 </body>
