@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Config -->
+    <script src="config.js"></script>
     <style>
         :root {
             --primary: #D4AF37; 
@@ -628,26 +630,71 @@
             const btn = document.getElementById('btnUploadContract');
             btn.disabled = true;
 
+            // Modal con barra de progreso 0-100
             Swal.fire({
                 title: 'Guardando Contrato...',
                 html: `
-                    <div style="margin-bottom: 15px; color: #a1a1aa;">
-                        Subiendo archivo a Google Drive y configurando accesos...<br>
+                    <div style="margin-bottom: 15px; color: #a1a1aa; font-size: 0.95rem;">
+                        Subiendo archivo a Google Drive y configurando accesos.<br>
                         <b style="color: #fff;">Por favor no cierres la página.</b>
                     </div>
-                    <div class="loader-spinner"></div>
+                    <div style="height: 24px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 1px solid rgba(212,175,55,0.3); position: relative;">
+                        <div id="uploadProgressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, rgba(212,175,55,0.6) 0%, rgba(212,175,55,1) 100%); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 0.85rem;">0%</div>
+                    </div>
+                    <div id="uploadStatusText" style="margin-top: 12px; color: #a1a1aa; font-size: 0.85rem;">Preparando envío...</div>
                 `,
                 allowOutsideClick: false,
+                allowEscapeKey: false,
                 showConfirmButton: false,
                 background: 'rgba(23, 16, 24, 0.95)',
-                color: '#fff'
+                color: '#fff',
+                backdrop: 'rgba(0,0,0,0.8)'
             });
 
-            const emailAdmin = document.getElementById('adminEmailInput').value.trim();
+            const setProgress = function(pct, text) {
+                const bar = document.getElementById('uploadProgressBar');
+                const status = document.getElementById('uploadStatusText');
+                if (bar) {
+                    bar.style.width = pct + '%';
+                    bar.innerText = Math.round(pct) + '%';
+                }
+                if (status && text) status.innerText = text;
+            };
 
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run
-                    .withSuccessHandler(function(res) {
+            const emailAdmin = document.getElementById('adminEmailInput').value.trim();
+            const payload = {
+                accion: 'guardarContratoAutenticado',
+                cdr: currentCdr,
+                base64Pdf: selectedFileBase64,
+                nombreArchivo: selectedFileName,
+                emailAdmin: emailAdmin
+            };
+
+            const apiUrl = (typeof CONFIG !== 'undefined' && CONFIG.API_URL)
+                ? CONFIG.API_URL
+                : 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', apiUrl, true);
+            // text/plain evita el preflight CORS; el doPost parsea el body como JSON.
+            xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+
+            // Progreso REAL de la subida (0-90% mientras sube, el 10% final es procesamiento server)
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const pct = Math.min(90, (e.loaded / e.total) * 90);
+                    setProgress(pct, 'Subiendo archivo... ' + Math.round(e.loaded / 1024) + ' KB / ' + Math.round(e.total / 1024) + ' KB');
+                }
+            };
+            xhr.upload.onload = function() {
+                setProgress(92, 'Procesando en el servidor...');
+            };
+
+            xhr.onload = function() {
+                setProgress(100, 'Completado');
+                try {
+                    const res = JSON.parse(xhr.responseText);
+                    setTimeout(function() {
                         Swal.close();
                         if (res.success) {
                             document.getElementById('section-upload').classList.remove('active');
@@ -657,22 +704,25 @@
                             }
                         } else {
                             btn.disabled = false;
-                            Swal.fire('Error', res.message, 'error');
+                            Swal.fire('Error', res.message || 'No se pudo guardar el contrato', 'error');
                         }
-                    })
-                    .withFailureHandler(function(err) {
-                        btn.disabled = false;
-                        Swal.fire('Error de red', err.message, 'error');
-                    })
-                    .guardarContratoAutenticado(currentCdr, selectedFileBase64, selectedFileName, emailAdmin);
-            } else {
-                // Mock test
-                setTimeout(() => {
-                    Swal.close();
-                    document.getElementById('section-upload').classList.remove('active');
-                    document.getElementById('section-success').classList.add('active');
-                }, 1500);
-            }
+                    }, 400);
+                } catch (e) {
+                    btn.disabled = false;
+                    Swal.fire('Error', 'Respuesta inválida del servidor: ' + xhr.responseText.substring(0, 200), 'error');
+                }
+            };
+            xhr.onerror = function() {
+                btn.disabled = false;
+                Swal.fire('Error de red', 'No se pudo conectar con el servidor. Verifica tu conexión.', 'error');
+            };
+            xhr.ontimeout = function() {
+                btn.disabled = false;
+                Swal.fire('Tiempo agotado', 'La subida tardó demasiado. Intenta de nuevo.', 'error');
+            };
+
+            xhr.timeout = 180000; // 3 min
+            xhr.send(JSON.stringify(payload));
         }
     </script>
 </body>
