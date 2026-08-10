@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Config -->
     <script src="config.js"></script>
     <style>
@@ -378,12 +380,24 @@
                 <h2 class="login-title">Acceso Administrador</h2>
                 <p class="login-subtitle">Ingresa tu correo autorizado para acceder al panel de carga del contrato autenticado.</p>
 
-                <div class="form-group">
-                    <label for="adminEmailInput">Correo de Administrador</label>
-                    <input type="email" id="adminEmailInput" class="form-control" placeholder="realestate.goldlifesystem@gmail.com" value="realestate.goldlifesystem@gmail.com">
+                <div style="display:flex; justify-content:center; margin: 20px 0;">
+                    <div id="g_id_onload"
+                         data-client_id="825455387668-asnkq57s4voon63c38b41e4q8qvc0b2e.apps.googleusercontent.com"
+                         data-context="signin"
+                         data-ux_mode="popup"
+                         data-callback="handleAdminGoogleLogin"
+                         data-auto_prompt="false">
+                    </div>
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-theme="filled_black"
+                         data-size="large"
+                         data-text="continue_with"
+                         data-shape="rectangular"
+                         data-logo_alignment="left">
+                    </div>
                 </div>
-
-                <button type="button" class="btn-primary" onclick="validarAccesoAdmin()">Verificar y Acceder ➔</button>
+                <p style="text-align:center; color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">Solo el correo <b>realestate.goldlifesystem@gmail.com</b> tiene acceso.</p>
             </div>
         </div>
 
@@ -483,29 +497,46 @@
             }
         };
 
-        function validarAccesoAdmin() {
-            const email = document.getElementById('adminEmailInput').value.trim().toLowerCase();
-            
-            if (!email || !email.includes('@')) {
-                Swal.fire('Error', 'Por favor ingresa un correo electrónico válido.', 'error');
+        // Email admin obtenido del login de Google
+        window.adminEmailVerificado = null;
+
+        function decodeJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const json = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(json);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        window.handleAdminGoogleLogin = function(response) {
+            const payload = decodeJwt(response.credential);
+            if (!payload || !payload.email) {
+                Swal.fire('Error', 'No se pudo leer el correo de tu cuenta de Google.', 'error');
                 return;
             }
+            const email = String(payload.email).trim().toLowerCase();
 
             if (email !== 'realestate.goldlifesystem@gmail.com') {
-                Swal.fire('Acceso Denegado', 'Únicamente el correo del Administrador (realestate.goldlifesystem@gmail.com) está autorizado.', 'error');
+                Swal.fire('Acceso Denegado', 'Iniciaste sesión con <b>' + email + '</b>.<br>Únicamente <b>realestate.goldlifesystem@gmail.com</b> está autorizado.', 'error');
                 return;
             }
 
-            // Cargar información del registro desde Apps Script
+            window.adminEmailVerificado = email;
+
             Swal.fire({
                 title: 'Verificando Registro...',
                 text: 'Consultando datos del inmueble en el servidor',
                 allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
+                didOpen: function() { Swal.showLoading(); }
             });
 
             fetchDataFromBackend(currentCdr, email);
-        }
+        };
 
         function fetchDataFromBackend(cdr, email) {
             // Se realiza la petición al backend con google.script.run si está empotrado o vía JSONP/fetch
@@ -661,7 +692,7 @@
                 if (status && text) status.innerText = text;
             };
 
-            const emailAdmin = document.getElementById('adminEmailInput').value.trim();
+            const emailAdmin = window.adminEmailVerificado || '';
             const payload = {
                 accion: 'guardarContratoAutenticado',
                 cdr: currentCdr,
