@@ -1028,6 +1028,11 @@
             'PROPIETARIO': 'PENDIENTE',
             'INQUILINO': 'PENDIENTE'
         };
+        if (state.contrato && state.contrato.datos && state.contrato.datos.codeudores) {
+            state.contrato.datos.codeudores.forEach(function(c, idx) {
+                estadosFinales['CODEUDOR' + (idx + 1)] = 'PENDIENTE';
+            });
+        }
         
         estados.forEach(est => {
            if(est.parte && est.parte.toUpperCase() !== 'ADMIN') {
