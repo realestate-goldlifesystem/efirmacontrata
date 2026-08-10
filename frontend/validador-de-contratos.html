@@ -896,10 +896,10 @@
 
         bindEvents();
         toggleLoading(true);
-        await Promise.all([
-            loadContractData(),
-            loadApprovalStatus()
-        ]);
+        // Cargar contrato PRIMERO para que state.contrato.datos.codeudores exista
+        // antes de que displayApprovalStatus intente leerlos.
+        await loadContractData();
+        await loadApprovalStatus();
         toggleLoading(false);
       }
 
