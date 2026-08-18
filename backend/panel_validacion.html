@@ -1271,9 +1271,13 @@
                     <div id="accionesContratoGenerales" style="margin-top: 1rem;">
                         <p id="msgBorradorInicial" class="text-sm" style="margin-bottom: 1rem; color: var(--text-muted);">Verifique que el contrato generado en la derecha corresponda a los datos aprobados.</p>
                         
-                        <!-- Botón para enviar borrador o nueva versión -->
-                        <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 0.5rem;" onclick="enviarOriginalValidar()" id="btnEnviarValidar">
-                            ✉️ Enviar Borrador a Validar
+                        <!-- Paso 1: Confirmar que el borrador está listo -->
+                        <button class="btn btn-success" style="width: 100%; justify-content: center; margin-bottom: 0.5rem;" onclick="confirmarBorradorListo()" id="btnConfirmarBorrador">
+                            ✅ Confirmo que el borrador está listo
+                        </button>
+                        <!-- Paso 2: Enviar a las partes (oculto hasta confirmar) -->
+                        <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-bottom: 0.5rem; display: none;" onclick="enviarOriginalValidar()" id="btnEnviarValidar">
+                            ✉️ Enviar Borrador a las Partes (v1)
                         </button>
 
                         <!-- Mensaje de éxito y botón original -->
@@ -1978,11 +1982,15 @@
                 confirmButtonText: 'Sí, generar',
                 cancelButtonText: 'Cancelar'            }).then((result) => {
                 if (result.isConfirmed) {
-                    if (btn) { btn.disabled = true; btn.innerHTML = ' Generando...'; }
+                    const actionsBox = btn ? btn.closest('.registro-actions') : null;
+                    const originalActionsHtml = actionsBox ? actionsBox.innerHTML : '';
+                    const stopAnim = actionsBox ? iniciarAnimacionCardGenerando(actionsBox, 'Elaborando contrato...') : null;
 
                     google.script.run
                         .withSuccessHandler(function (res) {
-                            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+                            if (stopAnim) stopAnim();
+                            if (actionsBox) actionsBox.innerHTML = originalActionsHtml;
+                            else if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
                             if (res.success) {
                                 abrirModalContrato(cdr, res);
                             } else {
@@ -1990,12 +1998,57 @@
                             }
                         })
                         .withFailureHandler(function (err) {
-                            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+                            if (stopAnim) stopAnim();
+                            if (actionsBox) actionsBox.innerHTML = originalActionsHtml;
+                            else if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
                             Swal.fire('Error de red', err.message, 'error');
                         })
                         .generarContrato(cdr, 'Borrador');
                 }
             });
+        }
+
+        // Reemplaza el contenido de un contenedor de acciones de tarjeta por un círculo
+        // de progreso 0-100% simulado (igual al patrón de mostrarProgreso/completarProgreso),
+        // para indicar visualmente que el contrato se está generando.
+        // Devuelve una función "stop" que detiene el intervalo (llamarla siempre al terminar).
+        function iniciarAnimacionCardGenerando(container, labelText) {
+            const circumference = 150.8; // 2 * PI * r(24)
+            container.innerHTML = `
+                <div style="display:flex; align-items:center; gap:0.75rem; padding:0.25rem 0;">
+                    <div style="position:relative; width:56px; height:56px; flex-shrink:0;">
+                        <svg width="56" height="56" viewBox="0 0 56 56" style="transform:rotate(-90deg);">
+                            <circle cx="28" cy="28" r="24" stroke="#e2e8f0" stroke-width="6" fill="none" />
+                            <circle class="cardProgressCircle" cx="28" cy="28" r="24" stroke="url(#progressGradient)"
+                                stroke-width="6" fill="none" stroke-dasharray="${circumference}"
+                                stroke-dashoffset="${circumference}" stroke-linecap="round"
+                                style="transition: stroke-dashoffset 0.15s ease;" />
+                        </svg>
+                        <div class="cardProgressPercent" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:800; color:#1e293b;">0%</div>
+                    </div>
+                    <span style="font-weight:600; color:#1e293b; font-size:0.9rem;">${labelText || 'Procesando...'}</span>
+                </div>
+            `;
+
+            const circleEl = container.querySelector('.cardProgressCircle');
+            const pctEl = container.querySelector('.cardProgressPercent');
+
+            let pct = 0;
+            const interval = setInterval(() => {
+                if (pct < 40) pct += 3;
+                else if (pct < 70) pct += 2;
+                else if (pct < 90) pct += 0.5;
+                else if (pct < 95) pct += 0.1;
+                pct = Math.min(pct, 95);
+
+                const offset = circumference - (circumference * pct / 100);
+                if (circleEl) circleEl.style.strokeDashoffset = offset;
+                if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+            }, 60);
+
+            return function stop() {
+                clearInterval(interval);
+            };
         }
 
         function abrirBorrador(cdr, btnEl) {
@@ -2013,10 +2066,11 @@
                             if (estadoStr.includes('BORRADOR ENVIADO') || estadoStr.includes('REVISION') || estadoStr.includes('CORRECCI') || (estadoStr.includes('APROBADO') && !estadoStr.includes('ESTUDIO APROBADO')) || estadoStr.includes('OBSERVACIONES')) {
                                 cambiarModoValidacionExterna();
                             } else {
-                                // Si está recién generado pero no enviado
+                                // Si está recién generado pero no enviado: mostrar confirmar, ocultar enviar
                                 document.getElementById('contratoModalBody').classList.remove('layout-validacion');
                                 document.getElementById('msgBorradorInicial').style.display = 'block';
-                                document.getElementById('btnEnviarValidar').style.display = 'flex';
+                                document.getElementById('btnConfirmarBorrador').style.display = 'flex';
+                                document.getElementById('btnEnviarValidar').style.display = 'none';
                                 document.getElementById('accionesOriginal').style.display = 'none';
                             }
                         } else {
@@ -2048,12 +2102,13 @@
             if(resData.datos) {
                 const copyBtn = (label, value) => {
                     if(!value || value === 'N/A') return '';
+                    const safe = escapeHTMLAttr(value);
                     return `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #374151; padding: 4px 0;">
                               <div style="display:flex; flex-direction:column;">
                                 <span style="font-size: 0.75rem; color: #9ca3af;">${label}</span>
-                                <span style="font-size: 0.9rem; color: #fff;">${value}</span>
+                                <span style="font-size: 0.9rem; color: #fff;">${safe}</span>
                               </div>
-                              <button onclick="navigator.clipboard.writeText('${value}'); this.textContent='✅'; setTimeout(()=>this.textContent='📋',1000);" style="background:transparent; border:none; cursor:pointer; font-size:1rem; padding:4px;" title="Copiar">📋</button>
+                              <button type="button" class="copy-value-btn" data-copy="${safe}" onclick="copiarValorBoton(this)" style="background:transparent; border:none; cursor:pointer; font-size:1rem; padding:4px;" title="Copiar">📋</button>
                             </div>`;
                 };
 
@@ -2074,16 +2129,19 @@
                 };
                 
                 // Helper function para formatear nombres de botones
-                function formatearNombreBotonDoc(nombreOriginal) {
+                // rolePrefix: 'P' propietario, 'I' inquilino, 'C' codeudor (solo aplica a Frontal/Reverso de cédula)
+                function formatearNombreBotonDoc(nombreOriginal, rolePrefix) {
                     if(!nombreOriginal) return 'Documento';
                     let n = nombreOriginal.toUpperCase();
-                    if(n.includes('FRONTAL')) return 'Frontal';
-                    if(n.includes('REVERSO')) return 'Reverso';
+                    const prefijo = rolePrefix ? rolePrefix + ' ' : '';
+                    if(n.includes('FRONTAL')) return `CC ${prefijo}Frontal`;
+                    if(n.includes('REVERSO')) return `CC ${prefijo}Reverso`;
                     if(n.includes('SOPORTES_INGRESO_COD_')) {
                         let m = n.match(/COD_(\d+)/);
                         return m ? 'Soportes C' + m[1] : 'Soportes Cod.';
                     }
                     if(n.includes('SOPORTES')) return 'Soportes';
+                    if(n.includes('SARLAFT')) return 'Sarlaft';
                     if(n.includes('CERTIFICADO') || n.includes('TRADICION')) return 'Cert. Tradición';
                     if(n.includes('COMPROBANTE') || n.includes('PAGO')) return 'Pago';
                     if(n.includes('RUT')) return 'RUT';
@@ -2101,7 +2159,7 @@
                 if(resData.datos.propietario) {
                     const p = resData.datos.propietario;
                     propHtml += copyBtn('Nombre Completo', p.nombre);
-                    propHtml += copyBtn('Documento', `${p.tipoDocumento || 'CC'} ${p.numeroDocumento || ''}`);
+                    propHtml += copyBtn('Documento', `${p.tipoDocumento || 'CC'} ${p.documento || p.numeroDocumento || ''}`);
                     propHtml += copyBtn('Celular', p.celular);
                     propHtml += copyBtn('Email', p.email);
                     propHtml += copyBtn('Dirección', p.direccion);
@@ -2109,7 +2167,7 @@
                 if(resData.datos.documentosRelacionados && resData.datos.documentosRelacionados.propietario.length > 0) {
                     propHtml += '<div style="margin-top:0.8rem; display:flex; flex-wrap:wrap; gap:0.5rem;">';
                     resData.datos.documentosRelacionados.propietario.forEach(doc => {
-                        propHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 ${formatearNombreBotonDoc(doc.nombre)}</a>`;
+                        propHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 ${formatearNombreBotonDoc(doc.nombre, 'P')}</a>`;
                     });
                     propHtml += '</div>';
                 }
@@ -2120,7 +2178,7 @@
                 if(resData.datos.inquilino) {
                     const i = resData.datos.inquilino;
                     inqHtml += copyBtn('Nombre Completo', i.nombre);
-                    inqHtml += copyBtn('Documento', `${i.tipoDocumento || 'CC'} ${i.numeroDocumento || ''}`);
+                    inqHtml += copyBtn('Documento', `${i.tipoDocumento || 'CC'} ${i.documento || i.numeroDocumento || ''}`);
                     inqHtml += copyBtn('Celular', i.celular);
                     inqHtml += copyBtn('Email', i.email);
                     inqHtml += copyBtn('Ocupación', i.ocupacion);
@@ -2128,7 +2186,7 @@
                 if(resData.datos.documentosRelacionados && resData.datos.documentosRelacionados.inquilino.length > 0) {
                     inqHtml += '<div style="margin-top:0.8rem; display:flex; flex-wrap:wrap; gap:0.5rem;">';
                     resData.datos.documentosRelacionados.inquilino.forEach(doc => {
-                        inqHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 ${formatearNombreBotonDoc(doc.nombre)}</a>`;
+                        inqHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 ${formatearNombreBotonDoc(doc.nombre, 'I')}</a>`;
                     });
                     inqHtml += '</div>';
                 }
@@ -2140,7 +2198,7 @@
                     resData.datos.codeudores.forEach((c, idx) => {
                         codHtml += `<h5 style="color:#fbbf24; margin-top:0.5rem; margin-bottom:0.2rem;">Codeudor ${idx+1}</h5>`;
                         codHtml += copyBtn('Nombre Completo', c.nombre);
-                        codHtml += copyBtn('Documento', c.numeroDocumento);
+                        codHtml += copyBtn('Documento', c.documento || c.numeroDocumento || '');
                         codHtml += copyBtn('Celular', c.celular);
                         codHtml += copyBtn('Email', c.email);
                     });
@@ -2148,7 +2206,7 @@
                 if(resData.datos.documentosRelacionados && resData.datos.documentosRelacionados.codeudores && resData.datos.documentosRelacionados.codeudores.length > 0) {
                     codHtml += '<div style="margin-top:0.8rem; display:flex; flex-wrap:wrap; gap:0.5rem;">';
                     resData.datos.documentosRelacionados.codeudores.forEach(doc => {
-                        codHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 ${formatearNombreBotonDoc(doc.nombre)}</a>`;
+                        codHtml += `<a href="${doc.url}" target="_blank" style="background:var(--primary); color:#000; padding:4px 8px; border-radius:4px; font-size:0.75rem; text-decoration:none; font-weight:600;">📄 ${formatearNombreBotonDoc(doc.nombre, 'C')}</a>`;
                     });
                     codHtml += '</div>';
                 }
@@ -2242,6 +2300,30 @@
             document.getElementById('modalContrato').classList.remove('show');
             document.getElementById('iframeContrato').src = '';
             contratoActualContext = null;
+            document.getElementById('btnConfirmarBorrador').style.display = 'flex';
+            document.getElementById('btnEnviarValidar').style.display = 'none';
+        }
+
+        function confirmarBorradorListo() {
+            Swal.fire({
+                title: '¿El borrador está listo?',
+                html: '<p style="font-size: 0.95rem; color: #a1a1aa;">Al confirmar, se habilitará el envío del borrador a todas las partes para su revisión y aprobación.</p>',
+                icon: 'question',
+                iconColor: '#d4af37',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, está listo',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#22c55e',
+                cancelButtonColor: '#6b7280',
+                background: 'rgba(30, 30, 35, 0.95)',
+                color: '#fff',
+                backdrop: 'rgba(0,0,0,0.8)'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    document.getElementById('btnConfirmarBorrador').style.display = 'none';
+                    document.getElementById('btnEnviarValidar').style.display = 'flex';
+                }
+            });
         }
 
         function enviarOriginalValidar() {
@@ -2336,6 +2418,7 @@
         function cambiarModoValidacionExterna() {
             document.getElementById('contratoModalBody').classList.add('layout-validacion');
             document.getElementById('msgBorradorInicial').style.display = 'none';
+            document.getElementById('btnConfirmarBorrador').style.display = 'none';
             document.getElementById('btnEnviarValidar').style.display = 'none';
             document.getElementById('accionesOriginal').style.display = 'none';
             document.getElementById('badgeEstadoContrato').textContent = "En Validación Externa";
@@ -2388,6 +2471,7 @@
                         }
 
                         var maxVersion = 1;
+                        var huboEnvioPrevio = !!(res.estados && res.estados.length > 0);
 
                         if (res.estados && res.estados.length > 0) {
                             res.estados.forEach(e => {
@@ -2440,15 +2524,20 @@
                         }
 
                         // Rellenar partes que no han respondido en la última versión
+                        // Solo aplica si de verdad ya se envió alguna versión a las partes;
+                        // si la bitácora está vacía (contrato recién generado, nada enviado aún),
+                        // no hay nadie "pendiente" porque nunca se les mandó nada.
                         var partesPendientesMaxVersion = false;
-                        todasLasPartesInvolucradas.forEach(p => {
-                            if (!partesEstadoFinal[p]) {
-                                partesEstadoFinal[p] = 'ENVIADO v' + maxVersion;
-                                partesPendientesMaxVersion = true;
-                            } else if (partesEstadoFinal[p] === 'PENDIENTE' || partesEstadoFinal[p] === 'REVISADO') {
-                                partesPendientesMaxVersion = true;
-                            }
-                        });
+                        if (huboEnvioPrevio) {
+                            todasLasPartesInvolucradas.forEach(p => {
+                                if (!partesEstadoFinal[p]) {
+                                    partesEstadoFinal[p] = 'ENVIADO v' + maxVersion;
+                                    partesPendientesMaxVersion = true;
+                                } else if (partesEstadoFinal[p] === 'PENDIENTE' || partesEstadoFinal[p] === 'REVISADO') {
+                                    partesPendientesMaxVersion = true;
+                                }
+                            });
+                        }
 
                         // Actualizar semáforos
                         const actualizarSemaforo = (id, parte) => {
@@ -2499,22 +2588,37 @@
                             document.getElementById('semaforoGlobal').textContent = 'Completado';
                             document.getElementById('semaforoGlobal').style.color = 'var(--success)';
                             document.getElementById('btnGenerarOriginal').disabled = false;
+                            document.getElementById('btnConfirmarBorrador').style.display = 'none';
                             document.getElementById('btnEnviarValidar').style.display = 'none';
                             document.getElementById('accionesOriginal').style.display = 'block';
                         } else {
                             document.getElementById('btnGenerarOriginal').disabled = true;
+                            document.getElementById('btnConfirmarBorrador').style.display = 'none';
                             document.getElementById('btnEnviarValidar').style.display = 'flex';
                             document.getElementById('accionesOriginal').style.display = 'none';
                         }
 
                         const btnEnviarValidar = document.getElementById('btnEnviarValidar');
-                        if (btnEnviarValidar) {
-                            if (partesPendientesMaxVersion) {
+                        const btnConfirmar = document.getElementById('btnConfirmarBorrador');
+                        if (btnEnviarValidar && !(todosAprobados && tienePrincipales)) {
+                            if (!huboEnvioPrevio) {
+                                // Primer envío: mostrar botón de confirmar, ocultar enviar
+                                if (btnConfirmar) btnConfirmar.style.display = 'flex';
+                                btnEnviarValidar.style.display = 'none';
+                                btnEnviarValidar.disabled = false;
+                                btnEnviarValidar.style.opacity = '1';
+                                btnEnviarValidar.title = '';
+                                btnEnviarValidar.innerHTML = '✉️ Enviar Borrador a las Partes (v1)';
+                            } else if (partesPendientesMaxVersion) {
+                                if (btnConfirmar) btnConfirmar.style.display = 'none';
+                                btnEnviarValidar.style.display = 'flex';
                                 btnEnviarValidar.disabled = true;
                                 btnEnviarValidar.style.opacity = '0.5';
                                 btnEnviarValidar.title = 'Debes esperar a que todas las partes terminen de revisar esta ronda (v' + maxVersion + ')';
                                 btnEnviarValidar.innerHTML = '⏳ Esperando (v' + maxVersion + ') que completen...';
                             } else {
+                                if (btnConfirmar) btnConfirmar.style.display = 'none';
+                                btnEnviarValidar.style.display = 'flex';
                                 btnEnviarValidar.disabled = false;
                                 btnEnviarValidar.style.opacity = '1';
                                 btnEnviarValidar.title = '';
@@ -2972,11 +3076,11 @@
 
                 documentosData.propietario.forEach(doc => {
                     const nameUpper = doc.nombre.toUpperCase();
-                    if (nameUpper.includes('CERT_BANCARIO')) {
+                    if (nameUpper.includes('BANC') || nameUpper.includes('BANCO')) {
                         docsBancaria.push(doc);
-                    } else if (nameUpper.includes('CERT_TRADICION')) {
+                    } else if (nameUpper.includes('TRADICION') || nameUpper.includes('SARLAFT') || nameUpper.includes('LIBERTAD')) {
                         docsInmueble.push(doc);
-                    } else if (nameUpper.includes('FACTURA_') || nameUpper.includes('SERVICIO_') || nameUpper.includes('RECIBO_')) {
+                    } else if (nameUpper.includes('FACTURA') || nameUpper.includes('SERVICIO') || nameUpper.includes('RECIBO')) {
                         docsServicios.push(doc);
                     } else {
                         docsPropietario.push(doc);
@@ -3394,12 +3498,7 @@
         // Renderizar Document Tabs para la persona activa
         // filterFn: función opcional para filtrar docs
         function renderDocumentTabs(personKey, filterFn) {
-            let docsList = [];
-            if (personKey === 'bancaria' || personKey === 'inmueble' || personKey === 'servicios') {
-                docsList = documentosData['propietario'] || [];
-            } else {
-                docsList = documentosData[personKey] || [];
-            }
+            let docsList = documentosData[personKey] || [];
 
             // Categorización por sub-pestañas del propietario
             if (personKey === 'propietario') {
@@ -3658,6 +3757,8 @@
 
             mostrarToast('Documento marcado como APROBADO', 'success');
 
+            guardarEstadoBuzonIndividual(documentoActual.nombre, 'APROBADO');
+
             // Re-render tabs
             renderDocumentTabs(personaActivaKey);
 
@@ -3665,6 +3766,23 @@
 
             // Auto-advance to the next unvalidated document
             avanzarAlSiguienteDocumento();
+        }
+
+        // Persiste de inmediato el estado de un solo documento en el Cerebro,
+        // para que no se pierda si el admin cierra el modal antes de "Procesar Todo".
+        function guardarEstadoBuzonIndividual(nombreArchivo, nuevoEstado) {
+            const buzonKey = obtenerBuzonParaDoc(nombreArchivo);
+            if (!buzonKey || !registroActual) return; // Doc sin buzón mapeado, no hay dónde guardar
+
+            const mapa = {};
+            mapa[buzonKey] = nuevoEstado;
+
+            google.script.run
+                .withFailureHandler(function (err) {
+                    console.error('No se pudo guardar el estado individual del documento:', err);
+                    mostrarToast('⚠️ No se guardó la evaluación en el servidor, reintenta antes de cerrar', 'error');
+                })
+                .actualizarEstadosValidacionEnCerebro(registroActual, mapa);
         }
 
         function mostrarRechazoDocumentoActual() {
@@ -3692,6 +3810,8 @@
             motivosCorreccion[documentoActual.id] = motivo;
 
             mostrarToast('Documento marcado para ACTUALIZAR', 'warning');
+
+            guardarEstadoBuzonIndividual(documentoActual.nombre, 'ACTUALIZANDO');
 
             // Re-render tabs
             renderDocumentTabs(personaActivaKey);
@@ -4106,6 +4226,29 @@
             } catch (e) {
                 console.warn('Error limpiando formularios:', e);
             }
+        }
+
+        // Escapa un valor para usarlo seguro dentro de un atributo HTML (ej: data-copy="...").
+        // Sin esto, un valor con comillas (una dirección, un nombre) rompe el tag y su JS
+        // queda visible como texto plano en la página.
+        function escapeHTMLAttr(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        // Handler único para todos los botones "📋 Copiar" del panel izquierdo.
+        // Lee el valor real de data-copy (donde SÍ llegan bien decodificadas las comillas)
+        // en vez de intentar armarlo dentro del propio atributo onclick.
+        function copiarValorBoton(btn) {
+            const val = btn.dataset.copy || '';
+            navigator.clipboard.writeText(val);
+            const original = btn.textContent;
+            btn.textContent = '✅';
+            setTimeout(() => { btn.textContent = original; }, 1000);
         }
 
         function mostrarToast(mensaje, tipo = 'info') {

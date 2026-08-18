@@ -465,7 +465,7 @@ function recopilarDatosContrato(cdr) {
     // Recopilar datos del contrato
     const contrato = {
       canon: obtenerValor('PRECIO DE PROMOCION GENERAL'),
-      fechaInicio: obtenerValor('FECHA INICIO DEL CONTRATO'),
+      fechaInicio: obtenerValor('FECHA INICIO DEL CONTRATO') || extraerCampoCerebro(inquilinoText, 'FECHA INICIO CONTRATO::'),
       fechaFinal: obtenerValor('FECHA FINAL DEL CONTRATO'),
       duracion: '12 meses', // Por defecto; se podría calcular entre fechaInicio y fechaFinal si fuera necesario
       incremento: obtenerValor('Incremento anual') || 'IPC',
@@ -545,7 +545,10 @@ function recopilarDatosContrato(cdr) {
         
         if (name.includes('BANCARIO')) {
           documentosUI.bancario.push(docObj);
-        } else if (name.includes('PROP') || name.includes('TRADICION') || name.includes('RUT') || name.includes('RPR')) {
+        } else if (name.includes('TRADICION') || name.includes('SARLAFT') || name.includes('FACTURA') || name.includes('SERVICIO') || name.includes('RECIBO')) {
+          // Documentos del inmueble (certificado, SARLAFT, facturas de servicios), no de la persona propietaria.
+          documentosUI.otros.push(docObj);
+        } else if (name.includes('PROP') || name.includes('RUT') || name.includes('RPR')) {
           documentosUI.propietario.push(docObj);
         } else if (name.includes('INQU')) {
           documentosUI.inquilino.push(docObj);
@@ -681,8 +684,8 @@ function reemplazarVariablesContrato(doc, datos) {
       '{{NUMERO_CUENTA_PROPIETARIO}}': datos.propietario.numeroCuenta || '',
       '{{NUMERO-DE-CUENTA-BANCARIA}}': datos.propietario.numeroCuenta || '',
       '{{NOMBRE-DEL-DUEÑO-DE-LA-CUENTA-BANCARIA}}': datos.propietario.titularCuenta || datos.propietario.nombre || '',
-      '{{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE LA CUENTA}}': datos.propietario.docTitularCuenta || datos.propietario.numeroDocumento || '',
-      '{{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE-LA-CUENTA}}': datos.propietario.docTitularCuenta || datos.propietario.numeroDocumento || '',
+      '{{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE LA CUENTA}}': datos.propietario.documentoTitular || datos.propietario.numeroDocumento || '',
+      '{{NUMERO-DE-DOCUMENTO-DEL-DUEÑO-DE-LA-CUENTA}}': datos.propietario.documentoTitular || datos.propietario.numeroDocumento || '',
 
       // Datos del inquilino
       '{{NOMBRE_INQUILINO}}': datos.inquilino.nombre || '',
@@ -1594,6 +1597,12 @@ function actualizarEstadoContrato(cdr, estado, detalles) {
           sheet.getRange(i, estadoDocCol).setValue(estadoDocValor);
         }
         Logger.log(`Estado actualizado para CDR/ID ${cdr}: ${estado} (Doc: ${estadoDocValor})`);
+
+        // El trámite acaba de avanzar: consolidar el pago de una vez, sin esperar al cron de 48h.
+        if (typeof consolidarPagoSiAplica === 'function') {
+          consolidarPagoSiAplica(cdr, estado);
+        }
+
         break;
       }
     }
@@ -1809,15 +1818,6 @@ function obtenerContratosPendientes() {
             });
         }
     }
-    if (contratos.length === 0) {
-        return [{
-            cdr: `DEBUG-INDICES: Cdr:${idxCdr}, Est:${idxEstado}, Doc:${idxDoc}, Det:${idxDetalles}`,
-            estadoBadge: "FILTRO_VACIO",
-            tipoNegocio: `Filas Totales: ${data.length}`,
-            canon: "0",
-            inquilino: "No hay coincidencias"
-        }];
-    }
     return JSON.parse(JSON.stringify(contratos));
   } catch (err) {
       return [{cdr: "DEBUG-ERROR CRITICO", estadoBadge: err.message, tipoNegocio: "ERROR", canon: "0", inquilino: "N/A"}];
@@ -1837,60 +1837,51 @@ function enviarBorradorAValidar(cdr, comentario_admin) {
     const emailPropietario = datos.propietario.email;
 
     if (!emailInquilino || !emailPropietario) {
-      throw new Error(`Correos faltantes. Inq: ${emailInquilino}, Prop: ${emailPropietario}`);
+      throw new Error('Correos faltantes. Inq: ' + emailInquilino + ', Prop: ' + emailPropietario);
     }
 
+    // 1. Registrar en bitácora y cambiar estado ANTES de enviar emails
+    const mensajeAdmin = comentario_admin || 'Nueva versión generada y enviada a revisión';
+    registrarAprobacionContrato(datos.idRegistro || cdr, 'ADMIN', 'ENVIADO', mensajeAdmin);
+    actualizarEstadoContrato(cdr, 'CONTRATO EN REVISION', '📧 Enviado a las partes para revisión y aprobación.');
+
+    // 2. Enviar emails (no bloquean el estado si fallan)
     const baseURL = CONTRATO_CONFIG.BASE_URL || 'https://realestate-goldlifesystem.github.io/efirmacontrata';
-    
-    // Asumimos que docId ya está generado y lo podemos sacar del estado en Sheet o lo pasamos en blanco si solo usamos CDR
-    // En este flujo, validador-de-contratos.html usará el CDR para obtener el borrador activo.
-    const urlContrato = '#'; // El link real al doc lo mostrará el frontend
-    
-    // Enviar al inquilino
-    enviarEmailRevisionInquilino(
-      emailInquilino,
-      datos.inquilino.nombre,
-      cdr,
-      urlContrato,
-      `${baseURL}/frontend/validador-de-contratos.html?id=${encodeURIComponent(datos.idRegistro)}&parte=inquilino`
-    );
+    const urlContrato = '#';
+    const idURL = encodeURIComponent(datos.idRegistro || cdr);
+    const erroresEmail = [];
 
-    // Enviar al propietario
-    enviarEmailRevisionPropietario(
-      emailPropietario,
-      datos.propietario.nombre,
-      cdr,
-      urlContrato,
-      `${baseURL}/frontend/validador-de-contratos.html?id=${encodeURIComponent(datos.idRegistro)}&parte=propietario`
-    );
+    try {
+      enviarEmailRevisionInquilino(emailInquilino, datos.inquilino.nombre, cdr, urlContrato,
+        baseURL + '/frontend/validador-de-contratos.html?id=' + idURL + '&parte=inquilino');
+    } catch (e) { erroresEmail.push('Inquilino: ' + e.message); }
 
-    // Enviar a codeudores si existen
+    try {
+      enviarEmailRevisionPropietario(emailPropietario, datos.propietario.nombre, cdr, urlContrato,
+        baseURL + '/frontend/validador-de-contratos.html?id=' + idURL + '&parte=propietario');
+    } catch (e) { erroresEmail.push('Propietario: ' + e.message); }
+
     if (datos.codeudores && datos.codeudores.length > 0) {
-      datos.codeudores.forEach((codeudor, index) => {
+      datos.codeudores.forEach(function(codeudor, index) {
         if (codeudor.email) {
-          enviarEmailRevisionCodeudor(
-            codeudor.email,
-            codeudor.nombre,
-            cdr,
-            urlContrato,
-            `${baseURL}/frontend/validador-de-contratos.html?id=${encodeURIComponent(datos.idRegistro)}&parte=codeudor${index + 1}`
-          );
+          try {
+            enviarEmailRevisionCodeudor(codeudor.email, codeudor.nombre, cdr, urlContrato,
+              baseURL + '/frontend/validador-de-contratos.html?id=' + idURL + '&parte=codeudor' + (index + 1));
+          } catch (e) { erroresEmail.push('Codeudor ' + (index + 1) + ': ' + e.message); }
         }
       });
     }
 
-    // REGISTRAR LA NUEVA VERSIÓN EN EL HISTORIAL DE BITÁCORA
-    const mensajeAdmin = comentario_admin || 'Nueva versión generada y enviada a revisión';
-    registrarAprobacionContrato(datos.idRegistro || cdr, 'ADMIN', 'ENVIADO', mensajeAdmin);
-
-    // Cambiar estado global a BORRADOR ENVIADO
-    actualizarEstadoContrato(cdr, 'BORRADOR ENVIADO', 'Los correos de validación se enviaron exitosamente (incluyendo codeudores si aplica).');
+    if (erroresEmail.length > 0) {
+      Logger.log('⚠️ Errores enviando emails (estado ya actualizado): ' + erroresEmail.join('; '));
+    }
 
     return {
       success: true,
-      message: 'Correos enviados. Estado actualizado a BORRADOR ENVIADO.'
+      message: 'Estado actualizado a CONTRATO EN REVISION.' + (erroresEmail.length > 0 ? ' Advertencia: ' + erroresEmail.join('; ') : ' Correos enviados.')
     };
   } catch(error) {
+    Logger.log('❌ Error en enviarBorradorAValidar: ' + error.toString());
     return {
       success: false,
       message: error.message

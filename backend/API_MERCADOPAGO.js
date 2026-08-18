@@ -4,6 +4,15 @@
 // Credenciales de Producción (Reales - Para cuando estés listo para salir en vivo)
 const MP_ACCESS_TOKEN = 'APP_USR-8777396757564882-052314-43723717a419b60b7e28e4b9a4638c6d-365464952';
 
+// Estados del inmueble/contrato donde el trámite ya está en curso y el pago NO debe reembolsarse.
+// Único punto de verdad: lo usan tanto el cron de 48h (auditorDeContratosVencidos) como la
+// consolidación inmediata (consolidarPagoSiAplica) al avanzar el contrato.
+const ESTADOS_SEGUROS_PAGO_MP = [
+  'READY_CONTRACT', 'CONTRACT_GENERATED', 'CONTRACT_REVIEW', 'CONTRACT_FINAL', 'COMPLETED',
+  'CONTRATO GENERADO', 'CONTRATO EN REVISION', 'BORRADOR ENVIADO', 'EN REVISION',
+  'APROBADO', 'CONTRATO APROBADO', 'CONTRATO ORIGINAL GENERADO', 'PROP_VALIDATED'
+];
+
 function crearPreferenciaPago(datos) {
   try {
     const url = 'https://api.mercadopago.com/checkout/preferences';
@@ -116,11 +125,7 @@ function auditorDeContratosVencidos() {
     const now = new Date();
 
     // Estados seguros (donde NO se debe reembolsar)
-    const estadosSeguros = [
-      'READY_CONTRACT', 'CONTRACT_GENERATED', 'CONTRACT_REVIEW', 'CONTRACT_FINAL', 'COMPLETED',
-      'CONTRATO GENERADO', 'CONTRATO EN REVISION', 'BORRADOR ENVIADO', 'EN REVISION',
-      'APROBADO', 'CONTRATO APROBADO', 'CONTRATO ORIGINAL GENERADO', 'PROP_VALIDATED'
-    ];
+    const estadosSeguros = ESTADOS_SEGUROS_PAGO_MP;
 
     for (let i = 1; i < dataPagos.length; i++) {
       const row = dataPagos[i];
@@ -186,6 +191,42 @@ function auditorDeContratosVencidos() {
     }
   } catch (e) {
     console.error('Error en auditorDeContratosVencidos:', e);
+  }
+}
+
+/**
+ * Consolida el pago de un CDR de inmediato, apenas el contrato avanza a un estado seguro
+ * (ej: apenas se genera el Borrador), en vez de esperar a que el cron de 48h lo detecte.
+ * Así el pago queda "cobrado" desde el momento en que el trámite se formaliza, y aunque
+ * más adelante cambie de estado, ya quedó como aprobado/consolidado (nunca se re-evalúa
+ * para reembolso una vez consolidado).
+ * @param {string} cdr - Código de registro del inmueble
+ * @param {string} estadoNuevo - El ESTADO DEL INMUEBLE que se acaba de escribir
+ */
+function consolidarPagoSiAplica(cdr, estadoNuevo) {
+  try {
+    if (!cdr || !estadoNuevo) return;
+    const estadoUpper = String(estadoNuevo).toUpperCase();
+    const esSeguro = ESTADOS_SEGUROS_PAGO_MP.some(st => estadoUpper.includes(st)) ||
+                      estadoUpper.includes('CONTRATO') || estadoUpper.includes('BORRADOR');
+    if (!esSeguro) return;
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetPagos = ss.getSheetByName('PAGOS_RECIBIDOS');
+    if (!sheetPagos) return;
+
+    const dataPagos = sheetPagos.getDataRange().getValues();
+    for (let i = 1; i < dataPagos.length; i++) {
+      const filaCdr = String(dataPagos[i][2]).trim();
+      const estadoPago = dataPagos[i][4];
+      if (filaCdr === String(cdr).trim() && estadoPago === 'APROBADO') {
+        sheetPagos.getRange(i + 1, 5).setValue('CONSOLIDADO');
+        sheetPagos.getRange(i + 1, 5).setBackground('#d9ead3'); // Verde claro
+        Logger.log('💰 Pago consolidado de inmediato para CDR ' + cdr + ' (estado: ' + estadoNuevo + '), ya no aplica reembolso por tiempo.');
+      }
+    }
+  } catch (e) {
+    Logger.log('⚠️ Error consolidando pago de inmediato para CDR ' + cdr + ': ' + e.message);
   }
 }
 

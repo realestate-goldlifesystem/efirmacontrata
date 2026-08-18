@@ -682,6 +682,22 @@ function doPost(e) {
       case 'subirContratoFirmado':
         result = handleSubirContratoFirmado(datos);
         break;
+      case 'guardarContratoAutenticado':
+        if (typeof guardarContratoAutenticado === 'function') {
+          result = guardarContratoAutenticado(datos.cdr, datos.base64Pdf, datos.nombreArchivo, datos.emailAdmin);
+        } else {
+          result = { success: false, message: 'guardarContratoAutenticado no disponible' };
+        }
+        break;
+      case 'lanzarMiguel':
+        // Barrido del agente captador desde el panel de herramientas del
+        // portafolio. Valida el correo del agente contra Google adentro.
+        if (typeof lanzarMiguelDesdeWeb === 'function') {
+          result = lanzarMiguelDesdeWeb(datos);
+        } else {
+          result = { success: false, message: 'API_AGENTE_CAPTADOR no cargada' };
+        }
+        break;
       case 'validarCertificadoOCR':
         // Llama a la función del OCR-HANDLER.js
         result = validarCertificadoDesdeFormulario(datos.base64);
@@ -1918,6 +1934,17 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
     const fila = buscarFilaPorCDR(codigoRegistro);
     if (!fila) throw new Error('Código de registro no encontrado');
 
+    // Candado anti-cracking: el envío del formulario NUNCA se acepta solo porque el
+    // frontend "cree" que el pago pasó. Se vuelve a confirmar contra el estado real
+    // que dejó el webhook de Mercado Pago (PAGOS_RECIBIDOS / ScriptProperties).
+    // No aplica en modo corrección: ese CDR ya pagó en su envío original.
+    if (!datosFormulario.modoCorreccion) {
+      const pagoConfirmado = (typeof verificarPagoPorCDR === 'function') && verificarPagoPorCDR(codigoRegistro);
+      if (!pagoConfirmado) {
+        throw new Error('No se encontró un pago aprobado para este registro. Completa el pago antes de enviar el formulario.');
+      }
+    }
+
     // Asegurar que tenemos el email del inquilino en modo corrección
     if (datosFormulario.modoCorreccion || !datosFormulario.inquilino.email) {
       const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
@@ -2264,6 +2291,9 @@ function escribirDatosContratoDocNivel7(cedulaFolder, datosFormulario, cdr) {
     body.appendParagraph(`NÚMERO DE IDENTIFICACIÓN:: ${datosFormulario?.inquilino?.numeroDocumento || ''}`);
     body.appendParagraph(`CELULAR:: ${datosFormulario?.inquilino?.celular || ''}`);
     body.appendParagraph(`CORREO:: ${datosFormulario?.inquilino?.email || ''}`);
+    if (datosFormulario?.fechaInicio) {
+      body.appendParagraph(`FECHA INICIO CONTRATO:: ${datosFormulario.fechaInicio}`);
+    }
 
     // Normalizar codeudor: el formulario envía un objeto único (o null), no un array
     const codeudorRaw = datosFormulario?.codeudor || datosFormulario?.codeudores;
@@ -3312,6 +3342,47 @@ function obtenerDocumentosDelCDR(cdr) {
           }
         }
       }
+      
+      // 5. ULTIMATE FALLBACK: Búsqueda global en Drive para atrapar CUALQUIER archivo del CDR que se haya escapado
+      try {
+        const cdrClean = cdr.replace(/'/g, "\\'");
+        const globalFiles = DriveApp.searchFiles(`title contains '${cdrClean}' and trashed = false`);
+        while (globalFiles.hasNext()) {
+          const f = globalFiles.next();
+          const fName = f.getName().toUpperCase();
+          
+          // Construir lista de IDs ya encontrados en TODAS las categorías
+          let allIds = [];
+          for (let key in documentos) {
+             if (Array.isArray(documentos[key])) {
+                allIds = allIds.concat(documentos[key].map(d => d.fileId));
+             }
+          }
+
+          if (!allIds.includes(f.getId())) {
+             // Es un archivo huérfano. Revisar si pertenece al propietario
+             if (fName.includes('BANC') || fName.includes('CERT_TRADICION') || fName.includes('CEDULA_PROP') || fName.includes('SARLAFT') || fName.includes('FACTURA') || fName.includes('RECIBO') || fName.includes('SERVICIO')) {
+                
+                // Normalizar nombres para que el frontend los entienda
+                let virtName = f.getName();
+                if (fName.includes('CERTBANCARIO') && !fName.includes('CERT_BANCARIO')) virtName = virtName.replace(/CERTBANCARIO/i, 'CERT_BANCARIO');
+                if (fName.includes('FACTURAAGUA') && !fName.includes('FACTURA_AGUA')) virtName = virtName.replace(/FACTURAAGUA/i, 'FACTURA_AGUA');
+                if (fName.includes('FACTURALUZ') && !fName.includes('FACTURA_LUZ')) virtName = virtName.replace(/FACTURALUZ/i, 'FACTURA_LUZ');
+                
+                documentos.propietario.push({
+                   nombre: '🔍 [Rescate Global] ' + virtName,
+                   url: f.getUrl(),
+                   fileId: f.getId(),
+                   tipo: f.getMimeType(),
+                   tamaño: f.getSize()
+                });
+                Logger.log('🔍 Archivo rescatado globalmente: ' + virtName);
+             }
+          }
+        }
+      } catch (globalErr) {
+        Logger.log('⚠️ Error en búsqueda global fallback: ' + globalErr);
+      }
 
     } catch (e) {
       Logger.log('Error buscando nuevos archivos de propietario: ' + e);
@@ -3391,48 +3462,12 @@ function buscarFilaPorCDR(cdr) {
   }
 }
 
-/**
- * Actualizar campos del inquilino en la hoja
- */
-function actualizarCamposInquilino(fila, datos) {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
-    if (!sheet) return;
-
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-
-    const mapCampos = {
-      'NOMBRE COMPLETO INQUILINO': datos.nombre,
-      'Documento de Identidad': datos.documento, // Ajusta según tu header exacto
-      'CORREO INQUILINO': datos.email,
-      'CELULAR INQUILINO': datos.celular
-    };
-
-    if (datos.fechaInicio) {
-      const arr = datos.fechaInicio.split('-'); // YYYY-MM-DD
-      if (arr.length === 3) {
-        const y = parseInt(arr[0], 10);
-        const m = parseInt(arr[1], 10) - 1;
-        const d = parseInt(arr[2], 10);
-        const dInit = new Date(y, m, d);
-        const dEnd = new Date(y + 1, m, d - 1);
-        
-        mapCampos['FECHA INICIO DEL CONTRATO'] = Utilities.formatDate(dInit, Session.getScriptTimeZone(), 'dd/MM/yyyy');
-        mapCampos['FECHA FINAL DEL CONTRATO'] = Utilities.formatDate(dEnd, Session.getScriptTimeZone(), 'dd/MM/yyyy');
-      }
-    }
-
-    Object.entries(mapCampos).forEach(([header, valor]) => {
-      const colIndex = headers.indexOf(header) + 1;
-      if (colIndex > 0 && valor) {
-        sheet.getRange(fila, colIndex).setValue(valor);
-      }
-    });
-
-  } catch (error) {
-    Logger.log('Error actualizando campos inquilino: ' + error.toString());
-  }
-}
+// NOTA: la implementación de actualizarCamposInquilino vive más abajo (única).
+// Antes había dos funciones con el mismo nombre: como en JS la última declaración
+// pisa a la primera, esta (la de arriba) quedó siempre muerta sin que nadie lo notara,
+// y su lógica de fechaInicio nunca corría — causa raíz de que la fecha de inicio del
+// contrato del inquilino quedara siempre en blanco. Se fusionó esa lógica en la
+// definición activa para no repetir el mismo bug.
 
 /**
  * Obtener valor por header
@@ -4275,6 +4310,23 @@ function actualizarCamposInquilino(fila, campos) {
     if (campos.celular) {
       const col = headers.indexOf('CELULAR INQUILINO') + 1;
       if (col > 0) sheet.getRange(fila, col).setValue(campos.celular);
+    }
+
+    if (campos.fechaInicio) {
+      const arr = String(campos.fechaInicio).split('-'); // YYYY-MM-DD
+      if (arr.length === 3) {
+        const y = parseInt(arr[0], 10);
+        const m = parseInt(arr[1], 10) - 1;
+        const d = parseInt(arr[2], 10);
+        const dInit = new Date(y, m, d);
+        const dEnd = new Date(y + 1, m, d - 1);
+
+        const colInicio = headers.indexOf('FECHA INICIO DEL CONTRATO') + 1;
+        if (colInicio > 0) sheet.getRange(fila, colInicio).setValue(Utilities.formatDate(dInit, Session.getScriptTimeZone(), 'dd/MM/yyyy'));
+
+        const colFinal = headers.indexOf('FECHA FINAL DEL CONTRATO') + 1;
+        if (colFinal > 0) sheet.getRange(fila, colFinal).setValue(Utilities.formatDate(dEnd, Session.getScriptTimeZone(), 'dd/MM/yyyy'));
+      }
     }
 
   } catch (error) {
@@ -5125,6 +5177,18 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
 
     if (targetRow === -1) throw new Error('Registro no encontrado');
 
+    // Prevenir subida duplicada: si ya se cargó el contrato autenticado, cortar aquí
+    if (colCarga > 0) {
+      const yaCargado = String(sheet.getRange(targetRow, colCarga).getValue() || '').trim();
+      if (yaCargado === '✅') {
+        return {
+          success: false,
+          message: 'Este contrato ya fue cargado previamente. No es posible subirlo de nuevo.',
+          yaCargado: true
+        };
+      }
+    }
+
     const emailProp = colEmailProp > 0 ? sheet.getRange(targetRow, colEmailProp).getValue() : '';
     const emailInq = colEmailInq > 0 ? sheet.getRange(targetRow, colEmailInq).getValue() : '';
     const nombreProp = colNombreProp > 0 ? sheet.getRange(targetRow, colNombreProp).getValue() : 'Propietario';
@@ -5134,25 +5198,103 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
     // Convertir base64 a blob PDF
     const pdfBlob = Utilities.newBlob(Utilities.base64Decode(base64Pdf), 'application/pdf', nombreArchivo || `Contrato_Autenticado_${cdr}.pdf`);
 
-    // Buscar o crear la carpeta del inmueble en Drive
-    let carpetaCDR;
-    if (typeof obtenerOCrearCarpetaCDR === 'function') {
-      carpetaCDR = obtenerOCrearCarpetaCDR(cdr);
-    } else {
-      carpetaCDR = DriveApp.getRootFolder();
+    // Usar la función de navegación oficial ya existente en GESTOR_CONTRATOS.js
+    // La estructura garantizada por la plantilla es:
+    //   {CDR}/ENTREGAS DEL INMUEBLE/{año}/DOCUMENTOS DE ENTREGA - INQUILINO/2- CONTRATO DE ARRENDAMIENTO
+    // Esa carpeta ya viene creada desde la plantilla, no debe crearse en la raíz.
+    if (typeof buscarCarpetaContratoDinamica !== 'function') {
+      throw new Error('buscarCarpetaContratoDinamica no está disponible (GESTOR_CONTRATOS.js).');
     }
 
-    // Subcarpeta "2- CONTRATO DE ARRENDAMIENTO"
-    let carpetaContrato;
-    const subCarpetas = carpetaCDR.getFoldersByName('2- CONTRATO DE ARRENDAMIENTO');
-    if (subCarpetas.hasNext()) {
-      carpetaContrato = subCarpetas.next();
-    } else {
-      carpetaContrato = carpetaCDR.createFolder('2- CONTRATO DE ARRENDAMIENTO');
+    // IMPORTANTE: usar el CDR real (columna A), no el ID de registro (KK163493).
+    // La carpeta en Drive se llama con el CDR completo ("REG_05-08-2026-C47_..."),
+    // no con el ID corto. Pasar el ID hace que la búsqueda falle y caiga al fallback global.
+    const cdrRealParaBuscar = cdrCol > 0
+      ? String(sheet.getRange(targetRow, cdrCol).getValue() || '').trim()
+      : String(cdr).trim();
+
+    // Siempre buscar "2- CONTRATO DE ARRENDAMIENTO": la plantilla maestra solo crea esa
+    // carpeta aunque el tipo de negocio sea Corretaje o Venta (el nombre del archivo
+    // interno sí puede distinguir el tipo, pero la carpeta contenedora es la misma).
+    const carpetaContrato = buscarCarpetaContratoDinamica({ cdr: cdrRealParaBuscar, tipoNegocio: 'Arriendo' });
+    if (!carpetaContrato) {
+      throw new Error('No se encontró la carpeta "2- CONTRATO DE ARRENDAMIENTO" para el CDR: ' + cdrRealParaBuscar);
+    }
+
+    // Anti-duplicado: la validación principal ya se hizo arriba con la columna CARGA DEL CONTRATO = ✅.
+    // Aquí solo bloqueamos si por accidente ya existe un archivo con EXACTAMENTE el mismo nombre
+    // que se está subiendo (subida repetida del mismo archivo).
+    // NO bloquear por prefijo "Contrato_" porque el borrador y el original previos también empiezan así,
+    // y esos SÍ deben coexistir hasta que los reemplacemos justo abajo.
+    const nombreObjetivo = String(nombreArchivo || '').toUpperCase();
+    if (nombreObjetivo) {
+      const existentes = carpetaContrato.getFiles();
+      while (existentes.hasNext()) {
+        const f = existentes.next();
+        if (f.getName().toUpperCase() === nombreObjetivo) {
+          return {
+            success: false,
+            message: 'Ya existe un archivo con ese mismo nombre: ' + f.getName(),
+            yaCargado: true,
+            urlDrive: f.getUrl()
+          };
+        }
+      }
     }
 
     const archivoFinal = carpetaContrato.createFile(pdfBlob);
     const urlDrive = archivoFinal.getUrl();
+
+    // Limpieza: borrar los 3 documentos previos generados por E-FirmaContrata durante el proceso
+    // (borrador Google Doc, original Google Doc "- FINAL", y PDF del original). Todos siguen el patrón
+    // "Contrato_{Tipo}_{Nombre}_{ID}". NO tocar archivos ajenos (ej. "Otrosi_...", contratos otros).
+    // El archivo recién subido (archivoFinal) se preserva por ID.
+    try {
+      const nuevoFileId = archivoFinal.getId();
+      const iter = carpetaContrato.getFiles();
+      const eliminados = [];
+      while (iter.hasNext()) {
+        const f = iter.next();
+        if (f.getId() === nuevoFileId) continue;
+        const nombreU = f.getName().toUpperCase();
+        // Patrón exacto de los 3 documentos previos: empiezan con "CONTRATO_" (borrador, original, pdf).
+        if (nombreU.startsWith('CONTRATO_')) {
+          const nombreOriginal = f.getName();
+          f.setTrashed(true);
+          eliminados.push(nombreOriginal);
+        }
+      }
+      if (eliminados.length > 0) {
+        Logger.log('🧹 Archivos previos enviados a papelera: ' + eliminados.join(' | '));
+      }
+    } catch (eLimpieza) {
+      Logger.log('⚠️ No se pudieron limpiar archivos previos (el PDF nuevo ya está guardado): ' + eLimpieza);
+    }
+
+    // Re-obtener las carpetas de la ruta REAL subiendo por los padres de `carpetaContrato`.
+    // Ruta garantizada: 2- CONTRATO -> DOCUMENTOS DE ENTREGA - INQUILINO -> {año} -> ENTREGAS DEL INMUEBLE -> {CDR}
+    // OJO: NO usar carpetaCDR.getFoldersByName(...) porque en la raíz pueden existir carpetas
+    // HUÉRFANAS con el mismo nombre creadas por ejecuciones anteriores fallidas, y ese getFoldersByName
+    // las devolvería y aplicaríamos permisos en la carpeta equivocada (bug real detectado en KK163493).
+    let folderInq = null;      // DOCUMENTOS DE ENTREGA - INQUILINO (correcta, dentro de {año})
+    let anioFolderReal = null; // {año}, e.g. "2026"
+    let folderProp = null;     // ENTREGAS DEL INMUEBLE (correcta)
+    let carpetaCDR = null;     // Raíz del CDR
+    try {
+      const p1 = carpetaContrato.getParents();       // -> DOCUMENTOS DE ENTREGA - INQUILINO
+      folderInq = p1.hasNext() ? p1.next() : null;
+      const p2 = folderInq ? folderInq.getParents() : null;  // -> {año}
+      anioFolderReal = p2 && p2.hasNext() ? p2.next() : null;
+      const p3 = anioFolderReal ? anioFolderReal.getParents() : null;  // -> ENTREGAS DEL INMUEBLE
+      folderProp = p3 && p3.hasNext() ? p3.next() : null;
+      const p4 = folderProp ? folderProp.getParents() : null;  // -> RAÍZ CDR
+      carpetaCDR = p4 && p4.hasNext() ? p4.next() : null;
+    } catch (eNav) {
+      Logger.log('No se pudo subir por padres desde carpetaContrato: ' + eNav);
+    }
+    if (!folderInq || !folderProp || !carpetaCDR) {
+      throw new Error('El PDF se subió pero no se pudo resolver la ruta padre para asignar permisos.');
+    }
 
     // 1. Reemplazar la casilla por check "✅" en lugar del hipervínculo
     if (colCarga > 0) {
@@ -5165,18 +5307,60 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
 
     // --- 2. CONFIGURACIÓN DE PERMISOS DE CARPETAS ---
 
-    // A. Propietario: Acceso de LECTOR (addViewer) a su carpeta "ENTREGAS DEL INMUEBLE"
+    const TUTORIAL_PROPIETARIO = 'https://www.youtube.com/watch?v=7JwBk8z4Mx8&feature=youtu.be';
+    const TUTORIAL_INQUILINO = 'https://www.youtube.com/watch?v=CyeoHA7zOjU&feature=youtu.be';
+
+    // Helper: otorga permiso SIN notificación con Drive Advanced v2, con fallbacks robustos.
+    // Devuelve { success, method, error } — el llamador puede agregar a erroresPermisos.
+    const otorgarPermisoSilencioso = function(folder, email, role) {
+      const fileId = folder.getId();
+      try {
+        Drive.Permissions.insert(
+          { role: role, type: 'user', value: email },
+          fileId,
+          { sendNotificationEmails: false, supportsAllDrives: true }
+        );
+        return { success: true, method: 'DriveV2.insert' };
+      } catch (e1) {
+        Logger.log('Drive.Permissions.insert falló para ' + email + ' role=' + role + ' folder=' + folder.getName() + ': ' + e1.message);
+      }
+      try {
+        Drive.Permissions.insert(
+          { role: role, type: 'user', value: email },
+          fileId,
+          { sendNotificationEmails: false }
+        );
+        return { success: true, method: 'DriveV2.insert-noSharedDrives' };
+      } catch (e2) {
+        Logger.log('Drive.Permissions.insert (no shared drives) falló: ' + e2.message);
+      }
+      try {
+        if (role === 'writer') folder.addEditor(email);
+        else folder.addViewer(email);
+        return { success: true, method: 'DriveApp-conNotificacion', warning: 'Se aplicó permiso enviando notificación (fallback)' };
+      } catch (e3) {
+        return { success: false, method: 'ninguno', error: e3.message };
+      }
+    };
+
+    const erroresPermisos = [];
+
+    // A. Propietario: Acceso de LECTOR a "ENTREGAS DEL INMUEBLE" — SILENCIOSO (sin correo de Drive)
+    // Usa folderProp resuelto por padres arriba (NO re-buscar con getFoldersByName para evitar huérfanas).
     if (emailProp && emailProp.includes('@')) {
-      const carpetasProp = carpetaCDR.getFoldersByName('ENTREGAS DEL INMUEBLE');
-      let folderProp = carpetasProp.hasNext() ? carpetasProp.next() : carpetaCDR.createFolder('ENTREGAS DEL INMUEBLE');
-      folderProp.addViewer(emailProp); // Permiso de LECTOR únicamente
+      const rProp = otorgarPermisoSilencioso(folderProp, emailProp, 'reader');
+      Logger.log('Permiso PROP→ENTREGAS (' + emailProp + '): ' + JSON.stringify(rProp));
+      if (!rProp.success) erroresPermisos.push('ENTREGAS propietario: ' + rProp.error);
 
       // Enviar correo al Propietario con botón a su carpeta
       const tplProp = HtmlService.createTemplateFromFile('backend/email_notificacion');
       tplProp.TITULO = '📂 Carpeta de Entregas del Inmueble';
       tplProp.NOMBRE_CLIENTE = nombreProp;
       tplProp.MENSAJE_PRINCIPAL = `El proceso de firma y carga del contrato autenticado para el inmueble en <strong>${direccion}</strong> ha finalizado.`;
-      tplProp.MENSAJE_SECUNDARIO = 'Puedes acceder a tu carpeta de entregas en Google Drive en modo de lectura con el siguiente botón:';
+      tplProp.MENSAJE_SECUNDARIO =
+        'Puedes acceder a tu carpeta de entregas en Google Drive en modo de lectura con el siguiente botón.' +
+        '<br><br>▶️ <strong>Antes de entrar, mira este breve tutorial de cómo usar tu carpeta:</strong>' +
+        '<br><a href="' + TUTORIAL_PROPIETARIO + '" target="_blank" style="color:#d4af37; font-weight:bold; text-decoration:underline;">Ver tutorial para propietarios en YouTube</a>';
       tplProp.URL_ACCION = folderProp.getUrl();
       tplProp.TEXTO_BOTON = '📂 Abrir Carpeta de Entregas';
 
@@ -5187,22 +5371,30 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
       });
     }
 
-    // B. Inquilino: Acceso LECTOR (addViewer) a "DOCUMENTOS DE ENTREGA - INQUILINO" y EDITOR (addEditor) a "1- COMPROBANTES DE PAGO DEL INMUEBLE"
+    // B. Inquilino: LECTOR a "DOCUMENTOS DE ENTREGA - INQUILINO" y EDITOR a "1- COMPROBANTES DE PAGO DEL INMUEBLE"
+    // Usa folderInq resuelto por padres arriba (NO re-buscar con getFoldersByName para evitar huérfanas).
     if (emailInq && emailInq.includes('@')) {
-      const carpetasInq = carpetaCDR.getFoldersByName('DOCUMENTOS DE ENTREGA - INQUILINO');
-      let folderInq = carpetasInq.hasNext() ? carpetasInq.next() : carpetaCDR.createFolder('DOCUMENTOS DE ENTREGA - INQUILINO');
-      folderInq.addViewer(emailInq); // Permiso de LECTOR en la carpeta principal de entrega
+      const r1 = otorgarPermisoSilencioso(folderInq, emailInq, 'reader');
+      Logger.log('Permiso INQ→DOCS ENTREGA (' + emailInq + '): ' + JSON.stringify(r1));
+      if (!r1.success) erroresPermisos.push('DOCS ENTREGA inquilino: ' + r1.error);
 
+      // La subcarpeta de comprobantes SÍ se busca dentro de folderInq (la correcta), no en la raíz.
       const subPagos = folderInq.getFoldersByName('1- COMPROBANTES DE PAGO DEL INMUEBLE');
       let folderPagos = subPagos.hasNext() ? subPagos.next() : folderInq.createFolder('1- COMPROBANTES DE PAGO DEL INMUEBLE');
-      folderPagos.addEditor(emailInq); // Permiso de EDITOR únicamente en comprobantes de pago
-      
+
+      const r2 = otorgarPermisoSilencioso(folderPagos, emailInq, 'writer');
+      Logger.log('Permiso INQ→COMPROBANTES PAGO (' + emailInq + '): ' + JSON.stringify(r2));
+      if (!r2.success) erroresPermisos.push('COMPROBANTES PAGO inquilino: ' + r2.error);
+
       // Enviar correo al Inquilino con botón a la carpeta global de entrega
       const tplInq = HtmlService.createTemplateFromFile('backend/email_notificacion');
       tplInq.TITULO = '📂 Documentos de Entrega y Comprobantes de Pago';
       tplInq.NOMBRE_CLIENTE = nombreInq;
       tplInq.MENSAJE_PRINCIPAL = `El contrato autenticado del inmueble en <strong>${direccion}</strong> ha sido archivado.`;
-      tplInq.MENSAJE_SECUNDARIO = 'Tienes acceso de consulta a tu carpeta de entregas y permisos de edición para cargar tus comprobantes de pago dentro de la subcarpeta 1- COMPROBANTES DE PAGO DEL INMUEBLE.';
+      tplInq.MENSAJE_SECUNDARIO =
+        'Tienes acceso de consulta a tu carpeta de entregas y permisos de edición para cargar tus comprobantes de pago dentro de la subcarpeta <strong>1- COMPROBANTES DE PAGO DEL INMUEBLE</strong>.' +
+        '<br><br>▶️ <strong>Antes de entrar, mira este breve tutorial de cómo usar tu carpeta y subir tus comprobantes:</strong>' +
+        '<br><a href="' + TUTORIAL_INQUILINO + '" target="_blank" style="color:#d4af37; font-weight:bold; text-decoration:underline;">Ver tutorial para inquilinos en YouTube</a>';
       tplInq.URL_ACCION = folderInq.getUrl();
       tplInq.TEXTO_BOTON = '📂 Abrir Documentos de Entrega';
 
