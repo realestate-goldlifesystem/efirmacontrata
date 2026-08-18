@@ -12,19 +12,13 @@ on:
           - arriendo
           - venta
       bedrooms:
-        description: 'Filtro de habitaciones (1, 2, 3, 4, 5, all)'
+        description: 'Habitaciones: una (3), varias separadas por coma (1,2) o all'
         required: false
         default: 'all'
       sector:
-        description: 'Localidad objetivo'
+        description: 'Localidad: una (usaquen), varias separadas por coma (usaquen,chapinero) o all'
         required: false
         default: 'all'
-        type: choice
-        options:
-          - all
-          - usaquen
-          - suba
-          - chapinero
       reponer:
         description: 'Reposición: saltar localidad+habitación con 5 o más NUEVO (cuota 20). Para probar el modo de la corrida automática sin esperar al cron.'
         required: false

@@ -234,20 +234,41 @@ function ejecutarAgenteCaptador(modo) {
   template.modo = modo;
   template.tipoTexto = tipoTexto;
 
-  // Medido con el contenido mas alto posible ("Todos" + "Todas las
-  // habitaciones", que lleva el resumen del plan a 3 lineas): 364 px.
+  // Medido con el contenido mas alto posible (todo marcado, que lleva el
+  // resumen del plan a 2 lineas con el aviso de duracion): 326 px.
   // Se deja margen para diferencias de renderizado de fuentes.
   var html = template.evaluate()
     .setWidth(470)
-    .setHeight(420);
+    .setHeight(340);
 
   ui.showModalDialog(html, '🚀 Miguel - Agente Captador Fincaraiz (' + tipoTexto + ')');
+}
+
+var NOMBRE_SECTOR_CAPTADOR = { usaquen: 'Usaquén', suba: 'Suba', chapinero: 'Chapinero' };
+
+/**
+ * Arma en lenguaje natural una lista que puede venir con varios valores
+ * separados por coma ("usaquen,chapinero" -> "Usaquén y Chapinero").
+ */
+function _listarSeleccion(csv, diccionario) {
+  var nombres = String(csv).split(',').map(function (p) {
+    var clave = p.trim();
+    return (diccionario && diccionario[clave]) ? diccionario[clave] : clave;
+  });
+  if (nombres.length === 1) return nombres[0];
+  return nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length - 1];
+}
+
+/** Cuántos valores trae la selección ('all' cuenta como el total del grupo). */
+function _contarSeleccion(csv, totalSiTodos) {
+  return (csv === 'all') ? totalSiTodos : String(csv).split(',').length;
 }
 
 /**
  * Función backend invocada desde el Modal HTML para disparar GitHub Actions
  * @param {string} modo - 'arriendo' o 'venta'
- * @param {string} bedrooms - '1', '2', '3', '4', '5' o 'all'
+ * @param {string} bedrooms - '1'..'5', varias separadas por coma ('1,2') o 'all'
+ * @param {string} sector - 'usaquen'/'suba'/'chapinero', varias separadas por coma o 'all'
  */
 function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
   modo = modo || 'arriendo';
@@ -275,10 +296,11 @@ function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
 
   try {
     var url = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/workflows/scraper.yml/dispatches";
-    var habTexto = (bedrooms === 'all') ? 'Todas las habitaciones (1 a 5)' : bedrooms + ' Habitación(es)';
-    var sectorTexto = (sector === 'all') ? 'Usaquén, Suba y Chapinero' :
-                      sector.charAt(0).toUpperCase() + sector.slice(1);
-    var combinaciones = (sector === 'all' ? 3 : 1) * (bedrooms === 'all' ? 5 : 1);
+    var habTexto = (bedrooms === 'all') ? 'Todas las habitaciones (1 a 5)'
+                                        : _listarSeleccion(bedrooms) + ' habitación(es)';
+    var sectorTexto = (sector === 'all') ? 'Usaquén, Suba y Chapinero'
+                                         : _listarSeleccion(sector, NOMBRE_SECTOR_CAPTADOR);
+    var combinaciones = _contarSeleccion(sector, 3) * _contarSeleccion(bedrooms, 5);
     var techo = combinaciones * 30;
 
     var options = {
@@ -305,7 +327,11 @@ function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
     if (code === 204) {
       ui.alert(
         '🚀 ¡Barrido de ' + tipoTexto + ' Iniciado!',
-        'Miguel está rastreando Fincaraiz en la nube (' + tipoTexto + ' | ' + habTexto + ').\n\nLos inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "' + pestanaTexto + '".',
+        'Miguel está rastreando en la nube:\n\n' +
+        '• Sector: ' + sectorTexto + '\n' +
+        '• Habitaciones: ' + habTexto + '\n' +
+        '• ' + combinaciones + ' barrido(s), máximo ' + techo + ' captaciones\n\n' +
+        'Los inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "' + pestanaTexto + '".',
         ui.ButtonSet.OK
       );
     } else {

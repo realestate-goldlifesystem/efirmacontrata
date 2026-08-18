@@ -128,19 +128,30 @@ BEDROOM_SLUGS = {
 
 _BASE = "https://www.fincaraiz.com.co/{op}/apartamentos-y-apartaestudios/{sector}/bogota/{hab}"
 
+def _varias(valor, validos, comodines):
+    """
+    Interpreta un parámetro que puede venir como uno solo ("usaquen"), como
+    varios separados por coma ("usaquen,chapinero") o como comodín ("all").
+    Siempre devuelve en el orden canónico de `validos`, sin repetidos, y
+    nunca vacío: si no se reconoce nada, se recorre todo (mismo criterio
+    conservador de antes).
+    """
+    v = str(valor).lower().strip()
+    if not v or v in comodines:
+        return list(validos)
+    pedidos = {p.strip() for p in v.split(",")}
+    elegidos = [x for x in validos if x in pedidos]
+    return elegidos or list(validos)
+
 def get_localidades(sector="all"):
-    """Localidades a recorrer. 'all' devuelve las tres."""
-    s = str(sector).lower().strip()
-    if not s or s in ("all", "todos", "todas"):
-        return list(LOCALIDADES.keys())
-    return [s] if s in LOCALIDADES else list(LOCALIDADES.keys())
+    """Localidades a recorrer. 'all' devuelve las tres. Acepta varias
+    separadas por coma ('usaquen,chapinero') para barridos combinados."""
+    return _varias(sector, LOCALIDADES.keys(), ("all", "todos", "todas"))
 
 def get_bedrooms(bedrooms="all"):
-    """Cantidades de habitaciones a recorrer. 'all' devuelve de 1 a 5."""
-    b = str(bedrooms).lower().strip()
-    if not b or b in ("all", "todas", "0"):
-        return list(BEDROOM_SLUGS.keys())
-    return [b] if b in BEDROOM_SLUGS else list(BEDROOM_SLUGS.keys())
+    """Cantidades de habitaciones a recorrer. 'all' devuelve de 1 a 5.
+    Acepta varias separadas por coma ('1,2')."""
+    return _varias(bedrooms, BEDROOM_SLUGS.keys(), ("all", "todas", "0"))
 
 def urls_de(operacion, localidad, bedrooms):
     """URLs de una combinacion concreta: una localidad y una cantidad de habitaciones."""

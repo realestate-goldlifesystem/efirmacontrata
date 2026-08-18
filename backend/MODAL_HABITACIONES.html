@@ -3,17 +3,25 @@
   <head>
     <base target="_top">
     <style>
-      html, body {
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background-color: #ffffff;
+      /* El padding va SOLO en body: cuando estaba en la regla 'html, body' se
+         aplicaba dos veces (16px de html + 16px de body por lado), y el
+         contenido quedaba 64px más angosto y 28px más abajo de lo previsto
+         -- ese era el espacio muerto a la derecha y abajo del modal. */
+      html {
         margin: 0;
-        padding: 14px 16px;
-        color: #1e293b;
+        padding: 0;
         /* Antes era 'hidden', y al crecer el contenido (selector de sector y
            resumen del plan) el modal recortaba los botones sin aviso.
            Con 'auto' aparece scroll en vez de perderse contenido. */
         overflow-x: hidden;
         overflow-y: auto;
+      }
+      body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background-color: #ffffff;
+        margin: 0;
+        padding: 14px 16px;
+        color: #1e293b;
         box-sizing: border-box;
       }
       *, *:before, *:after {
@@ -33,12 +41,48 @@
         color: #64748b;
         margin-bottom: 12px;
       }
-      .pills-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 1fr);
-        gap: 6px;
-        margin-bottom: 8px;
+      /* Titulo de seccion y su atajo "Todos" en la misma linea: antes el
+         atajo de habitaciones era un boton de ancho completo con su propia
+         fila, y entre eso y los margenes el modal sobraba alto por debajo. */
+      .seccion-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
       }
+      .seccion-label {
+        font-size: 11px; font-weight: 700; color: #334155;
+        text-transform: uppercase; letter-spacing: .3px;
+      }
+      .chip-todos {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+        padding: 3px 10px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 999px;
+        background-color: #f8fafc;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .chip-todos:hover {
+        border-color: #cbd5e1;
+        background-color: #f1f5f9;
+      }
+      .chip-todos.active {
+        border-color: #2563eb;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff;
+      }
+      .grid {
+        display: grid;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
+      .grid-5 { grid-template-columns: repeat(5, 1fr); }
       .pill-btn {
         padding: 8px 2px;
         font-size: 12px;
@@ -60,39 +104,6 @@
         background-color: #eff6ff;
         color: #1d4ed8;
         box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
-      }
-      .pill-full {
-        width: 100%;
-        padding: 8px 10px;
-        font-size: 12px;
-        font-weight: 700;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 8px;
-        background-color: #f8fafc;
-        color: #334155;
-        cursor: pointer;
-        text-align: center;
-        transition: all 0.2s ease;
-        margin-bottom: 14px;
-      }
-      .pill-full:hover {
-        border-color: #cbd5e1;
-        background-color: #f1f5f9;
-      }
-      .pill-full.active {
-        border-color: #2563eb;
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        color: #ffffff;
-        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-      }
-      .seccion-label {
-        font-size: 11px; font-weight: 700; color: #334155;
-        text-transform: uppercase; letter-spacing: .3px;
-        margin: 2px 0 6px;
-      }
-      .sectores-grid {
-        display: grid; grid-template-columns: repeat(4, 1fr);
-        gap: 6px; margin-bottom: 14px;
       }
       .resumen-plan {
         font-size: 11px; color: #475569; background: #f8fafc;
@@ -129,26 +140,29 @@
   </head>
   <body>
     <div class="modal-title">🤖 Miguel - Agente Captador Fincaraiz</div>
-    <div class="modal-subtitle">Modo: <b><?= tipoTexto ?></b> | Selecciona habitaciones objetivo:</div>
-    
-    <div class="seccion-label">Sector</div>
-    <div class="sectores-grid">
-      <button class="pill-btn sector-btn" onclick="selectSector('usaquen', this)">Usaqu&eacute;n</button>
-      <button class="pill-btn sector-btn" onclick="selectSector('suba', this)">Suba</button>
-      <button class="pill-btn sector-btn" onclick="selectSector('chapinero', this)">Chapinero</button>
-      <button class="pill-btn sector-btn active" onclick="selectSector('all', this)">Todos</button>
+    <div class="modal-subtitle">Modo: <b><?= tipoTexto ?></b> | Puedes elegir varios sectores y varias habitaciones a la vez.</div>
+
+    <div class="seccion-head">
+      <span class="seccion-label">Sector</span>
+      <button class="chip-todos" id="chipSector" onclick="marcarTodos('sector')">Todos</button>
+    </div>
+    <div class="grid grid-3" id="gridSector">
+      <button class="pill-btn" data-val="usaquen" onclick="alternarSector('usaquen')">Usaqu&eacute;n</button>
+      <button class="pill-btn" data-val="suba" onclick="alternarSector('suba')">Suba</button>
+      <button class="pill-btn" data-val="chapinero" onclick="alternarSector('chapinero')">Chapinero</button>
     </div>
 
-    <div class="seccion-label">Habitaciones</div>
-    <div class="pills-grid">
-      <button class="pill-btn active" onclick="selectHab('1', this)">1 Hab</button>
-      <button class="pill-btn" onclick="selectHab('2', this)">2 Habs</button>
-      <button class="pill-btn" onclick="selectHab('3', this)">3 Habs</button>
-      <button class="pill-btn" onclick="selectHab('4', this)">4 Habs</button>
-      <button class="pill-btn" onclick="selectHab('5', this)">5 Habs</button>
+    <div class="seccion-head">
+      <span class="seccion-label">Habitaciones</span>
+      <button class="chip-todos" id="chipHab" onclick="marcarTodos('hab')">Todas</button>
     </div>
-
-    <button class="pill-full" onclick="selectHab('all', this)">✨ TODAS LAS HABITACIONES (1 a 5)</button>
+    <div class="grid grid-5" id="gridHab">
+      <button class="pill-btn" data-val="1" onclick="alternarHab('1')">1 Hab</button>
+      <button class="pill-btn" data-val="2" onclick="alternarHab('2')">2 Habs</button>
+      <button class="pill-btn" data-val="3" onclick="alternarHab('3')">3 Habs</button>
+      <button class="pill-btn" data-val="4" onclick="alternarHab('4')">4 Habs</button>
+      <button class="pill-btn" data-val="5" onclick="alternarHab('5')">5 Habs</button>
+    </div>
 
     <div class="resumen-plan" id="resumenPlan"></div>
 
@@ -158,49 +172,101 @@
     </div>
 
     <script>
-      var selectedBedrooms = '1';
-      var selectedSector = 'all';
+      var CUOTA_POR_BARRIDO = 30;
 
-      // Cada grupo limpia SOLO sus propios botones: antes se limpiaban todos
-      // los .pill-btn de la página y eso habría borrado la selección de sector.
-      function selectSector(val, btn) {
-        selectedSector = val;
-        document.querySelectorAll('.sector-btn').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        pintarResumen();
+      var SECTORES = ['usaquen', 'suba', 'chapinero'];
+      var NOMBRE_SECTOR = { usaquen: 'Usaquén', suba: 'Suba', chapinero: 'Chapinero' };
+      var HABS = ['1', '2', '3', '4', '5'];
+
+      var selSector = ['usaquen', 'suba', 'chapinero'];
+      var selHab = ['1'];
+
+      /**
+       * Marca o desmarca un valor. Nunca deja la lista vacía (sin sector o sin
+       * habitación no hay barrido posible), así que el último seleccionado
+       * ignora el clic en vez de dejar el modal en un estado inválido.
+       * Devuelve la lista reordenada al orden canónico, para que el barrido
+       * recorra siempre en el mismo orden sin importar en qué orden se hizo clic.
+       */
+      function alternar(seleccion, val, canonico) {
+        var i = seleccion.indexOf(val);
+        if (i >= 0) {
+          if (seleccion.length === 1) return seleccion;
+          seleccion.splice(i, 1);
+        } else {
+          seleccion.push(val);
+        }
+        return canonico.filter(function (c) { return seleccion.indexOf(c) >= 0; });
       }
 
-      function selectHab(val, btn) {
-        selectedBedrooms = val;
-        document.querySelectorAll('.pills-grid .pill-btn, .pill-full').forEach(function (b) {
-          b.classList.remove('active');
-        });
-        btn.classList.add('active');
-        pintarResumen();
+      function alternarSector(val) {
+        selSector = alternar(selSector, val, SECTORES);
+        pintar();
       }
 
-      function pintarResumen() {
-        var sectores = (selectedSector === 'all') ? 3 : 1;
-        var habs = (selectedBedrooms === 'all') ? 5 : 1;
-        var barridos = sectores * habs;
-        var techo = barridos * 30;
+      function alternarHab(val) {
+        selHab = alternar(selHab, val, HABS);
+        pintar();
+      }
 
-        var nombreSector = { usaquen: 'Usaquén', suba: 'Suba', chapinero: 'Chapinero',
-                             all: 'Usaquén, Suba y Chapinero' }[selectedSector];
-        var nombreHab = (selectedBedrooms === 'all')
-          ? 'de 1 a 5 habitaciones'
-          : selectedBedrooms + ' habitación(es)';
+      function marcarTodos(grupo) {
+        if (grupo === 'sector') {
+          selSector = SECTORES.slice();
+        } else {
+          selHab = HABS.slice();
+        }
+        pintar();
+      }
+
+      function marcarActivos(idGrid, seleccion) {
+        var botones = document.querySelectorAll('#' + idGrid + ' .pill-btn');
+        for (var i = 0; i < botones.length; i++) {
+          var activo = seleccion.indexOf(botones[i].getAttribute('data-val')) >= 0;
+          botones[i].classList.toggle('active', activo);
+        }
+      }
+
+      /** Une nombres en lenguaje natural: "Usaquén y Chapinero". */
+      function listar(nombres) {
+        if (nombres.length === 1) return nombres[0];
+        return nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length - 1];
+      }
+
+      function pintar() {
+        marcarActivos('gridSector', selSector);
+        marcarActivos('gridHab', selHab);
+        document.getElementById('chipSector')
+          .classList.toggle('active', selSector.length === SECTORES.length);
+        document.getElementById('chipHab')
+          .classList.toggle('active', selHab.length === HABS.length);
+
+        var barridos = selSector.length * selHab.length;
+        var techo = barridos * CUOTA_POR_BARRIDO;
+
+        var nombres = selSector.map(function (s) { return NOMBRE_SECTOR[s]; });
+        var textoSector = (selSector.length === SECTORES.length)
+          ? 'las 3 localidades' : listar(nombres);
+        var textoHab = (selHab.length === HABS.length)
+          ? 'las 5 habitaciones' : listar(selHab) + ' habitación(es)';
 
         var texto = 'Se harán <b>' + barridos + '</b> barrido' + (barridos === 1 ? '' : 's') +
-                    ' de 30 en ' + nombreSector + ', ' + nombreHab +
-                    '. Máximo <b>' + techo + '</b> captaciones.';
+                    ' de ' + CUOTA_POR_BARRIDO + ': <b>' + textoSector + '</b> × <b>' +
+                    textoHab + '</b>. Máximo <b>' + techo + '</b> captaciones.';
 
         if (barridos >= 10) {
           texto += '<br>Puede tardar <b>1 a 3 horas</b>; corre en la nube, puedes cerrar la hoja.';
         }
         document.getElementById('resumenPlan').innerHTML = texto;
+      }
+
+      /**
+       * Se manda 'all' cuando está todo marcado (para no depender de que el
+       * backend reconozca la lista completa) y la lista separada por coma en
+       * cualquier otro caso: config.get_localidades / get_bedrooms entienden
+       * ambas formas.
+       */
+      function valorDe(seleccion, canonico) {
+        return seleccion.length === canonico.length ? 'all' : seleccion.join(',');
       }
 
       function iniciar() {
@@ -217,10 +283,14 @@
             primaryBtn.disabled = false;
             primaryBtn.innerText = '🚀 Iniciar Barrido';
           })
-          .dispararWorkflowConHabitaciones('<?= modo ?>', selectedBedrooms, selectedSector);
+          .dispararWorkflowConHabitaciones(
+            '<?= modo ?>',
+            valorDe(selHab, HABS),
+            valorDe(selSector, SECTORES)
+          );
       }
 
-      pintarResumen();
+      pintar();
     </script>
   </body>
 </html>
