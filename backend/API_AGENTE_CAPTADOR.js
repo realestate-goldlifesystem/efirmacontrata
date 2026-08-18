@@ -265,20 +265,37 @@ function _contarSeleccion(csv, totalSiTodos) {
 }
 
 /**
- * Función backend invocada desde el Modal HTML para disparar GitHub Actions
- * @param {string} modo - 'arriendo' o 'venta'
- * @param {string} bedrooms - '1'..'5', varias separadas por coma ('1,2') o 'all'
- * @param {string} sector - 'usaquen'/'suba'/'chapinero', varias separadas por coma o 'all'
+ * Núcleo compartido: dispara el workflow y DEVUELVE el resultado, sin tocar
+ * la interfaz. Lo usan tanto el modal del Sheet (que encima muestra un
+ * ui.alert) como el panel web del agente (que responde JSON) -- desde un
+ * doPost no existe SpreadsheetApp.getUi(), así que la parte que llama a
+ * GitHub tiene que vivir aparte de los alerts.
+ *
+ * @returns {{success: boolean, code: number, mensaje: string,
+ *            sectorTexto: string, habTexto: string,
+ *            combinaciones: number, techo: number, pestana: string}}
  */
-function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
-  modo = modo || 'arriendo';
+function _lanzarBarridoMiguel(modo, bedrooms, sector) {
+  modo = (modo === 'venta') ? 'venta' : 'arriendo';
   bedrooms = bedrooms || 'all';
   sector = sector || 'all';
 
-  var ui = SpreadsheetApp.getUi();
-  var esVenta = modo === 'venta';
-  var tipoTexto = esVenta ? 'VENTA' : 'ARRIENDO';
-  var pestanaTexto = esVenta ? '1 - CAPTACIONES V' : '1 - CAPTACIONES A';
+  var habTexto = (bedrooms === 'all') ? 'Todas las habitaciones (1 a 5)'
+                                      : _listarSeleccion(bedrooms) + ' habitación(es)';
+  var sectorTexto = (sector === 'all') ? 'Usaquén, Suba y Chapinero'
+                                       : _listarSeleccion(sector, NOMBRE_SECTOR_CAPTADOR);
+  var combinaciones = _contarSeleccion(sector, 3) * _contarSeleccion(bedrooms, 5);
+
+  var salida = {
+    success: false,
+    code: 0,
+    mensaje: '',
+    sectorTexto: sectorTexto,
+    habTexto: habTexto,
+    combinaciones: combinaciones,
+    techo: combinaciones * 30,
+    pestana: (modo === 'venta') ? '1 - CAPTACIONES V' : '1 - CAPTACIONES A'
+  };
 
   var scriptProps = PropertiesService.getScriptProperties();
   var githubToken = scriptProps.getProperty('GITHUB_PAT');
@@ -286,23 +303,12 @@ function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
   var repoName = scriptProps.getProperty('GITHUB_REPO') || 'efirmacontrata';
 
   if (!githubToken) {
-    ui.alert(
-      '⚠️ Falta Configurar Token de GitHub',
-      'No se encontró la propiedad "GITHUB_PAT" en las Propiedades del Script.\n\nPor favor agregue la propiedad GITHUB_PAT en Extensiones > Apps Script > Configuración del proyecto > Propiedades del script.',
-      ui.ButtonSet.OK
-    );
-    return;
+    salida.mensaje = 'No se encontró la propiedad "GITHUB_PAT" en las Propiedades del Script.';
+    return salida;
   }
 
   try {
     var url = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/actions/workflows/scraper.yml/dispatches";
-    var habTexto = (bedrooms === 'all') ? 'Todas las habitaciones (1 a 5)'
-                                        : _listarSeleccion(bedrooms) + ' habitación(es)';
-    var sectorTexto = (sector === 'all') ? 'Usaquén, Suba y Chapinero'
-                                         : _listarSeleccion(sector, NOMBRE_SECTOR_CAPTADOR);
-    var combinaciones = _contarSeleccion(sector, 3) * _contarSeleccion(bedrooms, 5);
-    var techo = combinaciones * 30;
-
     var options = {
       "method": "post",
       "headers": {
@@ -322,27 +328,117 @@ function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
     };
 
     var res = UrlFetchApp.fetch(url, options);
-    var code = res.getResponseCode();
-
-    if (code === 204) {
-      ui.alert(
-        '🚀 ¡Barrido de ' + tipoTexto + ' Iniciado!',
-        'Miguel está rastreando en la nube:\n\n' +
-        '• Sector: ' + sectorTexto + '\n' +
-        '• Habitaciones: ' + habTexto + '\n' +
-        '• ' + combinaciones + ' barrido(s), máximo ' + techo + ' captaciones\n\n' +
-        'Los inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "' + pestanaTexto + '".',
-        ui.ButtonSet.OK
-      );
-    } else {
-      var errorMsg = res.getContentText();
-      ui.alert(
-        '❌ Error al activar el Robot (Código ' + code + ')',
-        'GitHub respondió:\n' + errorMsg,
-        ui.ButtonSet.OK
-      );
+    salida.code = res.getResponseCode();
+    salida.success = (salida.code === 204);
+    if (!salida.success) {
+      salida.mensaje = res.getContentText();
     }
   } catch (e) {
-    ui.alert('❌ Error de Conexión', e.toString(), ui.ButtonSet.OK);
+    salida.mensaje = e.toString();
   }
+  return salida;
+}
+
+/**
+ * Función backend invocada desde el Modal HTML del Sheet para disparar
+ * GitHub Actions. Solo envuelve al núcleo con los alerts de la hoja.
+ * @param {string} modo - 'arriendo' o 'venta'
+ * @param {string} bedrooms - '1'..'5', varias separadas por coma ('1,2') o 'all'
+ * @param {string} sector - 'usaquen'/'suba'/'chapinero', varias separadas por coma o 'all'
+ */
+function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
+  var ui = SpreadsheetApp.getUi();
+  var tipoTexto = (modo === 'venta') ? 'VENTA' : 'ARRIENDO';
+  var r = _lanzarBarridoMiguel(modo, bedrooms, sector);
+
+  if (r.success) {
+    ui.alert(
+      '🚀 ¡Barrido de ' + tipoTexto + ' Iniciado!',
+      'Miguel está rastreando en la nube:\n\n' +
+      '• Sector: ' + r.sectorTexto + '\n' +
+      '• Habitaciones: ' + r.habTexto + '\n' +
+      '• ' + r.combinaciones + ' barrido(s), máximo ' + r.techo + ' captaciones\n\n' +
+      'Los inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "' + r.pestana + '".',
+      ui.ButtonSet.OK
+    );
+  } else if (r.code === 0 && r.mensaje.indexOf('GITHUB_PAT') >= 0) {
+    ui.alert(
+      '⚠️ Falta Configurar Token de GitHub',
+      r.mensaje + '\n\nPor favor agregue la propiedad GITHUB_PAT en Extensiones > Apps Script > Configuración del proyecto > Propiedades del script.',
+      ui.ButtonSet.OK
+    );
+  } else if (r.code === 0) {
+    ui.alert('❌ Error de Conexión', r.mensaje, ui.ButtonSet.OK);
+  } else {
+    ui.alert('❌ Error al activar el Robot (Código ' + r.code + ')',
+             'GitHub respondió:\n' + r.mensaje, ui.ButtonSet.OK);
+  }
+}
+
+// --- Entrada desde el panel web del agente (Portafolio) ---------------------
+
+// Mismo correo que ya valida el login del portafolio, pero aquí se comprueba
+// del lado del servidor: la validación del navegador sirve para la experiencia,
+// no como candado (cualquiera puede saltarse el JS de su propio navegador).
+var CORREO_AGENTE_MIGUEL = 'realestate.goldlifesystem@gmail.com';
+// Client ID de Google del portafolio: se exige que el token venga de ESA app,
+// para que un token sacado desde otro sitio no sirva aquí.
+var GOOGLE_CLIENT_ID_PORTAFOLIO = '825455387668-asnkq57s4voon63c38b41e4q8qvc0b2e.apps.googleusercontent.com';
+
+/**
+ * Verifica contra Google el token de sesión que manda el portafolio y
+ * confirma que sea el correo autorizado. Devuelve {ok, mensaje}.
+ */
+function _verificarAgenteGoogle(credential) {
+  if (!credential) {
+    return { ok: false, mensaje: 'Falta la credencial de Google. Vuelve a iniciar sesión.' };
+  }
+  try {
+    var resp = UrlFetchApp.fetch(
+      'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential),
+      { muteHttpExceptions: true }
+    );
+    if (resp.getResponseCode() !== 200) {
+      return { ok: false, mensaje: 'Tu sesión de Google venció. Cierra sesión y vuelve a entrar.' };
+    }
+    var info = JSON.parse(resp.getContentText());
+    if (String(info.aud) !== GOOGLE_CLIENT_ID_PORTAFOLIO) {
+      return { ok: false, mensaje: 'La credencial no pertenece al portafolio de Gold Life.' };
+    }
+    if (String(info.email_verified) !== 'true') {
+      return { ok: false, mensaje: 'El correo de Google no está verificado.' };
+    }
+    var email = String(info.email || '').toLowerCase().trim();
+    if (email !== CORREO_AGENTE_MIGUEL) {
+      return { ok: false, mensaje: 'El correo ' + email + ' no tiene permiso para lanzar a Miguel.' };
+    }
+    return { ok: true, mensaje: '', email: email };
+  } catch (e) {
+    return { ok: false, mensaje: 'No se pudo validar la sesión de Google: ' + e.toString() };
+  }
+}
+
+/**
+ * Handler del doPost: lanza a Miguel desde el panel de herramientas del
+ * agente en el portafolio. Exige el token de Google del agente.
+ */
+function lanzarMiguelDesdeWeb(datos) {
+  var permiso = _verificarAgenteGoogle(datos && datos.credential);
+  if (!permiso.ok) {
+    return { success: false, message: permiso.mensaje };
+  }
+
+  var r = _lanzarBarridoMiguel(datos.modo, datos.bedrooms, datos.sector);
+  return {
+    success: r.success,
+    message: r.success
+      ? ('Miguel arrancó: ' + r.sectorTexto + ' · ' + r.habTexto + ' · ' +
+         r.combinaciones + ' barrido(s), máximo ' + r.techo + ' captaciones.')
+      : ('No se pudo iniciar el barrido (código ' + r.code + '): ' + r.mensaje),
+    sectorTexto: r.sectorTexto,
+    habTexto: r.habTexto,
+    combinaciones: r.combinaciones,
+    techo: r.techo,
+    pestana: r.pestana
+  };
 }

@@ -5,7 +5,10 @@ import { jwtDecode } from 'jwt-decode';
 
 interface LoginRolesModalProps {
   onClose: () => void;
-  onSelectAgent: () => void;
+  /** Recibe el token de Google: las herramientas que tocan el backend (ej.
+   *  Miguel) lo reenvían para que el servidor confirme el correo por su
+   *  cuenta, en vez de fiarse de esta validación del navegador. */
+  onSelectAgent: (credential: string) => void;
   onSelectOwner: () => void;
 }
 
@@ -16,7 +19,7 @@ export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner 
       try {
         const decoded = jwtDecode<{ email: string }>(credentialResponse.credential);
         if (decoded.email.toLowerCase().trim() === 'realestate.goldlifesystem@gmail.com') {
-          onSelectAgent();
+          onSelectAgent(credentialResponse.credential);
         } else {
           alert("Acceso denegado. Este correo no cuenta con permisos de administrador.");
         }

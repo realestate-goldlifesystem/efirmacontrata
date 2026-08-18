@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
-import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft } from 'lucide-react';
+import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot } from 'lucide-react';
 import VIPPropertiesPanel from './VIPPropertiesPanel';
+import MiguelCaptadorModal from './MiguelCaptadorModal';
 
 interface AgentDashboardProps {
   onOpenForm: () => void;
   onOpenCalculator: () => void;
   onLogout: () => void;
+  /** Token de Google del agente; Miguel lo reenvía para que el backend
+   *  confirme el correo del lado del servidor. */
+  agentCredential?: string | null;
 }
 
-export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout }: AgentDashboardProps) {
+export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout, agentCredential = null }: AgentDashboardProps) {
   const [showSasModal, setShowSasModal] = useState(false);
+  const [showMiguelModal, setShowMiguelModal] = useState(false);
   const [activeView, setActiveView] = useState<'menu' | 'portafolio'>('menu');
 
   if (activeView === 'portafolio') {
@@ -183,7 +188,32 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout 
           </div>
         </button>
 
+        {/* Tarjeta de Miguel: ocupa las dos columnas para no quedar sola
+            impar al final de la grilla */}
+        <button
+          onClick={() => setShowMiguelModal(true)}
+          className="col-span-2 group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
+            <Bot className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
+          </div>
+          <div className="flex flex-col items-center">
+            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Miguel · Agente Captador</h2>
+            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
+              Lanza el barrido de propietarios directos en Fincaraiz y Metrocuadrado por sector y habitaciones.
+            </p>
+          </div>
+        </button>
+
       </div>
+
+      {showMiguelModal && (
+        <MiguelCaptadorModal
+          agentCredential={agentCredential}
+          onClose={() => setShowMiguelModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -39,7 +39,19 @@ export default function App() {
     } catch {
       return false;
     }
-  }); 
+  });
+
+  // Token de Google del agente. Va en sessionStorage (no localStorage): el
+  // token vence en ~1 hora y así no queda guardado más de lo que dura la
+  // pestaña. Lo usan las herramientas que llaman al backend, que revalida
+  // el correo del lado del servidor.
+  const [agentCredential, setAgentCredential] = useState<string | null>(() => {
+    try {
+      return sessionStorage.getItem('agentCredential');
+    } catch {
+      return null;
+    }
+  });
 
   const scrollToSection = (sectionId: string) => {
     if (showRegisterPage) {
@@ -136,7 +148,8 @@ export default function App() {
           </div>
         ) : isAgentLoggedIn ? (
           <div className="pt-24 animate-fade-in">
-            <AgentDashboard 
+            <AgentDashboard
+              agentCredential={agentCredential}
               onOpenForm={() => {
                 setShowRegisterPage(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -147,7 +160,9 @@ export default function App() {
               }}
               onLogout={() => {
                 setIsAgentLoggedIn(false);
+                setAgentCredential(null);
                 try { localStorage.removeItem('agentLoggedIn'); } catch {}
+                try { sessionStorage.removeItem('agentCredential'); } catch {}
                 setShowRegisterPage(false);
                 setShowCalculatorPage(false);
               }}
@@ -198,9 +213,11 @@ export default function App() {
       {showRolesModal && (
         <LoginRolesModal 
           onClose={() => setShowRolesModal(false)}
-          onSelectAgent={() => {
+          onSelectAgent={(credential) => {
             setIsAgentLoggedIn(true);
+            setAgentCredential(credential);
             try { localStorage.setItem('agentLoggedIn', 'true'); } catch {}
+            try { sessionStorage.setItem('agentCredential', credential); } catch {}
             setShowRolesModal(false);
             // Ya no forzamos showRegisterPage(true), dejamos que caiga en el Dashboard
             setShowRegisterPage(false);
