@@ -112,11 +112,14 @@ SECTORES = [z for zonas in LOCALIDADES.values() for z in zonas]
 LOCALIDAD_LETRA = {"usaquen": "U", "suba": "S", "chapinero": "C"}
 
 # --- Lógica de reposición de inventario (barrido automático, --reponer) ---
-# Antes de capturar una combinación localidad x habitación, se cuenta cuántas
-# filas en estado NUEVO ya existen para esa combinación exacta (filtrando por
-# la columna LOCALIDAD). Si ya hay este umbral o más, se salta esa combinación
-# para no acumular más backlog del que se alcanza a llamar.
-UMBRAL_REPOSICION = 5
+# Meta de leads sin llamar (estado NUEVO) que debe haber en CADA combinación
+# localidad x habitación. Antes de capturar, se cuenta cuántos hay ya para esa
+# combinación exacta (filtrando por la columna LOCALIDAD) y solo se captura la
+# diferencia que falta para llegar a esta meta: si hay 2, captura 8; si hay 6,
+# captura 4; si ya hay 10 o más, no captura nada en esa combinación.
+# Así el inventario se mantiene parejo sin acumular más backlog del que se
+# alcanza a llamar.
+OBJETIVO_INVENTARIO = 10
 
 BEDROOM_SLUGS = {
     "1": "1-habitacion",

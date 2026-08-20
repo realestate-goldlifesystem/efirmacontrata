@@ -582,10 +582,11 @@ if __name__ == "__main__":
                         help="Salvaguarda de páginas por búsqueda. Normalmente no se toca: "
                              "el robot recorre desde la última página real hacia la 1.")
     parser.add_argument("--reponer", action="store_true",
-                        help="Antes de cada combinación localidad x habitación, cuenta cuántas filas "
-                             "NUEVO ya existen (columna LOCALIDAD) y se salta si ya hay "
-                             f"{config.UMBRAL_REPOSICION} o más. Pensado para el barrido automático, "
-                             "no para pedidos manuales de un sector puntual.")
+                        help="Reposición: en cada combinación localidad x habitación cuenta las filas "
+                             "NUEVO que ya existen (columna LOCALIDAD) y captura SOLO lo que falte para "
+                             f"llegar a {config.OBJETIVO_INVENTARIO}; si ya hay {config.OBJETIVO_INVENTARIO} "
+                             "o más, no captura nada ahí. En este modo la cuota la manda el objetivo, no "
+                             "--max-items. Pensado para el barrido automático, no para pedidos manuales.")
     args = parser.parse_args()
 
     if args.max_pages:
@@ -600,8 +601,12 @@ if __name__ == "__main__":
     print(f"🤖 ROBOT CAPTADOR | MODO: {args.mode.upper()}")
     print(f"   Localidades  : {', '.join(localidades)}")
     print(f"   Habitaciones : {', '.join(habitaciones)}")
-    print(f"   Cuota        : {args.max_items} por cada combinación")
-    print(f"   Combinaciones: {combinaciones}  (techo teórico: {combinaciones * args.max_items})")
+    if args.reponer:
+        print(f"   Cuota        : completar hasta {config.OBJETIVO_INVENTARIO} en NUEVO por combinación (reposición)")
+        print(f"   Combinaciones: {combinaciones}  (techo teórico: {combinaciones * config.OBJETIVO_INVENTARIO})")
+    else:
+        print(f"   Cuota        : {args.max_items} por cada combinación")
+        print(f"   Combinaciones: {combinaciones}  (techo teórico: {combinaciones * args.max_items})")
     print(SEP)
 
     gran_total = 0
@@ -618,8 +623,6 @@ if __name__ == "__main__":
             inicio = ahora_colombia()
             print("")
             print(SEP)
-            print(f"📍 {localidad.upper()} | {hab} HABITACIÓN(ES) | Cuota: {args.max_items}")
-            print(SEP)
 
             scraper = FincaraizScraper(
                 headless=True,
@@ -629,11 +632,19 @@ if __name__ == "__main__":
                 localidad=localidad,
             )
 
+            # Cuota de ESTA combinación. Fuera del modo reposición es la que
+            # pidió el usuario; en reposición la manda el objetivo: se captura
+            # solo lo que falte para completar OBJETIVO_INVENTARIO en NUEVO.
+            cuota_combo = args.max_items
+
             if args.reponer:
                 ya_tiene = scraper.sheets.contar_nuevos(localidad, hab)
-                if ya_tiene >= config.UMBRAL_REPOSICION:
+                faltan = config.OBJETIVO_INVENTARIO - ya_tiene
+                if faltan <= 0:
+                    print(f"📍 {localidad.upper()} | {hab} HABITACIÓN(ES)")
+                    print(SEP)
                     print(f"⏭️  [SALTADA] Ya hay {ya_tiene} en NUEVO para {localidad} "
-                          f"{hab} hab (umbral: {config.UMBRAL_REPOSICION}). No se captura.")
+                          f"{hab} hab (objetivo: {config.OBJETIVO_INVENTARIO}). No se captura.")
                     try:
                         scraper.sheets.registrar_bitacora([
                             get_spanish_date_str(),
@@ -643,19 +654,28 @@ if __name__ == "__main__":
                             hab,
                             "SALTADA",
                             0,
-                            args.max_items,
+                            config.OBJETIVO_INVENTARIO,
                             0,
                             0,
                             0,
                             0,
                             round((ahora_colombia() - inicio).total_seconds() / 60, 1),
                             f"Ya había {ya_tiene} en NUEVO para esta localidad+habitación "
-                            f"(umbral: {config.UMBRAL_REPOSICION}). No se hizo barrido.",
+                            f"(objetivo: {config.OBJETIVO_INVENTARIO}). No se hizo barrido.",
                         ])
                     except Exception as e:
                         print(f"[WARN] No se pudo registrar en la bitácora: {e}")
-                    resultados.append((localidad, hab, "SALTADA", 0, ya_tiene))
+                    resultados.append((localidad, hab, "SALTADA", 0, ya_tiene, config.OBJETIVO_INVENTARIO))
                     continue
+
+                cuota_combo = faltan
+                scraper.max_items_per_run = cuota_combo
+                print(f"📍 {localidad.upper()} | {hab} HABITACIÓN(ES) | Ya tiene {ya_tiene} en NUEVO, "
+                      f"faltan {cuota_combo} para {config.OBJETIVO_INVENTARIO}")
+                print(SEP)
+            else:
+                print(f"📍 {localidad.upper()} | {hab} HABITACIÓN(ES) | Cuota: {cuota_combo}")
+                print(SEP)
 
             scraper.run()
             gran_total += scraper.processed_count
@@ -665,13 +685,13 @@ if __name__ == "__main__":
             if scraper.agotado:
                 estado = "AGOTADA"
                 detalle = (f"Se recorrieron todas las páginas disponibles y solo se encontraron "
-                           f"{scraper.processed_count} de los {args.max_items} de la cuota. "
+                           f"{scraper.processed_count} de los {cuota_combo} de la cuota. "
                            f"No hay más propietarios nuevos en esta búsqueda.")
                 print("")
                 print(f"⚠️  [AGOTADA] {detalle}")
             else:
                 estado = "COMPLETA"
-                detalle = f"Cuota de {args.max_items} alcanzada."
+                detalle = f"Cuota de {cuota_combo} alcanzada."
                 print("")
                 print(f"✅ [COMPLETA] {detalle}")
 
@@ -681,7 +701,7 @@ if __name__ == "__main__":
             # así que una falla aquí no debe tumbar el resto de Fincaraiz.
             mc_capturados = 0
             if scraper.agotado:
-                cuota_faltante = args.max_items - scraper.processed_count
+                cuota_faltante = cuota_combo - scraper.processed_count
                 try:
                     from miguel_captador import buscar_metrocuadrado
                     mc_capturados = buscar_metrocuadrado(
@@ -697,7 +717,7 @@ if __name__ == "__main__":
             total_captados = scraper.processed_count + mc_capturados
             gran_total += mc_capturados
 
-            resultados.append((localidad, hab, estado, total_captados, None))
+            resultados.append((localidad, hab, estado, total_captados, None, cuota_combo))
 
             # Se anota apenas termina cada combinación, no al final de todo, para
             # que una corrida cortada a medias deje igual su rastro.
@@ -710,7 +730,7 @@ if __name__ == "__main__":
                     hab,
                     estado,
                     total_captados,
-                    args.max_items,
+                    cuota_combo,
                     scraper.pages_visited,
                     scraper.listings_seen,
                     scraper.skipped_agency,
@@ -730,13 +750,13 @@ if __name__ == "__main__":
     print(f"DETALLE DE LAS {len(resultados)} COMBINACIONES:")
     print("")
 
-    for localidad, hab, estado, captados, ya_tenia in resultados:
+    for localidad, hab, estado, captados, ya_tenia, cuota in resultados:
         icono = ICONO_ESTADO.get(estado, "  ")
         etiqueta = f"{localidad} {hab} hab".ljust(20)
         if estado == "SALTADA":
-            nota = f"ya tenía {ya_tenia} en NUEVO (umbral: {config.UMBRAL_REPOSICION})"
+            nota = f"ya tenía {ya_tenia} en NUEVO (objetivo: {config.OBJETIVO_INVENTARIO})"
         else:
-            nota = f"{captados}/{args.max_items} captados"
+            nota = f"{captados}/{cuota} captados"
         print(f"  {icono} {estado.ljust(8)} {etiqueta} {nota}")
 
     # Conteo por estado: deja claro de un vistazo que las tres categorías
