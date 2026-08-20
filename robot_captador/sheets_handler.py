@@ -181,7 +181,9 @@ class SheetsHandler:
 
             val_f = row[col_link].strip() if len(row) > col_link and row[col_link] else ""
             if val_f:
-                self.existing_links.add(val_f.lower())
+                m = re.search(r'HYPERLINK\("([^"]+)"', val_f, re.IGNORECASE)
+                clean_f = m.group(1) if m else val_f
+                self.existing_links.add(clean_f.lower().strip())
 
             has_data = bool(cleaned_c or val_f)
 
@@ -220,6 +222,18 @@ class SheetsHandler:
             f'=IF({ref}=""{sep}""{sep}'
             f'HYPERLINK("https://wa.me/{config.WHATSAPP_COUNTRY_CODE}"&{ref}{sep}"{config.WHATSAPP_EMOJI}"))'
         )
+
+    def build_property_link_formula(self, link):
+        """
+        Fórmula para la columna 'LINK DEL INMUEBLE PUBLICADO': enlace clickeable al anuncio.
+        """
+        if not link:
+            return ""
+        link_str = str(link).strip()
+        if link_str.startswith("="):
+            return link_str
+        sep = config.FORMULA_ARG_SEPARATOR
+        return f'=HYPERLINK("{link_str}"{sep}"{link_str}")'
 
     def get_sheet_id(self):
         """Obtiene (y cachea) el sheetId numérico de la pestaña destino."""
@@ -412,8 +426,11 @@ class SheetsHandler:
         cleaned = clean_phone(phone)
         if cleaned and cleaned in self.existing_phones:
             return True, f"Celular {cleaned} ya existe en el Sheet"
-        if link and link.lower().strip() in self.existing_links:
-            return True, f"Link {link} ya existe en el Sheet"
+        if link:
+            m = re.search(r'HYPERLINK\("([^"]+)"', link, re.IGNORECASE)
+            clean_l = m.group(1) if m else link
+            if clean_l.lower().strip() in self.existing_links:
+                return True, f"Link {clean_l} ya existe en el Sheet"
         return False, ""
 
     def append_captacion(self, captacion_data):
@@ -442,7 +459,7 @@ class SheetsHandler:
             "celular": clean_phone(phone),
             "arriendo": self.is_arriendo,
             "venta": self.is_venta,
-            "link del inmueble publicado": link,
+            "link del inmueble publicado": self.build_property_link_formula(link),
             "estado de llamada": "NUEVO",
             "tipo de inmueble": captacion_data.get("property_type", ""),
             "nombre del propietario": captacion_data.get("owner_name", ""),
@@ -522,7 +539,9 @@ class SheetsHandler:
         if phone:
             self.existing_phones.add(clean_phone(phone))
         if link:
-            self.existing_links.add(link.lower().strip())
+            m = re.search(r'HYPERLINK\("([^"]+)"', link, re.IGNORECASE)
+            clean_l = m.group(1) if m else link
+            self.existing_links.add(clean_l.lower().strip())
         self.target_row_index += 1
 
         return True
