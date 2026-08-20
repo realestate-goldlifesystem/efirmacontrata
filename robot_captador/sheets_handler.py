@@ -118,6 +118,7 @@ class SheetsHandler:
         self.max_n = 0
         self.target_row_index = None # 1-indexed row position in Sheet
         self.sheet_id = None         # sheetId numérico, necesario para batchUpdate
+        self._formato_ref = None     # formato de la fila de referencia, cacheado
         self.load_existing_data()
 
     def normalize_header(self, h):
@@ -133,6 +134,9 @@ class SheetsHandler:
         - Fila 2: Filtro (Reservado y omitido)
         - Fila 3+: Datos reales (Escribir siempre al final)
         """
+        # Los scripts de Metrocuadrado reasignan sheet_title y luego llaman aquí:
+        # el formato cacheado es de la pestaña anterior, así que se descarta.
+        self._formato_ref = None
         range_name = f"'{self.sheet_title}'!A1:Z3000"
         result = con_reintentos(
             lambda: self.service.values().get(
@@ -298,37 +302,81 @@ class SheetsHandler:
                 return s["properties"]["gridProperties"]["rowCount"]
         return 0
 
-    def apply_row_format(self, target_row):
+    def formato_de_referencia(self):
         """
-        Copia el formato (bordes, colores, validaciones, formato de número) desde
-        una fila de referencia hacia la fila recién escrita.
-
-        Por qué hace falta: al escribir solo valores, las filas que nunca tuvieron
-        formato quedan peladas. Es lo que pasó desde la fila 592 en adelante,
-        cuando el Sheet se expandió con `appendDimension` (que agrega filas en
-        blanco sin heredar nada). Se usa una fila de referencia FIJA y conocida
-        como buena, no la anterior, para no propagar una fila ya rota.
+        Lee (y cachea) el formato completo de la fila de referencia: bordes,
+        fondos, formato de número y validaciones (los desplegables). Se lee una
+        sola vez por corrida y se reutiliza para cada fila nueva.
         """
-        sheet_id = self.get_sheet_id()
-        if sheet_id is None:
-            return
+        if self._formato_ref is not None:
+            return self._formato_ref
 
         ref = config.FORMAT_REFERENCE_ROW
-        if target_row == ref:
-            return
-
-        try:
-            self.service.batchUpdate(
+        resp = con_reintentos(
+            lambda: self.service.get(
                 spreadsheetId=self.spreadsheet_id,
-                body={"requests": [{
-                    "copyPaste": {
-                        # 0-indexed y con fin exclusivo
-                        "source": {"sheetId": sheet_id, "startRowIndex": ref - 1, "endRowIndex": ref},
-                        "destination": {"sheetId": sheet_id, "startRowIndex": target_row - 1, "endRowIndex": target_row},
-                        "pasteType": "PASTE_FORMAT"
-                    }
-                }]}
-            ).execute()
+                ranges=[f"'{self.sheet_title}'!A{ref}:{col_to_letter(max(self.col_map.values()) if self.col_map else 18)}{ref}"],
+                includeGridData=True,
+                fields="sheets/data/rowData/values(userEnteredFormat,dataValidation)",
+            ).execute(),
+            "lectura del formato de referencia",
+        )
+        filas = resp["sheets"][0]["data"][0].get("rowData", [])
+        self._formato_ref = filas[0].get("values", []) if filas else []
+        return self._formato_ref
+
+    def apply_row_format(self, target_row):
+        """
+        Le da a la fila recién escrita el mismo formato que tiene la tabla
+        (bordes, fondos, formato de número y desplegables), para que un registro
+        nuevo no quede pelado al lado de los anteriores.
+
+        Se usa `updateCells` y NO `copyPaste`: cuando la pestaña tiene un filtro
+        activo -- y "1 - CAPTACIONES A" lo tiene -- Google rechaza el copyPaste
+        con "This operation is not supported on a range with a filtered out row",
+        y la fila quedaba sin formato dejando solo un WARN en el log. Eso fue lo
+        que dejó sin bordes a las filas 720 en adelante. `updateCells` no es una
+        copia, así que el filtro no lo bloquea.
+
+        Todo va dentro del try -- incluido get_sheet_id -- porque un fallo ahí
+        antes cortaba el formato sin ningún aviso.
+        """
+        try:
+            if target_row == config.FORMAT_REFERENCE_ROW:
+                return
+
+            sheet_id = self.get_sheet_id()
+            if sheet_id is None:
+                print(f"[WARN] Sin formato en la fila {target_row}: no se encontró la pestaña '{self.sheet_title}'.")
+                return
+
+            valores_formato = self.formato_de_referencia()
+            if not valores_formato:
+                print(f"[WARN] Sin formato en la fila {target_row}: la fila de referencia "
+                      f"{config.FORMAT_REFERENCE_ROW} no tiene formato que copiar.")
+                return
+
+            con_reintentos(
+                lambda: self.service.batchUpdate(
+                    spreadsheetId=self.spreadsheet_id,
+                    body={"requests": [{
+                        "updateCells": {
+                            # 0-indexed y con fin exclusivo
+                            "range": {
+                                "sheetId": sheet_id,
+                                "startRowIndex": target_row - 1,
+                                "endRowIndex": target_row,
+                                "startColumnIndex": 0,
+                                "endColumnIndex": len(valores_formato),
+                            },
+                            "rows": [{"values": valores_formato}],
+                            # Solo formato y validaciones: los valores ya escritos no se tocan.
+                            "fields": "userEnteredFormat,dataValidation",
+                        }
+                    }]}
+                ).execute(),
+                f"formato de la fila {target_row}",
+            )
         except Exception as e:
             # El formato es cosmético: si falla, el dato ya quedó guardado.
             print(f"[WARN] No se pudo aplicar el formato a la fila {target_row}: {e}")
