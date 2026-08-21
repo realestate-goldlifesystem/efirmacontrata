@@ -352,32 +352,37 @@ function _lanzarBarridoMiguel(modo, bedrooms, sector) {
  * @param {string} sector - 'usaquen'/'suba'/'chapinero', varias separadas por coma o 'all'
  */
 function dispararWorkflowConHabitaciones(modo, bedrooms, sector) {
-  var ui = SpreadsheetApp.getUi();
   var tipoTexto = (modo === 'venta') ? 'VENTA' : 'ARRIENDO';
   var r = _lanzarBarridoMiguel(modo, bedrooms, sector);
 
+  // Se DEVUELVE el resultado en vez de mostrar un ui.alert: la alerta nativa
+  // de Google no se puede cerrar por código (obliga a hacer clic), y el modal
+  // necesita poder confirmar y cerrarse solo con su cuenta regresiva.
   if (r.success) {
-    ui.alert(
-      '🚀 ¡Barrido de ' + tipoTexto + ' Iniciado!',
-      'Miguel está rastreando en la nube:\n\n' +
-      '• Sector: ' + r.sectorTexto + '\n' +
-      '• Habitaciones: ' + r.habTexto + '\n' +
-      '• ' + r.combinaciones + ' barrido(s), máximo ' + r.techo + ' captaciones\n\n' +
-      'Los inmuebles de propietarios directos comenzarán a escribirse automáticamente en la pestaña "' + r.pestana + '".',
-      ui.ButtonSet.OK
-    );
-  } else if (r.code === 0 && r.mensaje.indexOf('GITHUB_PAT') >= 0) {
-    ui.alert(
-      '⚠️ Falta Configurar Token de GitHub',
-      r.mensaje + '\n\nPor favor agregue la propiedad GITHUB_PAT en Extensiones > Apps Script > Configuración del proyecto > Propiedades del script.',
-      ui.ButtonSet.OK
-    );
-  } else if (r.code === 0) {
-    ui.alert('❌ Error de Conexión', r.mensaje, ui.ButtonSet.OK);
-  } else {
-    ui.alert('❌ Error al activar el Robot (Código ' + r.code + ')',
-             'GitHub respondió:\n' + r.mensaje, ui.ButtonSet.OK);
+    return {
+      success: true,
+      titulo: '¡Barrido de ' + tipoTexto + ' iniciado!',
+      lineas: [
+        'Sector: ' + r.sectorTexto,
+        'Habitaciones: ' + r.habTexto,
+        r.combinaciones + ' barrido(s), máximo ' + r.techo + ' captaciones'
+      ],
+      nota: 'Los propietarios directos se irán escribiendo solos en "' + r.pestana + '".'
+    };
   }
+
+  var titulo, nota;
+  if (r.code === 0 && r.mensaje.indexOf('GITHUB_PAT') >= 0) {
+    titulo = 'Falta configurar el token de GitHub';
+    nota = 'Agrega la propiedad GITHUB_PAT en Extensiones > Apps Script > Configuración del proyecto > Propiedades del script.';
+  } else if (r.code === 0) {
+    titulo = 'Error de conexión';
+    nota = r.mensaje;
+  } else {
+    titulo = 'No se pudo activar el robot (código ' + r.code + ')';
+    nota = 'GitHub respondió: ' + r.mensaje;
+  }
+  return { success: false, titulo: titulo, lineas: [], nota: nota };
 }
 
 // --- Entrada desde el panel web del agente (Portafolio) ---------------------

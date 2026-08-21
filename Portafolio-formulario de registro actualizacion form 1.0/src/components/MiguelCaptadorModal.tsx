@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Bot, Loader2, CheckCircle2, AlertTriangle, Rocket } from 'lucide-react';
+
+const SEGUNDOS_CIERRE = 5;
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
 
@@ -43,6 +45,19 @@ export default function MiguelCaptadorModal({ onClose, agentCredential }: Miguel
   const [selHab, setSelHab] = useState<string[]>(['1']);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<{ ok: boolean; mensaje: string } | null>(null);
+  // Cuenta regresiva: solo corre cuando el barrido SÍ arrancó. Si falló, el
+  // modal se queda abierto para poder leer el motivo.
+  const [restan, setRestan] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (restan === null) return;
+    if (restan <= 0) {
+      onClose();
+      return;
+    }
+    const t = setTimeout(() => setRestan(restan - 1), 1000);
+    return () => clearTimeout(t);
+  }, [restan, onClose]);
 
   const barridos = selSector.length * selHab.length;
   const techo = barridos * CUOTA_POR_BARRIDO;
@@ -87,6 +102,7 @@ export default function MiguelCaptadorModal({ onClose, agentCredential }: Miguel
         ok: !!data.success,
         mensaje: data.message || (data.success ? 'Barrido iniciado.' : 'No se pudo iniciar el barrido.'),
       });
+      if (data.success) setRestan(SEGUNDOS_CIERRE);
     } catch {
       setResultado({ ok: false, mensaje: 'Error de red al conectar con el servidor.' });
     } finally {
@@ -220,28 +236,51 @@ export default function MiguelCaptadorModal({ onClose, agentCredential }: Miguel
           </div>
         )}
 
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-stone-800 text-stone-300 text-sm font-semibold hover:bg-stone-700 transition-colors"
-          >
-            {resultado?.ok ? 'Cerrar' : 'Cancelar'}
-          </button>
-          <button
-            onClick={lanzar}
-            disabled={enviando}
-            className="px-5 py-2.5 rounded-xl bg-brand-gold text-stone-950 text-sm font-bold hover:brightness-110 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {enviando ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Activando...
-              </>
-            ) : (
-              <>
-                <Rocket className="w-4 h-4" /> Iniciar Barrido
-              </>
-            )}
-          </button>
+        <div className="flex items-center justify-end gap-3">
+          {restan !== null ? (
+            /* Barrido lanzado: se cierra solo con la cuenta regresiva */
+            <>
+              <span className="text-xs text-stone-500">Se cierra solo</span>
+              <div className="relative w-11 h-11 shrink-0">
+                <svg className="w-11 h-11 -rotate-90" viewBox="0 0 42 42">
+                  <circle cx="21" cy="21" r="18" fill="none" strokeWidth="4" className="stroke-stone-800" />
+                  <circle
+                    cx="21" cy="21" r="18" fill="none" strokeWidth="4" strokeLinecap="round"
+                    className="stroke-brand-gold transition-[stroke-dashoffset] duration-1000 ease-linear"
+                    strokeDasharray={2 * Math.PI * 18}
+                    strokeDashoffset={2 * Math.PI * 18 * (1 - restan / SEGUNDOS_CIERRE)}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-brand-gold">
+                  {restan}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl bg-stone-800 text-stone-300 text-sm font-semibold hover:bg-stone-700 transition-colors"
+              >
+                {resultado ? 'Cerrar' : 'Cancelar'}
+              </button>
+              <button
+                onClick={lanzar}
+                disabled={enviando}
+                className="px-5 py-2.5 rounded-xl bg-brand-gold text-stone-950 text-sm font-bold hover:brightness-110 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {enviando ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Activando...
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="w-4 h-4" /> Iniciar Barrido
+                  </>
+                )}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
