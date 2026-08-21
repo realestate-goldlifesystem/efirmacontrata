@@ -71,6 +71,31 @@ ETIQUETAS_UI = {"ver lugares cercanos", "ver mas", "ver más"}
 # un complemento local para este sitio).
 PALABRAS_EMPRESA_METROCUADRADO = ["cia", "s en c", "realtors", "roastbeef"]
 
+# Fragmentos que se buscan como SUBCADENA sobre el nombre compactado (sin
+# espacios ni simbolos). Solo van aqui pedazos que NO aparecen dentro del
+# nombre de una persona real, porque un falso positivo aqui descarta a un
+# propietario legitimo. Esto es lo que atrapa los nombres pegados sin
+# espacio ("WIKIREALTORS", "REINMOBA") que se colaban con la regla de
+# palabra completa.
+FRAGMENTOS_EMPRESA = [
+    "inmobiliar", "inmob", "realtor", "realestate", "bienesraices",
+    "fincaraiz", "propiedad", "arriendo", "inversion", "constructora",
+    "inmueble", "corretaje", "avaluo", "vivienda", "habitat",
+    "arrendamiento", "urbanismo", "consultorinmob",
+]
+
+# Marcas conocidas de inmobiliarias. Tambien por subcadena sobre el nombre
+# compactado, para que den igual los espacios y simbolos con que las
+# escriban ("Engel & Volkers", "ENGEL&VOLKERS", "Century 21" -> century21).
+MARCAS_INMOBILIARIAS = [
+    "engel", "volkers", "coldwell", "sotheby", "century21", "remax",
+    "kellerwilliams", "lahaus", "aptuno", "tutecho", "coninsa", "habitea",
+    "ciencuadras", "metrocuadrado",
+    # Vistas colandose en corridas reales (nombre de marca, sin ninguna
+    # palabra generica que las delate):
+    "espaciosurbanos", "coolhouse", "casascasas",
+]
+
 # Numero del asistente de IA propio de Metrocuadrado ("Pedrito Cuadrado"),
 # confirmado por busqueda web -- NO es el celular de ningun anunciante. Si
 # una peticion resuelve a este numero (en vez de al clic real), se descarta
@@ -132,14 +157,35 @@ def extraer_operacion_de_url(url):
 def es_inmobiliaria(nombre):
     """
     Heuristica de deteccion (Metrocuadrado no tiene un campo limpio tipo
-    owner.particular como Fincaraiz). Solo por palabras clave -- NO por
-    mayusculas/minusculas: Playwright lee el texto ya renderizado, y la
-    pagina muestra ALGUNOS nombres de personas reales en mayusculas por
-    estilo visual, asi que las mayusculas no distinguen nada aqui.
+    owner.particular como Fincaraiz -- se verifico en vivo el HTML del
+    anuncio y NO existe ningun campo de publicador/inmobiliaria). Solo por
+    palabras clave -- NO por mayusculas/minusculas: Playwright lee el texto
+    ya renderizado, y la pagina muestra ALGUNOS nombres de personas reales
+    en mayusculas por estilo visual, asi que las mayusculas no distinguen
+    nada aqui.
+
+    Dos pasadas, a proposito:
+      1) FRAGMENTOS y MARCAS se buscan como SUBCADENA sobre el nombre
+         "compactado" (sin espacios ni simbolos). Asi caen tanto los nombres
+         pegados sin espacio ("WIKIREALTORS" -> realtor) como las marcas
+         escritas de cualquier forma ("Engel & Volkers", "Century 21").
+         Solo van aqui fragmentos que NO aparecen en el nombre de una
+         persona, para no descartar propietarios reales por accidente.
+      2) La lista negra general de config sigue exigiendo PALABRA COMPLETA,
+         porque trae palabras cortas y ambiguas ("pad", "sas", "grupo") que
+         como subcadena darian falsos positivos (ej. "pad" dentro de
+         "Padilla").
     """
     if not nombre:
         return False
+
     norm = normalizar(nombre)
+    compacto = re.sub(r"[^a-z0-9]", "", norm)
+
+    for frag in FRAGMENTOS_EMPRESA + MARCAS_INMOBILIARIAS:
+        if frag and frag in compacto:
+            return True
+
     palabras = norm.split()
     for kw in list(config.KEYWORD_BLACKLIST) + PALABRAS_EMPRESA_METROCUADRADO:
         kwn = normalizar(kw)

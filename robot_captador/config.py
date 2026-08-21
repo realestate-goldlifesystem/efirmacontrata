@@ -49,7 +49,10 @@ KEYWORD_BLACKLIST = [
     "soluciones", "servicios", "gestion", "gerencia", "asesores", "asesor",
     "inversiones", "desarrollo", "constructora", "century 21", "re/max", "remax",
     "pad", "pads", "arriendos", "ventas", "comercializadora", "capital",
-    "homie", "aptuno", "cobi", "houm", "lahaus", "habitea"
+    "homie", "aptuno", "cobi", "houm", "lahaus", "habitea",
+    # Forma juridica: delata una empresa aunque el nombre sea de persona
+    # (visto en vivo: "EDUARDO PEÑA A E HIJOS LTDA" se colaba como particular).
+    "ltda"
 ]
 EXCLUDED_KEYWORDS = KEYWORD_BLACKLIST
 

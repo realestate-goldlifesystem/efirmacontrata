@@ -232,6 +232,20 @@
         return nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length - 1];
       }
 
+      /**
+       * Ajusta el alto del diálogo al del contenido real. El resumen del plan
+       * pasa de 1 a 3 líneas según lo que se marque, así que con un alto fijo
+       * o sobraba espacio abajo o salía scroll. Se llama en cada repintado.
+       * El try/catch es para poder abrir este HTML suelto en un navegador
+       * (fuera del Sheet no existe google.script.host).
+       */
+      function ajustarAlto() {
+        try {
+          var alto = Math.ceil(document.body.getBoundingClientRect().height) + 2;
+          google.script.host.setHeight(alto);
+        } catch (e) { /* fuera del Sheet, se ignora */ }
+      }
+
       function pintar() {
         marcarActivos('gridSector', selSector);
         marcarActivos('gridHab', selHab);
@@ -257,6 +271,7 @@
           texto += '<br>Puede tardar <b>1 a 3 horas</b>; corre en la nube, puedes cerrar la hoja.';
         }
         document.getElementById('resumenPlan').innerHTML = texto;
+        ajustarAlto();
       }
 
       /**

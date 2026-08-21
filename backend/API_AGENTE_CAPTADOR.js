@@ -234,14 +234,19 @@ function ejecutarAgenteCaptador(modo) {
   template.modo = modo;
   template.tipoTexto = tipoTexto;
 
-  // Medido con el contenido mas alto posible (todo marcado, que lleva el
-  // resumen del plan a 2 lineas con el aviso de duracion): 326 px.
-  // Se deja margen para diferencias de renderizado de fuentes.
+  // El alto real lo ajusta el propio modal al terminar de dibujarse
+  // (google.script.host.setHeight en MODAL_HABITACIONES.html): el resumen
+  // del plan cambia de 1 a 3 lineas segun lo que se marque, y con un alto
+  // fijo o sobraba espacio abajo o aparecia scroll. Este valor es solo el
+  // de arranque, antes de que el JS lo corrija.
   var html = template.evaluate()
     .setWidth(470)
-    .setHeight(340);
+    .setHeight(330);
 
-  ui.showModalDialog(html, '🚀 Miguel - Agente Captador Fincaraiz (' + tipoTexto + ')');
+  // Titulo CORTO a proposito: Google ensancha el diálogo para que quepa el
+  // texto del titulo, y uno largo ("Miguel - Agente Captador Fincaraiz
+  // (ARRIENDO)") dejaba una franja muerta a la derecha del contenido.
+  ui.showModalDialog(html, 'Miguel · ' + tipoTexto);
 }
 
 var NOMBRE_SECTOR_CAPTADOR = { usaquen: 'Usaquén', suba: 'Suba', chapinero: 'Chapinero' };
