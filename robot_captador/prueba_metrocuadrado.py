@@ -555,7 +555,13 @@ def procesar_anuncio(page, context, url, estado_telefono, localidad_buscada, lug
         "phone": telefono,
         "link": url,
         "property_type": tipo,
-        "bedrooms": "1",
+        # Se prefiere lo que dice el PROPIO slug del anuncio; si el slug no
+        # trae el dato, se cae a la habitacion buscada (arriba ya se descarto
+        # el anuncio si ambas no coincidian, asi que no pueden contradecirse).
+        # Estuvo fijo en "1" mientras el prototipo solo probaba 1 habitacion:
+        # al ampliarlo a 1-5 quedo escribiendo "1" para TODO, lo que ademas
+        # rompia la reposicion (contar_nuevos cuenta por esta columna).
+        "bedrooms": str(habitaciones_url or habitaciones_esperadas),
         "price": precio,
         "location": barrio,
         # localidad la asigna quien llama (segun la busqueda usada, ej "usaquen")
