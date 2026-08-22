@@ -658,6 +658,9 @@ function doPost(e) {
       case 'consultarPropietario':
         result = handleConsultarPropietario(datos);
         break;
+      case 'verificarInmuebleExistente':
+        result = handleVerificarInmuebleExistente(datos);
+        break;
       case 'obtenerInmueblesVip':
         result = handleObtenerInmueblesVip(datos);
         break;
@@ -759,6 +762,22 @@ function getUrlFromCell(row, col, data, formulas) {
 // INTEGRACIÓN PORTAFOLIO REACT -> CRM
 // ==========================================
 function handleRegistrarInmueble(datos) {
+  // ⚠️ BLOQUEO OBLIGATORIO — NO QUITAR.
+  // appendRow() + getLastRow() no son atómicos. Sin este lock, dos agentes
+  // registrando al mismo tiempo leen el MISMO lastRow: uno encola la fila del
+  // otro y su propio inmueble queda huérfano (sin CDR, carpetas ni contrato),
+  // aunque el formulario le haya respondido "registro exitoso".
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (lockErr) {
+    Logger.log('🔒 handleRegistrarInmueble: no se pudo adquirir el bloqueo en 30s.');
+    return {
+      success: false,
+      message: "El sistema está registrando otro inmueble en este momento. Espera unos segundos y vuelve a enviar el formulario."
+    };
+  }
+
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
     if (!sheet) throw new Error("Hoja '1.1 - INMUEBLES REGISTRADOS' no encontrada en el CRM.");
@@ -798,31 +817,19 @@ function handleRegistrarInmueble(datos) {
     const propKey = 'PENDING_REGISTRATION_ROW_' + lastRow;
     PropertiesService.getScriptProperties().setProperty(propKey, 'true');
 
-    // Limpiar triggers existentes de esta misma función para evitar el límite de 20
-    try {
-      const triggers = ScriptApp.getProjectTriggers();
-      let triggerCount = 0;
-      triggers.forEach(trigger => {
-        if (trigger.getHandlerFunction() === 'procesarRegistrosPendientes') {
-          ScriptApp.deleteTrigger(trigger);
-        } else {
-          triggerCount++;
-        }
-      });
-      
-      // Solo creamos si no estamos en el límite total (por seguridad)
-      if (triggerCount < 19) {
-        ScriptApp.newTrigger('procesarRegistrosPendientes')
-          .timeBased()
-          .after(1000)
-          .create();
-        Logger.log(`⏳ Registro encolado asíncronamente para la fila ${lastRow}. Trigger programado.`);
-      } else {
-        Logger.log(`⚠️ Límite de triggers alcanzado. El registro se encoló pero el trigger no pudo ser creado.`);
-      }
-    } catch(err) {
-      Logger.log(`⚠️ Error al manejar triggers: ${err.message}`);
+    // Programar el worker. asegurarTriggerWorker() reutiliza el trigger que ya esté
+    // encolado en vez de borrarlo y recrearlo: con varios registros simultáneos, borrar
+    // el trigger de otro podía dejar su registro sin quien lo atienda.
+    // Si no se puede crear (tope de 20), el watchdog cada 10 min lo recoge.
+    if (!asegurarTriggerWorker('procesarRegistrosPendientes', 1000)) {
+      Logger.log(`⚠️ Fila ${lastRow} encolada, pero no se pudo programar el worker. El watchdog la recogerá.`);
+    } else {
+      Logger.log(`⏳ Registro encolado asíncronamente para la fila ${lastRow}. Trigger programado.`);
     }
+
+    // Encender la red de seguridad. Solo vive mientras haya cola: cuando esta se
+    // vacía, el propio watchdog deja de reprogramarse y desaparece.
+    armarWatchdogCola();
 
     return { 
       success: true, 
@@ -831,6 +838,8 @@ function handleRegistrarInmueble(datos) {
   } catch (error) {
     Logger.log("Error en handleRegistrarInmueble: " + error.toString());
     return { success: false, message: "Error interno: " + error.message };
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -845,7 +854,10 @@ function procesarRegistrosPendientes() {
   try {
     lock.waitLock(15000); // Esperar hasta 15 segundos si está ocupado
   } catch (e) {
-    Logger.log('🔒 No se pudo adquirir el bloqueo de script, otra instancia de procesarRegistrosPendientes está activa.');
+    // P3: NO morir aquí. Si nos vamos sin reprogramar y este era el último
+    // trigger vivo, la cola queda congelada para siempre con trabajo pendiente.
+    Logger.log('🔒 No se pudo adquirir el bloqueo de script, otra instancia de procesarRegistrosPendientes está activa. Reprogramando...');
+    asegurarTriggerWorker('procesarRegistrosPendientes', 30000);
     return;
   }
 
@@ -931,10 +943,7 @@ function procesarRegistrosPendientes() {
 
     if (hasMore) {
       Logger.log('⏳ Quedan más registros pendientes en la cola. Reprogramando Worker para el siguiente...');
-      ScriptApp.newTrigger('procesarRegistrosPendientes')
-        .timeBased()
-        .after(1000)
-        .create();
+      asegurarTriggerWorker('procesarRegistrosPendientes', 1000);
     } else {
       Logger.log('🏁 Todos los registros de la cola han sido enviados a la Fase 2.');
     }
@@ -4887,6 +4896,121 @@ function obtenerIdRegistro(cdr) {
 // =========================================
 // FUNCIÓN PARA CONSULTAR PROPIETARIO POR CÉDULA
 // =========================================
+/**
+ * Verifica si un inmueble YA está registrado, por dirección + torre + apartamento.
+ *
+ * Es el seguro que faltaba: la consulta por cédula no cubre el caso de un inmueble
+ * ya registrado a nombre de OTRO propietario, ni el de un agente que se equivoca
+ * de cédula, ni el del que ignora el selector y hace "registro normal".
+ *
+ * ⚠️ Usa la MISMA normalización que buscarREGPorDireccion() (trim + mayúsculas +
+ * espacios colapsados). Si el formulario y el backend normalizaran distinto, el
+ * formulario diría "libre" y luego Fase 1 lo clasificaría como renovación:
+ * justo la incoherencia que este endpoint existe para evitar.
+ *
+ * Entrada: { direccion, torre, apto }
+ * Salida:  { success, existe, coincidencias: [...] }
+ */
+function handleVerificarInmuebleExistente(datos) {
+  try {
+    // Normalización básica (idéntica a normalizarTexto del Archivo 1)
+    var norm = function (t) {
+      if (t === null || t === undefined) return '';
+      return t.toString().trim().toUpperCase().replace(/\s+/g, ' ');
+    };
+
+    // Normalización de DIRECCIONES: canoniza el tipo de vía y la puntuación.
+    //
+    // Necesaria porque la misma vía se guarda de muchas formas. En datos reales
+    // conviven CRA / Carrera / Cra / AK y CALLE / CLL / Cl para las mismas calles,
+    // y Google Maps devuelve "Cl 183 #8A-10" donde el registro dice
+    // "CALLE 183 #8a-10". Con comparación exacta eso es un falso negativo, o sea
+    // un duplicado que se cuela: exactamente lo que este endpoint debe evitar.
+    //
+    // A propósito es MÁS AMPLIA que la de buscarREGPorDireccion(), que decide la
+    // clasificación real y debe ser conservadora (un falso positivo allá
+    // convertiría un inmueble nuevo en "renovación"). Aquí solo se ADVIERTE y se
+    // le muestra al agente la coincidencia para que él decida, así que conviene
+    // pecar de sensible: un falso positivo cuesta un clic, un falso negativo
+    // cuesta un registro duplicado.
+    var normDir = function (t) {
+      var s = norm(t).replace(/\./g, ' ');
+      s = s.replace(/^(CALLE|CLLE|CLL|CLE|CL|C)\s+/, 'CL ');
+      s = s.replace(/^(CARRERA|CRA|CRR|CR|KRA|KR|AK)\s+/, 'KR ');
+      s = s.replace(/^(TRANSVERSAL|TRANSV|TRV|TV|TR)\s+/, 'TV ');
+      s = s.replace(/^(DIAGONAL|DIAG|DGN|DG)\s+/, 'DG ');
+      s = s.replace(/^(AVENIDA|AVDA|AVE|AV)\s+/, 'AV ');
+      s = s.replace(/\s*#\s*/g, ' #');   // "#8A - 10" y "# 8A-10" -> " #8A-10"
+      s = s.replace(/\s*-\s*/g, '-');    // "127 B - 05" -> "127 B-05"
+      s = s.replace(/\s+/g, ' ').trim();
+      return s;
+    };
+
+    var dirBuscada = normDir(datos.direccion);
+    var torreBuscada = norm(datos.torre);
+    var aptoBuscado = norm(datos.apto);
+
+    if (!dirBuscada || !aptoBuscado) {
+      return { success: false, message: 'Se requieren al menos dirección y número de inmueble.' };
+    }
+
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    if (!sheet) return { success: false, message: 'No se encontró la hoja de inmuebles.' };
+
+    var data = sheet.getDataRange().getValues();
+    if (data.length < 2) return { success: true, existe: false, coincidencias: [] };
+
+    var headers = data[0].map(function (h) { return (h || '').toString().trim(); });
+    var idx = function (n) { return headers.indexOf(n); };
+
+    var iDir = idx('Ingrese la Dirección del inmueble');
+    var iTorre = idx('N° o Letra de la Torre');
+    var iApto = idx('N° de inmueble');
+    var iCDR = idx('CODIGO DE REGISTRO');
+    var iID = idx('ID DE REGISTRO');
+    var iNeg = idx('TIPO DE NEGOCIO');
+    var iProp = idx('NOMBRES Y APELLIDOS DEL PROPIETARIO');
+    var iCed = idx('Número de documento');
+    var iEstado = idx('ESTADO DEL INMUEBLE');
+
+    if (iDir === -1 || iApto === -1) {
+      return { success: false, message: 'Faltan columnas de dirección o número de inmueble.' };
+    }
+
+    var coincidencias = [];
+    for (var i = 1; i < data.length; i++) {
+      var r = data[i];
+      if (normDir(r[iDir]) !== dirBuscada) continue;
+      if (norm(r[iApto]) !== aptoBuscado) continue;
+      // La torre debe coincidir, contando "sin torre" en ambos lados como igual.
+      if (norm(iTorre !== -1 ? r[iTorre] : '') !== torreBuscada) continue;
+
+      coincidencias.push({
+        fila: i + 1,
+        cdr: iCDR !== -1 ? (r[iCDR] || '').toString() : '',
+        idRegistro: iID !== -1 ? (r[iID] || '').toString() : '',
+        tipoNegocio: iNeg !== -1 ? (r[iNeg] || '').toString() : '',
+        propietario: iProp !== -1 ? (r[iProp] || '').toString() : '',
+        cedula: iCed !== -1 ? (r[iCed] || '').toString() : '',
+        estado: iEstado !== -1 ? (r[iEstado] || '').toString() : '',
+        direccion: (r[iDir] || '').toString(),
+        torre: iTorre !== -1 ? (r[iTorre] || '').toString() : '',
+        apto: (r[iApto] || '').toString()
+      });
+    }
+
+    return {
+      success: true,
+      existe: coincidencias.length > 0,
+      coincidencias: coincidencias
+    };
+  } catch (error) {
+    Logger.log('Error en handleVerificarInmuebleExistente: ' + error.toString());
+    // Ante un fallo NO se bloquea al agente: se deja seguir y Fase 1 clasificará.
+    return { success: false, message: 'Error interno: ' + error.message };
+  }
+}
+
 function handleConsultarPropietario(datos) {
   var cedula = datos.cedula;
   if (!cedula) return { success: false, message: 'Cédula no proporcionada' };

@@ -66,6 +66,14 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(null);
   const [reutilizarMultimedia, setReutilizarMultimedia] = useState<'SI' | 'NO'>('SI');
   const [propertySearchTerm, setPropertySearchTerm] = useState('');
+  // Inmueble que el agente tocó en el paso 0 pero para el que todavía no eligió
+  // acción (renovar / cambiar negocio). Primero SE ELIGE EL INMUEBLE y después
+  // qué hacer con él, que es el orden en que realmente piensa el agente.
+  const [pendingPropertyIndex, setPendingPropertyIndex] = useState<number | null>(null);
+  // Seguro por dirección+torre+apto (independiente del de cédula).
+  const [dupCheckStatus, setDupCheckStatus] = useState<'idle' | 'checking' | 'clear' | 'found'>('idle');
+  const [dupMatches, setDupMatches] = useState<any[]>([]);
+  const [dupAcknowledged, setDupAcknowledged] = useState(false);
 const getInitialFormData = (selectedServiceType: string | null | undefined, initialCalculatorState: any) => ({
     gridAnswers: {} as Record<string, string>,
     // Step 1: Destino y Ubicación
@@ -222,6 +230,16 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
+
+  // Si cambia la identidad del inmueble (dirección, torre o número), el chequeo
+  // de duplicado anterior deja de valer: hay que volver a preguntar. Sin esto,
+  // un agente que corrige la dirección se llevaría el "continuar de todas formas"
+  // que había aceptado para OTRA dirección.
+  useEffect(() => {
+    setDupAcknowledged(false);
+    setDupCheckStatus('idle');
+    setDupMatches([]);
+  }, [formData.address, formData.towerLetter, formData.propertyNumber, formData.idTypeDescription]);
 
   // Limpieza de Estados Huérfanos en Tiempo Real (Payload Sanitization UI)
   useEffect(() => {
@@ -532,9 +550,126 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
     return true;
   };
 
-  const handleNextStep = () => {
+  /**
+   * Seguro por DIRECCIÓN + TORRE + APARTAMENTO.
+   *
+   * La consulta por cédula no cubre tres casos reales: que el inmueble ya esté
+   * registrado a nombre de OTRO propietario, que el agente se equivoque de
+   * cédula, o que ignore el selector y siga por "registro normal". El trío
+   * dirección+torre+apto sí identifica el inmueble de forma inequívoca.
+   *
+   * Devuelve true si se puede avanzar, false si hay que detenerse y mostrar aviso.
+   * Ante cualquier error de red NO bloquea: el backend clasificará igual en Fase 1.
+   */
+  const verificarDuplicadoPorDireccion = async (): Promise<boolean> => {
+    setDupCheckStatus('checking');
+    try {
+      const response = await fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          accion: 'verificarInmuebleExistente',
+          direccion: formData.address,
+          torre: formData.idTypeDescription === 'Torre y número' ? formData.towerLetter : '',
+          apto: formData.propertyNumber
+        })
+      });
+      const data = await response.json();
+      if (data && data.success && data.existe) {
+        setDupMatches(data.coincidencias || []);
+        setDupCheckStatus('found');
+        return false;
+      }
+      setDupCheckStatus('clear');
+      return true;
+    } catch (e) {
+      // Fallo de red: no castigar al agente reteniéndolo.
+      setDupCheckStatus('clear');
+      return true;
+    }
+  };
+
+  /**
+   * Desde el aviso de duplicado, salta DIRECTO a renovación o cambio de negocio
+   * con el inmueble ya cargado, sin devolver al agente al paso 0.
+   *
+   * Contempla que el inmueble encontrado puede ser de OTRO propietario (se vendió,
+   * o el agente se equivocó de cédula): en ese caso primero trae los datos de ese
+   * propietario y después selecciona el inmueble.
+   */
+  const irAFlujoConInmueble = async (match: any, flujo: 'renovacion' | 'cambio_negocio') => {
+    setDupCheckStatus('checking');
+    try {
+      let lista = ownerProperties;
+      const cedulaDueno = String(match.cedula || '').trim();
+
+      // El inmueble es de otro propietario: hay que cargar SU portafolio.
+      if (cedulaDueno && cedulaDueno !== String(validatedCedula || '').trim()) {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ accion: 'consultarPropietario', cedula: cedulaDueno })
+        });
+        const data = await response.json();
+        if (!data.success || !data.propietario) {
+          setDupCheckStatus('found');
+          return;
+        }
+        lista = data.inmuebles || [];
+        setOwnerProperties(lista);
+        setCedulaInput(cedulaDueno);
+        setValidatedCedula(cedulaDueno);
+        setCedulaStatus('found');
+        setFormData(p => ({
+          ...p,
+          name: data.propietario.nombre,
+          documentNumber: data.propietario.numeroDocumento,
+          confirmDocumentNumber: data.propietario.numeroDocumento,
+          email: data.propietario.email || '',
+          confirmEmail: data.propietario.email || '',
+          phone: data.propietario.celular || '',
+          confirmPhone: data.propietario.celular || ''
+        }));
+      }
+
+      // Ubicar el inmueble dentro del portafolio. Se busca por ID DE REGISTRO,
+      // que es único e inmutable; la dirección puede venir escrita distinto.
+      const idx = lista.findIndex((p: any) =>
+        String(p["ID DE REGISTRO"] || p.idRegistro || '').trim() === String(match.idRegistro || '').trim()
+      );
+
+      if (idx === -1) {
+        // No se pudo ubicar: en vez de fallar en silencio, se manda al paso 0
+        // con la cédula lista para que el agente lo elija a mano.
+        setDupCheckStatus('idle');
+        setDupMatches([]);
+        setCurrentStep(0);
+        return;
+      }
+
+      setActiveFlow(flujo);
+      selectProperty(idx);
+      setDupCheckStatus('idle');
+      setDupMatches([]);
+      setPendingPropertyIndex(null);
+      setCurrentStep(1);
+    } catch (e) {
+      setDupCheckStatus('found');
+    }
+  };
+
+  const handleNextStep = async () => {
     if (canGoToNext()) {
       setShakeErrors(false);
+
+      // Al salir del paso 3 ya están dirección (paso 1), torre y apartamento:
+      // es el primer momento en que se puede identificar el inmueble.
+      // Solo aplica al flujo normal — en renovación/cambio el inmueble ya se eligió.
+      if (currentStep === 3 && activeFlow === 'normal' && !dupAcknowledged) {
+        const libre = await verificarDuplicadoPorDireccion();
+        if (!libre) return; // se queda en el paso 3 mostrando el aviso
+      }
+
       if (currentStep === 4 && cedulaStatus === 'found' && activeFlow === 'normal') {
         setCurrentStep(6);
       } else {
@@ -1076,30 +1211,126 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                 <p className="mt-1 font-mono text-xs">{formData.name} ya existe en el sistema.</p>
                               </div>
                             </div>
-                            
-                            <div className="grid grid-cols-1 gap-3">
-                              <button type="button" onClick={() => { setActiveFlow('normal'); setSelectedPropertyIndex(null); setValidatedCedula(cedulaInput); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm">
-                                <div>
-                                  <h5 className="font-bold text-stone-900 group-hover:text-brand-gold-dark transition-colors">Nuevo Inmueble</h5>
-                                  <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Añadir una nueva propiedad al portafolio de este cliente.</p>
+
+                            {/* Nuevo inmueble: siempre disponible, sin competir con las otras acciones */}
+                            <button
+                              type="button"
+                              onClick={() => { setActiveFlow('normal'); setSelectedPropertyIndex(null); setPendingPropertyIndex(null); setValidatedCedula(cedulaInput); setCurrentStep(1); }}
+                              className="w-full flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-brand-gold rounded-xl transition-all group text-left shadow-sm"
+                            >
+                              <div>
+                                <h5 className="font-bold text-stone-900 group-hover:text-brand-gold-dark transition-colors">+ Registrar Nuevo Inmueble</h5>
+                                <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Añadir una propiedad que aún no está en su portafolio.</p>
+                              </div>
+                              <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-brand-gold-dark" />
+                            </button>
+
+                            {ownerProperties.length > 0 && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-3 pt-1">
+                                  <div className="h-px flex-1 bg-stone-200" />
+                                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                                    o gestiona uno de sus {ownerProperties.length} inmuebles
+                                  </span>
+                                  <div className="h-px flex-1 bg-stone-200" />
                                 </div>
-                                <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-brand-gold-dark" />
-                              </button>
-                              <button type="button" onClick={() => { setActiveFlow('renovacion'); resetPropertyFields(); setSelectedPropertyIndex(null); setValidatedCedula(cedulaInput); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-blue-500 rounded-xl transition-all group text-left shadow-sm">
-                                <div>
-                                  <h5 className="font-bold text-stone-900 group-hover:text-blue-600 transition-colors">Renovación de Contrato</h5>
-                                  <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Renovar contrato existente sin volver a pedir datos.</p>
+
+                                {ownerProperties.length > 4 && (
+                                  <input
+                                    type="text"
+                                    placeholder="Buscar por dirección o ID de registro..."
+                                    value={propertySearchTerm}
+                                    onChange={(e) => setPropertySearchTerm(e.target.value)}
+                                    className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl focus:border-brand-gold focus:ring-1 focus:ring-brand-gold outline-none transition-all text-sm"
+                                  />
+                                )}
+
+                                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                                  {ownerProperties
+                                    .map((prop, idx) => ({ prop, idx }))
+                                    .filter(({ prop }) => {
+                                      const term = propertySearchTerm.toLowerCase();
+                                      if (!term) return true;
+                                      const address = String(prop["Ingrese la Dirección del inmueble"] || prop.direccion || '').toLowerCase();
+                                      const idReg = String(prop["ID DE REGISTRO"] || prop.idRegistro || '').toLowerCase();
+                                      return address.includes(term) || idReg.includes(term);
+                                    })
+                                    .map(({ prop, idx }) => {
+                                      const abierto = pendingPropertyIndex === idx;
+                                      const torre = prop["N° o Letra de la Torre"] || prop.torre || '';
+                                      const apto = prop["N° de inmueble"] || prop.apto || '';
+                                      const negocio = prop["TIPO DE NEGOCIO"] || prop.tipoNegocio || 'Sin tipo';
+                                      return (
+                                        <div key={idx} className={`border rounded-xl transition-all ${abierto ? 'border-brand-gold bg-brand-gold/5 shadow-sm' : 'border-stone-200 bg-white hover:border-stone-300'}`}>
+                                          <button
+                                            type="button"
+                                            onClick={() => setPendingPropertyIndex(abierto ? null : idx)}
+                                            className="w-full flex items-start justify-between gap-3 p-4 text-left"
+                                          >
+                                            <div className="min-w-0">
+                                              <strong className="block text-sm text-stone-900 truncate">
+                                                {prop["Ingrese la Dirección del inmueble"] || prop.direccion || 'Dirección no especificada'}
+                                              </strong>
+                                              <span className="text-xs text-stone-500 mt-0.5 block">
+                                                {torre ? `Torre ${torre} · ` : ''}Inmueble {apto}
+                                              </span>
+                                              <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 bg-stone-100 rounded text-stone-600 uppercase tracking-wider">
+                                                {negocio}
+                                              </span>
+                                            </div>
+                                            <span className="shrink-0 font-mono text-[10px] bg-stone-100 text-stone-500 px-2 py-1 rounded">
+                                              {prop["ID DE REGISTRO"] || prop.idRegistro || 'N/A'}
+                                            </span>
+                                          </button>
+
+                                          {/* Las acciones aparecen SOLO tras elegir el inmueble */}
+                                          {abierto && (
+                                            <div className="px-4 pb-4 pt-1 space-y-2 animate-in fade-in slide-in-from-top-1">
+                                              <p className="text-[10px] text-stone-500 uppercase tracking-widest font-bold">¿Qué deseas hacer con este inmueble?</p>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setActiveFlow('renovacion');
+                                                  setValidatedCedula(cedulaInput);
+                                                  setFormData(p => ({ ...p, documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
+                                                  selectProperty(idx);
+                                                  setPendingPropertyIndex(null);
+                                                  setCurrentStep(1);
+                                                }}
+                                                className="w-full flex items-center justify-between p-3 bg-white border border-stone-200 hover:border-blue-500 rounded-lg transition-all group text-left"
+                                              >
+                                                <div>
+                                                  <h5 className="font-bold text-sm text-stone-900 group-hover:text-blue-600">Renovación de Contrato</h5>
+                                                  <p className="text-[10px] text-stone-500 uppercase tracking-wider">Renovar sin volver a pedir los datos.</p>
+                                                </div>
+                                                <ArrowRight className="w-4 h-4 text-stone-500 group-hover:text-blue-500" />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setActiveFlow('cambio_negocio');
+                                                  setValidatedCedula(cedulaInput);
+                                                  setFormData(p => ({ ...p, documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
+                                                  selectProperty(idx);
+                                                  setPendingPropertyIndex(null);
+                                                  setCurrentStep(1);
+                                                }}
+                                                className="w-full flex items-center justify-between p-3 bg-white border border-stone-200 hover:border-emerald-500 rounded-lg transition-all group text-left"
+                                              >
+                                                <div>
+                                                  <h5 className="font-bold text-sm text-stone-900 group-hover:text-emerald-600">Cambio de Modelo de Negocio</h5>
+                                                  <p className="text-[10px] text-stone-500 uppercase tracking-wider">Ej: pasar de Corretaje a Administración.</p>
+                                                </div>
+                                                <ArrowRight className="w-4 h-4 text-stone-500 group-hover:text-emerald-500" />
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                 </div>
-                                <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-blue-500" />
-                              </button>
-                              <button type="button" onClick={() => { setActiveFlow('cambio_negocio'); resetPropertyFields(); setSelectedPropertyIndex(null); setValidatedCedula(cedulaInput); setCurrentStep(1); }} className="flex items-center justify-between p-4 bg-white border border-stone-200 hover:border-emerald-500 rounded-xl transition-all group text-left shadow-sm">
-                                <div>
-                                  <h5 className="font-bold text-stone-900 group-hover:text-emerald-600 transition-colors">Cambio de Modelo de Negocio</h5>
-                                  <p className="text-[10px] text-stone-500 mt-1 uppercase tracking-wider">Ej: Pasar de Corretaje a Administración.</p>
-                                </div>
-                                <ArrowRight className="w-5 h-5 text-stone-600 group-hover:text-emerald-500" />
-                              </button>
-                            </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1825,6 +2056,101 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                         Distribución Interna y Equipamiento
                       </h4>
 
+                      {/* Seguro por dirección+torre+apto: este inmueble ya está registrado */}
+                      {dupCheckStatus === 'found' && dupMatches.length > 0 && (
+                        <div className="p-5 bg-amber-50 border-2 border-amber-300 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2">
+                          <div className="flex items-start gap-3">
+                            <div className="size-9 shrink-0 rounded-lg bg-amber-200 flex items-center justify-center">
+                              <span className="text-lg leading-none">⚠️</span>
+                            </div>
+                            <div>
+                              <h5 className="font-black text-amber-900">Este inmueble ya está registrado</h5>
+                              <p className="text-xs text-amber-800 mt-1">
+                                Encontramos {dupMatches.length === 1 ? 'un registro' : `${dupMatches.length} registros`} con la misma dirección, torre y número de inmueble.
+                              </p>
+                            </div>
+                          </div>
+
+                          {dupMatches.map((m, i) => (
+                            <div key={i} className="p-3 bg-white border border-amber-200 rounded-xl text-xs space-y-1">
+                              <div className="font-bold text-stone-900">
+                                {m.direccion}{m.torre ? ` · Torre ${m.torre}` : ''} · Inmueble {m.apto}
+                              </div>
+                              <div className="text-stone-600">
+                                Propietario: <strong>{m.propietario || 'N/D'}</strong>
+                                {m.cedula ? ` (CC ${m.cedula})` : ''}
+                              </div>
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                <span className="px-2 py-0.5 bg-stone-100 rounded font-bold uppercase tracking-wider text-[10px] text-stone-700">{m.tipoNegocio || 'Sin tipo'}</span>
+                                {m.estado && <span className="px-2 py-0.5 bg-stone-100 rounded font-bold uppercase tracking-wider text-[10px] text-stone-700">{m.estado}</span>}
+                                {m.idRegistro && <span className="px-2 py-0.5 bg-stone-100 rounded font-mono text-[10px] text-stone-600">{m.idRegistro}</span>}
+                              </div>
+                            </div>
+                          ))}
+
+                          <div className="space-y-2 pt-1">
+                            <p className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">¿Qué deseas hacer?</p>
+
+                            {/* Acciones directas sobre el inmueble encontrado: se salta el
+                                regreso al paso 0. irAFlujoConInmueble() se encarga de cargar
+                                al propietario correcto si el inmueble es de otra persona. */}
+                            <button
+                              type="button"
+                              disabled={dupCheckStatus === 'checking'}
+                              onClick={() => irAFlujoConInmueble(dupMatches[0], 'renovacion')}
+                              className="w-full flex items-center justify-between p-3 bg-white border border-stone-200 hover:border-blue-500 rounded-lg transition-all group text-left disabled:opacity-60"
+                            >
+                              <div>
+                                <h6 className="font-bold text-sm text-stone-900 group-hover:text-blue-600">Renovar el contrato de este inmueble</h6>
+                                <p className="text-[10px] text-stone-500 uppercase tracking-wider">Continúa la renovación con los datos ya cargados.</p>
+                              </div>
+                              <ArrowRight className="w-4 h-4 text-stone-500 group-hover:text-blue-500" />
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={dupCheckStatus === 'checking'}
+                              onClick={() => irAFlujoConInmueble(dupMatches[0], 'cambio_negocio')}
+                              className="w-full flex items-center justify-between p-3 bg-white border border-stone-200 hover:border-emerald-500 rounded-lg transition-all group text-left disabled:opacity-60"
+                            >
+                              <div>
+                                <h6 className="font-bold text-sm text-stone-900 group-hover:text-emerald-600">Cambiar el modelo de negocio</h6>
+                                <p className="text-[10px] text-stone-500 uppercase tracking-wider">Ej: pasar de {dupMatches[0].tipoNegocio || 'su modelo actual'} a otro modelo.</p>
+                              </div>
+                              <ArrowRight className="w-4 h-4 text-stone-500 group-hover:text-emerald-500" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => { setCurrentStep(1); setDupCheckStatus('idle'); setDupMatches([]); }}
+                              className="w-full flex items-center justify-between p-3 bg-white border border-stone-200 hover:border-stone-400 rounded-lg transition-all group text-left"
+                            >
+                              <div>
+                                <h6 className="font-bold text-sm text-stone-900">Corregir la dirección</h6>
+                                <p className="text-[10px] text-stone-500 uppercase tracking-wider">Volver al paso 1 para revisar los datos de ubicación.</p>
+                              </div>
+                              <ArrowRight className="w-4 h-4 text-stone-500" />
+                            </button>
+
+                            {/* Salida de emergencia: la coincidencia puede ser falsa (dos "Apto 301"
+                                en direcciones escritas distinto). Nunca bloquear duro al agente. */}
+                            <button
+                              type="button"
+                              onClick={() => { setDupAcknowledged(true); setDupCheckStatus('idle'); setDupMatches([]); setCurrentStep(4); }}
+                              className="w-full text-center p-2 text-[11px] text-stone-500 hover:text-stone-800 underline transition-colors"
+                            >
+                              Es un inmueble distinto — continuar de todas formas
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* El resto del paso se oculta mientras haya aviso de duplicado:
+                          no tiene sentido seguir llenando datos de un inmueble que ya
+                          existe sin antes decidir qué hacer con él. */}
+                      {!(dupCheckStatus === 'found' && dupMatches.length > 0) && (
+                      <>
+
                       {/* Card 1: Identificación e Internos (Cocina, Vista) */}
                       <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
                         <div className="flex items-center gap-2 mb-1">
@@ -2083,6 +2409,8 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                           />
                         </div>
                       </div>
+                      </>
+                      )}
 
                     </div>
                   )}
@@ -2978,14 +3306,28 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                           </button>
                         )}
 
-                        {currentStep < 8 ? (
+                        {/* Con el aviso de duplicado en pantalla no se ofrece "Siguiente":
+                            la salida va por los botones del propio aviso, para que la
+                            decisión sea explícita y no se pueda pasar de largo. */}
+                        {(dupCheckStatus === 'found' && dupMatches.length > 0) ? null : currentStep < 8 ? (
                           <button
                             type="button" onClick={handleNextStep}
-                            disabled={!canGoToNext()}
+                            disabled={!canGoToNext() || dupCheckStatus === 'checking'}
                             className="bg-brand-gold-dark hover:bg-[#8A631F] text-white px-8 py-3.5 rounded-full font-bold shadow-lg shadow-brand-gold/30 hover:shadow-brand-gold/50 transition-all flex items-center justify-center space-x-2 w-full sm:w-auto hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
                           >
-                            <span>{currentStep === 7 ? 'Ir a Precios' : 'Siguiente'}</span>
-                            <ArrowRight className="w-4 h-4" />
+                            {/* La consulta al Apps Script puede tardar varios segundos.
+                                Sin este aviso el agente cree que el botón no respondió. */}
+                            {dupCheckStatus === 'checking' ? (
+                              <>
+                                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                <span>Verificando inmueble...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>{currentStep === 7 ? 'Ir a Precios' : 'Siguiente'}</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </>
+                            )}
                           </button>
                         ) : (
                           <button

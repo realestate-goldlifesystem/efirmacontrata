@@ -22,7 +22,9 @@ const CONFIG_MULTIMEDIA = {
         'g3f37a897bb7_0_18',
         'g3f37a897bb7_0_36',
         'g3f37a897bb7_0_54'
-    ]
+    ],
+    // Plantilla del cartel de ventana (solo texto, sin foto)
+    TEMPLATE_SLIDES_CARTEL: '1QRei0CLnz8QAUtJWeG-nW9m2swsgr0OmL4qoFZwHXMs'
 };
 
 /**
@@ -544,6 +546,180 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
         url: pngFile.getUrl(),
         id: pngFile.getId()
     };
+}
+
+/**
+ * Genera el "Cartel de Ventanilla" (solo texto) a partir de la plantilla de Slides,
+ * usando los mismos datos del inmueble que ya llegan en la fila del registro.
+ * A diferencia de generarPortada(), no depende de que existan fotos todavía,
+ * por eso se puede disparar en el momento del registro del formulario.
+ *
+ * Todas las columnas se resuelven por NOMBRE de encabezado, nunca por número:
+ * si mañana se mueve una columna, el cartel sigue saliendo bien.
+ */
+function generarCartelVentanilla(rowData, headers, targetFolder, cdr) {
+    const presId = CONFIG_MULTIMEDIA.TEMPLATE_SLIDES_CARTEL;
+
+    // 1. Crear copia temporal del archivo maestro
+    const originalFile = DriveApp.getFileById(presId);
+    const tempFile = originalFile.makeCopy(`TEMP_CARTEL_${cdr}`, targetFolder);
+    const tempPresId = tempFile.getId();
+
+    // El Sheet trae caracteres invisibles (U+3164 Hangul Filler) en varias celdas:
+    // "¿Dispone de deposito?" guarda "ㅤ" para NO y "Depositoㅤ" para SÍ.
+    // .trim() NO los elimina, por eso se limpian explícitamente.
+    const limpiar = (val) => String(val === null || val === undefined ? '' : val)
+        .replace(/[ㅤ​-‍﻿ ]/g, '')
+        .trim();
+
+    // Resuelve una columna por su nombre EXACTO de encabezado.
+    const colPorNombre = (nombre) => {
+        for (let i = 0; i < headers.length; i++) {
+            if (limpiar(headers[i]) === nombre) return i;
+        }
+        return -1;
+    };
+
+    // Lee el valor de una columna por nombre, ya limpio.
+    const valorDe = (nombre) => {
+        const idx = colPorNombre(nombre);
+        return idx !== -1 ? limpiar(rowData[idx]) : '';
+    };
+
+    const soloNumero = (val) => limpiar(val).replace(/[^0-9]/g, '');
+
+    // "1 Habitación" / "3 Habitaciones", con singular correcto.
+    // Si no hay dato o es 0, devuelve vacío para que la línea no aparezca.
+    const pluralizar = (cantidadStr, singular, plural) => {
+        const n = parseInt(cantidadStr, 10);
+        if (!cantidadStr || isNaN(n) || n <= 0) return '';
+        return `${n} ${n === 1 ? singular : plural}`;
+    };
+
+    const formatCurrency = (val) => {
+        const num = parseFloat(limpiar(val).replace(/[^0-9]/g, ''));
+        if (isNaN(num)) return '';
+        return num.toLocaleString('es-CO');
+    };
+
+    // 2. Extraer valores del Excel (todo por nombre de columna)
+    const tipoNegocio = valorDe('TIPO DE NEGOCIO');
+    const esMixto = tipoNegocio === 'Admi-Venta' || tipoNegocio === 'Vendi-Renta';
+    const esVenta = tipoNegocio === 'Venta';
+    // Corretaje y Administración son arriendo.
+    const accionNegocio = esMixto ? 'VENDE Y ARRIENDA' : (esVenta ? 'VENDE' : 'ARRIENDA');
+
+    const tipoInm = valorDe('Selecciona el tipo de inmueble').toUpperCase();
+
+    // Garajes: valores reales del Sheet -> "Ningun" | "Comunal" | "1" | "2"
+    //   Ningun / vacío -> línea vacía
+    //   Comunal        -> "Garaje comunal"
+    //   1 / 2 / ...    -> "1 Garaje" / "2 Garajes"
+    const garajesRaw = valorDe('N° de Garajes');
+    let textoGarajes = '';
+    if (garajesRaw.toLowerCase().indexOf('comunal') !== -1) {
+        textoGarajes = 'Garaje comunal';
+    } else if (garajesRaw.toLowerCase().indexOf('ningun') === -1) {
+        textoGarajes = pluralizar(soloNumero(garajesRaw), 'Garaje', 'Garajes');
+    }
+
+    // Depósito: "Depositoㅤ" = sí, "ㅤ" o vacío = no. Se valida por subcadena,
+    // NO por "celda no vacía" (el invisible U+3164 haría pasar los 'no' como 'sí').
+    const tieneDeposito = valorDe('¿Dispone de deposito?').toLowerCase().indexOf('deposito') !== -1;
+
+    const precioGen = valorDe('PRECIO DE PROMOCION GENERAL');
+    const precioVen = valorDe('PRECIO DE PROMOCION EN VENTA');
+
+    const precioVentaFmt = formatCurrency(precioVen);
+    const precioArriendoFmt = formatCurrency(precioGen);
+
+    let tagPrecioVenta = '';
+    let tagPrecioArriendo = '';
+
+    if (esMixto) {
+        // Ambos precios en la misma línea: "$500.000.000 y/o $2.500.000"
+        tagPrecioVenta = precioVentaFmt ? `$${precioVentaFmt} y/o ` : '';
+        tagPrecioArriendo = precioArriendoFmt ? `$${precioArriendoFmt}` : '';
+    } else if (esVenta) {
+        tagPrecioVenta = precioVentaFmt ? `$${precioVentaFmt}` : '';
+    } else {
+        tagPrecioArriendo = precioArriendoFmt ? `$${precioArriendoFmt}` : '';
+    }
+
+    const mapReemplazos = {
+        '<<TIPO DE NEGOCIO>>': accionNegocio,
+        '<<TIPO INM>>': tipoInm,
+        '<<HAB>>': pluralizar(soloNumero(valorDe('N° de Habitaciones')), 'Habitación', 'Habitaciones'),
+        '<<BAÑ>>': pluralizar(soloNumero(valorDe('N° de Baños')), 'Baño', 'Baños'),
+        '<<GAR>>': textoGarajes,
+        '<<DEPÓSITO>>': tieneDeposito ? '1 Depósito' : '',
+        '<<PRECIO DE VENTA EN NUM>>': tagPrecioVenta,
+        '<<PRECIO DE ARRIENDO EN NUM>>': tagPrecioArriendo,
+        // Solo aplica donde hay canon: arriendo y mixto. En venta pura se borra.
+        '<<ADMIN>>': esVenta ? '' : 'Incluida administración'
+    };
+
+    // 3. Reemplazar en la diapositiva (la plantilla del cartel tiene un único slide)
+    const pres = SlidesApp.openById(tempPresId);
+    const slide = pres.getSlides()[0];
+    if (!slide) throw new Error("La plantilla del cartel de ventanilla no tiene diapositivas");
+
+    for (let tag in mapReemplazos) {
+        const val = mapReemplazos[tag] || ' ';
+        try {
+            slide.replaceAllText(tag, val);
+        } catch (e) {
+            console.error("Error en replaceAllText para tag " + tag + ": " + e.message);
+        }
+    }
+
+    pres.saveAndClose();
+
+    // 4. Exportar PNG
+    const url = `https://docs.google.com/presentation/d/${tempPresId}/export/png?id=${tempPresId}&pageid=${slide.getObjectId()}`;
+    const token = ScriptApp.getOAuthToken();
+    const response = UrlFetchApp.fetch(url, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const pngBlob = response.getBlob().setName(`Cartel_Ventanilla_${cdr}.png`);
+    const pngFile = targetFolder.createFile(pngBlob);
+
+    tempFile.setTrashed(true);
+
+    return {
+        url: pngFile.getUrl(),
+        id: pngFile.getId()
+    };
+}
+
+/**
+ * Baja por una ruta de subcarpetas resolviendo cada nivel por NOMBRE.
+ * Se usa para llegar a carpetas replicadas desde PLANTILLA #1 en cada CDR,
+ * donde el ID es distinto en cada inmueble y solo el nombre es estable.
+ *
+ * Con crearSiFalta=true crea los niveles que no existan. Esto es necesario para
+ * RENOVACIONES (TIPO_2) y CAMBIOS DE NEGOCIO (TIPO_4), que reutilizan carpetas REG
+ * creadas ANTES de que la carpeta existiera en la plantilla maestra.
+ *
+ * Devuelve la carpeta final, o null si falta un nivel y crearSiFalta=false.
+ */
+function navegarRutaCarpetas(carpetaRaiz, rutaNombres, crearSiFalta) {
+    let actual = carpetaRaiz;
+    for (let i = 0; i < rutaNombres.length; i++) {
+        const nombre = rutaNombres[i];
+        const iter = actual.getFoldersByName(nombre);
+        if (iter.hasNext()) {
+            actual = iter.next();
+        } else if (crearSiFalta) {
+            Logger.log(`📁 Creando subcarpeta faltante "${nombre}" dentro de "${actual.getName()}"`);
+            actual = actual.createFolder(nombre);
+        } else {
+            Logger.log(`⚠️ No se encontró la subcarpeta "${nombre}" dentro de "${actual.getName()}"`);
+            return null;
+        }
+    }
+    return actual;
 }
 
 /**

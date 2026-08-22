@@ -23,7 +23,9 @@ function continuarRegistroInmuebleParte2() {
     try {
       lock.waitLock(15000);
     } catch (e) {
-      Logger.log('🔒 No se pudo adquirir el bloqueo, otra instancia de Parte 2 está corriendo.');
+      // P3: reprogramar en vez de morir; si no, la cola se congela.
+      Logger.log('🔒 No se pudo adquirir el bloqueo, otra instancia de Parte 2 está corriendo. Reprogramando...');
+      asegurarTriggerWorker('continuarRegistroInmuebleParte2', 30000);
       return;
     }
 
@@ -79,12 +81,12 @@ function continuarRegistroInmuebleParte2() {
 
     if (procesosRestantesParte2 > 0) {
       Logger.log(`⏳ Quedan ${procesosRestantesParte2} registros en cola de Parte 2. Reprogramando...`);
-      ScriptApp.newTrigger('continuarRegistroInmuebleParte2').timeBased().after(1000).create();
+      asegurarTriggerWorker('continuarRegistroInmuebleParte2', 1000);
     }
     
     if (procesosRestantesParte3 > 0) {
       Logger.log(`⏰ Hay ${procesosRestantesParte3} registros en cola de Parte 3. Reprogramando...`);
-      ScriptApp.newTrigger('continuarRegistroInmuebleParte3').timeBased().after(1000).create();
+      asegurarTriggerWorker('continuarRegistroInmuebleParte3', 1000);
     }
 
     var tiempoTotal = (new Date().getTime() - tiempoInicio) / 1000;
@@ -171,6 +173,38 @@ function procesarRegistroParte2(datos) {
         break;
     }
 
+    // NUEVO: Generar el Cartel de Ventanilla automáticamente al registrar (no depende de fotos)
+    try {
+      if (datos.regFolderId && typeof generarCartelVentanilla === 'function') {
+        Logger.log('🪧 Generando Cartel de Ventanilla...');
+        var regFolder = DriveApp.getFolderById(datos.regFolderId);
+
+        // La carpeta ya viene replicada desde PLANTILLA #1. Se navega SIEMPRE por nombre,
+        // nunca por ID: el ID del .txt de jerarquía es el de la plantilla maestra, no el del CDR.
+        // crearSiFalta=true: las renovaciones (TIPO_2) y cambios de negocio (TIPO_4)
+        // reutilizan carpetas REG viejas, anteriores a que la carpeta existiera en la plantilla.
+        var carpetaCartel = navegarRutaCarpetas(regFolder, [
+          'ARCHIVOS DEL INMUEBLE',
+          'CONTENIDO DE PUBLICACIÓN',
+          'CARTEL DE VENTANILLA'
+        ], true);
+
+        if (!carpetaCartel) {
+          throw new Error('No se pudo resolver la ruta ARCHIVOS DEL INMUEBLE/CONTENIDO DE PUBLICACIÓN/CARTEL DE VENTANILLA en el REG');
+        }
+
+        var headersCartel = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        var rowDataCartel = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+        generarCartelVentanilla(rowDataCartel, headersCartel, carpetaCartel, datos.cdr);
+        Logger.log('✅ Cartel de Ventanilla generado');
+      } else {
+        Logger.log('⚠️ No se generó Cartel de Ventanilla (sin regFolderId o función no encontrada).');
+      }
+    } catch (e) {
+      Logger.log('⚠️ Error al generar Cartel de Ventanilla: ' + e.message);
+    }
+
     Logger.log(`✅ Fila ${row} procesada correctamente (Fase de Carpetas)`);
 
   } catch (error) {
@@ -211,37 +245,9 @@ function procesarTipo11_NuevoInmueble(sheet, row, datos) {
     throw new Error(`No se encontró carpeta ${carpetaNegocio}`);
   }
 
-  // 4. Acceder a PLANTILLA #1 MAESTRA
-  Logger.log('🔍 Accediendo a PLANTILLA #1 maestra...');
-  var plantillaMaestra = DriveApp.getFolderById('1YIsZRuxPmX7Ks43N16gFP_9Gd7r9SPNH');
-
-  // 5. Navegar a PLANTILLA #2 dentro de la maestra
-  var inmueblesPlantilla = getFolderByName(plantillaMaestra, 'INMUEBLES');
-  if (!inmueblesPlantilla) {
-    throw new Error('No se encontró carpeta INMUEBLES en PLANTILLA #1');
-  }
-
-  var arriendoPlantilla = getFolderByName(inmueblesPlantilla, 'ARRIENDO');
-  if (!arriendoPlantilla) {
-    throw new Error('No se encontró carpeta ARRIENDO en PLANTILLA #1');
-  }
-
-  var plantilla2 = getFolderByName(arriendoPlantilla, 'PLANTILLA #2');
-  if (!plantilla2) {
-    throw new Error('No se encontró PLANTILLA #2 en PLANTILLA #1 maestra');
-  }
-
-  Logger.log('✅ PLANTILLA #2 encontrada en plantilla maestra');
-
-  // 6. Crear carpeta del nuevo REG en la ubicación destino
+  // 4-7. Crear la carpeta REG copiando PLANTILLA #2 desde la maestra
   var cdr = datos.cdr;
-  var nuevoREG = carpetaNegocioFolder.createFolder(cdr);
-  Logger.log(`📁 Carpeta REG creada: ${cdr}`);
-
-  // 7. Copiar toda la estructura de PLANTILLA #2
-  Logger.log('📋 Copiando estructura completa de PLANTILLA #2...');
-  copiarContenidoCompleto(plantilla2, nuevoREG);
-  Logger.log('✅ Estructura copiada completamente');
+  var nuevoREG = crearREGDesdePlantillaMaestra(carpetaNegocioFolder, cdr);
 
   // 8. Renombrar carpeta XXXX a año actual
   renombrarCarpetaAnioEnREG(nuevoREG);
@@ -259,6 +265,51 @@ function procesarTipo11_NuevoInmueble(sheet, row, datos) {
   encolarParaParte3(row, datos);
 
   Logger.log('✅ TIPO 3 (Fase de copiado completada)');
+}
+
+// ==========================================
+// CREACIÓN DE CARPETA REG (única fuente de verdad)
+// ==========================================
+
+/**
+ * Crea la carpeta REG de un inmueble copiando PLANTILLA #2 desde la
+ * PLANTILLA #1 MAESTRA. Es la ÚNICA forma en que se debe crear un REG.
+ *
+ * Nunca tomar el molde "PLANTILLA #2" que queda dentro del RPR de un
+ * propietario: ese es de un solo uso y provoca que el segundo inmueble del
+ * mismo propietario falle. La maestra, en cambio, es inagotable.
+ *
+ * @param {Folder} carpetaNegocioFolder  ARRIENDO | VENTA | BI-NEGOCIO del RPR
+ * @param {string} cdr                   Código de registro; será el nombre
+ * @return {Folder} la carpeta REG ya creada y poblada
+ */
+function crearREGDesdePlantillaMaestra(carpetaNegocioFolder, cdr) {
+  Logger.log('🔍 Accediendo a PLANTILLA #1 maestra...');
+  var plantillaMaestra = DriveApp.getFolderById(CONFIG_INMUEBLES.TEMPLATE_FOLDER_ID);
+
+  var inmueblesPlantilla = getFolderByName(plantillaMaestra, 'INMUEBLES');
+  if (!inmueblesPlantilla) {
+    throw new Error('No se encontró carpeta INMUEBLES en PLANTILLA #1');
+  }
+
+  var arriendoPlantilla = getFolderByName(inmueblesPlantilla, 'ARRIENDO');
+  if (!arriendoPlantilla) {
+    throw new Error('No se encontró carpeta ARRIENDO en PLANTILLA #1');
+  }
+
+  var plantilla2 = getFolderByName(arriendoPlantilla, 'PLANTILLA #2');
+  if (!plantilla2) {
+    throw new Error('No se encontró PLANTILLA #2 en PLANTILLA #1 maestra');
+  }
+
+  var nuevoREG = carpetaNegocioFolder.createFolder(cdr);
+  Logger.log(`📁 Carpeta REG creada: ${cdr}`);
+
+  Logger.log('📋 Copiando estructura completa de PLANTILLA #2...');
+  copiarContenidoCompleto(plantilla2, nuevoREG);
+  Logger.log('✅ Estructura copiada completamente');
+
+  return nuevoREG;
 }
 
 // ==========================================
@@ -306,27 +357,23 @@ function procesarTipo4_NuevoPropietario(sheet, row, datos) {
     throw new Error(`No se encontró carpeta ${carpetaNegocio}`);
   }
 
-  // 4. Buscar PLANTILLA #2 en ARRIENDO
-  var arriendoFolder = getFolderByName(inmueblesFolder, 'ARRIENDO');
-  if (!arriendoFolder) {
-    throw new Error('No se encontró carpeta ARRIENDO');
-  }
-
-  var plantillaFolder = getFolderByName(arriendoFolder, 'PLANTILLA #2');
-  if (!plantillaFolder) {
-    throw new Error('No se encontró PLANTILLA #2');
-  }
-
-  // 5. Mover PLANTILLA #2 a carpeta destino si es necesario
-  if (carpetaNegocio !== 'ARRIENDO') {
-    Logger.log(`🚚 Moviendo PLANTILLA #2 a: ${carpetaNegocio}`);
-    plantillaFolder.moveTo(carpetaNegocioFolder);
-  }
-
-  // 6. Renombrar PLANTILLA #2 con el CDR
+  // 4-6. Crear la carpeta REG copiando PLANTILLA #2 desde la MAESTRA.
+  //
+  // ⚠️ ANTES: se tomaba el molde "PLANTILLA #2" que venía dentro del RPR del
+  // propietario y se le hacía setName(cdr). Ese molde es de UN SOLO USO: si el
+  // mismo propietario NUEVO registraba 2+ inmuebles, el primero se lo llevaba y
+  // los siguientes morían con "No se encontró PLANTILLA #2".
+  // Y no era una carrera: Fase 1 clasifica los 3 como TIPO_1 porque en ese
+  // momento el RPR todavía está vacío (la copia se difiere a Parte 2), así que
+  // la clasificación quedaba obsoleta aunque todo corriera en estricto orden.
+  //
+  // AHORA: se copia desde la plantilla maestra, igual que TIPO_2 y TIPO_3.
+  // La maestra nunca se agota, así que da lo mismo cuántos inmuebles registre
+  // el propietario ni qué tipo le haya tocado en Fase 1.
+  // El molde local queda sin usar dentro del RPR; es inofensivo porque
+  // buscarREGPorDireccion() ya ignora explícitamente las carpetas "PLANTILLA #2".
   var cdr = datos.cdr;
-  plantillaFolder.setName(cdr);
-  Logger.log(`✅ REG creado: ${cdr}`);
+  var plantillaFolder = crearREGDesdePlantillaMaestra(carpetaNegocioFolder, cdr);
 
   // 7. Renombrar carpeta XXXX a año actual
   renombrarCarpetaAnioEnREG(plantillaFolder);
@@ -1693,7 +1740,9 @@ function continuarRegistroInmuebleParte3() {
     try {
       lock.waitLock(15000);
     } catch (e) {
-      Logger.log('🔒 No se pudo adquirir el bloqueo, otra instancia de Parte 3 está corriendo.');
+      // P3: reprogramar en vez de morir; si no, la cola se congela.
+      Logger.log('🔒 No se pudo adquirir el bloqueo, otra instancia de Parte 3 está corriendo. Reprogramando...');
+      asegurarTriggerWorker('continuarRegistroInmuebleParte3', 30000);
       return;
     }
 
@@ -1843,12 +1892,12 @@ function continuarRegistroInmuebleParte3() {
 
     if (procesosRestantesParte3 > 0) {
       Logger.log(`⏳ Quedan ${procesosRestantesParte3} registros en la Parte 3. Reprogramando...`);
-      ScriptApp.newTrigger('continuarRegistroInmuebleParte3').timeBased().after(1000).create();
+      asegurarTriggerWorker('continuarRegistroInmuebleParte3', 1000);
     }
     
     if (procesosRestantesParte2 > 0) {
       Logger.log(`⏰ Hay ${procesosRestantesParte2} registros en la Parte 2 que llegaron tarde. Reprogramando...`);
-      ScriptApp.newTrigger('continuarRegistroInmuebleParte2').timeBased().after(1000).create();
+      asegurarTriggerWorker('continuarRegistroInmuebleParte2', 1000);
     }
 
     var tiempoTotal = (new Date().getTime() - tiempoInicio) / 1000;

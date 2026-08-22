@@ -114,11 +114,11 @@ function onFormSubmitInmueble(e) {
     );
 
     // PASO 10: Crear trigger para Archivo 2
+    // Antes hacía newTrigger() directo, sin limpiar ni contar: con varios registros
+    // seguidos se acumulaban y al pasar de 20 triggers Apps Script lanzaba excepción,
+    // dejando la fila marcada como ERROR. asegurarTriggerWorker() no duplica ni desborda.
     Logger.log('⏰ Programando ejecución de Archivo 2...');
-    ScriptApp.newTrigger('continuarRegistroInmuebleParte2')
-      .timeBased()
-      .after(CONFIG_INMUEBLES.TIEMPO_ESPERA_PARTE2)
-      .create();
+    asegurarTriggerWorker('continuarRegistroInmuebleParte2', CONFIG_INMUEBLES.TIEMPO_ESPERA_PARTE2);
 
     var tiempoTotal = (new Date().getTime() - tiempoInicio) / 1000;
     Logger.log('🔵 ═══════════════════════════════════════════════════');

@@ -288,3 +288,166 @@ function instalarTriggerSincroTasasSFC() {
 
     SpreadsheetApp.getUi().alert('✅ Cron Trigger de SFC activado (Ejecución Semanal: Lunes 2:00 AM).');
 }
+
+// ==========================================
+// SALUD DE LA COLA DE REGISTROS (P3)
+// ==========================================
+
+var CONFIG_WATCHDOG = {
+  // Cada cuánto vuelve a mirar el watchdog MIENTRAS haya trabajo en cola.
+  // No es un cron: si la cola queda vacía, el watchdog no se reprograma y muere.
+  INTERVALO_MS: 10 * 60 * 1000 // 10 minutos
+};
+
+/**
+ * Cuenta cuántos triggers vivos hay para una función dada.
+ */
+function contarTriggersDe(fnName) {
+  var n = 0;
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === fnName) n++;
+  });
+  return n;
+}
+
+/**
+ * Garantiza que exista UN trigger pendiente para el worker indicado, sin duplicar
+ * ni reventar el límite de 20 triggers por proyecto de Apps Script.
+ *
+ * Reemplaza los `ScriptApp.newTrigger(...).create()` sueltos: si ya hay uno
+ * encolado no crea otro, y si el proyecto está cerca del tope no crea nada
+ * (el watchdog lo recogerá después).
+ *
+ * @return {boolean} true si al terminar hay al menos un trigger vivo para fnName.
+ */
+function asegurarTriggerWorker(fnName, delayMs) {
+  try {
+    var propios = 0;
+    var total = 0;
+    ScriptApp.getProjectTriggers().forEach(function(t) {
+      total++;
+      if (t.getHandlerFunction() === fnName) propios++;
+    });
+
+    if (propios > 0) return true; // ya hay uno en camino
+
+    if (total >= 19) {
+      Logger.log('⚠️ asegurarTriggerWorker: proyecto al límite de triggers (' + total + '). No se creó "' + fnName + '".');
+      return false;
+    }
+
+    ScriptApp.newTrigger(fnName).timeBased().after(delayMs || 1000).create();
+    Logger.log('⏱️ Trigger programado para "' + fnName + '".');
+    return true;
+  } catch (e) {
+    Logger.log('⚠️ asegurarTriggerWorker("' + fnName + '") falló: ' + e.message);
+    return false;
+  }
+}
+
+/**
+ * WATCHDOG de la cola de registros. Pensado para correr cada 10 minutos.
+ *
+ * Revive la cadena si quedó trabajo encolado sin ningún trigger vivo que lo
+ * atienda. Eso pasa cuando un worker no consigue el LockService, cuando se
+ * agotó el tiempo de ejecución, o cuando alguien corrió limpiarTriggersHuerfanos()
+ * con la cola a medias.
+ *
+ * Es la versión automática del botón manual limpiarTriggersHuerfanos().
+ */
+function watchdogColaRegistros() {
+  // Borra su propio trigger al entrar (mismo patrón que Parte 2 y Parte 3).
+  // Si al final queda trabajo pendiente, se vuelve a programar; si no, muere aquí.
+  eliminarTriggerActual('watchdogColaRegistros');
+
+  var props = PropertiesService.getScriptProperties().getProperties();
+
+  var pendientes = { fase1: 0, parte2: 0, parte3: 0 };
+  for (var key in props) {
+    if (key.indexOf('PENDING_REGISTRATION_ROW_') === 0) pendientes.fase1++;
+    else if (key.indexOf('PROCESO_PARTE2_') === 0) pendientes.parte2++;
+    else if (key.indexOf('PROCESO_PARTE3_') === 0) pendientes.parte3++;
+  }
+
+  var totalPendiente = pendientes.fase1 + pendientes.parte2 + pendientes.parte3;
+
+  // Cola vacía -> apagarse. No se reprograma: nada que vigilar.
+  if (totalPendiente === 0) {
+    Logger.log('✅ Watchdog: cola vacía, no hay nada que vigilar. Se apaga (no se reprograma).');
+    return;
+  }
+
+  var revividos = [];
+
+  if (pendientes.fase1 > 0 && contarTriggersDe('procesarRegistrosPendientes') === 0) {
+    if (asegurarTriggerWorker('procesarRegistrosPendientes', 1000)) revividos.push('Fase 1 (' + pendientes.fase1 + ')');
+  }
+  if (pendientes.parte2 > 0 && contarTriggersDe('continuarRegistroInmuebleParte2') === 0) {
+    if (asegurarTriggerWorker('continuarRegistroInmuebleParte2', 1000)) revividos.push('Parte 2 (' + pendientes.parte2 + ')');
+  }
+  if (pendientes.parte3 > 0 && contarTriggersDe('continuarRegistroInmuebleParte3') === 0) {
+    if (asegurarTriggerWorker('continuarRegistroInmuebleParte3', 1000)) revividos.push('Parte 3 (' + pendientes.parte3 + ')');
+  }
+
+  if (revividos.length > 0) {
+    Logger.log('🚑 Watchdog: cola atascada, se revivió -> ' + revividos.join(', '));
+  } else {
+    Logger.log('👀 Watchdog: hay trabajo en curso y sus workers están vivos (F1:' +
+      pendientes.fase1 + ' P2:' + pendientes.parte2 + ' P3:' + pendientes.parte3 + '). Nada que revivir.');
+  }
+
+  // Sigue habiendo trabajo -> volver a mirar. Solo mientras la cola no esté vacía.
+  armarWatchdogCola(CONFIG_WATCHDOG.INTERVALO_MS);
+}
+
+/**
+ * Enciende el watchdog si no está ya encendido.
+ *
+ * Se llama desde handleRegistrarInmueble al encolar un registro, y desde el
+ * propio watchdog mientras quede trabajo. Al vaciarse la cola nadie lo vuelve a
+ * llamar y el trigger desaparece solo — no queda un cron corriendo de gratis
+ * cada 10 minutos (144 ejecuciones/día contra la cuota) ni ocupando un slot
+ * de los 20 triggers disponibles.
+ */
+function armarWatchdogCola(delayMs) {
+  return asegurarTriggerWorker('watchdogColaRegistros', delayMs || CONFIG_WATCHDOG.INTERVALO_MS);
+}
+
+/**
+ * YA NO HACE FALTA INSTALAR NADA: el watchdog se enciende solo al encolarse un
+ * registro y se apaga solo al vaciarse la cola (ver armarWatchdogCola).
+ *
+ * Esta función queda como utilidad de limpieza para quitar el cron recurrente
+ * de 10 minutos si alguna vez se llegó a instalar la versión anterior. Correrla
+ * es seguro aunque no exista: si hay trabajo pendiente vuelve a armar el
+ * watchdog en su modo bajo demanda.
+ */
+function limpiarWatchdogRecurrente() {
+  var fnName = 'watchdogColaRegistros';
+  var borrados = 0;
+  ScriptApp.getProjectTriggers().forEach(function(t) {
+    if (t.getHandlerFunction() === fnName) {
+      ScriptApp.deleteTrigger(t);
+      borrados++;
+    }
+  });
+
+  // Si quedó trabajo en cola, dejarlo vigilado en el modo nuevo (bajo demanda).
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var hayTrabajo = false;
+  for (var key in props) {
+    if (key.indexOf('PENDING_REGISTRATION_ROW_') === 0 ||
+        key.indexOf('PROCESO_PARTE2_') === 0 ||
+        key.indexOf('PROCESO_PARTE3_') === 0) { hayTrabajo = true; break; }
+  }
+  if (hayTrabajo) armarWatchdogCola(1000);
+
+  var msg = '🧹 Se eliminaron ' + borrados + ' trigger(s) de watchdog. ' +
+            (hayTrabajo
+              ? 'Había trabajo en cola: se re-armó el watchdog bajo demanda.'
+              : 'Cola vacía: el watchdog se encenderá solo cuando entre un registro.');
+  Logger.log(msg);
+  if (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getUi) {
+    try { SpreadsheetApp.getUi().alert(msg); } catch (e) {}
+  }
+}
