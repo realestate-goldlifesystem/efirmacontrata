@@ -533,15 +533,18 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
              formData.phone === formData.confirmPhone &&
              String(formData.email || '').toLowerCase() === String(formData.confirmEmail || '').toLowerCase();
     }
+    // Paso 6 = Negocio. Va ANTES que Llaves porque el tipo de autorización
+    // depende del modelo de negocio elegido aquí.
     if (currentStep === 6) {
+      return formData.clausesAccepted;
+    }
+    // Paso 7 = Llaves y autorización de ingreso.
+    if (currentStep === 7) {
       if (formData.hasPorteriaAndAdmin === 'SI') {
         if (!String(formData.porteriaBuildingName || '').trim()) return false;
         if (formData.porteriaAutoSendEmail === 'SI' && !String(formData.porteriaAdminEmail || '').trim()) return false;
       }
       return true;
-    }
-    if (currentStep === 7) {
-      return formData.clausesAccepted;
     }
     // Paso 8 usa el botón de Finalizar y no next step, pero por si acaso
     if (currentStep === 8) {
@@ -918,7 +921,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
         {!submitted && currentStep > 0 && (
           <div className="mb-10 max-w-4xl mx-auto">
             <div className="flex justify-between text-[10px] sm:text-xs font-mono mb-4 px-2">
-              {['Ubicación', 'Físico', 'Int/Ext', 'Entorno', 'Propietario', 'Llaves', 'Negocio', 'Precios'].map((label, idx) => {
+              {['Ubicación', 'Físico', 'Int/Ext', 'Entorno', 'Propietario', 'Negocio', 'Llaves', 'Precios'].map((label, idx) => {
                 const isActive = currentStep === idx + 1;
                 const isPast = currentStep > idx + 1;
                 return (
@@ -2834,10 +2837,10 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                   )}
 
                   {/* STEP 7: Cláusulas y Porcentajes de Negocio */}
-                  {currentStep === 7 && (
+                  {currentStep === 6 && (
                     <div className="space-y-6 animate-fade-in">
                       <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
-                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">7</span>
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">6</span>
                         Cláusulas Legales y Comisión de Acuerdos
                       </h4>
 
@@ -3059,10 +3062,10 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                   )}
 
                   {/* STEP 6: Control de Autorización y Llaves */}
-                  {currentStep === 6 && (
+                  {currentStep === 7 && (
                     <div className="space-y-6 animate-fade-in">
                       <h4 className="text-base font-bold text-stone-900 font-sans flex items-center gap-2 border-b border-stone-100 pb-2">
-                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">6</span>
+                        <span className="bg-brand-gold text-stone-950 font-mono text-xs w-5 h-5 rounded-full flex items-center justify-center font-extrabold">7</span>
                         Control de Autorización y Llaves de Inmueble
                       </h4>
 

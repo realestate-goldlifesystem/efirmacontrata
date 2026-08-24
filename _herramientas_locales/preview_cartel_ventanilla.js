@@ -69,7 +69,11 @@ const ESCENARIOS = [
   { titulo: 'MIXTO (Vendi-Renta) · 1 garaje · con depósito',
     fila: ['Vendi-Renta','Apartamento','3','2','1',SI_DEP,'2500000','500000000'] },
   { titulo: 'MIXTO (Admi-Venta) · COMUNAL · SIN depósito',
-    fila: ['Admi-Venta','Apartamento','2','2','Comunal',NO_DEP,'3100000','620000000'] }
+    fila: ['Admi-Venta','Apartamento','2','2','Comunal',NO_DEP,'3100000','620000000'] },
+  { titulo: 'ARRIENDO · SIN garaje · CON depósito  (hueco intermedio)',
+    fila: ['Corretaje','Apartamento','3','2','Ningun',SI_DEP,'2800000',''] },
+  { titulo: 'ARRIENDO · SIN garaje · SIN depósito  (dos huecos)',
+    fila: ['Corretaje','Apartaestudio','1','1','Ningun',NO_DEP,'1500000',''] }
 ];
 
 // ---- Ejecutar ------------------------------------------------------------
@@ -82,7 +86,8 @@ const resultados = ESCENARIOS.map(esc => {
     titulo: esc.titulo,
     negocio: g('<<TIPO DE NEGOCIO>>'),
     inm: g('<<TIPO INM>>'),
-    lineas: [g('<<HAB>>'), g('<<BAÑ>>'), g('<<GAR>>'), g('<<DEPÓSITO>>')].filter(Boolean),
+    // Ya viene armado en un solo tag; se parte solo para pintarlo.
+    lineas: g('<<CARACTERISTICAS>>').split(/\r?\n/).filter(Boolean),
     precio: (g('<<PRECIO DE VENTA EN NUM>>') + g('<<PRECIO DE ARRIENDO EN NUM>>')).trim(),
     admin: g('<<ADMIN>>')
   };

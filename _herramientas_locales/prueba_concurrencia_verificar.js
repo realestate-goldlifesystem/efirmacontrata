@@ -13,7 +13,7 @@ const auth = new google.auth.GoogleAuth({
 });
 const SPREADSHEET_ID = '1jdPeOqQ2rRQNhlClAnFQFaNMxOl7HCI7oI1yG3_QRZc';
 const HOJA = '1.1 - INMUEBLES REGISTRADOS';
-const MARCA = 'PRUEBA-QA';
+const MARCA = 'PRUEBA-ID2';
 
 async function run() {
   const sheets = google.sheets({ version: 'v4', auth });

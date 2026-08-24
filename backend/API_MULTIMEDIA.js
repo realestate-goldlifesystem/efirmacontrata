@@ -646,13 +646,24 @@ function generarCartelVentanilla(rowData, headers, targetFolder, cdr) {
         tagPrecioArriendo = precioArriendoFmt ? `$${precioArriendoFmt}` : '';
     }
 
+    // Las características van en UN SOLO tag, no en cuatro.
+    //
+    // Antes cada una tenía su propio renglón en la plantilla. Al quedar vacía (un
+    // inmueble sin garaje, por ejemplo) el texto desaparecía pero EL RENGLÓN NO, y
+    // el cartel salía con un hueco en la mitad. Borrar el texto no borra la línea.
+    // Armando el bloque aquí y uniendo solo lo que tiene contenido, el hueco no
+    // puede existir en ninguna combinación.
+    const caracteristicas = [
+        pluralizar(soloNumero(valorDe('N° de Habitaciones')), 'Habitación', 'Habitaciones'),
+        pluralizar(soloNumero(valorDe('N° de Baños')), 'Baño', 'Baños'),
+        textoGarajes,
+        tieneDeposito ? '1 Depósito' : ''
+    ].filter(function (linea) { return linea; }).join('\n');
+
     const mapReemplazos = {
         '<<TIPO DE NEGOCIO>>': accionNegocio,
         '<<TIPO INM>>': tipoInm,
-        '<<HAB>>': pluralizar(soloNumero(valorDe('N° de Habitaciones')), 'Habitación', 'Habitaciones'),
-        '<<BAÑ>>': pluralizar(soloNumero(valorDe('N° de Baños')), 'Baño', 'Baños'),
-        '<<GAR>>': textoGarajes,
-        '<<DEPÓSITO>>': tieneDeposito ? '1 Depósito' : '',
+        '<<CARACTERISTICAS>>': caracteristicas,
         '<<PRECIO DE VENTA EN NUM>>': tagPrecioVenta,
         '<<PRECIO DE ARRIENDO EN NUM>>': tagPrecioArriendo,
         // Solo aplica donde hay canon: arriendo y mixto. En venta pura se borra.

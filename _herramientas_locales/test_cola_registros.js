@@ -35,7 +35,10 @@ const sandbox = {
   },
   PropertiesService: {
     getScriptProperties: () => ({
-      getProperties: () => Object.assign({}, propsStore)
+      getProperties: () => Object.assign({}, propsStore),
+      getProperty: (k) => (k in propsStore ? propsStore[k] : null),
+      setProperty: (k, v) => { propsStore[k] = String(v); },
+      deleteProperty: (k) => { delete propsStore[k]; }
     })
   }
 };
@@ -151,6 +154,47 @@ sandbox.watchdogColaRegistros();                   // corre, cola vacía
 check('se apagó solo al terminar',
   triggers.filter(t => t.fn === 'watchdogColaRegistros').length === 0,
   JSON.stringify(triggers.map(t => t.fn)));
+
+// ---- Regresión del bloqueo visto en producción (21-ago-2026) --------------
+// Había un trigger FANTASMA (un .after() ya gastado que sigue listado). El
+// watchdog lo daba por vivo y jamás revivía la cola, que quedó con F1:2 parada.
+console.log('\n[11] TRIGGER FANTASMA: la cola no avanza pero el trigger existe');
+reset();
+propsStore['PENDING_REGISTRATION_ROW_40'] = 'true';
+propsStore['PENDING_REGISTRATION_ROW_41'] = 'true';
+triggers.push({ fn: 'procesarRegistrosPendientes' }); // el fantasma
+triggers.push({ fn: 'watchdogColaRegistros' });
+
+sandbox.watchdogColaRegistros();                       // 1er vistazo: toma referencia
+check('1er chequeo no toca nada (aún no sabe si avanza)',
+  triggers.filter(t => t.fn === 'procesarRegistrosPendientes').length === 1,
+  JSON.stringify(triggers.map(t => t.fn)));
+
+sandbox.watchdogColaRegistros();                       // 2do: igual -> sin progreso (1)
+sandbox.watchdogColaRegistros();                       // 3ro: igual -> sin progreso (2) -> actúa
+check('tras 2 chequeos sin avance declara atasco',
+  logs.some(l => l.includes('ATASCADA')), logs.slice(-3).join(' | '));
+check('recreó el trigger de Fase 1 (mató al fantasma)',
+  logs.some(l => l.includes('forzado')), logs.slice(-3).join(' | '));
+check('sigue habiendo exactamente 1 trigger de Fase 1',
+  triggers.filter(t => t.fn === 'procesarRegistrosPendientes').length === 1,
+  JSON.stringify(triggers.map(t => t.fn)));
+
+console.log('\n[12] Con avance real NO declara atasco');
+reset();
+propsStore['PENDING_REGISTRATION_ROW_50'] = 'true';
+propsStore['PENDING_REGISTRATION_ROW_51'] = 'true';
+propsStore['PENDING_REGISTRATION_ROW_52'] = 'true';
+triggers.push({ fn: 'procesarRegistrosPendientes' });
+sandbox.watchdogColaRegistros();
+delete propsStore['PENDING_REGISTRATION_ROW_50'];   // el worker terminó uno
+sandbox.watchdogColaRegistros();
+delete propsStore['PENDING_REGISTRATION_ROW_51'];   // y otro
+sandbox.watchdogColaRegistros();
+check('nunca declara atasco mientras la cola encoge',
+  !logs.some(l => l.includes('ATASCADA')), logs.filter(l => l.includes('ATASCADA')).join('|'));
+check('reporta que la cola avanza',
+  logs.some(l => l.includes('la cola avanza')), logs.slice(-2).join(' | '));
 
 console.log('\n' + (fallos === 0 ? '✅ TODAS LAS PRUEBAS PASARON' : `❌ ${fallos} PRUEBA(S) FALLARON`) + '\n');
 process.exit(fallos === 0 ? 0 : 1);

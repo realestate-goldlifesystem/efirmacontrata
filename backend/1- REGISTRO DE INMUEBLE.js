@@ -60,10 +60,18 @@ function onFormSubmitInmueble(e) {
     var cdr = generarCodigoRegistro(sheet, row);
     Logger.log(`✅ CDR generado: ${cdr}`);
 
-    // PASO 3.5: Generar ID DE REGISTRO
-    Logger.log('🔢 Generando ID Único...');
-    var idInmueble = generarIdInmuebleUnico(sheet, row);
-    Logger.log(`✅ ID generado: ${idInmueble}`);
+    // PASO 3.5: ID DE REGISTRO
+    // Normalmente ya viene puesto desde handleRegistrarInmueble, que lo escribe al
+    // insertar la fila. Solo se genera aquí si falta (fila insertada a mano en el Sheet).
+    var idCol = getColumnByName(sheet, 'ID DE REGISTRO');
+    var idInmueble = idCol ? (sheet.getRange(row, idCol).getValue() || '').toString().trim() : '';
+    if (!idInmueble) {
+      Logger.log('🔢 La fila no traía ID. Generando uno...');
+      idInmueble = generarIdInmuebleUnico(sheet, row);
+      Logger.log(`✅ ID generado: ${idInmueble}`);
+    } else {
+      Logger.log(`🆔 ID ya asignado en el registro: ${idInmueble}`);
+    }
 
     // PASO 4: Asignar estado inicial "REGISTRANDO"
     Logger.log('📌 Asignando estado inicial...');
@@ -90,13 +98,23 @@ function onFormSubmitInmueble(e) {
     // PASO 9: Guardar datos para Archivo 2
     Logger.log('💾 Guardando datos para procesamiento posterior...');
     
-    var propMultimediaKey = 'REUTILIZAR_MULTIMEDIA_ROW_' + row;
-    var reutilizarMultimedia = PropertiesService.getScriptProperties().getProperty(propMultimediaKey);
+    // La clave de cola es el ID; la fila solo como último recurso si no hubo ID.
+    var claveCola = idInmueble || ('ROW_' + row);
+
+    var propsSvc = PropertiesService.getScriptProperties();
+    var reutilizarMultimedia = propsSvc.getProperty('REUTILIZAR_MULTIMEDIA_' + claveCola);
     if (reutilizarMultimedia) {
-      PropertiesService.getScriptProperties().deleteProperty(propMultimediaKey);
+      propsSvc.deleteProperty('REUTILIZAR_MULTIMEDIA_' + claveCola);
+    } else {
+      // Compatibilidad: si el candado se guardó con el formato viejo, recogerlo igual.
+      var claveVieja = 'REUTILIZAR_MULTIMEDIA_ROW_' + row;
+      reutilizarMultimedia = propsSvc.getProperty(claveVieja);
+      if (reutilizarMultimedia) propsSvc.deleteProperty(claveVieja);
     }
 
     var datosParaParte2 = {
+      // 'fila' queda como pista para los logs. La verdad es idInmueble: Parte 2 y
+      // Parte 3 resuelven la fila buscando ese ID, porque el número puede moverse.
       fila: row,
       cdr: cdr,
       idInmueble: idInmueble,
@@ -108,8 +126,8 @@ function onFormSubmitInmueble(e) {
       timestamp: tiempoInicio
     };
 
-    PropertiesService.getScriptProperties().setProperty(
-      'PROCESO_PARTE2_' + row,
+    propsSvc.setProperty(
+      'PROCESO_PARTE2_' + claveCola,
       JSON.stringify(datosParaParte2)
     );
 
@@ -346,7 +364,17 @@ function calcularSecuencia(sheet, currentRow, tipoNegocioCode) {
 // GENERACIÓN DE ID ÚNICO
 // ==========================================
 
-function generarIdInmuebleUnico(sheet, row) {
+/**
+ * Genera un ID único SIN escribirlo en ninguna fila.
+ *
+ * Existe aparte de generarIdInmuebleUnico() porque el registro nuevo necesita su ID
+ * ANTES de que la fila exista: se mete dentro del array que va a appendRow(), para que
+ * la fila nazca identificada en una sola operación en lugar de dos.
+ *
+ * Debe llamarse dentro de un lock (handleRegistrarInmueble ya lo tiene): dos
+ * ejecuciones simultáneas leerían la misma lista de IDs existentes.
+ */
+function generarIdInmuebleUnicoValor(sheet) {
   var idCol = getColumnByName(sheet, 'ID DE REGISTRO');
   if (!idCol) return null;
 
@@ -368,17 +396,72 @@ function generarIdInmuebleUnico(sheet, row) {
     var numAleatorio = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
     var letra1 = letras.charAt(Math.floor(Math.random() * letras.length));
     var letra2 = letras.charAt(Math.floor(Math.random() * letras.length));
-    
+
     nuevoId = letra1 + letra2 + numAleatorio;
-    
+
     if (existingIds.indexOf(nuevoId) === -1) {
       break; // Es único
     }
     intentos++;
   }
 
+  return nuevoId;
+}
+
+/**
+ * Genera el ID y lo escribe en la fila indicada.
+ *
+ * Ya NO es el camino normal: desde que la cola se indexa por ID, el identificador se
+ * asigna en handleRegistrarInmueble al insertar la fila. Esto queda como red de
+ * seguridad para filas que lleguen sin ID (por ejemplo, insertadas a mano en el Sheet).
+ */
+function generarIdInmuebleUnico(sheet, row) {
+  var idCol = getColumnByName(sheet, 'ID DE REGISTRO');
+  if (!idCol) return null;
+
+  var nuevoId = generarIdInmuebleUnicoValor(sheet);
   sheet.getRange(row, idCol).setValue(nuevoId);
   return nuevoId;
+}
+
+/**
+ * Devuelve el número de fila de un inmueble a partir de su ID DE REGISTRO,
+ * o -1 si no aparece.
+ *
+ * Es el reemplazo de "confiar en el número de fila guardado". El número se mueve
+ * (un deleteRow de una renovación, un borrado a mano, un ordenamiento de la hoja);
+ * el ID no. Quien recibe -1 NO debe seguir adivinando: significa que ese inmueble
+ * ya no está, y hay que reportarlo en vez de escribir en la fila equivocada.
+ */
+/**
+ * Lee el ID DE REGISTRO de una fila concreta. Devuelve '' si la fila no es válida
+ * o la celda está vacía. Es la operación inversa a buscarFilaPorIdRegistro().
+ */
+function leerIdRegistroDeFila(sheet, fila) {
+  if (!fila || fila < 2) return '';
+  var idCol = getColumnByName(sheet, 'ID DE REGISTRO');
+  if (!idCol) return '';
+  var v = sheet.getRange(fila, idCol).getValue();
+  return v ? v.toString().trim() : '';
+}
+
+function buscarFilaPorIdRegistro(sheet, id) {
+  if (!id) return -1;
+  var idCol = getColumnByName(sheet, 'ID DE REGISTRO');
+  if (!idCol) return -1;
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+
+  var objetivo = id.toString().trim();
+  var values = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+  for (var i = 0; i < values.length; i++) {
+    var v = values[i][0];
+    if (v && v.toString().trim() === objetivo) {
+      return i + 2; // +2: los datos arrancan en la fila 2
+    }
+  }
+  return -1;
 }
 
 // ==========================================
@@ -647,14 +730,19 @@ function determinarTipoRegistro(sheet, row, resultadoRPR, datosInmueble) {
     // Encontró REG con misma dirección+torre+apto en el mismo tipo de negocio
     Logger.log(`✅ REG existente encontrado: ${regExistente.nombre}`);
 
-    // Buscar fila original en la hoja
+    // Localizar el registro anterior. La búsqueda por CDR está bien: es por contenido.
+    // Lo que NO se puede persistir es el número de fila que devuelve — para cuando
+    // Parte 2 y Parte 3 lo usen, ese número puede apuntar a otro inmueble.
+    // Se guarda el ID DE REGISTRO de esa fila, que sí es estable.
     var filaOriginal = buscarFilaPorCDRParcial(sheet, regExistente.nombre);
+    var idOriginal = leerIdRegistroDeFila(sheet, filaOriginal);
 
-    Logger.log('📊 TIPO 2: RENOVACIÓN (mismo inmueble)');
+    Logger.log('📊 TIPO 2: RENOVACIÓN (mismo inmueble) | ID original: ' + (idOriginal || '(sin ID)'));
     return {
       tipo: 'TIPO_2',
       descripcion: 'Renovación - Crear año nuevo',
       filaOriginal: filaOriginal,
+      idOriginal: idOriginal,
       regExistenteId: regExistente.folder.getId(),
       regExistenteNombre: regExistente.nombre,
       carpetaNegocio: carpetaNegocio
@@ -673,12 +761,14 @@ function determinarTipoRegistro(sheet, row, resultadoRPR, datosInmueble) {
     Logger.log(`✅ REG encontrado en ${otrosNegociosResult.carpetaOrigen}: ${otrosNegociosResult.regFolder.getName()}`);
 
     var filaOriginal = buscarFilaPorCDRParcial(sheet, otrosNegociosResult.regFolder.getName());
+    var idOriginal = leerIdRegistroDeFila(sheet, filaOriginal);
 
-    Logger.log('📊 TIPO 4: CAMBIO DE TIPO DE NEGOCIO');
+    Logger.log('📊 TIPO 4: CAMBIO DE TIPO DE NEGOCIO | ID original: ' + (idOriginal || '(sin ID)'));
     return {
       tipo: 'TIPO_4',
       descripcion: 'Cambio de tipo de negocio - Renombrar y mover REG',
       filaOriginal: filaOriginal,
+      idOriginal: idOriginal,
       regExistenteId: otrosNegociosResult.regFolder.getId(),
       regExistenteNombre: otrosNegociosResult.regFolder.getName(),
       carpetaOrigen: otrosNegociosResult.carpetaOrigen,

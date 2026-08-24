@@ -39,6 +39,7 @@ function continuarRegistroInmuebleParte2() {
       if (key.startsWith('PROCESO_PARTE2_')) {
         try {
           var datos = JSON.parse(todasPropiedades[key]);
+          datos.__clave = key;   // se recuerda para poder borrarla exactamente
           procesosPendientes.push(datos);
         } catch (e) {
           Logger.log(`⚠️ Error al parsear propiedad ${key}: ${e.message}`);
@@ -52,8 +53,14 @@ function continuarRegistroInmuebleParte2() {
       return;
     }
 
-    // Ordenar de más antiguo a más reciente para procesar en orden (FIFO)
-    procesosPendientes.sort(function(a, b) { return a.fila - b.fila; });
+    // FIFO por marca de tiempo de llegada (la pone Fase 1 al encolar).
+    // NO ordenar por 'fila': ese número puede haberse movido, y además dejó de ser
+    // la identidad. Si dos registros no traen timestamp, se cae a 'fila' como pista.
+    procesosPendientes.sort(function(a, b) {
+      var ta = a.timestamp || a.fila || 0;
+      var tb = b.timestamp || b.fila || 0;
+      return ta - tb;
+    });
 
     Logger.log(`📋 ${procesosPendientes.length} registro(s) pendiente(s) en total`);
 
@@ -61,13 +68,13 @@ function continuarRegistroInmuebleParte2() {
     var datos = procesosPendientes[0];
 
     Logger.log(`\n🔧 ═══════════════════════════════════════════════════`);
-    Logger.log(`🔧 Procesando fila ${datos.fila} - Tipo: ${datos.tipoRegistro.tipo}`);
+    Logger.log(`🔧 Procesando ${datos.idInmueble || 'fila ' + datos.fila} - Tipo: ${datos.tipoRegistro.tipo}`);
     Logger.log(`🔧 ═══════════════════════════════════════════════════`);
 
     procesarRegistroParte2(datos);
 
-    // Limpiar datos después de procesar
-    props.deleteProperty('PROCESO_PARTE2_' + datos.fila);
+    // Limpiar datos después de procesar, usando la clave exacta con la que se leyó
+    props.deleteProperty(datos.__clave || ('PROCESO_PARTE2_' + (datos.idInmueble || datos.fila)));
 
     // PASO 3: Re-evaluar TODA la cola (Parte 2 y Parte 3)
     var todasPropiedadesFinal = props.getProperties();
@@ -112,7 +119,22 @@ function procesarRegistroParte2(datos) {
     .getSheetByName('1.1 - INMUEBLES REGISTRADOS');
 
   var backupFiltro = null;
+
+  // Resolver la fila AHORA por ID. Entre Fase 1 y este momento pasaron minutos y
+  // pudieron borrarse filas (una renovación hace deleteRow) o reordenarse la hoja:
+  // el número guardado en datos.fila puede estar apuntando a otro inmueble.
   var row = datos.fila;
+  if (datos.idInmueble) {
+    var filaReal = buscarFilaPorIdRegistro(sheet, datos.idInmueble);
+    if (filaReal < 2) {
+      Logger.log(`⚠️ Parte 2: el inmueble ${datos.idInmueble} ya no está en la hoja. Se omite.`);
+      return;
+    }
+    if (filaReal !== datos.fila) {
+      Logger.log(`↕️ La fila se movió: ${datos.fila} → ${filaReal} (ID ${datos.idInmueble})`);
+    }
+    row = filaReal;
+  }
 
   try {
     // Respaldar y eliminar filtros en Archivo 2
@@ -265,6 +287,50 @@ function procesarTipo11_NuevoInmueble(sheet, row, datos) {
   encolarParaParte3(row, datos);
 
   Logger.log('✅ TIPO 3 (Fase de copiado completada)');
+}
+
+// ==========================================
+// RESOLUCIÓN DE LA FILA DEL INMUEBLE ORIGINAL
+// ==========================================
+
+/**
+ * Devuelve el número de fila del inmueble ORIGINAL (el que se renueva o cambia de
+ * negocio), resolviéndolo por su ID DE REGISTRO en vez de por el número que Fase 1
+ * guardó minutos antes.
+ *
+ * Ese número es el dato más peligroso del pipeline: apunta a un inmueble real ya
+ * registrado, y sobre él se escriben precios, CDR, tipo de negocio, links y estado, y
+ * se manda el correo al propietario. Si la hoja cambió entre medias, escribir ahí
+ * significa pisarle los datos a otro cliente.
+ *
+ * Devuelve -1 si no se puede ubicar con certeza. Quien lo reciba debe abortar la
+ * transferencia, nunca continuar con un número dudoso.
+ */
+function resolverFilaOriginal(sheet, tipoRegistro) {
+  if (!tipoRegistro) return -1;
+
+  var idOriginal = tipoRegistro.idOriginal;
+  var filaGuardada = tipoRegistro.filaOriginal;
+
+  if (idOriginal) {
+    var fila = buscarFilaPorIdRegistro(sheet, idOriginal);
+    if (fila < 2) {
+      Logger.log(`❌ El inmueble original ${idOriginal} ya no está en la hoja. No se transfiere nada.`);
+      return -1;
+    }
+    if (fila !== filaGuardada) {
+      Logger.log(`↕️ El inmueble original se movió: fila ${filaGuardada} → ${fila} (ID ${idOriginal})`);
+    }
+    return fila;
+  }
+
+  // Sin ID (registros clasificados antes de este cambio, o filas viejas sin ID).
+  // Se acepta el número guardado, pero dejando constancia de que va sin red.
+  if (filaGuardada > 0) {
+    Logger.log(`⚠️ El inmueble original no tiene ID; se usa la fila ${filaGuardada} sin poder verificarla.`);
+    return filaGuardada;
+  }
+  return -1;
 }
 
 // ==========================================
@@ -620,7 +686,13 @@ function procesarTipo13_CambioTipoNegocio(sheet, row, datos) {
   moverArchivosAutocratTipo13(sheet, row, regFolder);
 
   // 6. Backup y Transferencia de Precios (Fase 1 Rollback TIPO 4)
-  var filaOriginal = datos.tipoRegistro.filaOriginal;
+  // Resolver la fila del inmueble ORIGINAL por su ID, no por el número guardado.
+  //
+  // ⚠️ Esta fila NO es la del registro nuevo: es la de un inmueble YA REGISTRADO de un
+  // cliente real. Aquí se le escriben precios, CDR, tipo de negocio, links y estado, y
+  // se le manda el correo. Si el número quedó viejo (una fila de arriba se borró entre
+  // Fase 1 y ahora), todo eso caería sobre el inmueble equivocado.
+  var filaOriginal = resolverFilaOriginal(sheet, datos.tipoRegistro);
   if (filaOriginal > 0) {
     Logger.log(`💾 Respaldando datos para Rollback TIPO 4 en fila original: ${filaOriginal}`);
     
@@ -1722,8 +1794,10 @@ function transferirCaracteristicasFormulario(sheet, filaOriginal, datos) {
 
 function encolarParaParte3(row, datos) {
   var props = PropertiesService.getScriptProperties();
-  props.setProperty('PROCESO_PARTE3_' + row, JSON.stringify(datos));
-  Logger.log(`💾 Registrado encolado para Parte 3 (OCR y Firma) en la fila: ${row}`);
+  // Se encola por ID; la fila solo como respaldo si el registro no llegó a tener uno.
+  var clave = datos.idInmueble || ('ROW_' + row);
+  props.setProperty('PROCESO_PARTE3_' + clave, JSON.stringify(datos));
+  Logger.log(`💾 Encolado para Parte 3 (OCR y Firma): ${clave}`);
 }
 
 function continuarRegistroInmuebleParte3() {
@@ -1754,6 +1828,7 @@ function continuarRegistroInmuebleParte3() {
       if (key.startsWith('PROCESO_PARTE3_')) {
         try {
           var datos = JSON.parse(todasPropiedades[key]);
+          datos.__clave = key;
           procesosPendientes.push(datos);
         } catch (e) {
           Logger.log(`⚠️ Error al parsear propiedad ${key}: ${e.message}`);
@@ -1767,14 +1842,34 @@ function continuarRegistroInmuebleParte3() {
       return;
     }
 
-    // Ordenar FIFO (Primero en entrar, primero en salir)
-    procesosPendientes.sort(function(a, b) { return a.fila - b.fila; });
+    // FIFO por marca de tiempo, igual que en Parte 2.
+    procesosPendientes.sort(function(a, b) {
+      var ta = a.timestamp || a.fila || 0;
+      var tb = b.timestamp || b.fila || 0;
+      return ta - tb;
+    });
     var datos = procesosPendientes[0];
-    var row = datos.fila;
 
-    Logger.log(`⚙️ Procesando OCR y Notificación para fila temporal ${row} - Tipo: ${datos.tipoRegistro.tipo}`);
-    
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+
+    // Resolver la fila por ID: entre Parte 2 y ahora la hoja pudo cambiar.
+    var row = datos.fila;
+    if (datos.idInmueble) {
+      var filaReal = buscarFilaPorIdRegistro(sheet, datos.idInmueble);
+      if (filaReal < 2) {
+        Logger.log(`⚠️ Parte 3: el inmueble ${datos.idInmueble} ya no está en la hoja. Se descarta de la cola.`);
+        props.deleteProperty(datos.__clave || ('PROCESO_PARTE3_' + datos.idInmueble));
+        lock.releaseLock();
+        return;
+      }
+      if (filaReal !== datos.fila) {
+        Logger.log(`↕️ La fila se movió: ${datos.fila} → ${filaReal} (ID ${datos.idInmueble})`);
+      }
+      row = filaReal;
+    }
+
+    Logger.log(`⚙️ Procesando OCR y Notificación para ${datos.idInmueble || 'fila ' + row} (fila ${row}) - Tipo: ${datos.tipoRegistro.tipo}`);
+
     var regFolder = DriveApp.getFolderById(datos.regFolderId);
 
     // 1. EXTRAER DESCRIPCIÓN MEDIANTE OCR (PDF a Google Doc temp)
@@ -1788,7 +1883,7 @@ function continuarRegistroInmuebleParte3() {
 
     // 2. EJECUTAR LÓGICAS ESPECÍFICAS SEGÚN TIPO
     var tipo = datos.tipoRegistro.tipo;
-    var filaOriginal = datos.tipoRegistro.filaOriginal;
+    var filaOriginal = resolverFilaOriginal(sheet, datos.tipoRegistro);
 
     if (tipo === 'TIPO_1' || tipo === 'TIPO_3') {
       // Caso 1: Nuevo Registro
@@ -1879,7 +1974,7 @@ function continuarRegistroInmuebleParte3() {
     }
 
     // 3. LIMPIAR COLA Y EVALUAR SIGUIENTES REGISTROS (Re-evaluando llegadas tardías)
-    props.deleteProperty('PROCESO_PARTE3_' + row);
+    props.deleteProperty(datos.__clave || ('PROCESO_PARTE3_' + (datos.idInmueble || row)));
 
     var propsFinal = props.getProperties();
     var procesosRestantesParte2 = 0;

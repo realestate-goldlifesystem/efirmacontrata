@@ -23,7 +23,7 @@ if (!EMAIL_PRUEBA) {
 
 const CEDULA_PRUEBA = process.env.CEDULA_PRUEBA || '999000111'; // misma para los 3 -> un solo RPR
 const PROPIETARIO = 'PRUEBA QA BORRAR';
-const MARCA = 'PRUEBA-QA';                          // aparece en la dirección/CDR
+const MARCA = 'PRUEBA-ID2';                          // aparece en la dirección/CDR
 
 const SI_DEP = 'Depositoㅤ';
 const NO_DEP = 'ㅤ';
@@ -134,6 +134,30 @@ const CASOS = [
       "¿Qué tipo de autorización desea realizar?": 'GENERAL'
     }),
     esperado: { accion: 'SE VENDE Y ARRIENDA', tipoSeq: 'VR', lineas: ['4 Habitaciones','3 Baños','Garaje comunal','1 Depósito'], precio: '$620.000.000 y/o $3.100.000', admin: true }
+  },
+  {
+    // Caso borde de MAQUETACIÓN: sin garaje pero CON depósito. Deja el tag <<GAR>>
+    // vacío EN MEDIO de la lista, no al final. Sirve para ver si la plantilla deja
+    // un renglón en blanco donde iba el garaje.
+    nombre: '4) CORRETAJE · SIN garaje · CON depósito (hueco intermedio)',
+    payload: Object.assign(base(4), {
+      "Selecciona el tipo de inmueble": 'Apartamento',
+      "N° de Habitaciones": '3',
+      "N° de Baños": '2',
+      "N° de Garajes": 'Ningun',
+      "¿Es Independiente o en Servidumbre?": '',
+      "¿Es Cubierto o descubierto?": '',
+      "N° Asignado del garaje": '',
+      "¿Dispone de deposito?": SI_DEP,
+      "# De Deposito": '9',
+      "TIPO DE NEGOCIO": 'Corretaje',
+      "PRECIO DE PROMOCION GENERAL": '2800000',
+      "PRECIO DE PROMOCION EN VENTA": '',
+      "PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)": '300000',
+      "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO": '50%',
+      "¿Qué tipo de autorización desea realizar?": 'GENERAL'
+    }),
+    esperado: { accion: 'SE ARRIENDA', tipoSeq: 'C', lineas: ['3 Habitaciones','2 Baños','1 Depósito'], precio: '$2.800.000', admin: true }
   }
 ];
 
@@ -152,13 +176,20 @@ async function enviar(caso, idx) {
 }
 
 (async () => {
-  console.log('Disparando 3 registros SIMULTÁNEOS a producción...');
+  // CASO=n manda UNO solo (1=corretaje, 2=venta, 3=mixto). Útil para revisar el
+  // diseño del cartel sin ensuciar el Sheet con tres registros.
+  const soloCaso = process.env.CASO ? parseInt(process.env.CASO, 10) : null;
+  const aEnviar = soloCaso ? [CASOS[soloCaso - 1]] : CASOS;
+
+  console.log(soloCaso
+    ? `Disparando 1 registro (caso ${soloCaso}) a producción...`
+    : 'Disparando 3 registros SIMULTÁNEOS a producción...');
   console.log('Propietario de prueba:', PROPIETARIO, '| CC', CEDULA_PRUEBA, '| correo', EMAIL_PRUEBA);
   console.log('');
 
   const inicio = Date.now();
   // Promise.all = salen a la vez. Máxima contención: el peor caso para el lock.
-  const resultados = await Promise.all(CASOS.map((c, i) => enviar(c, i + 1)));
+  const resultados = await Promise.all(aEnviar.map((c, i) => enviar(c, i + 1)));
   console.log(`Las 3 respuestas llegaron en ${Date.now() - inicio} ms\n`);
 
   let ok = 0;

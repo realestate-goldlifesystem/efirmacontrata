@@ -800,6 +800,21 @@ function handleRegistrarInmueble(datos) {
       }
     }
 
+    // La fila nace CON su identidad puesta.
+    //
+    // El ID se genera aquí y viaja dentro del array, no con un setValue posterior: así
+    // queda escrito en la misma operación que inserta la fila. Antes se asignaba en
+    // Fase 1, o sea minutos después de encolar, y en esa ventana lo único que
+    // identificaba a la fila era su posición — que se mueve.
+    const colIdRegistro = headers.indexOf('ID DE REGISTRO');
+    let idRegistro = '';
+    if (colIdRegistro !== -1) {
+      idRegistro = generarIdInmuebleUnicoValor(sheet);
+      newRow[colIdRegistro] = idRegistro;
+    } else {
+      Logger.log('⚠️ No se encontró la columna ID DE REGISTRO; Fase 1 tendrá que generarlo.');
+    }
+
     // Insertar la nueva fila en el Excel
     sheet.appendRow(newRow);
     SpreadsheetApp.flush();
@@ -807,15 +822,48 @@ function handleRegistrarInmueble(datos) {
     // Obtener la fila recién insertada
     const lastRow = sheet.getLastRow();
 
+    // Clave de cola: el ID si lo hay, la fila solo como último recurso.
+    // Con ID, mover o borrar filas deja de desalinear la cola.
+    const claveCola = idRegistro || ('ROW_' + lastRow);
+
     // Candado Multimedia (Paso C.1 del plan)
     if (datos.reutilizarMultimedia === 'SI') {
-      const propMultimediaKey = 'REUTILIZAR_MULTIMEDIA_ROW_' + lastRow;
+      const propMultimediaKey = 'REUTILIZAR_MULTIMEDIA_' + claveCola;
       PropertiesService.getScriptProperties().setProperty(propMultimediaKey, 'SI');
     }
 
-    // Encolar de forma asíncrona la fila para procesamiento pesado en segundo plano
-    const propKey = 'PENDING_REGISTRATION_ROW_' + lastRow;
-    PropertiesService.getScriptProperties().setProperty(propKey, 'true');
+    // Encolar de forma asíncrona el inmueble para procesamiento pesado en segundo plano.
+    //
+    // El VALOR es la marca de tiempo de llegada, y es lo que da el orden FIFO. Antes el
+    // orden salía del número de fila que venía en la clave; al pasar la clave a ID (que
+    // es aleatorio) hizo falta guardar el orden aparte. Sin esto, los registros se
+    // procesan en el orden arbitrario en que PropertiesService devuelve las claves, y
+    // copiarFormatoFila() —que copia el formato de la fila de arriba— se rompe: una fila
+    // procesada antes que la anterior copia un formato que todavía no existe.
+    const propKey = 'PENDING_REGISTRATION_' + claveCola;
+    PropertiesService.getScriptProperties().setProperty(propKey, String(Date.now()));
+
+    // Marcar la fila como EN COLA desde ya.
+    //
+    // Hasta que Fase 1 la tome (y ponga REGISTRANDO) pueden pasar varios minutos si
+    // hay otros registros delante. Sin esto la fila se ve con el estado VACÍO, que es
+    // indistinguible de un registro perdido: no se puede saber si está esperando turno
+    // o si el sistema se lo tragó.
+    try {
+      const colEstado = headers.indexOf('ESTADO DEL INMUEBLE');
+      const colDetalle = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
+      if (colEstado !== -1) {
+        sheet.getRange(lastRow, colEstado + 1).setValue('EN COLA');
+      }
+      if (colDetalle !== -1) {
+        sheet.getRange(lastRow, colDetalle + 1)
+          .setValue('⏳ Recibido. Esperando turno para generar carpetas y documentos.');
+      }
+      SpreadsheetApp.flush();
+    } catch (e) {
+      // Es informativo: si falla, el registro sigue su curso igual.
+      Logger.log('⚠️ No se pudo marcar la fila ' + lastRow + ' como EN COLA: ' + e.message);
+    }
 
     // Programar el worker. asegurarTriggerWorker() reutiliza el trigger que ya esté
     // encolado en vez de borrarlo y recrearlo: con varios registros simultáneos, borrar
@@ -849,28 +897,28 @@ function handleRegistrarInmueble(datos) {
 function procesarRegistrosPendientes() {
   var startTime = new Date().getTime(); // Registrar el tiempo de inicio de la ejecución
 
-  // 1. Intentar adquirir bloqueo para evitar ejecuciones concurrentes y colisiones
+  // 1. Borrar el PROPIO trigger antes que nada (mismo orden que Parte 2 y Parte 3).
+  //
+  // ⚠️ EL ORDEN IMPORTA — NO MOVER DESPUÉS DEL LOCK.
+  // Los triggers .after() son de un solo uso pero SIGUEN LISTADOS hasta que se
+  // borran. Si esta limpieza va después del lock, al fallar el lock se llama a
+  // asegurarTriggerWorker() con el propio trigger todavía en la lista; esa función
+  // ve "ya hay uno en camino" y NO crea ninguno. El trigger gastado queda ahí para
+  // siempre, nadie vuelve a crear otro, y el watchdog cree que el worker está vivo.
+  // Resultado: cola congelada con trabajo pendiente (visto en producción el
+  // 21-ago-2026: "F1:2 ... workers están vivos" sin que nada corriera).
+  eliminarTriggerActual('procesarRegistrosPendientes');
+
+  // 2. Intentar adquirir bloqueo para evitar ejecuciones concurrentes y colisiones
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(15000); // Esperar hasta 15 segundos si está ocupado
   } catch (e) {
-    // P3: NO morir aquí. Si nos vamos sin reprogramar y este era el último
+    // NO morir aquí. Si nos vamos sin reprogramar y este era el último
     // trigger vivo, la cola queda congelada para siempre con trabajo pendiente.
     Logger.log('🔒 No se pudo adquirir el bloqueo de script, otra instancia de procesarRegistrosPendientes está activa. Reprogramando...');
     asegurarTriggerWorker('procesarRegistrosPendientes', 30000);
     return;
-  }
-
-  // 2. Limpiar todos los triggers excedentes de esta función para mantener limpia la cuota
-  try {
-    var triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(function(trigger) {
-      if (trigger.getHandlerFunction() === 'procesarRegistrosPendientes') {
-        ScriptApp.deleteTrigger(trigger);
-      }
-    });
-  } catch (e) {
-    Logger.log('⚠️ Error limpiando triggers: ' + e.message);
   }
 
   try {
@@ -882,60 +930,80 @@ function procesarRegistrosPendientes() {
 
     var props = PropertiesService.getScriptProperties();
     var allProps = props.getProperties();
-    var rowsToProcess = [];
+    var pendientes = [];
 
-    // Encontrar todas las filas pendientes en la cola
+    // Encontrar todo lo encolado. La clave trae el ID DE REGISTRO del inmueble
+    // (formato viejo: 'ROW_<n>', que se sigue entendiendo por si quedó algo colgado).
     for (var key in allProps) {
-      if (key.indexOf('PENDING_REGISTRATION_ROW_') === 0) {
-        var rowNum = parseInt(key.replace('PENDING_REGISTRATION_ROW_', ''), 10);
-        if (!isNaN(rowNum)) {
-          rowsToProcess.push({ row: rowNum, key: key });
+      if (key.indexOf('PENDING_REGISTRATION_') === 0) {
+        var ident = key.substring('PENDING_REGISTRATION_'.length);
+        if (ident) {
+          // El valor es la marca de tiempo de llegada. Las entradas viejas guardaban
+          // 'true'; se les da orden 0 para que salgan primero.
+          var llegada = parseInt(allProps[key], 10);
+          pendientes.push({ ident: ident, key: key, llegada: isNaN(llegada) ? 0 : llegada });
         }
       }
     }
 
     // Si no hay nada encolado, terminar
-    if (rowsToProcess.length === 0) {
-      Logger.log('ℹ️ Cola vacía. No hay filas pendientes de procesar.');
+    if (pendientes.length === 0) {
+      Logger.log('ℹ️ Cola vacía. No hay registros pendientes de procesar.');
       return;
     }
 
-    // Ordenar de más antiguo a más reciente
-    rowsToProcess.sort(function(a, b) { return a.row - b.row; });
+    // FIFO por orden de llegada. NO QUITAR: copiarFormatoFila() copia el formato de la
+    // fila de arriba, así que procesar fuera de orden deja filas sin formato.
+    pendientes.sort(function (a, b) { return a.llegada - b.llegada; });
 
-    Logger.log(`🚀 Worker: Iniciando procesamiento del primer registro de ${rowsToProcess.length} encolados...`);
+    Logger.log(`🚀 Worker: ${pendientes.length} registro(s) en cola. Procesando el más antiguo...`);
 
-    // Procesar SOLO la primera fila para asegurar que cada ejecución tome menos de 10 segundos
-    var item = rowsToProcess[0];
+    // Procesar SOLO uno para que cada ejecución sea corta
+    var item = pendientes[0];
 
-    Logger.log(`⚙️ Worker: Procesando fila ${item.row}...`);
-    
-    // Obtener el rango y cabeceras
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    var mockEvent = {
-      range: sheet.getRange(item.row, 1, 1, headers.length)
-    };
-
-    // Disparar el flujo síncrono en segundo plano (Fase 1)
-    if (typeof onFormSubmitInmueble === 'function') {
-      try {
-        onFormSubmitInmueble(mockEvent);
-        Logger.log(`✅ Worker: Fila ${item.row} procesada exitosamente en Fase 1.`);
-      } catch (execError) {
-        Logger.log(`❌ Worker: Error ejecutando onFormSubmitInmueble para fila ${item.row}: ` + execError.toString());
-      }
+    // Resolver la fila AHORA, no confiar en un número guardado antes.
+    var fila = -1;
+    if (item.ident.indexOf('ROW_') === 0) {
+      fila = parseInt(item.ident.substring(4), 10);   // compatibilidad con el formato viejo
+      if (isNaN(fila)) fila = -1;
     } else {
-      Logger.log(`❌ Worker: onFormSubmitInmueble no está definido.`);
+      fila = buscarFilaPorIdRegistro(sheet, item.ident);
     }
-    
-    // Eliminar el indicador de esta fila de la cola
-    props.deleteProperty(item.key);
+
+    if (fila < 2) {
+      // El inmueble ya no está (fila borrada, hoja reordenada). Se saca de la cola en vez
+      // de procesar a ciegas: escribir en una fila adivinada corrompería otro registro.
+      Logger.log(`⚠️ Worker: no se encontró el inmueble "${item.ident}" en la hoja. Se descarta de la cola.`);
+      props.deleteProperty(item.key);
+    } else {
+      Logger.log(`⚙️ Worker: Procesando "${item.ident}" (fila ${fila})...`);
+
+      var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var mockEvent = {
+        range: sheet.getRange(fila, 1, 1, headers.length)
+      };
+
+      // Disparar el flujo síncrono en segundo plano (Fase 1)
+      if (typeof onFormSubmitInmueble === 'function') {
+        try {
+          onFormSubmitInmueble(mockEvent);
+          Logger.log(`✅ Worker: "${item.ident}" procesado exitosamente en Fase 1.`);
+        } catch (execError) {
+          Logger.log(`❌ Worker: Error ejecutando onFormSubmitInmueble para "${item.ident}": ` + execError.toString());
+        }
+      } else {
+        Logger.log(`❌ Worker: onFormSubmitInmueble no está definido.`);
+      }
+
+      // Sacar este inmueble de la cola
+      props.deleteProperty(item.key);
+    }
 
     // NUEVO: Revisar si quedaron más registros en la cola (o si llegaron nuevos mientras procesábamos)
     var allPropsAfter = props.getProperties();
     var hasMore = false;
     for (var k in allPropsAfter) {
-      if (k.indexOf('PENDING_REGISTRATION_ROW_') === 0) {
+      if (k.indexOf('PENDING_REGISTRATION_') === 0) {
         hasMore = true;
         break;
       }
