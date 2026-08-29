@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Calculator, ShieldAlert, Sparkles, HelpCircle, ArrowRight, Percent, Check } from 'lucide-react';
 import { FORMAT_COP } from '../data';
 import { numberToWordsSpanish } from '../lib/numberToWords';
@@ -72,6 +72,45 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
   const ventaFee = salePrice * 0.03; // 3% commission
   const ventaNetProceeds = salePrice - ventaFee;
 
+  // --- Resumen flotante en móvil -----------------------------------------
+  //
+  // El resultado vive ~540px debajo del campo de valor. En un celular, con el
+  // teclado abierto quedan unos 500px visibles: el propietario escribe su canon
+  // y NO ve cambiar nada. Se pierde justo lo que hace útil a una calculadora.
+  //
+  // Esta barra muestra el neto mensual mientras los controles están en pantalla
+  // y el resultado real todavía no. Desaparece sola al llegar a las tarjetas,
+  // para no taparlas.
+  const panelControlesRef = useRef<HTMLDivElement | null>(null);
+  const [mostrarResumen, setMostrarResumen] = useState(false);
+
+  // Se usa un listener de scroll y no IntersectionObserver a propósito: el cálculo
+  // con getBoundingClientRect es predecible en cualquier navegador y verificable en
+  // pruebas, mientras que el observer depende de que el navegador esté componiendo
+  // cuadros y falla en entornos embebidos.
+  useEffect(() => {
+    const evaluar = () => {
+      const el = panelControlesRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      // Visible mientras una parte real del panel de controles esté en pantalla.
+      setMostrarResumen(r.top < window.innerHeight - 80 && r.bottom > 120);
+    };
+    evaluar();
+    window.addEventListener('scroll', evaluar, { passive: true });
+    window.addEventListener('resize', evaluar);
+    return () => {
+      window.removeEventListener('scroll', evaluar);
+      window.removeEventListener('resize', evaluar);
+    };
+  }, []);
+
+  // Qué cifra resume mejor cada modo, en las palabras del propietario.
+  const resumenMovil =
+    calcMode === 'venta'
+      ? { etiqueta: 'Recibes por la venta', valor: ventaNetProceeds }
+      : { etiqueta: 'Recibes cada mes', valor: adminNetProceeds };
+
   const handleApply = (service: 'corretaje' | 'administracion' | 'venta' | 'vendi-renta' | 'admi-venta') => {
     onSelectServiceType(service, {
       rentPrice: calcMode === 'venta' ? salePrice : rentPrice,
@@ -123,7 +162,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
           {/* Slider Controls Column */}
-          <div className="lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6">
+          <div ref={panelControlesRef} className="lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6">
             <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider font-mono pb-4 border-b border-stone-200">
               Configura tu Inmueble
             </h3>
@@ -137,7 +176,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     key={mode}
                     type="button"
                     onClick={() => setCalcMode(mode)}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                    className={`flex-1 min-h-[44px] py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                       calcMode === mode
                         ? mode === 'arriendo'
                           ? 'bg-brand-gold text-stone-950 shadow-md'
@@ -182,22 +221,51 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     )}
                   </div>
 
-                  {/* Slider for Rent */}
-                  <div className="space-y-2">
+                  {/* Atajos de canon.
+                      Van JUNTO al campo, antes del slider: quien no tiene el número
+                      exacto resuelve de un toque en vez de tener que deslizar. */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[1500000, 2500000, 4200000, 6000000].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => {
+                          setRentPrice(val);
+                          if (includesHoa && val <= hoaPrice) setHoaPrice(Math.floor(val * 0.15));
+                        }}
+                        className={`min-h-[44px] py-2.5 px-3 border rounded-lg text-sm font-bold tracking-wide transition-all cursor-pointer ${
+                          rentPrice === val
+                            ? 'bg-brand-gold/10 text-brand-gold-dark border-brand-gold/40 shadow-sm'
+                            : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50 hover:text-stone-900 shadow-sm'
+                        }`}
+                      >
+                        {FORMAT_COP(val)}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Slider de ajuste fino.
+                      El contenedor lleva padding vertical a propósito: el riel mide 6px,
+                      que es imposible de agarrar con el pulgar. Así la zona que responde
+                      al toque llega a ~44px sin engordar la línea visualmente. */}
+                  <div className="space-y-1">
                     <div className="flex justify-between text-[11px] font-mono text-stone-500">
                       <span>$ 1.000.000</span>
+                      <span>Ajusta deslizando</span>
                       <span>$ 10.000.000</span>
                     </div>
-                    <input
-                      type="range"
-                      min="1000000"
-                      max="10000000"
-                      step="50000"
-                      id="rent-slider-price"
-                      value={rentPrice}
-                      onChange={(e) => setRentPrice(parseInt(e.target.value))}
-                      className="w-full accent-brand-gold h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer"
-                    />
+                    <div className="py-3">
+                      <input
+                        type="range"
+                        min="1000000"
+                        max="10000000"
+                        step="50000"
+                        id="rent-slider-price"
+                        value={rentPrice}
+                        onChange={(e) => setRentPrice(parseInt(e.target.value))}
+                        className="w-full accent-brand-gold h-1.5 bg-stone-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -254,18 +322,18 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                   
                   {/* HOA Checklist */}
                   <div className="p-3 bg-white border border-stone-200 rounded-lg space-y-3.5 shadow-sm">
-                    <div className="flex items-center space-x-2.5">
+                    <label htmlFor="calc-includes-hoa" className="flex items-center space-x-2.5 min-h-[44px] -my-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         id="calc-includes-hoa"
                         checked={includesHoa}
                         onChange={(e) => setIncludesHoa(e.target.checked)}
-                        className="w-4 h-4 text-brand-gold border-stone-300 bg-white rounded focus:ring-brand-gold focus:ring-1 cursor-pointer"
+                        className="w-5 h-5 shrink-0 text-brand-gold border-stone-300 bg-white rounded focus:ring-brand-gold focus:ring-1 cursor-pointer"
                       />
-                      <label htmlFor="calc-includes-hoa" className="text-xs text-stone-800 font-bold cursor-pointer select-none">
+                      <span className="text-sm text-stone-800 font-bold">
                         El valor total incluye administración
-                      </label>
-                    </div>
+                      </span>
+                    </label>
 
                     {includesHoa && (
                       <div className="space-y-2.5 pt-2 border-t border-stone-100 animate-fade-in">
@@ -304,45 +372,24 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     )}
                   </div>
 
-                  {/* Typical Examples Quick Selection (Only shown for rent values reference) */}
-                  <div className="space-y-2">
-                    <span className="text-[10px] text-stone-550 uppercase tracking-widest font-mono font-semibold block">Referencias de Renta</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[1500000, 2500000, 4200000, 6000000].map((val) => (
-                        <button
-                          key={val}
-                          onClick={() => {
-                            setRentPrice(val);
-                            if (includesHoa && val <= hoaPrice) {
-                              setHoaPrice(Math.floor(val * 0.15));
-                            }
-                          }}
-                          className={`py-2 px-3 border rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                            rentPrice === val
-                              ? 'bg-brand-gold/10 text-brand-gold-dark border-brand-gold/40 shadow-sm'
-                              : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900 shadow-sm'
-                          }`}
-                        >
-                          {FORMAT_COP(val)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Los atajos de canon se movieron arriba, junto al campo de valor:
+                      allí son el camino rápido, aquí abajo quedaban después del
+                      recorrido largo que venían a evitar. */}
 
                   {/* Multi-Property Toggle */}
                   <div className="p-3 bg-white border border-stone-200 rounded-lg space-y-1 shadow-sm">
-                    <div className="flex items-center space-x-2.5">
+                    <label htmlFor="calc-multi-prop" className="flex items-center space-x-2.5 min-h-[44px] -my-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
                         id="calc-multi-prop"
                         checked={isMultiProperty}
                         onChange={(e) => setIsMultiProperty(e.target.checked)}
-                        className="w-4 h-4 text-brand-gold border-stone-300 bg-white rounded focus:ring-brand-gold focus:ring-1 cursor-pointer"
+                        className="w-5 h-5 shrink-0 text-brand-gold border-stone-300 bg-white rounded focus:ring-brand-gold focus:ring-1 cursor-pointer"
                       />
-                      <label htmlFor="calc-multi-prop" className="text-xs text-stone-800 font-bold cursor-pointer select-none">
+                      <span className="text-sm text-stone-800 font-bold">
                         Registraré más de 2 inmuebles
-                      </label>
-                    </div>
+                      </span>
+                    </label>
                     {isMultiProperty && (
                       <p className="text-[10px] text-brand-gold-dark font-mono pl-6 leading-tight animate-fade-in font-bold">
                         🎉 Tarifa preferencial del 8.0% y descuento de corretaje del 40%.
@@ -409,7 +456,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
           </div>
 
           {/* Dynamic Side-by-side Panel (Adapts to Active Tab Mode) */}
-          <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div id="resultado-calculadora" className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8 scroll-mt-20">
             
             {calcMode === 'arriendo' && (
               <>
@@ -1003,6 +1050,38 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 Mantenerme sin descuento
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resumen flotante — SOLO móvil (lg:hidden).
+          En pantallas grandes los controles y el resultado se ven a la vez, así que
+          esta barra sobraría. En móvil es lo que permite ver el efecto de cada dígito
+          sin tener que scrollear hasta las tarjetas. */}
+      {mostrarResumen && (
+        <div
+          aria-live="polite"
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-900/95 backdrop-blur-sm border-t border-brand-gold/30 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.25)] animate-fade-in"
+          style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+        >
+          <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-widest font-mono text-stone-400">
+                {resumenMovil.etiqueta}
+              </p>
+              <p className="text-xl font-extrabold text-brand-gold font-mono tabular-nums truncate">
+                {FORMAT_COP(Math.max(0, Math.round(resumenMovil.valor)))}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                document.getElementById('resultado-calculadora')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+              className="shrink-0 min-h-[44px] px-4 bg-brand-gold text-stone-950 rounded-xl font-bold text-sm active:scale-95 transition-transform"
+            >
+              Ver detalle
+            </button>
           </div>
         </div>
       )}
