@@ -81,6 +81,43 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
   // Esta barra muestra el neto mensual mientras los controles están en pantalla
   // y el resultado real todavía no. Desaparece sola al llegar a las tarjetas,
   // para no taparlas.
+  // --- Flujo de dos pantallas en móvil -----------------------------------
+  //
+  // En celular la calculadora se comporta como una app: primero se configura,
+  // luego se ven los resultados. Antes había que recorrer casi 3 pantallas de
+  // scroll para llegar del canon a las cifras, y en el camino se perdía el hilo.
+  //
+  // En pantallas grandes NO aplica: allí los controles y las dos tarjetas caben
+  // a la vez y compararlas de un vistazo es mejor que cualquier paso a paso.
+  const [vistaMovil, setVistaMovil] = useState<'configurar' | 'resultados'>('configurar');
+
+  // Cuál de los dos modelos se muestra en detalle. El otro nunca desaparece:
+  // queda como una línea de referencia para que comparar no cueste ni un toque.
+  const [modeloEnfocado, setModeloEnfocado] = useState<0 | 1>(0);
+
+  // Al cambiar de tipo de negocio se vuelve a configurar: los resultados que
+  // había en pantalla ya no corresponden a lo que el propietario está mirando.
+  // La cifra del OTRO modelo, para que comparar no cueste ni un toque.
+  // Sin esto el switch obliga a recordar el número anterior, y comparar de
+  // memoria es justo lo que hace perder fuerza al argumento.
+  const otroModelo =
+    calcMode === 'arriendo'
+      ? (modeloEnfocado === 0
+          ? { nombre: 'Corretaje', valor: corretajeOneTimeFee, nota: 'pago único' }
+          : { nombre: 'Administración', valor: adminNetProceeds, nota: 'cada mes' })
+      : (modeloEnfocado === 0
+          // Se enseña la cifra que TITULA cada panel, no una equivalente: si el número
+          // de la línea no aparece igual al abrirla, comparar deja de dar confianza.
+          ? { nombre: 'Admi-Venta', valor: adminFirstMonthNet, nota: 'el primer mes' }
+          : { nombre: 'Vendi-Renta', valor: canonValue, nota: 'de canon al arrendar' });
+
+  const irAConfigurar = () => setVistaMovil('configurar');
+  const cambiarModo = (modo: 'arriendo' | 'venta' | 'mixto') => {
+    setCalcMode(modo);
+    setModeloEnfocado(0);
+    setVistaMovil('configurar');
+  };
+
   const panelControlesRef = useRef<HTMLDivElement | null>(null);
   const [mostrarResumen, setMostrarResumen] = useState(false);
 
@@ -162,7 +199,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
           {/* Slider Controls Column */}
-          <div ref={panelControlesRef} className="lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6">
+          <div ref={panelControlesRef} className={`lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6 ${vistaMovil === 'resultados' ? 'hidden lg:block' : ''}`}>
             <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider font-mono pb-4 border-b border-stone-200">
               Configura tu Inmueble
             </h3>
@@ -175,7 +212,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                   <button
                     key={mode}
                     type="button"
-                    onClick={() => setCalcMode(mode)}
+                    onClick={() => cambiarModo(mode)}
                     className={`flex-1 min-h-[44px] py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                       calcMode === mode
                         ? mode === 'arriendo'
@@ -453,15 +490,68 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
               )}
 
             </div>
+
+            {/* Paso a resultados — SOLO móvil.
+                En pantallas grandes las tarjetas ya están al lado, así que este
+                botón sobraría y hasta confundiría. */}
+            <button
+              type="button"
+              onClick={() => { setVistaMovil('resultados'); setModeloEnfocado(0); }}
+              className="lg:hidden w-full min-h-[52px] bg-brand-gold hover:bg-[#8A631F] text-stone-950 font-extrabold rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform"
+            >
+              Ver mi comparación
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Dynamic Side-by-side Panel (Adapts to Active Tab Mode) */}
-          <div id="resultado-calculadora" className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8 scroll-mt-20">
+          <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid'} grid-cols-1 md:grid-cols-2`}>
+
+            {/* Cabecera de resultados — SOLO móvil.
+                Da el contexto que se pierde al cambiar de pantalla (qué canon se
+                calculó) y el camino de vuelta. Sin esto el propietario aterriza
+                en unas cifras sin recordar de dónde salieron. */}
+            <div className="lg:hidden md:col-span-2 flex items-center justify-between gap-3 -mb-2">
+              <button
+                type="button"
+                onClick={irAConfigurar}
+                className="min-h-[44px] px-3 -ml-3 flex items-center gap-1.5 text-sm font-bold text-stone-600 hover:text-stone-900 transition-colors"
+              >
+                <ArrowRight className="w-4 h-4 rotate-180" />
+                Volver a calcular
+              </button>
+              <span className="text-xs font-mono font-bold text-stone-700 bg-stone-100 border border-stone-200 px-2.5 py-1.5 rounded-lg tabular-nums">
+                {calcMode === 'venta' ? FORMAT_COP(salePrice) : FORMAT_COP(rentPrice)}
+              </span>
+            </div>
+
+            {/* Selector de modelo — SOLO móvil, y solo donde hay dos que comparar. */}
+            {calcMode !== 'venta' && (
+              <div className="lg:hidden md:col-span-2 bg-stone-100/80 p-1 rounded-xl border border-stone-200 flex gap-1 shadow-inner">
+                {(calcMode === 'arriendo'
+                  ? ['Administración', 'Corretaje']
+                  : ['Vendi-Renta', 'Admi-Venta']
+                ).map((nombre, i) => (
+                  <button
+                    key={nombre}
+                    type="button"
+                    onClick={() => setModeloEnfocado(i as 0 | 1)}
+                    className={`flex-1 min-h-[44px] rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+                      modeloEnfocado === i
+                        ? 'bg-brand-gold text-stone-950 shadow-md'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    {nombre}
+                  </button>
+                ))}
+              </div>
+            )}
             
             {calcMode === 'arriendo' && (
               <>
                 {/* Panel 1: Administración (RECOMENDADO) */}
-                <div className="bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden animate-fade-in">
+                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden animate-fade-in ${modeloEnfocado === 0 ? 'flex' : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-brand-gold text-stone-950 text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     Recomendado
                   </div>
@@ -551,7 +641,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 </div>
 
                 {/* Panel 2: Corretaje */}
-                <div className="bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex flex-col justify-between shadow-sm animate-fade-in">
+                <div className={`bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-sm animate-fade-in ${modeloEnfocado === 1 ? 'flex' : 'hidden lg:flex'}`}>
                   <div>
                     <span className="text-[10px] bg-stone-100 text-stone-600 font-mono tracking-widest uppercase py-1 px-2.5 rounded border border-stone-200">
                       CORRETAJE INMOBILIARIO
@@ -661,6 +751,29 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
               </>
             )}
 
+            {/* La otra opción, siempre a la vista — SOLO móvil.
+                Un toque la trae al detalle; verla no cuesta ninguno. */}
+            {calcMode !== 'venta' && (
+              <button
+                type="button"
+                onClick={() => setModeloEnfocado(modeloEnfocado === 0 ? 1 : 0)}
+                className="lg:hidden md:col-span-2 w-full min-h-[56px] flex items-center justify-between gap-3 px-4 bg-stone-100 border border-stone-200 rounded-xl text-left hover:bg-stone-150 active:scale-[0.99] transition-all"
+              >
+                <span className="min-w-0">
+                  <span className="block text-[10px] uppercase tracking-widest font-mono text-stone-500">
+                    Con {otroModelo.nombre} recibirías
+                  </span>
+                  <span className="block text-base font-extrabold text-stone-800 font-mono tabular-nums truncate">
+                    {FORMAT_COP(Math.max(0, Math.round(otroModelo.valor)))}
+                    <span className="text-[11px] font-sans font-medium text-stone-500 ml-1.5">{otroModelo.nota}</span>
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs font-bold text-brand-gold-dark flex items-center gap-1">
+                  Ver <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </button>
+            )}
+
             {calcMode === 'venta' && (
               /* Center and Span over both columns */
               <div className="md:col-span-2 max-w-2xl mx-auto w-full bg-brand-dark-deep border-2 border-stone-900 p-6 sm:p-8 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden animate-fade-in">
@@ -730,7 +843,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             {calcMode === 'mixto' && (
               <>
                 {/* Panel 1: Vendi-Renta (Doble Oportunidad) */}
-                <div className="bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex flex-col justify-between shadow-sm relative overflow-hidden animate-fade-in">
+                <div className={`bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-sm relative overflow-hidden animate-fade-in ${modeloEnfocado === 0 ? 'flex' : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-teal-600 text-white text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     {mixtoScenario === 'arriendo' ? 'Éxito: Arriendo' : 'Éxito: Venta'}
                   </div>
@@ -860,7 +973,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 </div>
 
                 {/* Panel 2: Admi-Venta (Combo Inversionista) */}
-                <div className="bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden animate-fade-in">
+                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden animate-fade-in ${modeloEnfocado === 1 ? 'flex' : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-brand-gold text-stone-950 text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     {mixtoScenario === 'arriendo' ? 'Fase: Arriendo' : 'Éxito: Venta'}
                   </div>
