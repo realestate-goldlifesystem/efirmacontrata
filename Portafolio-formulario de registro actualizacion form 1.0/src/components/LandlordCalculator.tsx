@@ -166,8 +166,27 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
       vistaMovil === 'resultados' ? 'resultado-calculadora' : 'calculadora'
     );
     if (!el) return;
+
+    // No se usa scrollIntoView: su punto de partida es getBoundingClientRect,
+    // que SÍ incluye el transform de la animación de entrada (arranca 26px más
+    // abajo), así que el destino salía desplazado. offsetTop ignora transforms.
+    let y = 0;
+    let nodo: HTMLElement | null = el;
+    while (nodo) {
+      y += nodo.offsetTop;
+      nodo = nodo.offsetParent as HTMLElement | null;
+    }
+
+    // La barra superior es fixed y tapa el contenido. Se mide en vivo en vez de
+    // fiarse del scroll-mt-20 (80px): mide 120px, y además se encoge al bajar,
+    // así que cualquier número escrito a mano queda mal en uno de los dos casos.
+    const barra = document.querySelector('nav');
+    const alto = barra && getComputedStyle(barra).position === 'fixed'
+      ? barra.getBoundingClientRect().height
+      : 0;
+
     const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    el.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
+    window.scrollTo({ top: Math.max(0, y - alto - 12), behavior: suave ? 'smooth' : 'auto' });
   }, [vistaMovil]);
 
   const irAConfigurar = () => irAVista('configurar');
