@@ -588,7 +588,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             {calcMode === 'arriendo' && (
               <>
                 {/* Panel 1: Administración (RECOMENDADO) */}
-                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden ${modeloEnfocado === 0 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
+                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-5 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden ${modeloEnfocado === 0 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-brand-gold text-stone-950 text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     Recomendado
                   </div>
@@ -597,20 +597,20 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     <span className="text-[10px] bg-brand-gold/10 text-brand-gold-dark font-mono tracking-widest uppercase py-1 px-2.5 rounded border border-brand-gold/20 font-bold">
                       ADMINISTRACIÓN PREMIUM
                     </span>
-                    <h4 className="text-xl font-bold text-stone-900 mt-4 leading-none font-sans">Renta garantizada fija</h4>
-                    <p className="text-stone-600 text-xs font-light mt-2 leading-relaxed font-sans">
+                    <h4 className="text-xl font-bold text-stone-900 mt-3 sm:mt-4 leading-none font-sans">Renta garantizada fija</h4>
+                    <p className="text-stone-600 text-xs font-light mt-1.5 sm:mt-2 leading-snug sm:leading-relaxed font-sans">
                       El modelo que te blinda financieramente de forma continua. Recibe tu dinero cada mes en tu cuenta, sin importar si el inquilino se demora o no.
                     </p>
 
                     {/* Main Value Display */}
-                    <div className="bg-white p-4 rounded-xl border border-stone-200 mt-5 shadow-sm space-y-3">
+                    <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-stone-200 mt-3.5 sm:mt-5 shadow-sm space-y-2 sm:space-y-3">
                       <div>
                         <span className="text-[10px] text-stone-500 uppercase tracking-widest block font-mono">Primer Mes (Descontada Póliza)</span>
                         <span className="text-xl font-extrabold text-emerald-650 block mt-0.5">
                           {FORMAT_COP(adminFirstMonthNet)}
                         </span>
                       </div>
-                      <div className="border-t border-stone-100 pt-2">
+                      <div className="border-t border-stone-100 pt-1.5 sm:pt-2">
                         <span className="text-[10px] text-stone-500 uppercase tracking-widest block font-mono">Mes 2 al 12 (Ingreso Mensual)</span>
                         <span className="text-2xl font-extrabold text-emerald-600 block mt-0.5">
                           {FORMAT_COP(adminNetProceeds)}
@@ -624,29 +624,29 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
 
                     {/* Subdetails Breakdown */}
-                    <div className="space-y-3 mt-5 text-xs">
+                    <div className="space-y-2.5 sm:space-y-3 mt-3.5 sm:mt-5 text-xs">
                       {includesHoa ? (
                         <>
-                          <div className="flex justify-between border-b border-stone-200 pb-2">
+                          <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
                             <span className="text-stone-600 font-light">Arriendo completo (Canon + Admin):</span>
                             <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(rentPrice)}</span>
                           </div>
-                          <div className="flex justify-between border-b border-stone-200 pb-2">
+                          <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
                             <span className="text-stone-600 font-light">Administración Edificio (Deducida para pago directo):</span>
                             <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(safeHoaPrice)}</span>
                           </div>
-                          <div className="flex justify-between border-b border-stone-200 pb-2">
+                          <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
                             <span className="text-stone-800 font-bold">Canon Neto (Base de comisión):</span>
                             <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(canonValue)}</span>
                           </div>
                         </>
                       ) : (
-                        <div className="flex justify-between border-b border-stone-200 pb-2">
+                        <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
                           <span className="text-stone-600 font-light">Canon de arrendamiento:</span>
                           <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(canonValue)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between border-b border-stone-200 pb-2">
+                      <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
                         <span className="text-stone-600 font-light">Comisión Gold Life ({adminMonthlyFeePercent.toFixed(1)}% sobre Canon):</span>
                         <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(adminFee)}</span>
                       </div>
@@ -657,7 +657,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
 
                     {/* Extra peace of mind */}
-                    <div className="mt-8 flex items-start space-x-2.5 bg-emerald-50 border border-emerald-100 p-3 rounded-lg text-xs text-emerald-800">
+                    <div className="mt-4 sm:mt-8 flex items-start space-x-2.5 bg-emerald-50 border border-emerald-100 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-emerald-800">
                       <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <p className="leading-normal font-sans">
                         <strong>Garantizado por 36 meses:</strong> Respaldo legal integral y acompañamiento en restitución sin sobrecostos de asesores adicionales, cubriendo además servicios públicos atrasados.
@@ -665,11 +665,11 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-4 border-t border-stone-200">
+                  <div className="mt-5 sm:mt-8 pt-3 sm:pt-4 border-t border-stone-200">
                     <button
                       id="calc-btn-admin"
                       onClick={() => handleApply('administracion')}
-                      className="w-full bg-brand-gold hover:bg-brand-gold-dark active:scale-98 text-stone-950 font-bold py-3.5 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-brand-gold/10"
+                      className="w-full bg-brand-gold hover:bg-brand-gold-dark active:scale-98 text-stone-950 font-bold py-3 sm:py-3.5 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-brand-gold/10"
                     >
                       <span className="font-sans">Quiero este modelo</span>
                       <ArrowRight className="w-4 h-4" />
@@ -678,18 +678,18 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 </div>
 
                 {/* Panel 2: Corretaje */}
-                <div className={`bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-sm ${modeloEnfocado === 1 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
+                <div className={`bg-brand-dark-deep border border-stone-200 p-5 sm:p-8 rounded-2xl flex-col justify-between shadow-sm ${modeloEnfocado === 1 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div>
                     <span className="text-[10px] bg-stone-100 text-stone-600 font-mono tracking-widest uppercase py-1 px-2.5 rounded border border-stone-200">
                       CORRETAJE INMOBILIARIO
                     </span>
-                    <h4 className="text-xl font-bold text-stone-900 mt-4 leading-none font-sans">Colocación con filtro estrella</h4>
-                    <p className="text-stone-600 text-xs font-light mt-2 leading-relaxed font-sans">
+                    <h4 className="text-xl font-bold text-stone-900 mt-3 sm:mt-4 leading-none font-sans">Colocación con filtro estrella</h4>
+                    <p className="text-stone-600 text-xs font-light mt-1.5 sm:mt-2 leading-snug sm:leading-relaxed font-sans">
                       Excelente modelo si administras directamente el recaudo mensual pero buscas delegar el mercadeo y el filtrado estricto de inquilinos.
                     </p>
 
                     {/* Main Value Display */}
-                    <div className="bg-white p-4 rounded-xl border border-stone-200 mt-5 shadow-sm">
+                    <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-stone-200 mt-3.5 sm:mt-5 shadow-sm">
                       <span className="text-xs text-stone-500 uppercase tracking-widest block font-mono">DEPÓSITO MENSUAL ESTIMADO</span>
                       <span className="text-2xl sm:text-3xl font-extrabold text-[#9A7B40] block mt-1">
                         {FORMAT_COP(rentPrice)}
@@ -702,14 +702,14 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
 
                     {/* Subdetails Breakdown */}
-                    <div className="space-y-3.5 mt-5 text-sm">
+                    <div className="space-y-3.5 mt-3.5 sm:mt-5 text-sm">
                       {includesHoa && (
-                        <div className="flex justify-between border-b border-stone-200 pb-2 text-xs">
+                        <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2 text-xs">
                           <span className="text-stone-600 font-light">Canon neto de arrendamiento:</span>
                           <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(canonValue)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between border-b border-stone-200 pb-2 text-xs items-center">
+                      <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2 text-xs items-center">
                         <span className="text-stone-600 font-light">
                           Comisión de corretaje:
                         </span>
@@ -726,7 +726,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                       </div>
                       
                       {isUpsellActive && (
-                        <div className="flex justify-between border-b border-stone-200 pb-2 text-xs text-emerald-700 font-medium">
+                        <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2 text-xs text-emerald-700 font-medium">
                           <span>Póliza 12 meses (50% arriendo completo):</span>
                           <span className="font-mono">{FORMAT_COP(corretajePolicy12Month)}</span>
                         </div>
@@ -739,7 +739,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
 
                     {/* Dynamic Upsell Toggle Section inside Corretaje Context Totals */}
-                    <div className="mt-5 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
+                    <div className="mt-3.5 sm:mt-5 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col pr-2">
                           <span className="text-xs font-bold text-[#8A631F] flex items-center gap-1">
@@ -766,7 +766,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
 
                     {/* Caution note */}
-                    <div className="mt-5 flex items-start space-x-2.5 bg-stone-100 border border-stone-200 p-3 rounded-lg text-xs text-stone-550">
+                    <div className="mt-3.5 sm:mt-5 flex items-start space-x-2.5 bg-stone-100 border border-stone-200 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-stone-550">
                       <ShieldAlert className="w-4 h-4 text-brand-gold-dark shrink-0 mt-0.5" />
                       <p className="leading-normal font-sans">
                         <strong>Gestión autónoma:</strong> Tras la búsqueda y firma del inquilino, delegas la gestión de cobro diaria. No incluye el blindaje contra impagos de administración (HOA) o servicios recurrentes.
@@ -774,11 +774,11 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-4 border-t border-stone-200">
+                  <div className="mt-5 sm:mt-8 pt-3 sm:pt-4 border-t border-stone-200">
                     <button
                       id="calc-btn-corretaje"
                       onClick={() => handleApply('corretaje')}
-                      className="w-full bg-white hover:bg-stone-50 border border-stone-300 hover:border-brand-gold text-stone-800 font-semibold py-3.5 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm"
+                      className="w-full bg-white hover:bg-stone-50 border border-stone-300 hover:border-brand-gold text-stone-800 font-semibold py-3 sm:py-3.5 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm"
                     >
                       <span className="font-sans">Quiero corretaje</span>
                       <ArrowRight className="w-4 h-4" />
@@ -813,7 +813,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
 
             {calcMode === 'venta' && (
               /* Center and Span over both columns */
-              <div className="md:col-span-2 max-w-2xl mx-auto w-full bg-brand-dark-deep border-2 border-stone-900 p-6 sm:p-8 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden animate-fade-in">
+              <div className="md:col-span-2 max-w-2xl mx-auto w-full bg-brand-dark-deep border-2 border-stone-900 p-5 sm:p-8 rounded-2xl flex flex-col justify-between shadow-xl relative overflow-hidden animate-fade-in">
                 <div className="absolute top-0 right-0 bg-stone-900 text-brand-gold text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                   COMISIÓN 3% ÉXITO
                 </div>
@@ -821,8 +821,8 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                   <span className="text-[10px] bg-stone-900/10 text-stone-800 font-mono tracking-widest uppercase py-1 px-2.5 rounded border border-stone-900/20 font-bold">
                     VENTA EXCLUSIVA PREMIUM
                   </span>
-                  <h4 className="text-xl font-bold text-stone-900 mt-4 leading-none font-sans">Comercialización y Cierre de Élite</h4>
-                  <p className="text-stone-605 text-xs font-light mt-2 leading-relaxed font-sans">
+                  <h4 className="text-xl font-bold text-stone-900 mt-3 sm:mt-4 leading-none font-sans">Comercialización y Cierre de Élite</h4>
+                  <p className="text-stone-605 text-xs font-light mt-1.5 sm:mt-2 leading-snug sm:leading-relaxed font-sans">
                     Promovemos tu propiedad con producción audiovisual cinematográfica y publicidad de alto impacto en los portales más importantes de Colombia. Filtramos y pre-calificamos financieramente a los compradores potenciales.
                   </p>
 
@@ -844,19 +844,19 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
 
                   {/* Bullet details */}
                   <div className="space-y-3.5 mt-6 text-sm">
-                    <div className="flex items-start space-x-2.5 bg-emerald-50 border border-emerald-100 p-3 rounded-lg text-xs text-emerald-800">
+                    <div className="flex items-start space-x-2.5 bg-emerald-50 border border-emerald-100 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-emerald-800">
                       <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <p className="leading-normal font-sans">
                         <strong>Acompañamiento legal incluido:</strong> Elaboramos la promesa de compraventa, realizamos el estudio preventivo de títulos y gestionamos la escritura pública sin cobros adicionales.
                       </p>
                     </div>
-                    <div className="flex items-start space-x-2.5 bg-stone-50 border border-stone-150 p-3 rounded-lg text-xs text-stone-600">
+                    <div className="flex items-start space-x-2.5 bg-stone-50 border border-stone-150 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-stone-600">
                       <Check className="w-4 h-4 text-brand-gold-dark shrink-0 mt-0.5" />
                       <p className="leading-normal font-sans">
                         <strong>Filtro de seguridad:</strong> Pre-calificamos la capacidad económica y crédito pre-aprobado de cada interesado antes de programar cualquier visita al inmueble.
                       </p>
                     </div>
-                    <div className="flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-3 rounded-lg text-xs text-sky-800">
+                    <div className="flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-sky-800">
                       <Check className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                       <p className="leading-normal font-sans">
                         <strong>Plan de Mitigación Tributaria (Cuentas AFC):</strong> Te orientamos legalmente para que, al vender tu casa de habitación (poseída por +2 años), puedas eximir hasta <strong>5.000 UVT (Aprox. $235 millones)</strong> del impuesto de Ganancia Ocasional (15%) depositando el dinero en una cuenta AFC.
@@ -865,7 +865,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                   </div>
                 </div>
 
-                <div className="mt-8 pt-4 border-t border-stone-200">
+                <div className="mt-5 sm:mt-8 pt-3 sm:pt-4 border-t border-stone-200">
                   <button
                     onClick={() => handleApply('venta')}
                     className="w-full bg-stone-900 hover:bg-stone-850 active:scale-98 text-brand-gold font-bold py-4 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md"
@@ -880,7 +880,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             {calcMode === 'mixto' && (
               <>
                 {/* Panel 1: Vendi-Renta (Doble Oportunidad) */}
-                <div className={`bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-sm relative overflow-hidden ${modeloEnfocado === 0 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
+                <div className={`bg-brand-dark-deep border border-stone-200 p-5 sm:p-8 rounded-2xl flex-col justify-between shadow-sm relative overflow-hidden ${modeloEnfocado === 0 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-teal-600 text-white text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     {mixtoScenario === 'arriendo' ? 'Éxito: Arriendo' : 'Éxito: Venta'}
                   </div>
@@ -892,12 +892,12 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     {mixtoScenario === 'arriendo' ? (
                       <div className="animate-fade-in mt-4">
                         <h4 className="text-xl font-bold text-stone-900 leading-none font-sans">¡Arriendo Concretado Primero!</h4>
-                        <p className="text-stone-605 text-xs font-light mt-2 leading-relaxed font-sans">
+                        <p className="text-stone-605 text-xs font-light mt-1.5 sm:mt-2 leading-snug sm:leading-relaxed font-sans">
                           Se consiguió el inquilino ideal. Tu propiedad empieza a generar ingresos y la promoción de ventas se pausa sin costos extra ni penalizaciones.
                         </p>
 
                         {/* Value Display */}
-                        <div className="bg-white p-4 rounded-xl border border-stone-200 mt-5 shadow-sm space-y-2.5 animate-fade-in">
+                        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-stone-200 mt-3.5 sm:mt-5 shadow-sm space-y-2.5 animate-fade-in">
                           <div>
                             <span className="text-[9px] text-stone-500 uppercase tracking-widest block font-mono">CANON DE RENTA MENSUAL</span>
                             <span className="text-2xl font-extrabold text-emerald-600 block">
@@ -905,7 +905,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                             </span>
                           </div>
                           
-                          <div className="border-t border-stone-100 pt-2 flex justify-between text-xs text-stone-600 font-light items-center">
+                          <div className="border-t border-stone-100 pt-1.5 sm:pt-2 flex justify-between text-xs text-stone-600 font-light items-center">
                             <span>Comisión de Corretaje:</span>
                             <span className="text-stone-900 font-mono font-semibold">
                               {isUpsellActive ? (
@@ -933,7 +933,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         </div>
 
                         {/* Upsell toggle in Vendi-Renta */}
-                        <div className="mt-4 p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1.5 animate-fade-in">
+                        <div className="mt-4 p-3 sm:p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1.5 animate-fade-in">
                           <div className="flex items-center justify-between">
                             <div className="flex flex-col pr-2">
                               <span className="text-xs font-bold text-[#8A631F] flex items-center gap-1">
@@ -957,19 +957,19 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     ) : (
                       <div className="animate-fade-in mt-4">
                         <h4 className="text-xl font-bold text-stone-900 leading-none font-sans">¡Venta Concretada Primero!</h4>
-                        <p className="text-stone-605 text-xs font-light mt-2 leading-relaxed font-sans">
+                        <p className="text-stone-605 text-xs font-light mt-1.5 sm:mt-2 leading-snug sm:leading-relaxed font-sans">
                           Se cerró la venta del inmueble con el comprador ideal. La oferta de arriendo se cancela automáticamente y recibes tus ganancias netas directas.
                         </p>
 
                         {/* Value Display */}
-                        <div className="bg-white p-4 rounded-xl border border-stone-200 mt-5 shadow-sm space-y-2.5">
+                        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-stone-200 mt-3.5 sm:mt-5 shadow-sm space-y-2.5">
                           <div>
                             <span className="text-[9px] text-stone-500 uppercase tracking-widest block font-mono">NETO ESTIMADO DE VENTA TRANSFERIDO</span>
                             <span className="text-2xl font-extrabold text-emerald-600 block">
                               {FORMAT_COP(ventaNetProceeds)}
                             </span>
                           </div>
-                          <div className="border-t border-stone-100 pt-2 flex justify-between text-xs text-stone-600 font-light">
+                          <div className="border-t border-stone-100 pt-1.5 sm:pt-2 flex justify-between text-xs text-stone-600 font-light">
                             <span>Comisión de Venta (3% éxito):</span>
                             <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(ventaFee)}</span>
                           </div>
@@ -980,7 +980,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         </div>
 
                         {/* AFC Benefit */}
-                        <div className="mt-3 flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-3 rounded-lg text-xs text-sky-800">
+                        <div className="mt-3 flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-sky-800">
                           <Check className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                           <p className="leading-normal font-sans">
                             <strong>Plan de Mitigación Tributaria:</strong> Puedes eximir hasta 5.000 UVT del 15% de Ganancia Ocasional invirtiendo en cuenta AFC.
@@ -990,7 +990,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     )}
 
                     {/* Extra notes */}
-                    <div className="mt-5 flex items-start space-x-2.5 bg-teal-50 border border-teal-100 p-3 rounded-lg text-xs text-teal-800">
+                    <div className="mt-3.5 sm:mt-5 flex items-start space-x-2.5 bg-teal-50 border border-teal-100 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-teal-800">
                       <Check className="w-4 h-4 text-teal-650 shrink-0 mt-0.5" />
                       <p className="leading-normal font-sans">
                         <strong>Garantía de Cero Doble Comisión:</strong> Solo pagas por el negocio que se ejecute primero. Promoción paralela 100% gratuita hasta el momento del cierre.
@@ -998,10 +998,10 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-4 border-t border-stone-200">
+                  <div className="mt-5 sm:mt-8 pt-3 sm:pt-4 border-t border-stone-200">
                     <button
                       onClick={() => handleApply('vendi-renta')}
-                      className="w-full bg-white hover:bg-stone-50 border border-stone-300 hover:border-teal-500 text-stone-800 font-semibold py-3.5 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm animate-fade-in"
+                      className="w-full bg-white hover:bg-stone-50 border border-stone-300 hover:border-teal-500 text-stone-800 font-semibold py-3 sm:py-3.5 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm animate-fade-in"
                     >
                       <span className="font-sans">Quiero Vendi-Renta</span>
                       <ArrowRight className="w-4 h-4" />
@@ -1010,7 +1010,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 </div>
 
                 {/* Panel 2: Admi-Venta (Combo Inversionista) */}
-                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden ${modeloEnfocado === 1 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
+                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-5 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden ${modeloEnfocado === 1 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-brand-gold text-stone-950 text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     {mixtoScenario === 'arriendo' ? 'Fase: Arriendo' : 'Éxito: Venta'}
                   </div>
@@ -1022,26 +1022,26 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     {mixtoScenario === 'arriendo' ? (
                       <div className="animate-fade-in mt-4">
                         <h4 className="text-xl font-bold text-stone-900 leading-none font-sans">Renta activa mientras se vende</h4>
-                        <p className="text-stone-605 text-xs font-light mt-2 leading-relaxed font-sans">
+                        <p className="text-stone-605 text-xs font-light mt-1.5 sm:mt-2 leading-snug sm:leading-relaxed font-sans">
                           Arrendamos tu propiedad bajo nuestro esquema blindado. Recibes ingresos estables mes a mes mientras el inmueble sigue disponible para la venta.
                         </p>
 
                         {/* Value Display */}
-                        <div className="bg-white p-4 rounded-xl border border-stone-200 mt-5 shadow-sm space-y-3">
+                        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-stone-200 mt-3.5 sm:mt-5 shadow-sm space-y-2 sm:space-y-3">
                           <div>
                             <span className="text-[10px] text-stone-550 uppercase tracking-widest block font-mono">Primer Mes (Descontada Póliza)</span>
                             <span className="text-xl font-extrabold text-emerald-650 block mt-0.5">
                               {FORMAT_COP(adminFirstMonthNet)}
                             </span>
                           </div>
-                          <div className="border-t border-stone-100 pt-2">
+                          <div className="border-t border-stone-100 pt-1.5 sm:pt-2">
                             <span className="text-[10px] text-stone-555 uppercase tracking-widest block font-mono">Mes 2 al 12 (Ingreso Mensual)</span>
                             <span className="text-2xl font-extrabold text-emerald-600 block mt-0.5">
                               {FORMAT_COP(adminNetProceeds)}
                             </span>
                           </div>
                           
-                          <div className="border-t border-stone-100 pt-2 space-y-2 text-xs">
+                          <div className="border-t border-stone-100 pt-1.5 sm:pt-2 space-y-2 text-xs">
                             {includesHoa ? (
                               <>
                                 <div className="flex justify-between text-stone-600 font-light">
@@ -1081,19 +1081,19 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     ) : (
                       <div className="animate-fade-in mt-4">
                         <h4 className="text-xl font-bold text-stone-900 leading-none font-sans">¡Venta Con Inquilino Exitoso!</h4>
-                        <p className="text-stone-605 text-xs font-light mt-2 leading-relaxed font-sans">
+                        <p className="text-stone-605 text-xs font-light mt-1.5 sm:mt-2 leading-snug sm:leading-relaxed font-sans">
                           Se logra vender la propiedad. Un inmueble bien administrado y generando renta es un imán para inversionistas, acelerando la venta final.
                         </p>
 
                         {/* Value Display */}
-                        <div className="bg-white p-4 rounded-xl border border-stone-200 mt-5 shadow-sm space-y-2.5">
+                        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-stone-200 mt-3.5 sm:mt-5 shadow-sm space-y-2.5">
                           <div>
                             <span className="text-[9px] text-stone-500 uppercase tracking-widest block font-mono">NETO ESTIMADO DE VENTA TRANSFERIDO</span>
                             <span className="text-2xl font-extrabold text-emerald-600 block">
                               {FORMAT_COP(ventaNetProceeds)}
                             </span>
                           </div>
-                          <div className="border-t border-stone-100 pt-2 flex justify-between text-xs text-stone-600 font-light">
+                          <div className="border-t border-stone-100 pt-1.5 sm:pt-2 flex justify-between text-xs text-stone-600 font-light">
                             <span>Comisión de Venta (3% éxito):</span>
                             <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(ventaFee)}</span>
                           </div>
@@ -1104,7 +1104,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         </div>
 
                         {/* AFC Benefit */}
-                        <div className="mt-3 flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-3 rounded-lg text-xs text-sky-800">
+                        <div className="mt-3 flex items-start space-x-2.5 bg-sky-50 border border-sky-100 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-sky-800">
                           <Check className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                           <p className="leading-normal font-sans">
                             <strong>Plan de Mitigación Tributaria:</strong> Puedes eximir hasta 5.000 UVT del 15% de Ganancia Ocasional invirtiendo en cuenta AFC.
@@ -1114,14 +1114,14 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     )}
 
                     {/* Extra notes */}
-                    <div className="space-y-2.5 mt-5">
-                      <div className="flex items-start space-x-2.5 bg-emerald-50 border border-emerald-100 p-3 rounded-lg text-xs text-emerald-800">
+                    <div className="space-y-2.5 mt-3.5 sm:mt-5">
+                      <div className="flex items-start space-x-2.5 bg-emerald-50 border border-emerald-100 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-emerald-800">
                         <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                         <p className="leading-normal font-sans">
                           <strong>Garantizado por 36 meses:</strong> Respaldo legal integral y acompañamiento en restitución sin sobrecostos de asesores adicionales, cubriendo además servicios públicos atrasados.
                         </p>
                       </div>
-                      <div className="flex items-start space-x-2.5 bg-emerald-50/50 border border-emerald-100/40 p-3 rounded-lg text-xs text-emerald-800/95">
+                      <div className="flex items-start space-x-2.5 bg-emerald-50/50 border border-emerald-100/40 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-emerald-800/95">
                         <Sparkles className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                         <p className="leading-normal font-sans">
                           <strong>Gestión de Visitas Blindada:</strong> Administramos al inquilino y coordinamos las visitas con compradores potenciales de forma pacífica, protegiendo tu canon de arriendo.
@@ -1130,10 +1130,10 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-4 border-t border-stone-200">
+                  <div className="mt-5 sm:mt-8 pt-3 sm:pt-4 border-t border-stone-200">
                     <button
                       onClick={() => handleApply('admi-venta')}
-                      className="w-full bg-brand-gold hover:bg-brand-gold-dark active:scale-98 text-stone-950 font-bold py-3.5 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-brand-gold/10"
+                      className="w-full bg-brand-gold hover:bg-brand-gold-dark active:scale-98 text-stone-950 font-bold py-3 sm:py-3.5 rounded-lg text-sm tracking-wide transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-brand-gold/10"
                     >
                       <span className="font-sans">Quiero Admi-Venta</span>
                       <ArrowRight className="w-4 h-4" />
@@ -1166,7 +1166,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
               </div>
             </div>
 
-            <div className="space-y-4 my-5 text-sm text-stone-700 leading-relaxed bg-brand-dark-deep p-4 rounded-xl border border-brand-gold/10">
+            <div className="space-y-4 my-5 text-sm text-stone-700 leading-relaxed bg-brand-dark-deep p-3.5 sm:p-4 rounded-xl border border-brand-gold/10">
               <p>
                 Al adquirir la <strong>Póliza de Arriendo Integral</strong> (equivalente al 50% de un mes de arriendo completo) no solo blindas tu renta ante cualquier impago por todo un año, sino que:
               </p>
