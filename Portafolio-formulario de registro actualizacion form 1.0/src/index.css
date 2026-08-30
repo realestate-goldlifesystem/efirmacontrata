@@ -23,6 +23,72 @@
   animation: shake 0.4s ease-in-out;
 }
 
+/* ==========================================================================
+   Transiciones de la calculadora (solo móvil)
+   --------------------------------------------------------------------------
+   El propietario pasa de "configurar" a "ver resultados" sin desplazar la
+   pantalla, asi que sin animacion el contenido se sustituye de golpe y no se
+   entiende que sea el MISMO calculo presentado de otra forma: parece que la
+   pagina salto a otro sitio. El movimiento cuenta esa continuidad.
+
+   La curva es easeOutQuint: arranca rapido y frena largo al final. Eso da la
+   sensacion de algo pesado que se posa, en vez del rebote de un ease-out
+   normal. El desenfoque, muy leve, hace que el texto no se lea a medio viaje
+   y evita el parpadeo tipico de animar solo la opacidad.
+   ========================================================================== */
+
+@keyframes cal-entra {
+  from { opacity: 0; transform: translateY(26px) scale(0.985); filter: blur(6px); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);     filter: blur(0);   }
+}
+
+/* Paneles del switch: entran desde el lado del que vienen, para que el gesto
+   coincida con la posicion del boton pulsado en el control segmentado. */
+@keyframes cal-entra-der {
+  from { opacity: 0; transform: translateX(30px); filter: blur(5px); }
+  to   { opacity: 1; transform: translateX(0);    filter: blur(0);   }
+}
+
+@keyframes cal-entra-izq {
+  from { opacity: 0; transform: translateX(-30px); filter: blur(5px); }
+  to   { opacity: 1; transform: translateX(0);     filter: blur(0);   }
+}
+
+/* Solo por debajo de lg (1024px): en escritorio las dos columnas conviven y no
+   hay cambio de pantalla que narrar. El limite se pone aqui y no con una clase
+   lg:animate-none porque este archivo se carga DESPUES de las utilidades de
+   Tailwind y ganaria por orden, dejando el escritorio animado igualmente. */
+@media (max-width: 1023.98px) {
+  .cal-entra     { animation: cal-entra     0.72s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .cal-entra-der { animation: cal-entra-der 0.58s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .cal-entra-izq { animation: cal-entra-izq 0.58s cubic-bezier(0.22, 1, 0.36, 1) both; }
+}
+
+/* Salida: mas corta que la entrada a proposito. Esperar a que algo desaparezca
+   se percibe como lentitud; esperar a que algo llegue se percibe como calma. */
+@media (max-width: 1023.98px) {
+.cal-sale {
+  opacity: 0;
+  transform: translateY(-14px) scale(0.99);
+  filter: blur(4px);
+  transition: opacity 0.34s ease-in, transform 0.34s ease-in, filter 0.34s ease-in;
+  pointer-events: none;
+}
+}
+
+/* Quien pidio menos movimiento recibe el cambio igual, sin desplazamiento. */
+@media (prefers-reduced-motion: reduce) {
+  .cal-entra, .cal-entra-der, .cal-entra-izq {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+  .cal-sale {
+    transition-duration: 0.01ms;
+    transform: none;
+    filter: none;
+  }
+}
+
 /* Feedback Visual Global - Inputs Completados */
 #registro-form input[data-filled="true"]:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(:focus),
 #registro-form select[data-filled="true"]:not(:focus),

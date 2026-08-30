@@ -111,11 +111,48 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
           ? { nombre: 'Admi-Venta', valor: adminFirstMonthNet, nota: 'el primer mes' }
           : { nombre: 'Vendi-Renta', valor: canonValue, nota: 'de canon al arrendar' });
 
-  const irAConfigurar = () => setVistaMovil('configurar');
+  // ── Transición entre las dos pantallas ────────────────────────────────────
+  // El cambio se hace en dos tiempos: primero la pantalla actual se retira, y
+  // solo cuando termina entra la siguiente. Cruzarlas a la vez obligaría a
+  // superponerlas en absolute, y con tarjetas de altura muy distinta eso hace
+  // saltar el alto de la página a mitad del gesto.
+  const MS_SALIDA = 340; // debe coincidir con .cal-sale en index.css
+  const [saliendo, setSaliendo] = useState(false);
+  const temporizador = useRef<number | null>(null);
+
+  // Si el componente se desmonta a mitad de la animación, el temporizador
+  // pendiente intentaría escribir estado sobre algo que ya no existe.
+  useEffect(() => () => {
+    if (temporizador.current !== null) window.clearTimeout(temporizador.current);
+  }, []);
+
+  const irAVista = (destino: 'configurar' | 'resultados', antes?: () => void) => {
+    if (temporizador.current !== null) window.clearTimeout(temporizador.current);
+    setSaliendo(true);
+    temporizador.current = window.setTimeout(() => {
+      antes?.();
+      setVistaMovil(destino);
+      setSaliendo(false);
+      temporizador.current = null;
+    }, MS_SALIDA);
+  };
+
+  const irAConfigurar = () => irAVista('configurar');
+  const verResultados = () => irAVista('resultados', () => setModeloEnfocado(0));
+
+  // Dirección del switch, para que el panel entre por el lado del botón pulsado.
+  const [direccion, setDireccion] = useState<1 | -1>(1);
+  const enfocarModelo = (i: 0 | 1) => {
+    if (i === modeloEnfocado) return;
+    setDireccion(i > modeloEnfocado ? 1 : -1);
+    setModeloEnfocado(i);
+  };
+  const claseEntradaPanel = direccion === 1 ? 'cal-entra-der' : 'cal-entra-izq';
+
   const cambiarModo = (modo: 'arriendo' | 'venta' | 'mixto') => {
     setCalcMode(modo);
     setModeloEnfocado(0);
-    setVistaMovil('configurar');
+    irAVista('configurar');
   };
 
   const panelControlesRef = useRef<HTMLDivElement | null>(null);
@@ -199,7 +236,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
           {/* Slider Controls Column */}
-          <div ref={panelControlesRef} className={`lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6 ${vistaMovil === 'resultados' ? 'hidden lg:block' : ''}`}>
+          <div ref={panelControlesRef} className={`lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6 ${vistaMovil === 'resultados' ? 'hidden lg:block' : 'cal-entra'} ${saliendo && vistaMovil === 'configurar' ? 'cal-sale' : ''}`}>
             <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider font-mono pb-4 border-b border-stone-200">
               Configura tu Inmueble
             </h3>
@@ -496,7 +533,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 botón sobraría y hasta confundiría. */}
             <button
               type="button"
-              onClick={() => { setVistaMovil('resultados'); setModeloEnfocado(0); }}
+              onClick={verResultados}
               className="lg:hidden w-full min-h-[52px] bg-brand-gold hover:bg-[#8A631F] text-stone-950 font-extrabold rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform"
             >
               Ver mi comparación
@@ -505,7 +542,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
           </div>
 
           {/* Dynamic Side-by-side Panel (Adapts to Active Tab Mode) */}
-          <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid'} grid-cols-1 md:grid-cols-2`}>
+          <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid cal-entra'} ${saliendo && vistaMovil === 'resultados' ? 'cal-sale' : ''} grid-cols-1 md:grid-cols-2`}>
 
             {/* Cabecera de resultados — SOLO móvil.
                 Da el contexto que se pierde al cambiar de pantalla (qué canon se
@@ -535,7 +572,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                   <button
                     key={nombre}
                     type="button"
-                    onClick={() => setModeloEnfocado(i as 0 | 1)}
+                    onClick={() => enfocarModelo(i as 0 | 1)}
                     className={`flex-1 min-h-[44px] rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
                       modeloEnfocado === i
                         ? 'bg-brand-gold text-stone-950 shadow-md'
@@ -551,7 +588,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             {calcMode === 'arriendo' && (
               <>
                 {/* Panel 1: Administración (RECOMENDADO) */}
-                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden animate-fade-in ${modeloEnfocado === 0 ? 'flex' : 'hidden lg:flex'}`}>
+                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden ${modeloEnfocado === 0 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-brand-gold text-stone-950 text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     Recomendado
                   </div>
@@ -641,7 +678,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 </div>
 
                 {/* Panel 2: Corretaje */}
-                <div className={`bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-sm animate-fade-in ${modeloEnfocado === 1 ? 'flex' : 'hidden lg:flex'}`}>
+                <div className={`bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-sm ${modeloEnfocado === 1 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div>
                     <span className="text-[10px] bg-stone-100 text-stone-600 font-mono tracking-widest uppercase py-1 px-2.5 rounded border border-stone-200">
                       CORRETAJE INMOBILIARIO
@@ -756,7 +793,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             {calcMode !== 'venta' && (
               <button
                 type="button"
-                onClick={() => setModeloEnfocado(modeloEnfocado === 0 ? 1 : 0)}
+                onClick={() => enfocarModelo(modeloEnfocado === 0 ? 1 : 0)}
                 className="lg:hidden md:col-span-2 w-full min-h-[56px] flex items-center justify-between gap-3 px-4 bg-stone-100 border border-stone-200 rounded-xl text-left hover:bg-stone-150 active:scale-[0.99] transition-all"
               >
                 <span className="min-w-0">
@@ -843,7 +880,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             {calcMode === 'mixto' && (
               <>
                 {/* Panel 1: Vendi-Renta (Doble Oportunidad) */}
-                <div className={`bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-sm relative overflow-hidden animate-fade-in ${modeloEnfocado === 0 ? 'flex' : 'hidden lg:flex'}`}>
+                <div className={`bg-brand-dark-deep border border-stone-200 p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-sm relative overflow-hidden ${modeloEnfocado === 0 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-teal-600 text-white text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     {mixtoScenario === 'arriendo' ? 'Éxito: Arriendo' : 'Éxito: Venta'}
                   </div>
@@ -973,7 +1010,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 </div>
 
                 {/* Panel 2: Admi-Venta (Combo Inversionista) */}
-                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden animate-fade-in ${modeloEnfocado === 1 ? 'flex' : 'hidden lg:flex'}`}>
+                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-6 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden ${modeloEnfocado === 1 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-brand-gold text-stone-950 text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     {mixtoScenario === 'arriendo' ? 'Fase: Arriendo' : 'Éxito: Venta'}
                   </div>
