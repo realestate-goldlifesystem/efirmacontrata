@@ -37,12 +37,14 @@ interface CalculatorProps {
 
 export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: CalculatorProps) {
   const [calcMode, setCalcMode] = useState<'arriendo' | 'venta' | 'mixto'>('arriendo');
-  const [rentPrice, setRentPrice] = useState<number>(2500000); // Default 2.5 million COP
-  const [salePrice, setSalePrice] = useState<number>(450000000); // Default 450 million COP
+  // Arranca vacio: el propietario escribe SU valor. Un numero puesto por
+  // nosotros se lee como una cifra ya calculada y se acepta sin mirar.
+  const [rentPrice, setRentPrice] = useState<number>(0);
+  const [salePrice, setSalePrice] = useState<number>(0);
   const [mixtoScenario, setMixtoScenario] = useState<'arriendo' | 'venta'>('arriendo');
   const [isMultiProperty, setIsMultiProperty] = useState<boolean>(false);
   const [includesHoa, setIncludesHoa] = useState<boolean>(false);
-  const [hoaPrice, setHoaPrice] = useState<number>(350000); // Default administration COP
+  const [hoaPrice, setHoaPrice] = useState<number>(0);
 
   // Brokerage policy upsell
   const [isUpsellActive, setIsUpsellActive] = useState<boolean>(false);
@@ -134,8 +136,39 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
       setVistaMovil(destino);
       setSaliendo(false);
       temporizador.current = null;
+      debeDesplazar.current = true;
     }, MS_SALIDA);
   };
+
+  // Con los campos vacíos las tarjetas mostrarían ceros en todas las cifras.
+  // Eso no es una comparación: es ruido que resta credibilidad justo donde el
+  // número es el argumento. Hasta que haya un valor, no se pasa a resultados.
+  const hayValor = calcMode === 'venta' ? salePrice > 0 : rentPrice > 0;
+
+  // Al cambiar de pantalla la página conserva el scroll anterior, que estaba a
+  // la altura del botón pulsado — abajo del panel de controles. Sin esto la
+  // vista aparece empezada por la mitad de la tarjeta y se pierden la cabecera
+  // y el switch, que son los que dan el contexto.
+  //
+  // Se hace en un efecto sobre vistaMovil y no dentro del setTimeout: allí el
+  // re-render de React aún no ha ocurrido y habría que esperarlo con
+  // requestAnimationFrame, que no se ejecuta si la pestaña no está visible.
+  const debeDesplazar = useRef(false);
+  useEffect(() => {
+    if (!debeDesplazar.current) return;
+    debeDesplazar.current = false;
+
+    // Solo en móvil: en escritorio no hay cambio de pantalla que seguir y el
+    // salto sería gratuito al cambiar de tipo de negocio.
+    if (window.matchMedia('(min-width: 1024px)').matches) return;
+
+    const el = document.getElementById(
+      vistaMovil === 'resultados' ? 'resultado-calculadora' : 'calculadora'
+    );
+    if (!el) return;
+    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
+  }, [vistaMovil]);
 
   const irAConfigurar = () => irAVista('configurar');
   const verResultados = () => irAVista('resultados', () => setModeloEnfocado(0));
@@ -285,7 +318,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         value={formatInputValue(rentPrice)}
                         onChange={(e) => setRentPrice(Math.max(0, parseInputValue(e.target.value)))}
                         className="w-full bg-white border border-stone-200 rounded-lg py-3.5 pl-8 pr-4 text-xl font-bold text-stone-900 focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold shadow-sm"
-                        placeholder="Ej. 2.500.000"
+                        placeholder="Escribe tu valor"
                       />
                     </div>
                     {rentPrice > 0 && (
@@ -333,7 +366,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         type="range"
                         min="1000000"
                         max="10000000"
-                        step="50000"
+                        step="1000"
                         id="rent-slider-price"
                         value={rentPrice}
                         onChange={(e) => setRentPrice(parseInt(e.target.value))}
@@ -360,7 +393,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         value={formatInputValue(salePrice)}
                         onChange={(e) => setSalePrice(Math.max(0, parseInputValue(e.target.value)))}
                         className="w-full bg-white border border-stone-200 rounded-lg py-3.5 pl-8 pr-4 text-xl font-bold text-stone-900 focus:outline-none focus:border-stone-900 focus:ring-1 focus:ring-stone-900 shadow-sm"
-                        placeholder="Ej. 450.000.000"
+                        placeholder="Escribe tu valor"
                       />
                     </div>
                     {salePrice > 0 && (
@@ -380,7 +413,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                       type="range"
                       min="100000000"
                       max="1500000000"
-                      step="10000000"
+                      step="1000"
                       id="sale-slider-price"
                       value={salePrice}
                       onChange={(e) => setSalePrice(parseInt(e.target.value))}
@@ -424,7 +457,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                             value={formatInputValue(hoaPrice)}
                             onChange={(e) => setHoaPrice(Math.max(0, parseInputValue(e.target.value)))}
                             className="w-full bg-white border border-stone-200 rounded-lg py-2 pl-7 pr-3 text-xs font-semibold text-stone-800 focus:outline-none focus:border-brand-gold"
-                            placeholder="Ej. 350.000"
+                            placeholder="Escribe el valor"
                           />
                         </div>
                         {hoaPrice > 0 && (
@@ -436,7 +469,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                           type="range"
                           min="100000"
                           max="2000000"
-                          step="20000"
+                          step="1000"
                           id="hoa-slider-price"
                           value={hoaPrice}
                           onChange={(e) => setHoaPrice(parseInt(e.target.value))}
@@ -534,15 +567,38 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             <button
               type="button"
               onClick={verResultados}
-              className="lg:hidden w-full min-h-[52px] bg-brand-gold hover:bg-[#8A631F] text-stone-950 font-extrabold rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform"
+              disabled={!hayValor}
+              className={`lg:hidden w-full min-h-[52px] font-extrabold rounded-xl flex items-center justify-center gap-2 transition-all ${
+                hayValor
+                  ? 'bg-brand-gold hover:bg-[#8A631F] text-stone-950 shadow-lg active:scale-[0.98]'
+                  : 'bg-stone-200 text-stone-500 cursor-not-allowed'
+              }`}
             >
-              Ver mi comparación
-              <ArrowRight className="w-4 h-4" />
+              {hayValor ? 'Ver mi comparación' : 'Escribe tu valor para comparar'}
+              {hayValor && <ArrowRight className="w-4 h-4" />}
             </button>
           </div>
 
           {/* Dynamic Side-by-side Panel (Adapts to Active Tab Mode) */}
           <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid cal-entra'} ${saliendo && vistaMovil === 'resultados' ? 'cal-sale' : ''} grid-cols-1 md:grid-cols-2`}>
+
+            {/* Sin valor no hay nada que comparar. En móvil el botón ya lo
+                impide, pero en escritorio las tarjetas están siempre a la vista
+                y mostrarían ceros en todas las cifras: ocho "$ 0" que no dicen
+                nada y restan credibilidad justo donde el número es el argumento. */}
+            {!hayValor ? (
+              <div className="md:col-span-2 flex flex-col items-center justify-center text-center py-16 px-6 bg-brand-dark-deep border border-dashed border-stone-300 rounded-2xl">
+                <Calculator className="w-8 h-8 text-stone-400" />
+                <p className="mt-4 text-base font-bold text-stone-700 font-sans">
+                  Escribe el valor de tu inmueble
+                </p>
+                <p className="mt-1.5 text-xs text-stone-500 font-sans max-w-xs leading-relaxed">
+                  En cuanto lo escribas verás, lado a lado, cuánto recibirías con cada
+                  uno de nuestros modelos.
+                </p>
+              </div>
+            ) : (<>
+
 
             {/* Cabecera de resultados — SOLO móvil.
                 Da el contexto que se pierde al cambiar de pantalla (qué canon se
@@ -1143,6 +1199,8 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
               </>
             )}
 
+            </>)}
+
           </div>
 
         </div>
@@ -1208,7 +1266,9 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
           En pantallas grandes los controles y el resultado se ven a la vez, así que
           esta barra sobraría. En móvil es lo que permite ver el efecto de cada dígito
           sin tener que scrollear hasta las tarjetas. */}
-      {mostrarResumen && (
+      {/* También espera a que haya un valor: si no, la barra anuncia
+          "Recibes cada mes $ 0", que es peor que no decir nada. */}
+      {mostrarResumen && hayValor && (
         <div
           aria-live="polite"
           className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-stone-900/95 backdrop-blur-sm border-t border-brand-gold/30 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.25)] animate-fade-in"
