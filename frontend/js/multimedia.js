@@ -533,7 +533,12 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
         labelEl.textContent = `Subiendo foto ${idx} de ${total} a Drive...`;
         fillEl.style.width = Math.round((idx / total) * 100) + '%';
         
-        const photoName = idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`;
+        // El nombre lleva .jpg desde el origen. Antes se subían sin extensión
+        // ("2-Portada_YB383511" a secas) y Drive las mostraba sin tipo; además
+        // el normalizador del backend detecta imágenes POR extensión, así que
+        // un archivo sin ninguna nunca entraba y se quedaba así para siempre.
+        const baseName = idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`;
+        const photoName = `${baseName}.jpg`;
         const metadata = {
             name: photoName,
             parents: [propertyData.fotosFolderId]
@@ -558,7 +563,10 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
             if (topPos !== -1) {
                 // Renombramos con el orden en que fue elegida
                 const topRank = topPos + 1;
-                const newName = `TOP_${topRank}_${photoName}`;
+                // Se parte de baseName para que la extensión quede al FINAL:
+                // usar photoName daría "TOP_1_2-Portada_CDR.jpg" solo por suerte
+                // del orden, y cualquier sufijo futuro la dejaría en medio.
+                const newName = `TOP_${topRank}_${baseName}.jpg`;
                 top10UploadedMeta.push({ id: data.id, name: newName });
             }
         } else {

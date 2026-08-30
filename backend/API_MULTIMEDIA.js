@@ -333,7 +333,23 @@ function normalizarImagenesAJpg(folder) {
                 break;
             }
         }
-        if (!ext) continue;                       // vídeos y demás: no se tocan
+
+        // Rescate de las fotos SIN extensión ninguna ("2-Portada_YB383511"), que
+        // es como las subió la página de multimedia hasta ago-2026. Mirando solo
+        // el nombre no hay nada que reconocer, así que aquí se pregunta a Drive
+        // por el tipo real. Solo se consulta cuando la extensión no ha decidido:
+        // getMimeType() es una llamada por archivo y hay carpetas con muchas.
+        if (!ext) {
+            var tipo = '';
+            try { tipo = f.getMimeType() || ''; } catch (e) { tipo = ''; }
+            if (tipo.indexOf('image/') !== 0) continue;  // vídeos, PDF y demás
+            // Es una imagen con un final que no reconocemos ("2-Portada_YB383511"
+            // o "CDR_2026.FINAL"). Se AÑADE .jpg en vez de recortar: adivinar qué
+            // parte del nombre sobra acabaría mutilando nombres legítimos, y aquí
+            // el punto puede ser parte del nombre y no una extensión.
+            ext = '';
+        }
+
         if (nombre.slice(-4) === '.jpg') continue; // ya está como debe
 
         pendientes.push({ file: f, nombre: nombre, ext: ext });

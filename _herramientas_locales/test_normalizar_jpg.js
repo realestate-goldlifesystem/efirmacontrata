@@ -16,7 +16,13 @@ const fabricar = new Function('console', codigo + '; return normalizarImagenesAJ
 const normalizar = fabricar(console_);
 
 const carpetaFalsa = (nombres) => {
-  const files = nombres.map(n => ({ _n: n, getName(){return this._n;}, setName(v){this._n=v;} }));
+  // Cada entrada puede ser "nombre" o ["nombre", "mimeType"], para poder probar
+  // los archivos sin extension, donde el tipo real es lo unico que decide.
+  const files = nombres.map(e => {
+    const [n, mime] = Array.isArray(e) ? e : [e, 'application/octet-stream'];
+    return { _n: n, _m: mime, getName(){return this._n;}, setName(v){this._n=v;},
+             getMimeType(){return this._m;} };
+  });
   return { files, getName: () => 'FOTOS', getFiles(){ let i=0; return {hasNext:()=>i<files.length, next:()=>files[i++]}; } };
 };
 
@@ -43,6 +49,29 @@ t('"png" dentro del nombre no confunde', ['pngfoto.mp4'], ['pngfoto.mp4']);
 t('mezcla real', ['1.DNG','2.HEIC','3.PNG','4.jpg','5.JPEG','video.mp4'],
                ['1.jpg','2.jpg','3.jpg','4.jpg','5.jpg','video.mp4']);
 t('triple colision', ['g.png','g.webp','g.jpg'], ['g.jpg','g-2.jpg','g-3.jpg']);
+
+// Casos de las fotos que sube carga_multimedia.html
+t('foto SIN extension que es imagen -> .jpg',
+  [['2-Portada_YB383511','image/jpeg']], ['2-Portada_YB383511.jpg']);
+t('varias sin extension (portada + fotos)',
+  [['2-Portada_YB383511','image/jpeg'], ['3-Foto_YB383511','image/png']],
+  ['2-Portada_YB383511.jpg', '3-Foto_YB383511.jpg']);
+t('TOP 10 sin extension',
+  [['TOP_1_2-Portada_YB383511','image/jpeg']], ['TOP_1_2-Portada_YB383511.jpg']);
+t('sin extension pero NO es imagen: no se toca',
+  [['ARCHIVO_RARO','application/octet-stream']], ['ARCHIVO_RARO']);
+t('sin extension y es video: no se toca',
+  [['clip_sin_ext','video/mp4']], ['clip_sin_ext']);
+t('colision: sin extension y ya existe el .jpg',
+  [['2-Portada_X','image/jpeg'], '2-Portada_X.jpg'],
+  ['2-Portada_X.jpg', '2-Portada_X-2.jpg']);
+t('nombre con punto interno pero sin extension real',
+  [['CDR_2026.FINAL','image/jpeg']], ['CDR_2026.FINAL.jpg']);
+
+t('imagen con extension desconocida: se anade, no se recorta',
+  [['captura.xyz','image/jpeg']], ['captura.xyz.jpg']);
+t('PDF con nombre de imagen no se toca',
+  [['contrato.pdf','application/pdf']], ['contrato.pdf']);
 
 console.log(fallos === 0 ? '\nTODAS PASAN' : `\n${fallos} FALLAN`);
 process.exit(fallos ? 1 : 0);
