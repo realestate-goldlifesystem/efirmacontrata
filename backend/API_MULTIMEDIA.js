@@ -278,10 +278,10 @@ function handleFinalizeMultimedia(datos) {
         }
     }
 
-    // Renombrar automáticamente DNG y HEIC a JPG en la carpeta de fotos (síncrono y rápido)
+    // Dejar todas las fotos con extensión .jpg (síncrono y rápido)
     if (fotosFolder) {
         try {
-            renombrarDNGaJPG(fotosFolder);
+            normalizarImagenesAJpg(fotosFolder);
         } catch(e) {
             console.error("Error renombrando fotos inline:", e);
         }
@@ -299,28 +299,80 @@ function handleFinalizeMultimedia(datos) {
 }
 
 /**
- * Renombra archivos .DNG y .HEIC a .JPG dentro de una carpeta específica.
+ * Deja TODAS las imágenes de una carpeta con extensión .jpg en minúscula.
+ *
+ * ⚠️ Esto renombra, NO convierte: un PNG pasa a llamarse .jpg pero por dentro
+ * sigue siendo PNG. Los navegadores y los portales lo abren igual porque miran
+ * el contenido, no el nombre. Ya era así cuando solo se tocaban DNG y HEIC.
+ *
+ * No se usa searchFiles('title contains ...') a propósito: el operador contains
+ * de Drive tokeniza e ignora la puntuación, así que 'foto.pngx' o un archivo con
+ * "png" en el nombre también entrarían. Se recorre la carpeta y se decide en
+ * local contra el final del nombre, que es literal e inequívoco.
  */
-function renombrarDNGaJPG(folder) {
-    const extensions = ['.DNG', '.HEIC'];
-    const queryParts = extensions.map(ext => `title contains '${ext}'`);
-    const query = `(${queryParts.join(' or ')}) and trashed = false`;
-    const files = folder.searchFiles(query);
-    
-    let count = 0;
-    while (files.hasNext()) {
-        const file = files.next();
-        const name = file.getName();
-        const upperName = name.toUpperCase();
-        const matchedExt = extensions.find(ext => upperName.endsWith(ext));
-        
-        if (matchedExt) {
-            const newName = name.slice(0, -matchedExt.length) + '.JPG';
-            file.setName(newName);
+var EXTENSIONES_IMAGEN = ['.DNG', '.HEIC', '.HEIF', '.PNG', '.WEBP', '.AVIF',
+                          '.TIFF', '.TIF', '.BMP', '.JPEG', '.JPG'];
+
+function normalizarImagenesAJpg(folder) {
+    // Los nombres ya ocupados se registran para no crear dos archivos que se
+    // llamen igual: Drive lo permite y luego no se sabe cuál es cuál.
+    var ocupados = {};
+    var pendientes = [];
+
+    var it = folder.getFiles();
+    while (it.hasNext()) {
+        var f = it.next();
+        var nombre = f.getName();
+        ocupados[nombre.toLowerCase()] = true;
+
+        var arriba = nombre.toUpperCase();
+        var ext = null;
+        for (var i = 0; i < EXTENSIONES_IMAGEN.length; i++) {
+            if (arriba.slice(-EXTENSIONES_IMAGEN[i].length) === EXTENSIONES_IMAGEN[i]) {
+                ext = EXTENSIONES_IMAGEN[i];
+                break;
+            }
+        }
+        if (!ext) continue;                       // vídeos y demás: no se tocan
+        if (nombre.slice(-4) === '.jpg') continue; // ya está como debe
+
+        pendientes.push({ file: f, nombre: nombre, ext: ext });
+    }
+
+    var count = 0;
+    for (var j = 0; j < pendientes.length; j++) {
+        var p = pendientes[j];
+        var base = p.nombre.slice(0, p.nombre.length - p.ext.length);
+        var destino = base + '.jpg';
+
+        // El propio archivo sale de la lista antes de comprobar colisiones: si
+        // no, "e.JPG" chocaría consigo mismo al pasar a "e.jpg" y saldría e-2.jpg.
+        delete ocupados[p.nombre.toLowerCase()];
+
+        // Si el nombre destino ya existe (p. ej. había foto.png y foto.jpg),
+        // se numera en vez de duplicar el nombre.
+        if (ocupados[destino.toLowerCase()]) {
+            var n = 2;
+            while (ocupados[(base + '-' + n + '.jpg').toLowerCase()]) n++;
+            destino = base + '-' + n + '.jpg';
+        }
+
+        try {
+            p.file.setName(destino);
+            ocupados[destino.toLowerCase()] = true;
             count++;
+        } catch (err) {
+            console.error('Error renombrando ' + p.nombre + ': ' + err.message);
         }
     }
-    console.log(`✅ ${count} fotos renombradas a .JPG en la carpeta ${folder.getName()}`);
+
+    console.log('✅ ' + count + ' imagen(es) normalizadas a .jpg en ' + folder.getName());
+    return count;
+}
+
+/** Nombre anterior, por si quedó referenciado en algún trigger o script suelto. */
+function renombrarDNGaJPG(folder) {
+    return normalizarImagenesAJpg(folder);
 }
 
 /**
