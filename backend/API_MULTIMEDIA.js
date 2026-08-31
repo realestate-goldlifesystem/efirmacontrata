@@ -640,12 +640,39 @@ function generarPortada(rowData, headers, targetSlideId, portadaDriveId, targetF
     const url = `https://docs.google.com/presentation/d/${tempPresId}/${urlParams}`;
     
     const token = ScriptApp.getOAuthToken();
-    const response = UrlFetchApp.fetch(url, {
-        headers: {
-            'Authorization': 'Bearer ' + token
-        }
-    });
-    
+
+    // Se exporta con reintentos porque el archivo recién guardado no siempre
+    // está disponible al instante: saveAndClose() devuelve el control antes de
+    // que Drive termine de consolidar la copia, y en ese hueco la exportación
+    // responde 400. Es un fallo intermitente, no del contenido de la plantilla.
+    //
+    // muteHttpExceptions permite LEER la respuesta de error. Sin esto,
+    // UrlFetchApp lanza la excepción con el HTML truncado y no se sabe el motivo.
+    let response = null;
+    let ultimoCodigo = 0;
+    let ultimoCuerpo = '';
+    for (let intento = 1; intento <= 3; intento++) {
+        response = UrlFetchApp.fetch(url, {
+            headers: { 'Authorization': 'Bearer ' + token },
+            muteHttpExceptions: true
+        });
+        ultimoCodigo = response.getResponseCode();
+        if (ultimoCodigo === 200) break;
+
+        ultimoCuerpo = String(response.getContentText() || '').replace(/\s+/g, ' ').slice(0, 300);
+        console.error(`Exportar portada ${tipo} — intento ${intento}/3 devolvió HTTP ${ultimoCodigo}. ${ultimoCuerpo}`);
+        if (intento < 3) Utilities.sleep(3000 * intento);   // 3s y luego 6s
+    }
+
+    if (ultimoCodigo !== 200) {
+        // Mensaje accionable: sin esto el usuario solo veía HTML de Google.
+        throw new Error(
+            `No se pudo exportar la portada de ${tipo} (HTTP ${ultimoCodigo}). ` +
+            `Presentación temporal: ${tempPresId}, diapositiva: ${targetSlideId}. ` +
+            `Detalle: ${ultimoCuerpo}`
+        );
+    }
+
     const pngBlob = response.getBlob().setName(`1-Portada_${tipo}_${cdr}.png`);
     const pngFile = targetFolder.createFile(pngBlob);
     
