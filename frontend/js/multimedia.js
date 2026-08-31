@@ -599,14 +599,20 @@ async function recortarPortadaCuadrada(file) {
     const { width: w, height: h } = bitmap;
     if (!w || !h) { bitmap.close && bitmap.close(); return file; }
 
-    if (w === h) {                     // ya es 1:1: no se toca
+    // Ya es 1:1 y ya es JPEG: se devuelve tal cual, sin recomprimir.
+    if (w === h && file.type === 'image/jpeg') {
         bitmap.close && bitmap.close();
         return file;
     }
 
-    // El cuadrado conserva la RESOLUCIÓN ORIGINAL: no se reescala a ningún
-    // tamaño fijo. Una foto 4:3 de iPhone (4032x3024) sale 3024x3024, no
-    // reducida. Solo se quitan los bordes que sobran para cuadrarla.
+    // A partir de aquí se pasa por el canvas en dos casos:
+    //  · no es cuadrada  -> se recorta al centro
+    //  · es cuadrada pero NO es JPEG (un PNG, p. ej.) -> el recorte es cero y
+    //    solo se recodifica. Sin esto se subía un PNG con nombre .jpg: en la
+    //    prueba del 31-08 la portada pesaba 2,33 MB frente a ~0,1 MB del resto.
+    //
+    // En ambos casos se conserva la RESOLUCIÓN ORIGINAL: no se reescala a ningún
+    // tamaño fijo. Una foto 4:3 de iPhone (4032x3024) sale 3024x3024.
     const lado = Math.min(w, h);
     const sx = Math.round((w - lado) / 2);   // recorte centrado
     const sy = Math.round((h - lado) / 2);
