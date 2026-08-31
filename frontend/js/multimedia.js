@@ -474,7 +474,13 @@ btnUpload.addEventListener('click', async () => {
     // proceso ya habría fotos subidas y cancelar dejaría el registro a medias.
     if (!esModoSoloVideo() && selectedPhotos.length > 0) {
         const primera = selectedPhotos[0].file || selectedPhotos[0];
-        if (!(await portadaEsUtilizable(primera))) return;
+        // Convertir un HEIC tarda unos segundos: se avisa en la propia etiqueta
+        // de progreso para que no parezca que el botón no responde.
+        const etiqueta = document.getElementById('progress-label');
+        const caja = document.getElementById('progress-container');
+        if (pareceHeic(primera) && caja) caja.style.display = 'block';
+        const ok = await portadaEsUtilizable(primera, etiqueta);
+        if (!ok) { if (caja) caja.style.display = 'none'; return; }
     }
 
     btnUpload.style.display = 'none';
@@ -631,6 +637,56 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
 // indistinguible del original y sin el peso desmedido de 1.0.
 const CALIDAD_PORTADA = 0.95;
 
+// Conversor de HEIC. Se carga BAJO DEMANDA: pesa más de 1 MB (lleva un
+// decodificador en WebAssembly) y la inmensa mayoría de cargas no lo necesitan,
+// porque iOS ya entrega JPEG al subir. Solo se descarga si aparece un HEIC que
+// el navegador no sabe leer.
+const URL_CONVERSOR_HEIC = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+let promesaConversorHeic = null;
+
+function pareceHeic(file) {
+    const tipo = (file.type || '').toLowerCase();
+    const nombre = (file.name || '').toLowerCase();
+    return tipo.indexOf('heic') !== -1 || tipo.indexOf('heif') !== -1 ||
+           nombre.endsWith('.heic') || nombre.endsWith('.heif');
+}
+
+/** Descarga el conversor una sola vez, aunque se le llame varias veces. */
+function cargarConversorHeic() {
+    if (window.heic2any) return Promise.resolve(true);
+    if (promesaConversorHeic) return promesaConversorHeic;
+
+    promesaConversorHeic = new Promise((resolve) => {
+        const s = document.createElement('script');
+        s.src = URL_CONVERSOR_HEIC;
+        s.onload = () => resolve(!!window.heic2any);
+        // Si el CDN no responde no se rompe la subida: se sigue sin conversión
+        // y el aviso previo ya le habrá dicho al usuario qué puede pasar.
+        s.onerror = () => { console.warn('No se pudo descargar el conversor HEIC.'); resolve(false); };
+        document.head.appendChild(s);
+    });
+    return promesaConversorHeic;
+}
+
+/**
+ * Convierte un HEIC a JPEG conservando la resolución.
+ * Devuelve null si no se pudo, para que quien llame decida qué hacer.
+ */
+async function convertirHeicAJpeg(file) {
+    const listo = await cargarConversorHeic();
+    if (!listo || !window.heic2any) return null;
+    try {
+        const blob = await window.heic2any({ blob: file, toType: 'image/jpeg', quality: CALIDAD_PORTADA });
+        const uno = Array.isArray(blob) ? blob[0] : blob;   // devuelve array si el HEIC trae varias imágenes
+        if (!uno) return null;
+        const nombre = (file.name || 'portada').replace(/\.(heic|heif)$/i, '') + '.jpg';
+        return new File([uno], nombre, { type: 'image/jpeg', lastModified: Date.now() });
+    } catch (e) {
+        console.warn('Falló la conversión del HEIC:', e);
+        return null;
+    }
+}
+
 /**
  * Deja la PORTADA en cuadrado 1:1, recortando por el centro.
  *
@@ -641,7 +697,9 @@ const CALIDAD_PORTADA = 0.95;
  * decodificar, canvas bloqueado). Vale más subir la foto sin recortar que perderla.
  */
 async function recortarPortadaCuadrada(file) {
-    if (!file || !file.type || file.type.indexOf('image/') !== 0) return file;
+    if (!file) return file;
+    const esImagen = (file.type || '').indexOf('image/') === 0;
+    if (!esImagen && !pareceHeic(file)) return file;
 
     let bitmap = null;
     try {
@@ -649,8 +707,27 @@ async function recortarPortadaCuadrada(file) {
         // tomadas en vertical con el móvil se dibujan giradas en el canvas.
         bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
     } catch (e) {
-        console.warn('No se pudo leer la portada para recortarla, se sube tal cual:', e);
-        return file;
+        // Chrome, Firefox y Edge no saben decodificar HEIC. Como la portada SÍ
+        // tiene que entrar en la plantilla de Slides, que tampoco lo entiende,
+        // se convierte con una librería antes de rendirse.
+        if (pareceHeic(file)) {
+            const convertido = await convertirHeicAJpeg(file);
+            if (convertido) {
+                try {
+                    bitmap = await createImageBitmap(convertido, { imageOrientation: 'from-image' });
+                    file = convertido;
+                } catch (e2) {
+                    console.warn('El HEIC convertido tampoco se pudo leer:', e2);
+                    return file;
+                }
+            } else {
+                console.warn('No se pudo convertir el HEIC de portada, se sube tal cual.');
+                return file;
+            }
+        } else {
+            console.warn('No se pudo leer la portada para recortarla, se sube tal cual:', e);
+            return file;
+        }
     }
 
     const { width: w, height: h } = bitmap;
@@ -711,30 +788,32 @@ async function recortarPortadaCuadrada(file) {
  *
  * @returns {Promise<boolean>} true si se puede continuar.
  */
-async function portadaEsUtilizable(file) {
-    if (!file) return true;
-    const nombre = (file.name || '').toLowerCase();
-    const pareceHeic = (file.type || '').indexOf('heic') !== -1 ||
-                       (file.type || '').indexOf('heif') !== -1 ||
-                       nombre.endsWith('.heic') || nombre.endsWith('.heif');
-    if (!pareceHeic) return true;
+async function portadaEsUtilizable(file, labelEl) {
+    if (!file || !pareceHeic(file)) return true;
 
-    // ¿Sabe este navegador decodificarlo? Si sí, se convertirá sin problema.
+    // ¿Sabe este navegador decodificarlo por sí solo? (Safari e iOS, sí)
     try {
         const bm = await createImageBitmap(file);
         bm.close && bm.close();
         return true;
-    } catch (e) {
-        return confirm(
-            'La foto de portada está en formato HEIC (de iPhone) y este navegador ' +
-            'no puede convertirla.\n\n' +
-            'Las demás fotos se suben sin problema, pero el DISEÑO DE PORTADA que ' +
-            'genera el sistema puede quedar sin la imagen.\n\n' +
-            'Recomendación: elige como portada una foto .jpg, o abre esta página ' +
-            'desde un iPhone o Safari.\n\n' +
-            '¿Continuar de todas formas?'
-        );
-    }
+    } catch (e) { /* sigue abajo: hay que convertirlo */ }
+
+    // No sabe. Se intenta con el conversor antes de molestar al usuario: en la
+    // práctica esto resuelve el caso y no llega a ver ningún aviso.
+    if (labelEl) labelEl.textContent = 'Preparando la portada (HEIC)...';
+    const convertido = await convertirHeicAJpeg(file);
+    if (convertido) return true;
+
+    // Solo si tampoco se pudo convertir (CDN caído, HEIC corrupto) se avisa.
+    return confirm(
+        'La foto de portada está en formato HEIC (de iPhone) y no se ha podido ' +
+        'convertir en este navegador.\n\n' +
+        'Las demás fotos se suben sin problema, pero el DISEÑO DE PORTADA que ' +
+        'genera el sistema puede quedar sin la imagen.\n\n' +
+        'Recomendación: elige como portada una foto .jpg, o abre esta página ' +
+        'desde un iPhone o Safari.\n\n' +
+        '¿Continuar de todas formas?'
+    );
 }
 
 async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
