@@ -89,8 +89,13 @@ function handleGetMultimediaData(params) {
     const linkYtCol = headers.indexOf('LINK DEL VIDEO DEL INMUEBLE');
     const checkMmCol = headers.indexOf('CHECK MULTIMEDIA');
     const yaTieneVideo = linkYtCol !== -1 && data[rowIdx][linkYtCol];
-    const yaCargoMultimedia = checkMmCol !== -1 &&
-        String(data[rowIdx][checkMmCol] || '').trim() !== '';
+    // Se compara contra VERDADERO, no contra "celda no vacía": la columna es una
+    // casilla de verificación como CHECK YT, así que una casilla desmarcada vale
+    // false, y false no es vacío. Con la comprobación de vacío se bloquearían
+    // TODOS los registros.
+    const marcaMm = checkMmCol !== -1 ? data[rowIdx][checkMmCol] : '';
+    const yaCargoMultimedia = marcaMm === true ||
+        String(marcaMm).trim().toUpperCase() === 'TRUE';
     if (yaTieneVideo || yaCargoMultimedia) {
         throw new Error("⚠️ BLOQUEO DE SEGURIDAD: Este inmueble ya tiene el contenido multimedia cargado en el sistema.");
     }
@@ -306,9 +311,12 @@ function handleFinalizeMultimedia(datos) {
     const checkMmCol = headers.indexOf('CHECK MULTIMEDIA');
     if (checkMmCol !== -1) {
         const celda = sheet.getRange(rowIdx + 1, checkMmCol + 1);
-        celda.setValue(youtubeId ? 'CARGADO CON VIDEO' : 'CARGADO SIN VIDEO');
-        // Verde si vino completo, naranja si quedó sin vídeo: así se ve de un
-        // vistazo en el Sheet a cuáles les falta el vídeo por conseguir.
+        // Casilla de verificación, igual que CHECK YT: se marca sola, no la
+        // marca nadie a mano. Es el estado del sistema, no una tarea pendiente.
+        celda.setValue(true);
+        // El color distingue lo que la casilla por sí sola no puede decir:
+        // verde si vino con vídeo, naranja si quedó sin él. Así se ve de un
+        // vistazo a qué inmuebles falta conseguirles el vídeo.
         celda.setBackground(youtubeId ? '#D9EAD3' : '#FCE5CD');
     }
 

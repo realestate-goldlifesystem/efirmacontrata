@@ -1222,7 +1222,10 @@ function insertarLinkContenido(sheet, row, regFolder, carpetaNegocio) {
   }
 
   var contenidoUrl = `https://drive.google.com/drive/folders/${contenidoFolder.getId()}`;
-  var formula = `=HYPERLINK("${contenidoUrl}";"CARPETA DE CONTENIDO")`;
+  // Los emojis van solo en el TEXTO del enlace (segundo argumento). Cambiarlos es
+  // seguro: todo el código que lee esta celda saca la URL del primer argumento
+  // con /HYPERLINK\("([^"]+)"/, así que el rótulo no le afecta.
+  var formula = `=HYPERLINK("${contenidoUrl}";"CARPETA DE CONTENIDO 📁📸📢")`;
 
   sheet.getRange(row, linkContenidoCol).setFormula(formula);
   Logger.log('✅ Link CONTENIDO insertado');
