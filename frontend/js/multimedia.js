@@ -109,6 +109,7 @@ function showWorkspace() {
     `;
     workspace.style.display = 'block';
     aplicarVideoOpcional();
+    if (esModoSoloVideo()) activarModoSoloVideo();
 }
 
 async function handleReutilizar() {
@@ -304,7 +305,51 @@ function esVideoOpcional() {
     return !!(propertyData && propertyData.videoOpcional);
 }
 
+/**
+ * Segunda visita para subir SOLO el vídeo.
+ *
+ * Ocurre cuando el inmueble ya cargó fotos pero se quedó sin vídeo — el caso de
+ * Ciencuadras, que no lo entregan de entrada. Antes el candado bloqueaba la
+ * entrada y no había forma de añadirlo después.
+ */
+function esModoSoloVideo() {
+    return !!(propertyData && propertyData.modoSoloVideo);
+}
+
+/** Deja la pantalla en el paso de vídeo, sin pedir fotos ni TOP 10. */
+function activarModoSoloVideo() {
+    step1.classList.remove('active');
+    step2.classList.remove('active');
+    step3.classList.add('active');
+    if (dot1) dot1.classList.remove('active');
+    if (dot2) dot2.classList.remove('active');
+    if (dot3) dot3.classList.add('active');
+
+    // Volver al paso 2 no tiene sentido aquí: no se pasó por él.
+    if (btnBack2) btnBack2.style.display = 'none';
+
+    const titulo = document.getElementById('titulo-paso-3');
+    if (titulo) titulo.textContent = 'Cargar el video que faltaba';
+
+    const aviso = document.getElementById('aviso-video-opcional');
+    if (aviso) {
+        aviso.style.display = 'block';
+        aviso.innerHTML =
+            '<strong>Este inmueble ya tiene sus fotos cargadas.</strong><br>' +
+            'Solo falta el video. Al subirlo se genera la miniatura y se completa ' +
+            'la publicación; las fotos y las portadas ya creadas no se tocan.';
+    }
+    actualizarBotonSubir();
+}
+
 function actualizarBotonSubir() {
+    if (esModoSoloVideo()) {
+        // Aquí el vídeo es lo ÚNICO que se viene a subir: sin él no hay nada
+        // que hacer, así que no se permite continuar en blanco.
+        btnUpload.disabled = !selectedVideo;
+        btnUpload.textContent = selectedVideo ? '🚀 SUBIR VIDEO' : 'Selecciona el video';
+        return;
+    }
     if (selectedVideo) {
         btnUpload.disabled = false;
         btnUpload.textContent = '🚀 PROCESAR Y SUBIR';
@@ -425,6 +470,13 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 btnUpload.addEventListener('click', async () => {
+    // La portada se comprueba ANTES de empezar: si se avisara a mitad del
+    // proceso ya habría fotos subidas y cancelar dejaría el registro a medias.
+    if (!esModoSoloVideo() && selectedPhotos.length > 0) {
+        const primera = selectedPhotos[0].file || selectedPhotos[0];
+        if (!(await portadaEsUtilizable(primera))) return;
+    }
+
     btnUpload.style.display = 'none';
     btnBack2.style.display = 'none';
     const progressContainer = document.getElementById('progress-container');
@@ -450,11 +502,16 @@ btnUpload.addEventListener('click', async () => {
             progressFill.style.width = '0%';
         }
         
-        // 2. Subir Fotos a Google Drive y organizar TOP 10
-        progressLabel.textContent = 'Subiendo Fotografías a Drive...';
-        progressPercentage.textContent = '';
-        progressFill.style.width = '0%';
-        const photoIds = await uploadPhotosToDrive(selectedPhotos, selectedTop10Indices, progressLabel, progressFill);
+        // 2. Subir Fotos a Google Drive y organizar TOP 10.
+        //    En modo solo vídeo se salta: las fotos ya están de la carga
+        //    anterior y volver a subirlas las duplicaría.
+        let photoIds = [];
+        if (!esModoSoloVideo()) {
+            progressLabel.textContent = 'Subiendo Fotografías a Drive...';
+            progressPercentage.textContent = '';
+            progressFill.style.width = '0%';
+            photoIds = await uploadPhotosToDrive(selectedPhotos, selectedTop10Indices, progressLabel, progressFill);
+        }
         
         // 3. Notificar a Apps Script para generar plantillas
         progressLabel.textContent = 'Creando plantillas PDF/PNG... (puede tardar un minuto)';
@@ -640,6 +697,46 @@ async function recortarPortadaCuadrada(file) {
     }
 }
 
+/**
+ * Avisa si la PORTADA es un HEIC que este navegador no sabe convertir.
+ *
+ * Solo importa en la portada: es la única foto que se inserta en la plantilla de
+ * Slides para generar el diseño, y Slides no entiende HEIC. Con el resto de
+ * fotos basta el renombrado a .jpg, que ya funciona en los portales porque miran
+ * el contenido y no el nombre.
+ *
+ * Safari y iOS sí decodifican HEIC, así que ahí se convierte y no se avisa nada.
+ * Chrome, Firefox y Edge en Windows/Android no pueden, y ahí conviene decirlo
+ * ANTES de subir: si no, el diseño sale sin la foto y no se entiende por qué.
+ *
+ * @returns {Promise<boolean>} true si se puede continuar.
+ */
+async function portadaEsUtilizable(file) {
+    if (!file) return true;
+    const nombre = (file.name || '').toLowerCase();
+    const pareceHeic = (file.type || '').indexOf('heic') !== -1 ||
+                       (file.type || '').indexOf('heif') !== -1 ||
+                       nombre.endsWith('.heic') || nombre.endsWith('.heif');
+    if (!pareceHeic) return true;
+
+    // ¿Sabe este navegador decodificarlo? Si sí, se convertirá sin problema.
+    try {
+        const bm = await createImageBitmap(file);
+        bm.close && bm.close();
+        return true;
+    } catch (e) {
+        return confirm(
+            'La foto de portada está en formato HEIC (de iPhone) y este navegador ' +
+            'no puede convertirla.\n\n' +
+            'Las demás fotos se suben sin problema, pero el DISEÑO DE PORTADA que ' +
+            'genera el sistema puede quedar sin la imagen.\n\n' +
+            'Recomendación: elige como portada una foto .jpg, o abre esta página ' +
+            'desde un iPhone o Safari.\n\n' +
+            '¿Continuar de todas formas?'
+        );
+    }
+}
+
 async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
     if (!userToken || !propertyData || !propertyData.fotosFolderId) {
         throw new Error("No hay carpeta de fotografías asignada en el CRM.");
@@ -750,7 +847,10 @@ async function notifyBackend(youtubeId, photoIds) {
         accion: 'finalizeMultimedia',
         id: currentCdr,
         youtubeId: youtubeId,
+        // En modo solo vídeo no se subieron fotos, así que no hay portadaId que
+        // mandar: el backend recupera la portada anterior desde Drive.
         portadaId: photoIds.length > 0 ? photoIds[0] : null,
+        soloVideo: esModoSoloVideo(),
         userToken: userToken
     };
     

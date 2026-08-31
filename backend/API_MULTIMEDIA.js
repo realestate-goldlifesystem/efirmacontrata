@@ -96,9 +96,16 @@ function handleGetMultimediaData(params) {
     const marcaMm = checkMmCol !== -1 ? data[rowIdx][checkMmCol] : '';
     const yaCargoMultimedia = marcaMm === true ||
         String(marcaMm).trim().toUpperCase() === 'TRUE';
-    if (yaTieneVideo || yaCargoMultimedia) {
+    // Con vídeo ya está completo: no hay nada que volver a subir.
+    if (yaTieneVideo) {
         throw new Error("⚠️ BLOQUEO DE SEGURIDAD: Este inmueble ya tiene el contenido multimedia cargado en el sistema.");
     }
+
+    // Si ya se cargaron las fotos pero falta el vídeo (el caso de Ciencuadras,
+    // que no lo entregan de entrada), se entra en MODO SOLO VÍDEO en vez de
+    // bloquear: se salta fotos y TOP 10 y solo se pide el vídeo. Las fotos y las
+    // portadas ya generadas no se tocan, así que no se duplica nada.
+    const modoSoloVideo = yaCargoMultimedia && !yaTieneVideo;
 
     // Los inmuebles que llegan por la alianza con Ciencuadras no traen vídeo,
     // así que en esos el paso se ofrece como opcional.
@@ -177,7 +184,8 @@ function handleGetMultimediaData(params) {
         hasPreviousMedia: hasPreviousMedia,
         previousMediaLink: previousMediaLink,
         esCiencuadras: esCiencuadras,
-        videoOpcional: esCiencuadras
+        videoOpcional: esCiencuadras,
+        modoSoloVideo: modoSoloVideo
     };
 }
 
@@ -188,8 +196,12 @@ function handleGetMultimediaData(params) {
 function handleFinalizeMultimedia(datos) {
     const id = datos.id || datos.cdr;
     const youtubeId = datos.youtubeId; // p.ej. 'dQw4w9WgXcQ'
-    const portadaId = datos.portadaId; // ID en Drive de la foto principal
+    let portadaId = datos.portadaId;   // ID en Drive de la foto principal
     const userToken = datos.userToken; // Token para cambiar la portada en YouTube
+
+    // Segunda visita para subir SOLO el vídeo: las fotos y las portadas ya están
+    // de la carga anterior y no se vuelven a tocar.
+    const soloVideo = datos.soloVideo === true || String(datos.soloVideo) === 'true';
 
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("1.1 - INMUEBLES REGISTRADOS");
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
@@ -239,22 +251,45 @@ function handleFinalizeMultimedia(datos) {
     let idxArriendo = parseInt(props.getProperty('IDX_TEMPLATE_ARRIENDO') || '0', 10);
     let idxVenta = parseInt(props.getProperty('IDX_TEMPLATE_VENTA') || '0', 10);
 
-    if (esArriendo) {
+    // En MODO SOLO VÍDEO las portadas ya existen de la carga anterior. Volver a
+    // generarlas dejaría archivos duplicados en la carpeta y, peor, avanzaría el
+    // contador del rotativo de plantillas, salteando diseños para los inmuebles
+    // siguientes. Así que aquí solo se sube el vídeo y su miniatura.
+    if (esArriendo && !soloVideo) {
         // Selecciona la plantilla actual y calcula la siguiente
         let slideIdArr = CONFIG_MULTIMEDIA.SLIDE_IDS_ARRIENDO[idxArriendo % CONFIG_MULTIMEDIA.SLIDE_IDS_ARRIENDO.length];
         urlArriendo = generarPortada(rowData, headers, slideIdArr, portadaId, fotosFolder, 'Arriendo', cdrEncontrado);
         props.setProperty('IDX_TEMPLATE_ARRIENDO', String(idxArriendo + 1));
     }
-    
-    if (esVenta) {
+
+    if (esVenta && !soloVideo) {
         // Selecciona la plantilla actual y calcula la siguiente
         let slideIdVen = CONFIG_MULTIMEDIA.SLIDE_IDS_VENTA[idxVenta % CONFIG_MULTIMEDIA.SLIDE_IDS_VENTA.length];
         urlVenta = generarPortada(rowData, headers, slideIdVen, portadaId, fotosFolder, 'Venta', cdrEncontrado);
         props.setProperty('IDX_TEMPLATE_VENTA', String(idxVenta + 1));
     }
 
+    // En modo solo vídeo el navegador no sube fotos, así que no manda portadaId.
+    // Se recupera de la carga anterior buscando el archivo "2-Portada" que dejó
+    // el formulario. Se busca recorriendo la carpeta y comparando el principio
+    // del nombre: searchFiles('title contains') tokeniza y devolvería de más.
+    if (soloVideo && !portadaId && fotosFolder) {
+        try {
+            const it = fotosFolder.getFiles();
+            while (it.hasNext()) {
+                const f = it.next();
+                if (f.getName().indexOf('2-Portada') === 0) { portadaId = f.getId(); break; }
+            }
+            console.log(portadaId
+                ? 'Modo solo vídeo: portada recuperada ' + portadaId
+                : 'Modo solo vídeo: no se encontró "2-Portada", la miniatura se omitirá.');
+        } catch (e) {
+            console.error('No se pudo recuperar la portada anterior: ' + e.message);
+        }
+    }
+
     let thumbnailStatus = "Not attempted";
-    
+
     // Generar Miniatura para YouTube (16:9)
     if (youtubeId && userToken) {
         try {
