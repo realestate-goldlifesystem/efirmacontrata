@@ -516,6 +516,67 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
     }
 }
 
+// Lado del cuadrado de la portada. No se amplía nunca por encima del original:
+// estirar una foto pequeña no añade detalle, solo peso y un resultado borroso.
+const LADO_PORTADA = 1080;
+
+/**
+ * Deja la PORTADA en cuadrado 1:1, recortando por el centro.
+ *
+ * Si ya viene cuadrada se devuelve el archivo TAL CUAL, sin pasar por el canvas:
+ * volver a comprimir un JPG que ya está bien solo le quita calidad.
+ *
+ * Devuelve el original ante cualquier problema (formato que el navegador no sabe
+ * decodificar, canvas bloqueado). Vale más subir la foto sin recortar que perderla.
+ */
+async function recortarPortadaCuadrada(file) {
+    if (!file || !file.type || file.type.indexOf('image/') !== 0) return file;
+
+    let bitmap = null;
+    try {
+        // imageOrientation 'from-image' respeta el EXIF. Sin esto, las fotos
+        // tomadas en vertical con el móvil se dibujan giradas en el canvas.
+        bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch (e) {
+        console.warn('No se pudo leer la portada para recortarla, se sube tal cual:', e);
+        return file;
+    }
+
+    const { width: w, height: h } = bitmap;
+    if (!w || !h) { bitmap.close && bitmap.close(); return file; }
+
+    if (w === h) {                     // ya es 1:1: no se toca
+        bitmap.close && bitmap.close();
+        return file;
+    }
+
+    const lado = Math.min(w, h);
+    const destino = Math.min(LADO_PORTADA, lado);
+    const sx = Math.round((w - lado) / 2);   // recorte centrado
+    const sy = Math.round((h - lado) / 2);
+
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = destino;
+        canvas.height = destino;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(bitmap, sx, sy, lado, lado, 0, 0, destino, destino);
+        bitmap.close && bitmap.close();
+
+        const blob = await new Promise((resolve) =>
+            canvas.toBlob(resolve, 'image/jpeg', 0.92)
+        );
+        if (!blob) return file;
+
+        return new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+    } catch (e) {
+        console.warn('Falló el recorte de la portada, se sube tal cual:', e);
+        bitmap.close && bitmap.close();
+        return file;
+    }
+}
+
 async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
     if (!userToken || !propertyData || !propertyData.fotosFolderId) {
         throw new Error("No hay carpeta de fotografías asignada en el CRM.");
@@ -529,7 +590,14 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
 
     // 1. Subir todas a la carpeta principal
     for (const item of photosArray) {
-        const file = item.file || item;
+        let file = item.file || item;
+
+        // Solo la portada va en 1:1. Las demás conservan su encuadre original.
+        if (idx === 1) {
+            labelEl.textContent = 'Ajustando la portada a formato cuadrado...';
+            file = await recortarPortadaCuadrada(file);
+        }
+
         labelEl.textContent = `Subiendo foto ${idx} de ${total} a Drive...`;
         fillEl.style.width = Math.round((idx / total) * 100) + '%';
         
