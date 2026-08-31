@@ -99,11 +99,16 @@ async function loadPropertyData() {
 
 function showWorkspace() {
     document.getElementById('decision-screen').style.display = 'none';
+    const avisoCc = esVideoOpcional()
+        ? '<p style="color:#B45309;font-weight:bold;">🤝 Inmueble de la alianza Ciencuadras — el video es opcional.</p>'
+        : '';
     propertyInfoCard.innerHTML = `
         <h3>Inmueble ID: ${currentCdr}</h3>
         <p>✅ Datos cargados. Listo para procesar y subir contenido.</p>
+        ${avisoCc}
     `;
     workspace.style.display = 'block';
+    aplicarVideoOpcional();
 }
 
 async function handleReutilizar() {
@@ -287,6 +292,45 @@ function handleVideoSelect(file) {
     selectedVideo = file;
     videoFilename.textContent = `${file.name} (${(file.size / (1024*1024)).toFixed(2)} MB)`;
     btnUpload.disabled = false; // Como el video es el último paso, habilita el botón final
+    actualizarBotonSubir();
+}
+
+/**
+ * Los inmuebles de la alianza Ciencuadras no traen video de entrada, así que
+ * ahí el paso es opcional y se puede terminar sin él. En el resto sigue siendo
+ * obligatorio: el botón solo se habilita al elegir el archivo.
+ */
+function esVideoOpcional() {
+    return !!(propertyData && propertyData.videoOpcional);
+}
+
+function actualizarBotonSubir() {
+    if (selectedVideo) {
+        btnUpload.disabled = false;
+        btnUpload.textContent = '🚀 PROCESAR Y SUBIR';
+    } else if (esVideoOpcional()) {
+        btnUpload.disabled = false;
+        // El texto dice explícitamente que se va sin video, para que nadie
+        // termine sin video por descuido creyendo que lo habia adjuntado.
+        btnUpload.textContent = '🚀 PROCESAR Y SUBIR (sin video)';
+    } else {
+        btnUpload.disabled = true;
+        btnUpload.textContent = '🚀 PROCESAR Y SUBIR';
+    }
+}
+
+/** Pinta el aviso y ajusta el título cuando el video no es obligatorio. */
+function aplicarVideoOpcional() {
+    const aviso = document.getElementById('aviso-video-opcional');
+    const titulo = document.getElementById('titulo-paso-3');
+    if (esVideoOpcional()) {
+        if (aviso) aviso.style.display = 'block';
+        if (titulo) titulo.textContent = 'Paso 3: Video Recorrido (opcional)';
+    } else {
+        if (aviso) aviso.style.display = 'none';
+        if (titulo) titulo.textContent = 'Paso 3: Video Recorrido';
+    }
+    actualizarBotonSubir();
 }
 
 // Lógica Fotos
@@ -392,10 +436,19 @@ btnUpload.addEventListener('click', async () => {
     isUploading = true;
     
     try {
-        // 1. Subir Video a YouTube (Resumable Upload)
-        progressLabel.textContent = 'Subiendo Video a YouTube...';
-        progressFill.style.width = '0%';
-        const youtubeId = await uploadVideoToYouTube(selectedVideo, progressPercentage, progressFill);
+        // 1. Subir Video a YouTube (Resumable Upload).
+        //    Sin video se salta el paso entero: el backend ya trata el id como
+        //    opcional (no escribe el link, no marca CHECK YT y no genera la
+        //    miniatura), asi que el resto del proceso sigue igual.
+        let youtubeId = null;
+        if (selectedVideo) {
+            progressLabel.textContent = 'Subiendo Video a YouTube...';
+            progressFill.style.width = '0%';
+            youtubeId = await uploadVideoToYouTube(selectedVideo, progressPercentage, progressFill);
+        } else {
+            progressLabel.textContent = 'Sin video: se continúa con las fotografías...';
+            progressFill.style.width = '0%';
+        }
         
         // 2. Subir Fotos a Google Drive y organizar TOP 10
         progressLabel.textContent = 'Subiendo Fotografías a Drive...';

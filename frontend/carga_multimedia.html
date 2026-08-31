@@ -408,7 +408,17 @@
 
             <!-- PASO 3: VIDEO -->
             <div id="step-3" class="step-section">
-                <h2 class="section-title">Paso 3: Video Recorrido</h2>
+                <h2 class="section-title" id="titulo-paso-3">Paso 3: Video Recorrido</h2>
+
+                <!-- Solo se muestra en inmuebles de la alianza Ciencuadras, que
+                     no traen video de entrada. Lo pinta multimedia.js. -->
+                <div id="aviso-video-opcional" style="display: none; background: #FFF4E5; border: 1px solid #FFD8A8; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; line-height: 1.5; color: #7C4A03;">
+                    <strong>Este inmueble viene de Ciencuadras: el video es opcional.</strong><br>
+                    Si aún no tienes el video, puedes continuar sin él y el resto del
+                    contenido se procesará igual. Quedará marcado en el sistema como
+                    <em>“cargado sin video”</em>.
+                </div>
+
                 <div class="drop-zone" id="video-drop-zone">
                     <div class="icon">🎥</div>
                     <p>Haz clic o arrastra tu video aquí (Hasta 5GB)</p>

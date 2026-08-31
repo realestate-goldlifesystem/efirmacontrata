@@ -76,10 +76,30 @@ function handleGetMultimediaData(params) {
     let habitacionesVal = habsCol !== -1 ? String(data[rowIdx][habsCol]).replace(/[^0-9]/g, '') : '';
     
     // CANDADO ANTI-DUPLICADOS
+    //
+    // Mira DOS señales, no una:
+    //  · CHECK MULTIMEDIA: se marca al terminar la carga, haya vídeo o no.
+    //  · LINK DEL VIDEO: se conserva porque los registros cargados ANTES de
+    //    existir la columna solo tienen esa marca; sin esto quedarían sin
+    //    proteger y se podrían volver a cargar.
+    //
+    // Antes solo se miraba el link del vídeo, así que un inmueble sin vídeo
+    // (los de Ciencuadras) nunca activaba el candado: se podía entrar otra vez
+    // y duplicar las fotos en Drive.
     const linkYtCol = headers.indexOf('LINK DEL VIDEO DEL INMUEBLE');
-    if (linkYtCol !== -1 && data[rowIdx][linkYtCol]) {
+    const checkMmCol = headers.indexOf('CHECK MULTIMEDIA');
+    const yaTieneVideo = linkYtCol !== -1 && data[rowIdx][linkYtCol];
+    const yaCargoMultimedia = checkMmCol !== -1 &&
+        String(data[rowIdx][checkMmCol] || '').trim() !== '';
+    if (yaTieneVideo || yaCargoMultimedia) {
         throw new Error("⚠️ BLOQUEO DE SEGURIDAD: Este inmueble ya tiene el contenido multimedia cargado en el sistema.");
     }
+
+    // Los inmuebles que llegan por la alianza con Ciencuadras no traen vídeo,
+    // así que en esos el paso se ofrece como opcional.
+    const ccCol = headers.indexOf('¿Viene de Ciencuadras?');
+    const esCiencuadras = ccCol !== -1 &&
+        String(data[rowIdx][ccCol] || '').trim().toUpperCase().indexOf('SI') === 0;
     
     let folderId = "";
     if (folderUrl) {
@@ -150,7 +170,9 @@ function handleGetMultimediaData(params) {
         tipoNegocio: tipoNegocioVal,
         habitaciones: habitacionesVal,
         hasPreviousMedia: hasPreviousMedia,
-        previousMediaLink: previousMediaLink
+        previousMediaLink: previousMediaLink,
+        esCiencuadras: esCiencuadras,
+        videoOpcional: esCiencuadras
     };
 }
 
@@ -276,6 +298,18 @@ function handleFinalizeMultimedia(datos) {
             const cellCheck = sheet.getRange(rowIdx + 1, checkYtCol + 1);
             cellCheck.setBackground('#FFF2CC'); // Amarillo pastel (Alerta visual)
         }
+    }
+
+    // Marca de "ya se cargó multimedia", SIEMPRE, haya vídeo o no. Es lo que
+    // lee el candado anti-duplicados la próxima vez: sin esto, un inmueble sin
+    // vídeo se podría volver a cargar y duplicaría las fotos en Drive.
+    const checkMmCol = headers.indexOf('CHECK MULTIMEDIA');
+    if (checkMmCol !== -1) {
+        const celda = sheet.getRange(rowIdx + 1, checkMmCol + 1);
+        celda.setValue(youtubeId ? 'CARGADO CON VIDEO' : 'CARGADO SIN VIDEO');
+        // Verde si vino completo, naranja si quedó sin vídeo: así se ve de un
+        // vistazo en el Sheet a cuáles les falta el vídeo por conseguir.
+        celda.setBackground(youtubeId ? '#D9EAD3' : '#FCE5CD');
     }
 
     // Dejar todas las fotos con extensión .jpg (síncrono y rápido)
