@@ -516,9 +516,10 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
     }
 }
 
-// Lado del cuadrado de la portada. No se amplía nunca por encima del original:
-// estirar una foto pequeña no añade detalle, solo peso y un resultado borroso.
-const LADO_PORTADA = 1080;
+// Calidad del JPEG de la portada. Recortar obliga a recodificar (no existe
+// recorte sin pérdida en el navegador), así que se usa 0.95: visualmente
+// indistinguible del original y sin el peso desmedido de 1.0.
+const CALIDAD_PORTADA = 0.95;
 
 /**
  * Deja la PORTADA en cuadrado 1:1, recortando por el centro.
@@ -550,22 +551,25 @@ async function recortarPortadaCuadrada(file) {
         return file;
     }
 
+    // El cuadrado conserva la RESOLUCIÓN ORIGINAL: no se reescala a ningún
+    // tamaño fijo. Una foto 4:3 de iPhone (4032x3024) sale 3024x3024, no
+    // reducida. Solo se quitan los bordes que sobran para cuadrarla.
     const lado = Math.min(w, h);
-    const destino = Math.min(LADO_PORTADA, lado);
     const sx = Math.round((w - lado) / 2);   // recorte centrado
     const sy = Math.round((h - lado) / 2);
 
     try {
         const canvas = document.createElement('canvas');
-        canvas.width = destino;
-        canvas.height = destino;
+        canvas.width = lado;
+        canvas.height = lado;
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(bitmap, sx, sy, lado, lado, 0, 0, destino, destino);
+        // Recorte 1:1 sin reescalado: origen y destino miden lo mismo.
+        ctx.drawImage(bitmap, sx, sy, lado, lado, 0, 0, lado, lado);
         bitmap.close && bitmap.close();
 
         const blob = await new Promise((resolve) =>
-            canvas.toBlob(resolve, 'image/jpeg', 0.92)
+            canvas.toBlob(resolve, 'image/jpeg', CALIDAD_PORTADA)
         );
         if (!blob) return file;
 
