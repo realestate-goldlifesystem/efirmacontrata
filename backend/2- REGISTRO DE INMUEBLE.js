@@ -1921,10 +1921,32 @@ function continuarRegistroInmuebleParte3() {
           Logger.log('⚠️ Error enviando correo de firma: ' + e.message);
         }
 
-        // Programar rollback
+        // Programar rollback.
+        //
+        // ⚠️ VA EN try/catch Y NO PUEDE QUITARSE. programarTriggersRollback crea
+        // DOS triggers, y Apps Script solo admite 20 por proyecto: al llegar al
+        // tope, create() lanza. Sin este catch la excepción se llevaba por
+        // delante el borrarFilaTemporal() de más abajo, y el resultado era el
+        // peor posible: la renovación aplicada del todo (carpeta del año nueva,
+        // datos transferidos, correo enviado) PERO la fila temporal viva, o sea
+        // el inmueble DUPLICADO en el Sheet. Pasó el 08-09-2026.
+        //
+        // Perder el rollback automático es un problema menor y visible en el
+        // log; dejar un duplicado silencioso es mucho peor.
         var colEmail = headers.indexOf('Correo electrónico');
         var email = colEmail !== -1 ? sheet.getRange(filaOriginal, colEmail + 1).getValue() : '';
-        if (email) programarTriggersRollback(idRegistro, email);
+        if (email) {
+          try {
+            programarTriggersRollback(idRegistro, email);
+          } catch (errRollback) {
+            Logger.log('⚠️ NO se pudieron programar los triggers de rollback para ' +
+                       idRegistro + ': ' + errRollback.message);
+            Logger.log('   La renovación/cambio SÍ quedó aplicada. Lo que no habrá es ' +
+                       'recordatorio al día 6 ni reversión automática al día 7.');
+            Logger.log('   Si es por el tope de 20 triggers, libera triggers viejos y ' +
+                       'vuelve a programarlo a mano.');
+          }
+        }
       }
       borrarFilaTemporal(sheet, row, datos.cdr);
 
@@ -1968,10 +1990,32 @@ function continuarRegistroInmuebleParte3() {
           Logger.log('⚠️ Error enviando correo de firma: ' + e.message);
         }
 
-        // Programar rollback
+        // Programar rollback.
+        //
+        // ⚠️ VA EN try/catch Y NO PUEDE QUITARSE. programarTriggersRollback crea
+        // DOS triggers, y Apps Script solo admite 20 por proyecto: al llegar al
+        // tope, create() lanza. Sin este catch la excepción se llevaba por
+        // delante el borrarFilaTemporal() de más abajo, y el resultado era el
+        // peor posible: la renovación aplicada del todo (carpeta del año nueva,
+        // datos transferidos, correo enviado) PERO la fila temporal viva, o sea
+        // el inmueble DUPLICADO en el Sheet. Pasó el 08-09-2026.
+        //
+        // Perder el rollback automático es un problema menor y visible en el
+        // log; dejar un duplicado silencioso es mucho peor.
         var colEmail = headers.indexOf('Correo electrónico');
         var email = colEmail !== -1 ? sheet.getRange(filaOriginal, colEmail + 1).getValue() : '';
-        if (email) programarTriggersRollback(idRegistro, email);
+        if (email) {
+          try {
+            programarTriggersRollback(idRegistro, email);
+          } catch (errRollback) {
+            Logger.log('⚠️ NO se pudieron programar los triggers de rollback para ' +
+                       idRegistro + ': ' + errRollback.message);
+            Logger.log('   La renovación/cambio SÍ quedó aplicada. Lo que no habrá es ' +
+                       'recordatorio al día 6 ni reversión automática al día 7.');
+            Logger.log('   Si es por el tope de 20 triggers, libera triggers viejos y ' +
+                       'vuelve a programarlo a mano.');
+          }
+        }
       }
       borrarFilaTemporal(sheet, row, datos.cdr);
     }
