@@ -739,9 +739,28 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
     setLoading(true);
 
     try {
+      // El inmueble que el agente eligió al pulsar "Renovar" o "Cambiar negocio".
+      // Hasta ahora esta intención se quedaba SOLO en el navegador: al backend
+      // llegaba un registro corriente y tenía que readivinar si era renovación
+      // rastreando carpetas en Drive. Si esa búsqueda fallaba, se creaba un
+      // inmueble duplicado sin que nadie se enterara (pasó el 08-09-2026).
+      const inmuebleOriginal = (activeFlow !== 'normal' && selectedPropertyIndex !== null)
+        ? (ownerProperties[selectedPropertyIndex] || {})
+        : null;
+
       const payload = {
         accion: 'registrarInmueble',
         reutilizarMultimedia: reutilizarMultimedia,
+        // 'normal' | 'renovacion' | 'cambio_negocio'
+        flujoSolicitado: activeFlow,
+        // ID DE REGISTRO del inmueble a renovar/cambiar. Es el identificador
+        // estable: la dirección puede venir escrita de otra forma y la fila se mueve.
+        idInmuebleOriginal: inmuebleOriginal
+          ? String(inmuebleOriginal['ID DE REGISTRO'] || '').trim()
+          : '',
+        cdrInmuebleOriginal: inmuebleOriginal
+          ? String(inmuebleOriginal['CODIGO DE REGISTRO'] || '').trim()
+          : '',
         "¿Viene de Ciencuadras?": formData.isCiencuadras ? 'SI' : 'NO',
         "Código Ciencuadras": formData.isCiencuadras ? formData.ciencuadrasCode : '',
         "Fecha de registro del inmueble.": formData.registrationDate,

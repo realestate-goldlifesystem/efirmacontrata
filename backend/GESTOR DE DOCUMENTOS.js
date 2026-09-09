@@ -832,6 +832,26 @@ function handleRegistrarInmueble(datos) {
       PropertiesService.getScriptProperties().setProperty(propMultimediaKey, 'SI');
     }
 
+    // Intención declarada por el agente en el formulario: renovar o cambiar de
+    // negocio un inmueble CONCRETO que él mismo eligió.
+    //
+    // Antes esto no viajaba y el backend tenía que readivinarlo rastreando
+    // carpetas en Drive. Cuando esa búsqueda no encontraba el REG, el inmueble
+    // se registraba como nuevo y quedaba duplicado en silencio. Guardándolo
+    // aquí, la clasificación parte de lo que el agente pidió y la búsqueda por
+    // carpetas queda solo como respaldo.
+    const flujo = String(datos.flujoSolicitado || 'normal').trim();
+    if (flujo === 'renovacion' || flujo === 'cambio_negocio') {
+      PropertiesService.getScriptProperties().setProperty(
+        'FLUJO_SOLICITADO_' + claveCola,
+        JSON.stringify({
+          flujo: flujo,
+          idOriginal: String(datos.idInmuebleOriginal || '').trim(),
+          cdrOriginal: String(datos.cdrInmuebleOriginal || '').trim()
+        })
+      );
+    }
+
     // Encolar de forma asíncrona el inmueble para procesamiento pesado en segundo plano.
     //
     // El VALOR es la marca de tiempo de llegada, y es lo que da el orden FIFO. Antes el

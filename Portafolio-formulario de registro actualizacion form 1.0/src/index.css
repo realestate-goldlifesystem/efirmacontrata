@@ -11,6 +11,22 @@
   --color-brand-dark-deep: #f3ede2;
   --color-brand-warm: #9e755a;
   --color-brand-orange: #b0622c;
+
+  /* Tonos intermedios de stone/emerald/teal usados en la calculadora
+     (LandlordCalculator, RegisterPropertyForm). Tailwind v4 no trae estas
+     escalas por defecto: sin declararlas aquí, esas clases no generan CSS
+     y el texto se queda sin color. Interpolados entre los stops oficiales
+     más cercanos de cada paleta. */
+  --color-stone-150: #eeedec;
+  --color-stone-550: #67625d;
+  --color-stone-555: #66615c;
+  --color-stone-605: #56524d;
+  --color-stone-650: #4e4a45;
+  --color-stone-750: #373330;
+  --color-stone-850: #231f1e;
+  --color-stone-855: #221e1d;
+  --color-emerald-650: #058760;
+  --color-teal-650: #0e857b;
 }
 
 @keyframes shake {

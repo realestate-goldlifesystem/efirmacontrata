@@ -73,6 +73,11 @@ function onFormSubmitInmueble(e) {
       Logger.log(`🆔 ID ya asignado en el registro: ${idInmueble}`);
     }
 
+    // La clave de cola es el ID; la fila solo como último recurso si no hubo ID.
+    // Se calcula aquí arriba porque la clasificación también la necesita, para
+    // recuperar la intención que dejó el formulario.
+    var claveCola = idInmueble || ('ROW_' + row);
+
     // PASO 4: Asignar estado inicial "REGISTRANDO"
     Logger.log('📌 Asignando estado inicial...');
     asignarEstadoRegistrando(sheet, row);
@@ -92,14 +97,12 @@ function onFormSubmitInmueble(e) {
 
     // PASO 8: Determinar tipo de registro
     Logger.log('🔍 Determinando tipo de registro...');
-    var tipoRegistro = determinarTipoRegistro(sheet, row, resultadoRPR, datosInmueble);
+    var tipoRegistro = determinarTipoRegistro(sheet, row, resultadoRPR, datosInmueble, claveCola);
     Logger.log(`📊 Tipo detectado: ${tipoRegistro.tipo}`);
 
     // PASO 9: Guardar datos para Archivo 2
     Logger.log('💾 Guardando datos para procesamiento posterior...');
     
-    // La clave de cola es el ID; la fila solo como último recurso si no hubo ID.
-    var claveCola = idInmueble || ('ROW_' + row);
 
     var propsSvc = PropertiesService.getScriptProperties();
     var reutilizarMultimedia = propsSvc.getProperty('REUTILIZAR_MULTIMEDIA_' + claveCola);
@@ -670,10 +673,170 @@ function guardarLinkRPR(sheet, row, resultadoRPR) {
 }
 
 // ==========================================
+// INTENCIÓN DECLARADA EN EL FORMULARIO
+// ==========================================
+
+/**
+ * Lee lo que el agente pidió al pulsar "Renovar" o "Cambiar negocio".
+ * Devuelve null si el registro entró por el flujo normal.
+ */
+function leerFlujoSolicitado(claveCola) {
+  if (!claveCola) return null;
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var crudo = props.getProperty('FLUJO_SOLICITADO_' + claveCola);
+    if (!crudo) return null;
+    // Se consume: si el registro se reintentara, la intención ya no aplica a
+    // una fila distinta de la que la originó.
+    props.deleteProperty('FLUJO_SOLICITADO_' + claveCola);
+    var v = JSON.parse(crudo);
+    return (v && v.flujo) ? v : null;
+  } catch (e) {
+    Logger.log('⚠️ No se pudo leer la intención del formulario: ' + e.message);
+    return null;
+  }
+}
+
+/**
+ * Localiza el inmueble que el agente eligió y arma el tipo de registro.
+ *
+ * Se resuelve por ID DE REGISTRO, que es estable; el CDR solo como respaldo
+ * para registros antiguos que aún no tienen ID. Devuelve null si no se puede
+ * confirmar: es preferible seguir por la detección normal a inventarse un
+ * inmueble original y escribir encima del que no es.
+ */
+function resolverPorIntencion(sheet, resultadoRPR, datosInmueble, intencion) {
+  var filaOriginal = -1;
+
+  if (intencion.idOriginal) {
+    filaOriginal = buscarFilaPorIdRegistro(sheet, intencion.idOriginal);
+  }
+  if (filaOriginal <= 0 && intencion.cdrOriginal) {
+    filaOriginal = buscarFilaPorCDRParcial(sheet, intencion.cdrOriginal);
+  }
+  if (filaOriginal <= 0) {
+    Logger.log('⚠️ No se encontró en el Sheet la fila del inmueble elegido.');
+    return null;
+  }
+
+  // La fila tiene que seguir siendo la del MISMO inmueble: si alguien la movió
+  // o la borró entretanto, escribir ahí sería peor que no hacer nada.
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var colCdr = headers.indexOf('CODIGO DE REGISTRO');
+  var cdrOriginal = colCdr !== -1
+    ? String(sheet.getRange(filaOriginal, colCdr + 1).getValue() || '').trim()
+    : '';
+  if (!cdrOriginal) {
+    Logger.log('⚠️ La fila ' + filaOriginal + ' no tiene CODIGO DE REGISTRO.');
+    return null;
+  }
+
+  // Buscar la carpeta REG de ese inmueble dentro del RPR del propietario.
+  var rprFolder = resultadoRPR.folder;
+  if (!rprFolder) return null;
+  var inmueblesFolder = getFolderByName(rprFolder, 'INMUEBLES');
+  if (!inmueblesFolder) { Logger.log('⚠️ El RPR no tiene carpeta INMUEBLES.'); return null; }
+
+  var encontrado = buscarREGPorCDREnTodasLasCarpetas(inmueblesFolder, cdrOriginal);
+  if (!encontrado) {
+    Logger.log('⚠️ No se encontró la carpeta REG de ' + cdrOriginal + ' en el RPR.');
+    return null;
+  }
+
+  var idOriginal = leerIdRegistroDeFila(sheet, filaOriginal);
+  var carpetaDestino = determinarCarpetaNegocio(datosInmueble.tipoNegocio);
+
+  // El agente pidió "cambiar de negocio" pero el inmueble ya está en la carpeta
+  // que le tocaría: en la práctica es una renovación, y tratarlo como cambio
+  // movería carpetas sin necesidad.
+  var esCambioReal = encontrado.carpeta !== carpetaDestino;
+
+  if (intencion.flujo === 'cambio_negocio' && esCambioReal) {
+    return {
+      tipo: 'TIPO_4',
+      descripcion: 'Cambio de tipo de negocio (pedido desde el formulario)',
+      filaOriginal: filaOriginal,
+      idOriginal: idOriginal,
+      regExistenteId: encontrado.folder.getId(),
+      regExistenteNombre: encontrado.folder.getName(),
+      carpetaOrigen: encontrado.carpeta,
+      carpetaDestino: carpetaDestino
+    };
+  }
+
+  return {
+    tipo: 'TIPO_2',
+    descripcion: 'Renovación (pedida desde el formulario)',
+    filaOriginal: filaOriginal,
+    idOriginal: idOriginal,
+    regExistenteId: encontrado.folder.getId(),
+    regExistenteNombre: encontrado.folder.getName(),
+    carpetaNegocio: encontrado.carpeta
+  };
+}
+
+/** Busca la carpeta REG cuyo nombre empiece por el CDR, en ARRIENDO/VENTA/BI-NEGOCIO. */
+function buscarREGPorCDREnTodasLasCarpetas(inmueblesFolder, cdr) {
+  var carpetas = ['ARRIENDO', 'VENTA', 'BI-NEGOCIO'];
+  for (var i = 0; i < carpetas.length; i++) {
+    var carpeta = getFolderByName(inmueblesFolder, carpetas[i]);
+    if (!carpeta) continue;
+    var it = carpeta.getFolders();
+    while (it.hasNext()) {
+      var f = it.next();
+      var nombre = f.getName();
+      if (nombre === 'PLANTILLA #2') continue;
+      // El CDR de la fila incluye la dirección y el apto, así que comparar el
+      // nombre completo es lo más seguro; se admite prefijo por si el nombre de
+      // la carpeta lleva algún sufijo añadido después.
+      if (nombre === cdr || nombre.indexOf(cdr) === 0 || cdr.indexOf(nombre) === 0) {
+        return { folder: f, carpeta: carpetas[i] };
+      }
+    }
+  }
+  return null;
+}
+
+/** Deja constancia en la fila de que lo pedido no se pudo resolver. */
+function marcarAvisoRenovacionNoResuelta(sheet, row, intencion) {
+  try {
+    var col = getColumnByName(sheet, 'DETALLES DEL ESTADO DEL INMUEBLE');
+    if (!col) return;
+    sheet.getRange(row, col).setValue(
+      '⚠️ Se pidió ' + intencion.flujo + ' del inmueble ' +
+      (intencion.idOriginal || intencion.cdrOriginal || '(sin id)') +
+      ', pero no se pudo localizar. Revisar antes de dar por bueno este registro.'
+    );
+  } catch (e) {
+    Logger.log('⚠️ No se pudo escribir el aviso: ' + e.message);
+  }
+}
+
+// ==========================================
 // DETERMINACIÓN DEL TIPO DE REGISTRO
 // ==========================================
 
-function determinarTipoRegistro(sheet, row, resultadoRPR, datosInmueble) {
+function determinarTipoRegistro(sheet, row, resultadoRPR, datosInmueble, claveCola) {
+  // Lo que el agente PIDIÓ manda sobre lo que se pueda deducir de las carpetas.
+  // Él eligió el inmueble en pantalla; la búsqueda por Drive es una heurística
+  // que puede fallar, y cuando falla crea un duplicado silencioso.
+  var intencion = leerFlujoSolicitado(claveCola);
+  if (intencion && intencion.flujo !== 'normal') {
+    var resuelto = resolverPorIntencion(sheet, resultadoRPR, datosInmueble, intencion);
+    if (resuelto) {
+      Logger.log('🎯 Se respeta la intención del formulario: ' + resuelto.tipo +
+                 ' sobre el inmueble ' + (intencion.idOriginal || intencion.cdrOriginal));
+      return resuelto;
+    }
+    // No se pudo resolver lo que el agente pidió. Antes esto acababa creando un
+    // inmueble nuevo sin avisar. Ahora se deja constancia bien visible y se
+    // sigue con la detección normal, que puede encontrarlo por otro camino.
+    Logger.log('⚠️ El formulario pidió "' + intencion.flujo + '" sobre ' +
+               (intencion.idOriginal || intencion.cdrOriginal || '(sin id)') +
+               ' pero NO se pudo localizar ese inmueble. Se intentará detectarlo por carpetas.');
+    marcarAvisoRenovacionNoResuelta(sheet, row, intencion);
+  }
+
   // Si RPR es nuevo, es TIPO 4 automáticamente
   if (resultadoRPR.esNuevo) {
     Logger.log('📊 TIPO 1: NUEVO PROPIETARIO (RPR recién creado)');
