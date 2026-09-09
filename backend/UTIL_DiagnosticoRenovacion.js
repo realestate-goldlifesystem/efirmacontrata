@@ -13,6 +13,104 @@
  * No modifica nada: solo lee la cola, los triggers y repite la búsqueda.
  * Ejecutar desde el editor de Apps Script y mirar el registro.
  */
+/**
+ * Borra la fila duplicada que dejó una renovación fallida.
+ *
+ * COMPRUEBA ANTES DE BORRAR, siempre:
+ *   1. Que la fila esté a medias (no terminada) y sin carpeta de contenido.
+ *   2. Que NO quede trabajo suyo en la cola. Si lo hubiera y se borrara la
+ *      fila, un worker podría despertar y escribir sobre otro inmueble.
+ *   3. Que exista OTRA fila con la misma dirección y apartamento, o sea que el
+ *      inmueble de verdad no se pierde al borrar esta.
+ *
+ * Sin --confirmar solo informa. Para borrar: borrarFilaDuplicada(69, true)
+ *
+ * @param {number} fila     Fila a borrar.
+ * @param {boolean} borrar  true para borrar de verdad.
+ */
+function borrarFilaDuplicada(fila, borrar) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var datos = sheet.getDataRange().getValues();
+  var col = function (n) { return headers.indexOf(n); };
+  var v = function (f, n) {
+    var i = col(n);
+    return i === -1 ? '' : String(datos[f - 1][i] || '').trim();
+  };
+
+  if (!fila || fila < 2 || fila > datos.length) { Logger.log('❌ Fila fuera de rango: ' + fila); return; }
+
+  var idReg = v(fila, 'ID DE REGISTRO');
+  var cdr = v(fila, 'CODIGO DE REGISTRO');
+  var estado = v(fila, 'ESTADO DEL INMUEBLE');
+  var carpeta = v(fila, 'LINK CARPETA DE CONTENIDO');
+  var dir = v(fila, 'Ingrese la Dirección del inmueble');
+  var apto = v(fila, 'N° de inmueble');
+
+  Logger.log('===== BORRADO DE FILA DUPLICADA =====');
+  Logger.log('Fila ' + fila + ': ' + cdr + '  (ID ' + idReg + ')');
+  Logger.log('Estado: "' + estado + '"  |  Carpeta de contenido: ' + (carpeta ? 'SÍ' : 'no'));
+
+  var problemas = [];
+
+  // 1. ¿Terminó? Una fila terminada NO se toca.
+  if (estado && estado.toUpperCase().indexOf('REGISTRANDO') === -1) {
+    problemas.push('la fila NO está a medias (estado "' + estado + '"): puede ser un registro válido.');
+  }
+  if (carpeta) {
+    problemas.push('la fila YA tiene carpeta de contenido: se procesó, no es un resto.');
+  }
+
+  // 2. ¿Queda trabajo encolado suyo?
+  var props = PropertiesService.getScriptProperties().getProperties();
+  var enCola = [];
+  for (var k in props) {
+    if (idReg && k.indexOf(idReg) !== -1) enCola.push(k);
+    if (k === 'PROCESO_PARTE2_ROW_' + fila || k === 'PROCESO_PARTE3_ROW_' + fila) enCola.push(k);
+  }
+  if (enCola.length) {
+    problemas.push('queda trabajo en la cola: ' + enCola.join(', ') +
+                   '. Borrar la fila ahora haría que un worker escriba sobre otro inmueble.');
+  } else {
+    Logger.log('✅ Sin trabajo pendiente en la cola para este registro.');
+  }
+
+  // 3. ¿El inmueble sobrevive en otra fila?
+  var gemelas = [];
+  for (var i = 1; i < datos.length; i++) {
+    var f = i + 1;
+    if (f === fila) continue;
+    if (v(f, 'Ingrese la Dirección del inmueble') === dir && v(f, 'N° de inmueble') === apto) {
+      gemelas.push('fila ' + f + ' → ' + v(f, 'CODIGO DE REGISTRO'));
+    }
+  }
+  if (!gemelas.length) {
+    problemas.push('NO existe otra fila con esa dirección y apartamento: borrarla perdería el inmueble.');
+  } else {
+    Logger.log('✅ El inmueble se conserva en: ' + gemelas.join(' | '));
+  }
+
+  if (problemas.length) {
+    Logger.log('');
+    Logger.log('🛑 NO SE BORRA. Motivos:');
+    problemas.forEach(function (p) { Logger.log('   · ' + p); });
+    return;
+  }
+
+  if (!borrar) {
+    Logger.log('');
+    Logger.log('✅ Todas las comprobaciones pasan. Es seguro borrarla.');
+    Logger.log('   Para hacerlo: borrarFilaDuplicada(' + fila + ', true)');
+    return;
+  }
+
+  sheet.deleteRow(fila);
+  Logger.log('');
+  Logger.log('🗑️ Fila ' + fila + ' borrada (' + cdr + ').');
+  Logger.log('   El inmueble sigue en: ' + gemelas.join(' | '));
+  Logger.log('   ⚠️ Revisa si hay que devolver el contador de la secuencia usada por ' + cdr + '.');
+}
+
 function diagnosticarUltimoRegistro() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
   var fila = sheet.getLastRow();
