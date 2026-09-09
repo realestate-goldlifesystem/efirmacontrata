@@ -153,22 +153,32 @@ function repararPermisos() {
 }
 
 /**
- * Instala el Cron Job para reembolsos de Mercado Pago
+ * Reembolsos de Mercado Pago: ya NO hay cron permanente.
+ *
+ * El auditor se enciende solo cuando entra un pago (desde el webhook, con
+ * asegurarAuditorPagos) y se apaga solo cuando no queda ninguno vivo. Así son
+ * CERO triggers en reposo, y uno solo mientras hay trabajo — en vez de uno fijo
+ * gastando 1.440 ejecuciones al día para no hacer nada.
+ *
+ * Esta función queda para encenderlo a mano si hiciera falta, pero lo normal es
+ * no tocarla: el webhook ya se ocupa.
  */
 function instalarTriggerReembolsosMP() {
-    const fnName = 'auditorDeContratosVencidos';
-    const triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(t => {
-        if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
-    });
+    var habia = apagarAuditorPagos();     // limpia cualquier resto anterior
+    var hayTrabajo = hayPagosPendientesDeAuditar();
 
-    // Se ejecutará cada 1 minuto
-    ScriptApp.newTrigger(fnName)
-        .timeBased()
-        .everyMinutes(1)
-        .create();
+    if (!hayTrabajo) {
+        SpreadsheetApp.getUi().alert(
+            'No hay pagos pendientes de auditar, así que no se instala ningún trigger.\n\n' +
+            (habia ? 'Se retiró el que había, que estaba girando en vacío.\n\n' : '') +
+            'Se encenderá solo en cuanto entre un pago.');
+        return;
+    }
 
-    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Reembolsos activado (Ejecución optimizada cada 1 MINUTO).');
+    asegurarAuditorPagos();
+    SpreadsheetApp.getUi().alert(
+        '✅ Auditor de pagos encendido (cada ' + MINUTOS_AUDITOR_PAGOS + ' min).\n\n' +
+        'Se apagará solo cuando no queden pagos que vigilar.');
 }
 
 /**

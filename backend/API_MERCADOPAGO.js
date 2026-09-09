@@ -96,6 +96,14 @@ function handleMercadoPagoWebhook(datos) {
           if (sheet) {
             sheet.appendRow([new Date(), paymentId, externalReference, paymentData.transaction_amount, 'APROBADO', JSON.stringify(paymentData)]);
           }
+
+          // Acaba de entrar un pago que habrá que vigilar hasta las 48 h: se
+          // enciende el auditor. Si ya estaba encendido, no se crea otro.
+          try {
+            asegurarAuditorPagos();
+          } catch (errAud) {
+            console.error('No se pudo encender el auditor de pagos: ' + errAud);
+          }
         }
       }
     }
@@ -104,6 +112,67 @@ function handleMercadoPagoWebhook(datos) {
     console.error('Webhook error:', e);
     return { success: false, error: e.toString() };
   }
+}
+
+// Cada cuánto revisa el auditor mientras hay pagos vivos.
+//
+// 30 minutos y no 1: el cron NO sirve para detectar los pagos que SÍ se
+// formalizan — de eso se encarga consolidarPagoSiAplica(), que corre en el
+// momento en que el contrato avanza. Aquí solo se decide el reembolso de las
+// 48 h, y para eso da igual enterarse al minuto o media hora después.
+// Bajó de 1.440 ejecuciones diarias a 48 mientras hay trabajo, y a CERO cuando
+// no lo hay.
+var MINUTOS_AUDITOR_PAGOS = 30;
+var FN_AUDITOR_PAGOS = 'auditorDeContratosVencidos';
+
+/**
+ * Enciende el auditor si hay pagos que vigilar. No crea uno si ya existe.
+ *
+ * Se llama desde el webhook al entrar un pago. La alternativa —un trigger por
+ * cada pago— agotaría las 20 plazas de Apps Script con unos pocos pagos a la
+ * vez, y llegar al tope no solo falla: rompe procesos a medias (el 08-09-2026
+ * dejó un inmueble duplicado por eso).
+ */
+function asegurarAuditorPagos() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === FN_AUDITOR_PAGOS) return false; // ya vigila
+  }
+  if (triggers.length >= 19) {
+    console.error('No hay sitio para el auditor de pagos: ' + triggers.length + '/20 triggers.');
+    return false;
+  }
+  ScriptApp.newTrigger(FN_AUDITOR_PAGOS).timeBased().everyMinutes(MINUTOS_AUDITOR_PAGOS).create();
+  console.log('Auditor de pagos encendido (cada ' + MINUTOS_AUDITOR_PAGOS + ' min).');
+  return true;
+}
+
+/** Apaga el auditor. Se llama cuando ya no queda ningún pago que vigilar. */
+function apagarAuditorPagos() {
+  var triggers = ScriptApp.getProjectTriggers();
+  var n = 0;
+  triggers.forEach(function (t) {
+    if (t.getHandlerFunction() === FN_AUDITOR_PAGOS) { ScriptApp.deleteTrigger(t); n++; }
+  });
+  if (n) console.log('Auditor de pagos apagado: no quedan pagos que vigilar.');
+  return n;
+}
+
+/**
+ * ¿Queda algún pago vivo? Solo los APROBADO necesitan vigilancia: son los que
+ * todavía pueden acabar en reembolso. CONSOLIDADO, REEMBOLSADO y ERROR ya están
+ * resueltos y no se vuelven a mirar.
+ */
+function hayPagosPendientesDeAuditar() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('PAGOS_RECIBIDOS');
+  if (!sheet) return false;
+  var ultima = sheet.getLastRow();
+  if (ultima < 2) return false;
+  var estados = sheet.getRange(2, 5, ultima - 1, 1).getValues();   // columna E
+  for (var i = 0; i < estados.length; i++) {
+    if (String(estados[i][0] || '').trim().toUpperCase() === 'APROBADO') return true;
+  }
+  return false;
 }
 
 function auditorDeContratosVencidos() {
@@ -188,6 +257,14 @@ function auditorDeContratosVencidos() {
           }
         }
       }
+    }
+    // Terminada la ronda: si ya no queda ningún pago vivo, el auditor se apaga
+    // solo y libera su plaza. Volverá a encenderse en cuanto entre otro pago.
+    //
+    // Va aquí dentro del try y no en un finally a propósito: si la ronda falló a
+    // media, puede haber pagos sin revisar y apagarse los dejaría sin vigilancia.
+    if (!hayPagosPendientesDeAuditar()) {
+      apagarAuditorPagos();
     }
   } catch (e) {
     console.error('Error en auditorDeContratosVencidos:', e);
