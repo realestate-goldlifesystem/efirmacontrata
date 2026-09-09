@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot } from 'lucide-react';
+import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot, Route, CheckCircle2 } from 'lucide-react';
 import VIPPropertiesPanel from './VIPPropertiesPanel';
 import MiguelCaptadorModal from './MiguelCaptadorModal';
 
@@ -15,6 +15,7 @@ interface AgentDashboardProps {
 export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout, agentCredential = null }: AgentDashboardProps) {
   const [showSasModal, setShowSasModal] = useState(false);
   const [showMiguelModal, setShowMiguelModal] = useState(false);
+  const [showGuiaCierreModal, setShowGuiaCierreModal] = useState(false);
   const [activeView, setActiveView] = useState<'menu' | 'portafolio'>('menu');
 
   if (activeView === 'portafolio') {
@@ -92,6 +93,102 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
                     </div>
                   </div>
                 </div>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showGuiaCierreModal && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+          <div className="bg-stone-900 border border-stone-700 w-full max-w-4xl rounded-2xl p-6 md:p-8 relative max-h-[90vh] overflow-y-auto animate-fade-in text-left">
+            <button onClick={() => setShowGuiaCierreModal(false)} className="absolute top-4 right-4 text-stone-500 hover:text-white bg-stone-800 p-2 rounded-full"><X className="w-5 h-5"/></button>
+            <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+              <Route className="w-8 h-8 text-brand-gold" /> Guía de Cierre de Venta
+            </h2>
+            <p className="text-stone-400 text-base mb-8 border-b border-stone-800 pb-4">
+              Desde que un prospecto se interesa hasta la escritura registrada: qué hacer en cada paso, qué documentos se piden y quién paga qué, según la normatividad colombiana.
+            </p>
+
+            <div className="space-y-6">
+
+              <section className="bg-stone-950/50 p-4 md:p-5 rounded-xl border border-stone-800">
+                <h3 className="text-lg font-bold text-brand-gold mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 1. Antes de agendar la visita — precalificar
+                </h3>
+                <p className="text-stone-300 text-sm leading-relaxed">
+                  Pregunta el medio de pago antes de coordinar cualquier visita: ¿contado o crédito hipotecario?, si es crédito ¿tiene carta de pre-aprobación o estudio con algún banco?, y el rango de presupuesto. Sin esto arriesgas el tiempo del propietario mostrando el inmueble a alguien que no puede comprarlo todavía.
+                </p>
+                <p className="text-stone-500 text-xs mt-2">Paga: nadie, es un filtro verbal tuyo de 2 minutos.</p>
+              </section>
+
+              <section className="bg-stone-950/50 p-4 md:p-5 rounded-xl border border-stone-800">
+                <h3 className="text-lg font-bold text-brand-gold mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 2. Antes de publicar — estudio de títulos
+                </h3>
+                <p className="text-stone-300 text-sm leading-relaxed mb-2">
+                  Se pide al captar el inmueble, no cuando ya hay comprador: descarga el <strong>Certificado de Tradición y Libertad</strong> con la matrícula inmobiliaria y verifica que el propietario sea el dueño real, y que no haya hipotecas, embargos o patrimonio de familia sin levantar. Si el título tiene un problema, te ahorras invertir en fotos, cartel y publicación.
+                </p>
+                <div className="bg-stone-950 p-2.5 rounded text-xs text-stone-400 border border-stone-800">
+                  <strong className="text-brand-gold-light">Trámite:</strong> 100% en línea, en el portal de la Superintendencia de Notariado y Registro (SNR) o la VUR, con el número de matrícula. Sale al instante, no hay que ir a ninguna oficina.
+                  <br /><strong className="text-brand-gold-light">Paga:</strong> el propietario (~$23.000–$30.000 COP) — es el gasto de estudio preliminar antes de promocionar.
+                </div>
+              </section>
+
+              <section className="bg-stone-950/50 p-4 md:p-5 rounded-xl border border-stone-800">
+                <h3 className="text-lg font-bold text-brand-gold mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 3. Llegó el interesado — oferta de compra
+                </h3>
+                <p className="text-stone-300 text-sm leading-relaxed">
+                  Cuando el comprador precalificado dice que le interesa, formaliza precio, forma de pago y plazo propuesto — puede ser un WhatsApp o correo, no necesita ser un documento legal pesado. Es la bisagra entre "le gustó" y la promesa: confirma números antes de redactar nada extenso.
+                </p>
+              </section>
+
+              <section className="bg-stone-950/50 p-4 md:p-5 rounded-xl border border-stone-800">
+                <h3 className="text-lg font-bold text-brand-gold mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 4. Ambas partes de acuerdo — promesa de compraventa
+                </h3>
+                <p className="text-stone-300 text-sm leading-relaxed mb-2">
+                  Documento entre comprador y vendedor (tú lo gestionas/redactas, no eres parte). Debe llevar, sin excepción (Art. 1611 C.C.):
+                </p>
+                <ul className="text-stone-400 text-sm space-y-1 list-disc list-inside mb-2">
+                  <li>Identificación completa de comprador y vendedor</li>
+                  <li>Matrícula inmobiliaria del inmueble</li>
+                  <li>Precio total y forma de pago</li>
+                  <li><strong>Arras</strong>: cuánto entrega el comprador como garantía y qué pasa si alguien se arrepiente (Art. 1859 C.C.)</li>
+                  <li><strong>Fecha, hora y notaría exactas</strong> de la escritura — sin esto la promesa es nula</li>
+                  <li>Cláusula de saneamiento</li>
+                  <li>Autorización irrevocable de pago de tu comisión, descontada del dinero que se mueve aquí y en la escritura</li>
+                </ul>
+                <p className="text-stone-500 text-xs">Certificado de tradición nuevo (menor a 30 días): se vuelve a pedir aquí, porque el de la captación puede haberse quedado desactualizado.</p>
+              </section>
+
+              <section className="bg-stone-950/50 p-4 md:p-5 rounded-xl border border-stone-800">
+                <h3 className="text-lg font-bold text-brand-gold mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 5. Entre la promesa y la escritura
+                </h3>
+                <p className="text-stone-300 text-sm leading-relaxed">
+                  El comprador tramita el crédito si aplica, dentro del plazo pactado. Se coordina quién asume la <strong>retención en la fuente</strong> (1% del valor, practicada por el notario) y se reúnen los paz y salvos: predial del año vigente, valorización si aplica, y administración si es propiedad horizontal.
+                </p>
+              </section>
+
+              <section className="bg-stone-950/50 p-4 md:p-5 rounded-xl border border-stone-800">
+                <h3 className="text-lg font-bold text-brand-gold mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 6. Notaría — escritura pública y registro
+                </h3>
+                <p className="text-stone-300 text-sm leading-relaxed">
+                  Se firma con cédulas originales, la promesa, el certificado de tradición actualizado y los paz y salvos. La venta no es legalmente perfecta hasta la escritura (Art. 1857 C.C.), y solo es oponible a terceros cuando la escritura queda <strong>registrada</strong> en la Oficina de Registro de Instrumentos Públicos (ORIP).
+                </p>
+              </section>
+
+              <section className="bg-emerald-900/10 border border-emerald-800/30 p-4 md:p-5 rounded-xl">
+                <h3 className="text-lg font-bold text-emerald-400 mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 7. Tu comisión
+                </h3>
+                <p className="text-stone-300 text-sm leading-relaxed">
+                  Según tu acuerdo de venta: 50% al firmar la promesa, 50% al firmar la escritura (o el calendario de crédito/arriendo si aplica). Con la cláusula de autorización de pago del paso 4, se descuenta directamente del dinero que se mueve en cada momento, en vez de depender de que el propietario te pague después por su cuenta.
+                </p>
               </section>
 
             </div>
@@ -184,6 +281,23 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
             <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Portafolio de Inmuebles</h2>
             <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
               Accede al catálogo de inmuebles publicados. Genera y comparte PDFs interactivos.
+            </p>
+          </div>
+        </button>
+
+        {/* Tarjeta de la Guía de Cierre de Venta */}
+        <button
+          onClick={() => setShowGuiaCierreModal(true)}
+          className="col-span-2 group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
+            <Route className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
+          </div>
+          <div className="flex flex-col items-center">
+            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Guía de Cierre de Venta</h2>
+            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
+              Paso a paso desde la oferta hasta la escritura: qué documentos pedir, quién paga qué y cómo asegurar tu comisión.
             </p>
           </div>
         </button>
