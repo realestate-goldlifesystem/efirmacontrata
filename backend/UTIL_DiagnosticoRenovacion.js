@@ -28,7 +28,38 @@
  * @param {number} fila     Fila a borrar.
  * @param {boolean} borrar  true para borrar de verdad.
  */
+/**
+ * PASO 1 — Revisa la última fila y dice si es seguro borrarla. NO borra nada.
+ *
+ * Sin parámetros a propósito: el editor de Apps Script no permite pasarlos al
+ * ejecutar una función a mano.
+ */
+function revisarUltimaFilaDuplicada() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+  borrarFilaDuplicada(sheet.getLastRow(), false);
+}
+
+/**
+ * PASO 2 — Borra la última fila, y solo si pasa las tres comprobaciones.
+ *
+ * El nombre lleva CONFIRMADO para que no se ejecute por error al buscarla en la
+ * lista del editor: aquí no hay ventana de "¿seguro?" que valga.
+ * Ejecuta antes revisarUltimaFilaDuplicada() y lee lo que dice.
+ */
+function borrarUltimaFilaDuplicada_CONFIRMADO() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+  borrarFilaDuplicada(sheet.getLastRow(), true);
+}
+
 function borrarFilaDuplicada(fila, borrar) {
+  // Sin fila (el editor ejecuta sin argumentos) se toma la última, que es el
+  // caso para el que existe esto: el resto de una carga recién fallada.
+  if (fila === undefined || fila === null || fila === '') {
+    fila = SpreadsheetApp.getActiveSpreadsheet()
+      .getSheetByName('1.1 - INMUEBLES REGISTRADOS').getLastRow();
+    borrar = false;   // sin decirlo explícitamente, nunca se borra
+    Logger.log('(sin parámetros: se revisa la ÚLTIMA fila y NO se borra nada)');
+  }
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var datos = sheet.getDataRange().getValues();
