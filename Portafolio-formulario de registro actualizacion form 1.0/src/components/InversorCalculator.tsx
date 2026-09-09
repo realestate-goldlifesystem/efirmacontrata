@@ -112,13 +112,30 @@ const CustomChartTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// Retención en la fuente en venta de inmuebles (Decreto 572 de 2025): 1% sobre
+// las primeras 10.000 UVT del valor de venta, 2.5% sobre el excedente. El
+// umbral se recalcula cada año porque la UVT la fija la DIAN; UVT 2026 =
+// $52.374 (Resolución 000238 del 15-dic-2025) => 10.000 UVT = $523.740.000.
+const UVT_2026 = 52374;
+const UMBRAL_RETENCION_UVT = 10000;
+const UMBRAL_RETENCION = UVT_2026 * UMBRAL_RETENCION_UVT;
+
+function calcularRetencionEnLaFuente(valorVenta: number): number {
+  const tramoBase = Math.min(valorVenta, UMBRAL_RETENCION);
+  const tramoExcedente = Math.max(0, valorVenta - UMBRAL_RETENCION);
+  return tramoBase * 0.01 + tramoExcedente * 0.025;
+}
+
 export default function InversorCalculator({ onBack }: InversorCalculatorProps) {
   const [activeTab, setActiveTab] = useState<'comprador' | 'inversionista' | 'vendedor'>('comprador');
 
   // Estados Vendedor
   const [sellerPurchaseValue, setSellerPurchaseValue] = useState<number>(200000000);
   const [sellerYearsOwned, setSellerYearsOwned] = useState<number>(5);
-  const [sellerRetencionRate, setSellerRetencionRate] = useState<number>(1.0);
+  // 'normal' aplica el escalonado 1%/2.5% de calcularRetencionEnLaFuente();
+  // 'exento' es para los casos de ley donde no aplica retención (ej. venta de
+  // la única vivienda de habitación para adquirir otra dentro del mismo año).
+  const [sellerRetencionMode, setSellerRetencionMode] = useState<'normal' | 'exento'>('normal');
   const [sellerNotariaRate, setSellerNotariaRate] = useState<number>(0.27);
   const [commissionRate, setCommissionRate] = useState<number>(3.0);
   const [showMitigationModal, setShowMitigationModal] = useState(false);
@@ -908,18 +925,18 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="flex items-center gap-1 text-[10px] text-stone-400 mb-1">
-                      Retención (%)
-                      <Tooltip text="Impuesto anticipado (1% por defecto). Puedes estar exento (0%) si cumples ciertas condiciones de ley, como vender tu única casa de habitación para comprar otra." position="bottom-right">
+                      Retención en la fuente
+                      <Tooltip text="Decreto 572 de 2025: 1% sobre las primeras 10.000 UVT del valor de venta (~$523.740.000 en 2026) y 2.5% sobre el excedente. Puedes estar exento (0%) si cumples ciertas condiciones de ley, como vender tu única casa de habitación para comprar otra." position="bottom-right">
                         <Info className="w-3 h-3 cursor-pointer text-stone-500 hover:text-white" />
                       </Tooltip>
                     </label>
                     <select
-                      value={sellerRetencionRate}
-                      onChange={(e) => setSellerRetencionRate(Number(e.target.value))}
+                      value={sellerRetencionMode}
+                      onChange={(e) => setSellerRetencionMode(e.target.value as 'normal' | 'exento')}
                       className="w-full bg-stone-900 border border-stone-800 rounded-lg p-2 text-white text-xs focus:border-brand-gold outline-none"
                     >
-                      <option value={1.0}>1.0% (Normal)</option>
-                      <option value={0}>0% (Exento)</option>
+                      <option value="normal">1% / 2.5% escalonado (Normal)</option>
+                      <option value="exento">0% (Exento)</option>
                     </select>
                   </div>
                   <div>
@@ -1564,7 +1581,8 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
             const impuestoPorcentaje = isGananciaOcasional ? 15 : 35; // 35% como estimado conservador en renta ordinaria
             const valorImpuesto = profit * (impuestoPorcentaje / 100);
             
-            const retencionValor = propertyValue * (sellerRetencionRate / 100);
+            const retencionValor = sellerRetencionMode === 'exento' ? 0 : calcularRetencionEnLaFuente(propertyValue);
+            const retencionPorcentajeEfectivo = propertyValue > 0 ? (retencionValor / propertyValue) * 100 : 0;
             const notariaValor = propertyValue * (sellerNotariaRate / 100);
             const comisionValor = propertyValue * (commissionRate / 100);
             
@@ -1581,7 +1599,12 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
                   </div>
                   
                   <div className="flex justify-between items-center text-red-400">
-                    <span>Retención en la Fuente ({sellerRetencionRate}%)</span>
+                    <span className="flex items-center gap-1">
+                      Retención en la Fuente ({retencionPorcentajeEfectivo.toFixed(2)}%)
+                      <Tooltip text="1% sobre las primeras 10.000 UVT (~$523.740.000 en 2026) y 2.5% sobre el excedente, según el Decreto 572 de 2025." position="bottom">
+                        <Info className="w-3.5 h-3.5 cursor-pointer hover:text-white" />
+                      </Tooltip>
+                    </span>
                     <span>- {formatCurrency(retencionValor)}</span>
                   </div>
                   <div className="flex justify-between items-center text-red-400">

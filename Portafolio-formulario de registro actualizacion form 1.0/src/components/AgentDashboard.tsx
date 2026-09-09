@@ -169,7 +169,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
                   <CheckCircle2 className="w-5 h-5" /> 5. Entre la promesa y la escritura
                 </h3>
                 <p className="text-stone-300 text-sm leading-relaxed">
-                  El comprador tramita el crédito si aplica, dentro del plazo pactado. Se coordina quién asume la <strong>retención en la fuente</strong> (1% del valor, practicada por el notario) y se reúnen los paz y salvos: predial del año vigente, valorización si aplica, y administración si es propiedad horizontal.
+                  El comprador tramita el crédito si aplica, dentro del plazo pactado. Se coordina quién asume la <strong>retención en la fuente</strong> (practicada por el notario) y se reúnen los paz y salvos: predial del año vigente, valorización si aplica, y administración si es propiedad horizontal.
                 </p>
               </section>
 
@@ -179,6 +179,95 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
                 </h3>
                 <p className="text-stone-300 text-sm leading-relaxed">
                   Se firma con cédulas originales, la promesa, el certificado de tradición actualizado y los paz y salvos. La venta no es legalmente perfecta hasta la escritura (Art. 1857 C.C.), y solo es oponible a terceros cuando la escritura queda <strong>registrada</strong> en la Oficina de Registro de Instrumentos Públicos (ORIP).
+                </p>
+              </section>
+
+              <section className="bg-sky-900/10 border border-sky-800/30 p-4 md:p-5 rounded-xl">
+                <h3 className="text-lg font-bold text-sky-400 mb-3 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 6.1 Quién paga qué, y por qué
+                </h3>
+                <p className="text-stone-400 text-xs mb-4">
+                  Así es <strong>lo normal</strong> en Colombia por costumbre notarial y por norma tributaria — no es una regla rígida: la promesa puede pactar otra repartición, pero si no dice nada, así se reparte.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Columna Comprador */}
+                  <div className="bg-stone-950/60 border border-sky-800/40 rounded-xl overflow-hidden">
+                    <div className="bg-sky-900/30 px-3.5 py-2 border-b border-sky-800/40">
+                      <span className="text-xs font-bold text-sky-300 uppercase tracking-wide">Paga el Comprador</span>
+                    </div>
+                    <div className="p-3.5 space-y-3.5">
+                      <div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-semibold text-white">Derechos notariales (su mitad)</span>
+                          <span className="text-[11px] font-mono text-sky-300">~0,27%</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">Por qué: la escritura beneficia a ambos por igual, así que por costumbre se paga 50/50 con el vendedor.</p>
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-semibold text-white">Impuesto de registro</span>
+                          <span className="text-[11px] font-mono text-sky-300">0,5%–1%</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">Por qué: es el trámite que lo inscribe a él como el nuevo dueño ante la ORIP — sin esto no es dueño frente a terceros, así que lo paga quien lo necesita.</p>
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-semibold text-white">Sobretasa de beneficencia</span>
+                          <span className="text-[11px] font-mono text-sky-300">~1%</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">Por qué: impuesto departamental que grava el acto de adquirir el inmueble; se liquida junto al registro.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Columna Vendedor */}
+                  <div className="bg-stone-950/60 border border-brand-gold/30 rounded-xl overflow-hidden">
+                    <div className="bg-brand-gold/10 px-3.5 py-2 border-b border-brand-gold/30">
+                      <span className="text-xs font-bold text-brand-gold uppercase tracking-wide">Paga el Vendedor</span>
+                    </div>
+                    <div className="p-3.5 space-y-3.5">
+                      <div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-semibold text-white">Derechos notariales (su mitad)</span>
+                          <span className="text-[11px] font-mono text-brand-gold">~0,27%</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">Por qué: la misma lógica del comprador — se reparte 50/50 salvo que la promesa diga otra cosa.</p>
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-semibold text-white">Retención en la fuente</span>
+                          <span className="text-[11px] font-mono text-brand-gold">1% / 2,5%</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">Por qué: es un anticipo del impuesto que el vendedor debe declarar por la venta; el notario lo retiene antes de entregarle el dinero. 1% hasta 10.000 UVT (~$523.740.000 en 2026), 2,5% sobre el excedente (Decreto 572 de 2025).</p>
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-semibold text-white">Ganancia ocasional</span>
+                          <span className="text-[11px] font-mono text-brand-gold">15%</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">Por qué: grava la utilidad real (venta menos compra) cuando tuvo el inmueble 2 años o más — es su ganancia, no la del comprador.</p>
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-semibold text-white">Estudio de títulos</span>
+                          <span className="text-[11px] font-mono text-brand-gold">~$23.000–$30.000</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">Por qué: es el propietario quien se beneficia de vender sin sorpresas legales; se paga al captar, antes de invertir en promoción.</p>
+                      </div>
+                      <div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm font-semibold text-white">Tu comisión</span>
+                          <span className="text-[11px] font-mono text-brand-gold">Según tu acuerdo</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-0.5 leading-snug">Por qué: quien contrata el servicio de intermediación es quien lo paga — lo fija el acuerdo de promoción que firmaste al captar.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-stone-500 text-[11px] mt-4 leading-relaxed">
+                  💡 Ninguna de estas reglas es obligatoria por ley (salvo los impuestos, que sí lo son en su monto y en a quién corresponden declararlos). Lo único que la ley exige es que quede claro en algún documento — dejarlo explícito en la promesa evita discusiones el día de la firma.
                 </p>
               </section>
 
