@@ -229,10 +229,19 @@ function limpiarTriggersFantasmaImpl(borrar) {
     }
 
     if (deRenovacion.indexOf(f) !== -1) {
-      if (idsVivos[t.getUniqueId()]) {
-        protegidos.push(f + ' → ' + idsVivos[t.getUniqueId()]);
-      } else {
+      var clave = idsVivos[t.getUniqueId()];
+      if (!clave) {
         aBorrar.push({ t: t, fn: f, motivo: 'su renovación ya se cerró: el ID no está registrado' });
+        return;
+      }
+      // Estar registrado NO basta: la fila del inmueble puede haberse borrado
+      // después (limpiezas de pruebas, por ejemplo) y entonces el trigger
+      // apunta a un registro que ya no existe. Pasó con tres renovaciones.
+      var idReg = clave.replace('TRIGGERS_RECORDATORIO_', '').replace('TRIGGERS_ROLLBACK_', '');
+      if (existeFilaDeRegistro(idReg)) {
+        protegidos.push(f + ' → ' + clave + '  (el inmueble sigue en el Sheet)');
+      } else {
+        aBorrar.push({ t: t, fn: f, motivo: 'el inmueble ' + idReg + ' ya no está en el Sheet' });
       }
     }
   });
@@ -260,11 +269,51 @@ function limpiarTriggersFantasmaImpl(borrar) {
   }
 
   var n = 0;
+  var idsLimpiados = {};
   aBorrar.forEach(function (x) {
-    try { ScriptApp.deleteTrigger(x.t); n++; } catch (e) {
+    try {
+      // Si el trigger estaba registrado, se apunta su ID para borrar también las
+      // anotaciones: si no, quedan en Properties señalando triggers inexistentes
+      // y el próximo inventario vuelve a creerlas vivas.
+      var clave = idsVivos[x.t.getUniqueId()];
+      if (clave) {
+        idsLimpiados[clave.replace('TRIGGERS_RECORDATORIO_', '').replace('TRIGGERS_ROLLBACK_', '')] = true;
+      }
+      ScriptApp.deleteTrigger(x.t); n++;
+    } catch (e) {
       Logger.log('⚠️ No se pudo borrar ' + x.fn + ': ' + e.message);
     }
   });
+
+  var propsSvc = PropertiesService.getScriptProperties();
+  var limpiadas = 0;
+  for (var idReg in idsLimpiados) {
+    ['TRIGGERS_RECORDATORIO_', 'TRIGGERS_ROLLBACK_', 'EMAIL_ROLLBACK_'].forEach(function (pref) {
+      if (propsSvc.getProperty(pref + idReg) !== null) {
+        propsSvc.deleteProperty(pref + idReg); limpiadas++;
+      }
+    });
+  }
+
   Logger.log('');
-  Logger.log('🗑️ Liberados: ' + n + '. Quedan ' + ScriptApp.getProjectTriggers().length + '/20.');
+  Logger.log('🗑️ Triggers liberados: ' + n + '. Quedan ' + ScriptApp.getProjectTriggers().length + '/20.');
+  if (limpiadas) Logger.log('🧹 Anotaciones huérfanas borradas de Properties: ' + limpiadas);
+}
+
+/** ¿Sigue existiendo en el Sheet la fila de ese ID DE REGISTRO? */
+function existeFilaDeRegistro(idRegistro) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var col = headers.indexOf('ID DE REGISTRO');
+    if (col === -1) return true;   // sin la columna no se puede afirmar que no está
+    var valores = sheet.getRange(2, col + 1, Math.max(1, sheet.getLastRow() - 1), 1).getValues();
+    for (var i = 0; i < valores.length; i++) {
+      if (String(valores[i][0] || '').trim() === idRegistro) return true;
+    }
+    return false;
+  } catch (e) {
+    Logger.log('⚠️ No se pudo comprobar si existe ' + idRegistro + ': ' + e.message);
+    return true;   // ante la duda, se protege
+  }
 }
