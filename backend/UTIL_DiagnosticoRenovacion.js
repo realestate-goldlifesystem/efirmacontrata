@@ -228,3 +228,5 @@ function diagnosticarRegistroEnFila(fila) {
   }
   Logger.log('===== FIN =====');
 }
+
+// (sincronizacion forzada para eliminar _leer_plantilla.js del proyecto remoto)

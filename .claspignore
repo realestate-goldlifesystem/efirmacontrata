@@ -21,6 +21,15 @@ frontend/
 Portafolio-formulario de registro actualizacion form 1.0/**
 Portafolio-formulario de registro actualizacion form 1.0/
 
+# === SCRIPTS NODE SUELTOS EN LA RAIZ ===
+# Empiezan por guion bajo por convencion en este repo y son de Node: usan
+# require() y process.argv, que no existen en Apps Script. Si uno se cuela,
+# NO falla solo el: rompe el proyecto ENTERO, porque Apps Script evalua todos
+# los archivos antes de ejecutar cualquier funcion, y hasta el Web App deja de
+# responder. Paso el 09-09-2026 con _leer_plantilla.js.
+_*.js
+/_*.js
+
 # === HERRAMIENTAS LOCALES (Node.js — solo corren localmente) ===
 _herramientas_locales/**
 _herramientas_locales/
