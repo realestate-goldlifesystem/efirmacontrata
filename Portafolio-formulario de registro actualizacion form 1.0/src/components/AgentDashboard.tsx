@@ -290,6 +290,9 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
                 <p className="text-stone-300 text-sm leading-relaxed">
                   Según tu acuerdo de venta: 50% al firmar la promesa, 50% al firmar la escritura (o el calendario de crédito/arriendo si aplica). Con la cláusula de autorización de pago del paso 4, se descuenta directamente del dinero que se mueve en cada momento, en vez de depender de que el propietario te pague después por su cuenta.
                 </p>
+                <div className="mt-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-xs text-emerald-200 leading-relaxed">
+                  <strong>Estás protegido si el negocio se cierra "por fuera":</strong> tu acuerdo tiene una cláusula de causa eficiente — si el propietario cierra directamente con un comprador que tú presentaste, contactaste o gestionaste, la comisión se sigue causando igual, sin importar cuánto tiempo haya pasado. No dependes de haber firmado tú mismo el negocio.
+                </div>
               </section>
 
               <section className="bg-stone-950/50 p-4 md:p-5 rounded-xl border border-stone-800">
