@@ -104,9 +104,11 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
   // memoria es justo lo que hace perder fuerza al argumento.
   const otroModelo =
     calcMode === 'arriendo'
+      // En arriendo la posición 0 es CORRETAJE (va primero / a la izquierda),
+      // así que la "otra" cifra que se enseña es la de Administración.
       ? (modeloEnfocado === 0
-          ? { nombre: 'Corretaje', valor: corretajeOneTimeFee, nota: 'pago único' }
-          : { nombre: 'Administración', valor: adminNetProceeds, nota: 'cada mes' })
+          ? { nombre: 'Administración', valor: adminNetProceeds, nota: 'cada mes' }
+          : { nombre: 'Corretaje', valor: corretajeOneTimeFee, nota: 'pago único' })
       : (modeloEnfocado === 0
           // Se enseña la cifra que TITULA cada panel, no una equivalente: si el número
           // de la línea no aparece igual al abrirla, comparar deja de dar confianza.
@@ -641,7 +643,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             {calcMode !== 'venta' && (
               <div className="lg:hidden md:col-span-2 bg-stone-100/80 p-1 rounded-xl border border-stone-200 flex gap-1 shadow-inner">
                 {(calcMode === 'arriendo'
-                  ? ['Administración', 'Corretaje']
+                  ? ['Corretaje', 'Administración']
                   : ['Vendi-Renta', 'Admi-Venta']
                 ).map((nombre, i) => (
                   <button
@@ -662,8 +664,9 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
             
             {calcMode === 'arriendo' && (
               <>
-                {/* Panel 1: Administración (RECOMENDADO) */}
-                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-5 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden ${modeloEnfocado === 0 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
+                {/* Administración (RECOMENDADO) — posición 1: a la DERECHA en escritorio y
+                    segunda en el switch. Se ordena con lg:order y no moviendo el bloque. */}
+                <div className={`bg-brand-dark-deep border-2 border-brand-gold p-5 sm:p-8 rounded-2xl flex-col justify-between shadow-xl shadow-brand-gold/5 relative overflow-hidden lg:order-2 ${modeloEnfocado === 1 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div className="absolute top-0 right-0 bg-brand-gold text-stone-950 text-[9px] font-extrabold px-3 py-1 uppercase tracking-widest font-mono rounded-bl-lg">
                     Recomendado
                   </div>
@@ -752,8 +755,8 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                   </div>
                 </div>
 
-                {/* Panel 2: Corretaje */}
-                <div className={`bg-brand-dark-deep border border-stone-200 p-5 sm:p-8 rounded-2xl flex-col justify-between shadow-sm ${modeloEnfocado === 1 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
+                {/* Corretaje — posición 0: a la IZQUIERDA en escritorio y el que se ve primero en móvil. */}
+                <div className={`bg-brand-dark-deep border border-stone-200 p-5 sm:p-8 rounded-2xl flex-col justify-between shadow-sm lg:order-1 ${modeloEnfocado === 0 ? `flex ${claseEntradaPanel}` : 'hidden lg:flex'}`}>
                   <div>
                     <span className="text-[10px] bg-stone-100 text-stone-600 font-mono tracking-widest uppercase py-1 px-2.5 rounded border border-stone-200">
                       CORRETAJE INMOBILIARIO
