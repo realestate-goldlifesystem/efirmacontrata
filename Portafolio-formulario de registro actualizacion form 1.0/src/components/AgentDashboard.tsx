@@ -180,6 +180,18 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
                 <p className="text-stone-300 text-sm leading-relaxed">
                   Se firma con cédulas originales, la promesa, el certificado de tradición actualizado y los paz y salvos. La venta no es legalmente perfecta hasta la escritura (Art. 1857 C.C.), y solo es oponible a terceros cuando la escritura queda <strong>registrada</strong> en la Oficina de Registro de Instrumentos Públicos (ORIP).
                 </p>
+
+                <div className="mt-4 pt-4 border-t border-stone-800">
+                  <h4 className="text-sm font-bold text-stone-200 mb-2">Cómo se paga el registro y la beneficencia (paso a paso)</h4>
+                  <ol className="text-stone-300 text-sm space-y-1.5 list-decimal list-inside">
+                    <li><strong>Liquidar</strong> en el portal de la Secretaría de Hacienda del departamento (en Bogotá, la Secretaría Distrital de Hacienda) — calcula beneficencia y registro juntos, beneficencia primero.</li>
+                    <li><strong>Pagar</strong> lo liquidado, normalmente por PSE.</li>
+                    <li><strong>Presentar el recibo</strong> junto con la escritura en la ORIP del municipio donde está el inmueble. <strong>Sin el recibo, la ORIP no inscribe la escritura</strong> — la venta queda firmada pero no registrada.</li>
+                  </ol>
+                  <div className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs text-amber-200 leading-relaxed">
+                    <strong>¿Lo haces tú como agente?</strong> Puedes acompañar todo el trámite — no hay ninguna reserva legal que lo impida, y ya lo prometes en tu propia calculadora ("gestionamos la escritura sin cobros adicionales"). Pero no manejes tú el dinero del impuesto: que el comprador pague directamente por PSE con la liquidación que le generas, y tú te encargas de la parte operativa (portal, seguimiento, entregar el recibo en la ORIP).
+                  </div>
+                </div>
               </section>
 
               <section className="bg-sky-900/10 border border-sky-800/30 p-4 md:p-5 rounded-xl">
@@ -278,6 +290,19 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
                 <p className="text-stone-300 text-sm leading-relaxed">
                   Según tu acuerdo de venta: 50% al firmar la promesa, 50% al firmar la escritura (o el calendario de crédito/arriendo si aplica). Con la cláusula de autorización de pago del paso 4, se descuenta directamente del dinero que se mueve en cada momento, en vez de depender de que el propietario te pague después por su cuenta.
                 </p>
+              </section>
+
+              <section className="bg-stone-950/50 p-4 md:p-5 rounded-xl border border-stone-800">
+                <h3 className="text-lg font-bold text-brand-gold mb-2 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" /> 8. Lo que sigue después de la escritura
+                </h3>
+                <p className="text-stone-300 text-sm leading-relaxed mb-2">
+                  El negocio queda firmado y registrado, pero para el vendedor el cierre tributario no termina ese día:
+                </p>
+                <ul className="text-stone-400 text-sm space-y-1.5 list-disc list-inside">
+                  <li><strong>Declaración de renta del año siguiente</strong> (se presenta entre agosto y octubre): ahí el vendedor declara la ganancia ocasional real. La retención que se pagó en la notaría es solo un <strong>anticipo</strong>, no el impuesto final.</li>
+                  <li><strong>4×1000 (GMF):</strong> los movimientos bancarios grandes durante el cierre (cuota inicial, desembolsos) pagan este gravamen — pequeño, pero vale la pena avisarle al cliente para que no le sorprenda en su extracto.</li>
+                </ul>
               </section>
 
             </div>
