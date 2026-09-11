@@ -327,6 +327,9 @@
 
             <button class="btn" id="btnSubmit" onclick="submitSignature()">Aceptar y Guardar Firma</button>
             <div class="loader" id="loader"></div>
+            <!-- Sin texto, un círculo girando un minuto parece un cuelgue y la
+                 gente vuelve a firmar. Esto lo explica mientras dura. -->
+            <p id="loaderMsg" style="display:none; margin-top: 12px; font-size: 14px; color: #555; text-align: center;"></p>
         </div>
 
         <!-- PASO 3: GRACIAS -->
@@ -454,13 +457,72 @@
                 .catch(() => clientIP = "No disponible (Bloqueado por navegador)");
         }
 
+        // Candado de la página: mientras una firma está en camino, no sale otra.
+        // El 11-09-2026 un documento quedó con DOS certificados de firma: el
+        // primer envío tardó, la página mostró "Error de conexión", devolvió el
+        // botón y el propietario firmó otra vez. El servidor ya había guardado
+        // la primera. (El backend ahora también ignora la repetida; esto evita
+        // además el susto y el doble toque.)
+        let enviandoFirma = false;
+        let firmaCompletada = false;
+
+        function mostrarFirmaCompletada() {
+            firmaCompletada = true;
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('step3').style.display = 'flex';
+
+            let timeLeft = 10;
+            const countSpan = document.getElementById('countdownText');
+            const countBar = document.getElementById('countdownBar');
+            const interval = setInterval(() => {
+                timeLeft--;
+                if (countSpan) countSpan.innerText = timeLeft;
+                if (countBar) countBar.style.width = (timeLeft * 10) + '%';
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    window.close();
+                    document.getElementById('step3-actions').innerHTML = '<p style="color: var(--primary); font-weight: 600;">Ya puede cerrar esta ventana manualmente.</p>';
+                }
+            }, 1000);
+        }
+
+        /**
+         * Tras un error, ANTES de devolver el botón, pregunta al servidor si la
+         * firma sí quedó guardada. Un error de conexión no significa que no se
+         * firmara: el servidor puede haber terminado aunque la respuesta se
+         * perdiera. Se pregunta varias veces porque puede seguir trabajando.
+         */
+        async function comprobarSiYaQuedoFirmado(loaderText) {
+            for (let intento = 1; intento <= 8; intento++) {
+                if (loaderText) loaderText.innerText = 'Comprobando si su firma quedó registrada... (' + intento + '/8)';
+                try {
+                    const r = await fetch(CONFIG.API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ accion: 'verificarEstadoFirma', docId: docId })
+                    });
+                    const res = await r.json();
+                    if (res && res.success && res.firmado) return true;
+                } catch (e) { /* red inestable: se reintenta */ }
+                await new Promise(ok => setTimeout(ok, 5000));
+            }
+            return false;
+        }
+
         async function submitSignature() {
+            if (enviandoFirma || firmaCompletada) return;   // doble toque o reenvío
             if (isCanvasBlank()) { alert("Por favor, dibuje su firma antes de continuar."); return; }
+            enviandoFirma = true;
 
             const btn = document.getElementById('btnSubmit');
             const loader = document.getElementById('loader');
+            btn.disabled = true;
             btn.style.display = 'none';
             loader.style.display = 'block';
+            const loaderMsg = document.getElementById('loaderMsg');
+            if (loaderMsg) {
+                loaderMsg.innerText = 'Registrando su firma. Puede tardar hasta un minuto: por favor no cierre ni recargue esta ventana.';
+                loaderMsg.style.display = 'block';
+            }
 
             const base64Signature = canvas.toDataURL("image/png");
             const userAgent = navigator.userAgent;
@@ -482,38 +544,27 @@
                 });
                 
                 const result = await response.json();
-                
+
                 if (result.success) {
-                    document.getElementById('step2').style.display = 'none';
-                    document.getElementById('step3').style.display = 'flex';
-                    
-                    // Iniciar cuenta regresiva
-                    let timeLeft = 10;
-                    const countSpan = document.getElementById('countdownText');
-                    const countBar = document.getElementById('countdownBar');
-                    
-                    const interval = setInterval(() => {
-                        timeLeft--;
-                        countSpan.innerText = timeLeft;
-                        countBar.style.width = (timeLeft * 10) + '%';
-                        
-                        if (timeLeft <= 0) {
-                            clearInterval(interval);
-                            // Intentar cerrar la pestaña
-                            window.close();
-                            // Fallback si el navegador bloquea window.close()
-                            document.getElementById('step3-actions').innerHTML = '<p style="color: var(--primary); font-weight: 600;">Ya puede cerrar esta ventana manualmente.</p>';
-                        }
-                    }, 1000);
-                } else {
-                    alert("Ocurrió un error guardando la firma: " + result.message);
-                    btn.style.display = 'block';
-                    loader.style.display = 'none';
+                    // yaFirmado: el servidor ignoró un envío repetido. Para el
+                    // propietario es lo mismo: su firma está hecha.
+                    mostrarFirmaCompletada();
+                    return;
                 }
+                throw new Error(result.message || 'Respuesta inesperada del servidor.');
             } catch (error) {
-                alert("Error de conexión: " + error.message);
+                // NO devolver el botón a ciegas: primero comprobar si la firma
+                // quedó guardada de todos modos.
+                const loaderText = document.getElementById('loaderMsg');
+                const quedoFirmado = await comprobarSiYaQuedoFirmado(loaderText);
+                if (quedoFirmado) { mostrarFirmaCompletada(); return; }
+
+                alert("No pudimos confirmar su firma: " + error.message + "\n\nPuede intentarlo de nuevo.");
+                enviandoFirma = false;
+                btn.disabled = false;
                 btn.style.display = 'block';
                 loader.style.display = 'none';
+                if (loaderText) loaderText.style.display = 'none';
             }
         }
     </script>

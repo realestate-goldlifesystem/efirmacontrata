@@ -1983,7 +1983,58 @@ function obtenerContextoContrato(cdr) {
 /**
  * Procesa la firma electrónica enviada desde la Sala de Firmas web
  */
+// Marca que deja la firma en el documento. Sirve para saber si YA se firmó.
+const MARCA_CERTIFICADO_FIRMA = 'CERTIFICADO DE FIRMA ELECTRÓNICA';
+
+/**
+ * Recibe la firma de la sala de firmas. Es IDEMPOTENTE: si llega dos veces
+ * para el mismo documento, la segunda no añade nada.
+ *
+ * Hace falta porque el 11-09-2026 un propietario vio "Error de conexión" (el
+ * proceso tarda y el navegador se cansó de esperar), volvió a firmar un minuto
+ * después y el documento quedó con DOS certificados de firma. El servidor sí
+ * había guardado la primera; la página no lo supo y le devolvió el botón.
+ *
+ * Dos defensas:
+ *  · Un candado, para que dos envíos simultáneos no entren a la vez. Es el
+ *    candado del DOCUMENTO y no el del script, que ya usa el registro de
+ *    inmuebles: así una firma lenta no bloquea los registros.
+ *  · Antes de escribir se mira si el documento ya lleva el certificado.
+ */
 function handleProcesarFirmaElectronica(datos) {
+  if (!datos || !datos.docId || !datos.base64) {
+    return { success: false, message: "Datos incompletos para procesar la firma." };
+  }
+
+  const lock = LockService.getDocumentLock() || LockService.getScriptLock();
+  try {
+    lock.waitLock(120000);   // la firma anterior puede estar a mitad de proceso
+  } catch (e) {
+    return { success: false, message: "Se está procesando una firma de este documento. Espera un momento y vuelve a abrir el enlace." };
+  }
+
+  try {
+    const cuerpo = DocumentApp.openById(datos.docId).getBody().getText();
+    if (cuerpo.indexOf(MARCA_CERTIFICADO_FIRMA) !== -1) {
+      const estado = handleVerificarEstadoFirma({ docId: datos.docId });
+      if (estado && estado.firmado) {
+        // Firma completa de antes: no se añade otro certificado, no se regenera
+        // el PDF ni se reenvía el correo al propietario.
+        console.log("Firma repetida ignorada para DocID " + datos.docId + ": el documento ya estaba firmado.");
+        return { success: true, yaFirmado: true, pdfUrl: estado.pdfUrl };
+      }
+      // Tiene el certificado pero no el PDF: una firma anterior se cortó a
+      // medias. Se completa lo que falta SIN añadir otro certificado.
+      console.log("DocID " + datos.docId + " ya tiene certificado pero no PDF: se completa sin volver a firmar.");
+      datos._saltarCertificado = true;
+    }
+    return procesarFirmaElectronicaSinCandado(datos);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function procesarFirmaElectronicaSinCandado(datos) {
   try {
     console.log("Procesando firma electrónica para DocID: " + datos.docId);
     if (!datos.docId || !datos.base64) {
@@ -1999,6 +2050,7 @@ function handleProcesarFirmaElectronica(datos) {
     const doc = DocumentApp.openById(docId);
     const body = doc.getBody();
 
+    if (!datos._saltarCertificado) {
     // Añadir salto de página y título
     body.appendPageBreak();
     const title = body.appendParagraph("CERTIFICADO DE FIRMA ELECTRÓNICA");
@@ -2036,7 +2088,8 @@ function handleProcesarFirmaElectronica(datos) {
     body.appendParagraph(`Dirección IP: ${datos.ip || "No disponible"}`);
     body.appendParagraph(`Dispositivo/Navegador: ${datos.userAgent || "No disponible"}`);
     body.appendParagraph(`Hash de Integridad (DocID): ${docId}`);
-    
+    }   // fin de !datos._saltarCertificado
+
     doc.saveAndClose();
 
     // 3. (Opcional) Generar PDF Final y Guardarlo
@@ -2088,12 +2141,17 @@ function handleProcesarFirmaElectronica(datos) {
         let targetRow = -1;
 
         // Intentar buscar la fila correcta
+        // UNA sola lectura de toda la hoja. Antes se leía celda a celda (hasta
+        // seis getValue() por fila), cientos de llamadas que alargaban la firma
+        // lo bastante como para que el navegador del propietario diera error.
+        const filas = sheet.getRange(1, 1, lastRow, sheet.getLastColumn()).getValues();
         for (let i = 2; i <= lastRow; i++) {
+          const fila = filas[i - 1];
           // Condición 1: Coincide el CDR
-          const cdrMatch = datos.cdr && cdrCol > 0 && String(sheet.getRange(i, cdrCol).getValue()).trim() === String(datos.cdr).trim();
+          const cdrMatch = datos.cdr && cdrCol > 0 && String(fila[cdrCol - 1]).trim() === String(datos.cdr).trim();
           
           // Condición 2: Coincide el docId en CUALQUIER columna de negocio (FALLBACK SEGURO)
-          const matchDocId = (col) => col > 0 && String(sheet.getRange(i, col).getValue()).trim() === String(docId).trim();
+          const matchDocId = (col) => col > 0 && String(fila[col - 1]).trim() === String(docId).trim();
           
           const docIdMatch = matchDocId(docIdColCorretaje) || 
                              matchDocId(docIdColAdmin) || 
