@@ -55,7 +55,17 @@ currentCdr = getCdrFromUrl();
 window.handleCredentialResponse = function(response) {
     const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
+        // 'youtube' ya cubre todo lo que se hace: subir el video, meterlo en las
+        // playlists y poner la miniatura. No hace falta 'youtube.upload'.
         scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/drive.file',
+        // ⚠️ NO QUITAR. Por defecto Google SUMA a la petición los permisos que la
+        // cuenta concedió en el pasado. La primera versión de esta página pedía
+        // 'youtube.upload'; al cambiarlo por 'youtube' (para las playlists), las
+        // cuentas que ya lo habían concedido mandaban youtube + youtube.upload +
+        // drive.file, y desde sep-2026 Google rechaza esa mezcla con
+        // "Error 400: invalid_request — scopes that cannot be requested together",
+        // bloqueando la carga entera. Así solo viaja lo que está escrito arriba.
+        include_granted_scopes: false,
         callback: (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
                 userToken = tokenResponse.access_token;
