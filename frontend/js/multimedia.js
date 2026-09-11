@@ -3,7 +3,8 @@
 const CLIENT_ID = '825455387668-asnkq57s4voon63c38b41e4q8qvc0b2e.apps.googleusercontent.com';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
 
-let userToken = null;
+let userToken = null;      // token de DRIVE (fotos). Se pide al iniciar sesión.
+let youtubeToken = null;   // token de YOUTUBE (video). Se pide al subir, y solo si hay video.
 let currentCdr = null;
 let propertyData = null; // Para guardar el Folder ID y Descripción
 let selectedVideo = null;
@@ -51,20 +52,52 @@ function getCdrFromUrl() {
 
 currentCdr = getCdrFromUrl();
 
+/**
+ * Pide el permiso de YouTube, en una ventana SEPARADA de la de Drive.
+ *
+ * ⚠️ Hay que llamarla SIN await delante, como primera cosa dentro de un clic:
+ * los navegadores solo dejan abrir la ventana de Google si nace de un gesto del
+ * usuario. El ejecutor de la Promise corre en el acto, así que la ventana se
+ * abre todavía "dentro" del clic aunque luego se espere el resultado.
+ *
+ * Por eso no se encadena justo después del login de Drive: esa segunda ventana
+ * ya no vendría de un clic y el navegador la bloquearía.
+ */
+function pedirTokenYoutube() {
+    return new Promise((resolve, reject) => {
+        if (youtubeToken) return resolve(youtubeToken);
+        const client = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            // 'youtube' cubre subir el video, meterlo en las playlists y poner
+            // la miniatura. No hace falta 'youtube.upload'.
+            scope: 'https://www.googleapis.com/auth/youtube',
+            include_granted_scopes: false,
+            callback: (r) => {
+                if (r && r.access_token) { youtubeToken = r.access_token; resolve(youtubeToken); }
+                else reject(new Error('YouTube no dio permiso' + (r && r.error ? ': ' + r.error : '.')));
+            },
+            error_callback: (err) => reject(new Error(
+                'No se pudo abrir la autorización de YouTube' +
+                (err && err.type === 'popup_failed_to_open' ? ' (el navegador bloqueó la ventana: permite ventanas emergentes para esta página)' : '') +
+                (err && err.type === 'popup_closed' ? ' (se cerró la ventana antes de aceptar)' : '') + '.'
+            ))
+        });
+        client.requestAccessToken();
+    });
+}
+
 // Login
 window.handleCredentialResponse = function(response) {
     const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
-        // 'youtube' ya cubre todo lo que se hace: subir el video, meterlo en las
-        // playlists y poner la miniatura. No hace falta 'youtube.upload'.
-        scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/drive.file',
+        // SOLO Drive. Desde sep-2026 Google rechaza pedir permisos de YouTube y
+        // de Drive en la MISMA ventana ("Error 400: invalid_request — scopes
+        // that cannot be requested together: youtube, drive.file"), y eso
+        // bloqueaba la carga entera. YouTube se pide aparte, con su propio clic:
+        // ver pedirTokenYoutube().
+        scope: 'https://www.googleapis.com/auth/drive.file',
         // ⚠️ NO QUITAR. Por defecto Google SUMA a la petición los permisos que la
-        // cuenta concedió en el pasado. La primera versión de esta página pedía
-        // 'youtube.upload'; al cambiarlo por 'youtube' (para las playlists), las
-        // cuentas que ya lo habían concedido mandaban youtube + youtube.upload +
-        // drive.file, y desde sep-2026 Google rechaza esa mezcla con
-        // "Error 400: invalid_request — scopes that cannot be requested together",
-        // bloqueando la carga entera. Así solo viaja lo que está escrito arriba.
+        // cuenta ya concedió antes, y volvería a mezclar YouTube con Drive.
         include_granted_scopes: false,
         callback: (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
@@ -480,6 +513,15 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 btnUpload.addEventListener('click', async () => {
+    // YouTube se pide AQUÍ y antes de cualquier await: es lo que mantiene la
+    // ventana de Google "dentro" del clic para que el navegador no la bloquee.
+    // Sin video (Ciencuadras) ni siquiera se pregunta por YouTube.
+    let promesaYoutube = null;
+    if (selectedVideo && !youtubeToken) {
+        promesaYoutube = pedirTokenYoutube();
+        promesaYoutube.catch(() => {});   // el error se trata abajo, al esperarla
+    }
+
     // La portada se comprueba ANTES de empezar: si se avisara a mitad del
     // proceso ya habría fotos subidas y cancelar dejaría el registro a medias.
     if (!esModoSoloVideo() && selectedPhotos.length > 0) {
@@ -510,6 +552,13 @@ btnUpload.addEventListener('click', async () => {
         //    miniatura), asi que el resto del proceso sigue igual.
         let youtubeId = null;
         if (selectedVideo) {
+            // Esperar el permiso de YouTube que se pidió al pulsar el botón. Si
+            // se rechaza o se cierra la ventana, salta al catch y el botón vuelve
+            // a aparecer: otro clic abre la ventana de nuevo.
+            if (promesaYoutube) {
+                progressLabel.textContent = 'Esperando el permiso de YouTube...';
+                await promesaYoutube;
+            }
             progressLabel.textContent = 'Subiendo Video a YouTube...';
             progressFill.style.width = '0%';
             youtubeId = await uploadVideoToYouTube(selectedVideo, progressPercentage, progressFill);
@@ -566,7 +615,7 @@ btnUpload.addEventListener('click', async () => {
 let uploadedYoutubeId = null;
 
 async function uploadVideoToYouTube(file, percentText, fillBar) {
-    if (!userToken) throw new Error("Sesión de Google expirada.");
+    if (!youtubeToken) throw new Error("Falta el permiso de YouTube. Vuelve a pulsar PROCESAR Y SUBIR.");
 
     if (uploadedYoutubeId) {
         percentText.textContent = '100% (Recuperado)';
@@ -590,7 +639,7 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
     const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${userToken}`,
+            'Authorization': `Bearer ${youtubeToken}`,
             'Content-Type': 'application/json',
             'X-Upload-Content-Length': file.size.toString(),
             'X-Upload-Content-Type': file.type
@@ -940,7 +989,8 @@ async function notifyBackend(youtubeId, photoIds) {
         // mandar: el backend recupera la portada anterior desde Drive.
         portadaId: photoIds.length > 0 ? photoIds[0] : null,
         soloVideo: esModoSoloVideo(),
-        userToken: userToken
+        // El backend lo usa SOLO para poner la miniatura en YouTube.
+        userToken: youtubeToken
     };
     
     const res = await fetch(APPS_SCRIPT_URL, {
@@ -984,7 +1034,7 @@ async function addVideoToPlaylists(videoId) {
     let nextPageToken = '';
     do {
         const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&mine=true&maxResults=50${nextPageToken ? '&pageToken='+nextPageToken : ''}`;
-        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${userToken}` } });
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${youtubeToken}` } });
         if (!res.ok) break;
         const data = await res.json();
         if (data.items) existingPlaylists = existingPlaylists.concat(data.items);
@@ -999,7 +1049,7 @@ async function addVideoToPlaylists(videoId) {
         } else {
             const createRes = await fetch('https://www.googleapis.com/youtube/v3/playlists?part=snippet,status', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${youtubeToken}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     snippet: { title: pName, description: `Inmuebles clasificados automáticamente como ${pName}` },
                     status: { privacyStatus: 'unlisted' }
@@ -1016,7 +1066,7 @@ async function addVideoToPlaylists(videoId) {
         if (pId) {
             await fetch('https://www.googleapis.com/youtube/v3/playlistItems?part=snippet', {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
+                headers: { 'Authorization': `Bearer ${youtubeToken}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     snippet: { playlistId: pId, resourceId: { kind: 'youtube#video', videoId: videoId } }
                 })
