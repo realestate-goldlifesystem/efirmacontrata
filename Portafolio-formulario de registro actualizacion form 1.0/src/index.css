@@ -145,3 +145,14 @@
 /* Calculadora en PC: columnas con scroll interno, barra fina y discreta. */
 .calc-scroll { scrollbar-width: thin; scrollbar-color: rgb(168 162 158 / .5) transparent; }
 
+
+/* Calculadora en PC: letra más grande SOLO en las tarjetas de resultados
+   (descripciones, desglose, notas). Márgenes y botones no cambian; si algo
+   deja de caber, el ajuste automático del tablero lo compensa. */
+@media (min-width: 1024px) {
+  #resultado-calculadora .text-\[9px\] { font-size: 11px; }
+  #resultado-calculadora .text-\[10px\] { font-size: 12px; }
+  #resultado-calculadora .text-\[11px\] { font-size: 13px; }
+  #resultado-calculadora .text-xs { font-size: 0.875rem; line-height: 1.35rem; }
+  #resultado-calculadora .text-sm { font-size: 0.95rem; }
+}
