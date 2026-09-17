@@ -224,6 +224,8 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         tablero.style.scrollMarginTop = "";
         return;
       }
+      const tarjetas = Array.from(document.querySelectorAll<HTMLElement>("#resultado-calculadora > div"));
+      tarjetas.forEach(t => { t.style.zoom = ""; });
       // Varias pasadas: al achicarse, el texto se reacomoda y cambia el alto.
       const disponible = window.innerHeight - 80 - 32;
       for (let i = 0; i < 5; i++) {
@@ -234,6 +236,35 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         if (Math.abs(zoom - zoomActual) < 0.005) break;
         tablero.style.zoom = zoom.toFixed(3);
       }
+      // Las tarjetas suelen ser más bajas que la columna de controles y les queda
+      // aire antes del botón: cada una se agranda hasta llenar su propio alto.
+      // Búsqueda binaria del zoom más grande con el que el contenido aún cabe
+      // (al crecer, el texto se reacomoda, así que se mide de verdad cada vez).
+      const zoomTablero = parseFloat(tablero.style.zoom) || 1;
+      // El alto disponible se toma ANTES de agrandar: si se midiera después, la
+      // tarjeta crecida estiraría la fila y siempre parecería que cabe.
+      const cabeCon = (t: HTMLElement, z: number, caja: number) => {
+        t.style.zoom = String(z);
+        const estilo = getComputedStyle(t);
+        const relleno = (parseFloat(estilo.paddingTop) + parseFloat(estilo.paddingBottom)) * z * zoomTablero;
+        const hijos = (Array.from(t.children) as HTMLElement[]).filter(h => getComputedStyle(h).position !== "absolute");
+        const contenido = hijos.reduce((suma, h) => suma + h.getBoundingClientRect().height, 0);
+        return contenido + relleno + 12 * z * zoomTablero <= caja;
+      };
+      // Todas las tarjetas con el MISMO zoom (el de la que menos aire tiene):
+      // lado a lado, tamaños distintos se verían descuadrados.
+      const visibles = tarjetas.filter(t => t.getBoundingClientRect().height > 0);
+      const cajas = visibles.map(t => t.getBoundingClientRect().height);
+      const cabenTodas = (z: number) =>
+        visibles.every((t, i) => cabeCon(t, z, cajas[i])) && tablero.getBoundingClientRect().height <= disponible + 1;
+      let bajo = 1, alto = 1.3;
+      if (visibles.length && cabenTodas(1.02)) {
+        for (let i = 0; i < 7; i++) {
+          const medio = (bajo + alto) / 2;
+          if (cabenTodas(medio)) bajo = medio; else alto = medio;
+        }
+      }
+      visibles.forEach(t => { t.style.zoom = bajo > 1.01 ? bajo.toFixed(3) : ""; });
       // El margen para no quedar bajo el menú también se escala con el zoom.
       tablero.style.scrollMarginTop = (92 / (parseFloat(tablero.style.zoom) || 1)).toFixed(0) + "px";
     };
