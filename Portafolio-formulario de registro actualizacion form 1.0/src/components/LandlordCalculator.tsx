@@ -225,7 +225,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         return;
       }
       // Varias pasadas: al achicarse, el texto se reacomoda y cambia el alto.
-      const disponible = window.innerHeight - 80 - 24;
+      const disponible = window.innerHeight - 80 - 32;
       for (let i = 0; i < 5; i++) {
         const zoomActual = parseFloat(tablero.style.zoom) || 1;
         const altoNatural = tablero.getBoundingClientRect().height / zoomActual;
@@ -323,7 +323,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         <div id="calculadora-tablero" ref={tableroRef} className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-6 xl:gap-8 items-start lg:items-stretch">
           
           {/* Slider Controls Column */}
-          <div ref={panelControlesRef} className={`lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6 ${vistaMovil === 'resultados' ? 'hidden lg:block' : 'cal-entra'} ${saliendo && vistaMovil === 'configurar' ? 'cal-sale' : ''}`}>
+          <div ref={panelControlesRef} className={`lg:col-span-4 xl:col-span-3 bg-brand-dark-deep p-6 sm:p-8 lg:p-5 rounded-2xl border border-stone-200 space-y-6 lg:space-y-4 ${vistaMovil === 'resultados' ? 'hidden lg:block' : 'cal-entra'} ${saliendo && vistaMovil === 'configurar' ? 'cal-sale' : ''}`}>
             <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider font-mono pb-4 border-b border-stone-200">
               Configura tu Inmueble
             </h3>
@@ -358,7 +358,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
               
               {/* Rent Inputs (Shown in Arriendo and Mixto) */}
               {(calcMode === 'arriendo' || calcMode === 'mixto') && (
-                <div className="space-y-4 animate-fade-in">
+                <div className="space-y-4 lg:space-y-3 animate-fade-in">
                   <div className="space-y-2">
                     <label htmlFor="rent-input-price" className="text-xs text-stone-600 uppercase tracking-widest font-mono">
                       {includesHoa ? 'Arriendo Completo (Canon + Admin)' : 'Valor mensual de arriendo (COP)'}
@@ -371,7 +371,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         id="rent-input-price"
                         value={formatInputValue(rentPrice)}
                         onChange={(e) => setRentPrice(Math.max(0, parseInputValue(e.target.value)))}
-                        className="w-full bg-white border border-stone-200 rounded-lg py-3.5 pl-8 pr-4 text-xl font-bold text-stone-900 focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold shadow-sm"
+                        className="w-full bg-white border border-stone-200 rounded-lg py-3.5 lg:py-2.5 pl-8 pr-4 text-xl lg:text-lg font-bold text-stone-900 focus:outline-none focus:border-brand-gold focus:ring-1 focus:ring-brand-gold shadow-sm"
                         placeholder="Escribe tu valor"
                       />
                     </div>
@@ -394,7 +394,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                           setRentPrice(val);
                           if (includesHoa && val <= hoaPrice) setHoaPrice(Math.floor(val * 0.15));
                         }}
-                        className={`min-h-[44px] py-2.5 px-3 border rounded-lg text-sm font-bold tracking-wide transition-all cursor-pointer ${
+                        className={`min-h-[44px] lg:min-h-0 py-2.5 lg:py-1.5 px-3 border rounded-lg text-sm lg:text-xs font-bold tracking-wide transition-all cursor-pointer ${
                           rentPrice === val
                             ? 'bg-brand-gold/10 text-brand-gold-dark border-brand-gold/40 shadow-sm'
                             : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50 hover:text-stone-900 shadow-sm'
@@ -409,13 +409,13 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                       El contenedor lleva padding vertical a propósito: el riel mide 6px,
                       que es imposible de agarrar con el pulgar. Así la zona que responde
                       al toque llega a ~44px sin engordar la línea visualmente. */}
-                  <div className="space-y-1">
+                  <div className={`space-y-1 ${calcMode === 'mixto' ? 'lg:hidden' : ''}`}>
                     <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-[11px] font-mono text-stone-500">
                       <span>$ 1.000.000</span>
                       <span>Ajusta deslizando</span>
                       <span>$ 10.000.000</span>
                     </div>
-                    <div className="py-3">
+                    <div className="py-3 lg:py-1">
                       <input
                         type="range"
                         min="1000000"
@@ -433,7 +433,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
 
               {/* Sale Inputs (Shown in Venta and Mixto) */}
               {(calcMode === 'venta' || calcMode === 'mixto') && (
-                <div className="space-y-4 animate-fade-in pt-4 border-t border-stone-200">
+                <div className="space-y-4 lg:space-y-3 animate-fade-in pt-4 border-t border-stone-200">
                   <div className="space-y-2">
                     <label htmlFor="sale-input-price" className="text-xs text-stone-600 uppercase tracking-widest font-mono">
                       Valor de venta proyectado (COP)
@@ -446,7 +446,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                         id="sale-input-price"
                         value={formatInputValue(salePrice)}
                         onChange={(e) => setSalePrice(Math.max(0, parseInputValue(e.target.value)))}
-                        className="w-full bg-white border border-stone-200 rounded-lg py-3.5 pl-8 pr-4 text-xl font-bold text-stone-900 focus:outline-none focus:border-stone-900 focus:ring-1 focus:ring-stone-900 shadow-sm"
+                        className="w-full bg-white border border-stone-200 rounded-lg py-3.5 lg:py-2.5 pl-8 pr-4 text-xl lg:text-lg font-bold text-stone-900 focus:outline-none focus:border-stone-900 focus:ring-1 focus:ring-stone-900 shadow-sm"
                         placeholder="Escribe tu valor"
                       />
                     </div>
@@ -458,7 +458,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                   </div>
 
                   {/* Slider for Sale */}
-                  <div className="space-y-2">
+                  <div className={`space-y-2 ${calcMode === 'mixto' ? 'lg:hidden' : ''}`}>
                     <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-[11px] font-mono text-stone-500">
                       <span>$ 100M</span>
                       <span>$ 1.500M</span>
@@ -482,7 +482,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                 <div className="space-y-4 pt-4 border-t border-stone-200">
                   
                   {/* HOA Checklist */}
-                  <div className="p-3 bg-white border border-stone-200 rounded-lg space-y-3.5 shadow-sm">
+                  <div className="p-3 bg-white border border-stone-200 rounded-lg space-y-3.5 lg:space-y-2 shadow-sm">
                     <label htmlFor="calc-includes-hoa" className="flex items-center space-x-2.5 min-h-[44px] -my-2 cursor-pointer select-none">
                       <input
                         type="checkbox"
@@ -634,7 +634,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
           </div>
 
           {/* Dynamic Side-by-side Panel (Adapts to Active Tab Mode) */}
-          <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 lg:gap-6 xl:gap-8 lg:content-start scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid cal-entra'} ${saliendo && vistaMovil === 'resultados' ? 'cal-sale' : ''} grid-cols-1 md:grid-cols-2`}>
+          <div id="resultado-calculadora" className={`lg:col-span-8 xl:col-span-9 gap-8 lg:gap-6 xl:gap-8 scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid cal-entra'} ${saliendo && vistaMovil === 'resultados' ? 'cal-sale' : ''} grid-cols-1 md:grid-cols-2`}>
 
             {/* Sin valor no hay nada que comparar. En móvil el botón ya lo
                 impide, pero en escritorio las tarjetas están siempre a la vista
