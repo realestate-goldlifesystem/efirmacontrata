@@ -272,7 +272,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
     <section id="calculadora" className="py-20 bg-brand-dark border-b border-stone-200 relative">
       <div className="absolute top-10 right-10 w-64 h-64 bg-brand-gold/5 rounded-full blur-[90px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl 2xl:max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
           <span className="text-xs uppercase font-mono tracking-widest text-brand-gold font-bold flex items-center justify-center gap-1.5">
@@ -377,7 +377,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                       que es imposible de agarrar con el pulgar. Así la zona que responde
                       al toque llega a ~44px sin engordar la línea visualmente. */}
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[11px] font-mono text-stone-500">
+                    <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-[11px] font-mono text-stone-500">
                       <span>$ 1.000.000</span>
                       <span>Ajusta deslizando</span>
                       <span>$ 10.000.000</span>
@@ -426,7 +426,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
 
                   {/* Slider for Sale */}
                   <div className="space-y-2">
-                    <div className="flex justify-between text-[11px] font-mono text-stone-500">
+                    <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-[11px] font-mono text-stone-500">
                       <span>$ 100M</span>
                       <span>$ 1.500M</span>
                     </div>
@@ -465,7 +465,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
 
                     {includesHoa && (
                       <div className="space-y-2.5 pt-2 border-t border-stone-100 animate-fade-in">
-                        <div className="flex justify-between items-center text-xs">
+                        <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right items-center text-xs">
                           <span className="text-[10px] text-stone-550 uppercase tracking-widest font-mono">Cuota de Administración</span>
                           <span className="font-bold text-brand-gold-dark font-mono">{FORMAT_COP(safeHoaPrice)}</span>
                         </div>
@@ -705,30 +705,30 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     <div className="space-y-2.5 sm:space-y-3 mt-3.5 sm:mt-5 text-xs">
                       {includesHoa ? (
                         <>
-                          <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
+                          <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-b border-stone-200 pb-1.5 sm:pb-2">
                             <span className="text-stone-600 font-light">Arriendo completo (Canon + Admin):</span>
                             <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(rentPrice)}</span>
                           </div>
-                          <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
+                          <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-b border-stone-200 pb-1.5 sm:pb-2">
                             <span className="text-stone-600 font-light">Administración Edificio (Deducida para pago directo):</span>
                             <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(safeHoaPrice)}</span>
                           </div>
-                          <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
+                          <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-b border-stone-200 pb-1.5 sm:pb-2">
                             <span className="text-stone-800 font-bold">Canon Neto (Base de comisión):</span>
                             <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(canonValue)}</span>
                           </div>
                         </>
                       ) : (
-                        <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
+                        <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-b border-stone-200 pb-1.5 sm:pb-2">
                           <span className="text-stone-600 font-light">Canon de arrendamiento:</span>
                           <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(canonValue)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2">
+                      <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-b border-stone-200 pb-1.5 sm:pb-2">
                         <span className="text-stone-600 font-light">Comisión Gold Life ({adminMonthlyFeePercent.toFixed(1)}% sobre Canon):</span>
                         <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(adminFee)}</span>
                       </div>
-                      <div className="flex justify-between pt-1">
+                      <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right pt-1">
                         <span className="text-stone-700 font-medium font-sans">Inversión única de póliza (50% arriendo completo - 1er mes):</span>
                         <span className="text-rose-600 font-mono font-bold">-{FORMAT_COP(adminTotalPolicy)}</span>
                       </div>
@@ -782,12 +782,12 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     {/* Subdetails Breakdown */}
                     <div className="space-y-3.5 mt-3.5 sm:mt-5 text-sm">
                       {includesHoa && (
-                        <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2 text-xs">
+                        <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-b border-stone-200 pb-1.5 sm:pb-2 text-xs">
                           <span className="text-stone-600 font-light">Canon neto de arrendamiento:</span>
                           <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(canonValue)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2 text-xs items-center">
+                      <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-b border-stone-200 pb-1.5 sm:pb-2 text-xs items-center">
                         <span className="text-stone-600 font-light">
                           Comisión de corretaje:
                         </span>
@@ -804,13 +804,13 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                       </div>
                       
                       {isUpsellActive && (
-                        <div className="flex justify-between border-b border-stone-200 pb-1.5 sm:pb-2 text-xs text-emerald-700 font-medium">
+                        <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-b border-stone-200 pb-1.5 sm:pb-2 text-xs text-emerald-700 font-medium">
                           <span>Póliza 12 meses (50% arriendo completo):</span>
                           <span className="font-mono">{FORMAT_COP(corretajePolicy12Month)}</span>
                         </div>
                       )}
 
-                      <div className="flex justify-between pt-1 text-xs">
+                      <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right pt-1 text-xs">
                         <span className="text-stone-700 font-medium">Gasto de inversión inicial total:</span>
                         <span className="text-brand-gold-dark font-mono font-bold text-base">{FORMAT_COP(corretajeTotalInitial)}</span>
                       </div>
@@ -998,13 +998,13 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                           </div>
 
                           {isUpsellActive && (
-                            <div className="flex justify-between text-xs text-emerald-700 font-medium">
+                            <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-xs text-emerald-700 font-medium">
                               <span>Póliza 12 meses (50% completo):</span>
                               <span className="font-mono">{FORMAT_COP(corretajePolicy12Month)}</span>
                             </div>
                           )}
 
-                          <div className="flex justify-between border-t border-stone-100 pt-1.5 text-xs text-stone-700 font-semibold">
+                          <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right border-t border-stone-100 pt-1.5 text-xs text-stone-700 font-semibold">
                             <span>Inversión inicial total:</span>
                             <span className="text-brand-gold-dark font-mono font-bold">{FORMAT_COP(isUpsellActive ? corretajeTotalInitial : baseCorretajeOneTimeFee)}</span>
                           </div>
@@ -1051,7 +1051,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                             <span>Comisión de Venta (3% éxito):</span>
                             <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(ventaFee)}</span>
                           </div>
-                          <div className="flex justify-between text-xs text-stone-600 font-light">
+                          <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-xs text-stone-600 font-light">
                             <span>Comisión de Arriendo Cobrada:</span>
                             <span className="text-emerald-700 font-bold font-mono">$0 (Ahorrada)</span>
                           </div>
@@ -1122,34 +1122,34 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                           <div className="border-t border-stone-100 pt-1.5 sm:pt-2 space-y-2 text-xs">
                             {includesHoa ? (
                               <>
-                                <div className="flex justify-between text-stone-600 font-light">
+                                <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-stone-600 font-light">
                                   <span>Arriendo completo (Canon + Admin):</span>
                                   <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(rentPrice)}</span>
                                 </div>
-                                <div className="flex justify-between text-stone-600 font-light">
+                                <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-stone-600 font-light">
                                   <span>Administración Edificio (Pago directo):</span>
                                   <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(safeHoaPrice)}</span>
                                 </div>
-                                <div className="flex justify-between text-stone-750 font-bold border-b border-stone-100 pb-1">
+                                <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-stone-750 font-bold border-b border-stone-100 pb-1">
                                   <span>Canon Neto (Base de comisión):</span>
                                   <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(canonValue)}</span>
                                 </div>
                               </>
                             ) : (
-                              <div className="flex justify-between text-stone-600 font-light border-b border-stone-100 pb-1">
+                              <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-stone-600 font-light border-b border-stone-100 pb-1">
                                 <span>Canon de arrendamiento:</span>
                                 <span className="text-stone-900 font-mono font-bold">{FORMAT_COP(canonValue)}</span>
                               </div>
                             )}
-                            <div className="flex justify-between text-stone-600 font-light">
+                            <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-stone-600 font-light">
                               <span>Admin. Gold Life ({adminMonthlyFeePercent.toFixed(1)}%):</span>
                               <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(adminFee)}</span>
                             </div>
-                            <div className="flex justify-between text-stone-600 font-light">
+                            <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-stone-600 font-light">
                               <span>Inversión Póliza (50% completo - 1er mes):</span>
                               <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(adminTotalPolicy)}</span>
                             </div>
-                            <div className="flex justify-between text-stone-600 font-light border-t border-stone-100 pt-1.5">
+                            <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-stone-600 font-light border-t border-stone-100 pt-1.5">
                               <span>Comisión de Venta (3% éxito):</span>
                               <span className="text-stone-500 font-mono italic">Pendiente al concretar venta</span>
                             </div>
@@ -1175,7 +1175,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                             <span>Comisión de Venta (3% éxito):</span>
                             <span className="text-rose-600 font-mono font-semibold">-{FORMAT_COP(ventaFee)}</span>
                           </div>
-                          <div className="flex justify-between text-xs text-stone-600 font-light">
+                          <div className="flex justify-between gap-3 [&>span:last-child]:shrink-0 [&>span:last-child]:whitespace-nowrap [&>span:last-child]:text-right text-xs text-stone-600 font-light">
                             <span>Fase de arrendamiento:</span>
                             <span className="text-emerald-700 font-semibold">Transferida a nuevo dueño</span>
                           </div>
