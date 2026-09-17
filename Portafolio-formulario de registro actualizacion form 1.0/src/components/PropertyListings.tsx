@@ -242,7 +242,7 @@ export default function PropertyListings() {
           </div>
           <a
             id="listings-cta-whatsapp"
-            href="https://wa.me/573177623878?text=Hola%20Gold%20Life,%20quiero%20colocar%20mi%20inmueble%20en%20su%20portafolio%20de%2520servicios."
+            href="https://wa.me/573177623878?text=Hola%20Gold%20Life%2C%20quiero%20colocar%20mi%20inmueble%20en%20su%20portafolio%20de%20servicios."
             target="_blank"
             rel="noopener noreferrer"
             className="w-full lg:w-auto bg-brand-gold hover:bg-brand-gold-dark text-stone-950 font-bold px-8 py-4 rounded-xl transition-all shadow-lg shadow-brand-gold/5 text-center cursor-pointer"
