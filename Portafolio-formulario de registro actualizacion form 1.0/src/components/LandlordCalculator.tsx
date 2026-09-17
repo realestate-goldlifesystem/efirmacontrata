@@ -305,7 +305,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
     <section id="calculadora" className="py-20 bg-brand-dark border-b border-stone-200 relative">
       <div className="absolute top-10 right-10 w-64 h-64 bg-brand-gold/5 rounded-full blur-[90px] pointer-events-none" />
 
-      <div className="max-w-7xl 2xl:max-w-[1640px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
+      <div className="max-w-7xl lg:max-w-none mx-auto px-4 sm:px-6 lg:px-6 xl:px-10 2xl:px-16">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
           <span className="text-xs uppercase font-mono tracking-widest text-brand-gold font-bold flex items-center justify-center gap-1.5">
