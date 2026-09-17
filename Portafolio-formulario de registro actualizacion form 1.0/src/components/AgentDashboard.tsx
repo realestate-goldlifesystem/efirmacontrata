@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot, Route, CheckCircle2 } from 'lucide-react';
+import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot, Route, CheckCircle2, CalendarDays } from 'lucide-react';
 import VIPPropertiesPanel from './VIPPropertiesPanel';
 import MiguelCaptadorModal from './MiguelCaptadorModal';
+import CitasAgendaPanel from './CitasAgendaPanel';
 
 interface AgentDashboardProps {
   onOpenForm: () => void;
@@ -16,7 +17,22 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
   const [showSasModal, setShowSasModal] = useState(false);
   const [showMiguelModal, setShowMiguelModal] = useState(false);
   const [showGuiaCierreModal, setShowGuiaCierreModal] = useState(false);
-  const [activeView, setActiveView] = useState<'menu' | 'portafolio'>('menu');
+  const [activeView, setActiveView] = useState<'menu' | 'portafolio' | 'citas'>('menu');
+
+  if (activeView === 'citas') {
+    return (
+      <div className="min-h-screen bg-brand-dark animate-fade-in pb-20 relative">
+        <button
+          onClick={() => setActiveView('menu')}
+          className="fixed top-24 left-4 md:left-8 z-50 flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all shadow-md"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium hidden md:inline">Volver al Panel</span>
+        </button>
+        <CitasAgendaPanel agentCredential={agentCredential} />
+      </div>
+    );
+  }
 
   if (activeView === 'portafolio') {
     return (
@@ -398,6 +414,24 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
             <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Portafolio de Inmuebles</h2>
             <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
               Accede al catálogo de inmuebles publicados. Genera y comparte PDFs interactivos.
+            </p>
+          </div>
+        </button>
+
+        {/* Tarjeta de la Agenda de Citas: las que agendan los propietarios desde
+            la página principal, con el estado que marcan desde su correo */}
+        <button
+          onClick={() => setActiveView('citas')}
+          className="col-span-2 group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-brand-gold/30 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-[0_0_30px_rgba(212,175,55,0.1)] hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors border border-brand-gold/20">
+            <CalendarDays className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
+          </div>
+          <div className="flex flex-col items-center">
+            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Agenda de Citas</h2>
+            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
+              Citas de propietarios: confirmadas, por confirmar, canceladas y quién pidió reagendar.
             </p>
           </div>
         </button>

@@ -140,9 +140,13 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-10 h-10 text-green-600" />
           </div>
-          <h2 className="text-3xl font-extrabold text-stone-900 font-serif italic mb-4">¡Cita Confirmada!</h2>
+          {/* No decir "confirmada": queda PENDIENTE hasta que el propietario pulse
+              Confirmar en el correo, y si no lo hace se libera 2 h antes. */}
+          <h2 className="text-3xl font-extrabold text-stone-900 font-serif italic mb-4">¡Cita agendada!</h2>
           <p className="text-stone-600 mb-8">
-            Hemos reservado tu espacio en nuestra agenda oficial de Google Calendar. Recibirás una invitación formal en tu correo electrónico con todos los detalles.
+            Reservamos tu espacio en nuestra agenda. Te enviamos un correo con los detalles:
+            <strong> confirma tu asistencia desde ahí</strong>. Si necesitas cambiar la fecha o cancelar,
+            también puedes hacerlo desde el mismo correo.
           </p>
           <button
             onClick={onBack}

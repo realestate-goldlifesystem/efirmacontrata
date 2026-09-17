@@ -422,7 +422,8 @@ function doGet(e) {
 
       case 'estadoCita':
         if (typeof handleEstadoCitaGet === 'function') {
-          return handleEstadoCitaGet(e.parameter.idCita, e.parameter.nuevoEstado);
+          // t = token de la cita: decide quién pulsa (propietario o agente) y qué puede hacer.
+          return handleEstadoCitaGet(e.parameter.idCita, e.parameter.nuevoEstado, e.parameter.t);
         }
         return HtmlService.createHtmlOutput('Módulo cron no cargado');
 
@@ -620,6 +621,12 @@ function doPost(e) {
         } else {
           result = { success: false, error: 'API_AGENDA no cargada' };
         }
+        break;
+      case 'obtenerCitas':
+        // Calendario de citas del panel del agente. Exige su sesión de Google.
+        result = (typeof obtenerCitasPanel === 'function')
+          ? obtenerCitasPanel(datos)
+          : { success: false, message: 'API_AGENDA no cargada' };
         break;
       case 'payment':
       case 'payment.created':
