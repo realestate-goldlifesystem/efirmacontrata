@@ -198,23 +198,27 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
       )}
 
       {/* Filtros por estado (con conteo) */}
-      {/* Móvil: una sola fila deslizable (en varias filas empujaban el calendario
-          fuera de la pantalla). Escritorio: se reparten en varias filas. */}
-      <div className="flex md:flex-wrap gap-2 mb-5 overflow-x-auto md:overflow-visible pb-1 -mx-4 px-4 md:mx-0 md:px-0">
+      {/* Móvil: cuadrícula de botones grandes, fáciles de tocar con el pulgar.
+          Escritorio: chips en varias filas. */}
+      <div className="grid grid-cols-2 md:flex md:flex-wrap gap-2 mb-5">
         <button
           onClick={() => setFiltro(null)}
-          className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full border text-xs md:text-sm transition-all ${filtro === null ? 'bg-brand-gold text-stone-950 border-brand-gold font-semibold' : 'bg-white text-stone-700 border-stone-300 hover:border-stone-400'}`}
+          aria-pressed={filtro === null}
+          className={`col-span-2 md:col-span-1 min-h-[48px] md:min-h-0 px-4 md:px-3 py-3 md:py-1.5 rounded-xl md:rounded-full border text-sm flex items-center justify-between md:justify-start gap-2 transition-all active:scale-[0.98] ${filtro === null ? "bg-brand-gold text-stone-950 border-brand-gold font-semibold" : "bg-white text-stone-700 border-stone-300 hover:border-stone-400"}`}
         >
-          Todas ({citas.length})
+          <span>Todas</span>
+          <span className="text-xs md:text-sm opacity-80 bg-black/5 md:bg-transparent rounded-full px-2 md:px-0">{citas.length}</span>
         </button>
         {(Object.keys(GRUPOS) as Grupo[]).filter(g => conteo[g]).map(g => (
           <button
             key={g}
             onClick={() => setFiltro(filtro === g ? null : g)}
-            className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full border text-xs md:text-sm flex items-center gap-2 transition-all ${GRUPOS[g].claro} ${filtro === g ? 'ring-2 ring-brand-gold font-semibold' : 'hover:shadow-sm'}`}
+            aria-pressed={filtro === g}
+            className={`min-h-[48px] md:min-h-0 px-3 py-2.5 md:py-1.5 rounded-xl md:rounded-full border text-sm flex items-center gap-2 text-left transition-all active:scale-[0.98] ${GRUPOS[g].claro} ${filtro === g ? "ring-2 ring-brand-gold font-semibold" : "hover:shadow-sm"}`}
           >
-            <span className={`w-2 h-2 rounded-full ${GRUPOS[g].punto}`} />
-            {GRUPOS[g].etiqueta} ({conteo[g]})
+            <span className={`w-2.5 h-2.5 md:w-2 md:h-2 shrink-0 rounded-full ${GRUPOS[g].punto}`} />
+            <span className="flex-1 leading-tight">{GRUPOS[g].etiqueta}</span>
+            <span className="text-xs font-semibold">{conteo[g]}</span>
           </button>
         ))}
       </div>
