@@ -287,10 +287,10 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         </div>
 
         {/* Input & Panel Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div id="calculadora-tablero" className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-6 xl:gap-8 items-start lg:items-stretch lg:h-[calc(100vh-6.75rem)] lg:min-h-[560px] lg:scroll-mt-[5.75rem]">
           
           {/* Slider Controls Column */}
-          <div ref={panelControlesRef} className={`lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6 ${vistaMovil === 'resultados' ? 'hidden lg:block' : 'cal-entra'} ${saliendo && vistaMovil === 'configurar' ? 'cal-sale' : ''}`}>
+          <div ref={panelControlesRef} className={`lg:col-span-4 lg:h-full lg:overflow-y-auto calc-scroll bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6 ${vistaMovil === 'resultados' ? 'hidden lg:block' : 'cal-entra'} ${saliendo && vistaMovil === 'configurar' ? 'cal-sale' : ''}`}>
             <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider font-mono pb-4 border-b border-stone-200">
               Configura tu Inmueble
             </h3>
@@ -601,7 +601,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
           </div>
 
           {/* Dynamic Side-by-side Panel (Adapts to Active Tab Mode) */}
-          <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid cal-entra'} ${saliendo && vistaMovil === 'resultados' ? 'cal-sale' : ''} grid-cols-1 md:grid-cols-2`}>
+          <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 lg:gap-6 xl:gap-8 lg:h-full lg:overflow-y-auto lg:content-start calc-scroll lg:pr-1 scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid cal-entra'} ${saliendo && vistaMovil === 'resultados' ? 'cal-sale' : ''} grid-cols-1 md:grid-cols-2`}>
 
             {/* Sin valor no hay nada que comparar. En móvil el botón ya lo
                 impide, pero en escritorio las tarjetas están siempre a la vista

@@ -37,7 +37,10 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
   ];
 
   const handleNavClick = (id: string) => {
-    onScrollTo(id);
+    // En PC la calculadora ocupa justo el alto de la pantalla: se aterriza
+    // directo en el tablero (sin el título encima) para que quede "congelada".
+    const enPC = window.matchMedia('(min-width: 1024px)').matches;
+    onScrollTo(id === 'calculadora' && enPC ? 'calculadora-tablero' : id);
     setIsOpen(false);
   };
 
@@ -46,14 +49,14 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
       id="main-nav"
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-brand-dark-deep/95 backdrop-blur-md shadow-md border-b border-stone-200 py-3'
-          : 'bg-transparent py-5'
+          ? 'bg-brand-dark-deep/95 backdrop-blur-md shadow-md border-b border-stone-200 py-1'
+          : 'bg-transparent py-3'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 lg:h-24 transition-all">
+        <div className="flex items-center justify-between h-16 lg:h-[72px] transition-all">
           {/* Logo Brand */}
-          <div className="flex-shrink-0 cursor-pointer flex items-center h-16 lg:h-20" onClick={() => handleNavClick('inicio')}>
+          <div className="flex-shrink-0 cursor-pointer flex items-center h-14 lg:h-16" onClick={() => handleNavClick('inicio')}>
             <img src={logoImg} alt="Gold Life Real Estate" className="h-full w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform scale-110 origin-left" />
           </div>
 
