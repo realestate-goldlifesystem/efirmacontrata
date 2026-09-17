@@ -210,6 +210,39 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
   };
 
   const panelControlesRef = useRef<HTMLDivElement | null>(null);
+
+  // PC: el tablero (controles + tarjetas) se escala entero para caber justo en
+  // el alto de la pantalla, sin barras de desplazamiento. Es un zoom automático:
+  // letras, botones y espacios crecen o se achican juntos. En móvil no aplica.
+  const tableroRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const tablero = tableroRef.current;
+    if (!tablero) return;
+    const ajustar = () => {
+      if (!window.matchMedia("(min-width: 1024px)").matches) {
+        tablero.style.zoom = "";
+        tablero.style.scrollMarginTop = "";
+        return;
+      }
+      // Varias pasadas: al achicarse, el texto se reacomoda y cambia el alto.
+      const disponible = window.innerHeight - 80 - 24;
+      for (let i = 0; i < 5; i++) {
+        const zoomActual = parseFloat(tablero.style.zoom) || 1;
+        const altoNatural = tablero.getBoundingClientRect().height / zoomActual;
+        if (altoNatural <= 0) return;
+        const zoom = Math.min(1.2, Math.max(0.55, disponible / altoNatural));
+        if (Math.abs(zoom - zoomActual) < 0.005) break;
+        tablero.style.zoom = zoom.toFixed(3);
+      }
+      // El margen para no quedar bajo el menú también se escala con el zoom.
+      tablero.style.scrollMarginTop = (92 / (parseFloat(tablero.style.zoom) || 1)).toFixed(0) + "px";
+    };
+    const observador = new ResizeObserver(() => ajustar());
+    (Array.from(tablero.children) as Element[]).forEach(h => observador.observe(h));
+    window.addEventListener("resize", ajustar);
+    ajustar();
+    return () => { observador.disconnect(); window.removeEventListener("resize", ajustar); };
+  }, [calcMode, hayValor, rentPrice, salePrice, hoaPrice, includesHoa, isUpsellActive, isMultiProperty, mixtoScenario]);
   const [mostrarResumen, setMostrarResumen] = useState(false);
 
   // Se usa un listener de scroll y no IntersectionObserver a propósito: el cálculo
@@ -287,10 +320,10 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
         </div>
 
         {/* Input & Panel Layout */}
-        <div id="calculadora-tablero" className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-6 xl:gap-8 items-start lg:items-stretch lg:h-[calc(100vh-6.75rem)] lg:min-h-[560px] lg:scroll-mt-[5.75rem]">
+        <div id="calculadora-tablero" ref={tableroRef} className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-6 xl:gap-8 items-start lg:items-stretch">
           
           {/* Slider Controls Column */}
-          <div ref={panelControlesRef} className={`lg:col-span-4 lg:h-full lg:overflow-y-auto calc-scroll bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6 ${vistaMovil === 'resultados' ? 'hidden lg:block' : 'cal-entra'} ${saliendo && vistaMovil === 'configurar' ? 'cal-sale' : ''}`}>
+          <div ref={panelControlesRef} className={`lg:col-span-4 bg-brand-dark-deep p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6 ${vistaMovil === 'resultados' ? 'hidden lg:block' : 'cal-entra'} ${saliendo && vistaMovil === 'configurar' ? 'cal-sale' : ''}`}>
             <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider font-mono pb-4 border-b border-stone-200">
               Configura tu Inmueble
             </h3>
@@ -352,7 +385,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                   {/* Atajos de canon.
                       Van JUNTO al campo, antes del slider: quien no tiene el número
                       exacto resuelve de un toque en vez de tener que deslizar. */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className={`grid grid-cols-2 gap-2 ${calcMode === 'mixto' ? 'lg:hidden' : ''}`}>
                     {[1500000, 2500000, 4200000, 6000000].map((val) => (
                       <button
                         key={val}
@@ -601,7 +634,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
           </div>
 
           {/* Dynamic Side-by-side Panel (Adapts to Active Tab Mode) */}
-          <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 lg:gap-6 xl:gap-8 lg:h-full lg:overflow-y-auto lg:content-start calc-scroll lg:pr-1 scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid cal-entra'} ${saliendo && vistaMovil === 'resultados' ? 'cal-sale' : ''} grid-cols-1 md:grid-cols-2`}>
+          <div id="resultado-calculadora" className={`lg:col-span-8 gap-8 lg:gap-6 xl:gap-8 lg:content-start scroll-mt-20 ${vistaMovil === 'configurar' ? 'hidden lg:grid' : 'grid cal-entra'} ${saliendo && vistaMovil === 'resultados' ? 'cal-sale' : ''} grid-cols-1 md:grid-cols-2`}>
 
             {/* Sin valor no hay nada que comparar. En móvil el botón ya lo
                 impide, pero en escritorio las tarjetas están siempre a la vista
