@@ -138,17 +138,8 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
     Logger.log('✅ Documento de Google generado nativamente: ' + tempDocFile.getName());
     
     // Escribir el ID del DOC en la columna Merged Doc ID correspondiente
-    var colName = '';
-    switch(tipoNegocio) {
-      case 'Administración': colName = 'Merged Doc ID - ADMINISTRACIÓN'; break;
-      case 'Venta': colName = 'Merged Doc ID - VENTA'; break;
-      case 'Admi-Venta': colName = 'Merged Doc ID - ADMI-VENTA'; break;
-      case 'Vendi-Renta': colName = 'Merged Doc ID - VENDI-RENTA'; break;
-      case 'AUTORIZACIÓN DE INGRESO AL INMUEBLE': colName = 'Merged Doc ID - AUTORIZACIÓN DE INGRESO AL INMUEBLE'; break;
-      case 'Corretaje':
-      default: colName = 'Merged Doc ID - CORRETAJE'; break;
-    }
-    
+    var colName = nombreColumnaMergedDoc(tipoNegocio);
+
     var colIndexWrite = headers.indexOf(colName);
     if (colIndexWrite !== -1) {
       sheet.getRange(row, colIndexWrite + 1).setValue(tempDocFile.getId());
@@ -160,5 +151,38 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
   } catch (error) {
     Logger.log('❌ Error en Motor Autocrat Nativo: ' + error.message);
     return null;
+  }
+}
+
+/**
+ * Columna donde queda el ID del documento generado para cada tipo.
+ * Una sola fuente: la usa el motor al escribir y la Parte 2 al reintentar.
+ */
+function nombreColumnaMergedDoc(tipoNegocio) {
+  switch (tipoNegocio) {
+    case 'Administración': return 'Merged Doc ID - ADMINISTRACIÓN';
+    case 'Venta': return 'Merged Doc ID - VENTA';
+    case 'Admi-Venta': return 'Merged Doc ID - ADMI-VENTA';
+    case 'Vendi-Renta': return 'Merged Doc ID - VENDI-RENTA';
+    case 'AUTORIZACIÓN DE INGRESO AL INMUEBLE': return 'Merged Doc ID - AUTORIZACIÓN DE INGRESO AL INMUEBLE';
+    case 'Corretaje':
+    default: return 'Merged Doc ID - CORRETAJE';
+  }
+}
+
+/**
+ * true si la fila ya tiene un documento generado y ese documento sigue vivo.
+ * Evita que un reintento de la Parte 2 (p. ej. tras "Excedió el tiempo máximo")
+ * genere el acta dos veces y deje la primera huérfana.
+ */
+function documentoAutocratYaGenerado(sheet, row, tipoNegocio) {
+  try {
+    var col = getColumnByName(sheet, nombreColumnaMergedDoc(tipoNegocio));
+    if (!col) return false;
+    var id = String(sheet.getRange(row, col).getValue() || '').trim();
+    if (!id) return false;
+    return !DriveApp.getFileById(id).isTrashed();
+  } catch (e) {
+    return false;
   }
 }

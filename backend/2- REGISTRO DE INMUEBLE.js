@@ -146,7 +146,13 @@ function procesarRegistroParte2(datos) {
       // Si el motor existe, generamos el PDF y su ID queda en la hoja
       if (typeof generarDocumentoNativo === 'function') {
         Logger.log('⚡ Disparando Motor Autocrat Nativo para tipo de negocio...');
-        generarDocumentoNativo(sheet, row, tipoNegocio, DriveApp.getRootFolder());
+        // Reintento seguro: si el acta ya quedó generada en una ejecución anterior
+        // que murió por tiempo, NO se genera otra (dejaría la primera huérfana).
+        if (documentoAutocratYaGenerado(sheet, row, tipoNegocio)) {
+          Logger.log('♻️ El acta de ' + tipoNegocio + ' ya estaba generada (reintento). No se duplica.');
+        } else {
+          generarDocumentoNativo(sheet, row, tipoNegocio, DriveApp.getRootFolder());
+        }
 
         // Generar también la Autorización de Ingreso si la propiedad tiene portería y administración
         var colPorteria = getColumnByName(sheet, '¿El inmueble dispone de portería y administración para realizar un acta de notificación de promoción inmobiliaria he ingreso?');
@@ -154,7 +160,11 @@ function procesarRegistroParte2(datos) {
           var valorPorteria = sheet.getRange(row, colPorteria).getValue();
           if (valorPorteria === 'SI') {
             Logger.log('⚡ Generando Acta de Autorización de Ingreso al Inmueble...');
-            generarDocumentoNativo(sheet, row, 'AUTORIZACIÓN DE INGRESO AL INMUEBLE', DriveApp.getRootFolder());
+            if (documentoAutocratYaGenerado(sheet, row, 'AUTORIZACIÓN DE INGRESO AL INMUEBLE')) {
+              Logger.log('♻️ El acta de ingreso ya estaba generada (reintento). No se duplica.');
+            } else {
+              generarDocumentoNativo(sheet, row, 'AUTORIZACIÓN DE INGRESO AL INMUEBLE', DriveApp.getRootFolder());
+            }
           } else {
             Logger.log('ℹ️ No aplica generación de Acta de Autorización de Ingreso (valor no es SI).');
           }
@@ -368,11 +378,25 @@ function crearREGDesdePlantillaMaestra(carpetaNegocioFolder, cdr) {
     throw new Error('No se encontró PLANTILLA #2 en PLANTILLA #1 maestra');
   }
 
-  var nuevoREG = carpetaNegocioFolder.createFolder(cdr);
-  Logger.log(`📁 Carpeta REG creada: ${cdr}`);
+  // REANUDABLE: copiar la plantilla puede pasar de los 6 minutos de Apps Script
+  // ("Excedió el tiempo máximo de ejecución", 18-09-2026). Si una ejecución
+  // anterior ya creó la carpeta con este CDR, se reutiliza y solo se copia lo que
+  // falta. Antes cada reintento creaba OTRA carpeta REG con el mismo nombre.
+  var existentes = carpetaNegocioFolder.getFoldersByName(cdr);
+  var nuevoREG = null;
+  while (existentes.hasNext()) {
+    var candidata = existentes.next();
+    if (!candidata.isTrashed()) { nuevoREG = candidata; break; }
+  }
+  if (nuevoREG) {
+    Logger.log(`♻️ Carpeta REG ya existía (reintento): ${cdr}. Se completa lo que falte.`);
+  } else {
+    nuevoREG = carpetaNegocioFolder.createFolder(cdr);
+    Logger.log(`📁 Carpeta REG creada: ${cdr}`);
+  }
 
   Logger.log('📋 Copiando estructura completa de PLANTILLA #2...');
-  copiarContenidoCompleto(plantilla2, nuevoREG);
+  copiarContenidoFaltante(plantilla2, nuevoREG);
   Logger.log('✅ Estructura copiada completamente');
 
   return nuevoREG;
@@ -2060,3 +2084,29 @@ function continuarRegistroInmuebleParte3() {
 // ==========================================
 
 Logger.log('📄 Archivo 2 cargado correctamente - v10.2-final');
+/**
+ * Como copiarContenidoCompleto, pero REANUDABLE: si el destino ya tiene un
+ * archivo o carpeta con el mismo nombre, no lo duplica (a las carpetas entra a
+ * completar lo que les falte). Así un reintento tras un corte por tiempo termina
+ * el trabajo en vez de empezarlo de nuevo.
+ */
+function copiarContenidoFaltante(sourceFolder, destinationFolder) {
+  var nombresArchivos = {};
+  var ya = destinationFolder.getFiles();
+  while (ya.hasNext()) nombresArchivos[ya.next().getName()] = true;
+
+  var files = sourceFolder.getFiles();
+  while (files.hasNext()) {
+    var file = files.next();
+    if (nombresArchivos[file.getName()]) continue;
+    file.makeCopy(file.getName(), destinationFolder);
+  }
+
+  var folders = sourceFolder.getFolders();
+  while (folders.hasNext()) {
+    var folder = folders.next();
+    var existente = destinationFolder.getFoldersByName(folder.getName());
+    var destino = existente.hasNext() ? existente.next() : destinationFolder.createFolder(folder.getName());
+    copiarContenidoFaltante(folder, destino);
+  }
+}
