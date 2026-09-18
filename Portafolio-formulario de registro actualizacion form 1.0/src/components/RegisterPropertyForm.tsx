@@ -736,7 +736,21 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
       alert("Debes confirmar por favor que la propiedad está libre de embargos.");
       return;
     }
+    if (loading) return; // un solo envío a la vez
     setLoading(true);
+
+    // Código único de ESTE envío. Se guarda hasta que el registro se confirme:
+    // si la respuesta se pierde (error de conexión) y el agente vuelve a enviar,
+    // viaja el mismo código y el backend reconoce el repetido en vez de crear
+    // un segundo inmueble (pasó el 18-09-2026: TN846551 + WT943479).
+    let idEnvio = '';
+    try { idEnvio = localStorage.getItem('registerPropertyIdEnvio') || ''; } catch (e2) {}
+    if (!idEnvio) {
+      idEnvio = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      try { localStorage.setItem('registerPropertyIdEnvio', idEnvio); } catch (e2) {}
+    }
 
     try {
       // El inmueble que el agente eligió al pulsar "Renovar" o "Cambiar negocio".
@@ -750,6 +764,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
 
       const payload = {
         accion: 'registrarInmueble',
+        idEnvio: idEnvio,
         reutilizarMultimedia: reutilizarMultimedia,
         // 'normal' | 'renovacion' | 'cambio_negocio'
         flujoSolicitado: activeFlow,
@@ -874,13 +889,14 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         try {
           localStorage.removeItem('registerPropertyFormData');
           localStorage.removeItem('registerPropertyCurrentStep');
+          localStorage.removeItem('registerPropertyIdEnvio');
         } catch (e) {}
       } else {
         alert("Error al registrar: " + data.message);
       }
     } catch (err) {
       console.error(err);
-      alert("Hubo un error de conexión con el sistema. Por favor, intenta de nuevo.");
+      alert("Hubo un error de conexión con el sistema. Es posible que el registro sí haya llegado: puedes volver a enviarlo tranquilo, el sistema reconoce el envío repetido y no lo duplica.");
     } finally {
       setLoading(false);
     }

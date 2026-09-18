@@ -786,6 +786,38 @@ function handleRegistrarInmueble(datos) {
   }
 
   try {
+    // ENVÍO REPETIDO: si la respuesta del primer envío se pierde (el navegador
+    // muestra "error de conexión" aunque el inmueble SÍ quedó guardado) y el
+    // agente reenvía, llega el mismo idEnvio. Se responde éxito sin volver a
+    // insertar. Pasó el 18-09-2026: TN846551 y su copia WT943479.
+    //
+    // La huella (dirección + documento + negocio) evita el caso contrario: que
+    // un idEnvio viejo, olvidado en el navegador, tape un inmueble distinto.
+    const idEnvio = String(datos.idEnvio || '').trim();
+    const huellaEnvio = [
+      datos['Ingrese la Dirección del inmueble'],
+      datos['N° de inmueble'],
+      datos['Número de documento'],
+      datos['TIPO DE NEGOCIO']
+    ].map(function (v) { return String(v || '').trim().toUpperCase(); }).join('|');
+    const claveEnvio = idEnvio ? 'ENVIO_REGISTRO_' + idEnvio : '';
+    if (claveEnvio) {
+      const previo = CacheService.getScriptCache().get(claveEnvio);
+      if (previo) {
+        try {
+          const p = JSON.parse(previo);
+          if (p.huella === huellaEnvio) {
+            Logger.log('🔁 Envío repetido ' + idEnvio + ' → ya registrado como ' + p.idRegistro + '. No se inserta de nuevo.');
+            return {
+              success: true,
+              repetido: true,
+              message: "Este inmueble ya había quedado registrado (" + p.idRegistro + "). No se creó un duplicado."
+            };
+          }
+        } catch (eCache) {}
+      }
+    }
+
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
     if (!sheet) throw new Error("Hoja '1.1 - INMUEBLES REGISTRADOS' no encontrada en el CRM.");
 
@@ -825,6 +857,16 @@ function handleRegistrarInmueble(datos) {
     // Insertar la nueva fila en el Excel
     sheet.appendRow(newRow);
     SpreadsheetApp.flush();
+
+    // Recordar este envío 6 h (máximo de CacheService) para reconocer un reenvío.
+    if (claveEnvio) {
+      try {
+        CacheService.getScriptCache().put(claveEnvio,
+          JSON.stringify({ idRegistro: idRegistro || '(sin ID)', huella: huellaEnvio }), 21600);
+      } catch (eCache) {
+        Logger.log('⚠️ No se pudo recordar el envío ' + idEnvio + ': ' + eCache.message);
+      }
+    }
 
     // Obtener la fila recién insertada
     const lastRow = sheet.getLastRow();

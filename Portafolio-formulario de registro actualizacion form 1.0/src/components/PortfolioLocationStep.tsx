@@ -185,22 +185,27 @@ export const PortfolioLocationStep: React.FC<LocationStepProps> = ({ formData, s
       .replace(/Autopista/gi, 'Aut');
 
     // Limpieza estricta de numerales y espacios (Ej. "AK 9 ## 185-61" -> "AK 9 #185-61")
+    // ⚠️ EL ORDEN IMPORTA: primero se convierten "No", "Nro", "N°" en "#" y SOLO
+    // DESPUÉS se colapsan los numerales dobles. Al revés, "Cl 143 # No 9-55"
+    // quedaba "Cl 143 ##9-55" (pasó el 18-09-2026 y llegó así al contrato).
     shortAddress = shortAddress
-      .replace(/\./g, '')      // Eliminar puntos (Cl. -> Cl)
-      .replace(/#\s*#/g, '#')  // Eliminar dobles numerales
-      .replace(/#\s+/g, '#')   // Eliminar espacio DESPUÉS del numeral
-      .replace(/\s+#/g, ' #')  // Asegurar un solo espacio ANTES del numeral
-      .replace(/No\s/gi, '#')  // Reemplazar No por numeral
-      .replace(/Nro/gi, '#')   // Reemplazar Nro por numeral
+      .replace(/\./g, '')              // Eliminar puntos (Cl. -> Cl)
+      .replace(/\bN[°º]\s*/gi, '#')    // N° / Nº -> #
+      .replace(/\bNro\b\s*/gi, '#')    // Nro -> #
+      .replace(/\bNo\b\s*/gi, '#')     // No -> # (palabra suelta: no toca "Norte")
+      .replace(/#(\s*#)+/g, '#')       // Colapsar numerales repetidos (##, # #)
+      .replace(/#\s+/g, '#')           // Sin espacio DESPUÉS del numeral
+      .replace(/\s*#/g, ' #')          // Un solo espacio ANTES del numeral
+      .replace(/\s{2,}/g, ' ')         // Espacios dobles
       .trim();
 
     // Obligar a MAYÚSCULAS las letras anexas a números y palabras clave
     shortAddress = shortAddress
       .replace(/\b([a-z])\b/g, (match) => match.toUpperCase()) // Letras sueltas a mayúscula (a -> A)
       .replace(/(\d)\s+([a-zA-Z])\b/g, '$1$2') // Pegar letra al número (10 A -> 10A)
-      .replace(/bis/gi, 'BIS')
-      .replace(/sur/gi, 'SUR')
-      .replace(/este/gi, 'ESTE')
+      .replace(/\bbis\b/gi, 'BIS')
+      .replace(/\bsur\b/gi, 'SUR')
+      .replace(/\beste\b/gi, 'ESTE')
       .replace(/(\d)([a-z])/g, (m, p1, p2) => `${p1}${p2.toUpperCase()}`); // (10a -> 10A)
 
     // Heurística de Placa Colombiana (Distancia en metros):
