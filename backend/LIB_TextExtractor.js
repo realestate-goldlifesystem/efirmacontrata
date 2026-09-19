@@ -511,7 +511,12 @@ function pulirDescripcion(lineas, opciones) {
         s = s.replace(/\s*adicionando que\s*\.?\s*$/i, '')
              .replace(/características adicionales como:\s*adicionando que\s+(\S)/i, function (m, c) { return 'características adicionales: ' + c.toLowerCase(); });
         // "adicionando que Tiene persianas" -> minúscula
-        s = s.replace(/adicionando que ([A-ZÁÉÍÓÚ])/g, function (m, c) { return 'adicionando que ' + c.toLowerCase(); });
+        // Tras una lista "•..." el texto libre va como frase aparte: "•Depósito. Además, tiene persianas"
+        s = s.replace(/adicionando que\s+que\s+/gi, 'adicionando que ') // el propietario escribió "que ..."
+             // Con lista (o texto propio) antes, el texto libre va como frase aparte:
+             // "•Depósito. Además, tiene persianas". Justo tras "como:" no aplica.
+             .replace(/([^\s:])\s+adicionando que\s+(\S)/, function (m, antes, c) { return antes + '. Además, ' + c.toLowerCase(); })
+             .replace(/adicionando que ([A-ZÁÉÍÓÚ])/g, function (m, c) { return 'adicionando que ' + c.toLowerCase(); });
 
         // Listas en línea: "•A •B •A" -> sin repetidos y con espacio uniforme
         if (s.indexOf('•') !== -1) {
@@ -540,7 +545,11 @@ function pulirDescripcion(lineas, opciones) {
              .replace(/\b(tu|el|El|La|la) (Apartamento|Apartaestudio|Casa)\b/g, function (m, a, t) { return a + ' ' + t.toLowerCase(); })
              .replace(/vista (Interior y Exterior|Interior|Exterior)/g, function (m, v) { return 'vista ' + v.toLowerCase(); })
              .replace(/una Zona (Residencial|Comercial|Industrial|Campestre)/g, function (m, z) { return 'una zona ' + z.toLowerCase(); })
-             .replace(/cocina ([A-ZÁÉÍÓÚ][\wáéíóú-]*) ([A-ZÁÉÍÓÚ][\wáéíóú-]*)/g, function (m, a, b) { return 'cocina ' + a.toLowerCase() + ' ' + b.toLowerCase(); });
+             // "cocina <estilo> <tipo>" -> "cocina integral americana", "cocina integral en U", "cocina semi-integral tipo isla"
+             .replace(/cocina (Abierta|cerrada|Cerrada|Americana|Isla|U) (Integral|Semi-Integral)/g, function (m, estilo, tipo) {
+                 var e = { 'Isla': 'tipo isla', 'U': 'en U' }[estilo] || estilo.toLowerCase();
+                 return 'cocina ' + tipo.toLowerCase() + ' ' + e;
+             });
 
         // Párrafo largo sin punto final
         // (no en listas "•...", viñetas ni medidas de dormitorios)
@@ -564,6 +573,40 @@ function pulirDescripcion(lineas, opciones) {
     });
     // Sin ninguna característica interna ni texto libre, la frase queda colgando.
     out = agrupadas.filter(function (s) { return !/^pero con características adicionales(?: como)?:\s*$/i.test(s); });
+
+    // Parqueadero + características en UNA frase. La plantilla las separa con un
+    // salto y un "pero" que solo tiene sentido cuando NO hay parqueadero.
+    for (var k = 0; k < out.length; k++) {
+        if (!/dispone de .*parqueadero/i.test(out[k])) continue;
+        var sig = out[k + 1] || '';
+        var m2 = sig.match(/^pero con (características adicionales(?: como)?:.*)$/i);
+        if (m2) {
+            var enlace = /no dispone de parqueadero/i.test(out[k]) ? ', pero cuenta con ' : ', y cuenta con ';
+            out[k] = out[k].replace(/[.\s]+$/, '') + enlace + m2[1];
+            out.splice(k + 1, 1);
+        }
+        if (!/[.!?]$/.test(out[k])) out[k] += '.';
+    }
+
+    // Valores vacíos o poco naturales dentro de las secciones
+    out = out.map(function (s) {
+        if (/^● \$\s*0?$/.test(s)) return '';                       // administración sin valor
+        if (/^● SI$/i.test(s)) return '● Se permiten mascotas';
+        if (/^● NO$/i.test(s)) return '● No se permiten mascotas';
+        return s;
+    });
+
+    // Secciones con encabezado (🏢 ..., 💰 ..., 🛏️ ...) que quedaron sin contenido:
+    // se quita el encabezado para que no quede un título colgando.
+    var esEncabezado = function (s) { return /^[^\wÁÉÍÓÚáéíóúñ•●○$]+.*:\s*$/.test(s) && !/^(pero|El|La)\b/.test(s); };
+    out = out.filter(function (s, i) {
+        if (!esEncabezado(s)) return true;
+        for (var j = i + 1; j < out.length; j++) {
+            if (!out[j].trim()) continue;
+            return !esEncabezado(out[j]) && !/^todo está a tu alcance/i.test(out[j]);
+        }
+        return false;
+    });
 
     // Aire antes del cierre aunque la línea anterior se haya quitado
     out = out.join('\n').replace(/\n(todo está a tu alcance)/i, '\n\n$1').split('\n');
