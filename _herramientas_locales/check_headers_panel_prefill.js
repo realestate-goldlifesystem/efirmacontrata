@@ -45,6 +45,21 @@ const REQUERIDAS = [
   ['Negocio',     'TIPO DE NEGOCIO'],
   // Usada por resumenInmueble() para listar el portafolio del propietario
   ['Listado',     'ID DE REGISTRO'],
+  // Campos que captura el formulario reordenado (ago-2026)
+  ['Interior',    '¿Que tipo vista tiene?'],
+  ['Interior',    '¿Que tipo de calentador tiene?'],
+  ['Interior',    '¿Que tipo de cocina es?'],
+  ['Interior',    '¿Que tipo de estilo de cocina es?'],
+  ['Interior',    '¿Que tipo de estufa dispone la cocina?'],
+  ['Entorno',     '¿Qué tipo de vigilancia dispone?'],
+  ['Entorno',     '¿En que tipo de via se encuentra el inmueble?'],
+  ['Entorno',     '¿Cual es el tipo de diseño que tiene el inmueble?'],
+  ['Entorno',     '¿Se permite mascota?'],
+  ['Entorno',     'Que tipo de mascotas'],
+  // Autorización de ingreso (paso nuevo, ago-2026)
+  ['Llaves',      '¿Qué tipo de autorización desea realizar?'],
+  ['Llaves',      '¿Qué tipo de autorización desea con el agente para administración?'],
+  ['Llaves',      '¿Qué tipo de autorización desea con el agente?'],
 ];
 
 // Distancia de edición, solo para sugerir el encabezado más parecido
