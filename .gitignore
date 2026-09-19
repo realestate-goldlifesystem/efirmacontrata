@@ -65,3 +65,7 @@ temp_clasp/
 **/.claude/
 # Scripts de depuracion de un solo uso
 _herramientas_locales/_debug_*.js
+# Capturas, vistas previas y snapshots de pruebas locales
+_herramientas_locales/*.png
+_herramientas_locales/preview_*.html
+_herramientas_locales/prueba_*.json
