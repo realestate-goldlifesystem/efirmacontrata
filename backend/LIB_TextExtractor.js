@@ -51,6 +51,10 @@ function procesarYGuardarDescripcion(sheet, row, carpetaReg) {
         }
     }
 
+    // Tipo de inmueble: la plantilla dice "APTO" y "apartamento" aunque sea una casa.
+    var colTipoInm = _lib_getColumnByName(sheet, 'Selecciona el tipo de inmueble');
+    var tipoInmueble = colTipoInm > 0 ? String(sheet.getRange(row, colTipoInm).getValue() || '').trim() : '';
+
     var colCodigo = _lib_getColumnByName(sheet, 'ID DE REGISTRO');
     var codigoRegistro = '';
     if (colCodigo > 0) {
@@ -63,7 +67,10 @@ function procesarYGuardarDescripcion(sheet, row, carpetaReg) {
     var precioVentaFormat = '';
     if (colPrecioVenta > 0 && colTipoNegocio > 0) {
         var tipoNeg = String(sheet.getRange(row, colTipoNegocio).getValue() || '');
-        if (tipoNeg.includes('Vendi-Renta') || tipoNeg.includes('Admi-Venta') || tipoNeg.includes('Venta')) {
+        // Solo MIXTOS: su título trae el precio de ARRIENDO y se le antepone el de
+        // venta en millones ("$425M/$3.100.000"). En Venta pura el título ya trae el
+        // precio de venta completo; anteponerlo lo repetía ("$450M/$ 450.000.000").
+        if (tipoNeg.includes('Vendi-Renta') || tipoNeg.includes('Admi-Venta')) {
             var precioCrudo = sheet.getRange(row, colPrecioVenta).getValue();
             var numStr = String(precioCrudo).replace(/[^\d]/g, '');
             if (numStr) {
@@ -84,7 +91,7 @@ function procesarYGuardarDescripcion(sheet, row, carpetaReg) {
             // Validar ID básico (longitud > 10 para evitar vacíos o errores)
             if (pdfId && String(pdfId).length > 10) {
                 Logger.log("🔎 Analizando PDF en columna '" + nombreCol + "' (ID: " + pdfId + ")...");
-                var texto = extraerDescripcionDelPDF(pdfId, numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat);
+                var texto = extraerDescripcionDelPDF(pdfId, numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat, tipoInmueble);
                 if (texto && texto.length > 20) { // Validar longitud mínima
                     Logger.log("✅ Descripción hallada en columna: " + nombreCol);
                     descripcionEncontrada = texto;
@@ -205,10 +212,32 @@ function _lib_getColumnByName(sheet, name) {
 /**
  * Extrae la descripción específica del inmueble basada en los marcadores conocidos.
  */
-function extraerDescripcionDelPDF(pdfFileId, numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat) {
+function extraerDescripcionDelPDF(pdfFileId, numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat, tipoInmueble) {
     var MARCADOR_INICIO = "DESCRIPCIÓN DEL INMUEBLE";
     var MARCADOR_FIN = "y vive en el apartamento de tus sueños";
 
+    // Desde que el motor nativo deja un GOOGLE DOC (no un PDF), se lee el Doc
+    // DIRECTAMENTE, párrafo por párrafo. Pasarlo a PDF y reconvertirlo metía el
+    // número de página ("3 de 4") en medio de los dormitorios, partía emojis y
+    // aplastaba los saltos de línea que luego había que adivinar (18-09-2026).
+    try {
+        if (DriveApp.getFileById(pdfFileId).getMimeType() === MimeType.GOOGLE_DOCS) {
+            var lineas = extraerLineasDeDoc(pdfFileId, MARCADOR_INICIO, MARCADOR_FIN);
+            if (lineas && lineas.length) {
+                return pulirDescripcion(lineas, {
+                    numGarajes: numGarajes,
+                    tieneDeposito: tieneDeposito,
+                    codigoRegistro: codigoRegistro,
+                    precioVentaFormat: precioVentaFormat,
+                    tipoInmueble: tipoInmueble
+                });
+            }
+        }
+    } catch (eDoc) {
+        Logger.log("⚠️ Lectura directa del Doc falló, se usa la ruta PDF: " + eDoc.message);
+    }
+
+    // Ruta antigua: actas viejas que sí son PDF.
     var textoCrudo = extraerTextoEntre(pdfFileId, MARCADOR_INICIO, MARCADOR_FIN);
 
     if (textoCrudo) {
@@ -379,4 +408,194 @@ function limpiarTexto(texto, numGarajes, tieneDeposito, codigoRegistro, precioVe
     limpio = limpio.replace(/\n\s+\n/g, '\n\n');
 
     return limpio;
+}
+
+
+// ==========================================
+// LECTURA DIRECTA DEL GOOGLE DOC (ruta actual)
+// ==========================================
+
+/**
+ * Devuelve las líneas del Doc entre los dos marcadores, respetando su
+ * estructura: cada párrafo es una línea y cada elemento de lista lleva su
+ * viñeta según el nivel (● primer nivel, ○ segundo). Sin PDF de por medio no
+ * hay números de página ni emojis partidos.
+ */
+function extraerLineasDeDoc(docId, inicioTexto, finTexto) {
+    var body = DocumentApp.openById(docId).getBody();
+    var lineas = [];
+    var dentro = false;
+    for (var i = 0; i < body.getNumChildren(); i++) {
+        var el = body.getChild(i);
+        var tipo = el.getType();
+        if (tipo !== DocumentApp.ElementType.PARAGRAPH && tipo !== DocumentApp.ElementType.LIST_ITEM) continue;
+        var texto = el.getText();
+        if (!dentro) {
+            var pos = texto.indexOf(inicioTexto);
+            if (pos === -1) continue;
+            dentro = true;
+            texto = texto.substring(pos + inicioTexto.length);
+            if (!texto.trim()) continue;
+        }
+        if (tipo === DocumentApp.ElementType.LIST_ITEM) {
+            texto = (el.getNestingLevel() > 0 ? '○ ' : '● ') + texto.trim();
+        }
+        var fin = texto.indexOf(finTexto);
+        if (fin !== -1) {
+            lineas.push(texto.substring(0, fin + finTexto.length));
+            return lineas;
+        }
+        lineas.push(texto);
+    }
+    return dentro ? lineas : null;
+}
+
+/**
+ * Deja la descripción lista para publicar. Función PURA (sin servicios de
+ * Google): se prueba en local con _herramientas_locales/test_descripcion_inmueble.js
+ *
+ * Corrige lo que trae la plantilla genérica: plurales "(es)"/"(s)", "El/la",
+ * "via", caracteres invisibles de Forms (ㅤ), viñetas y "$" repetidos, zonas
+ * duplicadas y mayúsculas a mitad de frase.
+ */
+function pulirDescripcion(lineas, opciones) {
+    opciones = opciones || {};
+    var INVISIBLES = /[ㅤ​-‏⁠﻿‪-‮]/g;
+
+    var plural = function (n, singular, pluralPalabra) {
+        return n + ' ' + (parseInt(n, 10) === 1 ? singular : pluralPalabra);
+    };
+    var FEMENINOS = ['Casa', 'Oficina', 'Bodega', 'Finca', 'Habitación', 'Casa Lote'];
+
+    var out = lineas.map(function (l) {
+        var s = String(l)
+            .replace(/^\t+/, '')
+            .replace(INVISIBLES, ' ')
+            .replace(/[  ]{2,}/g, ' ')
+            .replace(/\s+$/, '');
+
+        // Plurales de la plantilla
+        s = s.replace(/(\d+) habitación\(es\)/gi, function (m, n) { return plural(n, 'habitación', 'habitaciones'); })
+             .replace(/(\d+) baño\(s\)/gi, function (m, n) { return plural(n, 'baño', 'baños'); })
+             .replace(/(\d+) parqueadero\(s\)/gi, function (m, n) { return plural(n, 'parqueadero', 'parqueaderos'); })
+             .replace(/(habitaci[oó]n(?:es)?),\s+y\s+/gi, '$1 y ');
+
+        // Sin cantidad: "Comunal parqueadero(s) ..." / "Ningun parqueadero(s) ..."
+        s = s.replace(/dispone de Comunal parqueadero\(s\)(?: (?:Independiente|Servidumbre))?(?: (?:Cubierto|Descubierto))?/gi, 'dispone de parqueadero comunal')
+             .replace(/dispone de Ning[uú]n[oa]? parqueadero\(s\)(?: (?:Independiente|Servidumbre))?(?: (?:Cubierto|Descubierto))?/gi, 'no dispone de parqueadero');
+
+        // Parqueaderos: "2 parqueaderos Servidumbre Cubierto" -> "2 parqueaderos en servidumbre y cubiertos"
+        s = s.replace(/(\d+) (parqueaderos?) (Independiente|Servidumbre) (Cubierto|Descubierto)/gi,
+            function (m, n, palabra, tipo, techo) {
+                var varios = parseInt(n, 10) !== 1;
+                var t = /servidumbre/i.test(tipo) ? 'en servidumbre' : (varios ? 'independientes' : 'independiente');
+                var c = techo.toLowerCase() + (varios ? 's' : '');
+                return n + ' ' + palabra + ' ' + t + ' y ' + c;
+            });
+
+        // Artículo según el tipo de inmueble
+        s = s.replace(/El\/la\s+([A-ZÁÉÍÓÚ][\wáéíóúñ]*)/g, function (m, tipo) {
+            return (FEMENINOS.indexOf(tipo) !== -1 ? 'La ' : 'El ') + tipo;
+        });
+
+        // Vía
+        s = s.replace(/sobre via (\w+)/gi, function (m, t) { return 'sobre una vía ' + t.toLowerCase() + '.'; })
+             .replace(/\bvia\b/g, 'vía');
+
+        // Mayúscula a mitad de frase tras coma
+        s = s.replace(/, El (Apartamento|Apartaestudio|Casa|Local|Inmueble)/g, ', el $1');
+
+        // Depósito sin viñeta (la columna trae "Deposito" sin "•")
+        s = s.replace(/\s*\bDeposito\b/g, ' •Depósito');
+        // Texto libre vacío o sin características internas
+        s = s.replace(/\s*adicionando que\s*\.?\s*$/i, '')
+             .replace(/características adicionales como:\s*adicionando que\s+(\S)/i, function (m, c) { return 'características adicionales: ' + c.toLowerCase(); });
+        // "adicionando que Tiene persianas" -> minúscula
+        s = s.replace(/adicionando que ([A-ZÁÉÍÓÚ])/g, function (m, c) { return 'adicionando que ' + c.toLowerCase(); });
+
+        // Listas en línea: "•A •B •A" -> sin repetidos y con espacio uniforme
+        if (s.indexOf('•') !== -1) {
+            var partes = s.split('•');
+            var cabeza = partes.shift();
+            var vistos = {};
+            var items = [];
+            partes.forEach(function (p) {
+                var nombre = p.trim();
+                if (!nombre) return;
+                var clave = nombre.toLowerCase();
+                if (vistos[clave]) return;
+                vistos[clave] = true;
+                items.push('•' + nombre);
+            });
+            s = (cabeza.trim() ? cabeza.trim() + ' ' : '') + items.join(' ');
+        }
+
+        // Viñetas y signos repetidos
+        s = s.replace(/^([●○])\s*(?:[●○*]\s*)+/, '$1 ')
+             .replace(/\$\s*\$/g, '$')
+             .replace(/\s+([,.])/g, '$1');
+
+        // Valores del formulario con marcas internas y mayúsculas a mitad de frase
+        s = s.replace(/\(CO\)/g, '')
+             .replace(/\b(tu|el|El|La|la) (Apartamento|Apartaestudio|Casa)\b/g, function (m, a, t) { return a + ' ' + t.toLowerCase(); })
+             .replace(/vista (Interior y Exterior|Interior|Exterior)/g, function (m, v) { return 'vista ' + v.toLowerCase(); })
+             .replace(/una Zona (Residencial|Comercial|Industrial|Campestre)/g, function (m, z) { return 'una zona ' + z.toLowerCase(); })
+             .replace(/cocina ([A-ZÁÉÍÓÚ][\wáéíóú-]*) ([A-ZÁÉÍÓÚ][\wáéíóú-]*)/g, function (m, a, b) { return 'cocina ' + a.toLowerCase() + ' ' + b.toLowerCase(); });
+
+        // Párrafo largo sin punto final
+        // (no en listas "•...", viñetas ni medidas de dormitorios)
+        if (s.length > 80 && !/^(•|[●○]|Dormitorio)/.test(s) && /[A-Za-zÁÉÍÓÚáéíóúñ0-9)]$/.test(s)) s += '.';
+        s = s.replace(/\b(que|de|la|el|y) \1\b/gi, '$1'); // "que que" -> "que"
+
+        return s.replace(/[ ]{2,}/g, ' ');
+    });
+
+    // Viñetas: la plantilla mezcla niveles de lista sin criterio. Regla única:
+    // en cada grupo, el primer punto es "●" y los siguientes "○"
+    // (● Espacio de la nevera / ○ Punto de AGUA). Viñetas vacías se quitan.
+    var agrupadas = [];
+    var enLista = false;
+    out.forEach(function (s) {
+        var m = s.match(/^[●○]\s*(.*)$/);
+        if (!m) { enLista = false; agrupadas.push(s); return; }
+        if (!m[1].trim()) return;
+        agrupadas.push((enLista ? '○ ' : '● ') + m[1].trim());
+        enLista = true;
+    });
+    // Sin ninguna característica interna ni texto libre, la frase queda colgando.
+    out = agrupadas.filter(function (s) { return !/^pero con características adicionales(?: como)?:\s*$/i.test(s); });
+
+    // Aire antes del cierre aunque la línea anterior se haya quitado
+    out = out.join('\n').replace(/\n(todo está a tu alcance)/i, '\n\n$1').split('\n');
+
+    var texto = out.join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    // Título: garajes, depósito, precio de venta y salto antes del tipo.
+    var partesTexto = texto.split('\n');
+    var titulo = partesTexto[0] + (partesTexto[1] && /^(APTO|CASA|LOCAL|OFICINA|LOTE|BODEGA|EDIFICIO|FINCA|APARTAESTUDIO)\b/i.test(partesTexto[1]) ? '\n' + partesTexto[1] : '');
+    var consumidas = titulo.split('\n').length;
+    var n = String(opciones.numGarajes || '');
+    if (/^[1-9]$/.test(n) && !/Gar\//i.test(titulo)) titulo = titulo.replace(/(\d+Bañ\/)/i, '$1' + n + 'Gar/');
+    if (opciones.tieneDeposito && !/Dep\//i.test(titulo)) titulo = titulo.replace(/(\d+Bañ\/(?:\d+Gar\/)?)/i, '$11Dep/');
+    if (opciones.precioVentaFormat && titulo.indexOf(opciones.precioVentaFormat) === -1) {
+        titulo = titulo.replace(/(\$\s*\d[\d.,]*)/, opciones.precioVentaFormat + '/$1');
+    }
+    texto = [titulo].concat(partesTexto.slice(consumidas)).join('\n');
+
+    // Tipo real del inmueble (la plantilla asume apartamento)
+    var TIPOS = {
+        'Casa': { abrev: 'CASA', este: 'esta casa', el: 'la casa' },
+        'Apartaestudio': { abrev: 'APTOESTUDIO', este: 'este apartaestudio', el: 'el apartaestudio' }
+    };
+    var tipo = TIPOS[String(opciones.tipoInmueble || '').trim()];
+    if (tipo) {
+        texto = texto.replace(/^(APTO) - /m, tipo.abrev + ' - ')
+                     .replace(/este apartamento/g, tipo.este)
+                     .replace(/el apartamento de tus sueños/g, tipo.el + ' de tus sueños');
+    }
+
+    if (opciones.codigoRegistro) texto = texto.replace(/\s+$/, '') + '\n\nCODIGO:' + opciones.codigoRegistro;
+    return texto;
 }
