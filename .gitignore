@@ -58,3 +58,10 @@ desktop.ini
 temp_clasp/
 *.tmp
 *.docx
+
+# --- Solo locales (no aportan al repo) ---
+# Configuracion de vista previa de Claude Code en cada PC
+.claude/
+**/.claude/
+# Scripts de depuracion de un solo uso
+_herramientas_locales/_debug_*.js
