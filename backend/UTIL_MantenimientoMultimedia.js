@@ -135,6 +135,21 @@ function _mantRecorrer(clavePropiedad, etiqueta, accion, nombreFuncion) {
       if (resultado) { hechos++; detalle.push('✅ ' + id + ': ' + resultado); }
       else { omitidos++; detalle.push('⏭️ ' + id + ': nada que hacer'); }
     } catch (e) {
+      if (e.message === '__TIEMPO__') {
+        // Se acabó el tiempo a mitad de este inmueble: se guarda ESTA fila para
+        // retomarla (lo ya creado no se repite) y se programa la continuación.
+        props.setProperty(clavePropiedad, String(fila));
+        var sigue = nombreFuncion ? _mantProgramarSiguiente(nombreFuncion) : false;
+        Logger.log([
+          '⏸️ ' + etiqueta + ': pausa DENTRO del inmueble ' + id + ' (fila ' + fila + ' de ' + ultima + ').',
+          'Hechos en esta pasada: ' + hechos + ' | omitidos: ' + omitidos,
+          detalle.join('\n'),
+          '',
+          sigue ? '⏱️ Continúa SOLO en 1 minuto y termina ese inmueble. No hay que hacer nada.'
+                : '➡️ VUELVE A EJECUTAR esta misma función para continuar.'
+        ].join('\n'));
+        return;
+      }
       errores++;
       detalle.push('❌ ' + id + ': ' + e.message);
     }
@@ -206,6 +221,13 @@ function reiniciarAvanceMantenimiento() {
 //   2. completarCarpetasFaltantes_CONFIRMADO() → las crea.
 // ==========================================
 
+// Momento en que hay que parar, aunque se esté a mitad de un inmueble. Crear
+// 105 carpetas tarda ~2,5 min: si se empieza uno cerca del límite, la ejecución
+// se pasa de los 6 minutos y Google la mata (visto el 20-09-2026). Al cortar se
+// deja el inmueble a medias A PROPÓSITO: la siguiente pasada retoma esa misma
+// fila y crea solo lo que le falte.
+var _mantLimite = 0;
+
 /** PLANTILLA #2 de la maestra: el molde con el que se compara. */
 function _mantPlantilla2() {
   var maestra = DriveApp.getFolderById(CONFIG_INMUEBLES.TEMPLATE_FOLDER_ID);
@@ -266,6 +288,8 @@ function _mantCompletarNivel(plantilla, destino, anio, ruta, crear, creadas, arc
       nombreDestino = anioExistente || anio;
     }
 
+    if (crear && _mantLimite && new Date().getTime() > _mantLimite) throw new Error('__TIEMPO__');
+
     var hija = getFolderByName(destino, nombreDestino);
     if (!hija) {
       creadas.push(ruta + '/' + nombreDestino);
@@ -294,6 +318,7 @@ function revisarCarpetasFaltantes() {
 
 function completarCarpetasFaltantes_CONFIRMADO() {
   var plantilla = _mantPlantilla2();
+  _mantLimite = new Date().getTime() + MANTENIMIENTO.MAX_MS;
   _mantRecorrer(MANTENIMIENTO.PROP_CURSOR_CARPETAS, 'Carpetas faltantes', function (sheet, fila, carpeta) {
     var creadas = _mantCompletarNivel(plantilla, carpeta, _mantAnioDelRegistro(sheet, fila), '', true, [], [], false);
     // Solo el conteo: listar las 105 rutas por inmueble desbordaba el registro
