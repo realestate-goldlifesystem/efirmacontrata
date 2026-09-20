@@ -235,6 +235,51 @@ async function borrarBorrador() {
     await conBorrador('readwrite', tienda => tienda.delete(currentCdr));
 }
 
+// Días que se conserva una carga a medias antes de considerarla abandonada.
+const DIAS_BORRADOR = 7;
+const MS_BORRADOR = DIAS_BORRADOR * 24 * 60 * 60 * 1000;
+
+/**
+ * Limpieza de arranque: borra lo que quedó de cargas abandonadas de CUALQUIER
+ * inmueble, no solo del actual.
+ *
+ * Al terminar bien, cada carga limpia lo suyo. Pero si el propietario deja una
+ * a medias y no vuelve a ese inmueble, sus fotos se quedarían ocupando espacio
+ * del teléfono para siempre: nadie volvería a abrir esa página para borrarlas.
+ */
+async function limpiarCargasAbandonadas() {
+    try {
+        // 1. Fotos guardadas (IndexedDB)
+        const db = await abrirBD();
+        await new Promise(resolve => {
+            const tx = db.transaction(ALMACEN_BORRADOR, 'readwrite');
+            const tienda = tx.objectStore(ALMACEN_BORRADOR);
+            const cursor = tienda.openCursor();
+            cursor.onsuccess = () => {
+                const c = cursor.result;
+                if (!c) return;
+                const dato = c.value;
+                if (!dato || Date.now() - (dato.guardadoEn || 0) > MS_BORRADOR) c.delete();
+                c.continue();
+            };
+            tx.oncomplete = resolve;
+            tx.onerror = resolve;
+        });
+
+        // 2. Avance de subida (localStorage)
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+            const clave = localStorage.key(i);
+            if (!clave || clave.indexOf('multimedia_progreso_') !== 0) continue;
+            let dato = null;
+            try { dato = JSON.parse(localStorage.getItem(clave)); } catch (e) {}
+            if (!dato || Date.now() - (dato.actualizadoEn || 0) > MS_BORRADOR) localStorage.removeItem(clave);
+        }
+    } catch (e) {
+        console.warn('No se pudo limpiar cargas viejas: ' + e.message);
+    }
+}
+limpiarCargasAbandonadas();
+
 /**
  * Devuelve la selección guardada de este inmueble, o null. Se descarta sola a
  * los 7 días para no revivir fotos de una carga vieja.
@@ -242,7 +287,7 @@ async function borrarBorrador() {
 async function leerBorrador() {
     const datos = await conBorrador('readonly', tienda => tienda.get(currentCdr));
     if (!datos || !datos.fotos || !datos.fotos.length) return null;
-    if (Date.now() - (datos.guardadoEn || 0) > 7 * 24 * 60 * 60 * 1000) {
+    if (Date.now() - (datos.guardadoEn || 0) > MS_BORRADOR) {
         await borrarBorrador();
         return null;
     }
@@ -873,7 +918,7 @@ function leerProgreso() {
 }
 
 function guardarProgreso(cambios) {
-    try { localStorage.setItem(CLAVE_PROGRESO, JSON.stringify({ ...leerProgreso(), ...cambios })); }
+    try { localStorage.setItem(CLAVE_PROGRESO, JSON.stringify({ ...leerProgreso(), ...cambios, actualizadoEn: Date.now() })); }
     catch (e) { /* modo privado o sin espacio: se sigue sin memoria */ }
 }
 
