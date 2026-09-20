@@ -732,6 +732,23 @@ function limpiarProgreso() {
 }
 
 /**
+ * Borra un archivo que ESTA MISMA carga subió en un intento anterior y que ya
+ * no hace parte de la selección (el propietario cambió o quitó esa foto). Con
+ * el permiso drive.file solo se pueden tocar archivos creados por esta página,
+ * así que no hay forma de borrar nada más del Drive del agente.
+ */
+async function borrarDeDrive(fileId) {
+    try {
+        await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${userToken}` }
+        });
+    } catch (e) {
+        console.warn('No se pudo borrar la foto sobrante ' + fileId + ': ' + e.message);
+    }
+}
+
+/**
  * Le pregunta a YouTube cuántos bytes recibió ya de esta sesión.
  * Devuelve {completo:false, offset:N} o {completo:true, videoId:'...'},
  * o null si la sesión ya no sirve (caducó o se borró).
@@ -773,6 +790,24 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
     // ¿Este mismo video ya se subió completo en un intento anterior?
     const progreso = leerProgreso();
     const clave = claveArchivo(file);
+
+    // Cambió de video después de haber subido otro completo: ese primero quedó
+    // en el canal, privado y sin inmueble que lo use. Se borra aquí, que es
+    // cuando hay permiso de YouTube a mano. Nunca se toca un video ya guardado
+    // en el registro: en ese momento la memoria ya se borró (limpiarProgreso).
+    if (progreso.youtubeId && progreso.videoClave && progreso.videoClave !== clave) {
+        percentText.textContent = 'Quitando el video anterior...';
+        try {
+            await fetch(`https://www.googleapis.com/youtube/v3/videos?id=${progreso.youtubeId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${youtubeToken}` }
+            });
+        } catch (e) {
+            console.warn('No se pudo borrar el video anterior: ' + e.message);
+        }
+        guardarProgreso({ youtubeId: null, uploadUrl: null, videoClave: null });
+        progreso.youtubeId = null; progreso.uploadUrl = null; progreso.videoClave = null;
+    }
     if (progreso.videoClave === clave && progreso.youtubeId) {
         percentText.textContent = '100% (ya estaba subido)';
         fillBar.style.width = '100%';
@@ -1114,25 +1149,61 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
     // Fotos que ya quedaron en Drive en un intento anterior de ESTE inmueble.
     // Sin esto, un corte a la mitad obligaba a resubirlas todas y además dejaba
     // duplicados en la carpeta.
+    //
+    // Se guarda la POSICIÓN además del id: el nombre del archivo depende del
+    // puesto (2-Portada, 3-Foto...). Si el propietario reordena o agrega fotos
+    // al volver, reutilizar el id a secas dejaría dos archivos con el mismo
+    // nombre y el TOP 10 apuntando al equivocado.
     const fotosPrevias = leerProgreso().fotos || {};
+    const clavesUsadas = new Set();
 
     // 1. Subir todas a la carpeta principal
     for (const item of photosArray) {
         let file = item.file || item;
         const claveFoto = claveArchivo(file);
+        clavesUsadas.add(claveFoto);
+        const baseName = idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`;
+        const photoName = `${baseName}.jpg`;
 
-        const yaSubida = fotosPrevias[claveFoto];
-        if (yaSubida && yaSubida.id) {
-            labelEl.textContent = `Foto ${idx} de ${total}: ya estaba subida`;
-            fillEl.style.width = Math.round((idx / total) * 100) + '%';
-            uploadedIds.push(yaSubida.id);
-            const topPosPrevio = top10Indices.indexOf(idx - 1);
-            if (topPosPrevio !== -1) {
-                const baseNamePrevio = idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`;
-                top10UploadedMeta.push({ id: yaSubida.id, name: `TOP_${topPosPrevio + 1}_${baseNamePrevio}.jpg` });
+        const previa = fotosPrevias[claveFoto];
+        // La portada se sube recortada en 1:1. Si una foto entra o sale de ese
+        // primer puesto, el archivo de Drive ya no sirve: hay que volver a subirla.
+        const cambiaPortada = previa && (previa.pos === 1) !== (idx === 1);
+
+        if (previa && previa.id && !cambiaPortada) {
+            let idPrevio = previa.id;
+            if (previa.pos !== idx) {
+                // Solo cambió de puesto: se renombra en Drive (instantáneo) en
+                // vez de volver a subir el archivo.
+                labelEl.textContent = `Foto ${idx} de ${total}: reordenando la ya subida...`;
+                const resRename = await fetch(`https://www.googleapis.com/drive/v3/files/${idPrevio}`, {
+                    method: 'PATCH',
+                    headers: { 'Authorization': `Bearer ${userToken}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: photoName })
+                });
+                if (!resRename.ok) idPrevio = null;   // no se pudo: se sube de nuevo más abajo
+            } else {
+                labelEl.textContent = `Foto ${idx} de ${total}: ya estaba subida`;
             }
-            idx++;
-            continue;
+
+            if (idPrevio) {
+                fillEl.style.width = Math.round((idx / total) * 100) + '%';
+                uploadedIds.push(idPrevio);
+                fotosPrevias[claveFoto] = { id: idPrevio, pos: idx };
+                guardarProgreso({ fotos: fotosPrevias });
+                const topPosPrevio = top10Indices.indexOf(idx - 1);
+                if (topPosPrevio !== -1) {
+                    top10UploadedMeta.push({ id: idPrevio, name: `TOP_${topPosPrevio + 1}_${baseName}.jpg` });
+                }
+                idx++;
+                continue;
+            }
+        }
+
+        // Cambió de/a portada, o falló el renombrado: la copia vieja sobra.
+        if (previa && previa.id) {
+            await borrarDeDrive(previa.id);
+            delete fotosPrevias[claveFoto];
         }
 
         // Solo la portada va en 1:1. Las demás conservan su encuadre original.
@@ -1148,8 +1219,6 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
         // ("2-Portada_YB383511" a secas) y Drive las mostraba sin tipo; además
         // el normalizador del backend detecta imágenes POR extensión, así que
         // un archivo sin ninguna nunca entraba y se quedaba así para siempre.
-        const baseName = idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`;
-        const photoName = `${baseName}.jpg`;
         const metadata = {
             name: photoName,
             parents: [propertyData.fotosFolderId]
@@ -1168,7 +1237,7 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
         if (res.ok) {
             const data = await res.json();
             uploadedIds.push(data.id);
-            fotosPrevias[claveFoto] = { id: data.id };
+            fotosPrevias[claveFoto] = { id: data.id, pos: idx };
             guardarProgreso({ fotos: fotosPrevias });
 
             // Si esta foto (índice 0-based) es del TOP 10, la anotamos
@@ -1188,6 +1257,18 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
         idx++;
     }
     
+    // 1b. Fotos de un intento anterior que ya NO están en la selección: se
+    //     borran de Drive para no dejar sobras en la carpeta del inmueble.
+    const sobrantes = Object.keys(fotosPrevias).filter(k => !clavesUsadas.has(k));
+    if (sobrantes.length) {
+        labelEl.textContent = 'Quitando fotos descartadas...';
+        for (const clave of sobrantes) {
+            if (fotosPrevias[clave] && fotosPrevias[clave].id) await borrarDeDrive(fotosPrevias[clave].id);
+            delete fotosPrevias[clave];
+        }
+        guardarProgreso({ fotos: fotosPrevias });
+    }
+
     // 2. Buscar subcarpeta "TOP 10" existente y copiar fotos
     if (top10UploadedMeta.length > 0) {
         labelEl.textContent = 'Organizando subcarpeta TOP 10...';
