@@ -24,6 +24,7 @@ var MANTENIMIENTO = {
   PROP_CURSOR_DESC: 'MANT_CURSOR_DESCRIPCIONES',
   PROP_CURSOR_JPG: 'MANT_CURSOR_JPG',
   PROP_CURSOR_CARPETAS: 'MANT_CURSOR_CARPETAS',
+  PROP_CURSOR_REVISION: 'MANT_CURSOR_REVISION',
   RUTA_FOTOS: ['ARCHIVOS DEL INMUEBLE', 'CONTENIDO DE PUBLICACIÓN', 'FOTOGRAFÍAS']
 };
 
@@ -177,10 +178,11 @@ function reiniciarAvanceMantenimiento() {
   props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_DESC);
   props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_JPG);
   props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_CARPETAS);
+  props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_REVISION);
   // Si quedó una continuación programada, también se cancela.
   ScriptApp.getProjectTriggers().forEach(function (t) {
     var f = t.getHandlerFunction();
-    if (f === 'regenerarDescripciones_CONFIRMADO' || f === 'normalizarFotosJpg_CONFIRMADO' || f === 'completarCarpetasFaltantes_CONFIRMADO') ScriptApp.deleteTrigger(t);
+    if (f === 'regenerarDescripciones_CONFIRMADO' || f === 'normalizarFotosJpg_CONFIRMADO' || f === 'completarCarpetasFaltantes_CONFIRMADO' || f === 'revisarCarpetasFaltantes') ScriptApp.deleteTrigger(t);
   });
   Logger.log('🔄 Avance borrado y continuaciones canceladas: la próxima ejecución empieza en la fila 2.');
 }
@@ -276,41 +278,18 @@ function _mantCompletarNivel(plantilla, destino, anio, ruta, crear, creadas, arc
 }
 
 function revisarCarpetasFaltantes() {
+  // Va por LOTES como las demás: recorrer 69 inmuebles × ~134 carpetas se pasa
+  // de los 6 minutos (se comprobó el 20-09-2026). Solo lee, no crea nada, y
+  // continúa sola hasta terminar.
   var plantilla = _mantPlantilla2();
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MANTENIMIENTO.HOJA);
-  var ultima = sheet.getLastRow();
-  var colId = getColumnByName(sheet, 'ID DE REGISTRO');
-  var conFaltantes = 0, completos = 0, totalArchivos = 0, detalle = [];
-
-  for (var fila = 2; fila <= ultima; fila++) {
-    var id = String(sheet.getRange(fila, colId).getValue() || '').trim();
-    if (!id) continue;
-    var carpeta = _mantCarpetaReg(sheet, fila);
-    if (!carpeta) continue;
-
+  _mantRecorrer(MANTENIMIENTO.PROP_CURSOR_REVISION, 'Revisión de carpetas (simulación)', function (sheet, fila, carpeta) {
     var archivosFaltantes = [];
-    var faltan = _mantCompletarNivel(plantilla, carpeta, _mantAnioDelRegistro(sheet, fila), '', false, [], archivosFaltantes, false);
-    totalArchivos += archivosFaltantes.length;
-    if (faltan.length || archivosFaltantes.length) {
-      conFaltantes++;
-      detalle.push('📁 ' + id + ' (año ' + _mantAnioDelRegistro(sheet, fila) + '): ' +
-        faltan.length + ' carpeta(s), ' + archivosFaltantes.length + ' archivo(s)' +
-        (faltan.length ? '\n     ' + faltan.join('\n     ') : ''));
-    } else {
-      completos++;
-    }
-  }
-
-  Logger.log([
-    '🔎 CARPETAS FALTANTES (simulación, no se creó nada)',
-    'Inmuebles completos: ' + completos,
-    'Inmuebles a los que les falta algo: ' + conFaltantes,
-    'Archivos del molde que faltan (NO se copian por defecto): ' + totalArchivos,
-    '',
-    detalle.join('\n'),
-    '',
-    'ℹ️ En simulación solo se ve el PRIMER nivel que falta; al crearlo se completa también lo de adentro.'
-  ].join('\n'));
+    var anio = _mantAnioDelRegistro(sheet, fila);
+    var faltan = _mantCompletarNivel(plantilla, carpeta, anio, '', false, [], archivosFaltantes, false);
+    if (!faltan.length && !archivosFaltantes.length) return null;
+    return 'año ' + anio + ' → faltan ' + faltan.length + ' carpeta(s) y ' + archivosFaltantes.length + ' archivo(s)' +
+      (faltan.length ? '\n     ' + faltan.join('\n     ') : '');
+  }, 'revisarCarpetasFaltantes');
 }
 
 function completarCarpetasFaltantes_CONFIRMADO() {
