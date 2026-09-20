@@ -296,7 +296,9 @@ function completarCarpetasFaltantes_CONFIRMADO() {
   var plantilla = _mantPlantilla2();
   _mantRecorrer(MANTENIMIENTO.PROP_CURSOR_CARPETAS, 'Carpetas faltantes', function (sheet, fila, carpeta) {
     var creadas = _mantCompletarNivel(plantilla, carpeta, _mantAnioDelRegistro(sheet, fila), '', true, [], [], false);
-    return creadas.length ? creadas.length + ' carpeta(s): ' + creadas.join(', ') : null;
+    // Solo el conteo: listar las 105 rutas por inmueble desbordaba el registro
+    // de Apps Script ("Logging output too large") y tapaba el avance real.
+    return creadas.length ? creadas.length + ' carpeta(s) creada(s)' : null;
   }, 'completarCarpetasFaltantes_CONFIRMADO');
 }
 
