@@ -113,7 +113,11 @@ function procesarYGuardarDescripcion(sheet, row, carpetaReg) {
                 var itActas = carpetaActas.getFiles();
                 while (itActas.hasNext()) {
                     var acta = itActas.next();
-                    if (acta.getName().indexOf('Acta de acuerdo') !== 0) continue;   // la de ingreso no trae descripción
+                    // Se prueban TODAS menos la de ingreso, que no trae descripción.
+                    // El nombre cambia según el negocio: "Acta de acuerdo para
+                    // promoción..." en corretaje y "Acta de administración de
+                    // inmueble..." en administración (registros del MVP, 2024-2025).
+                    if (acta.getName().indexOf('Acta de autorización de ingreso') === 0) continue;
                     Logger.log('🔁 ID de la hoja inservible; se usa el acta de la carpeta: ' + acta.getName());
                     var textoActa = extraerDescripcionDelPDF(acta.getId(), numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat, tipoInmueble);
                     if (textoActa && textoActa.length > 20) { descripcionEncontrada = textoActa; break; }
