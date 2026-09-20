@@ -299,3 +299,85 @@ function completarCarpetasFaltantes_CONFIRMADO() {
     return creadas.length ? creadas.length + ' carpeta(s): ' + creadas.join(', ') : null;
   }, 'completarCarpetasFaltantes_CONFIRMADO');
 }
+
+// ==========================================
+// CARPETA DEL PROPIETARIO (RPR)
+// ==========================================
+// Lo anterior solo mira la carpeta REG del inmueble. La RPR (la del
+// propietario, con DOCUMENTOS DEL PROPIETARIO e INMUEBLES) nace de PLANTILLA #1
+// y hasta ahora nadie la revisaba.
+//
+// ⚠️ "PLANTILLA #2" NO se copia a la RPR. Ese molde vive dentro de ARRIENDO en
+// la plantilla maestra y es de un solo uso: si quedara dentro del RPR de un
+// propietario, el segundo inmueble de esa persona fallaría (ver el comentario
+// de crearREGDesdePlantillaMaestra en 2- REGISTRO DE INMUEBLE).
+//
+//   1. revisarCarpetasRPR()            → SOLO lista lo que falta.
+//   2. completarCarpetasRPR_CONFIRMADO() → las crea.
+
+/** Recorre las RPR sin repetir: varios inmuebles comparten la del mismo dueño. */
+function _mantRecorrerRPR(etiqueta, crear) {
+  var plantilla1 = DriveApp.getFolderById(CONFIG_INMUEBLES.TEMPLATE_FOLDER_ID);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MANTENIMIENTO.HOJA);
+  var ultima = sheet.getLastRow();
+  var colId = getColumnByName(sheet, 'ID DE REGISTRO');
+  var colRpr = getColumnByName(sheet, 'LINK DE CARPETA RPR');
+  var vistas = {}, detalle = [], conFaltantes = 0, completas = 0;
+
+  for (var fila = 2; fila <= ultima; fila++) {
+    var id = String(sheet.getRange(fila, colId).getValue() || '').trim();
+    if (!id || !colRpr) continue;
+    var m = String(sheet.getRange(fila, colRpr).getFormula() || '').match(/folders\/([a-zA-Z0-9_-]+)/);
+    if (!m || vistas[m[1]]) continue;      // misma RPR de otro inmueble: ya revisada
+    vistas[m[1]] = true;
+
+    try {
+      var rpr = DriveApp.getFolderById(m[1]);
+      if (rpr.isTrashed()) continue;
+      var faltan = _mantCompletarNivelRPR(plantilla1, rpr, '', crear, []);
+      if (faltan.length) {
+        conFaltantes++;
+        detalle.push('📁 ' + rpr.getName() + ': ' + faltan.length + ' carpeta(s)\n     ' + faltan.join('\n     '));
+      } else {
+        completas++;
+      }
+    } catch (e) {
+      detalle.push('❌ ' + id + ': ' + e.message);
+    }
+  }
+
+  Logger.log([
+    (crear ? '🧹 ' : '🔎 ') + etiqueta,
+    'Carpetas de propietario revisadas: ' + Object.keys(vistas).length,
+    'Completas: ' + completas + ' | con faltantes: ' + conFaltantes,
+    '',
+    detalle.length ? detalle.join('\n') : '(nada que reportar)'
+  ].join('\n'));
+}
+
+/** Como _mantCompletarNivel pero para la RPR: salta PLANTILLA #2 y no toca años. */
+function _mantCompletarNivelRPR(plantilla, destino, ruta, crear, creadas) {
+  var sub = plantilla.getFolders();
+  while (sub.hasNext()) {
+    var carpetaPlantilla = sub.next();
+    var nombre = carpetaPlantilla.getName();
+    if (nombre === 'PLANTILLA #2') continue;     // ⚠️ nunca dentro de un RPR
+
+    var hija = getFolderByName(destino, nombre);
+    if (!hija) {
+      creadas.push(ruta + '/' + nombre);
+      if (!crear) continue;
+      hija = destino.createFolder(nombre);
+    }
+    _mantCompletarNivelRPR(carpetaPlantilla, hija, ruta + '/' + nombre, crear, creadas);
+  }
+  return creadas;
+}
+
+function revisarCarpetasRPR() {
+  _mantRecorrerRPR('CARPETAS DEL PROPIETARIO (simulación, no se creó nada)', false);
+}
+
+function completarCarpetasRPR_CONFIRMADO() {
+  _mantRecorrerRPR('CARPETAS DEL PROPIETARIO: creando lo que falta', true);
+}
