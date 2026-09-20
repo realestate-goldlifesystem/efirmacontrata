@@ -398,6 +398,16 @@
             <!-- PASO 1: FOTOS -->
             <div id="step-1" class="step-section active">
                 <h2 class="section-title">Paso 1: Ordenar Fotografías</h2>
+
+                <!-- Aparece solo si se recuperó la selección de un intento que
+                     se cortó antes de subir (pestaña cerrada, celular sin memoria). -->
+                <div id="aviso-borrador" style="background:rgba(46,125,50,0.12); border:1px solid var(--success); border-radius:8px; padding:12px 14px; margin-bottom:15px; display:none;">
+                    <p class="texto" style="margin:0 0 8px 0; font-size:clamp(12px,2vw,14px); color:#A5D6A7;"></p>
+                    <button type="button" id="btn-descartar-borrador"
+                            style="background:transparent; border:1px solid #666; color:var(--text-muted); padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer;">
+                        Empezar de cero
+                    </button>
+                </div>
                 <p style="font-size: clamp(13px, 2vw, 15px); color: var(--text-muted); margin-bottom: 15px;">
                     Arrastra las fotos para decidir su orden. La primera foto será siempre la <strong>PORTADA</strong>.
                 </p>
@@ -508,6 +518,6 @@
          ⚠️ Al editar esta nota, que el comentario siga cerrándose con la flecha
          de la línea siguiente: si se pierde, el script de abajo queda DENTRO del
          comentario, no se carga, y el botón de Google deja de funcionar. -->
-    <script src="./js/multimedia.js?v=3.0"></script>
+    <script src="./js/multimedia.js?v=3.1"></script>
 </body>
 </html>

@@ -172,6 +172,120 @@ async function loadPropertyData() {
     }
 }
 
+// ==========================================
+// BORRADOR DE LA SELECCIÓN (antes de pulsar subir)
+// ==========================================
+// Todo lo que el propietario arma —fotos, orden, TOP 10 y qué video eligió—
+// vive solo en la memoria de la página. Si el celular cierra la pestaña por
+// falta de memoria, o la recarga, se perdía el trabajo entero y tocaba volver
+// a escoger y reordenar 40 fotos.
+//
+// Las FOTOS se guardan completas en IndexedDB (pesan poco y así al volver ya
+// están puestas). El VIDEO no: copiar 500 MB al navegador se demora y llena el
+// teléfono; de él solo se recuerda cuál era, para pedirlo de nuevo por nombre.
+const BD_BORRADOR = 'goldlife_multimedia';
+const ALMACEN_BORRADOR = 'borradores';
+
+function abrirBD() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(BD_BORRADOR, 1);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(ALMACEN_BORRADOR)) db.createObjectStore(ALMACEN_BORRADOR);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function conBorrador(modo, accion) {
+    try {
+        const db = await abrirBD();
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction(ALMACEN_BORRADOR, modo);
+            const req = accion(tx.objectStore(ALMACEN_BORRADOR));
+            tx.oncomplete = () => resolve(req && req.result);
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (e) {
+        console.warn('Borrador no disponible: ' + e.message);
+        return null;
+    }
+}
+
+let guardadoPendiente = null;
+function guardarBorrador() {
+    // Se espera un momento: reordenar arrastrando dispara muchos cambios seguidos.
+    clearTimeout(guardadoPendiente);
+    guardadoPendiente = setTimeout(async () => {
+        if (isUploading) return;
+        if (!selectedPhotos.length && !selectedVideo) return;
+        const datos = {
+            fotos: selectedPhotos.map(f => ({ blob: f, nombre: f.name, tipo: f.type, lastModified: f.lastModified })),
+            top10: selectedTop10Indices.slice(),
+            videoNombre: selectedVideo ? selectedVideo.name : null,
+            guardadoEn: Date.now()
+        };
+        await conBorrador('readwrite', tienda => tienda.put(datos, currentCdr));
+    }, 400);
+}
+
+async function borrarBorrador() {
+    clearTimeout(guardadoPendiente);
+    await conBorrador('readwrite', tienda => tienda.delete(currentCdr));
+}
+
+/**
+ * Devuelve la selección guardada de este inmueble, o null. Se descarta sola a
+ * los 7 días para no revivir fotos de una carga vieja.
+ */
+async function leerBorrador() {
+    const datos = await conBorrador('readonly', tienda => tienda.get(currentCdr));
+    if (!datos || !datos.fotos || !datos.fotos.length) return null;
+    if (Date.now() - (datos.guardadoEn || 0) > 7 * 24 * 60 * 60 * 1000) {
+        await borrarBorrador();
+        return null;
+    }
+    return datos;
+}
+
+async function restaurarBorrador() {
+    const datos = await leerBorrador();
+    if (!datos) return;
+
+    const archivos = datos.fotos.map(f => new File([f.blob], f.nombre, { type: f.tipo, lastModified: f.lastModified }));
+    handlePhotosSelect(archivos);
+    top10Guardado = datos.top10 || null;
+
+    const aviso = document.getElementById('aviso-borrador');
+    if (aviso) {
+        aviso.style.display = 'block';
+        aviso.querySelector('.texto').textContent =
+            `Recuperamos tu selección anterior: ${archivos.length} foto(s)` +
+            (datos.videoNombre ? `. El video "${datos.videoNombre}" hay que elegirlo de nuevo.` : '.');
+    }
+}
+
+// TOP 10 elegido antes del corte; se vuelve a aplicar al pintar esa pantalla.
+let top10Guardado = null;
+
+function conectarDescartarBorrador() {
+    const btn = document.getElementById('btn-descartar-borrador');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        await borrarBorrador();
+        photoGrid.innerHTML = '';
+        selectedTop10Indices = [];
+        top10Guardado = null;
+        updateBadges();
+        selectedPhotos = [];
+        btnNext1.disabled = true;
+        document.getElementById('aviso-borrador').style.display = 'none';
+    });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', conectarDescartarBorrador);
+else conectarDescartarBorrador();
+
 function showWorkspace() {
     document.getElementById('decision-screen').style.display = 'none';
     const avisoCc = esVideoOpcional()
@@ -183,6 +297,7 @@ function showWorkspace() {
         ${avisoCc}
     `;
     workspace.style.display = 'block';
+    restaurarBorrador();
     aplicarVideoOpcional();
     if (esModoSoloVideo()) activarModoSoloVideo();
 }
@@ -260,6 +375,17 @@ function renderTop10Grid() {
     if (selectedPhotos.length > 0) {
         selectedTop10Indices.push(0);
     }
+
+    // Si veníamos de una selección recuperada, se respeta el TOP 10 que ya
+    // había elegido en vez de dejarlo solo con la portada.
+    if (top10Guardado && top10Guardado.length) {
+        top10Guardado.forEach(i => {
+            if (i > 0 && i < selectedPhotos.length && selectedTop10Indices.indexOf(i) === -1) {
+                selectedTop10Indices.push(i);
+            }
+        });
+        top10Guardado = null;
+    }
     
     selectedPhotos.forEach((file, index) => {
         const card = document.createElement('div');
@@ -313,6 +439,7 @@ function renderTop10Grid() {
             // Re-evaluar visuales de todos
             updateAllTop10Visuals();
             updateTop10Counter();
+            guardarBorrador();
         };
         
         top10Grid.appendChild(card);
@@ -379,6 +506,7 @@ function handleVideoSelect(file) {
 
     btnUpload.disabled = false; // Como el video es el último paso, habilita el botón final
     actualizarBotonSubir();
+    guardarBorrador();
 }
 
 /**
@@ -532,6 +660,7 @@ function updateBadges() {
 function updateSelectedPhotosArray() {
     selectedPhotos = Array.from(photoGrid.children).map(card => card.fileRef);
     btnNext1.disabled = selectedPhotos.length === 0;
+    guardarBorrador();
 }
 
 // Sortable
@@ -666,6 +795,7 @@ btnUpload.addEventListener('click', async () => {
         // Terminó de verdad: se borra la memoria para que la próxima carga de
         // este inmueble (una renovación, por ejemplo) empiece limpia.
         limpiarProgreso();
+        await borrarBorrador();
         
         // 4. Éxito!
         isUploading = false;
