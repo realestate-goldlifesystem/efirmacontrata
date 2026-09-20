@@ -617,8 +617,11 @@ function pulirDescripcion(lineas, opciones) {
 
     // Título: garajes, depósito, precio de venta y salto antes del tipo.
     var partesTexto = texto.split('\n');
-    var titulo = partesTexto[0] + (partesTexto[1] && /^(APTO|CASA|LOCAL|OFICINA|LOTE|BODEGA|EDIFICIO|FINCA|APARTAESTUDIO)\b/i.test(partesTexto[1]) ? '\n' + partesTexto[1] : '');
-    var consumidas = titulo.split('\n').length;
+    // El título va en UNA sola línea: la plantilla lo parte en dos (dirección /
+    // "APTO - 2Hab...") y se une con un espacio.
+    var uneTipo = !!(partesTexto[1] && /^(APTO|CASA|LOCAL|OFICINA|LOTE|BODEGA|EDIFICIO|FINCA|APARTAESTUDIO)\b/i.test(partesTexto[1]));
+    var titulo = partesTexto[0] + (uneTipo ? ' ' + partesTexto[1] : '');
+    var consumidas = uneTipo ? 2 : 1;   // cuántas líneas del original quedaron dentro del título
     var n = String(opciones.numGarajes || '');
     if (/^[1-9]$/.test(n) && !/Gar\//i.test(titulo)) titulo = titulo.replace(/(\d+Bañ\/)/i, '$1' + n + 'Gar/');
     if (opciones.tieneDeposito && !/Dep\//i.test(titulo)) titulo = titulo.replace(/(\d+Bañ\/(?:\d+Gar\/)?)/i, '$11Dep/');
