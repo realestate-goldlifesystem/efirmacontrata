@@ -474,32 +474,56 @@ function limpiarTexto(texto, numGarajes, tieneDeposito, codigoRegistro, precioVe
  * hay números de página ni emojis partidos.
  */
 function extraerLineasDeDoc(docId, inicioTexto, finTexto) {
-    var body = DocumentApp.openById(docId).getBody();
-    var lineas = [];
-    var dentro = false;
-    for (var i = 0; i < body.getNumChildren(); i++) {
-        var el = body.getChild(i);
+    var estado = { lineas: [], dentro: false, terminado: false };
+    _recorrerElementos(DocumentApp.openById(docId).getBody(), inicioTexto, finTexto, estado);
+    return estado.dentro ? estado.lineas : null;
+}
+
+/**
+ * Recorre un contenedor del Doc acumulando las líneas de la descripción.
+ *
+ * ⚠️ Entra TAMBIÉN en las tablas. En las actas la descripción vive dentro de
+ * una tabla (comprobado el 20-09-2026): al mirar solo los párrafos sueltos no
+ * se encontraba nada, se caía a la ruta vieja y el Doc quedaba con el texto
+ * crudo del acta —"habitación(es)", "El/la", "via"— pese a estar el pulido.
+ */
+function _recorrerElementos(contenedor, inicioTexto, finTexto, estado) {
+    for (var i = 0; i < contenedor.getNumChildren() && !estado.terminado; i++) {
+        var el = contenedor.getChild(i);
         var tipo = el.getType();
+
+        if (tipo === DocumentApp.ElementType.TABLE) {
+            var tabla = el.asTable();
+            for (var f = 0; f < tabla.getNumRows() && !estado.terminado; f++) {
+                var fila = tabla.getRow(f);
+                for (var c = 0; c < fila.getNumCells() && !estado.terminado; c++) {
+                    _recorrerElementos(fila.getCell(c), inicioTexto, finTexto, estado);
+                }
+            }
+            continue;
+        }
+
         if (tipo !== DocumentApp.ElementType.PARAGRAPH && tipo !== DocumentApp.ElementType.LIST_ITEM) continue;
+
         var texto = el.getText();
-        if (!dentro) {
+        if (!estado.dentro) {
             var pos = texto.indexOf(inicioTexto);
             if (pos === -1) continue;
-            dentro = true;
+            estado.dentro = true;
             texto = texto.substring(pos + inicioTexto.length);
             if (!texto.trim()) continue;
         }
         if (tipo === DocumentApp.ElementType.LIST_ITEM) {
-            texto = (el.getNestingLevel() > 0 ? '○ ' : '● ') + texto.trim();
+            texto = (el.asListItem().getNestingLevel() > 0 ? '○ ' : '● ') + texto.trim();
         }
         var fin = texto.indexOf(finTexto);
         if (fin !== -1) {
-            lineas.push(texto.substring(0, fin + finTexto.length));
-            return lineas;
+            estado.lineas.push(texto.substring(0, fin + finTexto.length));
+            estado.terminado = true;
+            return;
         }
-        lineas.push(texto);
+        estado.lineas.push(texto);
     }
-    return dentro ? lineas : null;
 }
 
 /**
