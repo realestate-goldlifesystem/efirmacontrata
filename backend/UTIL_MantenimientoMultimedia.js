@@ -7,10 +7,12 @@
 //                                              con el formato nuevo.
 //   3. normalizarFotosJpg_CONFIRMADO()       → deja todas las fotos con .jpg.
 //
-// ⚠️ Apps Script corta a los 6 minutos. Las dos funciones van por LOTES y
-// recuerdan dónde quedaron: si el registro dice "quedan N", se vuelve a
-// ejecutar la MISMA función hasta que diga que terminó. Cada pasada sigue
-// desde la siguiente fila, nunca repite trabajo.
+// ⚠️ Apps Script corta a los 6 minutos. Las dos funciones van por LOTES: se
+// detienen a los 4:30, guardan en qué fila iban y SE PROGRAMAN SOLAS para
+// seguir 1 minuto después, hasta terminar. No hay que volver a pulsar nada;
+// basta mirar el registro de ejecuciones para ver cuándo dice TERMINADO.
+// Si el tope de 20 triggers impidiera programarla, el avance igual queda
+// guardado y basta ejecutar la misma función a mano.
 //
 // No tocan el acta ni la hoja: solo el Doc de descripción y los nombres de las
 // fotos dentro de la carpeta del inmueble.
@@ -63,9 +65,39 @@ function revisarMantenimientoMultimedia() {
   ].join('\n'));
 }
 
+/**
+ * Programa la siguiente pasada dentro de 1 minuto para que el trabajo se
+ * complete solo, sin que nadie tenga que volver a pulsar Ejecutar.
+ *
+ * Devuelve true si quedó programada. Si falla (tope de 20 triggers), el trabajo
+ * NO se pierde: el avance sigue guardado y basta volver a ejecutar a mano.
+ */
+function _mantProgramarSiguiente(nombreFuncion) {
+  try {
+    // El trigger .after() es de un solo uso pero sigue LISTADO hasta que se
+    // borra; sin esta limpieza se van acumulando hasta topar el límite.
+    ScriptApp.getProjectTriggers().forEach(function (t) {
+      if (t.getHandlerFunction() === nombreFuncion) ScriptApp.deleteTrigger(t);
+    });
+    ScriptApp.newTrigger(nombreFuncion).timeBased().after(60 * 1000).create();
+    return true;
+  } catch (e) {
+    Logger.log('⚠️ No se pudo programar la continuación automática: ' + e.message);
+    return false;
+  }
+}
+
 /** Motor común de los dos mantenimientos: recorre filas por lotes. */
-function _mantRecorrer(clavePropiedad, etiqueta, accion) {
+function _mantRecorrer(clavePropiedad, etiqueta, accion, nombreFuncion) {
   var inicio = new Date().getTime();
+
+  // Si esta pasada viene de un trigger programado, se borra ya mismo: gastado
+  // igual sigue ocupando una de las 20 plazas.
+  if (nombreFuncion) {
+    ScriptApp.getProjectTriggers().forEach(function (t) {
+      if (t.getHandlerFunction() === nombreFuncion) ScriptApp.deleteTrigger(t);
+    });
+  }
   var props = PropertiesService.getScriptProperties();
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MANTENIMIENTO.HOJA);
   var ultima = sheet.getLastRow();
@@ -77,12 +109,15 @@ function _mantRecorrer(clavePropiedad, etiqueta, accion) {
   for (; fila <= ultima; fila++) {
     if (new Date().getTime() - inicio > MANTENIMIENTO.MAX_MS) {
       props.setProperty(clavePropiedad, String(fila));
+      var programado = nombreFuncion ? _mantProgramarSiguiente(nombreFuncion) : false;
       Logger.log([
         '⏸️ ' + etiqueta + ': pausa por tiempo en la fila ' + fila + ' de ' + ultima + '.',
         'Hechos en esta pasada: ' + hechos + ' | omitidos: ' + omitidos + ' | errores: ' + errores,
         detalle.join('\n'),
         '',
-        '➡️ VUELVE A EJECUTAR esta misma función para continuar (quedan ' + (ultima - fila + 1) + ' filas).'
+        programado
+          ? '⏱️ Continúa SOLO en 1 minuto desde la fila ' + fila + ' (quedan ' + (ultima - fila + 1) + '). No hay que hacer nada.'
+          : '➡️ VUELVE A EJECUTAR esta misma función para continuar (quedan ' + (ultima - fila + 1) + ' filas).'
       ].join('\n'));
       return;
     }
@@ -116,7 +151,7 @@ function _mantRecorrer(clavePropiedad, etiqueta, accion) {
 function regenerarDescripciones_CONFIRMADO() {
   _mantRecorrer(MANTENIMIENTO.PROP_CURSOR_DESC, 'Descripciones', function (sheet, fila, carpeta) {
     return procesarYGuardarDescripcion(sheet, fila, carpeta) ? 'descripción actualizada' : null;
-  });
+  }, 'regenerarDescripciones_CONFIRMADO');
 }
 
 /** Renombra a .jpg las fotos de versiones viejas (FOTOGRAFÍAS y TOP 10). */
@@ -132,7 +167,7 @@ function normalizarFotosJpg_CONFIRMADO() {
     if (itTop.hasNext()) renombradas += (normalizarImagenesAJpg(itTop.next()) || 0);
 
     return renombradas ? renombradas + ' foto(s) renombrada(s)' : null;
-  });
+  }, 'normalizarFotosJpg_CONFIRMADO');
 }
 
 /** Si hace falta empezar de cero, borra el avance guardado. */
@@ -140,5 +175,10 @@ function reiniciarAvanceMantenimiento() {
   var props = PropertiesService.getScriptProperties();
   props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_DESC);
   props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_JPG);
-  Logger.log('🔄 Avance borrado: la próxima ejecución empieza en la fila 2.');
+  // Si quedó una continuación programada, también se cancela.
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    var f = t.getHandlerFunction();
+    if (f === 'regenerarDescripciones_CONFIRMADO' || f === 'normalizarFotosJpg_CONFIRMADO') ScriptApp.deleteTrigger(t);
+  });
+  Logger.log('🔄 Avance borrado y continuaciones canceladas: la próxima ejecución empieza en la fila 2.');
 }
