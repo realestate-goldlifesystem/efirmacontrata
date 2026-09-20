@@ -102,6 +102,28 @@ function procesarYGuardarDescripcion(sheet, row, carpetaReg) {
         }
     }
 
+    // RESCATE PARA REGISTROS VIEJOS (era Autocrat, 2024-2025): la hoja guarda un
+    // ID de acta que ya no existe ("No item with the given ID could be found"),
+    // pero el acta sigue ahí dentro de la carpeta del inmueble, como PDF y con
+    // otro ID. Se busca por ruta antes de darse por vencido.
+    if (!descripcionEncontrada && carpetaReg) {
+        try {
+            var carpetaActas = _lib_navegarRuta(carpetaReg, ['ARCHIVOS DEL INMUEBLE', 'AUTORIZACIONES DE COMERCIALIZACIÓN']);
+            if (carpetaActas) {
+                var itActas = carpetaActas.getFiles();
+                while (itActas.hasNext()) {
+                    var acta = itActas.next();
+                    if (acta.getName().indexOf('Acta de acuerdo') !== 0) continue;   // la de ingreso no trae descripción
+                    Logger.log('🔁 ID de la hoja inservible; se usa el acta de la carpeta: ' + acta.getName());
+                    var textoActa = extraerDescripcionDelPDF(acta.getId(), numGarajes, tieneDeposito, codigoRegistro, precioVentaFormat, tipoInmueble);
+                    if (textoActa && textoActa.length > 20) { descripcionEncontrada = textoActa; break; }
+                }
+            }
+        } catch (eRescate) {
+            Logger.log('⚠️ No se pudo buscar el acta en la carpeta: ' + eRescate.message);
+        }
+    }
+
     if (!descripcionEncontrada) {
         Logger.log("⚠️ No se pudo extraer descripción de ningún PDF vinculado.");
         return false;
@@ -232,6 +254,32 @@ function extraerDescripcionDelPDF(pdfFileId, numGarajes, tieneDeposito, codigoRe
                     tipoInmueble: tipoInmueble
                 });
             }
+        }
+        // Actas viejas en PDF: se convierten a Doc temporal y se leen por la
+        // MISMA ruta, así quedan con el formato nuevo (título en una línea,
+        // plurales corregidos) en vez del texto plano de antes.
+        var tempPdfId = null;
+        try {
+            var copia = Drive.Files.insert(
+                { title: 'TEMP_DESC_' + new Date().getTime(), mimeType: MimeType.GOOGLE_DOCS },
+                DriveApp.getFileById(pdfFileId).getBlob(),
+                { convert: true }
+            );
+            tempPdfId = copia.id;
+            var lineasPdf = extraerLineasDeDoc(tempPdfId, MARCADOR_INICIO, MARCADOR_FIN);
+            if (lineasPdf && lineasPdf.length) {
+                return pulirDescripcion(lineasPdf, {
+                    numGarajes: numGarajes,
+                    tieneDeposito: tieneDeposito,
+                    codigoRegistro: codigoRegistro,
+                    precioVentaFormat: precioVentaFormat,
+                    tipoInmueble: tipoInmueble
+                });
+            }
+        } catch (ePdf) {
+            Logger.log('⚠️ No se pudo leer el PDF como documento: ' + ePdf.message);
+        } finally {
+            if (tempPdfId) { try { DriveApp.getFileById(tempPdfId).setTrashed(true); } catch (e) {} }
         }
     } catch (eDoc) {
         Logger.log("⚠️ Lectura directa del Doc falló, se usa la ruta PDF: " + eDoc.message);
@@ -470,6 +518,10 @@ function pulirDescripcion(lineas, opciones) {
     var out = lineas.map(function (l) {
         var s = String(l)
             .replace(/^\t+/, '')
+            // Pie de página de las actas viejas convertidas desde PDF ("3 de 4"),
+            // que se colaba en medio de los dormitorios.
+            .replace(/^\s*(?:P[aá]gina\s+)?\d+\s+de\s+\d+\s*$/i, '')
+            .replace(/\s*(?:P[aá]gina\s+)?\d+\s+de\s+\d+\s*$/i, '')
             .replace(INVISIBLES, ' ')
             .replace(/[  ]{2,}/g, ' ')
             .replace(/\s+$/, '');
