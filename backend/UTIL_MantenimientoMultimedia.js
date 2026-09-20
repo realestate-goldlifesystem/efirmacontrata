@@ -408,3 +408,42 @@ function revisarCarpetasRPR() {
 function completarCarpetasRPR_CONFIRMADO() {
   _mantRecorrerRPR('CARPETAS DEL PROPIETARIO: creando lo que falta', true);
 }
+
+// ==========================================
+// REGENERAR SOLO ALGUNOS INMUEBLES
+// ==========================================
+// Para rematar los que quedaron con formato viejo sin repetir los 69. Edita la
+// lista y ejecuta. Dura segundos.
+//
+// Los del 20-09-2026 tenían el acta en PDF (o con el ID de la hoja ya muerto):
+// entran por la conversión a Doc, que solo corre bien desde Apps Script porque
+// la Service Account no tiene espacio propio en Drive para la copia temporal.
+var IDS_A_REGENERAR = ['TN507970', 'JO138318', 'GC587292', 'QZ513891', 'PH853656'];
+
+function regenerarDescripcionesDeLista_CONFIRMADO() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MANTENIMIENTO.HOJA);
+  var colId = getColumnByName(sheet, 'ID DE REGISTRO');
+  var ultima = sheet.getLastRow();
+  var hechos = 0, fallidos = [], detalle = [];
+
+  for (var fila = 2; fila <= ultima; fila++) {
+    var id = String(sheet.getRange(fila, colId).getValue() || '').trim();
+    if (IDS_A_REGENERAR.indexOf(id) === -1) continue;
+
+    var carpeta = _mantCarpetaReg(sheet, fila);
+    if (!carpeta) { fallidos.push(id + ' (sin carpeta REG)'); continue; }
+
+    try {
+      if (procesarYGuardarDescripcion(sheet, fila, carpeta)) { hechos++; detalle.push('✅ ' + id); }
+      else fallidos.push(id + ' (sin acta utilizable)');
+    } catch (e) {
+      fallidos.push(id + ' (' + e.message + ')');
+    }
+  }
+
+  Logger.log([
+    '🏁 Regeneración puntual: ' + hechos + ' de ' + IDS_A_REGENERAR.length,
+    detalle.join('\n'),
+    fallidos.length ? '\n⚠️ No se pudieron:\n  ' + fallidos.join('\n  ') : ''
+  ].join('\n'));
+}
