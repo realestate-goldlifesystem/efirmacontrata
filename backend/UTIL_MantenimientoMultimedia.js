@@ -288,10 +288,14 @@ function revisarCarpetasFaltantes() {
     var carpeta = _mantCarpetaReg(sheet, fila);
     if (!carpeta) continue;
 
-    var faltan = _mantCompletarNivel(plantilla, carpeta, _mantAnioDelRegistro(sheet, fila), '', false, []);
-    if (faltan.length) {
+    var archivosFaltantes = [];
+    var faltan = _mantCompletarNivel(plantilla, carpeta, _mantAnioDelRegistro(sheet, fila), '', false, [], archivosFaltantes, false);
+    totalArchivos += archivosFaltantes.length;
+    if (faltan.length || archivosFaltantes.length) {
       conFaltantes++;
-      detalle.push('📁 ' + id + ' (año ' + _mantAnioDelRegistro(sheet, fila) + '): ' + faltan.length + ' carpeta(s)\n     ' + faltan.join('\n     '));
+      detalle.push('📁 ' + id + ' (año ' + _mantAnioDelRegistro(sheet, fila) + '): ' +
+        faltan.length + ' carpeta(s), ' + archivosFaltantes.length + ' archivo(s)' +
+        (faltan.length ? '\n     ' + faltan.join('\n     ') : ''));
     } else {
       completos++;
     }
