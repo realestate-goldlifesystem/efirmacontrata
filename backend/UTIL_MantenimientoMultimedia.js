@@ -23,6 +23,7 @@ var MANTENIMIENTO = {
   MAX_MS: 4.5 * 60 * 1000,          // margen antes del corte de Google
   PROP_CURSOR_DESC: 'MANT_CURSOR_DESCRIPCIONES',
   PROP_CURSOR_JPG: 'MANT_CURSOR_JPG',
+  PROP_CURSOR_CARPETAS: 'MANT_CURSOR_CARPETAS',
   RUTA_FOTOS: ['ARCHIVOS DEL INMUEBLE', 'CONTENIDO DE PUBLICACIÓN', 'FOTOGRAFÍAS']
 };
 
@@ -175,10 +176,143 @@ function reiniciarAvanceMantenimiento() {
   var props = PropertiesService.getScriptProperties();
   props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_DESC);
   props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_JPG);
+  props.deleteProperty(MANTENIMIENTO.PROP_CURSOR_CARPETAS);
   // Si quedó una continuación programada, también se cancela.
   ScriptApp.getProjectTriggers().forEach(function (t) {
     var f = t.getHandlerFunction();
-    if (f === 'regenerarDescripciones_CONFIRMADO' || f === 'normalizarFotosJpg_CONFIRMADO') ScriptApp.deleteTrigger(t);
+    if (f === 'regenerarDescripciones_CONFIRMADO' || f === 'normalizarFotosJpg_CONFIRMADO' || f === 'completarCarpetasFaltantes_CONFIRMADO') ScriptApp.deleteTrigger(t);
   });
   Logger.log('🔄 Avance borrado y continuaciones canceladas: la próxima ejecución empieza en la fila 2.');
+}
+
+// ==========================================
+// COMPLETAR CARPETAS QUE FALTAN (registros viejos)
+// ==========================================
+// Los primeros inmuebles se crearon cuando la PLANTILLA #2 tenía menos
+// subcarpetas. Esto compara cada REG contra la plantilla maestra de HOY y crea
+// SOLO lo que falte.
+//
+// Reglas:
+//  - Nunca borra, nunca renombra, nunca mueve nada de lo que ya existe.
+//  - La carpeta de año NO se duplica: si el inmueble ya tiene su "2024", se
+//    completa DENTRO de ese año (la plantilla la llama "XXXX"). Solo si no hay
+//    ninguna se crea, y con el año DEL REGISTRO, no con el año actual.
+//  - Solo carpetas: los documentos de la plantilla no se copian (un acta o una
+//    cuenta de cobro nueva en un inmueble viejo confundiría más que ayudar).
+//
+//   1. revisarCarpetasFaltantes()            → SOLO lista lo que falta.
+//   2. completarCarpetasFaltantes_CONFIRMADO() → las crea.
+// ==========================================
+
+/** PLANTILLA #2 de la maestra: el molde con el que se compara. */
+function _mantPlantilla2() {
+  var maestra = DriveApp.getFolderById(CONFIG_INMUEBLES.TEMPLATE_FOLDER_ID);
+  var inmuebles = getFolderByName(maestra, 'INMUEBLES');
+  if (!inmuebles) throw new Error('No se encontró INMUEBLES en la plantilla maestra');
+  var arriendo = getFolderByName(inmuebles, 'ARRIENDO');
+  if (!arriendo) throw new Error('No se encontró ARRIENDO en la plantilla maestra');
+  var p2 = getFolderByName(arriendo, 'PLANTILLA #2');
+  if (!p2) throw new Error('No se encontró PLANTILLA #2 en la plantilla maestra');
+  return p2;
+}
+
+/** Año del registro: del CDR (REG_14-12-2024-C1...) y si no, de la marca temporal. */
+function _mantAnioDelRegistro(sheet, fila) {
+  var colCdr = getColumnByName(sheet, 'CODIGO DE REGISTRO');
+  var cdr = colCdr ? String(sheet.getRange(fila, colCdr).getValue() || '') : '';
+  var m = cdr.match(/REG_\d{2}-\d{2}-(\d{4})/);
+  if (m) return m[1];
+
+  var colFecha = getColumnByName(sheet, 'Marca temporal');
+  var fecha = colFecha ? sheet.getRange(fila, colFecha).getValue() : null;
+  if (fecha instanceof Date) return String(fecha.getFullYear());
+  return String(new Date().getFullYear());
+}
+
+/**
+ * Recorre la plantilla y crea en el destino lo que falte.
+ * 'XXXX' se resuelve contra la carpeta de año que YA tenga el inmueble.
+ * Devuelve la lista de rutas creadas (vacía si no faltaba nada).
+ */
+function _mantCompletarNivel(plantilla, destino, anio, ruta, crear, creadas, archivos, copiarArchivos) {
+  // Archivos del molde que faltan. El registro de hoy SÍ los copia
+  // (copiarContenidoFaltante en 2- REGISTRO), por eso se cuentan aparte: así se
+  // ve cuánto falta sin meterle documentos nuevos a un inmueble viejo salvo que
+  // se pida expresamente.
+  var arch = plantilla.getFiles();
+  while (arch.hasNext()) {
+    var archivoPlantilla = arch.next();
+    if (destino.getFilesByName(archivoPlantilla.getName()).hasNext()) continue;
+    archivos.push(ruta + '/' + archivoPlantilla.getName());
+    if (crear && copiarArchivos) archivoPlantilla.makeCopy(archivoPlantilla.getName(), destino);
+  }
+
+  var sub = plantilla.getFolders();
+  while (sub.hasNext()) {
+    var carpetaPlantilla = sub.next();
+    var nombre = carpetaPlantilla.getName();
+    var nombreDestino = nombre;
+
+    if (nombre === 'XXXX') {
+      // ¿Ya hay una carpeta de año (4 dígitos) en este punto? Se usa ESA.
+      var existentes = destino.getFolders();
+      var anioExistente = null;
+      while (existentes.hasNext()) {
+        var c = existentes.next();
+        if (/^\d{4}$/.test(c.getName())) { anioExistente = c.getName(); break; }
+      }
+      nombreDestino = anioExistente || anio;
+    }
+
+    var hija = getFolderByName(destino, nombreDestino);
+    if (!hija) {
+      creadas.push(ruta + '/' + nombreDestino);
+      if (!crear) continue;            // en simulación no se puede seguir hacia abajo
+      hija = destino.createFolder(nombreDestino);
+    }
+    _mantCompletarNivel(carpetaPlantilla, hija, anio, ruta + '/' + nombreDestino, crear, creadas, archivos, copiarArchivos);
+  }
+  return creadas;
+}
+
+function revisarCarpetasFaltantes() {
+  var plantilla = _mantPlantilla2();
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MANTENIMIENTO.HOJA);
+  var ultima = sheet.getLastRow();
+  var colId = getColumnByName(sheet, 'ID DE REGISTRO');
+  var conFaltantes = 0, completos = 0, totalArchivos = 0, detalle = [];
+
+  for (var fila = 2; fila <= ultima; fila++) {
+    var id = String(sheet.getRange(fila, colId).getValue() || '').trim();
+    if (!id) continue;
+    var carpeta = _mantCarpetaReg(sheet, fila);
+    if (!carpeta) continue;
+
+    var faltan = _mantCompletarNivel(plantilla, carpeta, _mantAnioDelRegistro(sheet, fila), '', false, []);
+    if (faltan.length) {
+      conFaltantes++;
+      detalle.push('📁 ' + id + ' (año ' + _mantAnioDelRegistro(sheet, fila) + '): ' + faltan.length + ' carpeta(s)\n     ' + faltan.join('\n     '));
+    } else {
+      completos++;
+    }
+  }
+
+  Logger.log([
+    '🔎 CARPETAS FALTANTES (simulación, no se creó nada)',
+    'Inmuebles completos: ' + completos,
+    'Inmuebles a los que les falta algo: ' + conFaltantes,
+    'Archivos del molde que faltan (NO se copian por defecto): ' + totalArchivos,
+    '',
+    detalle.join('\n'),
+    '',
+    'ℹ️ En simulación solo se ve el PRIMER nivel que falta; al crearlo se completa también lo de adentro.'
+  ].join('\n'));
+}
+
+function completarCarpetasFaltantes_CONFIRMADO() {
+  var plantilla = _mantPlantilla2();
+  _mantRecorrer(MANTENIMIENTO.PROP_CURSOR_CARPETAS, 'Carpetas faltantes', function (sheet, fila, carpeta) {
+    var creadas = _mantCompletarNivel(plantilla, carpeta, _mantAnioDelRegistro(sheet, fila), '', true, [], [], false);
+    return creadas.length ? creadas.length + ' carpeta(s): ' + creadas.join(', ') : null;
+  }, 'completarCarpetasFaltantes_CONFIRMADO');
 }
