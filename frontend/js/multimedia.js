@@ -72,6 +72,8 @@ function pedirTokenYoutube() {
             // la miniatura. No hace falta 'youtube.upload'.
             scope: 'https://www.googleapis.com/auth/youtube',
             include_granted_scopes: false,
+            // Si la cuenta ya dio el permiso, no vuelve a mostrar la pantalla.
+            prompt: '',
             callback: (r) => {
                 if (r && r.access_token) { youtubeToken = r.access_token; resolve(youtubeToken); }
                 else reject(new Error('YouTube no dio permiso' + (r && r.error ? ': ' + r.error : '.')));
@@ -86,8 +88,19 @@ function pedirTokenYoutube() {
     });
 }
 
-// Login
-window.handleCredentialResponse = function(response) {
+// Login. Una SOLA ventana: la del permiso de Drive.
+//
+// Antes había además el botón "Iniciar sesión con Google" (g_id_signin), cuya
+// respuesta no se usaba: solo servía para abrir esta misma ventana. Resultado:
+// el agente elegía su cuenta dos veces seguidas para entrar. Si hay video, la
+// de YouTube sigue aparte porque Google no deja pedirla junto con Drive.
+window.iniciarSesionDrive = function() {
+    const boton = document.getElementById('btn-entrar');
+    if (boton) { boton.disabled = true; boton.querySelector('span').textContent = 'Abriendo Google...'; }
+    const restaurarBoton = () => {
+        if (boton) { boton.disabled = false; boton.querySelector('span').textContent = 'Continuar con Google'; }
+    };
+
     const client = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         // SOLO Drive. Desde sep-2026 Google rechaza pedir permisos de YouTube y
@@ -99,17 +112,36 @@ window.handleCredentialResponse = function(response) {
         // ⚠️ NO QUITAR. Por defecto Google SUMA a la petición los permisos que la
         // cuenta ya concedió antes, y volvería a mezclar YouTube con Drive.
         include_granted_scopes: false,
+        // Sin esto Google vuelve a mostrar la pantalla de permisos en cada
+        // entrada. Con '' se salta si la cuenta ya los concedió: la ventana se
+        // abre y se cierra sola.
+        prompt: '',
         callback: (tokenResponse) => {
             if (tokenResponse && tokenResponse.access_token) {
                 userToken = tokenResponse.access_token;
                 loginSection.style.display = 'none';
                 loadingScreen.style.display = 'block';
                 loadPropertyData();
+            } else {
+                restaurarBoton();
             }
         },
+        error_callback: (err) => {
+            restaurarBoton();
+            if (err && err.type === 'popup_failed_to_open') {
+                alert('El navegador bloqueó la ventana de Google. Permite ventanas emergentes para esta página y vuelve a intentar.');
+            }
+        }
     });
     client.requestAccessToken();
 };
+
+function conectarBotonEntrar() {
+    const boton = document.getElementById('btn-entrar');
+    if (boton) boton.addEventListener('click', () => window.iniciarSesionDrive());
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', conectarBotonEntrar);
+else conectarBotonEntrar();
 
 async function loadPropertyData() {
     try {
@@ -505,6 +537,37 @@ new Sortable(photoGrid, {
 // Subida
 let isUploading = false;
 
+// --- PANTALLA ENCENDIDA MIENTRAS SUBE ---
+// El archivo está en el celular del propietario: lo manda el navegador, no la
+// nube. Si el teléfono bloquea la pantalla, el sistema congela la página y la
+// subida se corta desde cero. Wake Lock evita ese bloqueo mientras dura la
+// carga, y se vuelve a pedir si el usuario cambia de app y regresa (el
+// navegador lo suelta al pasar a segundo plano).
+let bloqueoPantalla = null;
+
+async function mantenerPantallaEncendida() {
+    if (!('wakeLock' in navigator)) return false;   // navegador viejo: sigue igual que antes
+    try {
+        bloqueoPantalla = await navigator.wakeLock.request('screen');
+        bloqueoPantalla.addEventListener('release', () => { bloqueoPantalla = null; });
+        return true;
+    } catch (e) {
+        console.warn('No se pudo mantener la pantalla encendida:', e.message);
+        return false;
+    }
+}
+
+async function soltarPantalla() {
+    try { if (bloqueoPantalla) await bloqueoPantalla.release(); } catch (e) {}
+    bloqueoPantalla = null;
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (isUploading && !bloqueoPantalla && document.visibilityState === 'visible') {
+        mantenerPantallaEncendida();
+    }
+});
+
 window.addEventListener('beforeunload', (e) => {
     if (isUploading) {
         e.preventDefault();
@@ -516,6 +579,12 @@ btnUpload.addEventListener('click', async () => {
     // YouTube se pide AQUÍ y antes de cualquier await: es lo que mantiene la
     // ventana de Google "dentro" del clic para que el navegador no la bloquee.
     // Sin video (Ciencuadras) ni siquiera se pregunta por YouTube.
+    //
+    // El bloqueo de pantalla también se pide aquí, antes de cualquier await: el
+    // navegador solo lo concede mientras el clic sigue "vivo". Si se pide más
+    // abajo devuelve NotAllowedError y el celular se seguiría apagando.
+    const promesaPantalla = mantenerPantallaEncendida();
+
     let promesaYoutube = null;
     if (selectedVideo && !youtubeToken) {
         promesaYoutube = pedirTokenYoutube();
@@ -532,7 +601,7 @@ btnUpload.addEventListener('click', async () => {
         const caja = document.getElementById('progress-container');
         if (pareceHeic(primera) && caja) caja.style.display = 'block';
         const ok = await portadaEsUtilizable(primera, etiqueta);
-        if (!ok) { if (caja) caja.style.display = 'none'; return; }
+        if (!ok) { if (caja) caja.style.display = 'none'; await soltarPantalla(); return; }
     }
 
     btnUpload.style.display = 'none';
@@ -544,6 +613,7 @@ btnUpload.addEventListener('click', async () => {
     
     progressContainer.style.display = 'block';
     isUploading = true;
+    await promesaPantalla;
     
     try {
         // 1. Subir Video a YouTube (Resumable Upload).
@@ -585,6 +655,7 @@ btnUpload.addEventListener('click', async () => {
         
         // 4. Éxito!
         isUploading = false;
+        await soltarPantalla();
         workspace.style.display = 'none';
         successScreen.style.display = 'block';
         
@@ -605,6 +676,7 @@ btnUpload.addEventListener('click', async () => {
         
     } catch (e) {
         isUploading = false;
+        await soltarPantalla();
         alert('❌ Error durante la subida: ' + e.message);
         btnUpload.style.display = 'block';
         btnBack2.style.display = 'block';

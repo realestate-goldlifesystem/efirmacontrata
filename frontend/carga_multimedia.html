@@ -124,6 +124,26 @@
             border-radius: 8px;
             border: 1px solid #333;
         }
+        .google-btn-propio {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 48px;
+            padding: 12px 22px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #1f1f1f;
+            color: #e3e3e3;
+            font-family: 'Roboto', system-ui, sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background .2s, border-color .2s;
+        }
+        .google-btn-propio:hover { background: #2a2a2a; border-color: #666; }
+        .google-btn-propio:active { transform: scale(.985); }
+        .google-btn-propio[disabled] { opacity: .6; cursor: default; }
 
         .step-section {
             display: none;
@@ -331,15 +351,20 @@
                 <h2 class="login-title">Acceso Restringido</h2>
                 <p class="login-subtitle">Sistema exclusivo para agentes Gold Life. Identifícate para sincronizar material al CRM y Drive.</p>
                 
+                <!-- Un solo botón: pide directamente el permiso de Drive.
+                     Antes había además el botón "Iniciar sesión con Google", cuya
+                     respuesta no se usaba para nada: solo servía para abrir esta
+                     misma ventana, así que el agente hacía dos veces lo mismo. -->
                 <div class="google-btn-wrapper">
-                    <div id="g_id_onload"
-                         data-client_id="825455387668-asnkq57s4voon63c38b41e4q8qvc0b2e.apps.googleusercontent.com"
-                         data-context="signin"
-                         data-ux_mode="popup"
-                         data-callback="handleCredentialResponse"
-                         data-auto_prompt="false">
-                    </div>
-                    <div class="g_id_signin" data-type="standard" data-theme="filled_black" data-size="large" data-text="continue_with" data-shape="rectangular" data-logo_alignment="left"></div>
+                    <button type="button" id="btn-entrar" class="google-btn-propio">
+                        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                            <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.1z"/>
+                            <path fill="#34A853" d="M24 46c6 0 11-2 14.5-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8 41.1 15.4 46 24 46z"/>
+                            <path fill="#FBBC05" d="M11.8 28.2c-.4-1.3-.7-2.7-.7-4.2s.2-2.9.7-4.2v-5.7H4.5C2.9 17.2 2 20.5 2 24s.9 6.8 2.5 9.9l7.3-5.7z"/>
+                            <path fill="#EA4335" d="M24 10.3c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C35 3.8 30 2 24 2 15.4 2 8 6.9 4.5 14.1l7.3 5.7c1.7-5.2 6.5-9.5 12.2-9.5z"/>
+                        </svg>
+                        <span>Continuar con Google</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -483,6 +508,6 @@
          ⚠️ Al editar esta nota, que el comentario siga cerrándose con la flecha
          de la línea siguiente: si se pierde, el script de abajo queda DENTRO del
          comentario, no se carga, y el botón de Google deja de funcionar. -->
-    <script src="./js/multimedia.js?v=2.7"></script>
+    <script src="./js/multimedia.js?v=2.8"></script>
 </body>
 </html>
