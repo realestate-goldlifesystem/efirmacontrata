@@ -253,7 +253,15 @@ async function restaurarBorrador() {
     const datos = await leerBorrador();
     if (!datos) return;
 
-    const archivos = datos.fotos.map(f => new File([f.blob], f.nombre, { type: f.tipo, lastModified: f.lastModified }));
+    // ⚠️ Hay que LEER el contenido a memoria (arrayBuffer) antes de armar el
+    // File. Si se reusa el blob tal cual sale de IndexedDB, sigue apuntando al
+    // almacén del navegador: en iPhone esa referencia se queda sin datos al
+    // cerrar la transacción y las miniaturas salen rotas (visto el 20-09-2026).
+    const archivos = [];
+    for (const f of datos.fotos) {
+        const contenido = await f.blob.arrayBuffer();
+        archivos.push(new File([contenido], f.nombre, { type: f.tipo, lastModified: f.lastModified }));
+    }
     handlePhotosSelect(archivos);
     top10Guardado = datos.top10 || null;
 
@@ -268,6 +276,18 @@ async function restaurarBorrador() {
 
 // TOP 10 elegido antes del corte; se vuelve a aplicar al pintar esa pantalla.
 let top10Guardado = null;
+
+/**
+ * Una sola vista previa por foto, compartida entre el Paso 1 y el Paso 2.
+ * Antes cada paso creaba la suya con createObjectURL sobre el mismo archivo:
+ * doble memoria por foto (con 70 fotos se nota) y, con archivos recuperados del
+ * borrador, la segunda podía quedar sin datos y mostrar el ícono de rota.
+ */
+const vistasPrevias = new WeakMap();
+function urlDeFoto(file) {
+    if (!vistasPrevias.has(file)) vistasPrevias.set(file, URL.createObjectURL(file));
+    return vistasPrevias.get(file);
+}
 
 function conectarDescartarBorrador() {
     const btn = document.getElementById('btn-descartar-borrador');
@@ -394,7 +414,7 @@ function renderTop10Grid() {
         card.style.transition = 'all 0.2s';
         
         const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
+        img.src = urlDeFoto(file);
         img.loading = "lazy";
         
         const overlay = document.createElement('div');
@@ -627,7 +647,7 @@ function handlePhotosSelect(files) {
         };
         
         const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
+        img.src = urlDeFoto(file);
         img.loading = "lazy"; // Magia para soportar 70+ fotos sin laggear el navegador
         
         card.appendChild(badge);
