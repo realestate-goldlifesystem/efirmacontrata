@@ -367,6 +367,16 @@ function handleVideoSelect(file) {
     if (!file.type.startsWith('video/')) return alert('Debe ser un video.');
     selectedVideo = file;
     videoFilename.textContent = `${file.name} (${(file.size / (1024*1024)).toFixed(2)} MB)`;
+
+    // Si es el mismo archivo de un intento que se cortó, se avisa para que el
+    // propietario sepa que NO va a empezar de cero.
+    const progresoVideo = leerProgreso();
+    if (progresoVideo.videoClave === claveArchivo(file) && (progresoVideo.uploadUrl || progresoVideo.youtubeId)) {
+        videoFilename.textContent += progresoVideo.youtubeId
+            ? ' — ya estaba subido, no se repite'
+            : ' — se retomará donde quedó';
+    }
+
     btnUpload.disabled = false; // Como el video es el último paso, habilita el botón final
     actualizarBotonSubir();
 }
@@ -652,6 +662,10 @@ btnUpload.addEventListener('click', async () => {
         progressLabel.textContent = 'Creando plantillas PDF/PNG... (puede tardar un minuto)';
         progressFill.style.width = '100%';
         await notifyBackend(youtubeId, photoIds);
+
+        // Terminó de verdad: se borra la memoria para que la próxima carga de
+        // este inmueble (una renovación, por ejemplo) empiece limpia.
+        limpiarProgreso();
         
         // 4. Éxito!
         isUploading = false;
@@ -686,6 +700,67 @@ btnUpload.addEventListener('click', async () => {
 
 let uploadedYoutubeId = null;
 
+// ==========================================
+// MEMORIA DE LA CARGA (para reanudar)
+// ==========================================
+// Todo lo pesado lo sube el celular del propietario. Si se corta (pantalla
+// bloqueada, cambio de app, red), antes había que empezar de CERO: un video de
+// 500 MB subido al 90% se perdía entero.
+//
+// Aquí se recuerda, por inmueble: la sesión de subida del video y por dónde iba,
+// y las fotos que ya quedaron en Drive. Al volver a entrar y elegir el MISMO
+// archivo, continúa en vez de repetir. El archivo en sí no se puede guardar en
+// el navegador, por eso hay que volver a elegirlo.
+const CLAVE_PROGRESO = 'multimedia_progreso_' + currentCdr;
+
+function claveArchivo(file) {
+    return `${file.name}|${file.size}|${file.lastModified || 0}`;
+}
+
+function leerProgreso() {
+    try { return JSON.parse(localStorage.getItem(CLAVE_PROGRESO) || '{}') || {}; }
+    catch (e) { return {}; }
+}
+
+function guardarProgreso(cambios) {
+    try { localStorage.setItem(CLAVE_PROGRESO, JSON.stringify({ ...leerProgreso(), ...cambios })); }
+    catch (e) { /* modo privado o sin espacio: se sigue sin memoria */ }
+}
+
+function limpiarProgreso() {
+    try { localStorage.removeItem(CLAVE_PROGRESO); } catch (e) {}
+}
+
+/**
+ * Le pregunta a YouTube cuántos bytes recibió ya de esta sesión.
+ * Devuelve {completo:false, offset:N} o {completo:true, videoId:'...'},
+ * o null si la sesión ya no sirve (caducó o se borró).
+ */
+async function consultarAvanceVideo(uploadUrl, totalSize) {
+    let res;
+    try {
+        res = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Range': `bytes */${totalSize}` }
+        });
+    } catch (e) {
+        return null;   // sin red: se tratará como sesión no disponible
+    }
+    if (res.status === 308) {
+        const rango = res.headers.get('Range');          // "bytes=0-524287"
+        const hasta = rango ? parseInt(rango.split('-')[1], 10) : -1;
+        return { completo: false, offset: isNaN(hasta) ? 0 : hasta + 1 };
+    }
+    if (res.ok) {
+        try {
+            const datos = await res.json();
+            if (datos && datos.id) return { completo: true, videoId: datos.id };
+        } catch (e) {}
+        return null;
+    }
+    return null;   // 404 / 410: la sesión caducó, toca empezar de nuevo
+}
+
 async function uploadVideoToYouTube(file, percentText, fillBar) {
     if (!youtubeToken) throw new Error("Falta el permiso de YouTube. Vuelve a pulsar PROCESAR Y SUBIR.");
 
@@ -693,6 +768,16 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
         percentText.textContent = '100% (Recuperado)';
         fillBar.style.width = '100%';
         return uploadedYoutubeId;
+    }
+
+    // ¿Este mismo video ya se subió completo en un intento anterior?
+    const progreso = leerProgreso();
+    const clave = claveArchivo(file);
+    if (progreso.videoClave === clave && progreso.youtubeId) {
+        percentText.textContent = '100% (ya estaba subido)';
+        fillBar.style.width = '100%';
+        uploadedYoutubeId = progreso.youtubeId;
+        return progreso.youtubeId;
     }
 
     // YouTube requiere mínimo Título, Descripción y estado Privado
@@ -707,36 +792,89 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
         status: { privacyStatus: "private", selfDeclaredMadeForKids: false }
     };
 
-    // 1. Iniciar sesión Resumable (le avisa a YT que le mandaremos un archivo gigante en pedazos)
-    const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${youtubeToken}`,
-            'Content-Type': 'application/json',
-            'X-Upload-Content-Length': file.size.toString(),
-            'X-Upload-Content-Type': file.type
-        },
-        body: JSON.stringify(metadata)
-    });
-
-    if (!initRes.ok) throw new Error('No se pudo iniciar la subida a YouTube: ' + await initRes.text());
-    const uploadUrl = initRes.headers.get('Location');
-    if (!uploadUrl) throw new Error('YouTube no devolvió la ruta de subida');
-
-    // 2. Enviar en Chunks (Pedazos) de 5MB
-    const chunkSize = 5 * 1024 * 1024;
     const totalSize = file.size;
+    let uploadUrl = null;
     let offset = 0;
+
+    // 1. Reanudar la sesión anterior de ESTE mismo archivo, si sigue viva.
+    if (progreso.videoClave === clave && progreso.uploadUrl) {
+        percentText.textContent = 'Retomando la subida anterior...';
+        const avance = await consultarAvanceVideo(progreso.uploadUrl, totalSize);
+        if (avance && avance.completo) {
+            uploadedYoutubeId = avance.videoId;
+            guardarProgreso({ youtubeId: avance.videoId });
+            percentText.textContent = '100% (ya estaba subido)';
+            fillBar.style.width = '100%';
+            try { await addVideoToPlaylists(avance.videoId); } catch (err) { console.error('Error en playlists:', err); }
+            return avance.videoId;
+        }
+        if (avance) {
+            uploadUrl = progreso.uploadUrl;
+            offset = avance.offset;
+            const pct = Math.round((offset / totalSize) * 100);
+            percentText.textContent = pct + '% (continuando)';
+            fillBar.style.width = pct + '%';
+        }
+    }
+
+    // 2. Sesión nueva (primer intento, archivo distinto o sesión caducada).
+    if (!uploadUrl) {
+        const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${youtubeToken}`,
+                'Content-Type': 'application/json',
+                'X-Upload-Content-Length': totalSize.toString(),
+                'X-Upload-Content-Type': file.type
+            },
+            body: JSON.stringify(metadata)
+        });
+
+        if (!initRes.ok) throw new Error('No se pudo iniciar la subida a YouTube: ' + await initRes.text());
+        uploadUrl = initRes.headers.get('Location');
+        if (!uploadUrl) throw new Error('YouTube no devolvió la ruta de subida');
+
+        // Se guarda ANTES de mandar nada: si el celular se bloquea a mitad del
+        // primer pedazo, al volver ya se sabe a qué sesión reengancharse.
+        guardarProgreso({ videoClave: clave, uploadUrl: uploadUrl, youtubeId: null });
+    }
+
+    // 3. Enviar en Chunks (Pedazos) de 5MB, reintentando los cortes de red.
+    const chunkSize = 5 * 1024 * 1024;
+    const MAX_REINTENTOS = 5;
+    let reintentos = 0;
 
     while (offset < totalSize) {
         const chunkEnd = Math.min(offset + chunkSize, totalSize);
         const chunk = file.slice(offset, chunkEnd);
 
-        const chunkRes = await fetch(uploadUrl, {
-            method: 'PUT',
-            headers: { 'Content-Range': `bytes ${offset}-${chunkEnd - 1}/${totalSize}` },
-            body: chunk
-        });
+        let chunkRes;
+        try {
+            chunkRes = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: { 'Content-Range': `bytes ${offset}-${chunkEnd - 1}/${totalSize}` },
+                body: chunk
+            });
+        } catch (errRed) {
+            // Se cayó la red en mitad del pedazo. Se le pregunta a YouTube hasta
+            // dónde alcanzó a recibir y se sigue desde ahí, sin repetir lo demás.
+            if (++reintentos > MAX_REINTENTOS) {
+                throw new Error('Se perdió la conexión durante la subida del video. Vuelve a entrar y pulsa subir: continuará donde iba.');
+            }
+            percentText.textContent = `Reintentando (${reintentos}/${MAX_REINTENTOS})...`;
+            await new Promise(r => setTimeout(r, 2000 * reintentos));
+            const avance = await consultarAvanceVideo(uploadUrl, totalSize);
+            if (avance && avance.completo) {
+                uploadedYoutubeId = avance.videoId;
+                guardarProgreso({ youtubeId: avance.videoId });
+                try { await addVideoToPlaylists(avance.videoId); } catch (err) { console.error('Error en playlists:', err); }
+                return avance.videoId;
+            }
+            if (avance) offset = avance.offset;
+            continue;
+        }
+
+        reintentos = 0;
 
         if (chunkRes.status === 308) { // 308 = "Recibí el pedazo, manda el siguiente"
             offset = chunkEnd;
@@ -756,7 +894,22 @@ async function uploadVideoToYouTube(file, percentText, fillBar) {
             }
             
             uploadedYoutubeId = videoData.id;
+            guardarProgreso({ youtubeId: videoData.id });
             return videoData.id;
+        } else if (chunkRes.status >= 500) {
+            // Falla temporal de Google: se reconsulta el avance y se reintenta.
+            if (++reintentos > MAX_REINTENTOS) {
+                throw new Error('YouTube no respondió bien a varios intentos. Vuelve a pulsar subir: continuará donde iba.');
+            }
+            await new Promise(r => setTimeout(r, 2000 * reintentos));
+            const avance = await consultarAvanceVideo(uploadUrl, totalSize);
+            if (avance && avance.completo) {
+                uploadedYoutubeId = avance.videoId;
+                guardarProgreso({ youtubeId: avance.videoId });
+                try { await addVideoToPlaylists(avance.videoId); } catch (err) { console.error('Error en playlists:', err); }
+                return avance.videoId;
+            }
+            if (avance) offset = avance.offset;
         } else {
             throw new Error('Falló la subida de un pedazo del video: ' + await chunkRes.text());
         }
@@ -958,9 +1111,29 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
     let idx = 1;
     const total = photosArray.length;
 
+    // Fotos que ya quedaron en Drive en un intento anterior de ESTE inmueble.
+    // Sin esto, un corte a la mitad obligaba a resubirlas todas y además dejaba
+    // duplicados en la carpeta.
+    const fotosPrevias = leerProgreso().fotos || {};
+
     // 1. Subir todas a la carpeta principal
     for (const item of photosArray) {
         let file = item.file || item;
+        const claveFoto = claveArchivo(file);
+
+        const yaSubida = fotosPrevias[claveFoto];
+        if (yaSubida && yaSubida.id) {
+            labelEl.textContent = `Foto ${idx} de ${total}: ya estaba subida`;
+            fillEl.style.width = Math.round((idx / total) * 100) + '%';
+            uploadedIds.push(yaSubida.id);
+            const topPosPrevio = top10Indices.indexOf(idx - 1);
+            if (topPosPrevio !== -1) {
+                const baseNamePrevio = idx === 1 ? `2-Portada_${currentCdr}` : `${idx + 1}-Foto_${currentCdr}`;
+                top10UploadedMeta.push({ id: yaSubida.id, name: `TOP_${topPosPrevio + 1}_${baseNamePrevio}.jpg` });
+            }
+            idx++;
+            continue;
+        }
 
         // Solo la portada va en 1:1. Las demás conservan su encuadre original.
         if (idx === 1) {
@@ -995,7 +1168,9 @@ async function uploadPhotosToDrive(photosArray, top10Indices, labelEl, fillEl) {
         if (res.ok) {
             const data = await res.json();
             uploadedIds.push(data.id);
-            
+            fotosPrevias[claveFoto] = { id: data.id };
+            guardarProgreso({ fotos: fotosPrevias });
+
             // Si esta foto (índice 0-based) es del TOP 10, la anotamos
             const topPos = top10Indices.indexOf(idx - 1);
             if (topPos !== -1) {
