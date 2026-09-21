@@ -82,8 +82,10 @@ function continuarRegistroInmuebleParte2() {
       if (errorParte2.message === CORTE_POR_TIEMPO) {
         // La cola NO se toca: el mismo registro se retoma en la siguiente
         // pasada y continúa copiando solo lo que le falte.
-        Logger.log('⏸️ Parte 2 pausada por tiempo. Se reprograma para continuar en 1 minuto.');
-        asegurarTriggerWorker('continuarRegistroInmuebleParte2', 60000);
+        // 1 segundo: el registro se siente continuo. Es el mismo valor que ya
+        // usa la cola (procesarRegistrosPendientes) al encadenar pasadas.
+        Logger.log('⏸️ Parte 2 pausada por tiempo. Continúa enseguida.');
+        asegurarTriggerWorker('continuarRegistroInmuebleParte2', 1000);
         lock.releaseLock();
         return;
       }

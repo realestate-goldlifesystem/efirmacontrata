@@ -9,7 +9,7 @@
 //
 // ⚠️ Apps Script corta a los 6 minutos. Las dos funciones van por LOTES: se
 // detienen a los 4:30, guardan en qué fila iban y SE PROGRAMAN SOLAS para
-// seguir 1 minuto después, hasta terminar. No hay que volver a pulsar nada;
+// seguir enseguida (1 s), hasta terminar. No hay que volver a pulsar nada;
 // basta mirar el registro de ejecuciones para ver cuándo dice TERMINADO.
 // Si el tope de 20 triggers impidiera programarla, el avance igual queda
 // guardado y basta ejecutar la misma función a mano.
@@ -68,8 +68,8 @@ function revisarMantenimientoMultimedia() {
 }
 
 /**
- * Programa la siguiente pasada dentro de 1 minuto para que el trabajo se
- * complete solo, sin que nadie tenga que volver a pulsar Ejecutar.
+ * Programa la siguiente pasada enseguida para que el trabajo se complete solo,
+ * sin que nadie tenga que volver a pulsar Ejecutar.
  *
  * Devuelve true si quedó programada. Si falla (tope de 20 triggers), el trabajo
  * NO se pierde: el avance sigue guardado y basta volver a ejecutar a mano.
@@ -81,7 +81,10 @@ function _mantProgramarSiguiente(nombreFuncion) {
     ScriptApp.getProjectTriggers().forEach(function (t) {
       if (t.getHandlerFunction() === nombreFuncion) ScriptApp.deleteTrigger(t);
     });
-    ScriptApp.newTrigger(nombreFuncion).timeBased().after(60 * 1000).create();
+    // 1 segundo para que el trabajo se sienta continuo (igual que la cola de
+    // registros). Google puede demorar un poco más en dispararlo, pero no espera
+    // el minuto completo.
+    ScriptApp.newTrigger(nombreFuncion).timeBased().after(1000).create();
     return true;
   } catch (e) {
     Logger.log('⚠️ No se pudo programar la continuación automática: ' + e.message);
@@ -118,7 +121,7 @@ function _mantRecorrer(clavePropiedad, etiqueta, accion, nombreFuncion) {
         detalle.join('\n'),
         '',
         programado
-          ? '⏱️ Continúa SOLO en 1 minuto desde la fila ' + fila + ' (quedan ' + (ultima - fila + 1) + '). No hay que hacer nada.'
+          ? '⏱️ Continúa SOLO enseguida desde la fila ' + fila + ' (quedan ' + (ultima - fila + 1) + '). No hay que hacer nada.'
           : '➡️ VUELVE A EJECUTAR esta misma función para continuar (quedan ' + (ultima - fila + 1) + ' filas).'
       ].join('\n'));
       return;
@@ -145,7 +148,7 @@ function _mantRecorrer(clavePropiedad, etiqueta, accion, nombreFuncion) {
           'Hechos en esta pasada: ' + hechos + ' | omitidos: ' + omitidos,
           detalle.join('\n'),
           '',
-          sigue ? '⏱️ Continúa SOLO en 1 minuto y termina ese inmueble. No hay que hacer nada.'
+          sigue ? '⏱️ Continúa SOLO enseguida y termina ese inmueble. No hay que hacer nada.'
                 : '➡️ VUELVE A EJECUTAR esta misma función para continuar.'
         ].join('\n'));
         return;

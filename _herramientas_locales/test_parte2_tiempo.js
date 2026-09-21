@@ -108,7 +108,7 @@ while (pasadas < 20) {
   duracionMax = Math.max(duracionMax, duracion);
   console.log(`Pasada ${pasadas}: ${(duracion / 1000).toFixed(0)}s · carpetas copiadas: ${copiado()}/${totalMolde}${cortada ? ' · CORTADA por tiempo, se relanza' : ' · completada'}`);
   if (!cortada) break;
-  ahora += 60 * 1000;                        // espera del relanzamiento
+  ahora += 1000;                             // espera del relanzamiento (1 s)
 }
 
 const faltan = rutas(moldeRpr).filter(r => !rutas(rpr).includes(r))
