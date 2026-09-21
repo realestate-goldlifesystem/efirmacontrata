@@ -127,4 +127,49 @@ const ok = [
 ];
 ok.forEach(([n, v]) => console.log(`${v ? '✅' : '❌'} ${n}`));
 console.log(`\nPasadas necesarias: ${pasadas} · pasada más larga: ${(duracionMax / 1000).toFixed(0)}s · carpetas: ${copiado()}/${totalMolde}`);
-process.exit(ok.every(([, v]) => v) ? 0 : 1);
+const okEscenario1 = ok.every(([, v]) => v);
+
+// ============================================================
+// ESCENARIO 2: dos registros casi al mismo tiempo
+// ============================================================
+// La Parte 2 toma SOLO el primero de la cola (el más antiguo por marca de
+// llegada) y hay un candado que impide dos ejecuciones a la vez. Se comprueba
+// que el segundo espera su turno y que ninguno queda a medias ni mezclado.
+console.log('\n\n=== ESCENARIO 2: dos registros seguidos ===');
+ahora = 0;
+const cola = [
+  { id: 'REG-A', llegada: 0, moldes: [construirMolde(), construirMolde()], destinos: [new CarpetaFalsa('RPR-A'), new CarpetaFalsa('REG-A')] },
+  { id: 'REG-B', llegada: 30 * 1000, moldes: [construirMolde(), construirMolde()], destinos: [new CarpetaFalsa('RPR-B'), new CarpetaFalsa('REG-B')] },
+];
+const pendientes = () => cola.filter(r => !r.listo).sort((a, b) => a.llegada - b.llegada);
+const orden = [];
+let pasada = 0;
+while (pendientes().length && pasada < 30) {
+  pasada++;
+  const r = pendientes()[0];                 // igual que el código: solo el primero
+  const inicio = ahora;
+  sandbox.fijarLimite(inicio + PRESUPUESTO);
+  let cortada = false;
+  try { r.moldes.forEach((m, i) => sandbox.copiar(m, r.destinos[i])); }
+  catch (e) { if (e.message !== sandbox.CORTE) throw e; cortada = true; }
+  if (!cortada) r.listo = true;
+  orden.push(r.id);
+  console.log(`Pasada ${pasada} → ${r.id} · ${((ahora - inicio) / 1000).toFixed(0)}s${cortada ? ' · pausada' : ' · TERMINADO'}`);
+  ahora += 1000;
+}
+
+const completo = (r) => r.moldes.every((m, i) => rutas(m).every(x => rutas(r.destinos[i]).includes(x)));
+const sinRepetir = (r) => r.destinos.every(d => { const x = rutas(d); return x.length === new Set(x).size; });
+const seIntercalaron = orden.join(',').includes('REG-B,REG-A');
+
+console.log('\n--- Resultado escenario 2');
+[
+  ['los dos terminan', cola.every(r => r.listo)],
+  ['ninguno queda a medias', cola.every(completo)],
+  ['sin carpetas duplicadas', cola.every(sinRepetir)],
+  ['el segundo espera al primero (no se intercalan)', !seIntercalaron],
+].forEach(([n, v]) => console.log(`${v ? '✅' : '❌'} ${n}`));
+console.log(`Orden de atención: ${orden.join(' → ')}`);
+
+const okEscenario2 = cola.every(r => r.listo) && cola.every(completo) && cola.every(sinRepetir) && !seIntercalaron;
+process.exit(okEscenario1 && okEscenario2 ? 0 : 1);
