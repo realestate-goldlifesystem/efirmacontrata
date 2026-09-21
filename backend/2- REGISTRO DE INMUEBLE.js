@@ -71,7 +71,24 @@ function continuarRegistroInmuebleParte2() {
     Logger.log(`🔧 Procesando ${datos.idInmueble || 'fila ' + datos.fila} - Tipo: ${datos.tipoRegistro.tipo}`);
     Logger.log(`🔧 ═══════════════════════════════════════════════════`);
 
-    procesarRegistroParte2(datos);
+    // Se reserva margen para soltar el trabajo ANTES de que Google mate la
+    // ejecución a los 6 minutos. Sin esto, un registro de propietario nuevo
+    // (dos plantillas: ~4 min + ~2 min) moría siempre a mitad de la copia.
+    LIMITE_PARTE2 = tiempoInicio + (4.5 * 60 * 1000);
+
+    try {
+      procesarRegistroParte2(datos);
+    } catch (errorParte2) {
+      if (errorParte2.message === CORTE_POR_TIEMPO) {
+        // La cola NO se toca: el mismo registro se retoma en la siguiente
+        // pasada y continúa copiando solo lo que le falte.
+        Logger.log('⏸️ Parte 2 pausada por tiempo. Se reprograma para continuar en 1 minuto.');
+        asegurarTriggerWorker('continuarRegistroInmuebleParte2', 60000);
+        lock.releaseLock();
+        return;
+      }
+      throw errorParte2;
+    }
 
     // Limpiar datos después de procesar, usando la clave exacta con la que se leyó
     props.deleteProperty(datos.__clave || ('PROCESO_PARTE2_' + (datos.idInmueble || datos.fila)));
@@ -240,6 +257,14 @@ function procesarRegistroParte2(datos) {
     Logger.log(`✅ Fila ${row} procesada correctamente (Fase de Carpetas)`);
 
   } catch (error) {
+    // Corte por tiempo: NO es un error del registro. Se deja subir para que
+    // quien llamó reprograme la Parte 2; la fila NO se marca en ERROR porque el
+    // inmueble está a medias, no roto.
+    if (error.message === CORTE_POR_TIEMPO) {
+      Logger.log(`⏸️ Fila ${row}: corte por tiempo, se continuará en la siguiente pasada.`);
+      if (sheet && backupFiltro) restaurarFiltros(sheet, backupFiltro);
+      throw error;
+    }
     Logger.log(`❌ ERROR en fila ${row}: ${error.message}`);
     Logger.log('📍 Stack: ' + error.stack);
     marcarErrorEnFila(sheet, row, error.message);
@@ -420,14 +445,20 @@ function procesarTipo4_NuevoPropietario(sheet, row, datos) {
   var inmueblesFolderIter = rprFolder.getFoldersByName('INMUEBLES');
   var inmueblesFolder = inmueblesFolderIter.hasNext() ? inmueblesFolderIter.next() : null;
 
-  if (!inmueblesFolder) {
-    Logger.log('📋 Copiando estructura de PLANTILLA #1 (esto puede tardar 1-2 min)...');
-    copiarContenidoCompleto(templateFolder, rprFolder);
-    Logger.log('✅ Estructura copiada completamente');
-    
-    inmueblesFolderIter = rprFolder.getFoldersByName('INMUEBLES');
-    inmueblesFolder = inmueblesFolderIter.hasNext() ? inmueblesFolderIter.next() : null;
-  }
+  // Se copia SIEMPRE con la versión que solo agrega lo que falta.
+  //
+  // ⚠️ Antes se usaba copiarContenidoCompleto (crea sin mirar) y solo se
+  // ejecutaba si no existía INMUEBLES. Con eso, una copia cortada a mitad
+  // dejaba dos finales malos: si alcanzó a crear INMUEBLES, el reintento se
+  // saltaba TODO y el propietario quedaba sin sus carpetas de documentos; si no,
+  // volvía a copiar y duplicaba lo ya creado. Copiar "lo que falte" es seguro
+  // las veces que haga falta.
+  Logger.log('📋 Copiando estructura de PLANTILLA #1 (esto puede tardar 1-2 min)...');
+  copiarContenidoFaltante(templateFolder, rprFolder);
+  Logger.log('✅ Estructura del propietario completa');
+
+  inmueblesFolderIter = rprFolder.getFoldersByName('INMUEBLES');
+  inmueblesFolder = inmueblesFolderIter.hasNext() ? inmueblesFolderIter.next() : null;
 
   if (!inmueblesFolder) {
     throw new Error('No se encontró carpeta INMUEBLES en RPR incluso después de copiar la plantilla');
@@ -2090,7 +2121,17 @@ Logger.log('📄 Archivo 2 cargado correctamente - v10.2-final');
  * completar lo que les falte). Así un reintento tras un corte por tiempo termina
  * el trabajo en vez de empezarlo de nuevo.
  */
+// Momento en que la Parte 2 debe soltar el trabajo, aunque esté a mitad de una
+// copia. Copiar PLANTILLA #1 tarda ~4 min y PLANTILLA #2 otros ~2: en un
+// registro de propietario NUEVO (TIPO 1) los 6 minutos de Google se agotan
+// siempre (visto el 21-09-2026). Al cortar aquí, la Parte 2 se reprograma y
+// retoma: como todas las copias son "solo lo que falta", reintentar es seguro.
+var LIMITE_PARTE2 = 0;
+var CORTE_POR_TIEMPO = '__TIEMPO_PARTE2__';
+
 function copiarContenidoFaltante(sourceFolder, destinationFolder) {
+  if (LIMITE_PARTE2 && new Date().getTime() > LIMITE_PARTE2) throw new Error(CORTE_POR_TIEMPO);
+
   var nombresArchivos = {};
   var ya = destinationFolder.getFiles();
   while (ya.hasNext()) nombresArchivos[ya.next().getName()] = true;
