@@ -172,4 +172,59 @@ console.log('\n--- Resultado escenario 2');
 console.log(`Orden de atención: ${orden.join(' → ')}`);
 
 const okEscenario2 = cola.every(r => r.listo) && cola.every(completo) && cola.every(sinRepetir) && !seIntercalaron;
-process.exit(okEscenario1 && okEscenario2 ? 0 : 1);
+
+// ============================================================
+// ESCENARIO 3: CINCO registros casi al mismo tiempo
+// ============================================================
+// Caso de un día movido: 5 agentes registrando con pocos minutos de diferencia.
+// Se mide además cuánto espera el último, que es lo que se le promete al agente.
+console.log('\n\n=== ESCENARIO 3: cinco registros casi al mismo tiempo ===');
+ahora = 0;
+const cinco = [];
+for (let i = 1; i <= 5; i++) {
+  cinco.push({
+    id: 'REG-' + i,
+    llegada: (i - 1) * 90 * 1000,            // uno cada minuto y medio
+    moldes: [construirMolde(), construirMolde()],
+    destinos: [new CarpetaFalsa('RPR-' + i), new CarpetaFalsa('REG-' + i)],
+  });
+}
+// El reloj se pone en cero DESPUÉS de armar los moldes: construirlos también
+// consume tiempo falso y, si no se reinicia, las esperas salen infladas.
+ahora = 0;
+
+const pend5 = () => cinco.filter(r => !r.listo && r.llegada <= ahora).sort((a, b) => a.llegada - b.llegada);
+const orden5 = [];
+let p5 = 0;
+while (cinco.some(r => !r.listo) && p5 < 60) {
+  p5++;
+  const r = pend5()[0];
+  if (!r) { ahora += 10 * 1000; p5--; continue; }   // nadie aún: el reloj avanza
+  const inicio = ahora;
+  sandbox.fijarLimite(inicio + PRESUPUESTO);
+  let cortada = false;
+  try { r.moldes.forEach((m, i) => sandbox.copiar(m, r.destinos[i])); }
+  catch (e) { if (e.message !== sandbox.CORTE) throw e; cortada = true; }
+  if (!cortada) { r.listo = true; r.fin = ahora; }
+  orden5.push(r.id);
+  ahora += 1000;
+}
+
+const completo5 = (r) => r.moldes.every((m, i) => rutas(m).every(x => rutas(r.destinos[i]).includes(x)));
+const sinRepetir5 = (r) => r.destinos.every(d => { const x = rutas(d); return x.length === new Set(x).size; });
+const min = (ms) => (ms / 60000).toFixed(1) + ' min';
+
+console.log('\nEspera de cada registro (desde que el agente envía hasta que su carpeta queda lista):');
+cinco.forEach(r => console.log(`  ${r.id}: llegó a ${min(r.llegada)} · listo a ${min(r.fin)} · esperó ${min(r.fin - r.llegada)}`));
+
+console.log('\n--- Resultado escenario 3');
+const ok5 = [
+  ['los 5 terminan', cinco.every(r => r.listo)],
+  ['ninguno queda a medias', cinco.every(completo5)],
+  ['sin carpetas duplicadas', cinco.every(sinRepetir5)],
+  ['se atienden en orden de llegada', orden5.filter((v, i, a) => v !== a[i - 1]).join(',') === 'REG-1,REG-2,REG-3,REG-4,REG-5'],
+];
+ok5.forEach(([n, v]) => console.log(`${v ? '✅' : '❌'} ${n}`));
+console.log(`Pasadas totales: ${p5} · último listo a los ${min(Math.max(...cinco.map(r => r.fin)))}`);
+
+process.exit(okEscenario1 && okEscenario2 && ok5.every(([, v]) => v) ? 0 : 1);
