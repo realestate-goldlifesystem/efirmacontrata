@@ -374,18 +374,28 @@
                 // Verificar si ya está firmado
                 const response = await fetch(CONFIG.API_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ accion: 'verificarEstadoFirma', docId: docId })
+                    body: JSON.stringify({ accion: 'verificarEstadoFirma', docId: docId, cdr: cdr })
                 });
                 const result = await response.json();
-                
+
                 if (result.success && result.firmado) {
-                    // Documento YA firmado
+                    // Documento YA firmado. El servidor devuelve el acta firmada
+                    // MÁS RECIENTE del inmueble: un link viejo del correo lleva a
+                    // la vigente, hasta que haya una firma nueva.
                     document.getElementById('loading-step').style.display = 'none';
                     document.getElementById('step3').style.display = 'flex';
-                    
+
                     document.getElementById('step3-title').innerText = "Documento ya firmado";
-                    document.getElementById('step3-desc').innerText = "Este documento ya ha sido revisado y firmado anteriormente con pleno valor legal.";
+                    document.getElementById('step3-desc').innerText = "Este documento ya fue firmado con pleno valor legal. Aquí puede consultar el acta firmada más reciente de su inmueble.";
                     document.getElementById('step3-actions').innerHTML = `<a href="${result.pdfUrl}" target="_blank" class="btn" style="text-decoration: none; display: inline-block;">Ver Documento Firmado</a>`;
+                } else if (result.noDisponible) {
+                    // El Doc ya no existe y no hay acta firmada para mostrar.
+                    // Antes caía al visor y mostraba un documento roto.
+                    document.getElementById('loading-step').style.display = 'none';
+                    document.getElementById('step3').style.display = 'flex';
+                    document.getElementById('step3-title').innerText = "Documento no disponible";
+                    document.getElementById('step3-desc').innerText = "Este enlace ya no está vigente. Por favor comuníquese con su asesor de Gold Life System para recibir el documento actualizado.";
+                    document.getElementById('step3-actions').innerHTML = '';
                 } else {
                     // Documento NO firmado, mostrar lector
                     document.getElementById('loading-step').style.display = 'none';
@@ -498,7 +508,7 @@
                 try {
                     const r = await fetch(CONFIG.API_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ accion: 'verificarEstadoFirma', docId: docId })
+                        body: JSON.stringify({ accion: 'verificarEstadoFirma', docId: docId, cdr: cdr })
                     });
                     const res = await r.json();
                     if (res && res.success && res.firmado) return true;

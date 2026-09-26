@@ -2014,15 +2014,21 @@ function handleProcesarFirmaElectronica(datos) {
   }
 
   try {
+    // Primero: ¿ya está firmado? Va ANTES de abrir el Doc porque, una vez
+    // firmado, el Doc se manda a la papelera y abrirlo puede fallar.
+    const estado = handleVerificarEstadoFirma({ docId: datos.docId, cdr: datos.cdr });
+    if (estado && estado.firmado) {
+      // Firma completa de antes: no se añade otro certificado, no se regenera
+      // el PDF ni se reenvía el correo al propietario.
+      console.log("Firma repetida ignorada para DocID " + datos.docId + ": el documento ya estaba firmado.");
+      return { success: true, yaFirmado: true, pdfUrl: estado.pdfUrl };
+    }
+    if (estado && estado.noDisponible) {
+      return { success: false, message: "Este documento ya no está disponible para firma." };
+    }
+
     const cuerpo = DocumentApp.openById(datos.docId).getBody().getText();
     if (cuerpo.indexOf(MARCA_CERTIFICADO_FIRMA) !== -1) {
-      const estado = handleVerificarEstadoFirma({ docId: datos.docId });
-      if (estado && estado.firmado) {
-        // Firma completa de antes: no se añade otro certificado, no se regenera
-        // el PDF ni se reenvía el correo al propietario.
-        console.log("Firma repetida ignorada para DocID " + datos.docId + ": el documento ya estaba firmado.");
-        return { success: true, yaFirmado: true, pdfUrl: estado.pdfUrl };
-      }
       // Tiene el certificado pero no el PDF: una firma anterior se cortó a
       // medias. Se completa lo que falta SIN añadir otro certificado.
       console.log("DocID " + datos.docId + " ya tiene certificado pero no PDF: se completa sin volver a firmar.");
@@ -2139,6 +2145,7 @@ function procesarFirmaElectronicaSinCandado(datos) {
       if (estadoCol > 0) {
         const lastRow = sheet.getLastRow();
         let targetRow = -1;
+        let negocioFirmado = '';   // "CORRETAJE", "VENTA"… de la columna que coincidió
 
         // Intentar buscar la fila correcta
         // UNA sola lectura de toda la hoja. Antes se leía celda a celda (hasta
@@ -2161,6 +2168,11 @@ function procesarFirmaElectronicaSinCandado(datos) {
 
           if (cdrMatch || docIdMatch) {
             targetRow = i;
+            [[docIdColCorretaje, 'CORRETAJE'], [docIdColAdmin, 'ADMINISTRACIÓN'],
+             [docIdColVenta, 'VENTA'], [docIdColAdmiVenta, 'ADMI-VENTA'],
+             [docIdColVendiRenta, 'VENDI-RENTA']].forEach(function (par) {
+              if (!negocioFirmado && matchDocId(par[0])) negocioFirmado = par[1];
+            });
             break;
           }
         }
@@ -2179,6 +2191,18 @@ function procesarFirmaElectronicaSinCandado(datos) {
           const docFirmadoCol = getCol('DOCUMENTO FIRMADO');
           if (docFirmadoCol > 0) {
             sheet.getRange(i, docFirmadoCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}"; "📄✅ FIRMADO")`);
+          }
+
+          // El link visible del acta ("Link to merged Doc - …") pasa al PDF
+          // firmado: el Doc se va a la papelera justo al terminar, y ese link
+          // quedaría apuntando a la nada. "Merged Doc ID" NO se toca: con él la
+          // firma encuentra la fila y la sala reconoce los links del correo.
+          if (negocioFirmado) {
+            const linkActaCol = getCol('Link to merged Doc - ' + negocioFirmado);
+            if (linkActaCol > 0) {
+              const rotulo = finalPdf.getName().replace(/"/g, "'");
+              sheet.getRange(i, linkActaCol).setFormula(`=HYPERLINK("${finalPdf.getUrl()}"; "${rotulo}")`);
+            }
           }
           
           // --- NUEVO: Añadir Botón Cargar Contenido ---
@@ -2405,6 +2429,21 @@ function procesarFirmaElectronicaSinCandado(datos) {
           } catch(e) {
             console.error("Error enviando copia final del PDF:", e);
           }
+
+          // --- Retirar el Doc borrador ---
+          // Ya firmado, el Doc solo es un borrador editable: si se deja, alguien
+          // podría cambiarlo y dejaría de coincidir con lo que firmó el
+          // propietario. El PDF firmado es el que vale y se conserva; los de
+          // años anteriores también (historial). A la PAPELERA, no borrado
+          // definitivo: 30 días de respaldo.
+          // Va al final, después de los correos, y solo si la fila se encontró:
+          // si algo no cuadró, mejor conservar el Doc para revisar a mano.
+          try {
+            DriveApp.getFileById(docId).setTrashed(true);
+            console.log("Doc borrador enviado a la papelera tras la firma: " + docId);
+          } catch (eTrash) {
+            console.error("No se pudo enviar el Doc a la papelera (no bloquea la firma):", eTrash);
+          }
         }
       }
     }
@@ -2422,48 +2461,128 @@ function procesarFirmaElectronicaSinCandado(datos) {
 }
 
 /**
- * Función para verificar si un documento ya fue firmado
+ * ¿Ya se firmó este documento? Lo usa la sala de firmas al abrir y tras un error.
+ *
+ * Reglas (26-sep-2026):
+ *  - Si el Doc sigue vivo y NO tiene su "- FIRMADO.pdf" → hay que firmarlo.
+ *    Ojo: aquí NO se mira la hoja, porque es justo el caso de una renovación
+ *    pendiente, y ahí la fila todavía tiene el firmado del año pasado.
+ *  - Si el Doc ya está firmado → se muestra el firmado MÁS RECIENTE del inmueble
+ *    (columna DOCUMENTO FIRMADO), no necesariamente el suyo. Así un link viejo
+ *    del correo lleva al acta vigente hasta que haya una firma nueva.
+ *  - Si el Doc ya no existe o está en la papelera (se manda ahí al firmar) →
+ *    también se muestra el firmado más reciente. Sin eso, un link viejo daba error.
+ *
+ * Todos los PDF firmados anteriores se conservan en Drive: aquí solo se decide
+ * cuál se muestra.
  */
 function handleVerificarEstadoFirma(datos) {
   try {
     const docId = datos.docId;
     if (!docId) return { success: false, message: "No docId provided" };
-    
-    const docFile = DriveApp.getFileById(docId);
-    const folder = docFile.getParents().next();
-    const docCreatedTime = docFile.getDateCreated().getTime();
-    
-    // Buscar si existe la versión en PDF firmada
-    const pdfName = docFile.getName() + " - FIRMADO.pdf";
-    const files = folder.searchFiles(`title = '${pdfName}'`);
-    
-    let yaFirmado = false;
-    let pdfUrl = null;
-    let minDiff = Infinity;
 
-    while (files.hasNext()) {
-      const pdfFile = files.next();
-      const diff = pdfFile.getDateCreated().getTime() - docCreatedTime;
-      
-      // El PDF debe haber nacido DESPUÉS del DOCX (diff >= 0).
-      // Nos quedamos con el que tenga la diferencia de tiempo MÁS PEQUEÑA.
-      // Esto asegura que el DOCX 2025 se case con el PDF 2025, y no con el PDF 2026.
-      if (diff >= 0 && diff < minDiff) {
-        minDiff = diff;
-        yaFirmado = true;
-        pdfUrl = pdfFile.getUrl();
-      }
+    // 1. ¿El Doc sigue vivo? ¿Tiene su propio PDF firmado?
+    let docVivo = false;
+    let pdfPropio = null;
+    try {
+      const docFile = DriveApp.getFileById(docId);
+      docVivo = !docFile.isTrashed();
+      pdfPropio = buscarPdfFirmadoDeDoc(docFile);
+    } catch (e) {
+      // Borrado del todo (pasaron los 30 días de la papelera): se sigue con la hoja
     }
-    
-    if (yaFirmado) {
-      return { success: true, firmado: true, pdfUrl: pdfUrl };
-    } else {
+
+    if (docVivo && !pdfPropio) {
       return { success: true, firmado: false };
     }
+
+    // 2. Firmado, o Doc ya retirado: se muestra el más reciente de la hoja
+    const masReciente = buscarFirmadoMasRecienteEnHoja(docId, datos.cdr);
+    const pdfUrl = masReciente || pdfPropio;
+
+    if (pdfUrl) {
+      return { success: true, firmado: true, pdfUrl: pdfUrl };
+    }
+    return { success: false, noDisponible: true, message: "El documento ya no está disponible." };
+
   } catch (err) {
     console.error("Error en handleVerificarEstadoFirma:", err);
     return { success: false, message: err.toString() };
   }
+}
+
+/**
+ * El "<nombre del Doc> - FIRMADO.pdf" que le corresponde a ESE Doc.
+ * Si hay varios con el mismo nombre (un contrato por año), se queda con el que
+ * nació justo después del Doc: así el Doc de 2025 se casa con el PDF de 2025 y
+ * no con el de 2026.
+ */
+function buscarPdfFirmadoDeDoc(docFile) {
+  const padres = docFile.getParents();
+  if (!padres.hasNext()) return null;
+  const folder = padres.next();
+  const docCreatedTime = docFile.getDateCreated().getTime();
+  const pdfName = docFile.getName() + " - FIRMADO.pdf";
+
+  // trashed = false: al completar una firma cortada se manda a la papelera el
+  // PDF anterior del mismo contrato, y sin este filtro podía salir ese.
+  const files = folder.searchFiles(`title = '${pdfName.replace(/'/g, "\\'")}' and trashed = false`);
+
+  let pdfUrl = null;
+  let minDiff = Infinity;
+  while (files.hasNext()) {
+    const pdfFile = files.next();
+    const diff = pdfFile.getDateCreated().getTime() - docCreatedTime;
+    if (diff >= 0 && diff < minDiff) {
+      minDiff = diff;
+      pdfUrl = pdfFile.getUrl();
+    }
+  }
+  return pdfUrl;
+}
+
+/**
+ * URL de la columna DOCUMENTO FIRMADO del inmueble, que la firma actualiza cada
+ * vez: siempre es el acta firmada más reciente.
+ *
+ * La fila se busca primero por el docId (columnas "Merged Doc ID - …") y, si no
+ * aparece — un link del año pasado, cuyo ID ya fue reemplazado por la renovación —,
+ * por el ID DE REGISTRO que trae el link de la sala (&cdr=).
+ */
+function buscarFirmadoMasRecienteEnHoja(docId, idRegistro) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+  if (!sheet) return null;
+
+  const rango = sheet.getDataRange();
+  const valores = rango.getValues();
+  const formulas = rango.getFormulas();
+  const headers = valores[0].map(h => String(h).trim());
+
+  const colFirmado = headers.indexOf('DOCUMENTO FIRMADO');
+  if (colFirmado === -1) return null;
+  const colId = headers.indexOf('ID DE REGISTRO');
+  const colsDoc = headers
+    .map((h, i) => h.indexOf('Merged Doc ID - ') === 0 ? i : -1)
+    .filter(i => i !== -1);
+
+  let fila = -1;
+  for (let r = 1; r < valores.length && fila === -1; r++) {
+    for (let k = 0; k < colsDoc.length; k++) {
+      if (String(valores[r][colsDoc[k]]).trim() === String(docId).trim()) { fila = r; break; }
+    }
+  }
+  if (fila === -1 && idRegistro && colId !== -1) {
+    for (let r = 1; r < valores.length; r++) {
+      if (String(valores[r][colId]).trim() === String(idRegistro).trim()) { fila = r; break; }
+    }
+  }
+  if (fila === -1) return null;
+
+  const formula = formulas[fila][colFirmado] || '';
+  const m = formula.match(/HYPERLINK\("([^"]+)"/i);
+  if (m) return m[1];
+  const valor = String(valores[fila][colFirmado] || '');
+  return valor.indexOf('http') === 0 ? valor : null;
 }
 
 
