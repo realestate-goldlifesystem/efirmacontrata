@@ -30,7 +30,13 @@ function limpiarPlantilla2Huerfana_CONFIRMADO() {
 function _plantilla2Huerfana(borrar) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet()
     .getSheetByName(CONFIG_INMUEBLES.HOJA_PRINCIPAL);
-  var datos = sheet.getDataRange().getValues();
+  var rango = sheet.getDataRange();
+  var datos = rango.getValues();
+  // El link de la RPR casi siempre es un =HYPERLINK(...): getValues() devuelve
+  // solo el texto visible, así que hay que mirar también la fórmula y, si
+  // tampoco, el enlace enriquecido de la celda.
+  var formulas = rango.getFormulas();
+  var enriquecido = rango.getRichTextValues();
   var encabezados = datos[0];
 
   var colRpr = encabezados.indexOf('LINK DE CARPETA RPR');
@@ -41,13 +47,20 @@ function _plantilla2Huerfana(borrar) {
 
   // Un RPR por propietario, aunque tenga varios inmuebles
   var rprs = {};
+  var sinLink = 0;
   for (var i = 1; i < datos.length; i++) {
     var id = String(datos[i][colId] || '').trim();
-    var m = String(datos[i][colRpr] || '').match(/folders\/([\w-]+)/);
-    if (!id || !m) continue;
-    if (!rprs[m[1]]) rprs[m[1]] = [];
-    rprs[m[1]].push(id);
+    if (!id) continue;
+
+    var folderId = _idDeCarpeta(formulas[i][colRpr]) ||
+                   _idDeCarpeta(datos[i][colRpr]) ||
+                   _idDeCarpeta(_urlEnriquecida(enriquecido[i][colRpr]));
+    if (!folderId) { sinLink++; continue; }
+
+    if (!rprs[folderId]) rprs[folderId] = [];
+    rprs[folderId].push(id);
   }
+  if (sinLink) Logger.log('⚠️ Filas con ID pero sin link de RPR legible: ' + sinLink);
 
   Logger.log(borrar ? '🧹 BORRANDO (a la papelera)' : '🔎 SIMULACIÓN');
   Logger.log('Propietarios (RPR) a revisar: ' + Object.keys(rprs).length);
@@ -88,16 +101,53 @@ function _plantilla2Huerfana(borrar) {
   }
 }
 
-/** Recorre el RPR completo buscando cualquier carpeta llamada PLANTILLA #2. */
-function _buscarPlantilla2(carpeta, ruta, hallazgos) {
-  var hijas = carpeta.getFolders();
-  while (hijas.hasNext()) {
-    var hija = hijas.next();
-    var nombre = hija.getName();
-    if (nombre === 'PLANTILLA #2') {
-      hallazgos.push({ carpeta: hija, ruta: ruta + '/PLANTILLA #2' });
-      continue;                       // no hace falta entrar: se va entera
+/** Saca el ID de carpeta de un texto que contenga .../folders/<id>. */
+function _idDeCarpeta(texto) {
+  var m = String(texto || '').match(/folders\/([\w-]+)/);
+  return m ? m[1] : '';
+}
+
+/** URL del enlace enriquecido de una celda (cuando no es fórmula). */
+function _urlEnriquecida(rich) {
+  if (!rich) return '';
+  var url = rich.getLinkUrl();
+  if (url) return url;
+  var partes = rich.getRuns();
+  for (var i = 0; i < partes.length; i++) {
+    var u = partes[i].getLinkUrl();
+    if (u) return u;
+  }
+  return '';
+}
+
+/**
+ * Busca la PLANTILLA #2 sobrante donde de verdad puede estar: colgando del RPR
+ * o dentro de INMUEBLES/<negocio>/. Se mira solo ahí a propósito — recorrer los
+ * RPR completos (125 subcarpetas cada uno × 18) se pasa de los 6 minutos, y más
+ * abajo no puede aparecer: viene de copiar PLANTILLA #1, que la trae en
+ * INMUEBLES/ARRIENDO.
+ */
+function _buscarPlantilla2(rpr, ruta, hallazgos) {
+  _plantilla2Directa(rpr, ruta, hallazgos);
+
+  var inmuebles = rpr.getFoldersByName('INMUEBLES');
+  while (inmuebles.hasNext()) {
+    var inm = inmuebles.next();
+    _plantilla2Directa(inm, ruta + '/INMUEBLES', hallazgos);
+
+    var negocios = inm.getFolders();
+    while (negocios.hasNext()) {
+      var neg = negocios.next();
+      if (neg.getName() === 'PLANTILLA #2') continue;   // ya la tomó la línea de arriba
+      _plantilla2Directa(neg, ruta + '/INMUEBLES/' + neg.getName(), hallazgos);
     }
-    _buscarPlantilla2(hija, ruta + '/' + nombre, hallazgos);
+  }
+}
+
+/** Hijas directas de una carpeta que se llamen PLANTILLA #2. */
+function _plantilla2Directa(carpeta, ruta, hallazgos) {
+  var it = carpeta.getFoldersByName('PLANTILLA #2');
+  while (it.hasNext()) {
+    hallazgos.push({ carpeta: it.next(), ruta: ruta + '/PLANTILLA #2' });
   }
 }
