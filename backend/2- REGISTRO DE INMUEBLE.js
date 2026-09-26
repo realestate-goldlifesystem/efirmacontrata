@@ -2148,6 +2148,11 @@ function copiarContenidoFaltante(sourceFolder, destinationFolder) {
   var folders = sourceFolder.getFolders();
   while (folders.hasNext()) {
     var folder = folders.next();
+    // El molde "PLANTILLA #2" vive dentro de PLANTILLA #1 (INMUEBLES/ARRIENDO).
+    // Al copiar PLANTILLA #1 en el RPR de un propietario nuevo se venía con
+    // ella y quedaba de adorno: el REG ya se crea desde la maestra, así que ese
+    // molde local no se usa nunca y solo confunde al abrir la carpeta.
+    if (folder.getName() === 'PLANTILLA #2') continue;
     var existente = destinationFolder.getFoldersByName(folder.getName());
     var destino = existente.hasNext() ? existente.next() : destinationFolder.createFolder(folder.getName());
     copiarContenidoFaltante(folder, destino);
