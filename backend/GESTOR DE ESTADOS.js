@@ -137,6 +137,7 @@ function onEditEstados(e) {
     // Pestañas de captaciones: sello de fecha y hora al salir de NUEVO.
     if (SEGUIMIENTO_CAPTACIONES.HOJAS.indexOf(currentSheetName) !== -1) {
       marcarSeguimientoCaptacion_(e, e.range.getSheet());
+      propagarFechaContactoCaptacion_(e, e.range.getSheet());
       return;
     }
     if (currentSheetName !== ESTADOS_CONFIG.HOJA_PRINCIPAL) return; // Solo actuar si es en la hoja correcta
@@ -539,6 +540,7 @@ const SEGUIMIENTO_CAPTACIONES = {
   COL_ESTADO: 'ESTADO DE LLAMADA',
   COL_FECHA: 'FECHA DE SEGUIMIENTO',
   COL_HORA: 'HORA SEGUIMIENTO',
+  COL_CONTACTO: 'FECHA DE CONTACTO',
   ESTADO_INICIAL: 'NUEVO'
 };
 
@@ -594,4 +596,38 @@ function marcarSeguimientoCaptacion_(e, hoja) {
     hoja.getRange(filaInicial + i, colFecha).setValue(fecha);
     hoja.getRange(filaInicial + i, colHora).setValue(hora);
   }
+}
+
+// Al cambiar a mano la FECHA DE CONTACTO de un lead que sigue en NUEVO, todos
+// los NUEVO que están debajo toman esa misma fecha: son los que quedaron sin
+// trabajar y pasan al día en que se retoman. Los que ya tienen otro estado
+// conservan su fecha.
+function propagarFechaContactoCaptacion_(e, hoja) {
+  const cfg = SEGUIMIENTO_CAPTACIONES;
+  const rango = e.range;
+  if (rango.getNumRows() !== 1 || rango.getNumColumns() !== 1) return;
+  const fila = rango.getRow();
+  if (fila < cfg.PRIMERA_FILA_DATOS) return;
+
+  const encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim().toUpperCase(); });
+  const colEstado = encabezados.indexOf(cfg.COL_ESTADO) + 1;
+  const colContacto = encabezados.indexOf(cfg.COL_CONTACTO) + 1;
+  if (!colEstado || !colContacto || rango.getColumn() !== colContacto) return;
+
+  const fecha = rango.getValue();
+  if (fecha === '' || fecha === null) return;
+  const normalizar = function (v) { return String(v == null ? '' : v).trim().toUpperCase(); };
+  if (normalizar(hoja.getRange(fila, colEstado).getValue()) !== cfg.ESTADO_INICIAL) return;
+
+  const n = hoja.getLastRow() - fila;
+  if (n <= 0) return;
+  const estados = hoja.getRange(fila + 1, colEstado, n, 1).getValues();
+  const celdas = [];
+  for (let i = 0; i < n; i++) {
+    if (normalizar(estados[i][0]) === cfg.ESTADO_INICIAL) {
+      celdas.push(hoja.getRange(fila + 1 + i, colContacto).getA1Notation());
+    }
+  }
+  if (celdas.length) hoja.getRangeList(celdas).setValue(fecha);
 }
