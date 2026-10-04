@@ -456,6 +456,9 @@ class SheetsHandler:
         field_values = {
             "n": new_n,
             "fecha de contacto": date_str,
+            # No se mueve nunca: es el día real en que entró el lead. La de
+            # contacto sí la corre el agente al retomar los NUEVO pendientes.
+            "fecha de captacion": date_str,
             "celular": clean_phone(phone),
             "arriendo": self.is_arriendo,
             "venta": self.is_venta,

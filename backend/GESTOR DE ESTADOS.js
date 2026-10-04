@@ -134,10 +134,9 @@ function onEditEstados(e) {
     if (!e || !e.range) return;
 
     const currentSheetName = e.range.getSheet().getName();
-    // Pestañas de captaciones: sello de fecha y hora al salir de NUEVO.
+    // Pestañas de captaciones: sellos de seguimiento y fecha de contacto en cascada.
     if (SEGUIMIENTO_CAPTACIONES.HOJAS.indexOf(currentSheetName) !== -1) {
-      marcarSeguimientoCaptacion_(e, e.range.getSheet());
-      propagarFechaContactoCaptacion_(e, e.range.getSheet());
+      procesarEdicionCaptacion_(e, e.range.getSheet());
       return;
     }
     if (currentSheetName !== ESTADOS_CONFIG.HOJA_PRINCIPAL) return; // Solo actuar si es en la hoja correcta
@@ -528,57 +527,76 @@ function initEstados() {
 // ==========================================
 // SEGUIMIENTO DE CAPTACIONES
 // ==========================================
-// Cuando un lead sale de NUEVO hacia cualquier otro estado (NO, SEGUIMIENTO,
-// CERRADO...), deja en FECHA DE SEGUIMIENTO y HORA SEGUIMIENTO el momento
-// exacto del cambio. Lo despacha onEditEstados, así que solo se dispara con
-// ediciones hechas a mano; lo que escriben el robot o Andrea por API no pasa
-// por aquí.
+// Lo despacha onEditEstados para las dos pestañas de captaciones, así que solo
+// se dispara con ediciones hechas a mano; lo que escriben el robot o Andrea
+// por API no pasa por aquí.
+//   - ESTADO DE LLAMADA sale de NUEVO      -> sella fecha y hora de seguimiento.
+//   - Cambia DETALLES DE SEGUIMIENTO       -> vuelve a sellar fecha y hora.
+//   - Cambia FECHA DE CONTACTO de un NUEVO -> los NUEVO de abajo toman esa fecha.
 
 const SEGUIMIENTO_CAPTACIONES = {
   HOJAS: ['1 - CAPTACIONES A', '1 - CAPTACIONES V'],
   PRIMERA_FILA_DATOS: 3, // fila 1 = encabezados, fila 2 = filtro
   COL_ESTADO: 'ESTADO DE LLAMADA',
+  COL_DETALLES: 'DETALLES DE SEGUIMIENTO',
   COL_FECHA: 'FECHA DE SEGUIMIENTO',
   COL_HORA: 'HORA SEGUIMIENTO',
   COL_CONTACTO: 'FECHA DE CONTACTO',
   ESTADO_INICIAL: 'NUEVO'
 };
 
-function marcarSeguimientoCaptacion_(e, hoja) {
+function procesarEdicionCaptacion_(e, hoja) {
   const cfg = SEGUIMIENTO_CAPTACIONES;
   const encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0]
     .map(function (h) { return String(h).trim().toUpperCase(); });
-  const colEstado = encabezados.indexOf(cfg.COL_ESTADO) + 1;
-  const colFecha = encabezados.indexOf(cfg.COL_FECHA) + 1;
-  const colHora = encabezados.indexOf(cfg.COL_HORA) + 1;
-  if (!colEstado || !colFecha || !colHora) return;
-
+  const col = function (nombre) { return encabezados.indexOf(nombre) + 1; };
+  const cols = {
+    estado: col(cfg.COL_ESTADO), detalles: col(cfg.COL_DETALLES), fecha: col(cfg.COL_FECHA),
+    hora: col(cfg.COL_HORA), contacto: col(cfg.COL_CONTACTO)
+  };
   const rango = e.range;
-  if (colEstado < rango.getColumn() || colEstado > rango.getLastColumn()) return;
+  const toca = function (c) { return c > 0 && c >= rango.getColumn() && c <= rango.getLastColumn(); };
 
-  const filaInicial = Math.max(rango.getRow(), cfg.PRIMERA_FILA_DATOS);
-  const filaFinal = rango.getLastRow();
-  if (filaFinal < filaInicial) return;
+  if (cols.fecha && cols.hora) {
+    if (toca(cols.estado)) marcarSeguimientoCaptacion_(e, hoja, cols);
+    if (toca(cols.detalles)) marcarSeguimientoPorDetalles_(e, hoja, cols);
+  }
+  if (toca(cols.contacto) && cols.estado) propagarFechaContactoCaptacion_(e, hoja, cols);
+}
 
+function normalizarEstadoCaptacion_(v) {
+  return String(v == null ? '' : v).trim().toUpperCase();
+}
+
+// Fecha (solo el día) y hora ("3:47 PM") de este instante, en hora de Colombia.
+function selloSeguimiento_() {
   const ahora = new Date();
   const zona = Session.getScriptTimeZone();
   const p = Utilities.formatDate(ahora, zona, 'yyyy-M-d').split('-');
-  const fecha = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])); // solo el día, sin hora
-  // AM/PM armado a mano: el formato 'a' depende del idioma y devuelve "p. m."
+  // AM/PM armado a mano: el formato "a" depende del idioma y devuelve "p. m."
   const hm = Utilities.formatDate(ahora, zona, 'H:mm').split(':');
   const h24 = Number(hm[0]);
-  const hora = (h24 % 12 || 12) + ':' + hm[1] + (h24 < 12 ? ' AM' : ' PM');
+  return {
+    fecha: new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])),
+    hora: (h24 % 12 || 12) + ':' + hm[1] + (h24 < 12 ? ' AM' : ' PM')
+  };
+}
 
-  const normalizar = function (v) { return String(v == null ? '' : v).trim().toUpperCase(); };
-  const unaCelda = rango.getNumRows() === 1 && rango.getNumColumns() === 1;
+function marcarSeguimientoCaptacion_(e, hoja, cols) {
+  const cfg = SEGUIMIENTO_CAPTACIONES;
+  const rango = e.range;
+  const filaInicial = Math.max(rango.getRow(), cfg.PRIMERA_FILA_DATOS);
+  const filaFinal = rango.getLastRow();
+  if (filaFinal < filaInicial) return;
+  const sello = selloSeguimiento_();
 
-  if (unaCelda) {
+  if (rango.getNumRows() === 1 && rango.getNumColumns() === 1) {
     // Caso normal: se sabe con certeza de qué estado venía.
-    const nuevo = normalizar(e.value);
-    if (normalizar(e.oldValue) !== cfg.ESTADO_INICIAL) return;
+    const nuevo = normalizarEstadoCaptacion_(e.value);
+    if (normalizarEstadoCaptacion_(e.oldValue) !== cfg.ESTADO_INICIAL) return;
     if (!nuevo || nuevo === cfg.ESTADO_INICIAL) return;
-    hoja.getRange(filaInicial, colFecha).setValue(fecha);
-    hoja.getRange(filaInicial, colHora).setValue(hora);
+    hoja.getRange(filaInicial, cols.fecha).setValue(sello.fecha);
+    hoja.getRange(filaInicial, cols.hora).setValue(sello.hora);
     return;
   }
 
@@ -586,47 +604,52 @@ function marcarSeguimientoCaptacion_(e, hoja) {
   // Un lead que nunca salió de NUEVO no tiene seguimiento, así que se marca
   // solo donde ambas celdas siguen vacías.
   const n = filaFinal - filaInicial + 1;
-  const estados = hoja.getRange(filaInicial, colEstado, n, 1).getValues();
-  const fechas = hoja.getRange(filaInicial, colFecha, n, 1).getValues();
-  const horas = hoja.getRange(filaInicial, colHora, n, 1).getValues();
+  const estados = hoja.getRange(filaInicial, cols.estado, n, 1).getValues();
+  const fechas = hoja.getRange(filaInicial, cols.fecha, n, 1).getValues();
+  const horas = hoja.getRange(filaInicial, cols.hora, n, 1).getValues();
   for (let i = 0; i < n; i++) {
-    const estado = normalizar(estados[i][0]);
+    const estado = normalizarEstadoCaptacion_(estados[i][0]);
     if (!estado || estado === cfg.ESTADO_INICIAL) continue;
     if (fechas[i][0] !== '' || horas[i][0] !== '') continue;
-    hoja.getRange(filaInicial + i, colFecha).setValue(fecha);
-    hoja.getRange(filaInicial + i, colHora).setValue(hora);
+    hoja.getRange(filaInicial + i, cols.fecha).setValue(sello.fecha);
+    hoja.getRange(filaInicial + i, cols.hora).setValue(sello.hora);
   }
+}
+
+// Cualquier cambio en DETALLES DE SEGUIMIENTO (una letra, un punto, borrar el
+// texto) cuenta como gestión del lead: la fecha y la hora pasan a este momento.
+function marcarSeguimientoPorDetalles_(e, hoja, cols) {
+  const rango = e.range;
+  const filaInicial = Math.max(rango.getRow(), SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS);
+  const n = rango.getLastRow() - filaInicial + 1;
+  if (n <= 0) return;
+  const sello = selloSeguimiento_();
+  hoja.getRange(filaInicial, cols.fecha, n, 1).setValue(sello.fecha);
+  hoja.getRange(filaInicial, cols.hora, n, 1).setValue(sello.hora);
 }
 
 // Al cambiar a mano la FECHA DE CONTACTO de un lead que sigue en NUEVO, todos
 // los NUEVO que están debajo toman esa misma fecha: son los que quedaron sin
 // trabajar y pasan al día en que se retoman. Los que ya tienen otro estado
-// conservan su fecha.
-function propagarFechaContactoCaptacion_(e, hoja) {
+// conservan su fecha. FECHA DE CAPTACIÓN no se toca: es el día real de entrada.
+function propagarFechaContactoCaptacion_(e, hoja, cols) {
   const cfg = SEGUIMIENTO_CAPTACIONES;
   const rango = e.range;
   if (rango.getNumRows() !== 1 || rango.getNumColumns() !== 1) return;
   const fila = rango.getRow();
   if (fila < cfg.PRIMERA_FILA_DATOS) return;
 
-  const encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0]
-    .map(function (h) { return String(h).trim().toUpperCase(); });
-  const colEstado = encabezados.indexOf(cfg.COL_ESTADO) + 1;
-  const colContacto = encabezados.indexOf(cfg.COL_CONTACTO) + 1;
-  if (!colEstado || !colContacto || rango.getColumn() !== colContacto) return;
-
   const fecha = rango.getValue();
   if (fecha === '' || fecha === null) return;
-  const normalizar = function (v) { return String(v == null ? '' : v).trim().toUpperCase(); };
-  if (normalizar(hoja.getRange(fila, colEstado).getValue()) !== cfg.ESTADO_INICIAL) return;
+  if (normalizarEstadoCaptacion_(hoja.getRange(fila, cols.estado).getValue()) !== cfg.ESTADO_INICIAL) return;
 
   const n = hoja.getLastRow() - fila;
   if (n <= 0) return;
-  const estados = hoja.getRange(fila + 1, colEstado, n, 1).getValues();
+  const estados = hoja.getRange(fila + 1, cols.estado, n, 1).getValues();
   const celdas = [];
   for (let i = 0; i < n; i++) {
-    if (normalizar(estados[i][0]) === cfg.ESTADO_INICIAL) {
-      celdas.push(hoja.getRange(fila + 1 + i, colContacto).getA1Notation());
+    if (normalizarEstadoCaptacion_(estados[i][0]) === cfg.ESTADO_INICIAL) {
+      celdas.push(hoja.getRange(fila + 1 + i, cols.contacto).getA1Notation());
     }
   }
   if (celdas.length) hoja.getRangeList(celdas).setValue(fecha);

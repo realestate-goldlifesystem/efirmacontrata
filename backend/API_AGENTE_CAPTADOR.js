@@ -88,15 +88,17 @@ function obtenerResumenCaptaciones() {
 
     var encabezados = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
     var colFecha = -1;
+    var colCaptacion = -1;
     var colCelular = -1;
     for (var i = 0; i < encabezados.length; i++) {
       var titulo = String(encabezados[i]).toLowerCase().trim();
       if (colFecha < 0 && titulo.indexOf('fecha de contacto') === 0) colFecha = i + 1;
+      if (colCaptacion < 0 && titulo.indexOf('fecha de captaci') === 0) colCaptacion = i + 1;
       if (colCelular < 0 && titulo.indexOf('celular') === 0) colCelular = i + 1;
     }
     if (colFecha < 0 || colCelular < 0) return;
 
-    var anchoLectura = Math.max(colFecha, colCelular);
+    var anchoLectura = Math.max(colFecha, colCelular, colCaptacion);
     var celdas = hoja.getRange(3, 1, ultimaFila - 2, anchoLectura).getDisplayValues();
 
     celdas.forEach(function (fila) {
@@ -106,7 +108,10 @@ function obtenerResumenCaptaciones() {
       var celular = String(fila[colCelular - 1] || '').trim();
       if (!celular) return;
 
-      var etiqueta = String(fila[colFecha - 1] || '').trim();
+      // El dia que cuenta es el de CAPTACION, que no se mueve. La de contacto
+      // la corre el agente al retomar los NUEVO pendientes; solo es respaldo.
+      var etiqueta = colCaptacion > 0 ? String(fila[colCaptacion - 1] || '').trim() : '';
+      if (!etiqueta) etiqueta = String(fila[colFecha - 1] || '').trim();
       if (!etiqueta) return;
 
       var dia = asegurarDia(etiqueta);
