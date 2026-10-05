@@ -2939,32 +2939,53 @@
 
         // ─── Badge Mercado Pago ───────────────────────────────────────────
         // Carga el estado del pago via google.script.run (mismo origen, sin CORS)
-        function cargarEstadoPagoMP(cdr) {
-            var safeId = cdr.replace(/[^a-zA-Z0-9]/g, '_');
-            var el = document.getElementById('mp-status-' + safeId);
+        // Pagos ya confirmados por el servidor, para no volver a preguntar al abrir el modal.
+        // Solo se guardan los confirmados: un "pendiente" puede pagarse en cualquier momento.
+        var pagosMPCache = {};
+
+        // Pinta el estado del pago en `el`. enLinea=true lo deja en un solo renglón (modal).
+        function pintarEstadoPagoMP(el, data, enLinea) {
             if (!el) return;
+            if (!data || !data.success) {
+                el.innerHTML = '<span style="color:var(--text-muted);font-size:0.75rem;">No disponible</span>';
+                return;
+            }
+            if (!data.pagado) {
+                // Si hubo un pago que ya no está vigente (reembolsado, error...), se dice cuál fue.
+                var texto = data.estado ? escapeHTMLAttr(data.estado) : 'PAGO PENDIENTE';
+                el.innerHTML = '<span style="color:var(--warning);font-weight:600;">&#x23F3; ' + texto + '</span>';
+                return;
+            }
+            var monto = data.monto ? Number(data.monto).toLocaleString('es-CO') : '---';
+            var idPago = escapeHTMLAttr(data.paymentId || '');
+            var detalle = 'ID: ' + idPago + ' &mdash; ' + escapeHTMLAttr(data.fecha || '');
+            el.innerHTML =
+                '<span style="color:var(--success);font-weight:700;">&#x2705; ' + (enLinea ? 'PAGO VERIFICADO' : 'VERIFICADO') + '</span>' +
+                '<span style="color:var(--text-muted);font-size:0.8rem;margin-left:8px;">$' + monto + ' COP</span>' +
+                (enLinea
+                    ? '<span style="color:var(--text-muted);font-size:0.8rem;margin-left:8px;">' + detalle + '</span>' +
+                      '<button class="btn-copy" data-copy="' + idPago + '" onclick="copiarValorBoton(this)" title="Copiar ID del pago" style="margin-left:4px;">&#128203;</button>'
+                    : '<span style="color:var(--text-muted);font-size:0.75rem;display:block;margin-top:2px;">' + detalle + '</span>');
+        }
+
+        // elId opcional: por defecto pinta en la tarjeta del registro; el modal pasa el suyo.
+        function cargarEstadoPagoMP(cdr, elId) {
+            var destino = elId || ('mp-status-' + cdr.replace(/[^a-zA-Z0-9]/g, '_'));
+            var enLinea = !!elId;
+            if (!document.getElementById(destino)) return;
+
+            if (pagosMPCache[cdr]) {
+                pintarEstadoPagoMP(document.getElementById(destino), pagosMPCache[cdr], enLinea);
+                return;
+            }
 
             google.script.run
                 .withSuccessHandler(function(data) {
-                    var statusEl = document.getElementById('mp-status-' + safeId);
-                    if (!statusEl) return;
-                    if (data && data.success && data.pagado) {
-                        var monto = data.monto ? Number(data.monto).toLocaleString('es-CO') : '---';
-                        statusEl.innerHTML =
-                            '<span style="color:var(--success);font-weight:700;">&#x2705; VERIFICADO</span>' +
-                            '<span style="color:var(--text-muted);font-size:0.8rem;margin-left:8px;">$' + monto + ' COP</span>' +
-                            '<span style="color:var(--text-muted);font-size:0.75rem;display:block;margin-top:2px;">' +
-                            'ID: ' + (data.paymentId || '') + ' &mdash; ' + (data.fecha || '') +
-                            '</span>';
-                    } else {
-                        statusEl.innerHTML =
-                            '<span style="color:var(--warning);font-weight:600;">&#x23F3; PAGO PENDIENTE</span>';
-                    }
+                    if (data && data.success && data.pagado) pagosMPCache[cdr] = data;
+                    pintarEstadoPagoMP(document.getElementById(destino), data, enLinea);
                 })
                 .withFailureHandler(function(err) {
-                    var statusEl = document.getElementById('mp-status-' + safeId);
-                    if (statusEl) statusEl.innerHTML =
-                        '<span style="color:var(--text-muted);font-size:0.75rem;">No disponible</span>';
+                    pintarEstadoPagoMP(document.getElementById(destino), null, enLinea);
                     console.warn('Error cargando estado MP para ' + cdr + ':', err);
                 })
                 .obtenerEstadoPagoMP(cdr);
@@ -3488,9 +3509,12 @@
                     </div>
                     <div><strong>Tipo:</strong> ${tipo.toUpperCase()}</div>
                     <div><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</div>
+                    ${tipo === 'inquilino' ? `<div><strong>&#x1F4B3; Pago (MP):</strong> <span id="mp-status-modal"><span style="color:var(--text-muted);font-size:0.8rem;">&#x23F3; verificando...</span></span></div>` : ''}
                 </div>
             `;
             document.getElementById('infoRegistro').innerHTML = infoHtml;
+            // El pago lo hace el inquilino: solo su modal lleva el distintivo.
+            if (tipo === 'inquilino') cargarEstadoPagoMP(cdr, 'mp-status-modal');
         }
 
         // --- MANEJO DE DOCUMENTOS Y EVALUACION ---

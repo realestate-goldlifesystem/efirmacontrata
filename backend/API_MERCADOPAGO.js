@@ -13,6 +13,91 @@ const ESTADOS_SEGUROS_PAGO_MP = [
   'APROBADO', 'CONTRATO APROBADO', 'CONTRATO ORIGINAL GENERADO', 'PROP_VALIDATED'
 ];
 
+// Estados de PAGOS_RECIBIDOS en los que el dinero está recibido y vigente.
+const ESTADOS_PAGO_VIGENTE = ['APROBADO', 'CONSOLIDADO'];
+
+/**
+ * Un registro tiene dos nombres: el CDR largo ("REG_21-09-2026-VR4_(...)") y el ID corto
+ * ("MN348696"). El pago queda guardado con el que traía el link del formulario (hoy el ID),
+ * pero el panel y el motor de contratos preguntan a veces con el CDR. Comparar un nombre
+ * contra el otro nunca coincide: el panel mostraba "PAGO PENDIENTE" con el pago ya hecho y
+ * el auditor de 48 h no encontraba el inmueble. Todo el que cruce un pago con un registro
+ * debe pasar por aquí.
+ * @param {string} cdrOId - CDR o ID de registro
+ * @return {string[]} Los nombres del registro, en mayúsculas y sin espacios sobrantes
+ */
+function clavesDeRegistroParaPago(cdrOId) {
+  const claves = [];
+  const agregar = function (v) {
+    const s = String(v || '').trim().toUpperCase();
+    if (s && claves.indexOf(s) === -1) claves.push(s);
+  };
+  agregar(cdrOId);
+  if (!claves.length) return claves;
+
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+    const ultima = sheet ? sheet.getLastRow() : 0;
+    if (ultima < 2) return claves;
+
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const colCdr = headers.indexOf('CODIGO DE REGISTRO') + 1;
+    const colId = headers.indexOf('ID DE REGISTRO') + 1;
+    if (!colCdr || !colId) return claves;
+
+    const cdrs = sheet.getRange(2, colCdr, ultima - 1, 1).getValues();
+    const ids = sheet.getRange(2, colId, ultima - 1, 1).getValues();
+    for (let i = 0; i < cdrs.length; i++) {
+      const c = String(cdrs[i][0] || '').trim().toUpperCase();
+      const d = String(ids[i][0] || '').trim().toUpperCase();
+      if (c === claves[0] || d === claves[0]) {
+        agregar(c);
+        agregar(d);
+        break;
+      }
+    }
+  } catch (e) {
+    Logger.log('⚠️ No se pudieron resolver los nombres del registro ' + cdrOId + ': ' + e.message);
+  }
+  return claves;
+}
+
+/**
+ * Busca el pago vigente de un registro en PAGOS_RECIBIDOS, por CDR o por ID.
+ * @param {string} cdrOId - CDR o ID de registro
+ * @return {{pagado: boolean, monto: *, fecha: string, paymentId: string, estado: string}}
+ *         Si no hay pago vigente, `estado` trae el de la última fila del registro (ej.
+ *         "REEMBOLSADO POR TIEMPO") o '' si nunca hubo ninguna.
+ */
+function buscarPagoDeRegistro(cdrOId) {
+  const sinPago = { pagado: false, monto: '', fecha: '', paymentId: '', estado: '' };
+  const claves = clavesDeRegistroParaPago(cdrOId);
+  if (!claves.length) return sinPago;
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('PAGOS_RECIBIDOS');
+  if (!sheet) return sinPago;
+
+  const data = sheet.getDataRange().getValues();
+  // Al revés: si hay varias filas del mismo registro, manda la más reciente.
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (claves.indexOf(String(data[i][2] || '').trim().toUpperCase()) === -1) continue;
+
+    const estado = String(data[i][4] || '').trim().toUpperCase();
+    if (ESTADOS_PAGO_VIGENTE.indexOf(estado) !== -1) {
+      const f = data[i][0];
+      return {
+        pagado: true,
+        monto: data[i][3],
+        fecha: f instanceof Date ? Utilities.formatDate(f, Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm') : String(f || ''),
+        paymentId: String(data[i][1] || ''),
+        estado: estado
+      };
+    }
+    if (!sinPago.estado) sinPago.estado = estado;
+  }
+  return sinPago;
+}
+
 function crearPreferenciaPago(datos) {
   try {
     const url = 'https://api.mercadopago.com/checkout/preferences';
@@ -185,6 +270,7 @@ function auditorDeContratosVencidos() {
     // Obtener headers de la hoja de inmuebles para encontrar las columnas de CDR y ESTADOS
     const headersInmuebles = sheetInmuebles.getRange(1, 1, 1, sheetInmuebles.getLastColumn()).getValues()[0];
     const colCdrInmuebles = headersInmuebles.indexOf('CODIGO DE REGISTRO');
+    const colIdInmuebles = headersInmuebles.indexOf('ID DE REGISTRO');
     const colEstadoInmuebles = headersInmuebles.indexOf('ESTADO DEL INMUEBLE');
     const colEstadoDocInmuebles = headersInmuebles.indexOf('ESTADO DOCUMENTAL');
     const colDetallesInmuebles = headersInmuebles.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
@@ -208,9 +294,15 @@ function auditorDeContratosVencidos() {
         
         if (minutesDiff >= 2880) { // 48 horas (48 * 60 minutos)
           // Buscar el estado del CDR en la hoja de inmuebles revisando todas las columnas relevantes
+          // El pago puede venir guardado con el CDR o con el ID del registro: se busca por los dos.
+          // Buscando solo por CDR, un pago guardado con el ID no encontraba su inmueble y se
+          // mandaba a reembolso aunque el trámite ya estuviera en curso.
           let esEstadoSeguro = false;
+          const clavePago = String(cdr || '').trim().toUpperCase();
           for (let j = 1; j < dataInmuebles.length; j++) {
-            if (colCdrInmuebles !== -1 && String(dataInmuebles[j][colCdrInmuebles]).trim() === String(cdr).trim()) {
+            const cdrFila = colCdrInmuebles !== -1 ? String(dataInmuebles[j][colCdrInmuebles] || '').trim().toUpperCase() : '';
+            const idFila = colIdInmuebles !== -1 ? String(dataInmuebles[j][colIdInmuebles] || '').trim().toUpperCase() : '';
+            if (clavePago && (cdrFila === clavePago || idFila === clavePago)) {
               const valEstado = colEstadoInmuebles !== -1 ? String(dataInmuebles[j][colEstadoInmuebles] || '').toUpperCase() : '';
               const valEstadoDoc = colEstadoDocInmuebles !== -1 ? String(dataInmuebles[j][colEstadoDocInmuebles] || '').toUpperCase() : '';
               const valDetalles = colDetallesInmuebles !== -1 ? String(dataInmuebles[j][colDetallesInmuebles] || '').toUpperCase() : '';
@@ -292,11 +384,12 @@ function consolidarPagoSiAplica(cdr, estadoNuevo) {
     const sheetPagos = ss.getSheetByName('PAGOS_RECIBIDOS');
     if (!sheetPagos) return;
 
+    const claves = clavesDeRegistroParaPago(cdr);
     const dataPagos = sheetPagos.getDataRange().getValues();
     for (let i = 1; i < dataPagos.length; i++) {
-      const filaCdr = String(dataPagos[i][2]).trim();
+      const filaCdr = String(dataPagos[i][2] || '').trim().toUpperCase();
       const estadoPago = dataPagos[i][4];
-      if (filaCdr === String(cdr).trim() && estadoPago === 'APROBADO') {
+      if (claves.indexOf(filaCdr) !== -1 && estadoPago === 'APROBADO') {
         sheetPagos.getRange(i + 1, 5).setValue('CONSOLIDADO');
         sheetPagos.getRange(i + 1, 5).setBackground('#d9ead3'); // Verde claro
         Logger.log('💰 Pago consolidado de inmediato para CDR ' + cdr + ' (estado: ' + estadoNuevo + '), ya no aplica reembolso por tiempo.');
@@ -309,28 +402,13 @@ function consolidarPagoSiAplica(cdr, estadoNuevo) {
 
 function verificarPagoPorCDR(cdr) {
   try {
-    // Habilitado explícitamente para prueba del registro KK163493
-    if (cdr && String(cdr).trim().toUpperCase() === 'KK163493') {
-      return true;
-    }
-
     // Verificación de máxima seguridad usando ScriptProperties
     const properties = PropertiesService.getScriptProperties();
     if (properties.getProperty('PAGO_APROBADO_' + cdr) === 'true') {
       return true;
     }
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheetPagos = ss.getSheetByName('PAGOS_RECIBIDOS');
-    if (!sheetPagos) return false;
-    
-    const dataPagos = sheetPagos.getDataRange().getValues();
-    for (let i = 1; i < dataPagos.length; i++) {
-      if (dataPagos[i][2] === cdr && dataPagos[i][4] === 'APROBADO') {
-        return true;
-      }
-    }
-    return false;
+    return buscarPagoDeRegistro(cdr).pagado;
   } catch (e) {
     return false;
   }

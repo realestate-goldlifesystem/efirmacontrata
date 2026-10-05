@@ -2596,42 +2596,15 @@ function obtenerEstadosValidacionDesdeCerebro(cdr) {
 /**
  * Consulta el estado del pago en la hoja PAGOS_RECIBIDOS (Mercado Pago).
  * Se llama desde doGet con accion=verificarPagoMP&cdr=XXX
- * Retorna: { success: true, pagado: boolean, monto, fecha, paymentId }
+ * También la llama el panel de validación para el distintivo de pago de cada tarjeta.
+ * Acepta CDR o ID de registro (ver buscarPagoDeRegistro en API_MERCADOPAGO.js).
+ * Retorna: { success: true, pagado: boolean, monto, fecha, paymentId, estado }
  */
 function obtenerEstadoPagoMP(cdr) {
   try {
-    // Habilitado explícitamente para prueba del registro KK163493
-    if (cdr && String(cdr).trim().toUpperCase() === 'KK163493') {
-      return {
-        success: true,
-        pagado: true,
-        monto: 85000,
-        fecha: new Date().toLocaleDateString('es-CO'),
-        paymentId: 'TEST-KK163493-PAID'
-      };
-    }
-
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('PAGOS_RECIBIDOS');
-    if (!sheet) {
-      return { success: true, pagado: false, motivo: 'Hoja PAGOS_RECIBIDOS no encontrada' };
-    }
-    var data = sheet.getDataRange().getValues();
-    // Recorremos al revés para retornar el último pago aprobado si hay varios
-    for (var i = data.length - 1; i >= 1; i--) {
-      var filaCDR   = String(data[i][2]).trim();
-      var filaEstado = String(data[i][4]).trim().toUpperCase();
-      if (filaCDR === cdr && filaEstado === 'APROBADO') {
-        return {
-          success:   true,
-          pagado:    true,
-          monto:     data[i][3],
-          fecha:     data[i][0] ? new Date(data[i][0]).toLocaleDateString('es-CO') : '',
-          paymentId: String(data[i][1])
-        };
-      }
-    }
-    return { success: true, pagado: false };
+    var pago = buscarPagoDeRegistro(cdr);
+    pago.success = true;
+    return pago;
   } catch (ex) {
     Logger.log('Error en obtenerEstadoPagoMP: ' + ex.message);
     return { success: false, pagado: false, motivo: ex.message };
