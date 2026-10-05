@@ -582,10 +582,17 @@ function ccRegistrarPago(datos) {
       if (!carpetaComprobantes) {
         return { success: false, message: 'No encontré la carpeta "' + CUENTA_COBRO.CARPETA_COMPROBANTES + '…" en SOPORTES CONTABLES. No se guardó ni se envió nada.' };
       }
-      var nombreComprobante = 'Comprobante de pago del propietario - Honorarios de corretaje - ' + idRegistro + '.' + ext;
-      // Si un intento anterior guardó el comprobante pero el recibo falló, no se duplica
-      var previos = carpetaComprobantes.getFilesByName(nombreComprobante);
-      while (previos.hasNext()) previos.next().setTrashed(true);
+      var baseComprobante = 'Comprobante de pago del propietario - Honorarios de corretaje - ' + idRegistro + '.';
+      var nombreComprobante = baseComprobante + ext;
+      // Si un intento anterior guardó el comprobante pero el recibo falló, no se
+      // duplica. Se compara SIN la extensión: en el reintento pueden subir el
+      // mismo comprobante en otro formato (.jpg primero, .png después — pasó en
+      // la prueba del 05-oct-2026 y quedaron dos).
+      var previos = carpetaComprobantes.getFiles();
+      while (previos.hasNext()) {
+        var previo = previos.next();
+        if (previo.getName().indexOf(baseComprobante) === 0) previo.setTrashed(true);
+      }
       carpetaComprobantes.createFile(Utilities.newBlob(Utilities.base64Decode(datos.base64),
                                                        String(datos.mimeType).toLowerCase(), nombreComprobante));
     }
