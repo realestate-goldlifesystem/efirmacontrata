@@ -99,6 +99,12 @@ function _actasFirmadas(aplicar) {
         var doc = _actaArchivoVivo(docId);
         var esDoc = doc && doc.getMimeType() === MimeType.GOOGLE_DOCS;
         if (def.seFirma && esDoc) {
+          // Plantilla que quedó con el marcador sin reemplazar (pruebas del
+          // MVP): su "FIRMADO" no es un acta de verdad. No se toca ni se enlaza.
+          if (/<<.*>>/.test(doc.getName())) {
+            avisos.push('   👀 ' + def.negocio + ': es una plantilla sin llenar, se deja para revisar a mano');
+            continue;
+          }
           var pdfPropio = buscarPdfFirmadoDeDoc(doc);        // GESTOR_CONTRATOS.js
           if (!pdfPropio) continue;                          // sin firmar: no se toca nada
           avisos.push('   🗑️ ' + def.negocio + ': Doc a la papelera (' + doc.getName() + ')');
