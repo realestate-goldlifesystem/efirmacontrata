@@ -35,6 +35,7 @@ var CUENTA_COBRO = {
   // Recibo de pago (se envía cuando el admin sube el comprobante del propietario)
   COL_RECIBO: 'RECIBO DE CORRETAJE',
   CARPETA_RECIBOS: '3- RECIBOS DE GESTION',                       // empieza por
+  CARPETA_COMPROBANTES: 'COMPROBANTES DE PAGO - ADICIONALES',     // empieza por
   PLANTILLA_RECIBO: '3- RECIBO DE PRESTACIÓN DE SERVICIOS DE CORRETAJE',   // empieza por
   URL_PAGINA_COMPROBANTE: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/carga_comprobante_pago.html',
   // Client ID público del botón de Google de las páginas de carga (ya está en el frontend)
@@ -555,17 +556,24 @@ function ccRegistrarPago(datos) {
       return { success: false, yaRegistrado: true, message: 'El recibo de este inmueble ya fue enviado. No se envía dos veces.' };
     }
 
-    // Comprobante → carpeta de recibos del inmueble (en prueba no se guarda nada)
     var carpetaRecibos = _ccCarpetaRecibos(sheet, fila, headers);
     if (!carpetaRecibos) return { success: false, message: 'No encontré la carpeta de recibos del inmueble en SOPORTES CONTABLES.' };
+
+    // Comprobante → "COMPROBANTES DE PAGO - ADICIONALES, TRABAJOS, OBRA, ASEO, Etc...":
+    // es la carpeta donde quedan los pagos del propietario por los servicios que
+    // adquiere con Gold Life. (En prueba no se guarda nada.)
     var idRegistro = String(sheet.getRange(fila, headers.indexOf('ID DE REGISTRO') + 1).getValue()).trim();
     if (!esPrueba) {
-      var nombreComprobante = 'Comprobante de pago del propietario - ' + idRegistro + '.' + ext;
+      var carpetaComprobantes = _ccSubcarpetaDeSoportes(sheet, fila, headers, CUENTA_COBRO.CARPETA_COMPROBANTES);
+      if (!carpetaComprobantes) {
+        return { success: false, message: 'No encontré la carpeta "' + CUENTA_COBRO.CARPETA_COMPROBANTES + '…" en SOPORTES CONTABLES. No se guardó ni se envió nada.' };
+      }
+      var nombreComprobante = 'Comprobante de pago del propietario - Honorarios de corretaje - ' + idRegistro + '.' + ext;
       // Si un intento anterior guardó el comprobante pero el recibo falló, no se duplica
-      var previos = carpetaRecibos.getFilesByName(nombreComprobante);
+      var previos = carpetaComprobantes.getFilesByName(nombreComprobante);
       while (previos.hasNext()) previos.next().setTrashed(true);
-      carpetaRecibos.createFile(Utilities.newBlob(Utilities.base64Decode(datos.base64),
-                                                  String(datos.mimeType).toLowerCase(), nombreComprobante));
+      carpetaComprobantes.createFile(Utilities.newBlob(Utilities.base64Decode(datos.base64),
+                                                       String(datos.mimeType).toLowerCase(), nombreComprobante));
     }
 
     var r = ccGenerarYEnviarRecibo(sheet, fila, { formaPago: formaPago, fechaPago: datos.fechaPago, soloAdmin: esPrueba });
@@ -574,6 +582,11 @@ function ccRegistrarPago(datos) {
     }
 
     if (!esPrueba) {
+      // El recibo ya salió: se retiran los moldes y queda solo el recibo.
+      // Va en try: un tropiezo ordenando no puede hacer parecer que el envío falló.
+      try { ccOrdenarCarpetaDeRecibos(carpetaRecibos, r.idPdf); }
+      catch (eOrden) { Logger.log('⚠️ No se pudo ordenar la carpeta de recibos: ' + eOrden.message); }
+
       if (iRec !== -1) sheet.getRange(fila, iRec + 1).setFormula('=HYPERLINK("' + r.urlPdf + '"; "🧾✅")');
       var iDet = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
       if (iDet !== -1) sheet.getRange(fila, iDet + 1).setValue('✅ Pago del propietario recibido. 🧾 Recibo enviado por $' + ccMiles(r.valor) + '.');
@@ -592,6 +605,11 @@ function ccRegistrarPago(datos) {
 
 /** SOPORTES CONTABLES (año vigente) / "3- RECIBOS DE GESTION…". null si no está. */
 function _ccCarpetaRecibos(sheet, fila, headers) {
+  return _ccSubcarpetaDeSoportes(sheet, fila, headers, CUENTA_COBRO.CARPETA_RECIBOS);
+}
+
+/** Subcarpeta de SOPORTES CONTABLES (año vigente) cuyo nombre EMPIEZA por el prefijo. null si no está. */
+function _ccSubcarpetaDeSoportes(sheet, fila, headers, prefijo) {
   var iSop = headers.indexOf('SOPORTES CONTABLES');
   if (iSop === -1) return null;
   var celda = sheet.getRange(fila, iSop + 1);
@@ -600,9 +618,59 @@ function _ccCarpetaRecibos(sheet, fila, headers) {
   var hijas = DriveApp.getFolderById(m[1]).getFolders();
   while (hijas.hasNext()) {
     var h = hijas.next();
-    if (h.getName().indexOf(CUENTA_COBRO.CARPETA_RECIBOS) === 0) return h;
+    if (!h.isTrashed() && h.getName().indexOf(prefijo) === 0) return h;
   }
   return null;
+}
+
+/** ¿La carpeta (y todo lo que cuelga de ella) no tiene ni un archivo? */
+function _ccCarpetaSinArchivos(carpeta) {
+  if (carpeta.getFiles().hasNext()) return false;
+  var hijas = carpeta.getFolders();
+  while (hijas.hasNext()) {
+    if (!_ccCarpetaSinArchivos(hijas.next())) return false;
+  }
+  return true;
+}
+
+/**
+ * Deja la carpeta de recibos solo con el recibo enviado (decisión de Leonardo,
+ * oct-2026): lo demás que trae de PLANTILLA #2 son moldes que en un corretaje
+ * no se usan — las plantillas "N- RECIBO DE PRESTACIÓN…" y las carpetas MES #1…#12.
+ *
+ * Solo se retira lo que es molde, y a la PAPELERA (30 días de respaldo):
+ *   - Docs cuyo nombre empieza por "<número>- RECIBO DE PRESTACI".
+ *   - Subcarpetas que no tengan NINGÚN archivo dentro.
+ * Cualquier otra cosa (un PDF, una carpeta con algo adentro) se deja y se anota:
+ * no es plantilla, alguien la puso ahí.
+ *
+ * ⚠️ `comparar_carpetas_con_plantilla.js` / `completarCarpetasFaltantes` verán
+ * estas carpetas como "faltantes": es a propósito, no hay que reponerlas.
+ */
+function ccOrdenarCarpetaDeRecibos(carpeta, idPdfRecibo) {
+  var retirados = 0, dejados = [];
+
+  var files = carpeta.getFiles();
+  while (files.hasNext()) {
+    var f = files.next();
+    if (f.getId() === idPdfRecibo) continue;
+    if (f.getMimeType() === MimeType.GOOGLE_DOCS && /^\d+- RECIBO DE PRESTACI/i.test(f.getName())) {
+      f.setTrashed(true); retirados++;
+    } else {
+      dejados.push(f.getName());
+    }
+  }
+
+  var hijas = carpeta.getFolders();
+  while (hijas.hasNext()) {
+    var h = hijas.next();
+    if (_ccCarpetaSinArchivos(h)) { h.setTrashed(true); retirados++; }
+    else dejados.push(h.getName() + '/');
+  }
+
+  Logger.log('🧹 Carpeta de recibos ordenada: ' + retirados + ' moldes a la papelera' +
+             (dejados.length ? '. Se dejó (no es plantilla): ' + dejados.join(' | ') : '.'));
+  return { retirados: retirados, dejados: dejados };
 }
 
 /**
@@ -742,7 +810,7 @@ function ccGenerarYEnviarRecibo(sheet, fila, op) {
     MailApp.sendEmail(mensaje);
 
     Logger.log('🧾 Recibo enviado a ' + mensaje.to + ' por $' + ccMiles(val.total));
-    return { enviada: true, motivo: '', valor: val.total, urlPdf: pdf.getUrl() };
+    return { enviada: true, motivo: '', valor: val.total, urlPdf: pdf.getUrl(), idPdf: pdf.getId() };
 
   } catch (e) {
     Logger.log('❌ Error generando el recibo: ' + e.message + '\n' + e.stack);
