@@ -1598,9 +1598,10 @@ function actualizarEstadoContrato(cdr, estado, detalles) {
         }
         Logger.log(`Estado actualizado para CDR/ID ${cdr}: ${estado} (Doc: ${estadoDocValor})`);
 
-        // El trámite acaba de avanzar: consolidar el pago de una vez, sin esperar al cron de 48h.
+        // Red de seguridad: el pago se consolida al aprobar los documentos del propietario
+        // (procesarValidacionPropietario). Si por algo no quedó consolidado ahí, se hace aquí.
         if (typeof consolidarPagoSiAplica === 'function') {
-          consolidarPagoSiAplica(cdr, estado);
+          consolidarPagoSiAplica(cdr, estado, estadoDocValor);
         }
 
         break;

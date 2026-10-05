@@ -4,14 +4,41 @@
 // Credenciales de Producción (Reales - Para cuando estés listo para salir en vivo)
 const MP_ACCESS_TOKEN = 'APP_USR-8777396757564882-052314-43723717a419b60b7e28e4b9a4638c6d-365464952';
 
-// Estados del inmueble/contrato donde el trámite ya está en curso y el pago NO debe reembolsarse.
-// Único punto de verdad: lo usan tanto el cron de 48h (auditorDeContratosVencidos) como la
-// consolidación inmediata (consolidarPagoSiAplica) al avanzar el contrato.
-const ESTADOS_SEGUROS_PAGO_MP = [
-  'READY_CONTRACT', 'CONTRACT_GENERATED', 'CONTRACT_REVIEW', 'CONTRACT_FINAL', 'COMPLETED',
-  'CONTRATO GENERADO', 'CONTRATO EN REVISION', 'BORRADOR ENVIADO', 'EN REVISION',
-  'APROBADO', 'CONTRATO APROBADO', 'CONTRATO ORIGINAL GENERADO', 'PROP_VALIDATED'
+// REGLA DEL PAGO (decisión de Leonardo, 05-oct-2026): el pago del inquilino es una garantía
+// para él y solo se CONSOLIDA cuando los documentos del PROPIETARIO quedan aprobados. Antes
+// de eso —formulario enviado, documentos del inquilino aprobados, propietario diligenciando o
+// en corrección— el pago sigue reembolsable y el auditor lo devuelve a las 48 h.
+//
+// Valores de ESTADO DOCUMENTAL desde ese punto en adelante. Único punto de verdad: lo usan el
+// auditor de 48 h (auditorDeContratosVencidos) y la consolidación inmediata (consolidarPagoSiAplica).
+const ESTADOS_DOC_QUE_CONSOLIDAN_PAGO = [
+  'PROP_VALIDATED', 'READY_CONTRACT', 'CONTRACT_GENERATED', 'CONTRACT_REVIEW', 'CONTRACT_FINAL', 'COMPLETED'
 ];
+
+/**
+ * ¿El trámite ya pasó la aprobación de los documentos del propietario?
+ *
+ * Se compara contra valores exactos y no buscando palabras sueltas: antes bastaba con que
+ * apareciera "APROBADO" en cualquier columna, y "ESTUDIO APROBADO" o "Documentos del
+ * inquilino aprobados" consolidaban el pago antes de tiempo.
+ * @param {string} estadoInmueble - ESTADO DEL INMUEBLE
+ * @param {string} estadoDoc - ESTADO DOCUMENTAL (puede traer "|detalle" al final)
+ * @param {string} detalles - DETALLES DEL ESTADO DEL INMUEBLE
+ * @return {boolean}
+ */
+function tramiteConsolidaPago(estadoInmueble, estadoDoc, detalles) {
+  const doc = String(estadoDoc || '').split('|')[0].trim().toUpperCase();
+  if (ESTADOS_DOC_QUE_CONSOLIDAN_PAGO.indexOf(doc) !== -1) return true;
+
+  // El contrato solo existe después de aprobar al propietario: "CONTRATO GENERADO",
+  // "CONTRATO EN REVISION", "CONTRATO APROBADO", "CONTRATO ORIGINAL GENERADO"...
+  const estado = String(estadoInmueble || '').trim().toUpperCase();
+  if (estado.indexOf('CONTRATO') === 0 || estado === 'BORRADOR ENVIADO') return true;
+
+  // Respaldo por si la hoja no tiene la columna ESTADO DOCUMENTAL: es el texto que deja
+  // procesarValidacionPropietario al aprobar.
+  return String(detalles || '').toUpperCase().indexOf('DOCUMENTOS COMPLETOS') !== -1;
+}
 
 // Estados de PAGOS_RECIBIDOS en los que el dinero está recibido y vigente.
 const ESTADOS_PAGO_VIGENTE = ['APROBADO', 'CONSOLIDADO'];
@@ -279,9 +306,6 @@ function auditorDeContratosVencidos() {
     const dataPagos = sheetPagos.getDataRange().getValues();
     const now = new Date();
 
-    // Estados seguros (donde NO se debe reembolsar)
-    const estadosSeguros = ESTADOS_SEGUROS_PAGO_MP;
-
     for (let i = 1; i < dataPagos.length; i++) {
       const row = dataPagos[i];
       const fechaPago = new Date(row[0]); // Columna A: Timestamp
@@ -303,21 +327,16 @@ function auditorDeContratosVencidos() {
             const cdrFila = colCdrInmuebles !== -1 ? String(dataInmuebles[j][colCdrInmuebles] || '').trim().toUpperCase() : '';
             const idFila = colIdInmuebles !== -1 ? String(dataInmuebles[j][colIdInmuebles] || '').trim().toUpperCase() : '';
             if (clavePago && (cdrFila === clavePago || idFila === clavePago)) {
-              const valEstado = colEstadoInmuebles !== -1 ? String(dataInmuebles[j][colEstadoInmuebles] || '').toUpperCase() : '';
-              const valEstadoDoc = colEstadoDocInmuebles !== -1 ? String(dataInmuebles[j][colEstadoDocInmuebles] || '').toUpperCase() : '';
-              const valDetalles = colDetallesInmuebles !== -1 ? String(dataInmuebles[j][colDetallesInmuebles] || '').toUpperCase() : '';
-
-              const textoCombinado = `${valEstado} | ${valEstadoDoc} | ${valDetalles}`;
-
-              // Verificar si alguno de los estados seguros está presente en las columnas
-              esEstadoSeguro = estadosSeguros.some(st => textoCombinado.includes(st)) ||
-                               textoCombinado.includes('CONTRATO') ||
-                               textoCombinado.includes('BORRADOR');
+              esEstadoSeguro = tramiteConsolidaPago(
+                colEstadoInmuebles !== -1 ? dataInmuebles[j][colEstadoInmuebles] : '',
+                colEstadoDocInmuebles !== -1 ? dataInmuebles[j][colEstadoDocInmuebles] : '',
+                colDetallesInmuebles !== -1 ? dataInmuebles[j][colDetallesInmuebles] : ''
+              );
               break;
             }
           }
 
-          // Si el estado NO es uno de los seguros, se asume que no terminaron el proceso.
+          // Pasaron 48 h sin que se aprobaran los documentos del propietario: se devuelve.
           if (!esEstadoSeguro) {
             // Reembolsar usando MP API
             const url = 'https://api.mercadopago.com/v1/payments/' + paymentId + '/refunds';
@@ -332,8 +351,17 @@ function auditorDeContratosVencidos() {
 
             const response = UrlFetchApp.fetch(url, options);
             if (response.getResponseCode() === 200 || response.getResponseCode() === 201) {
-              sheetPagos.getRange(i + 1, 5).setValue('REEMBOLSADO POR TIEMPO');
-              sheetPagos.getRange(i + 1, 5).setBackground('#ffcccc'); // Rojo claro
+              // Mercado Pago avisa varias veces del mismo pago y cada aviso deja su fila. El
+              // pago se devolvió una sola vez: se marcan todas sus filas de una. Si quedaran
+              // en APROBADO, el panel lo seguiría mostrando pagado y, al cumplir cada una sus
+              // 48 h, se le pediría a MP otro reembolso que termina en "ERROR REEMBOLSO (MP)".
+              for (let k = i; k < dataPagos.length; k++) {
+                if (String(dataPagos[k][1]) === String(paymentId) && dataPagos[k][4] === 'APROBADO') {
+                  sheetPagos.getRange(k + 1, 5).setValue('REEMBOLSADO POR TIEMPO');
+                  sheetPagos.getRange(k + 1, 5).setBackground('#ffcccc'); // Rojo claro
+                  dataPagos[k][4] = 'REEMBOLSADO POR TIEMPO';
+                }
+              }
               console.log('Reembolsado automáticamente el pago ' + paymentId + ' para CDR ' + cdr);
             } else {
               const errorText = response.getContentText();
@@ -364,21 +392,17 @@ function auditorDeContratosVencidos() {
 }
 
 /**
- * Consolida el pago de un CDR de inmediato, apenas el contrato avanza a un estado seguro
- * (ej: apenas se genera el Borrador), en vez de esperar a que el cron de 48h lo detecte.
- * Así el pago queda "cobrado" desde el momento en que el trámite se formaliza, y aunque
- * más adelante cambie de estado, ya quedó como aprobado/consolidado (nunca se re-evalúa
- * para reembolso una vez consolidado).
- * @param {string} cdr - Código de registro del inmueble
- * @param {string} estadoNuevo - El ESTADO DEL INMUEBLE que se acaba de escribir
+ * Consolida el pago de un registro de inmediato, en el momento en que se aprueban los
+ * documentos del propietario (o el trámite ya va más adelante), en vez de esperar a que el
+ * auditor de 48 h lo detecte. Una vez consolidado no se vuelve a evaluar para reembolso,
+ * aunque el estado cambie después.
+ * @param {string} cdr - CDR o ID de registro
+ * @param {string} estadoInmueble - El ESTADO DEL INMUEBLE que se acaba de escribir ('' si no cambió)
+ * @param {string} [estadoDoc] - El ESTADO DOCUMENTAL que se acaba de escribir
  */
-function consolidarPagoSiAplica(cdr, estadoNuevo) {
+function consolidarPagoSiAplica(cdr, estadoInmueble, estadoDoc) {
   try {
-    if (!cdr || !estadoNuevo) return;
-    const estadoUpper = String(estadoNuevo).toUpperCase();
-    const esSeguro = ESTADOS_SEGUROS_PAGO_MP.some(st => estadoUpper.includes(st)) ||
-                      estadoUpper.includes('CONTRATO') || estadoUpper.includes('BORRADOR');
-    if (!esSeguro) return;
+    if (!cdr || !tramiteConsolidaPago(estadoInmueble, estadoDoc, '')) return;
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const sheetPagos = ss.getSheetByName('PAGOS_RECIBIDOS');
@@ -392,7 +416,7 @@ function consolidarPagoSiAplica(cdr, estadoNuevo) {
       if (claves.indexOf(filaCdr) !== -1 && estadoPago === 'APROBADO') {
         sheetPagos.getRange(i + 1, 5).setValue('CONSOLIDADO');
         sheetPagos.getRange(i + 1, 5).setBackground('#d9ead3'); // Verde claro
-        Logger.log('💰 Pago consolidado de inmediato para CDR ' + cdr + ' (estado: ' + estadoNuevo + '), ya no aplica reembolso por tiempo.');
+        Logger.log('💰 Pago consolidado de inmediato para CDR ' + cdr + ' (estado: ' + (estadoInmueble || estadoDoc) + '), ya no aplica reembolso por tiempo.');
       }
     }
   } catch (e) {

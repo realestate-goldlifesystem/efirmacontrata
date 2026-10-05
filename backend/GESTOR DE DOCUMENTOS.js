@@ -3912,6 +3912,12 @@ function procesarValidacionPropietario(datos) {
         sheet.getRange(fila, estadoDocCol).setValue('PROP_VALIDATED');
       }
 
+      // Aquí se consolida el pago del inquilino: hasta este momento era su garantía y
+      // todavía podía devolvérsele (ver la regla en API_MERCADOPAGO.js).
+      if (typeof consolidarPagoSiAplica === 'function') {
+        consolidarPagoSiAplica(cdr, '', 'PROP_VALIDATED');
+      }
+
       return {
         success: true,
         message: 'Documentos aprobados. Sistema listo para generar contrato',
