@@ -322,11 +322,16 @@ function auditorDeContratosVencidos() {
           // Buscando solo por CDR, un pago guardado con el ID no encontraba su inmueble y se
           // mandaba a reembolso aunque el trámite ya estuviera en curso.
           let esEstadoSeguro = false;
+          // Nombres del registro tal como están escritos (CDR e ID), para borrar su marca
+          // de "pagó" si se reembolsa.
+          const nombresRegistro = [String(cdr || '').trim()];
           const clavePago = String(cdr || '').trim().toUpperCase();
           for (let j = 1; j < dataInmuebles.length; j++) {
             const cdrFila = colCdrInmuebles !== -1 ? String(dataInmuebles[j][colCdrInmuebles] || '').trim().toUpperCase() : '';
             const idFila = colIdInmuebles !== -1 ? String(dataInmuebles[j][colIdInmuebles] || '').trim().toUpperCase() : '';
             if (clavePago && (cdrFila === clavePago || idFila === clavePago)) {
+              if (colCdrInmuebles !== -1) nombresRegistro.push(String(dataInmuebles[j][colCdrInmuebles] || '').trim());
+              if (colIdInmuebles !== -1) nombresRegistro.push(String(dataInmuebles[j][colIdInmuebles] || '').trim());
               esEstadoSeguro = tramiteConsolidaPago(
                 colEstadoInmuebles !== -1 ? dataInmuebles[j][colEstadoInmuebles] : '',
                 colEstadoDocInmuebles !== -1 ? dataInmuebles[j][colEstadoDocInmuebles] : '',
@@ -362,6 +367,13 @@ function auditorDeContratosVencidos() {
                   dataPagos[k][4] = 'REEMBOLSADO POR TIEMPO';
                 }
               }
+              // La plata ya se devolvió: se borra la marca de "pagó". Si no, el formulario
+              // del inquilino seguiría abierto sin pago. Para retomar el trámite tendrá que
+              // pagar otra vez; ese pago nuevo vuelve a crear la marca y su propia fila.
+              const propsPago = PropertiesService.getScriptProperties();
+              nombresRegistro.forEach(function (nombre) {
+                if (nombre) propsPago.deleteProperty('PAGO_APROBADO_' + nombre);
+              });
               console.log('Reembolsado automáticamente el pago ' + paymentId + ' para CDR ' + cdr);
             } else {
               const errorText = response.getContentText();
