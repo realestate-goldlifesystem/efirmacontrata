@@ -86,7 +86,25 @@ function generarContrato(cdr, version = 'Borrador') {
       if (header) {
         header.replaceText('(?i)BORRADOR', 'ORIGINAL'); // Case insensitive
       }
+
+      // Canon tal como quedó escrito en el contrato que se va a firmar. Se lee
+      // del Doc (no de la hoja) porque el borrador se puede editar desde el
+      // panel o a mano en el propio Doc: esto es lo único cierto. Con él se
+      // calcula después la cuenta de cobro (GESTOR_CUENTA_COBRO.js).
+      let canonFinal = 0;
+      try {
+        canonFinal = ccExtraerCanonDeTexto(docOriginal.getBody().getText());
+      } catch (eCanon) {
+        Logger.log('⚠️ No se pudo leer el canon del contrato original: ' + eCanon.message);
+      }
       docOriginal.saveAndClose();
+
+      try {
+        if (canonFinal) ccGuardarCanonFinal(cdr, canonFinal);
+        else Logger.log('⚠️ El contrato original no tiene la cláusula "PRECIO DEL CANON: $…" legible. La cuenta de cobro no saldrá sola.');
+      } catch (eGuardar) {
+        Logger.log('⚠️ No se pudo guardar el canon final: ' + eGuardar.message);
+      }
       
       // Generar PDF
       const pdfBlob = docOriginal.getAs(MimeType.PDF);
@@ -104,7 +122,11 @@ function generarContrato(cdr, version = 'Borrador') {
         urlPdf: pdfFile.getUrl(),
         carpeta: carpetaContratoDestino.getUrl(),
         datos: datos,
-        message: 'Contrato Original generado exitosamente'
+        canonFinal: canonFinal,
+        message: 'Contrato Original generado exitosamente' +
+                 (canonFinal
+                   ? '. Canon del contrato: $' + ccMiles(canonFinal)
+                   : '. ⚠️ No pude leer el canon del contrato: la cuenta de cobro tocará hacerla a mano')
       };
     }
 

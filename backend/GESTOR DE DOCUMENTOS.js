@@ -5482,6 +5482,17 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
       }
     }
 
+    // Canon final para la cuenta de cobro. Normalmente ya quedó guardado al
+    // generar el ORIGINAL; esto cubre los contratos generados antes de ese
+    // cambio. Tiene que ir AQUÍ: la limpieza de abajo manda el Doc a la papelera.
+    try {
+      if (typeof ccAsegurarCanonFinalDesdeCarpeta === 'function') {
+        ccAsegurarCanonFinalDesdeCarpeta(sheet, targetRow, carpetaContrato);
+      }
+    } catch (eCanon) {
+      Logger.log('⚠️ No se pudo asegurar el canon final: ' + eCanon);
+    }
+
     const archivoFinal = carpetaContrato.createFile(pdfBlob);
     const urlDrive = archivoFinal.getUrl();
 
@@ -5645,9 +5656,28 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
       });
     }
 
+    // --- 3. CUENTA DE COBRO AL PROPIETARIO (correo aparte) ---
+    // Va al final y nunca tumba la carga: el contrato ya está guardado. Si no se
+    // puede calcular (falta el canon o el porcentaje) NO se envía nada y se deja
+    // dicho en la hoja y en la respuesta, para hacerla a mano.
+    let notaCobro = '';
+    try {
+      if (typeof ccGenerarYEnviar === 'function') {
+        const cobro = ccGenerarYEnviar(sheet, targetRow);
+        // Administración/Venta no llevan esta cuenta: ahí no se anota nada.
+        if (cobro.enviada) notaCobro = ' 📩 Cuenta de cobro enviada al propietario por $' + ccMiles(cobro.valor) + '.';
+        else if (!cobro.noAplicaPorNegocio) notaCobro = ' ⚠️ Cuenta de cobro NO enviada: ' + cobro.motivo;
+      }
+    } catch (eCobro) {
+      notaCobro = ' ⚠️ Cuenta de cobro NO enviada: ' + eCobro.message;
+    }
+    if (notaCobro && colDetalles > 0) {
+      sheet.getRange(targetRow, colDetalles).setValue('✅ Contrato autenticado cargado en Drive.' + notaCobro);
+    }
+
     return {
       success: true,
-      message: '✅ Contrato autenticado guardado con éxito. Permisos y notificaciones enviadas.',
+      message: '✅ Contrato autenticado guardado con éxito. Permisos y notificaciones enviadas.' + notaCobro,
       urlDrive: urlDrive
     };
 

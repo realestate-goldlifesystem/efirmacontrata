@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuenta de cobro</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f4; font-family:'Helvetica Neue', Helvetica, Arial, sans-serif; color:#333333;">
+    <div style="max-width:600px; margin:40px auto; background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+
+        <div style="background-color:#1a1a1a; color:#d4af37; text-align:center; padding:30px 20px; border-bottom:4px solid #d4af37;">
+            <h1 style="margin:0; font-size:24px; letter-spacing:1px; font-weight:300;">REAL ESTATE <br><strong style="font-weight:700;">GOLD LIFE SYSTEM</strong></h1>
+        </div>
+
+        <div style="padding:40px 30px; line-height:1.6;">
+            <h2 style="color:#1a1a1a; margin-top:0; font-size:20px;">Gracias por confiar en nosotros</h2>
+
+            <p style="font-size:16px; margin-bottom:20px;">Estimado/a <strong><?= NOMBRE_CLIENTE ?></strong>,</p>
+
+            <p style="font-size:16px; margin-bottom:20px;">
+                Es un gusto contarle que el proceso de arrendamiento de su inmueble en
+                <strong><?= DIRECCION ?></strong> concluyó con éxito: el contrato quedó firmado,
+                autenticado y archivado.
+            </p>
+
+            <p style="font-size:16px; margin-bottom:20px;">
+                Con este mensaje le hacemos llegar la <strong>cuenta de cobro</strong> por los honorarios
+                de la gestión. La encuentra adjunta en PDF, junto con los datos para realizar el pago.
+            </p>
+
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse; margin:28px 0; background-color:#fcf9f2; border-left:4px solid #d4af37; border-radius:0 4px 4px 0;">
+                <tr>
+                    <td style="padding:16px 20px 6px 20px; font-size:14px; color:#777777;">Canon mensual pactado</td>
+                    <td style="padding:16px 20px 6px 20px; font-size:15px; color:#333333; text-align:right; white-space:nowrap;"><?= CANON ?></td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 20px 14px 20px; font-size:14px; color:#777777;">Honorarios de comercialización</td>
+                    <td style="padding:6px 20px 14px 20px; font-size:15px; color:#333333; text-align:right; white-space:nowrap;"><?= PORCENTAJE ?></td>
+                </tr>
+                <tr>
+                    <td style="padding:14px 20px 4px 20px; font-size:15px; color:#1a1a1a; font-weight:bold; border-top:1px solid #eadfc4;">Total a pagar</td>
+                    <td style="padding:14px 20px 4px 20px; font-size:22px; color:#1a1a1a; font-weight:bold; text-align:right; white-space:nowrap; border-top:1px solid #eadfc4;"><?= VALOR ?></td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding:0 20px 16px 20px; font-size:12px; color:#999999; text-align:right; letter-spacing:0.3px;"><?= VALOR_LETRAS ?></td>
+                </tr>
+            </table>
+
+            <p style="font-size:16px; margin-bottom:20px;">
+                Una vez recibamos su pago le enviaremos el recibo correspondiente para su archivo.
+            </p>
+
+            <p style="font-size:16px; margin-bottom:20px;">
+                Gracias por permitirnos acompañarle en este proceso. Para nosotros es un privilegio
+                cuidar de su patrimonio, y quedamos a su disposición para lo que necesite.
+            </p>
+
+            <p style="font-size:16px; margin-bottom:0;">Con aprecio,</p>
+            <p style="font-size:16px; margin-top:4px;"><strong style="color:#1a1a1a;">Real Estate - Gold Life System</strong></p>
+        </div>
+
+        <div style="background-color:#1a1a1a; color:#888888; text-align:center; padding:20px; font-size:13px;">
+            <p style="margin:5px 0;">&copy; <?= new Date().getFullYear() ?> <span style="color:#d4af37; font-weight:bold;">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
+            <p style="margin:5px 0;">Si tiene alguna inquietud sobre esta cuenta de cobro, puede responder a este correo.</p>
+        </div>
+    </div>
+</body>
+</html>
