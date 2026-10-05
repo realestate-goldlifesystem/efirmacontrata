@@ -174,6 +174,19 @@ function ccPartesDeFecha(iso) {
 }
 
 /**
+ * Número de serie de Sheets (días desde 1899-12-30) → "2026-10-01".
+ * Una celda de fecha SIN formato de fecha llega como número (46296), no como
+ * Date. '' si no parece una fecha razonable (2020–2100).
+ */
+function ccSerialAFechaISO(n) {
+  var x = Number(n);
+  if (!isFinite(x) || x < 43831 || x > 73050) return '';
+  var d = new Date(Math.round((Math.floor(x) - 25569) * 86400000));
+  var dos = function (v) { return ('0' + v).slice(-2); };
+  return d.getUTCFullYear() + '-' + dos(d.getUTCMonth() + 1) + '-' + dos(d.getUTCDate());
+}
+
+/**
  * Valores del recibo. La gestión completa vale un canon; lo que no se cobra va
  * como "beneficio de descuento" (regla de Leonardo, oct-2026):
  *   canon 2.645.000 al 50 % → gestión 2.645.000, descuento -1.322.500, total 1.322.500
@@ -469,9 +482,10 @@ function _ccVerificarAdmin(credential) {
   return { ok: true, motivo: '' };
 }
 
-/** Fecha de una celda (Date, "2026-10-01" o "01/10/2026") → "2026-10-01". '' si no se entiende. */
+/** Fecha de una celda (Date, número de serie, "2026-10-01" o "01/10/2026") → "2026-10-01". '' si no se entiende. */
 function _ccFechaISO(valor) {
   if (valor instanceof Date && !isNaN(valor.getTime())) return Utilities.formatDate(valor, 'America/Bogota', 'yyyy-MM-dd');
+  if (typeof valor === 'number') return ccSerialAFechaISO(valor);
   var s = String(valor || '').trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
   var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -707,7 +721,8 @@ function ccGenerarYEnviarRecibo(sheet, fila, op) {
     if (!nombre || !cedula) return falla('Faltan el nombre o la cédula del propietario en la hoja.');
     if (!direccion) return falla('Falta la dirección del inmueble en la hoja.');
     if (!pago) return falla('La fecha de pago no es válida.');
-    if (!desde || !hasta) return falla('Faltan la fecha de registro o la fecha de inicio del contrato en la hoja (periodo del servicio).');
+    if (!desde) return falla('Falta la "Fecha de registro del inmueble." en la hoja (inicio del periodo del servicio).');
+    if (!hasta) return falla('Falta la "FECHA INICIO DEL CONTRATO" en la hoja (fin del periodo del servicio). Escríbela en la fila y vuelve a intentar.');
     if (!op.formaPago) return falla('Falta la forma de pago.');
     if (!op.soloAdmin && correo.indexOf('@') === -1) return falla('El propietario no tiene correo en la hoja.');
 

@@ -81,6 +81,18 @@ function pdfDePrueba() {
   });
   console.log('\n✅ Canon final escrito en la hoja.');
 
+  // El recibo necesita la FECHA INICIO DEL CONTRATO para el "periodo del servicio".
+  // En un caso real la llena la elaboración del contrato, que aquí nos saltamos.
+  const cInicio = c('FECHA INICIO DEL CONTRATO');
+  if (cInicio !== -1 && !String(v('FECHA INICIO DEL CONTRATO') || '').trim()) {
+    const en10dias = Math.floor(Date.now() / 86400000) + 25569 + 10;      // número de serie de Sheets
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET, range: `'${HOJA}'!${letra(cInicio)}${fila}`,
+      valueInputOption: 'RAW', requestBody: { values: [[en10dias]] },
+    });
+    console.log('✅ Fecha de inicio del contrato escrita (hoy + 10 días).');
+  }
+
   console.log('📤 Cargando el contrato autenticado de prueba...');
   const t0 = Date.now();
   const res = await fetch(EXEC_URL, {

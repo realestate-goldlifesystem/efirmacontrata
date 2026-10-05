@@ -100,6 +100,16 @@ igual('fecha dd/mm/aaaa no es ISO', ctx.ccPartesDeFecha('05/10/2026'), null);
 igual('fecha mes 13', ctx.ccPartesDeFecha('2026-13-01'), null);
 igual('fecha texto', ctx.ccPartesDeFecha('ayer'), null);
 
+// --- Recibo: fechas que la hoja entrega como número de serie ---
+igual('serial 46296 → 2026-10-01', ctx.ccSerialAFechaISO(46296), '2026-10-01');
+igual('serial 46283 → 2026-09-18', ctx.ccSerialAFechaISO(46283), '2026-09-18');
+igual('serial 46300 → 2026-10-05', ctx.ccSerialAFechaISO(46300), '2026-10-05');
+igual('serial con hora (46283.40)', ctx.ccSerialAFechaISO(46283.40474537037), '2026-09-18');
+igual('serial como texto', ctx.ccSerialAFechaISO('46296'), '2026-10-01');
+igual('serial vacío', ctx.ccSerialAFechaISO(''), '');
+igual('un precio no es una fecha', ctx.ccSerialAFechaISO(2645000), '');
+igual('serial muy viejo', ctx.ccSerialAFechaISO(100), '');
+
 // --- Recibo: valores (gestión completa = un canon; lo no cobrado es descuento) ---
 igual('recibo YX454035 (50%)', ctx.ccValoresRecibo(2645000, 1322500), { gestion: 2645000, descuento: 1322500, total: 1322500 });
 igual('recibo al 60%', ctx.ccValoresRecibo(2459300, 1475580), { gestion: 2459300, descuento: 983720, total: 1475580 });
