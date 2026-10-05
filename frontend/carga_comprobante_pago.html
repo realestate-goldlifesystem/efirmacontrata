@@ -665,10 +665,19 @@
             if (enviando || !archivo) return;
             const valor = document.getElementById('infoValor').textContent;
             const destino = document.getElementById('infoCorreo').textContent;
+            const propietario = document.getElementById('infoPropietario').textContent;
+
+            // El texto va con textContent (no dentro del html) para que un nombre
+            // con símbolos raros no se interprete como etiquetas.
+            const cuerpo = document.createElement('div');
+            const negrita = function (t) { const b = document.createElement('b'); b.textContent = t; return b; };
+            cuerpo.append('Se enviará el recibo por ', negrita(valor), ' al propietario ', negrita(propietario),
+                          ', al correo ', negrita(destino), '.', document.createElement('br'),
+                          'Esta acción no se puede deshacer.');
 
             Swal.fire({
                 title: '¿Enviar el recibo?',
-                html: 'Se enviará el recibo por <b>' + valor + '</b> a <b>' + destino + '</b>.<br>Esta acción no se puede deshacer.',
+                html: cuerpo,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Sí, enviar',
