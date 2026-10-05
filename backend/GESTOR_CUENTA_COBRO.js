@@ -607,6 +607,8 @@ function ccRegistrarPago(datos) {
       // Va en try: un tropiezo ordenando no puede hacer parecer que el envío falló.
       try { ccOrdenarCarpetaDeRecibos(carpetaRecibos, r.idPdf); }
       catch (eOrden) { Logger.log('⚠️ No se pudo ordenar la carpeta de recibos: ' + eOrden.message); }
+      try { ccRetirarCarpetasDeAdministracion(sheet, fila, headers); }
+      catch (eAdmin) { Logger.log('⚠️ No se pudieron retirar las carpetas de administración: ' + eAdmin.message); }
 
       if (iRec !== -1) sheet.getRange(fila, iRec + 1).setFormula('=HYPERLINK("' + r.urlPdf + '"; "🧾✅")');
       var iDet = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
@@ -652,6 +654,42 @@ function _ccCarpetaSinArchivos(carpeta) {
     if (!_ccCarpetaSinArchivos(hijas.next())) return false;
   }
   return true;
+}
+
+/**
+ * En Corretaje y Vendi-Renta, retira de SOPORTES CONTABLES las dos carpetas que
+ * son del servicio de ADMINISTRACIÓN (decisión de Leonardo, 05-oct-2026):
+ *   "1- RECIBO HE INSTRUCTIVO DE PAGO DE ADMINISTRACION"  → ahí cae la cuenta de
+ *        cobro de la administración al propietario
+ *   "2- COMPROBANTES DE PAGO - ADMINISTRACIÓN DEL INMUEBLE" → pagos mes a mes
+ *
+ * ⚠️ En Administración y Admi-Venta esas carpetas SÍ se usan (y las plantillas
+ * 1 y 2 de recibos también): este flujo no corre para esos negocios, y aquí se
+ * vuelve a comprobar el tipo por si alguien llama la función desde otro lado.
+ *
+ * Misma regla que en los recibos: a la papelera, y solo si no tienen NINGÚN
+ * archivo adentro.
+ */
+function ccRetirarCarpetasDeAdministracion(sheet, fila, headers) {
+  var iNeg = headers.indexOf('TIPO DE NEGOCIO');
+  var negocio = iNeg === -1 ? '' : String(sheet.getRange(fila, iNeg + 1).getValue()).trim().toLowerCase();
+  if (negocio !== 'corretaje' && negocio !== 'vendi-renta') {
+    Logger.log('ℹ️ Negocio "' + negocio + '": las carpetas de administración se conservan.');
+    return { retiradas: 0, dejadas: [] };
+  }
+
+  var PREFIJOS = ['1- RECIBO HE INSTRUCTIVO', '2- COMPROBANTES DE PAGO - ADMINISTRACI'];
+  var retiradas = 0, dejadas = [];
+  PREFIJOS.forEach(function (prefijo) {
+    var carpeta = _ccSubcarpetaDeSoportes(sheet, fila, headers, prefijo);
+    if (!carpeta) return;
+    if (_ccCarpetaSinArchivos(carpeta)) { carpeta.setTrashed(true); retiradas++; }
+    else dejadas.push(carpeta.getName());
+  });
+
+  Logger.log('🧹 Carpetas de administración retiradas: ' + retiradas +
+             (dejadas.length ? '. Se dejó (tiene archivos): ' + dejadas.join(' | ') : '.'));
+  return { retiradas: retiradas, dejadas: dejadas };
 }
 
 /**
