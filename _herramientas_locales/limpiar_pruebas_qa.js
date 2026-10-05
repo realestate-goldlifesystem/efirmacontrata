@@ -150,6 +150,6 @@ async function run() {
   console.log('\n✅ Filas eliminadas del Sheet.');
   console.log('   Falta correr en el editor de Apps Script:');
   console.log('     1) borrarDrivePruebasQA()   -> carpetas y documentos a la papelera');
-  console.log('     2) restaurarContadoresQA()  -> secuencias a C=46, V=12, VR=3 (opcional)');
+  console.log('     2) restaurarContadoresQA()  -> libera el consecutivo que gastó la prueba (lo calcula desde la hoja)');
 }
 run().catch(e => { console.error('ERROR:', e.message); process.exit(1); });

@@ -585,18 +585,53 @@ function borrarDrivePruebasQA() {
  * un CDR histórico.
  */
 function restaurarContadoresQA() {
-  // Valores capturados ANTES de las pruebas del 21-ago-2026.
-  var VALORES = { C: 46, A: 8, V: 12, VR: 3 };
+  // ⚠️ ANTES esto fijaba números escritos a mano ({ C: 46, A: 8, V: 12, VR: 3 },
+  // de agosto-2026). Dos meses después, con el consecutivo real en C49, correrlo
+  // habría hecho que el sistema volviera a repartir C47–C49, que ya eran de
+  // inmuebles reales. Un número fijo se vence solo; ahora se CALCULA.
+  //
+  // Regla: un contador solo baja UN paso, y solo si está exactamente una unidad
+  // por encima del mayor consecutivo que queda en la hoja — o sea, cuando lo
+  // único que lo empujó fue la prueba que se acaba de borrar. En cualquier otro
+  // caso se deja como está (un hueco en la numeración es inofensivo).
+  //
+  // Poner aquí SOLO los tipos que usó la prueba que se acaba de borrar.
+  var TIPOS_DE_LA_PRUEBA = ['C'];
 
   var props = PropertiesService.getScriptProperties();
   var lineas = [];
 
-  for (var tipo in VALORES) {
-    var clave = 'MAX_SEQ_' + tipo;
-    var antes = props.getProperty(clave);
-    props.setProperty(clave, String(VALORES[tipo]));
-    lineas.push(clave + ': ' + (antes === null ? '(vacío)' : antes) + ' -> ' + VALORES[tipo]);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var colCdr = -1;
+  for (var h = 0; h < headers.length; h++) {
+    if (String(headers[h]).trim() === 'CODIGO DE REGISTRO') { colCdr = h + 1; break; }
   }
+  if (colCdr === -1) throw new Error('No se encontró la columna CODIGO DE REGISTRO');
+
+  // Mayor consecutivo por tipo que hay en la hoja: "REG_05-10-2026-C50_(…" → C, 50
+  var maxEnHoja = {};
+  var cdrs = sheet.getRange(2, colCdr, Math.max(1, sheet.getLastRow() - 1), 1).getValues();
+  for (var r = 0; r < cdrs.length; r++) {
+    var m = String(cdrs[r][0] || '').match(/^REG_\d{2}-\d{2}-\d{4}-([A-Z]+)(\d+)_/);
+    if (!m) continue;
+    var n = parseInt(m[2], 10);
+    if (!maxEnHoja[m[1]] || n > maxEnHoja[m[1]]) maxEnHoja[m[1]] = n;
+  }
+
+  TIPOS_DE_LA_PRUEBA.forEach(function (tipo) {
+    var clave = 'MAX_SEQ_' + tipo;
+    var actual = parseInt(props.getProperty(clave), 10);
+    var enHoja = maxEnHoja[tipo] || 0;
+    if (isNaN(actual)) {
+      lineas.push(clave + ': (vacío) -> no se toca');
+    } else if (enHoja > 0 && actual === enHoja + 1) {
+      props.setProperty(clave, String(enHoja));
+      lineas.push(clave + ': ' + actual + ' -> ' + enHoja + ' (se libera el número de la prueba)');
+    } else {
+      lineas.push(clave + ': ' + actual + ' -> no se toca (el mayor en la hoja es ' + enHoja + ')');
+    }
+  });
 
   // LAST_RPR_SEQUENCE se BORRA en vez de fijarse: al faltar, getNextRPRSequence()
   // lo recalcula solo desde la columna LINK DE CARPETA RPR del Sheet, que ya
