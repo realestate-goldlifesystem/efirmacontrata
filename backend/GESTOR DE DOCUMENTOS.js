@@ -699,6 +699,13 @@ function doPost(e) {
           result = { success: false, message: 'guardarContratoAutenticado no disponible' };
         }
         break;
+      // Comprobante de pago del propietario → recibo (GESTOR_CUENTA_COBRO.js)
+      case 'contextoComprobantePago':
+        result = ccContextoComprobante(datos);
+        break;
+      case 'registrarPagoPropietario':
+        result = ccRegistrarPago(datos);
+        break;
       case 'lanzarMiguel':
         // Barrido del agente captador desde el panel de herramientas del
         // portafolio. Valida el correo del agente contra Google adentro.

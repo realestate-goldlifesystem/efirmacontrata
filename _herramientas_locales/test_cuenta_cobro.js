@@ -91,5 +91,26 @@ igual('cifras: doc limpio', ctx.ccCifrasEnPesos(docBueno), [1322500, 1322500, 13
 igual('cifras: detecta el aseo de la plantilla', ctx.ccCifrasEnPesos(docMalo).filter(c => c !== 1322500), [85000]);
 igual('cifras: la cuenta bancaria no cuenta como pesos', ctx.ccCifrasEnPesos('Cuenta de ahorros: 91291940949'), []);
 
+// --- Recibo: fechas ---
+igual('fecha 2026-10-05', ctx.ccPartesDeFecha('2026-10-05'), { dia: 5, mes: 'octubre', anio: 2026, corta: '05/10/2026' });
+igual('fecha 2026-09-18', ctx.ccPartesDeFecha('2026-09-18'), { dia: 18, mes: 'septiembre', anio: 2026, corta: '18/09/2026' });
+igual('fecha con hora', ctx.ccPartesDeFecha('2026-01-01T10:00:00').corta, '01/01/2026');
+igual('fecha vacía', ctx.ccPartesDeFecha(''), null);
+igual('fecha dd/mm/aaaa no es ISO', ctx.ccPartesDeFecha('05/10/2026'), null);
+igual('fecha mes 13', ctx.ccPartesDeFecha('2026-13-01'), null);
+igual('fecha texto', ctx.ccPartesDeFecha('ayer'), null);
+
+// --- Recibo: valores (gestión completa = un canon; lo no cobrado es descuento) ---
+igual('recibo YX454035 (50%)', ctx.ccValoresRecibo(2645000, 1322500), { gestion: 2645000, descuento: 1322500, total: 1322500 });
+igual('recibo al 60%', ctx.ccValoresRecibo(2459300, 1475580), { gestion: 2459300, descuento: 983720, total: 1475580 });
+igual('recibo al 100% (sin descuento)', ctx.ccValoresRecibo(2000000, 2000000), { gestion: 2000000, descuento: 0, total: 2000000 });
+igual('recibo: gestión − descuento = total', (() => { const r = ctx.ccValoresRecibo(3950000, 2686000); return r.gestion - r.descuento === r.total; })(), true);
+
+// --- Recibo: el control de cifras acepta las tres del recibo y delata una ajena ---
+const recibo = 'Pago de arriendo: $  2.645.000 Beneficio de descuento $    -1.322.500 Total con deducciones: $ 1.322.500';
+igual('cifras del recibo', ctx.ccCifrasEnPesos(recibo), [2645000, 1322500, 1322500]);
+igual('recibo con cifra vieja de la plantilla', ctx.ccCifrasEnPesos(recibo + ' $ 1.200.000').filter(c => [2645000, 1322500].indexOf(c) === -1), [1200000]);
+igual('descuento cero', ctx.ccCifrasEnPesos('Beneficio de descuento $    0'), [0]);
+
 console.log(`\n${ok} bien, ${mal} mal`);
 process.exit(mal ? 1 : 0);
