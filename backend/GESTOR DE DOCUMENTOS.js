@@ -2136,6 +2136,8 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
           }
         }
         sheet.getRange(fila, estadoDocCol).setValue(nuevoEstado);
+        // El inquilino cargó: se detiene su reloj y se avisa al agente
+        if (typeof plzAlCambiarEstado === 'function') plzAlCambiarEstado(fila);
       }
 
       // Actualizar datos del inquilino si vienen en el formulario
@@ -3076,6 +3078,9 @@ function actualizarDatosInquilino(fila, datosFormulario, urlsCarpetas) {
       sheet.getRange(fila, urlCol).setValue(urlsCarpetas.carpetaInquilino);
     }
 
+    // El inquilino cargó: se detiene su reloj y se avisa al agente (no repite si ya se avisó)
+    if (typeof plzAlCambiarEstado === 'function') plzAlCambiarEstado(fila);
+
   } catch (error) {
     Logger.log('Error actualizando datos inquilino: ' + error.toString());
     throw error;
@@ -3150,6 +3155,9 @@ function actualizarDatosPropietario(fila, datosFormulario, urlsCarpetas) {
     if (urlCol > 0) {
       sheet.getRange(fila, urlCol).setValue(urlsCarpetas.carpetaPropietario);
     }
+
+    // El propietario cargó: se detiene el reloj del reembolso y se avisa al agente
+    if (typeof plzAlCambiarEstado === 'function') plzAlCambiarEstado(fila);
 
   } catch (error) {
     Logger.log('Error actualizando datos propietario: ' + error.toString());
@@ -3852,8 +3860,12 @@ function procesarValidacionInquilino(datos) {
         actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
       }
 
-      // Enviar email al propietario
-      enviarEmailPropietario(cdr);
+      // Arranca el plazo del propietario (48 h para CARGAR) y se le cuenta al
+      // inquilino que fue aprobado y cuál es su garantía. Ver GESTOR_PLAZOS.js.
+      const vencePropietario = (typeof plzAlAprobarInquilino === 'function') ? plzAlAprobarInquilino(fila) : 0;
+
+      // Enviar email al propietario (con su fecha límite)
+      enviarEmailPropietario(cdr, vencePropietario);
 
       return {
         success: true,
@@ -3872,6 +3884,9 @@ function procesarValidacionInquilino(datos) {
       if (datos.estadosBuzon) {
         actualizarEstadosValidacionEnCerebro(cdr, datos.estadosBuzon);
       }
+
+      // Arranca el plazo de corrección (24 h) antes de armar el correo, que lo anuncia
+      if (typeof plzAlCambiarEstado === 'function') plzAlCambiarEstado(fila);
 
       // Enviar email de corrección
       enviarEmailCorreccionInquilino(cdr, observaciones, datos.documentosCorregir);
@@ -3925,6 +3940,9 @@ function procesarValidacionPropietario(datos) {
         consolidarPagoSiAplica(cdr, '', 'PROP_VALIDATED');
       }
 
+      // Se les avisa a las dos partes que todo quedó aprobado y qué sigue
+      if (typeof plzAlAprobarPropietario === 'function') plzAlAprobarPropietario(fila);
+
       return {
         success: true,
         message: 'Documentos aprobados. Sistema listo para generar contrato',
@@ -3938,14 +3956,16 @@ function procesarValidacionPropietario(datos) {
         const docsStr = (datos.documentosCorregir || []).join(',');
         sheet.getRange(fila, estadoDocCol).setValue('PROP_CORRECTION|' + docsStr);
       }
+      // Arranca el plazo de corrección (24 h) antes de armar el correo, que lo anuncia
+      if (typeof plzAlCambiarEstado === 'function') plzAlCambiarEstado(fila);
 
       // Enviar email de corrección
+      // Mismo correo que recibe el inquilino cuando se le pide una corrección
+      // (enviarEmailCorreccionPropietario), que además anuncia el plazo de 24 h.
+      // Antes iba por enviarCorreoCorreccion de ESTADOS DOCUMENTALES.js, con otro
+      // diseño y sin plazo.
       try {
-        if (typeof enviarCorreoCorreccion === 'function') {
-          enviarCorreoCorreccion(cdr, 'propietario', { observaciones: observaciones, documentos: datos.documentosCorregir || [] });
-        } else {
-          Logger.log('Advertencia: enviarCorreoCorreccion no está definida en este ámbito global.');
-        }
+        enviarEmailCorreccionPropietario(cdr, observaciones, datos.documentosCorregir || []);
       } catch (e) {
         Logger.log('Error enviando correo de corrección: ' + e);
       }
@@ -3970,40 +3990,10 @@ function procesarValidacionPropietario(datos) {
  * Enviar email inicial al inquilino
  */
 function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulario, direccion = '') {
-  const dirText = direccion ? ` "${direccion}"` : '';
-  const asunto = `FORMULARIO DE ARRENDAMIENTO DEL INMUEBLE${dirText} - ${codigoRegistro}`;
-
-  const cuerpoHtml = `
-      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-        <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
-          <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
-        </div>
-        
-        <div style="padding: 40px 30px; line-height: 1.6; color: #333333;">
-          <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombre}</strong>,</p>
-          
-          <p style="margin-bottom: 20px; font-size: 16px;">
-            Su solicitud de arrendamiento ha sido aprobada. Para continuar con el proceso en <strong>Gold Life System</strong>, 
-            necesitamos que complete el formulario con sus datos y documentos.
-          </p>
-
-          <div style="text-align: center; margin: 35px 0;">
-              <a href="${urlFormulario}" 
-                 style="display: inline-block; background-color: #d4af37; color: #ffffff; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
-                  Diligenciar Formulario
-              </a>
-          </div>
-
-        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-        
-        <p style="color: #999; font-size: 14px; text-align: center;">
-          E-FirmaContrata • Real Estate Gold Life System<br>
-          Código de registro: ${codigoRegistro}<br>
-          Este es un correo automático, por favor no responder.
-        </p>
-      </div>
-    </div>
-  `;
+  // Texto y diseño en GESTOR_PLAZOS.js (plzCorreoInicialInquilino)
+  const correo = plzCorreoInicialInquilino({ nombre: nombre, codigo: codigoRegistro, url: urlFormulario, direccion: direccion });
+  const asunto = correo.asunto;
+  const cuerpoHtml = correo.html;
 
   MailApp.sendEmail({
     to: email,
@@ -4077,7 +4067,7 @@ function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
 /**
  * Enviar email al propietario para iniciar su formulario
  */
-function enviarEmailPropietario(cdr) {
+function enviarEmailPropietario(cdr, venceMs) {
   try {
     Logger.log('enviarEmailPropietario llamado con CDR: ' + cdr);
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
@@ -4107,50 +4097,15 @@ function enviarEmailPropietario(cdr) {
     const direccion = colDireccion >= 0 ? row[colDireccion] : '';
     const dirText = direccion ? ` "${direccion}"` : '';
 
-    const asunto = `FORMULARIO DE PROPIETARIO DEL INMUEBLE${dirText} - ${idRegistro}`;
+    // Fecha límite para cargar. Si no viene (reenvío desde el popup), se toma la
+    // de la etapa en curso; si no hay reloj corriendo, el correo va sin plazo.
+    let vence = Number(venceMs) || 0;
+    if (!vence && typeof plzVencimientoDeFila === 'function') vence = plzVencimientoDeFila(fila);
 
-    const cuerpoHtml = `
-      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; color: #333333;">
-        <div style="max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <div style="background-color: #1a1a1a; color: #d4af37; text-align: center; padding: 30px 20px; border-bottom: 4px solid #d4af37;">
-                <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; font-weight: 300;">REAL ESTATE <br><strong style="font-weight: 700;">GOLD LIFE SYSTEM</strong></h1>
-            </div>
-            
-            <div style="padding: 40px 30px; line-height: 1.6;">
-                <p style="margin-bottom: 20px; font-size: 16px;">Estimado/a <strong>${nombreProp}</strong>,</p>
-                
-                <p style="margin-bottom: 20px; font-size: 16px;">
-                  Los documentos del inquilino han sido aprobados. Ahora necesitamos que complete 
-                  su formulario con la documentación requerida para continuar con el proceso de arrendamiento.
-                </p>
-                
-                <div style="background-color: #fcf9f2; border-left: 4px solid #d4af37; padding: 15px 20px; margin: 25px 0; border-radius: 0 4px 4px 0;">
-                    <h3 style="margin-top: 0; color: #333; font-size: 16px;">📄 Documentos requeridos:</h3>
-                    <ul style="color: #555; line-height: 1.8; margin-bottom: 0; font-size: 15px;">
-                      <li>Documento de identidad</li>
-                      <li>Formulario SARLAFT</li>
-                      <li>Certificado bancario</li>
-                      <li>Certificado de tradición y libertad</li>
-                      <li>Recibos de servicios públicos al día</li>
-                    </ul>
-                </div>
-                
-                <div style="text-align: center; margin: 35px 0;">
-                    <a href="${urlFormulario}" 
-                       style="display: inline-block; background-color: #d4af37; color: #ffffff; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
-                      COMPLETAR FORMULARIO
-                    </a>
-                </div>
-            </div>
-            
-            <div style="background-color: #1a1a1a; color: #888888; text-align: center; padding: 20px; font-size: 13px;">
-                <p style="margin: 5px 0;">&copy; ${new Date().getFullYear()} <span style="color: #d4af37; font-weight: bold;">Real Estate - Gold Life System</span>. Todos los derechos reservados.</p>
-                <p style="margin: 5px 0;">Código de registro: ${cdr}</p>
-                <p style="margin: 5px 0;">Este es un correo generado automáticamente, por favor no responda directamente a este mensaje.</p>
-            </div>
-        </div>
-      </div>
-    `;
+    // Texto y diseño en GESTOR_PLAZOS.js (plzCorreoPropietarioFormulario)
+    const correo = plzCorreoPropietarioFormulario({ nombre: nombreProp, codigo: idRegistro, url: urlFormulario, direccion: direccion, vence: vence });
+    const asunto = correo.asunto;
+    const cuerpoHtml = correo.html;
 
     MailApp.sendEmail({
       to: emailProp,
@@ -4306,6 +4261,7 @@ function enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir =
             <p style="margin: 0; font-size: 15px; color: #555;"><strong>📋 Observaciones / Instrucciones:</strong><br><br>${observaciones || 'Por favor revise los documentos enviados'}</p>
           </div>
           
+          ${(typeof plzAvisoCorreccionHtml === 'function' && typeof plzVencimientoDeFila === 'function' && plzVencimientoDeFila(buscarFilaPorCDR(cdr))) ? plzAvisoCorreccionHtml(plzVencimientoDeFila(buscarFilaPorCDR(cdr))) : ''}
           <div style="text-align: center; margin: 35px 0;">
             <a href="${urlCorreccion}" 
                style="display: inline-block; background-color: #d4af37; color: #ffffff !important; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">
@@ -4383,6 +4339,7 @@ function enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir
             <p style="margin: 0; font-size: 15px; color: #555;"><strong>📋 Observaciones / Instrucciones:</strong><br><br>${observaciones || 'Por favor revise los documentos enviados'}</p>
           </div>
           
+          ${(typeof plzAvisoCorreccionHtml === 'function' && typeof plzVencimientoDeFila === 'function' && plzVencimientoDeFila(buscarFilaPorCDR(cdr))) ? plzAvisoCorreccionHtml(plzVencimientoDeFila(buscarFilaPorCDR(cdr))) : ''}
           <div style="text-align: center; margin: 35px 0;">
             <a href="${urlCorreccion}" 
                style="display: inline-block; background-color: #d4af37; color: #ffffff !important; text-decoration: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 6px rgba(212, 175, 55, 0.3);">

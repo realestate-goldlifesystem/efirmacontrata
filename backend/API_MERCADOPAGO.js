@@ -338,12 +338,17 @@ function auditorDeContratosVencidos() {
       if (estadoPago === 'APROBADO') {
         const minutesDiff = (now - fechaPago) / (1000 * 60);
         
-        if (minutesDiff >= 2880) { // 48 horas (48 * 60 minutos)
+        // Antes este bloque solo corría pasadas 48 h del pago, y esa era toda la regla.
+        // Ahora corre siempre: el plazo depende de la ETAPA del trámite (GESTOR_PLAZOS.js),
+        // y de paso se consolida apenas se puede y se le recuerda al agente lo que tiene
+        // sin revisar.
+        {
           // Buscar el estado del CDR en la hoja de inmuebles revisando todas las columnas relevantes
           // El pago puede venir guardado con el CDR o con el ID del registro: se busca por los dos.
           // Buscando solo por CDR, un pago guardado con el ID no encontraba su inmueble y se
           // mandaba a reembolso aunque el trámite ya estuviera en curso.
           let esEstadoSeguro = false;
+          let filaInmueble = -1;   // fila (1-based) del inmueble de este pago
           // Nombres del registro tal como están escritos (CDR e ID), para borrar su marca
           // de "pagó" si se reembolsa.
           const nombresRegistro = [String(cdr || '').trim()];
@@ -352,6 +357,7 @@ function auditorDeContratosVencidos() {
             const cdrFila = colCdrInmuebles !== -1 ? String(dataInmuebles[j][colCdrInmuebles] || '').trim().toUpperCase() : '';
             const idFila = colIdInmuebles !== -1 ? String(dataInmuebles[j][colIdInmuebles] || '').trim().toUpperCase() : '';
             if (clavePago && (cdrFila === clavePago || idFila === clavePago)) {
+              filaInmueble = j + 1;
               if (colCdrInmuebles !== -1) nombresRegistro.push(String(dataInmuebles[j][colCdrInmuebles] || '').trim());
               if (colIdInmuebles !== -1) nombresRegistro.push(String(dataInmuebles[j][colIdInmuebles] || '').trim());
               esEstadoSeguro = tramiteConsolidaPago(
@@ -363,8 +369,19 @@ function auditorDeContratosVencidos() {
             }
           }
 
-          // Pasaron 48 h sin que se aprobaran los documentos del propietario: se devuelve.
-          if (!esEstadoSeguro) {
+          // ¿Se venció el plazo de la etapa en la que está el trámite?
+          //  - Con el inmueble ubicado: lo decide GESTOR_PLAZOS (48 h para que el inquilino
+          //    envíe, 48 h para que el propietario CARGUE, 24 h para una corrección; mientras
+          //    le toca revisar al agente el reloj está detenido).
+          //  - Sin inmueble ubicado, o sin ese módulo: la regla de siempre, 48 h desde el pago.
+          let plazoVencido = minutesDiff >= 2880;
+          if (!esEstadoSeguro && filaInmueble > 0 && typeof plzPagoVencido === 'function') {
+            plazoVencido = plzPagoVencido(sheetInmuebles, filaInmueble, headersInmuebles, fechaPago.getTime(), now.getTime());
+          }
+
+          if (!esEstadoSeguro && !plazoVencido) {
+            // Todavía está en plazo (o le toca al agente): no se hace nada en esta ronda.
+          } else if (!esEstadoSeguro) {
             // Reembolsar usando MP API
             const url = 'https://api.mercadopago.com/v1/payments/' + paymentId + '/refunds';
             const options = {
@@ -397,6 +414,10 @@ function auditorDeContratosVencidos() {
                 if (nombre) propsPago.deleteProperty('PAGO_APROBADO_' + nombre);
               });
               console.log('Reembolsado automáticamente el pago ' + paymentId + ' para CDR ' + cdr);
+              // Avisarles al inquilino y al propietario: antes el reembolso era silencioso.
+              if (filaInmueble > 0 && typeof plzAvisarReembolso === 'function') {
+                plzAvisarReembolso(sheetInmuebles, filaInmueble, headersInmuebles);
+              }
             } else {
               const errorText = response.getContentText();
               console.error('Error reembolsando: ' + errorText);

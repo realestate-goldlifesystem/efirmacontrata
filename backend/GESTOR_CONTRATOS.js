@@ -1287,8 +1287,9 @@ function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAproba
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
   tpl.TITULO = 'Borrador del Contrato Listo para Revisión como Inquilino';
   tpl.NOMBRE_CLIENTE = nombre;
-  tpl.MENSAJE_PRINCIPAL = 'El borrador de su contrato de arrendamiento está listo. Por favor, ingrese a nuestro portal de validación transparente para revisar los términos, aprobar el documento o solicitar cambios.';
-  tpl.MENSAJE_SECUNDARIO = 'Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas.';
+  // Explica cómo funciona la sala de revisión (versiones, aprobar, pedir corrección). Ver GESTOR_PLAZOS.js
+  tpl.MENSAJE_PRINCIPAL = plzTextoRevisionBorrador('inquilino');
+  tpl.MENSAJE_SECUNDARIO = PLZ_TEXTO_REVISION_SECUNDARIO;
   tpl.URL_ACCION = urlAprobacion;
   tpl.TEXTO_BOTON = 'Revisar y Validar Borrador del Contrato';
 
@@ -1313,8 +1314,9 @@ function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlApro
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
   tpl.TITULO = 'Borrador del Contrato Listo para Revisión como Propietario';
   tpl.NOMBRE_CLIENTE = nombre;
-  tpl.MENSAJE_PRINCIPAL = 'El borrador del contrato de arrendamiento de su propiedad está listo para revisión. Por favor, ingrese a nuestro portal de validación transparente y verifique que todos los términos sean correctos.';
-  tpl.MENSAJE_SECUNDARIO = 'Nuestro sistema registrará cualquier observación en la bitácora del contrato, asegurando transparencia entre todas las partes involucradas.';
+  // Explica cómo funciona la sala de revisión (versiones, aprobar, pedir corrección). Ver GESTOR_PLAZOS.js
+  tpl.MENSAJE_PRINCIPAL = plzTextoRevisionBorrador('propietario');
+  tpl.MENSAJE_SECUNDARIO = PLZ_TEXTO_REVISION_SECUNDARIO;
   tpl.URL_ACCION = urlAprobacion;
   tpl.TEXTO_BOTON = 'Revisar y Validar Borrador del Contrato';
 
@@ -1544,10 +1546,13 @@ function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
 
     // --- HTML PARA LOS CLIENTES (Sin PDF, sin botón) ---
     const tplClientes = HtmlService.createTemplateFromFile('backend/email_notificacion');
-    tplClientes.TITULO = 'Contrato Original Definitivo Listo para Firma';
-    tplClientes.NOMBRE_CLIENTE = 'Estimado Cliente';
-    tplClientes.MENSAJE_PRINCIPAL = `El contrato de arrendamiento <strong>${displayId}</strong> ha sido aprobado por todas las partes y el documento definitivo ha sido generado exitosamente en formato PDF Original.`;
-    tplClientes.MENSAJE_SECUNDARIO = 'Por favor esté atento a su bandeja de entrada. Muy pronto recibirá el correo oficial de la plataforma de firmas electrónicas para proceder con la firma digital del documento.';
+    // Textos en GESTOR_PLAZOS.js (plzTextosContratoListo): explican qué sigue y
+    // que el correo de firma llega de otra dirección.
+    const textosListo = plzTextosContratoListo(displayId);
+    tplClientes.TITULO = textosListo.titulo;
+    tplClientes.NOMBRE_CLIENTE = 'cliente';
+    tplClientes.MENSAJE_PRINCIPAL = textosListo.principal;
+    tplClientes.MENSAJE_SECUNDARIO = textosListo.secundario;
     tplClientes.URL_ACCION = ''; 
     tplClientes.TEXTO_BOTON = ''; 
     const htmlBodyClientes = tplClientes.evaluate().getContent();
