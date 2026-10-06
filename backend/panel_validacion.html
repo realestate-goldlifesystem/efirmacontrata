@@ -1669,9 +1669,13 @@
                 <!-- Botón Maestro Global (Aparece abajo cuando TODO está evaluado) -->
                 <div id="boxAccionesGlobales"
                     style="display:none; margin-top: 0.5rem; text-align: right; border-top: 1px solid var(--border-color); padding-top: 0.5rem;">
-                    <button class="btn btn-primary" onclick="mostrarConfirmacionFinal()"
+                    <button class="btn btn-primary" id="btnFinalizarValidacion" onclick="mostrarConfirmacionFinal()"
                         style="font-size: 1rem; padding: 0.6rem 2rem; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);">&#128640;
-                        Aprobados Todos (Finalizar Validación)</button>
+                        Finalizar Validación</button>
+                </div>
+                <!-- Mientras falte un documento por evaluar NO hay botón: se dice cuáles faltan -->
+                <div id="boxPendientesEval"
+                    style="display:none; margin-top: 0.5rem; text-align: right; border-top: 1px solid var(--border-color); padding-top: 0.5rem; font-size: 0.85rem; color: #f59e0b;">
                 </div>
 
                 <!-- Modal de Confirmación Interno -->
@@ -3977,32 +3981,65 @@
     </script>
     <script>
         window.parsedBlocks.push('Block_5');
-        function verificarAprobacionGlobal() {
-            // Solo contar docs que tienen fileId válido (pueden ser evaluados)
-            let totalDocsCount = 0;
-            let evalCount = 0;
-
+        /**
+         * REGLA: la validación solo se puede terminar cuando TODOS los documentos de
+         * TODAS las personas tienen veredicto (aprobado o por corregir). Así sale una
+         * sola corrección con todo, y no una ahora y otra después por un olvido.
+         * @return {{total:number, evaluados:number, faltan:string[]}}
+         */
+        function estadoDeEvaluacion() {
+            let total = 0, evaluados = 0;
+            const faltan = [];
             for (let person in documentosData) {
                 if (!Array.isArray(documentosData[person])) continue;
                 documentosData[person].forEach(doc => {
                     if (!doc || !doc.fileId) return; // Ignorar docs sin fileId
-                    totalDocsCount++;
-                    if (validacionEstado[doc.fileId]) evalCount++; // aprobado o correccion
+                    total++;
+                    if (validacionEstado[doc.fileId] === 'aprobado' || validacionEstado[doc.fileId] === 'correccion') evaluados++;
+                    else faltan.push(String(doc.nombre || 'documento').replace(/_\[REG_.*?\]/, '').replace(/\.[a-z0-9]+$/i, '').replace(/_/g, ' ').trim());
                 });
             }
+            return { total: total, evaluados: evaluados, faltan: faltan };
+        }
 
+        /** true si todavía NO se puede terminar; avisa cuáles faltan. */
+        function faltaEvaluar() {
+            const e = estadoDeEvaluacion();
+            if (e.total > 0 && e.faltan.length === 0) return false;
+            alert(e.total === 0
+                ? 'No hay documentos cargados para evaluar.'
+                : 'Todavía no se puede terminar la validación.\n\nFalta dar veredicto (aprobar o pedir actualización) a ' + e.faltan.length + ' de ' + e.total + ':\n\n• ' + e.faltan.join('\n• '));
+            return true;
+        }
+
+        function verificarAprobacionGlobal() {
+            const e = estadoDeEvaluacion();
             const btnGlobalContainer = document.getElementById('boxAccionesGlobales');
+            const boxPendientes = document.getElementById('boxPendientesEval');
+            const completo = e.total > 0 && e.faltan.length === 0;
 
-            if (evalCount === totalDocsCount && totalDocsCount > 0) {
-                btnGlobalContainer.style.display = 'block';
-            } else {
-                btnGlobalContainer.style.display = 'none';
+            btnGlobalContainer.style.display = completo ? 'block' : 'none';
+            if (boxPendientes) {
+                boxPendientes.style.display = (!completo && e.total > 0) ? 'block' : 'none';
+                boxPendientes.textContent = 'Faltan ' + e.faltan.length + ' de ' + e.total + ' por evaluar para poder terminar: ' + e.faltan.join(' · ');
+            }
+            const btnFin = document.getElementById('btnFinalizarValidacion');
+            if (btnFin && completo) {
+                let porCorregir = 0;
+                for (let person in documentosData) {
+                    if (!Array.isArray(documentosData[person])) continue;
+                    documentosData[person].forEach(doc => { if (doc && doc.fileId && validacionEstado[doc.fileId] === 'correccion') porCorregir++; });
+                }
+                btnFin.textContent = porCorregir === 0
+                    ? '🚀 Finalizar: aprobar todo (' + e.total + ')'
+                    : '🚀 Finalizar: enviar ' + porCorregir + ' a corrección (' + (e.total - porCorregir) + ' aprobados)';
             }
 
             actualizarContadorUI();
         }
 
         function mostrarConfirmacionFinal() {
+            if (faltaEvaluar()) return;
             // Contar Aprobados vs Rechazados
             let aprobados = 0;
             let correcciones = 0;
@@ -4071,6 +4108,7 @@
 
         function ejecutarAprobacionMaster() {
             try {
+                if (faltaEvaluar()) { cerrarModal('modalConfirmacionFinal'); return; }
                 // Verificar si todo fue aprobado, o si hay rechazos
                 let docIdsConCorreccion = [];
                 let detalleMotivos = "";
@@ -4101,7 +4139,10 @@
                     estado: docIdsConCorreccion.length === 0 ? 'aprobado' : 'correccion',
                     documentosCorregir: docIdsConCorreccion, // Empty if all approved
                     observaciones: detalleMotivos.trim(),
-                    estadosBuzon: estadosBuzonMap // Mapa de buzones para el Cerebro
+                    estadosBuzon: estadosBuzonMap, // Mapa de buzones para el Cerebro
+                    // El servidor también lo exige (ver validacionIncompleta)
+                    totalDocumentos: estadoDeEvaluacion().total,
+                    sinEvaluar: estadoDeEvaluacion().faltan.length
                 };
 
                 const btn = document.getElementById('btnEjecutarAprobacionMaster');

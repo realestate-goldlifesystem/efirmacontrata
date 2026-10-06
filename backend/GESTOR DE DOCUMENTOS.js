@@ -1109,7 +1109,21 @@ function procesarRegistrosPendientes() {
 // WRAPPERS PARA EL FRONTEND (PANEL VALIDACIÓN)
 // ==========================================
 
+/**
+ * La validación solo se termina cuando TODOS los documentos tienen veredicto. El
+ * panel no muestra el botón antes; esto es la segunda llave, por si el panel
+ * falla. Si no viene el dato (pruebas, llamadas viejas) no estorba.
+ */
+function validacionIncompleta(datos) {
+  const faltan = Number(datos && datos.sinEvaluar);
+  if (!(faltan > 0)) return null;
+  return { success: false, validacionIncompleta: true,
+           message: 'Faltan ' + faltan + ' documento(s) por evaluar. Dé veredicto a todos (aprobar o pedir actualización) y vuelva a intentar. No se envió nada.' };
+}
+
 function procesarValidacion(datos) {
+  const incompleta = validacionIncompleta(datos);
+  if (incompleta) return incompleta;
   if (datos.tipo === 'inquilino') {
     return procesarValidacionInquilino(datos);
   } else if (datos.tipo === 'propietario') {
@@ -1182,6 +1196,8 @@ function bloqueoDeCorreccion(sheet, fila, tipo) {
 }
 
 function enviarCorrecciones(datos) {
+  const incompleta = validacionIncompleta(datos);
+  if (incompleta) return incompleta;
   if (datos.tipo === 'inquilino') {
     return enviarCorreccionInquilino(datos);
   } else if (datos.tipo === 'propietario') {
