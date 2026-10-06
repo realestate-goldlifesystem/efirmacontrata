@@ -3997,7 +3997,7 @@ function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulari
         <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
         
         <p style="color: #999; font-size: 14px; text-align: center;">
-          E-firmaContrata • Real Estate Gold Life System<br>
+          E-FirmaContrata • Real Estate Gold Life System<br>
           Código de registro: ${codigoRegistro}<br>
           Este es un correo automático, por favor no responder.
         </p>
@@ -4630,7 +4630,7 @@ function procesarEmailCorreccion(email, linkCorreccion) {
   const cuerpoHTML = `
     <body style="background:#0F0F0F; padding:30px; color:#f4f4f4; font-family:Segoe UI,sans-serif;">
       <div style="max-width:600px; margin:auto; background:#1e1e1e; padding:30px; border-radius:12px;">
-        <h2 style="color:#FFD700; text-align:center;">EFirmaContrata</h2>
+        <h2 style="color:#FFD700; text-align:center;">E-FirmaContrata</h2>
         <p>Se requiere que corrijas o completes algunos datos/documentos enviados previamente.</p>
         <a href="${linkCorreccion}" style="display:inline-block; margin-top:20px; background:#FFD700; color:#000; padding:12px 20px; border-radius:8px; text-decoration:none;">Corregir formulario</a>
         <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
@@ -4645,7 +4645,7 @@ function enviarContratoFirmar(email, linkContrato) {
   const cuerpoHTML = `
     <body style="background:#0F0F0F; padding:30px; color:#f4f4f4; font-family:Segoe UI,sans-serif;">
       <div style="max-width:600px; margin:auto; background:#1e1e1e; padding:30px; border-radius:12px;">
-        <h2 style="color:#FFD700; text-align:center;">EFirmaContrata</h2>
+        <h2 style="color:#FFD700; text-align:center;">E-FirmaContrata</h2>
         <p>Se ha generado el contrato de arrendamiento. Por favor ingresa para revisarlo y firmarlo:</p>
         <a href="${linkContrato}" style="display:inline-block; margin-top:20px; background:#FFD700; color:#000; padding:12px 20px; border-radius:8px; text-decoration:none;">Ver y firmar contrato</a>
         <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
@@ -4660,7 +4660,7 @@ function notificarFinalizacion(email) {
   const cuerpoHTML = `
     <body style="background:#0F0F0F; padding:30px; color:#f4f4f4; font-family:Segoe UI,sans-serif;">
       <div style="max-width:600px; margin:auto; background:#1e1e1e; padding:30px; border-radius:12px;">
-        <h2 style="color:#FFD700; text-align:center;">EFirmaContrata</h2>
+        <h2 style="color:#FFD700; text-align:center;">E-FirmaContrata</h2>
         <p>El contrato ha sido finalizado y registrado correctamente en el sistema.</p>
         <p>Gracias por usar E-FirmaContrata.</p>
         <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>

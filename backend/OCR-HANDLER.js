@@ -1,6 +1,6 @@
 // ==========================================
 // SISTEMA OCR PARA CERTIFICADOS DE TRADICIÓN
-// E-firmaContrata v3.0 PRODUCCIÓN
+// E-FirmaContrata v3.0 PRODUCCIÓN
 // Real Estate Gold Life System
 // ==========================================
 
