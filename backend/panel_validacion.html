@@ -545,6 +545,42 @@
             overflow: hidden;
         }
 
+        /* Validación de documentos: el alto es para el documento, no para los títulos.
+           Antes el encabezado, la tarjeta "Información del Registro" y los márgenes se
+           llevaban casi un tercio de la ventana y el certificado quedaba en una franja. */
+        #modalValidacion .modal-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #modalValidacion .modal-header {
+            padding: 0.4rem 1.25rem;
+        }
+
+        #modalValidacion .modal-header h2 {
+            font-size: 1.05rem;
+        }
+
+        #modalValidacion .close-modal {
+            font-size: 1.8rem;
+        }
+
+        #modalValidacion .modal-body {
+            flex: 1;
+            height: auto;
+            min-height: 0;
+            padding: 0.5rem 1rem 0.6rem 1rem;
+        }
+
+        #modalValidacion .documents-container {
+            gap: 1rem;
+        }
+
+        #modalValidacion .doc-left-col,
+        #modalValidacion .doc-right-col {
+            gap: 0.75rem;
+        }
+
         /* Document Preview Container */
         .documents-container {
             display: grid;
@@ -1342,11 +1378,10 @@
             <div class="modal-body">
                 <!-- Información del Registro -->
                 <div class="data-display"
-                    style="padding: 0.5rem 1rem; margin-bottom: 0.5rem; border: 1px solid var(--border-color); background: var(--surface); border-radius: var(--radius); box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);">
-                    <h3 style="margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--primary);">&#128204; Información del Registro
-                    </h3>
+                    style="padding: 0.3rem 0.9rem; margin-bottom: 0.4rem; border: 1px solid var(--border-color); background: var(--surface); border-radius: var(--radius); box-shadow: inset 0 1px 1px rgba(255,255,255,0.05);">
+                    <!-- Una sola línea: el título "Información del Registro" ocupaba un renglón entero -->
                     <div class="data-grid" id="infoRegistro"
-                        style="display: flex; gap: 1.5rem; align-items: center; justify-content: flex-start; color: var(--text-main);">
+                        style="display: flex; gap: 1.5rem; align-items: center; justify-content: flex-start; color: var(--text-main); font-size: 0.85rem;">
                         <!-- Se llena dinámicamente -->
                     </div>
                 </div>
@@ -1494,13 +1529,11 @@
                                 </div>
                                 <!-- Sección: Datos Inmueble -->
                                 <div id="seccionDatosInmueble" data-section="inmueble" style="display:none;">
-                                    <div style="background: var(--light); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid #e2e8f0; text-align: center;">
-                                         <h4 style="margin: 0 0 0.5rem 0; color: var(--dark);">Análisis Inteligente de Documento</h4>
-                                         <p style="font-size: 0.85rem; color: var(--gray); margin-bottom: 1rem;">Extrae la información del Certificado con OCR, o edita manualmente los datos del inmueble.</p>
-                                         <button id="btnAnalizarOCR" class="btn btn-primary" onclick="analizarCertificadoOCR()" style="width: 100%; justify-content: center; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);">
+                                    <div style="background: var(--light); padding: 0.6rem; border-radius: var(--radius); margin-bottom: 0.75rem; border: 1px solid #e2e8f0; text-align: center;">
+                                         <button id="btnAnalizarOCR" class="btn btn-primary" onclick="analizarCertificadoOCR()" title="Lee el certificado completo: dueños actuales, embargos, hipotecas y vigencia. También puede editar los datos a mano." style="width: 100%; justify-content: center; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);">
                                              &#128269; Analizar Certificado con OCR
                                          </button>
-                                         <div id="ocrBadgesContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-top: 1rem; display: none;">
+                                         <div id="ocrBadgesContainer" style="display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-top: 0.6rem; display: none;">
                                              <!-- Se llenan por JS -->
                                          </div>
                                     </div>
