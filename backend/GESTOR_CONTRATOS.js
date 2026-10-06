@@ -1183,6 +1183,15 @@ function registrarAprobacionContrato(cdr, tipo, accion, comentarios) {
 
     SpreadsheetApp.flush(); // Asegurar que los datos se escriban antes de responder
 
+    // Si con este veredicto ya respondieron TODAS las partes la versión vigente, se le
+    // avisa al agente qué pasó (AVISO_RONDA_CONTRATO.js). Un fallo aquí no debe
+    // impedir que el veredicto quede registrado.
+    try {
+      rondaAvisarSiCompleta(hojaAprobaciones, cdr);
+    } catch (errRonda) {
+      Logger.log('⚠️ No se pudo avisar la ronda completa: ' + errRonda.message);
+    }
+
     // Verificar si todas las partes han aprobado
     const aprobaciones = verificarAprobacionesCompletas(cdr);
 
