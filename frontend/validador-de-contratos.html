@@ -688,7 +688,7 @@
                     ✗ Solicitar Corrección
                   </button>
                   <button id="btnDownload" class="btn-action btn-download">
-                    📥 Descargar Borrador
+                    📥 Descargar Borrador (PDF)
                   </button>
                 </div>
 
@@ -1377,9 +1377,26 @@
           return;
         }
 
-        window.open(state.contrato.url, '_blank', 'noopener');
-        toast('📥 Descargando contrato...');
+        // Solo PDF. Antes se abría el documento de Google, desde donde se podía bajar
+        // en Word o cualquier formato editable.
+        window.open(urlPdfDelDocumento(state.contrato.url), '_blank', 'noopener');
+        toast('📥 Descargando el borrador en PDF...');
       }
+
+      /**
+       * Enlace que descarga el documento como PDF.
+       * Google Doc → su exportación a PDF; archivo de Drive (ya es PDF) → descarga directa;
+       * cualquier otra cosa → el enlace tal cual.
+       */
+      function urlPdfDelDocumento(url) {
+        const u = String(url || '');
+        const doc = u.match(/\/document\/d\/([\w-]{20,})/);
+        if (doc) return 'https://docs.google.com/document/d/' + doc[1] + '/export?format=pdf';
+        const archivo = u.match(/\/file\/d\/([\w-]{20,})/) || u.match(/[?&]id=([\w-]{20,})/);
+        if (archivo) return 'https://drive.google.com/uc?export=download&id=' + archivo[1];
+        return u;
+      }
+      window.urlPdfDelDocumento = urlPdfDelDocumento;   // para probarla desde la consola
       // AUTO-SINCRONIZACIÓN (Polling Inteligente)
       let syncInterval;
       
