@@ -913,3 +913,79 @@ function probarReciboDePago() {
   });
   Logger.log(JSON.stringify(r, null, 2));
 }
+
+// ==========================================
+// ORDENAR A MANO UN INMUEBLE CUYO RECIBO SE HIZO SIN EL SISTEMA
+// ==========================================
+
+/**
+ * Para inmuebles a los que se les envió el recibo ANTES de que existiera este
+ * flujo (el recibo se llenó a mano): deja sus carpetas igual que las que ordena
+ * el sistema y marca la hoja con 🧾✅.
+ *
+ * No envía ningún correo. Solo aplica a Corretaje y Vendi-Renta.
+ * Exige que el recibo en PDF ya esté en "3- RECIBOS DE GESTION…": si no está, no
+ * toca nada (sin recibo, las plantillas todavía hacen falta).
+ */
+var ID_A_ORDENAR = 'YX454035';
+
+function revisarCarpetasTrasReciboManual() { _ccOrdenarManual(false); }
+function ordenarCarpetasTrasReciboManual_CONFIRMADO() { _ccOrdenarManual(true); }
+
+function _ccOrdenarManual(aplicar) {
+  var sheet = _ccHoja();
+  var headers = _ccEncabezados(sheet);
+  var fila = _ccFilaDe(sheet, headers, ID_A_ORDENAR);
+  if (fila === -1) throw new Error('No encontré el registro ' + ID_A_ORDENAR);
+
+  var negocio = String(sheet.getRange(fila, headers.indexOf('TIPO DE NEGOCIO') + 1).getValue()).trim();
+  Logger.log((aplicar ? '🧹 APLICANDO' : '🔎 SIMULACIÓN') + ' — ' + ID_A_ORDENAR + ' (' + negocio + ')');
+  if (negocio.toLowerCase() !== 'corretaje' && negocio.toLowerCase() !== 'vendi-renta') {
+    Logger.log('El negocio es ' + negocio + ': sus carpetas de administración se usan. No se toca nada.');
+    return;
+  }
+
+  var carpeta = _ccCarpetaRecibos(sheet, fila, headers);
+  if (!carpeta) { Logger.log('No encontré la carpeta de recibos. No se toca nada.'); return; }
+
+  // El recibo ya enviado: el PDF más reciente cuyo nombre empiece por "Recibo"
+  var pdfs = carpeta.getFilesByType(MimeType.PDF), recibo = null;
+  while (pdfs.hasNext()) {
+    var f = pdfs.next();
+    if (!/^recibo/i.test(f.getName())) continue;
+    if (!recibo || f.getDateCreated() > recibo.getDateCreated()) recibo = f;
+  }
+  if (!recibo) { Logger.log('No hay un recibo en PDF en la carpeta. No se toca nada.'); return; }
+  Logger.log('Recibo que se conserva: ' + recibo.getName());
+
+  if (!aplicar) {
+    var moldes = 0, vacias = 0, otros = [];
+    var files = carpeta.getFiles();
+    while (files.hasNext()) {
+      var a = files.next();
+      if (a.getId() === recibo.getId()) continue;
+      if (a.getMimeType() === MimeType.GOOGLE_DOCS && /^\d+- RECIBO DE PRESTACI/i.test(a.getName())) moldes++;
+      else otros.push(a.getName());
+    }
+    var hijas = carpeta.getFolders();
+    while (hijas.hasNext()) { var h = hijas.next(); if (_ccCarpetaSinArchivos(h)) vacias++; else otros.push(h.getName() + '/'); }
+    Logger.log('En la carpeta de recibos se retirarían: ' + moldes + ' plantillas y ' + vacias + ' carpetas vacías.');
+    if (otros.length) Logger.log('Se dejaría (no es plantilla): ' + otros.join(' | '));
+    ['1- RECIBO HE INSTRUCTIVO', '2- COMPROBANTES DE PAGO - ADMINISTRACI'].forEach(function (p) {
+      var c = _ccSubcarpetaDeSoportes(sheet, fila, headers, p);
+      if (c) Logger.log((_ccCarpetaSinArchivos(c) ? 'Se retiraría: ' : 'Se dejaría (tiene archivos): ') + c.getName());
+    });
+    Logger.log('(simulación: ejecuta ordenarCarpetasTrasReciboManual_CONFIRMADO para hacerlo)');
+    return;
+  }
+
+  ccOrdenarCarpetaDeRecibos(carpeta, recibo.getId());
+  ccRetirarCarpetasDeAdministracion(sheet, fila, headers);
+
+  var iRec = headers.indexOf(CUENTA_COBRO.COL_RECIBO);
+  if (iRec !== -1 && sheet.getRange(fila, iRec + 1).getFormula().indexOf('🧾') === -1) {
+    sheet.getRange(fila, iRec + 1).setFormula('=HYPERLINK("' + recibo.getUrl() + '"; "🧾✅")');
+    Logger.log('Hoja marcada con 🧾✅.');
+  }
+  Logger.log('✅ Listo.');
+}
