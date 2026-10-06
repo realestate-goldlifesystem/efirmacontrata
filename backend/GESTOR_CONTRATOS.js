@@ -760,7 +760,9 @@ function reemplazarVariablesContrato(doc, datos) {
     const reemplazos = {
       // Datos del contrato
       '{{CDR}}': datos.idRegistro || datos.cdr || '',
-      '{{numero-de-solicitud-del-aprobado}}': datos.cdr || '',
+      // Pie de página "Solicitud … - 26": va el ID DE REGISTRO (corto), no el código
+      // largo REG_… (decisión de Leonardo, 06-oct-2026)
+      '{{numero-de-solicitud-del-aprobado}}': datos.idRegistro || datos.cdr || '',
       '{{FECHA_HOY}}': `${diaActual} de ${mesActual} de ${anoActual}`,
       '{{DIA_ACTUAL}}': diaActual,
       '{{DIA-VIGENTE}}': diaActual,
@@ -1432,8 +1434,10 @@ function enviarEmailRevisionCodeudor(email, nombre, cdr, urlContrato, urlAprobac
   const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
   tpl.TITULO = 'Borrador del Contrato Listo para Revisión como Codeudor';
   tpl.NOMBRE_CLIENTE = nombre;
-  tpl.MENSAJE_PRINCIPAL = 'Ha sido designado como codeudor en un contrato de arrendamiento. Por favor, ingrese a nuestro portal de validación transparente para revisar el borrador del contrato, sus responsabilidades y aprobar el documento.';
-  tpl.MENSAJE_SECUNDARIO = 'Como codeudor, usted responde solidariamente por el pago del canon y garantiza el cumplimiento del contrato. Nuestro sistema registrará su aprobación en la bitácora del contrato.';
+  // Mismo texto que inquilino y propietario (cómo funciona la sala de revisión), más
+  // lo que solo le toca al codeudor. Este correo se había quedado con el texto viejo.
+  tpl.MENSAJE_PRINCIPAL = plzTextoRevisionBorrador('codeudor');
+  tpl.MENSAJE_SECUNDARIO = PLZ_TEXTO_CODEUDOR + '<br><br>' + PLZ_TEXTO_REVISION_SECUNDARIO;
   tpl.URL_ACCION = urlAprobacion;
   tpl.TEXTO_BOTON = 'Revisar y Validar Borrador del Contrato';
 

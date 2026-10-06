@@ -294,6 +294,9 @@ function plzTextoRevisionBorrador(rol) {
 }
 var PLZ_TEXTO_REVISION_SECUNDARIO =
   'Cuando <strong>todas las partes aprueban la misma versión</strong>, generamos el contrato definitivo y pasamos a la firma electrónica. Entre más pronto lo revise, más pronto tendrá su contrato firmado.';
+/** Lo que solo aplica al codeudor en el correo de revisión del borrador. */
+var PLZ_TEXTO_CODEUDOR =
+  '<strong>Su papel como codeudor:</strong> usted respalda al arrendatario y responde de forma solidaria por el canon y las demás obligaciones del contrato. Por eso su revisión cuenta igual que la de las otras partes: revise con calma sus datos y las cláusulas antes de aprobar.';
 
 /** 6. A las partes, cuando el borrador pasa a contrato original. Devuelve textos para la plantilla común. */
 function plzTextosContratoListo(displayId) {
