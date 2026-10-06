@@ -1152,13 +1152,47 @@ function analizarCertificadoDesdePanel(fileId, datosPropietario) {
     }
     
     // 2. Ejecutar OCR completo
-    const resultadoOCR = procesarCertificadoTradicionOCR(base64Content);
+    const resultadoOCR = procesarCertificadoTradicionOCR(base64Content, { todasLasPaginas: true });
     
     if (!resultadoOCR.exito) {
       return { success: false, message: resultadoOCR.mensaje };
     }
     
     const datosDuros = resultadoOCR.datos;
+
+    // Lectura por anotaciones (OCR_FOLIO.js): dueños actuales, medidas cautelares,
+    // hipotecas y limitaciones VIGENTES. Si no se pudieron leer las anotaciones
+    // (foto borrosa), sigue el cruce viejo de abajo y el panel lo avisa.
+    const folio = datosDuros.folio || { leido: false };
+    if (folio.leido && folio.titulares.nombres.length) {
+      const cotejo = folioCotejar(folio, datosPropietario);
+      const dias = folioDiasDesde(datosDuros.fechaExpedicion);
+      return {
+        success: true,
+        datos: {
+          matricula: datosDuros.matricula || 'No detectada',
+          direccion: datosDuros.direccion || 'No detectada',
+          ciudad: datosDuros.ciudad || 'No detectada',
+          vigente: dias !== null && dias <= 30,
+          diasExpedido: dias === null ? 'Desconocido' : dias,
+          tieneEmbargo: folio.cautelares.length > 0,
+          alertasEmbargo: folio.cautelares.map(folioResumen),
+          cedulaMatch: cotejo.cedulaCoincide,
+          nombreMatch: cotejo.nombreCoincide,
+          propietarioDetectado: folio.titulares.nombres.join(' / '),
+          // Lo nuevo
+          lecturaPorAnotaciones: true,
+          anotacionesLeidas: folio.anotaciones.length,
+          anotacionTitulares: folio.titulares.anotacion,
+          adquisicionParcial: folio.titulares.parcial,
+          titulares: folio.titulares.nombres,
+          otrosTitulares: cotejo.otrosTitulares,
+          cedulaEnAnotacion: cotejo.cedulaEnAnotacion,
+          hipotecas: folio.gravamenes.map(folioResumen),
+          limitaciones: folio.limitaciones.map(folioResumen)
+        }
+      };
+    }
     
     // 3. Cruce de Datos (Validaciones Inteligentes)
     const cedulaPropietario = String(datosPropietario.documento).trim().replace(/\D/g, '');

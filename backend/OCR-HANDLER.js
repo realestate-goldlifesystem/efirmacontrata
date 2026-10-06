@@ -23,7 +23,12 @@ const TOKEN_CACHE = {
 // FUNCIÓN PRINCIPAL OCR
 // ==========================================
 
-function procesarCertificadoTradicionOCR(archivoBase64) {
+/**
+ * @param {string} archivoBase64
+ * @param {{todasLasPaginas:boolean}=} opciones  el panel pide todas; el formulario solo
+ *        necesita la fecha (página 1) y así contesta rápido.
+ */
+function procesarCertificadoTradicionOCR(archivoBase64, opciones) {
   const startTime = Date.now();
   
   try {
@@ -33,7 +38,10 @@ function procesarCertificadoTradicionOCR(archivoBase64) {
     }
     
     const base64Content = prepararBase64(archivoBase64);
-    const texto = llamarVisionAPIConReintentos(base64Content, accessToken);
+    const completo = !!(opciones && opciones.todasLasPaginas);
+    const texto = completo
+      ? leerPdfCompletoConVision(base64Content, accessToken)
+      : llamarVisionAPIConReintentos(base64Content, accessToken);
     
     if (!texto) {
       return {
@@ -163,6 +171,43 @@ function llamarVisionAPIConReintentos(base64Content, accessToken) {
   throw lastError || new Error('No se pudo procesar después de varios intentos');
 }
 
+/**
+ * Lee TODAS las páginas de un PDF (Vision acepta 5 por llamada). En un certificado
+ * de tradición la página 1 solo trae el encabezado: los dueños y las anotaciones
+ * vigentes están en las últimas. Una imagen suelta se lee como siempre.
+ */
+function leerPdfCompletoConVision(base64Content, accessToken) {
+  if (!base64Content.startsWith('JVBERi0')) return llamarVisionAPIConReintentos(base64Content, accessToken);
+
+  const MAX_PAGINAS = 40;
+  let texto = '';
+  let leidas = 0;
+  for (let desde = 1; desde <= MAX_PAGINAS; desde += 5) {
+    const response = UrlFetchApp.fetch('https://vision.googleapis.com/v1/files:annotate', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      payload: JSON.stringify({ requests: [{
+        inputConfig: { content: base64Content, mimeType: 'application/pdf' },
+        features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+        pages: [0, 1, 2, 3, 4].map(k => desde + k)
+      }] }),
+      muteHttpExceptions: true
+    });
+    const cuerpo = JSON.parse(response.getContentText() || '{}');
+    const lote = (cuerpo.responses && cuerpo.responses[0]) || {};
+    if (response.getResponseCode() !== 200 || lote.error) {
+      // Pedir páginas que no existen da error: si ya se leyó algo, ahí terminó el documento
+      if (leidas > 0) break;
+      throw new Error('Vision API error ' + response.getResponseCode() + ': ' + JSON.stringify(lote.error || cuerpo.error || {}));
+    }
+    const paginas = lote.responses || [];
+    paginas.forEach(p => { texto += ((p.fullTextAnnotation || {}).text || '') + String.fromCharCode(10); });
+    leidas += paginas.length;
+    if (paginas.length < 5 || leidas >= (lote.totalPages || 0)) break;
+  }
+  return texto || null;
+}
+
 function llamarVisionAPI(base64Content, accessToken) {
   // Detectar si es PDF por su firma base64 (JVBERi0 = %PDF-)
   const isPDF = base64Content.startsWith('JVBERi0');
@@ -244,21 +289,28 @@ function llamarVisionAPI(base64Content, accessToken) {
 
 function extraerDatosOptimizado(texto) {
   const textoUpper = texto.toUpperCase();
+  const folio = folioAnalizar(texto);
   
   return {
+    // Lectura por anotaciones (OCR_FOLIO.js). Cuando logra leerlas, manda sobre las
+    // búsquedas por palabra suelta, que daban "embargo" por cualquier "LIMITACION
+    // AL DOMINIO" (así se titula el reglamento de propiedad horizontal).
+    folio: folio,
     matricula: extraerMatriculaOpt(textoUpper),
     direccion: extraerDireccionOpt(texto),
     area: extraerAreaOpt(textoUpper),
-    propietarios: extraerPropietariosOpt(texto),
+    propietarios: folio.titulares.nombres.length ? folio.titulares.nombres.join(', ') : extraerPropietariosOpt(texto),
     chip: extraerCHIPOpt(textoUpper),
     ciudad: extraerCiudadOpt(textoUpper),
     estrato: extraerEstratoOpt(textoUpper),
     departamento: extraerDepartamentoOpt(textoUpper),
     municipio: extraerMunicipioOpt(textoUpper),
     vereda: extraerVeredaOpt(textoUpper),
-    fechaExpedicion: extraerFechaExpedicionOpt(texto),
-    embargo: detectarEmbargosOpt(textoUpper),
-    cedulas: extraerCedulasOpt(texto)
+    fechaExpedicion: folio.fechaImpresion || extraerFechaExpedicionOpt(texto),
+    embargo: folio.leido
+      ? { tieneEmbargo: folio.cautelares.length > 0, alertas: folio.cautelares.map(folioResumen) }
+      : detectarEmbargosOpt(textoUpper),
+    cedulas: folio.titulares.cedulas.length ? folio.titulares.cedulas : extraerCedulasOpt(texto)
   };
 }
 

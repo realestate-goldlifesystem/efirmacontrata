@@ -4418,6 +4418,54 @@
                          badgesHtml += `<span class="badge badge-danger"> Vencido (+30 d)</span>`;
                     }
 
+                    // Lectura por anotaciones (OCR_FOLIO.js): dueños actuales y lo que sigue VIGENTE
+                    if (data.lecturaPorAnotaciones) {
+                         const escB = (t) => String(t === null || t === undefined ? '' : t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+                         const titulares = data.titulares || [];
+                         const deDonde = escB(`Titulares en la anotación ${data.anotacionTitulares}: ${titulares.join(' / ')}`);
+
+                         if (data.cedulaMatch) {
+                              badgesHtml += `<span class="badge badge-success" title="${deDonde}"> Cédula coincide</span>`;
+                         } else if (data.cedulaEnAnotacion) {
+                              badgesHtml += `<span class="badge badge-warning" title="Aparece en la anotación ${escB(data.cedulaEnAnotacion)}, pero no entre los dueños actuales. ${deDonde}"> Cédula: no es titular actual</span>`;
+                         } else {
+                              badgesHtml += `<span class="badge badge-danger" title="${deDonde}"> Cédula no está entre los titulares</span>`;
+                         }
+
+                         if (data.nombreMatch) {
+                              badgesHtml += `<span class="badge badge-success" title="${deDonde}"> Titular coincide</span>`;
+                         } else {
+                              badgesHtml += `<span class="badge badge-warning" title="${deDonde}"> Nombre distinto al del folio</span>`;
+                         }
+
+                         (data.otrosTitulares || []).forEach(n => {
+                              badgesHtml += `<span class="badge badge-warning" title="El inmueble tiene más de un dueño: también debe firmar o dar poder."> Copropietario: ${escB(n)}</span>`;
+                         });
+                         if (data.adquisicionParcial) {
+                              badgesHtml += `<span class="badge badge-warning" title="La última compra fue de una parte del inmueble: puede haber más dueños en anotaciones anteriores."> Compra parcial: revise dueños anteriores</span>`;
+                         }
+
+                         const cautelares = data.alertasEmbargo || [];
+                         if (cautelares.length) {
+                              cautelares.forEach(c => { badgesHtml += `<span class="badge badge-danger" title="Medida cautelar vigente (no aparece cancelada)"> Medida cautelar: ${escB(c)}</span>`; });
+                         } else {
+                              badgesHtml += `<span class="badge badge-success" title="Ninguna anotación vigente es embargo, demanda ni medida cautelar"> Sin embargos vigentes</span>`;
+                         }
+                         (data.hipotecas || []).forEach(h => {
+                              badgesHtml += `<span class="badge badge-info" title="Hipoteca vigente. No impide arrendar; es informativo."> Hipoteca: ${escB(h)}</span>`;
+                         });
+                         (data.limitaciones || []).forEach(l => {
+                              badgesHtml += `<span class="badge badge-warning" title="Limitación vigente: revise si afecta el arriendo"> ${escB(l)}</span>`;
+                         });
+                         badgesHtml += `<span style="flex-basis:100%; font-size:0.72rem; opacity:0.65; text-align:center;">Se leyeron ${escB(data.anotacionesLeidas)} anotaciones. Verifique contra el documento.</span>`;
+
+                         badgesContainer.innerHTML = badgesHtml;
+                         return;
+                    }
+
+                    // Sin anotaciones legibles (foto borrosa): cruce antiguo, por palabras sueltas
+                    badgesHtml += `<span class="badge badge-warning" title="No se pudieron leer las anotaciones; lo de abajo es una búsqueda por palabras y puede equivocarse."> Lectura parcial: revise a mano</span>`;
+
                     // 2. Badge Cédula
                     if (data.cedulaMatch) {
                          badgesHtml += `<span class="badge badge-success"> Cédula Coincide</span>`;
