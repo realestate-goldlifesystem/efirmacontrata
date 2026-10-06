@@ -1211,8 +1211,9 @@ function registrarAprobacionContrato(cdr, tipo, accion, comentarios) {
       // Actualizar estado a correccion solicitada
       actualizarEstadoContrato(cdr, 'CONTRATO EN CORRECCION', `⚠️ Correcciones solicitadas por ${tipo}`);
 
-      // Enviar notificacion de cambios solicitados
-      enviarNotificacionCambiosSolicitados(cdr, tipo, comentarios);
+      // A las partes NO se les escribe por cada respuesta (decisión de Leonardo, 06-oct-2026):
+      // reciben UN solo resumen cuando todos respondieron la versión. Lo envía
+      // rondaAvisarSiCompleta (AVISO_RONDA_CONTRATO.js), unas líneas arriba.
 
       return {
         success: true,
@@ -1510,64 +1511,9 @@ function enviarNotificacionContratoAprobado(cdr) {
   }
 }
 
-/**
- * Enviar notificacion de cambios solicitados
- */
-function enviarNotificacionCambiosSolicitados(cdr, solicitante, observaciones) {
-  try {
-    const displayId = typeof obtenerIdRegistro === 'function' ? obtenerIdRegistro(cdr) : cdr;
-    const datos = recopilarDatosContrato(cdr);
-
-    if (!datos.success) return;
-
-    const asunto = `Cambios Solicitados al Contrato - ${displayId}`;
-
-    const tpl = HtmlService.createTemplateFromFile('backend/email_notificacion');
-    tpl.TITULO = 'Cambios Solicitados';
-    tpl.NOMBRE_CLIENTE = 'Cliente';
-    tpl.MENSAJE_PRINCIPAL = `Se han solicitado cambios al contrato de arrendamiento con código <strong>${displayId}</strong>.`;
-    tpl.MENSAJE_SECUNDARIO = `Observaciones (${solicitante}):\n${observaciones || 'Sin observaciones específicas'}`;
-    
-    // Podemos incluir un botón para que vayan a la bitácora a revisar
-    const idURL = datosReq.success && datosReq.data.idRegistro ? datosReq.data.idRegistro : cdr;
-    const cdrEncoded = encodeURIComponent(idURL).replace(/\(/g, '%28').replace(/\)/g, '%29');
-    tpl.URL_ACCION = `${CONTRATO_CONFIG.BASE_URL}/validador-de-contratos.html?cdr=${cdrEncoded}`;
-    tpl.TEXTO_BOTON = 'Ver Bitácora del Contrato';
-
-    const htmlBody = tpl.evaluate().getContent();
-
-    // Enviar a todas las partes
-    const emails = [
-      datos.data.inquilino.email,
-      datos.data.propietario.email
-    ];
-
-    // Agregar emails de codeudores
-    if (datos.data.codeudores && datos.data.codeudores.length > 0) {
-      datos.data.codeudores.forEach(codeudor => {
-        if (codeudor.email) {
-          emails.push(codeudor.email);
-        }
-      });
-    }
-
-    // Enviar email a todos
-    emails.forEach(email => {
-      if (email) {
-        MailApp.sendEmail({
-          to: email,
-          subject: asunto,
-          htmlBody: htmlBody
-        });
-      }
-    });
-
-    Logger.log(`Notificacion de cambios enviada para CDR: ${cdr}`);
-
-  } catch (error) {
-    Logger.log(`Error enviando notificacion de cambios: ${error.toString()}`);
-  }
-}
+// (Aquí estaba enviarNotificacionCambiosSolicitados: avisaba a todas las partes en cada
+// solicitud de corrección. Usaba una variable inexistente y nunca llegó a enviar nada.
+// Lo reemplaza el resumen único de AVISO_RONDA_CONTRATO.js.)
 
 /**
  * Enviar el PDF original al correo del administrador y de las partes

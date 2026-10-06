@@ -87,7 +87,18 @@ igual('mixto: dice quién aprobó y quién no', /Inquilino y Codeudor 1<\/strong
 igual('las observaciones y los nombres no pueden meter HTML', [/<script>/.test(c3.html), /<b>PEREZ/.test(c3.html)], [false, false]);
 igual('muestra la observación', /cambiar .* la fecha/.test(c3.html), true);
 
+// --- El resumen único que reciben las PARTES (solo cuando hubo correcciones) ---
+const partesCorreo = (filas) => ctx.rondaCorreoPartes({ codigo: 'SK000001', direccion: 'Calle 1 #2-3', resumen: R(filas),
+  destinatario: 'ANA <i>PEREZ</i>', urlValidador: 'https://ejemplo.test/validador-de-contratos.html?cdr=SK000001&rol=inquilino' });
+const p1 = partesCorreo([enviado(2), fila('inquilino', 'APROBADO', 2), fila('propietario', 'CORREGIR', 2, 'corregir <b>mi</b> cédula'), fila('codeudor1', 'APROBADO', 2)]);
+igual('partes: asunto', p1.asunto, 'Todas las partes respondieron el borrador (versión 2) - SK000001');
+igual('partes: anuncia la versión siguiente y que no hay que hacer nada', [/versión 3/.test(p1.html), /no tiene que hacer nada/.test(p1.html)], [true, true]);
+igual('partes: muestra quién aprobó y quién pidió ajuste', [/Aprobó/.test(p1.html), /Pidió un ajuste/.test(p1.html)], [true, true]);
+igual('partes: sin HTML ajeno en observaciones ni en el nombre', [/<b>mi/.test(p1.html), /<i>PEREZ/.test(p1.html)], [false, false]);
+igual('partes: no le habla al cliente de "panel de validación"', /panel de validaci/i.test(p1.html), false);
+
 if (process.argv.includes('--ver')) {
+  fs.writeFileSync(path.join(os.tmpdir(), 'ronda_partes.html'), p1.html);
   [['aprobaron', c1], ['corrigen', c2], ['mixto', c3]].forEach(([n, c]) => {
     const destino = path.join(os.tmpdir(), 'ronda_' + n + '.html');
     fs.writeFileSync(destino, c.html);

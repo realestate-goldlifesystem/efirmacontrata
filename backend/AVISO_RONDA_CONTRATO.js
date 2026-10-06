@@ -144,6 +144,42 @@ function rondaCorreoAgente(d) {
   };
 }
 
+/**
+ * Correo ÚNICO a cada parte cuando todos respondieron la versión y hubo correcciones.
+ * (Si todos aprobaron, a las partes les llega el de "contrato aprobado".)
+ * Muestra lo mismo que ya ven en el Historial de Revisiones del validador.
+ * d = { codigo, direccion, resumen, nombres, destinatario, urlValidador }
+ */
+function rondaCorreoPartes(d) {
+  const r = d.resumen;
+  const filas = r.partes.map(p => {
+    const v = r.veredictos[p];
+    const estado = v.veredicto === 'aprobo'
+      ? '<span style="color:#15803d; font-weight:bold;">✓ Aprobó</span>'
+      : '<span style="color:#b45309; font-weight:bold;">✎ Pidió un ajuste</span>';
+    const comentario = v.veredicto === 'corrige' && v.comentario
+      ? '<div style="margin-top:6px; padding:8px 12px; background-color:#f6f6f6; border-radius:4px; color:#333333; font-size:14px;">' + plzEsc(v.comentario).replace(/\n/g, '<br>') + '</div>'
+      : '';
+    return '<tr><td style="padding:10px 0; border-bottom:1px solid #eeeeee; font-size:15px;">' +
+             '<strong style="color:#1a1a1a;">' + rondaNombreDeParte(p) + '</strong><br>' + estado + comentario +
+           '</td></tr>';
+  }).join('');
+
+  return {
+    asunto: 'Todas las partes respondieron el borrador (versión ' + r.version + ') - ' + d.codigo,
+    html: plzHtml({
+      titulo: 'Todas las partes ya revisaron el borrador',
+      nombre: plzNombrePropio(d.destinatario) || 'Cliente', codigo: d.codigo,
+      cuerpo:
+        plzP('Todas las partes ya revisaron la <strong>versión ' + r.version + '</strong> del borrador del contrato' + (d.direccion ? ' del inmueble en <strong>' + plzEsc(d.direccion) + '</strong>' : '') + '. Este es el resultado:') +
+        '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:6px 0 10px 0;">' + filas + '</table>' +
+        plzCaja('<strong>Qué sigue:</strong> estamos preparando la <strong>versión ' + (r.version + 1) + '</strong> con los ajustes solicitados. Le llegará un correo cuando esté lista para su revisión. <strong>Por ahora no tiene que hacer nada.</strong>') +
+        plzP('El contrato definitivo se genera cuando todas las partes aprueban la misma versión.'),
+      boton: d.urlValidador ? { texto: 'Ver el historial de revisiones', url: d.urlValidador } : null
+    })
+  };
+}
+
 // ---------- Con servicios ----------
 
 /**
@@ -175,6 +211,33 @@ function rondaAvisarSiCompleta(hojaAprobaciones, cdr) {
   });
   const enviado = _plzEnviar(PLAZOS.CORREO_ADMIN, correo);
   Logger.log('📬 Aviso de ronda completa al agente (' + cdr + '): ' + correo.asunto);
+
+  // A las partes: un solo resumen, y solo si hubo correcciones (si todos aprobaron
+  // ya reciben el correo de "contrato aprobado").
+  const resumen = rondaResumen(filas, cdr, codeudores.length);
+  if (resumen.situacion !== 'todos_aprobaron') {
+    const idUrl = encodeURIComponent(info.idRegistro || cdr).replace(/\(/g, '%28').replace(/\)/g, '%29');
+    const destinos = [['inquilino', info.inquilino], ['propietario', info.propietario]]
+      .concat(codeudores.map((c, i) => ['codeudor' + (i + 1), c]));
+    const yaEscritos = {};
+    destinos.forEach(par => {
+      const persona = par[1] || {};
+      const correoParte = String(persona.email || '').trim().toLowerCase();
+      if (!correoParte || yaEscritos[correoParte]) return;      // una persona con dos papeles recibe uno solo
+      yaEscritos[correoParte] = true;
+      try {
+        _plzEnviar(persona.email, rondaCorreoPartes({
+          codigo: info.idRegistro || cdr,
+          direccion: info.inmueble ? info.inmueble.direccion : '',
+          resumen: resumen, destinatario: persona.nombre,
+          urlValidador: CONTRATO_CONFIG.BASE_URL + '/validador-de-contratos.html?cdr=' + idUrl + '&rol=' + par[0]
+        }));
+      } catch (e) {
+        Logger.log('⚠️ No se pudo enviar el resumen a ' + par[0] + ': ' + e.message);
+      }
+    });
+    Logger.log('📬 Resumen de la versión ' + resumen.version + ' enviado a ' + Object.keys(yaEscritos).length + ' parte(s).');
+  }
   return enviado;
 }
 
@@ -193,5 +256,10 @@ function probarCorreosDeRonda() {
       urlHoja: SpreadsheetApp.getActiveSpreadsheet().getUrl()
     }));
   });
-  Logger.log('Enviados 3 correos de prueba a ' + PLAZOS.CORREO_ADMIN);
+  // Y el que reciben las partes cuando hubo correcciones
+  _plzEnviar(PLAZOS.CORREO_ADMIN, rondaCorreoPartes({
+    codigo: 'PRUEBA', direccion: 'Calle de Prueba 1 #2-3', resumen: armar({ inquilino: 1 }),
+    destinatario: 'INQUILINO DE PRUEBA', urlValidador: CONTRATO_CONFIG.BASE_URL + '/validador-de-contratos.html?cdr=PRUEBA'
+  }));
+  Logger.log('Enviados 4 correos de prueba a ' + PLAZOS.CORREO_ADMIN + ' (3 del agente y 1 de las partes)');
 }
