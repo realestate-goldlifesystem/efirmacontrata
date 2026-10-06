@@ -20,7 +20,7 @@ on:
         required: false
         default: 'all'
       reponer:
-        description: 'Reposición: saltar localidad+habitación con 5 o más NUEVO (cuota 20). Para probar el modo de la corrida automática sin esperar al cron.'
+        description: 'Reposición: completar hasta 10 en NUEVO por localidad+habitación (capta solo lo que falte; si ya hay 10, la salta). Es el modo de la corrida automática.'
         required: false
         default: false
         type: boolean
