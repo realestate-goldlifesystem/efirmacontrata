@@ -1,5 +1,6 @@
 // Prueba local de la lista de bancos:
 //   - frontend/js/bancos.js: qué entidades del servidor se SUMAN a la lista fija
+//     y cuáles de la fija se QUITAN porque ya no están vigentes
 //     del formulario del propietario (sin duplicar las que ya están con otro nombre);
 //   - backend/GESTOR_BANCOS.js: leer la respuesta de Mercado Pago, validar la copia
 //     guardada y decidir cuándo toca refrescar.
@@ -55,6 +56,19 @@ igual('ignora vacíos, nulos y textos absurdos', agregar(['', null, undefined, '
 igual('limpia espacios de más', agregar(['  Banco   Nuevo  ']), ['Banco Nuevo']);
 igual('sin lista del servidor → nada', front.efcBancosPorAgregar(base, null), []);
 igual('sin base → agrega todas', front.efcBancosPorAgregar([], ['B', 'A']), ['A', 'B']);
+
+// --- Qué se QUITA de la lista fija (lo que el servidor ya no publica) ---
+const opciones = [];
+sel.replace(/<option value="([^"]+)">([^<]+)<\/option>/g, (_, v, t) => { opciones.push({ value: v, text: t }); });
+const vigentes = ['Bancolombia', 'Nequi', 'DaviPlata', 'Davivienda', 'Banco de Bogotá', 'Banco Caja Social', 'BBVA', 'Banco Agrario de Colombia',
+  'AV Villas', 'Banco Popular', 'Banco de Occidente', 'DAVIbank S.A.', 'Banco Falabella', 'Bancoomeva', 'Banco Itaú', 'Lulo Bank', 'Rappipay',
+  'Banco Finandina', 'Banco Pichincha', 'Banco Serfinanza', 'Confiar Cooperativa Financiera', 'Nu'];
+const quitar = (n) => front.efcBancosPorQuitar(opciones, n);
+igual('quita solo las que el servidor no trae', quitar(vigentes).sort(), ['Coofinep', 'Mibanco']);
+igual('si un banco deja de publicarse, se quita', quitar(vigentes.filter(b => b !== 'Nequi')).includes('Nequi'), true);
+igual('lista del servidor muy corta → no quita nada', quitar(['Bancolombia', 'Nequi']), []);
+igual('lista vacía o nula → no quita nada', [quitar([]), quitar(null)], [[], []]);
+igual('DAVIbank (antes Scotiabank Colpatria) se queda', quitar(vigentes).includes('DAVIbank'), false);
 
 // --- Servidor: leer a Mercado Pago ---
 const pse = (n) => ({ id: 'pse', financial_institutions: n.map((d, i) => ({ id: String(i), description: d })) });

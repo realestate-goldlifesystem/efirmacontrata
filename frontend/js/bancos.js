@@ -1,13 +1,15 @@
 /**
  * LISTA DE BANCOS SIEMPRE AL DÍA (formulario del propietario) — oct-2026
  *
- * El <select id="banco"> trae una lista fija, que es la base y la que garantiza
- * que el formulario funcione aunque el servidor no responda. Este script le
- * SUMA las entidades que publique el servidor (accion=obtenerBancos: las
- * entidades de PSE que reporta Mercado Pago, guardadas una semana).
+ * El <select id="banco"> trae una lista fija, que solo es el RESPALDO: la que se
+ * ve si el servidor no responde. Cuando llega la lista del servidor
+ * (accion=obtenerBancos: las entidades de PSE que reporta Mercado Pago), el
+ * desplegable se deja IGUAL a ella: se quitan las fijas que ya no están
+ * vigentes y se agregan las que falten.
  *
- * Solo agrega, nunca quita ni reemplaza: si el servidor falla o trae algo raro,
- * la lista fija queda intacta. Las nuevas van al final, en orden alfabético.
+ * Las que coinciden conservan su nombre y su orden de siempre (las más usadas
+ * arriba); las nuevas van al final, en orden alfabético. Solo se quita si la
+ * lista del servidor es creíble (10 o más); con una respuesta rara no se toca nada.
  *
  * La versión anterior ("actualización mixta") REEMPLAZABA la lista fija por una
  * simulada de 12 bancos con uno inventado. Nunca llegó a funcionar; ver la nota
@@ -56,7 +58,27 @@
     return agregar.sort(function (a, b) { return a.localeCompare(b, 'es', { sensitivity: 'base' }); });
   }
 
+  /**
+   * De las opciones que ya ofrece el formulario, las que SOBRAN: las que el
+   * servidor ya no publica (un banco que cerró o cambió de nombre).
+   * Solo se atreve a quitar si la lista del servidor es creíble (10 o más).
+   * @param {{value:string, text:string}[]} opciones
+   * @param {string[]} nuevos
+   * @return {string[]} los value de las opciones que hay que quitar
+   */
+  function bancosPorQuitar(opciones, nuevos) {
+    var vigentes = (nuevos || []).filter(function (n) { return typeof n === 'string' && n.trim(); });
+    if (vigentes.length < 10) return [];
+    return (opciones || []).filter(function (o) {
+      for (var i = 0; i < vigentes.length; i++) {
+        if (mismaEntidad(o.text, vigentes[i]) || mismaEntidad(o.value, vigentes[i])) return false;
+      }
+      return true;
+    }).map(function (o) { return o.value; });
+  }
+
   g.efcBancosPorAgregar = bancosPorAgregar;      // expuesto para las pruebas
+  g.efcBancosPorQuitar = bancosPorQuitar;
   g.efcMismaEntidadBancaria = mismaEntidad;
 
   // ---------- En la página ----------
@@ -71,6 +93,18 @@
 
   function sumarAlSelect(lista) {
     if (!select || !Array.isArray(lista)) return;
+
+    // Primero se quitan las que el servidor ya no publica, para que la lista
+    // quede IGUAL a la vigente; después se agregan las que falten.
+    var opciones = [];
+    for (var j = 0; j < select.options.length; j++) {
+      if (select.options[j].value) opciones.push({ value: select.options[j].value, text: select.options[j].textContent });
+    }
+    var quitar = bancosPorQuitar(opciones, lista);
+    for (var k = select.options.length - 1; k >= 0; k--) {
+      if (select.options[k].value && quitar.indexOf(select.options[k].value) !== -1) select.remove(k);
+    }
+
     var base = [];
     for (var i = 0; i < select.options.length; i++) {
       if (!select.options[i].value) continue;
