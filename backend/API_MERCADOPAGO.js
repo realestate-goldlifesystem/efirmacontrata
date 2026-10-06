@@ -206,7 +206,29 @@ function handleMercadoPagoWebhook(datos) {
           const ss = SpreadsheetApp.getActiveSpreadsheet();
           const sheet = ss.getSheetByName('PAGOS_RECIBIDOS');
           if (sheet) {
-            sheet.appendRow([new Date(), paymentId, externalReference, paymentData.transaction_amount, 'APROBADO', JSON.stringify(paymentData)]);
+            // Mercado Pago avisa VARIAS veces del mismo pago (payment.created,
+            // payment.updated y reintentos). Antes cada aviso sumaba una fila:
+            // el pago 181563322027 de SK142795 quedó anotado 5 veces
+            // (05-oct-2026). Ahora un pago = una fila. El candado es porque dos
+            // avisos llegan con 2 segundos de diferencia y ambos verían la hoja
+            // "sin ese pago".
+            const candado = LockService.getScriptLock();
+            let conCandado = false;
+            try { candado.waitLock(20000); conCandado = true; } catch (eLock) { /* se anota igual: mejor repetido que perdido */ }
+            try {
+              const encabezados = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
+              const colIdMP = encabezados.indexOf('ID Mercado Pago') + 1;
+              let yaAnotado = false;
+              if (colIdMP > 0 && sheet.getLastRow() > 1) {
+                yaAnotado = sheet.getRange(2, colIdMP, sheet.getLastRow() - 1, 1).getValues()
+                  .some(function (r) { return String(r[0]).trim() === String(paymentId).trim(); });
+              }
+              if (!yaAnotado) {
+                sheet.appendRow([new Date(), paymentId, externalReference, paymentData.transaction_amount, 'APROBADO', JSON.stringify(paymentData)]);
+              }
+            } finally {
+              if (conCandado) candado.releaseLock();
+            }
           }
 
           // Acaba de entrar un pago que habrá que vigilar hasta las 48 h: se
