@@ -592,6 +592,14 @@ function recopilarDatosContrato(cdr) {
       console.log("Error buscando documentos relacionados:", errDoc);
     }
 
+    // Servicios públicos de la cláusula DÉCIMA PRIMERA: solo los recibos APROBADOS
+    try {
+      datosCompletos.serviciosDelContrato = listaServiciosDelContrato(obtenerEstadosValidacionDesdeCerebro(cdr));
+    } catch (errServ) {
+      console.log('Error leyendo servicios aprobados:', errServ);
+      datosCompletos.serviciosDelContrato = '';
+    }
+
     console.log('Datos recopilados exitosamente');
 
     return {
@@ -606,6 +614,27 @@ function recopilarDatosContrato(cdr) {
       message: error.message
     };
   }
+}
+
+/** Lo que dice la cláusula si ningún recibo quedó aprobado: no se nombra ninguno a ciegas. */
+const SERVICIOS_SIN_APROBAR = 'los que tenga instalados el inmueble';
+
+/**
+ * Servicios públicos que van en el contrato (regla de Leonardo, 06-oct-2026): solo
+ * los que tienen su recibo APROBADO en la validación. Agua → Acueducto, Vanti →
+ * Gas, Enel → Luz. Internet no entra: la misma cláusula lo trata como servicio
+ * privado a cargo del arrendatario. Caldera no tiene recibo ni casilla: no se nombra.
+ * Pura (probada en _herramientas_locales/test_servicios_contrato.js).
+ * @param {Object} estadosBuzon  { 'BUZON FACTURA AGUA': 'APROBADO', … } del Cerebro
+ * @return {string} "Acueducto, Gas y Luz"; '' si no hay ninguno aprobado
+ */
+function listaServiciosDelContrato(estadosBuzon) {
+  const ORDEN = [['AGUA', 'Acueducto'], ['GAS', 'Gas'], ['LUZ', 'Luz'], ['TELEFONO', 'Teléfono']];
+  const estados = {};
+  Object.keys(estadosBuzon || {}).forEach(k => { estados[String(k).trim().toUpperCase()] = String(estadosBuzon[k] || '').trim().toUpperCase(); });
+  const nombres = ORDEN.filter(par => estados['BUZON FACTURA ' + par[0]] === 'APROBADO').map(par => par[1]);
+  if (nombres.length <= 1) return nombres.join('');
+  return nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length - 1];
 }
 
 /**
@@ -812,6 +841,14 @@ function reemplazarVariablesContrato(doc, datos) {
       '{{telefono}}': 'Teléfono',
       '{{caldera}}': 'Caldera'
     };
+
+    // Cláusula de servicios: la plantilla trae cinco marcadores seguidos
+    // ({{Acueducto}}, {{gas}}, {{Energía Eléctrica}}, {{telefono}}, {{caldera}}) que
+    // antes se llenaban SIEMPRE con las cinco palabras, tuviera o no el inmueble
+    // teléfono o caldera. Ahora toda la tira se cambia por los servicios cuyo recibo
+    // fue aprobado. Si la plantilla cambia y la tira no aparece, siguen los
+    // reemplazos individuales de arriba.
+    replaceInAll('\\{\\{Acueducto\\}\\}.*\\{\\{caldera\\}\\}', datos.serviciosDelContrato || SERVICIOS_SIN_APROBAR);
 
     // Realizar reemplazos
     for (const [variable, valor] of Object.entries(reemplazos)) {
