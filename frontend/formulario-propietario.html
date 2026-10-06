@@ -874,6 +874,24 @@
                 <span id="facturaInternetName" class="file-name"></span>
               </div>
             </div>
+
+            <!-- Solo aparece (y es obligatoria) si el inmueble tiene administración -->
+            <div class="servicio-item" data-servicio="administracion" id="itemAdministracion" style="display:none;">
+              <div class="servicio-checkbox">
+                <label>
+                  <input type="checkbox" id="servicioAdministracion">
+                  🏢 Administración del conjunto <span class="required">*</span>
+                </label>
+                <div class="muted" style="font-size: 0.8rem; margin-top: 4px;">Recibo o cuenta de cobro de la administración (el más reciente).</div>
+              </div>
+              <div class="servicio-upload">
+                <input type="file" id="facturaAdministracion" class="file-input" accept=".pdf,.jpg,.jpeg,.png">
+                <label for="facturaAdministracion" class="btn btn-sm btn-outline" style="cursor:pointer">
+                  📎 Adjuntar recibo o cuenta de cobro
+                </label>
+                <span id="facturaAdministracionName" class="file-name"></span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1047,7 +1065,8 @@
               certBancario: 'certBancarioName',
               facturaAgua: 'facturaAguaName', facturaLuz: 'facturaLuzName',
               facturaGas: 'facturaGasName', facturaTelefono: 'facturaTelefonoName',
-              facturaInternet: 'facturaInternetName'
+              facturaInternet: 'facturaInternetName',
+              facturaAdministracion: 'facturaAdministracionName'
             };
             for (const [key, archivo] of Object.entries(archivos)) {
               if (archivo && archivo.nombre) {
@@ -1252,15 +1271,16 @@
         state.modoCorreccion = (params.get('modo') === 'correccion');
         const docs = params.get('docs');
         if(document.getElementById('displayDir')) {
-          if (dir) {
-            document.getElementById('displayDir').textContent = dir;
-          } else if (state.cdr && typeof CONFIG !== "undefined" && CONFIG.API_URL) {
+          if (dir) document.getElementById('displayDir').textContent = dir;
+          if (state.cdr && typeof CONFIG !== "undefined" && CONFIG.API_URL) {
             
             const callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
             window[callbackName] = function(data) {
-              if (data && data.success && data.direccion) {
+              if (data && data.success && data.direccion && !dir) {
                 document.getElementById('displayDir').textContent = data.direccion;
               }
+              // Si el inmueble tiene administración, se pide su recibo o cuenta de cobro
+              if (data && data.success && data.tieneAdministracion) activarAdministracion();
               delete window[callbackName];
             };
             const script = document.createElement('script');
@@ -1332,7 +1352,7 @@
         if (state.step === 3) {
             let totalFacturasRequeridas = 0;
             let facturasAdjuntadas = 0;
-            const servicios = ['Agua', 'Luz', 'Gas', 'Telefono', 'Internet'];
+            const servicios = ['Agua', 'Luz', 'Gas', 'Telefono', 'Internet', 'Administracion'];
             servicios.forEach(srv => {
                 const cb = document.getElementById('servicio' + srv);
                 if(cb && cb.checked) {
@@ -1396,7 +1416,8 @@
           'facturaLuz': 'Factura Luz',
           'facturaGas': 'Factura Gas',
           'facturaTelefono': 'Factura Teléfono',
-          'facturaInternet': 'Factura Internet'
+          'facturaInternet': 'Factura Internet',
+          'facturaAdministracion': 'Recibo o cuenta de cobro de la administración'
         };
         el.correccionDocs.innerHTML = state.docsCorreccion.map(d => {
           const label = friendlyNames[d] || d;
@@ -1406,7 +1427,7 @@
         // Marcar archivos no requeridos como ocultos
         const allFileKeys = [
           'docFront', 'docBack', 'certTradicion', 'sarlaft', 'certBancario',
-          'facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet', 'comprobantePago'
+          'facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet', 'facturaAdministracion', 'comprobantePago'
         ];
         allFileKeys.forEach(key => {
           if (!state.docsCorreccion.includes(key)) {
@@ -1450,7 +1471,7 @@
       function getStepFileKeys(step) {
         if (step === 1) return ['docFront', 'docBack', 'certTradicion', 'sarlaft'];
         if (step === 2) return ['certBancario'];
-        if (step === 3) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'];
+        if (step === 3) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet', 'facturaAdministracion'];
         return []; // Step 0 y 4 no tienen archivos
       }
 
@@ -1566,6 +1587,7 @@
         bindFile($('facturaGas'), 'facturaGas', $('facturaGasName'));
         bindFile($('facturaTelefono'), 'facturaTelefono', $('facturaTelefonoName'));
         bindFile($('facturaInternet'), 'facturaInternet', $('facturaInternetName'));
+        bindFile($('facturaAdministracion'), 'facturaAdministracion', $('facturaAdministracionName'));
       }
 
       function bindFile(input, key, nameEl) {
@@ -1710,8 +1732,26 @@
       });
 
       // --------- Servicios ----------
+      /** Muestra la casilla de administración y la deja marcada: es obligatoria para este inmueble. */
+      function activarAdministracion() {
+        state.tieneAdministracion = true;
+        const item = document.getElementById('itemAdministracion');
+        if (item) item.style.display = '';
+        const cb = document.getElementById('servicioAdministracion');
+        if (cb && !cb.checked && !state.modoCorreccion) {
+          cb.checked = true;
+          cb.dispatchEvent(new Event('change'));
+        }
+        if (typeof evaluateProgress === 'function') evaluateProgress();
+      }
+
       function bindServicios() {
-        ['agua', 'luz', 'gas', 'telefono', 'internet'].forEach(tipo => {
+        // En corrección, si lo que se pidió corregir es el recibo de administración, la casilla debe verse
+        if (state.modoCorreccion && state.docsCorreccion.includes('facturaAdministracion')) {
+          const itemAdm = document.getElementById('itemAdministracion');
+          if (itemAdm) itemAdm.style.display = '';
+        }
+        ['agua', 'luz', 'gas', 'telefono', 'internet', 'administracion'].forEach(tipo => {
           const checkbox = $(`servicio${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`);
           const item = document.querySelector(`.servicio-item[data-servicio="${tipo}"]`);
           const uploadDiv = item?.querySelector('.servicio-upload');
@@ -1997,7 +2037,7 @@
         if (state.modoCorreccion) {
           if (step === 1) return [{ id: 'docFront', isType: 'file' }, { id: 'docBack', isType: 'file' }, { id: 'certTradicion', isType: 'file' }, { id: 'sarlaft', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
           if (step === 2) return [{ id: 'certBancario', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
-          if (step === 3) return [{ id: 'facturaAgua', isType: 'file' }, { id: 'facturaLuz', isType: 'file' }, { id: 'facturaGas', isType: 'file' }, { id: 'facturaTelefono', isType: 'file' }, { id: 'facturaInternet', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 3) return [{ id: 'facturaAgua', isType: 'file' }, { id: 'facturaLuz', isType: 'file' }, { id: 'facturaGas', isType: 'file' }, { id: 'facturaTelefono', isType: 'file' }, { id: 'facturaInternet', isType: 'file' }, { id: 'facturaAdministracion', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
           if (step === 4) return [{ id: 'comprobantePago', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
           return [];
         }
@@ -2063,9 +2103,10 @@
             return true;
           }
           case 3: {
-            if (state.modoCorreccion) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
+            if (state.modoCorreccion) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet', 'facturaAdministracion'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
             // Agua y luz son obligatorios; de los demás, factura solo si se marcaron
             if (!['agua', 'luz'].every(s => state.servicios.includes(s))) return false;
+            if (state.tieneAdministracion && !state.servicios.includes('administracion')) return false;
             const check = state.servicios.every(tipo => {
               const key = `factura${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
               return !!state.archivos[key];
@@ -2166,7 +2207,7 @@
 
           case 3: // Servicios: agua y luz obligatorios, el resto opcional
             if (state.modoCorreccion) {
-              const srAcorregir = ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'].filter(k => state.docsCorreccion.includes(k));
+              const srAcorregir = ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet', 'facturaAdministracion'].filter(k => state.docsCorreccion.includes(k));
               for (const d of srAcorregir) {
                 if (!state.archivos[d]) {
                   showAlert('warning', 'Falta adjuntar factura de servicio público para corrección.');
@@ -2182,6 +2223,15 @@
                 showAlert('warning', `Marque ${faltan.join(' y ')} y adjunte su factura: ${faltan.length > 1 ? 'son obligatorios' : 'es obligatorio'}.`);
                 return false;
               }
+            }
+
+            if (state.tieneAdministracion && !state.servicios.includes('administracion')) {
+              showAlert('warning', 'Su inmueble tiene administración: marque "Administración del conjunto" y adjunte el recibo o la cuenta de cobro más reciente.');
+              return false;
+            }
+            if (state.servicios.includes('administracion') && !state.archivos['facturaAdministracion']) {
+              showAlert('warning', 'Adjunte el recibo o la cuenta de cobro de la administración.');
+              return false;
             }
 
             // Validar que se hayan adjuntado los archivos de los servicios marcados
@@ -2222,7 +2272,8 @@
             facturaLuz: 'Factura Luz',
             facturaGas: 'Factura Gas',
             facturaTelefono: 'Factura Teléfono',
-            facturaInternet: 'Factura Internet'
+            facturaInternet: 'Factura Internet',
+            facturaAdministracion: 'Administración'
           }[k] || k;
           return `<div class="summary-file"><i class="fas fa-file-alt"></i> ${nice}: ${escapeHTML(v?.nombre || '—')}</div>`;
         }).join('');

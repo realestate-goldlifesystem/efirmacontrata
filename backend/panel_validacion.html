@@ -3745,7 +3745,7 @@
                     if (res.success) {
                         // Un solo PDF con varios recibos (OCR_RECIBOS.js): se tomó la página de esta casilla
                         const d = res.datos || {};
-                        const NOMBRES = { AGUA: 'agua', LUZ: 'luz', GAS: 'gas', INTERNET: 'internet', TELEFONO: 'teléfono' };
+                        const NOMBRES = { AGUA: 'agua', LUZ: 'luz', GAS: 'gas', INTERNET: 'internet', TELEFONO: 'teléfono', ADMINISTRACION: 'administración' };
                         if (d.noCorresponde) {
                             const trae = (d.otros || []).map(o => (NOMBRES[o.tipo] || o.tipo) + ' (pág. ' + o.pagina + ')').join(', ');
                             alert('Este archivo no trae un recibo de ' + (NOMBRES[d.tipoEsperado] || d.tipoEsperado) + '.\nLo que trae: ' + (trae || 'no se reconoció') + '.\n\nNo se guardó nada. Escriba la referencia a mano o pida el recibo correcto.');
@@ -4251,6 +4251,7 @@
             if (n.includes('FACTURA_GAS')) return 'BUZON FACTURA GAS';
             if (n.includes('FACTURA_TELEFONO')) return 'BUZON FACTURA TELEFONO';
             if (n.includes('FACTURA_INTERNET')) return 'BUZON FACTURA INTERNET';
+            if (n.includes('FACTURA_ADMINISTRACION')) return 'BUZON FACTURA ADMINISTRACION';
 
             return null; // Archivo no mapeado
         }

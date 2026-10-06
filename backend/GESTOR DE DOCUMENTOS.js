@@ -487,7 +487,9 @@ function doGet(e) {
         if (typeof verificarPagoPorCDR === 'function') {
            pago_completado = verificarPagoPorCDR(e.parameter.cdr);
         }
-        result = { success: true, direccion: dir, pago_completado: pago_completado };
+        result = { success: true, direccion: dir, pago_completado: pago_completado,
+                   // El formulario del propietario pide el recibo de administración solo si la hay
+                   tieneAdministracion: inmuebleTieneAdministracion(e.parameter.cdr) };
         break;
 
 
@@ -1555,6 +1557,53 @@ function actualizarDatosCerebro(datos) {
 // HANDLERS DE API EXISTENTES
 // ==========================================
 
+
+/**
+ * ¿El inmueble paga administración? Sale del precio de administración del registro.
+ * Ante la duda (sin dato o error) responde false: no se le exige al propietario un
+ * recibo que quizá no existe.
+ */
+/**
+ * Carpeta "1- RECIBO HE INSTRUCTIVO DE PAGO DE ADMINISTRACION" de SOPORTES
+ * CONTABLES del registro: ahí cae el recibo o cuenta de cobro de la administración
+ * que sube el propietario. null si no se encuentra (el archivo cae entonces con los
+ * demás recibos de servicios, para no perderlo).
+ * Nota: en Corretaje esa carpeta se retira al final del negocio SOLO si está vacía
+ * (ccRetirarCarpetasDeAdministracion); con el recibo adentro se conserva.
+ */
+function carpetaReciboDeAdministracion(cdr) {
+  try {
+    const fila = buscarFilaPorCDR(cdr);
+    if (!fila || fila < 2) return null;
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    return _ccSubcarpetaDeSoportes(sheet, fila, headers, '1- RECIBO HE INSTRUCTIVO');
+  } catch (e) {
+    Logger.log('⚠️ carpetaReciboDeAdministracion: ' + e.message);
+    return null;
+  }
+}
+
+function inmuebleTieneAdministracion(cdr) {
+  try {
+    const fila = buscarFilaPorCDR(cdr);
+    if (!fila || fila < 2) return false;
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const col = headers.findIndex(h => String(h || '').trim().toUpperCase() === 'PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)');
+    if (col < 0) return false;
+    return valorDeAdministracion(sheet.getRange(fila, col + 1).getValue()) > 0;
+  } catch (e) {
+    return false;
+  }
+}
+
+/** " $390.700" → 390700; vacío, "N/A" o 0 → 0. Pura. */
+function valorDeAdministracion(v) {
+  if (typeof v === 'number') return isFinite(v) && v > 0 ? Math.round(v) : 0;
+  const n = parseInt(String(v === null || v === undefined ? '' : v).replace(/[,.]\d{1,2}\s*$/, '').replace(/[^\d]/g, ''), 10);
+  return isNaN(n) ? 0 : n;
+}
 
 function handleObtenerDireccionInmueble(cdr) {
   try {
@@ -3091,6 +3140,9 @@ function guardarDocumentosPropietario(codigoRegistro, archivosBase64, datosFormu
       'facturaGas': { getCarpeta: () => buscarOCrearCarpetaServicio('GAS'), nombre: `FACTURA_GAS_[${codigoRegistro}]` },
       'facturaTelefono': { getCarpeta: () => buscarOCrearCarpetaServicio('TELEFONO'), nombre: `FACTURA_TELEFONO_[${codigoRegistro}]` },
       'facturaInternet': { getCarpeta: () => buscarOCrearCarpetaServicio('INTERNET'), nombre: `FACTURA_INTERNET_[${codigoRegistro}]` },
+      // Recibo o cuenta de cobro de la administración del conjunto (obligatorio si el inmueble la tiene).
+      // Va a SOPORTES CONTABLES > "1- RECIBO HE INSTRUCTIVO DE PAGO DE ADMINISTRACION" (decisión de Leonardo).
+      'facturaAdministracion': { getCarpeta: () => carpetaReciboDeAdministracion(codigoRegistro) || buscarOCrearCarpetaServicio('ADMINISTRACION'), nombre: `FACTURA_ADMINISTRACION_[${codigoRegistro}]` },
     };
 
     // ==============================
@@ -3202,7 +3254,7 @@ function escribirDatosPropietarioEnDoc(inmuebleFolder, datosFormulario, cdr, arc
   body.appendParagraph('BUZON SARLAFT:: RECIBIDO');
 
   // Agregar buzones dinámicos de facturas extraídos directamente de los archivos recabados
-  const keysFacturas = ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'];
+  const keysFacturas = ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet', 'facturaAdministracion'];
   keysFacturas.forEach(key => {
     if (archivosBase64 && archivosBase64[key] && archivosBase64[key].contenido) {
       const nombreServicio = key.replace('factura', '').toUpperCase();
@@ -3676,6 +3728,28 @@ function obtenerDocumentosDelCDR(cdr) {
         }
       }
       
+      // 4.5 RECIBO O CUENTA DE COBRO DE LA ADMINISTRACIÓN (SOPORTES CONTABLES > "1- RECIBO HE INSTRUCTIVO…")
+      try {
+        const carpetaAdm = carpetaReciboDeAdministracion(cdr);
+        if (carpetaAdm) {
+          const archivosAdm = carpetaAdm.getFiles();
+          while (archivosAdm.hasNext()) {
+            const f = archivosAdm.next();
+            if (f.getName().includes('FACTURA_ADMINISTRACION')) {
+              documentos.propietario.push({
+                nombre: '🏢 [Propietario] ' + f.getName(),
+                url: f.getUrl(),
+                fileId: f.getId(),
+                tipo: f.getMimeType(),
+                tamaño: f.getSize()
+              });
+            }
+          }
+        }
+      } catch (admErr) {
+        Logger.log('⚠️ No se pudo listar el recibo de administración: ' + admErr);
+      }
+
       // 5. ULTIMATE FALLBACK: Búsqueda global en Drive para atrapar CUALQUIER archivo del CDR que se haya escapado
       try {
         const cdrClean = cdr.replace(/'/g, "\\'");
@@ -4402,7 +4476,8 @@ function mapearNombresAFrontendIds(documentosNombres) {
     'FACTURA_LUZ': 'facturaLuz',
     'FACTURA_GAS': 'facturaGas',
     'FACTURA_TELEFONO': 'facturaTelefono',
-    'FACTURA_INTERNET': 'facturaInternet'
+    'FACTURA_INTERNET': 'facturaInternet',
+    'FACTURA_ADMINISTRACION': 'facturaAdministracion'
   };
 
   const ids = [];
