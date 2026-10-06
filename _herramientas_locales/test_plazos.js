@@ -114,6 +114,12 @@ igual('9: 24 h para revisar', tiene('9-agente-carga', 'Tienes 24 horas para revi
 igual('9: aclara que no hay reembolso en ese tramo', tiene('9-agente-carga', 'reloj del reembolso está detenido'), true);
 igual('10: dice las horas', tiene('10-agente-recordatorio', '26 horas'), true);
 igual('ningún correo nombra la plataforma de firma', Object.values(correos).some(c => /signio|v[ií]afirma/i.test(c.html)), false);
+// "Asegurado" le suena al cliente a póliza de arrendamiento, y esto es solo la
+// elaboración del contrato (corrección de Leonardo, 05-oct-2026).
+igual('ningún correo usa "asegurar/asegurado" ni habla de pólizas',
+  Object.values(correos).concat([{ html: ctx.plzAvisoCorreccionHtml(T) }, { html: ctx.plzTextoRevisionBorrador('propietario') }, { html: JSON.stringify(ctx.plzTextosContratoListo('X')) }])
+    .some(c => /asegur|p[oó]liza/i.test(c.html)), false);
+igual('3: el cierre habla de elaborar el contrato', tiene('3-propietario-formulario', 'elaborar su contrato'), true);
 igual('todos escriben bien la marca', Object.values(correos).every(c => c.html.includes('E-FirmaContrata') && !/EFirmaContrata|E-firmaContrata/.test(c.html)), true);
 igual('un nombre con HTML no se cuela', ctx.plzCorreoInquilinoAprobado({ nombre: '<script>x</script>', vence: T, ...base }).html.includes('<script>'), false);
 igual('una dirección con HTML no se cuela', ctx.plzCorreoInquilinoAprobado({ nombre: 'A', vence: T, codigo: 'X', direccion: '<img src=x>' }).html.includes('<img'), false);

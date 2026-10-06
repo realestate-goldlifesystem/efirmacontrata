@@ -234,8 +234,8 @@ function plzCorreoInquilinoAprobado(d) {
 /** 3. Al propietario, con su formulario, cuando se aprueba al inquilino. */
 function plzCorreoPropietarioFormulario(d) {
   var cajaPlazo = d.vence
-    ? plzCaja('<strong>Tiempos garantizados.</strong> Para asegurarle a usted y a su inquilino la entrega oportuna del contrato, el sistema reserva este proceso hasta el <strong>' + plzFechaLarga(d.vence) + '</strong>.<br><br>' +
-              'Si para ese momento no hemos recibido sus documentos, el sistema le devuelve el pago al inquilino y libera el proceso; para retomarlo habría que iniciarlo de nuevo desde cero. Cargarlos ahora le toma unos minutos y deja su arrendamiento asegurado.')
+    ? plzCaja('<strong>Tiempos garantizados.</strong> Para cumplirles a usted y a su inquilino con la entrega oportuna del contrato, el sistema reserva este proceso hasta el <strong>' + plzFechaLarga(d.vence) + '</strong>.<br><br>' +
+              'Si para ese momento no hemos recibido sus documentos, el sistema le devuelve el pago al inquilino y libera el proceso; para retomarlo habría que iniciarlo de nuevo desde cero. Cargarlos ahora le toma unos minutos, y con eso pasamos de inmediato a elaborar su contrato.')
     : '';
   return {
     asunto: 'FORMULARIO DE PROPIETARIO DEL INMUEBLE' + (d.direccion ? ' "' + d.direccion + '"' : '') + ' - ' + d.codigo,
@@ -266,7 +266,7 @@ function plzCorreoTodoAprobado(d) {
       nombre: d.nombre, codigo: d.codigo,
       cuerpo:
         plzP('Los documentos de <strong>ambas partes</strong> ya fueron revisados y aprobados' + (d.direccion ? ' para el inmueble en <strong>' + plzEsc(d.direccion) + '</strong>' : '') + '. ' +
-             (d.rol === 'inquilino' ? 'Su pago quedó en firme y el proceso sigue adelante.' : 'El proceso quedó asegurado y sigue adelante.')) +
+             (d.rol === 'inquilino' ? 'Su pago quedó en firme y el proceso sigue adelante.' : 'El proceso quedó en firme y sigue adelante.')) +
         plzP('Esto es lo que viene:') +
         plzPasos([
           ['Borrador del contrato', 'En un plazo máximo de ' + PLAZOS.HORAS_BORRADOR + ' horas recibirá un correo con el borrador para revisarlo en línea.'],
