@@ -486,7 +486,10 @@ function recopilarDatosContrato(cdr) {
 
     // Recopilar datos del contrato
     const contrato = {
-      canon: obtenerValor('PRECIO DE PROMOCION GENERAL'),
+      // El "precio de promoción general" es lo que se anuncia: canon + administración.
+      // En el contrato el canon va SOLO (la administración tiene su propia cláusula).
+      canon: canonSinAdministracion(obtenerValor('PRECIO DE PROMOCION GENERAL'), obtenerValor('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)')),
+      precioConAdministracion: obtenerValor('PRECIO DE PROMOCION GENERAL'),
       fechaInicio: obtenerValor('FECHA INICIO DEL CONTRATO') || extraerCampoCerebro(inquilinoText, 'FECHA INICIO CONTRATO::'),
       fechaFinal: obtenerValor('FECHA FINAL DEL CONTRATO'),
       duracion: '12 meses', // Por defecto; se podría calcular entre fechaInicio y fechaFinal si fuera necesario
@@ -603,6 +606,31 @@ function recopilarDatosContrato(cdr) {
       message: error.message
     };
   }
+}
+
+/**
+ * Canon del contrato = precio de promoción general − administración.
+ * Regla de Leonardo (06-oct-2026): en la cláusula del canon va solo el canon; antes
+ * salía el arriendo completo. Comprobado con YX454035: $3.100.000 − $455.000 =
+ * $2.645.000, que fue el canon con el que se liquidó la comisión.
+ * Sin administración → el precio completo. Si la administración no es creíble
+ * (mayor o igual al precio) no se resta: es mejor un canon alto y visible en el
+ * borrador que uno en cero o negativo.
+ * Pura (probada en _herramientas_locales/test_canon_contrato.js).
+ * @return {number} canon en pesos; 0 si no hay precio
+ */
+function canonSinAdministracion(precioTotal, administracion) {
+  const pesos = (v) => {
+    if (typeof v === 'number') return isFinite(v) && v > 0 ? Math.round(v) : 0;
+    const s = String(v === null || v === undefined ? '' : v).replace(/[,.]\d{1,2}\s*$/, '');   // centavos ",00"
+    const n = parseInt(s.replace(/[^\d]/g, ''), 10);
+    return isNaN(n) ? 0 : n;
+  };
+  const total = pesos(precioTotal);
+  const admin = pesos(administracion);
+  if (!total) return 0;
+  if (!admin || admin >= total) return total;
+  return total - admin;
 }
 
 /**
