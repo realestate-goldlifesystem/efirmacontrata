@@ -1119,6 +1119,68 @@ function procesarValidacion(datos) {
   }
 }
 
+/**
+ * ¿Se puede enviar una corrección ahora? (oct-2026)
+ *
+ * Una corrección es una RONDA: se envía una, la persona responde, el agente
+ * revisa. Mientras la ronda está abierta no se envía otra. Antes el panel dejaba
+ * oprimir "Procesar todo" dos veces y a la persona le llegaban dos correos con
+ * listas distintas y el reloj de 24 h volvía a empezar.
+ *
+ * Pura (probada en _herramientas_locales/test_turno_correccion.js).
+ * @param {string} estadoDoc  valor de ESTADO DOCUMENTAL
+ * @param {string} tipo       'inquilino' | 'propietario'
+ * @return {{permitido:boolean, motivo:string}} motivo: '' | 'abierta' | 'ya_aprobado' | 'no_ha_cargado'
+ */
+function turnoParaCorregir(estadoDoc, tipo) {
+  const etapa = String(estadoDoc || '').split('|')[0].trim().toUpperCase();
+  const SI = { permitido: true, motivo: '' };
+  const no = (motivo) => ({ permitido: false, motivo: motivo });
+  const ORDEN = ['INQ_SUBMITTED', 'INQ_CORRECTION', 'INQ_VALIDATED', 'PROP_SUBMITTED', 'PROP_CORRECTION', 'PROP_VALIDATED',
+                 'READY_CONTRACT', 'CONTRACT_GENERATED', 'CONTRACT_REVIEW', 'CONTRACT_FINAL', 'COMPLETED'];
+  const i = ORDEN.indexOf(etapa);
+  if (i === -1) return SI;                       // fila vieja sin etapa, o etapa desconocida: no se estorba
+
+  if (tipo === 'inquilino') {
+    if (etapa === 'INQ_SUBMITTED') return SI;
+    return no(etapa === 'INQ_CORRECTION' ? 'abierta' : 'ya_aprobado');
+  }
+  if (tipo === 'propietario') {
+    if (etapa === 'PROP_SUBMITTED') return SI;
+    if (etapa === 'PROP_CORRECTION') return no('abierta');
+    return no(i < ORDEN.indexOf('PROP_SUBMITTED') ? 'no_ha_cargado' : 'ya_aprobado');
+  }
+  return SI;
+}
+
+/** Si NO toca enviar la corrección, devuelve la respuesta para el panel; si toca, null. */
+function bloqueoDeCorreccion(sheet, fila, tipo) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const col = (n) => headers.indexOf(n) + 1;
+  const estado = col('ESTADO DOCUMENTAL') > 0 ? sheet.getRange(fila, col('ESTADO DOCUMENTAL')).getValue() : '';
+  const turno = turnoParaCorregir(estado, tipo);
+  if (turno.permitido) return null;
+
+  const quien = tipo === 'propietario' ? 'propietario' : 'inquilino';
+  let message;
+  if (turno.motivo === 'abierta') {
+    let cuando = '', hasta = '';
+    try {
+      const marca = col('CONTROL DE PLAZO') > 0 ? plzLeerMarca(sheet.getRange(fila, col('CONTROL DE PLAZO')).getValue()) : { ms: 0 };
+      if (marca.ms) cuando = ' el ' + plzFechaLarga(marca.ms);
+      const vence = plzVencimientoDeFila(fila);
+      if (vence) hasta = ' Tiene plazo hasta el ' + plzFechaLarga(vence) + '.';
+    } catch (e) { /* sin fechas: el mensaje sale igual */ }
+    message = 'Ya hay una corrección enviada al ' + quien + cuando + ' y todavía no ha respondido.' + hasta +
+              ' No se envió otra. Cuando cargue lo pedido podrá revisar de nuevo.';
+  } else if (turno.motivo === 'no_ha_cargado') {
+    message = 'El propietario todavía no ha cargado sus documentos: no hay nada que corregir.';
+  } else {
+    message = 'Los documentos del ' + quien + ' ya fueron aprobados: no se puede pedir una corrección en esta etapa.';
+  }
+  return { success: false, correccionBloqueada: turno.motivo, message: message };
+}
+
 function enviarCorrecciones(datos) {
   if (datos.tipo === 'inquilino') {
     return enviarCorreccionInquilino(datos);
@@ -3994,6 +4056,10 @@ function procesarValidacionInquilino(datos) {
       };
 
     } else if (estado === 'correccion') {
+      // Una sola corrección abierta a la vez (ver turnoParaCorregir)
+      const bloqueoInq = bloqueoDeCorreccion(sheet, fila, 'inquilino');
+      if (bloqueoInq) return bloqueoInq;
+
       // Actualizar estado en Sheet
       sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
       if (estadoDocCol > 0) {
@@ -4071,6 +4137,10 @@ function procesarValidacionPropietario(datos) {
       };
 
     } else if (estado === 'correccion') {
+      // Una sola corrección abierta a la vez (ver turnoParaCorregir)
+      const bloqueoProp = bloqueoDeCorreccion(sheet, fila, 'propietario');
+      if (bloqueoProp) return bloqueoProp;
+
       // Actualizar estado — almacenar nombres de docs a corregir para referencia futura
       sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
       if (estadoDocCol > 0) {
@@ -4614,6 +4684,11 @@ function enviarCorreccionInquilino(datos) {
     const fila = buscarFilaPorCDR(cdr);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+
+    // Una sola corrección abierta a la vez (ver turnoParaCorregir)
+    const bloqueo = bloqueoDeCorreccion(sheet, fila, 'inquilino');
+    if (bloqueo) return bloqueo;
+
     sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
 
     // ESTADO DOCUMENTAL pasa a "en corrección" ANTES de enviar el correo.
@@ -4658,6 +4733,11 @@ function enviarCorreccionPropietario(datos) {
     const fila = buscarFilaPorCDR(cdr);
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
+
+    // Una sola corrección abierta a la vez (ver turnoParaCorregir)
+    const bloqueo = bloqueoDeCorreccion(sheet, fila, 'propietario');
+    if (bloqueo) return bloqueo;
+
     sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
 
     // ESTADO DOCUMENTAL pasa a "en corrección" ANTES de enviar el correo (misma
