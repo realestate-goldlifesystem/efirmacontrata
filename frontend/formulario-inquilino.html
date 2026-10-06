@@ -1912,6 +1912,17 @@
         div.textContent = str || '';
         return div.innerHTML;
       }
+
+      // Puente hacia el <script> de Mercado Pago de abajo, que vive FUERA de esta
+      // función y no ve `state` ni `desbloquearWizardPorPago`. Sin esto,
+      // goToPayment() se estrellaba con "state is not defined" justo cuando el
+      // servidor respondía "ya pagó", y terminaba abriendo el cobro otra vez
+      // (visto el 05-oct-2026 en SK142795).
+      window.eFirmaPago = {
+        cdr: function () { return state.cdr || ''; },
+        enModoCorreccion: function () { return !!state.modoCorreccion; },
+        desbloquear: desbloquearWizardPorPago
+      };
     })();
   </script>
   
@@ -1934,31 +1945,60 @@
         }
 
         const urlParams = new URLSearchParams(window.location.search);
-        const cdr = urlParams.get('cdr') || state.cdr || 'TEST-CDR';
+        const puente = window.eFirmaPago || null;   // ver el final del <script> principal
+        const cdr = urlParams.get('cdr') || (puente ? puente.cdr() : '') || 'TEST-CDR';
 
-        // Reconfirmar contra el backend ANTES de abrir el checkout real. Sin esto, si el usuario
-        // hace clic más rápido de lo que tarda la verificación automática de fondo (iniciarVerificacionPago),
-        // igual termina viendo/pagando el checkout de Mercado Pago aunque el pago ya estuviera aprobado.
+        const soltarBoton = function () {
+          if (btnGoToPayment) { btnGoToPayment.disabled = false; btnGoToPayment.innerHTML = 'Comenzar Ahora →'; }
+        };
+
+        // Reconfirmar contra el backend ANTES de abrir el checkout real: quien ya pagó
+        // y vuelve a la página no debe ver el cobro otra vez.
+        //
+        // ⚠️ REGLA: aquí un error NUNCA termina en cobrar. Antes, si algo fallaba, el
+        // catch decía "se continúa al checkout normal" — y falló siempre: este
+        // <script> no ve `state`, así que al responder el servidor "ya pagó" saltaba
+        // un ReferenceError y se abría Mercado Pago igual. Tres respuestas posibles:
+        //   'pagado'    → se desbloquea el formulario, sin cobro
+        //   'no_pagado' → el servidor lo confirmó: ahí sí se abre el cobro
+        //   'error'     → no se pudo saber: se avisa y NO se cobra
+        let estadoPago = 'error';
         try {
-          const yaPagado = await new Promise((resolve) => {
+          estadoPago = await new Promise((resolve) => {
             const callbackName = 'jsonp_gopay_' + Math.round(100000 * Math.random());
+            // El servidor a veces tarda más de 20 s en responder; se le da un minuto.
+            const reloj = setTimeout(function () { delete window[callbackName]; resolve('error'); }, 60000);
             window[callbackName] = function (data) {
+              clearTimeout(reloj);
               delete window[callbackName];
-              resolve(!!(data && data.success && data.pago_completado));
+              if (!data || !data.success) resolve('error');
+              else resolve(data.pago_completado ? 'pagado' : 'no_pagado');
             };
             const script = document.createElement('script');
-            script.onerror = () => { delete window[callbackName]; resolve(false); };
+            script.onerror = () => { clearTimeout(reloj); delete window[callbackName]; resolve('error'); };
             script.src = CONFIG.API_URL + '?accion=obtenerDireccion&cdr=' + encodeURIComponent(cdr) + '&callback=' + callbackName;
             document.body.appendChild(script);
           });
-
-          if (yaPagado && !state.modoCorreccion) {
-            desbloquearWizardPorPago();
-            if (btnGoToPayment) { btnGoToPayment.disabled = false; btnGoToPayment.innerHTML = 'Comenzar Ahora →'; }
-            return;
-          }
         } catch (e) {
-          console.warn('No se pudo re-verificar el pago antes del checkout, se continúa al checkout normal:', e);
+          console.warn('No se pudo verificar el pago antes del checkout:', e);
+          estadoPago = 'error';
+        }
+
+        if (estadoPago === 'pagado') {
+          // En modo corrección el formulario ya está a la vista: no hay nada que desbloquear.
+          try {
+            if (puente && !puente.enModoCorreccion()) puente.desbloquear();
+          } catch (e) {
+            console.warn('No se pudo desbloquear el formulario tras confirmar el pago:', e);
+          }
+          soltarBoton();
+          return;
+        }
+
+        if (estadoPago === 'error') {
+          soltarBoton();
+          alert('No pudimos verificar el estado de tu pago en este momento. Revisa tu conexión y vuelve a intentar en unos segundos. No se te cobró nada.');
+          return;
         }
 
         if (btnGoToPayment) {
