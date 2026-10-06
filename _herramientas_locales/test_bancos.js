@@ -62,6 +62,9 @@ igual('extrae las entidades de PSE', back.bcoExtraerDeMercadoPago([{ id: 'visa' 
 igual('sin método PSE → vacío', back.bcoExtraerDeMercadoPago([{ id: 'visa' }]), []);
 igual('respuesta de error (objeto) → vacío', back.bcoExtraerDeMercadoPago({ message: 'unauthorized' }), []);
 
+igual("fuera fiduciarias y banca corporativa", back.bcoSoloParaPersonas(["Nequi", "ALIANZA FIDUCIARIA S.A.", "J.P. Morgan", "Citibank", "Banco Mundo Mujer"]), ["Nequi", "Banco Mundo Mujer"]);
+igual("DAVIbank no se duplica con su nombre nuevo", agregar(["DAVIbank S.A."]), []);
+
 // --- Servidor: la copia guardada ---
 const diez = Array.from({ length: 12 }, (_, i) => 'Banco ' + i);
 igual('copia buena', back.bcoLeerCopia(JSON.stringify({ ts: 5, bancos: diez })).bancos.length, 12);

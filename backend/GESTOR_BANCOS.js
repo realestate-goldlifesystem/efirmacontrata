@@ -23,7 +23,16 @@ const BANCOS_DIAS_VIGENCIA = 7;
 const BANCOS_HORAS_ENTRE_REINTENTOS = 6;   // si Mercado Pago falla, no insistir en cada apertura
 const BANCOS_MINIMO_CREIBLE = 10;          // menos que esto no es la lista de PSE: se descarta
 
+// Entidades de PSE donde un propietario NO tiene su cuenta para recibir el
+// arriendo: fiduciarias y banca solo corporativa. Se dejan fuera de la lista.
+const BANCOS_NO_SON_PARA_PERSONAS = /fiduciaria|morgan|citibank/i;
+
 // ---------- Puras (probadas en _herramientas_locales/test_bancos.js) ----------
+
+/** Deja solo las entidades donde una persona puede tener su cuenta. */
+function bcoSoloParaPersonas(bancos) {
+  return (bancos || []).filter(b => !BANCOS_NO_SON_PARA_PERSONAS.test(b));
+}
 
 /** De la respuesta de /v1/payment_methods, los nombres de las entidades de PSE. */
 function bcoExtraerDeMercadoPago(metodos) {
@@ -103,7 +112,7 @@ function obtenerBancosParaFormulario(forzar) {
 
   return {
     success: true,
-    bancos: copia ? copia.bancos : [],
+    bancos: copia ? bcoSoloParaPersonas(copia.bancos) : [],
     actualizado: copia && copia.ts ? new Date(copia.ts).toISOString() : ''
   };
 }
