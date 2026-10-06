@@ -27,8 +27,17 @@ on:
   repository_dispatch:
     types: [trigger-scraper]
   schedule:
-    # Lunes y Jueves a las 8:00 AM COT (13:00 UTC)
-    - cron: '0 13 * * 1,4'
+    # Lunes y Jueves a las 8:00 AM, 3:00 PM y 6:00 PM COT (13, 20 y 23 UTC).
+    # Tres horas a propósito: si GitHub no asigna máquina en una (pasó el
+    # 5-oct-2026 por un incidente de Actions), la siguiente repone. Como es
+    # reposición, la que encuentre las 10 en NUEVO se salta y no duplica.
+    - cron: '0 13,20,23 * * 1,4'
+
+# Nunca dos robots a la vez: cada uno calcula la próxima fila libre al
+# arrancar, y dos en paralelo se pisarían las filas. El segundo espera.
+concurrency:
+  group: robot-captador
+  cancel-in-progress: false
 
 jobs:
   run-scraper:
