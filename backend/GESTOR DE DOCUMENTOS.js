@@ -4487,7 +4487,6 @@ function actualizarCampoValidacion(datos) {
 function enviarCorreccionInquilino(datos) {
   try {
     const { cdr, observaciones, documentosCorregir } = datos;
-    enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir || []);
 
     // Actualizar estado en Sheet
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
@@ -4495,6 +4494,20 @@ function enviarCorreccionInquilino(datos) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al inquilino');
+
+    // ESTADO DOCUMENTAL pasa a "en corrección" ANTES de enviar el correo.
+    // Este es el camino que usa el panel (enviarCorrecciones) y antes dejaba el
+    // estado en INQ_SUBMITTED: para el sistema seguía siendo "le toca revisar al
+    // agente", así que el plazo de 24 h no arrancaba, el correo salía sin su
+    // fecha límite y al agente le habrían llegado recordatorios de algo que ya
+    // había revisado (visto el 05-oct-2026).
+    const estadoDocColCorr = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+    if (estadoDocColCorr > 0) {
+      sheet.getRange(fila, estadoDocColCorr).setValue('INQ_CORRECTION|' + (documentosCorregir || []).join(','));
+    }
+    if (typeof plzAlCambiarEstado === 'function') plzAlCambiarEstado(fila);
+
+    enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir || []);
 
     // Actualizar Cerebro con buzones APROBADO/ACTUALIZANDO
     if (datos.estadosBuzon) {
@@ -4518,7 +4531,6 @@ function enviarCorreccionInquilino(datos) {
 function enviarCorreccionPropietario(datos) {
   try {
     const { cdr, observaciones, documentosCorregir } = datos;
-    enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir || []);
 
     // Actualizar estado en Sheet
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
@@ -4526,6 +4538,17 @@ function enviarCorreccionPropietario(datos) {
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const detallesCol = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE') + 1;
     sheet.getRange(fila, detallesCol).setValue('📝 Corrección solicitada al propietario');
+
+    // ESTADO DOCUMENTAL pasa a "en corrección" ANTES de enviar el correo (misma
+    // razón que en enviarCorreccionInquilino): sin esto el plazo de 24 h no
+    // arrancaba y el correo salía sin fecha límite.
+    const estadoDocColCorr = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+    if (estadoDocColCorr > 0) {
+      sheet.getRange(fila, estadoDocColCorr).setValue('PROP_CORRECTION|' + (documentosCorregir || []).join(','));
+    }
+    if (typeof plzAlCambiarEstado === 'function') plzAlCambiarEstado(fila);
+
+    enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir || []);
 
     // Actualizar Cerebro con buzones APROBADO/ACTUALIZANDO
     if (datos.estadosBuzon) {

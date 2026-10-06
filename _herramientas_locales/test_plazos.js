@@ -117,6 +117,7 @@ igual('ningún correo nombra la plataforma de firma', Object.values(correos).som
 igual('todos escriben bien la marca', Object.values(correos).every(c => c.html.includes('E-FirmaContrata') && !/EFirmaContrata|E-firmaContrata/.test(c.html)), true);
 igual('un nombre con HTML no se cuela', ctx.plzCorreoInquilinoAprobado({ nombre: '<script>x</script>', vence: T, ...base }).html.includes('<script>'), false);
 igual('una dirección con HTML no se cuela', ctx.plzCorreoInquilinoAprobado({ nombre: 'A', vence: T, codigo: 'X', direccion: '<img src=x>' }).html.includes('<img'), false);
+igual('corrección: dice las horas y la fecha exacta', ['Tiene 24 horas para enviar la corrección', 'miércoles 7 de octubre a las 5:41 p. m.', 'desde cero'].every(t => ctx.plzAvisoCorreccionHtml(T + 48 * H).includes(t)), true);
 igual('revisión: nombra los botones reales de la pantalla',
   ['Aprobar Contrato', 'Solicitar Corrección', 'Observaciones', 'Historial de Revisiones', 'Seleccione su rol'].every(t => ctx.plzTextoRevisionBorrador('inquilino').includes(t)), true);
 

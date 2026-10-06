@@ -307,7 +307,8 @@ function plzTextosContratoListo(displayId) {
 
 /** Aviso de plazo para los correos de corrección (HTML). */
 function plzAvisoCorreccionHtml(venceMs) {
-  return plzCaja('<strong>Tiene hasta el ' + plzFechaLarga(venceMs) + '</strong> para enviar la corrección. Pasado ese plazo, el sistema devuelve el pago del inquilino y libera el proceso, y habría que iniciarlo de nuevo.');
+  return plzCaja('⏳ <strong>Tiene ' + PLAZOS.HORAS_CORRECCION + ' horas para enviar la corrección:</strong> hasta el <strong>' + plzFechaLarga(venceMs) + '</strong>.<br><br>' +
+                 'El sistema reserva el proceso durante ese tiempo. Si la corrección no llega, devuelve el pago del inquilino y libera el proceso, y habría que iniciarlo de nuevo desde cero. Son solo los documentos indicados: le tomará unos minutos.');
 }
 
 /** Al inquilino, cuando se le devuelve el pago. */
@@ -580,7 +581,7 @@ function plzAlAprobarPropietario(fila) {
 
 /**
  * Envía TODOS los correos nuevos al correo del sistema, con datos de ejemplo y
- * [PRUEBA n/10] en el asunto, para leerlos tal como le llegarían al cliente.
+ * [PRUEBA n/11] en el asunto, para leerlos tal como le llegarían al cliente.
  * No toca la hoja ni le escribe a ningún cliente.
  */
 function probarCorreosDePlazos() {
@@ -613,7 +614,13 @@ function probarCorreosDePlazos() {
     plzCorreoReembolsoInquilino(inq),
     plzCorreoReembolsoPropietario(prop),
     plzCorreoAgenteCarga({ quien: 'propietario', codigo: base.codigo, direccion: base.direccion, nombreCliente: prop.nombre, vence: ahora + 24 * 3600000, urlHoja: urlHoja }),
-    plzCorreoAgenteRecordatorio({ quien: 'propietario', codigo: base.codigo, direccion: base.direccion, nombreCliente: prop.nombre, horas: 26, urlHoja: urlHoja })
+    plzCorreoAgenteRecordatorio({ quien: 'propietario', codigo: base.codigo, direccion: base.direccion, nombreCliente: prop.nombre, horas: 26, urlHoja: urlHoja }),
+    // El recuadro de plazo que llevan los correos de corrección (el resto de ese correo no cambió)
+    { asunto: 'Corrección requerida - así se ve el aviso de plazo - ' + base.codigo,
+      html: plzHtml({ titulo: 'Corrección requerida', nombre: prop.nombre, codigo: base.codigo,
+        cuerpo: plzP('Hemos revisado sus documentos y necesitamos que vuelva a enviar los siguientes archivos para continuar con el proceso:') +
+                '<ul style="color:#666666;"><li>Certificado bancario</li></ul>' + plzAvisoCorreccionHtml(ahora + 24 * 3600000),
+        boton: { texto: 'Realizar correcciones', url: base.url } }) }
   ];
   correos.forEach(function (c, i) {
     MailApp.sendEmail({ to: PLAZOS.CORREO_ADMIN, subject: '[PRUEBA ' + (i + 1) + '/' + correos.length + '] ' + c.asunto, htmlBody: c.html });
