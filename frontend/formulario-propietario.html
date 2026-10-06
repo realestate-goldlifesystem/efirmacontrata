@@ -471,6 +471,22 @@
     .ocr-badge-vigente { background: #d1fae5; color: #065f46; padding: 6px 16px; border-radius: 8px; font-weight: 700; display: inline-block; margin-bottom: 0.75rem; }
     .ocr-badge-vencido { background: #fee2e2; color: #991b1b; padding: 6px 16px; border-radius: 8px; font-weight: 700; display: inline-block; margin-bottom: 0.75rem; }
   </style>
+  <style>
+    /* Aviso flotante ("Número copiado…"). No tenía NINGÚN estilo: el texto
+       "Copiado al portapapeles" quedaba escrito siempre al pie de la página, y
+       al copiar de verdad no pasaba nada visible. */
+    .toast {
+      position: fixed; left: 50%; bottom: 28px; z-index: 9999;
+      transform: translate(-50%, 16px);
+      background: #1a1a1a; color: #F4F4F5;
+      border: 1px solid rgba(212, 175, 55, 0.45); border-radius: 10px;
+      padding: 12px 20px; font-size: 0.9rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease, visibility .25s;
+    }
+    .toast.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+  </style>
 </head>
 
 <body>
@@ -506,7 +522,7 @@
         </div>
 
         <p style="font-size: 0.95rem; line-height: 1.5; color: #a1a1aa; margin-bottom: 20px;">
-          Este sistema le guiará paso a paso en la elaboración de la solicitud de los documentos de contrato para el inmueble de su interés ubicado en: <br>
+          Este sistema le guiará paso a paso en la elaboración de la solicitud de los documentos de contrato para el inmueble de su propiedad ubicado en: <br>
           <strong style="color: var(--primary); font-size: 1.1rem; letter-spacing: 0.5px; display: inline-block; margin-top: 5px;" id="displayDir"></strong>
         </p>
 
@@ -542,8 +558,8 @@
           <div style="display: flex; gap: 10px; align-items: center;">
             <span style="font-size: 20px;">🛡️</span>
             <div>
-              <strong style="color: #10b981; display: block; margin-bottom: 2px; font-size: 0.95rem;">Garantía de Satisfacción 100%</strong>
-              <p style="margin: 0; font-size: 0.85rem; line-height: 1.4;">De no formalizar el proceso, o si el propietario no completa su parte en 48 horas, el sistema realizará un reembolso automático y sin costo adicional a su cuenta de Mercado Pago.</p>
+              <strong style="color: #10b981; display: block; margin-bottom: 2px; font-size: 0.95rem;">Tiempos garantizados</strong>
+              <p style="margin: 0; font-size: 0.85rem; line-height: 1.4;">Su inquilino ya está listo. El sistema reserva este proceso por un tiempo limitado: la fecha límite está en el correo que recibió. Cargue sus documentos dentro de ese plazo y pasamos de inmediato a elaborar su contrato.</p>
             </div>
           </div>
         </div>
@@ -2368,35 +2384,16 @@
         return div.innerHTML;
       }
 
-      // Funcionalidad Mixta API Bancos (Actualización Silenciosa con Caché del Backend)
-      function actualizarBancosMixtoAPI() {
-          // Consultamos a nuestro propio servidor (muy rápido, sin riesgo de CORS ni bloqueo de internet)
-          google.script.run
-            .withSuccessHandler(function(bancosApi) {
-                if (bancosApi && bancosApi.length > 5) {
-                    const selectBanco = document.getElementById('banco');
-                    const valorSeleccionadoOGuardado = selectBanco.value;
-                    let html = '<option value="">Seleccione un banco...</option>';
-                    bancosApi.forEach(b => {
-                        html += `<option value="${b.nombre}">${b.nombre}</option>`;
-                    });
-                    
-                    selectBanco.innerHTML = html;
-                    
-                    if (valorSeleccionadoOGuardado) {
-                        selectBanco.value = valorSeleccionadoOGuardado;
-                    }
-                    console.log('✅ Bancos actualizados desde la caché maestra del servidor.');
-                }
-            })
-            .withFailureHandler(function(err) {
-                console.log('🔄 Modo Mixto: Caché no disponible, usando lista estática local.');
-            })
-            .obtenerBancosDesdeCaché();
-      }
-      
-      // Lanzamos la actualización silenciosa 1 segundo después de que todo el entorno haya cargado
-      setTimeout(actualizarBancosMixtoAPI, 1000);
+      // LISTA DE BANCOS: es la fija del <select id="banco"> (23 entidades) y es la que vale.
+      //
+      // Aquí había una "actualización mixta" que 1 s después de cargar intentaba
+      // reemplazarla con una lista del servidor. Nunca funcionó: usaba
+      // google.script.run, que no existe en GitHub Pages, y dejaba un error en cada
+      // carga ("google is not defined"). Y fue una suerte: lo que el servidor tiene
+      // guardado (cronJobActualizarBancos, UTIL_Triggers.js) es una SIMULACIÓN de 12
+      // bancos que incluye uno inventado, "Banco Nuevo Colombia (Test API)". Si se
+      // quiere una lista viva, primero hay que conectar una fuente real; mientras
+      // tanto, para agregar un banco se agrega su <option> arriba.
 
     })();
 

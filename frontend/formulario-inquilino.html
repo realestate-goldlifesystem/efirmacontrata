@@ -294,6 +294,22 @@
       }
     }
   </style>
+  <style>
+    /* Aviso flotante ("Número copiado…"). No tenía NINGÚN estilo: el texto
+       "Copiado al portapapeles" quedaba escrito siempre al pie de la página, y
+       al copiar de verdad no pasaba nada visible. */
+    .toast {
+      position: fixed; left: 50%; bottom: 28px; z-index: 9999;
+      transform: translate(-50%, 16px);
+      background: #1a1a1a; color: #F4F4F5;
+      border: 1px solid rgba(212, 175, 55, 0.45); border-radius: 10px;
+      padding: 12px 20px; font-size: 0.9rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease, visibility .25s;
+    }
+    .toast.show { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+  </style>
 </head>
 
 <body>
