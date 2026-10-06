@@ -594,7 +594,10 @@ function recopilarDatosContrato(cdr) {
 
     // Servicios públicos de la cláusula DÉCIMA PRIMERA: solo los recibos APROBADOS
     try {
-      datosCompletos.serviciosDelContrato = listaServiciosDelContrato(obtenerEstadosValidacionDesdeCerebro(cdr));
+      // La caldera no tiene recibo: sale del registro del inmueble ("¿Qué tipo de calentador tiene?")
+      const colCalentador = headers.findIndex(h => /TIPO DE CALENTADOR/i.test(String(h || '')));
+      const calentador = colCalentador >= 0 ? rowData[colCalentador] : '';
+      datosCompletos.serviciosDelContrato = listaServiciosDelContrato(obtenerEstadosValidacionDesdeCerebro(cdr), calentador);
     } catch (errServ) {
       console.log('Error leyendo servicios aprobados:', errServ);
       datosCompletos.serviciosDelContrato = '';
@@ -622,17 +625,22 @@ const SERVICIOS_SIN_APROBAR = 'los que tenga instalados el inmueble';
 /**
  * Servicios públicos que van en el contrato (regla de Leonardo, 06-oct-2026): solo
  * los que tienen su recibo APROBADO en la validación. Agua → Acueducto, Vanti →
- * Gas, Enel → Luz. Internet no entra: la misma cláusula lo trata como servicio
- * privado a cargo del arrendatario. Caldera no tiene recibo ni casilla: no se nombra.
+ * Gas, Enel → Energía Eléctrica (el nombre que usa la Ley 142 de 1994; "luz" es
+ * como se le dice, pero es un contrato). Internet no entra: la misma cláusula lo
+ * trata como servicio privado a cargo del arrendatario.
+ * La caldera no tiene recibo: se nombra cuando el registro del inmueble dice que
+ * el calentador es de caldera.
  * Pura (probada en _herramientas_locales/test_servicios_contrato.js).
- * @param {Object} estadosBuzon  { 'BUZON FACTURA AGUA': 'APROBADO', … } del Cerebro
- * @return {string} "Acueducto, Gas y Luz"; '' si no hay ninguno aprobado
+ * @param {Object} estadosBuzon   { 'BUZON FACTURA AGUA': 'APROBADO', … } del Cerebro
+ * @param {string=} tipoCalentador  respuesta a "¿Qué tipo de calentador tiene?"
+ * @return {string} "Acueducto, Gas y Energía Eléctrica"; '' si no hay ninguno
  */
-function listaServiciosDelContrato(estadosBuzon) {
-  const ORDEN = [['AGUA', 'Acueducto'], ['GAS', 'Gas'], ['LUZ', 'Luz'], ['TELEFONO', 'Teléfono']];
+function listaServiciosDelContrato(estadosBuzon, tipoCalentador) {
+  const ORDEN = [['AGUA', 'Acueducto'], ['GAS', 'Gas'], ['LUZ', 'Energía Eléctrica'], ['TELEFONO', 'Teléfono']];
   const estados = {};
   Object.keys(estadosBuzon || {}).forEach(k => { estados[String(k).trim().toUpperCase()] = String(estadosBuzon[k] || '').trim().toUpperCase(); });
   const nombres = ORDEN.filter(par => estados['BUZON FACTURA ' + par[0]] === 'APROBADO').map(par => par[1]);
+  if (/CALDERA/i.test(String(tipoCalentador || ''))) nombres.push('Caldera');
   if (nombres.length <= 1) return nombres.join('');
   return nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length - 1];
 }

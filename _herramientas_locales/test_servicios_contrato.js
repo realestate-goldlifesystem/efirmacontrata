@@ -24,14 +24,14 @@ function igual(nombre, obtenido, esperado) {
 const l = ctx.listaServiciosDelContrato;
 const A = 'APROBADO';
 
-igual('agua, luz y gas aprobados', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A, 'BUZON FACTURA GAS': A }), 'Acueducto, Gas y Luz');
-igual('solo agua y luz (lo mínimo obligatorio)', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A }), 'Acueducto y Luz');
+igual('agua, luz y gas aprobados', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A, 'BUZON FACTURA GAS': A }), 'Acueducto, Gas y Energía Eléctrica');
+igual('solo agua y luz (lo mínimo obligatorio)', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A }), 'Acueducto y Energía Eléctrica');
 igual('solo agua', l({ 'BUZON FACTURA AGUA': A }), 'Acueducto');
-igual('con teléfono', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A, 'BUZON FACTURA TELEFONO': A }), 'Acueducto, Luz y Teléfono');
+igual('con teléfono', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A, 'BUZON FACTURA TELEFONO': A }), 'Acueducto, Energía Eléctrica y Teléfono');
 
 // Lo que NO está aprobado no se nombra
-igual('gas en corrección → no sale', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A, 'BUZON FACTURA GAS': 'ACTUALIZANDO' }), 'Acueducto y Luz');
-igual('recibido sin revisar → no sale', l({ 'BUZON FACTURA AGUA': 'RECIBIDO', 'BUZON FACTURA LUZ': A }), 'Luz');
+igual('gas en corrección → no sale', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A, 'BUZON FACTURA GAS': 'ACTUALIZANDO' }), 'Acueducto y Energía Eléctrica');
+igual('recibido sin revisar → no sale', l({ 'BUZON FACTURA AGUA': 'RECIBIDO', 'BUZON FACTURA LUZ': A }), 'Energía Eléctrica');
 igual('"RECIBIDO (CORRECCIÓN)" → no sale', l({ 'BUZON FACTURA GAS': 'RECIBIDO (CORRECCIÓN)' }), '');
 
 // Lo que no es de esta cláusula
@@ -41,7 +41,10 @@ igual('otros buzones aprobados no se confunden', l({ 'BUZON CERTIFICADO TRADICIO
 // Bordes
 igual('ninguno aprobado → vacío (la cláusula usa su texto de respaldo)', [l({}), l(null), l(undefined)], ['', '', '']);
 igual('minúsculas y espacios en el Cerebro', l({ ' buzon factura agua ': ' aprobado ' }), 'Acueducto');
-igual('la caldera nunca se nombra: no tiene recibo', /caldera/i.test(l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A, 'BUZON FACTURA GAS': A, 'BUZON FACTURA TELEFONO': A })), false);
+// Caldera: no tiene recibo, sale del registro del inmueble
+igual('calentador de caldera → se nombra al final', l({ 'BUZON FACTURA AGUA': A, 'BUZON FACTURA LUZ': A }, 'Caldera'), 'Acueducto, Energía Eléctrica y Caldera');
+igual('calentador eléctrico o de gas → no se nombra caldera', [l({ 'BUZON FACTURA AGUA': A }, 'Eléctrico'), l({ 'BUZON FACTURA AGUA': A }, 'Gas'), l({ 'BUZON FACTURA AGUA': A }, ''), l({ 'BUZON FACTURA AGUA': A })], ['Acueducto', 'Acueducto', 'Acueducto', 'Acueducto']);
+igual('"caldera" en minúsculas o con más texto', l({}, ' caldera central '), 'Caldera');
 
 console.log(`\n${ok} bien, ${mal} mal`);
 process.exit(mal ? 1 : 0);
