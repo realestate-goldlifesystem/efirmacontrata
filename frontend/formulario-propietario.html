@@ -2331,12 +2331,31 @@
           archivosBase64: state.archivos
         };
 
+        const irAExito = (mensaje) => {
+          const msg = encodeURIComponent(mensaje || 'Documentación enviada correctamente.');
+          // Limpiar caché local al enviar exitosamente
+          if (!state.modoCorreccion && state.cdr) {
+            localStorage.removeItem(`efirma_prop_${state.cdr}`);
+            limpiarDB();
+          }
+          const displayDir = document.getElementById('displayDir') ? document.getElementById('displayDir').textContent : '';
+          location.href = `pagina-exito.html?status=success&msg=${msg}&cdr=${encodeURIComponent(state.cdr)}&dir=${encodeURIComponent(displayDir)}`;
+        };
+
         try {
+          const cuerpo = JSON.stringify(payload);
+          // El servidor no recibe envíos de más de 50 MB y, cuando se pasa, el
+          // navegador solo dice "Failed to fetch". Se avisa antes, y claro.
+          if (cuerpo.length > LIMITE_ENVIO_BYTES) {
+            const mb = Math.round(cuerpo.length / 1048576);
+            throw new Error(`Sus archivos pesan demasiado en total (${mb} MB). Reemplace los más pesados por versiones más livianas (por ejemplo, fotos en lugar de PDF escaneados) e intente de nuevo. Sus datos siguen guardados.`);
+          }
+
           const url = new URL(CONFIG.API_URL);
           const res = await fetch(url.toString(), {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
+            body: cuerpo
           });
 
           const data = await res.json();
@@ -2346,26 +2365,43 @@
             throw new Error(data?.message || 'No fue posible procesar la información.');
           }
 
-          const msg = encodeURIComponent(data.message || 'Documentación enviada correctamente.');
-
-          // Limpiar caché local al enviar exitosamente
-          if (!state.modoCorreccion && state.cdr) {
-            localStorage.removeItem(`efirma_prop_${state.cdr}`);
-            limpiarDB();
-          }
-
-          const displayDir = document.getElementById('displayDir') ? document.getElementById('displayDir').textContent : '';
-          location.href = `pagina-exito.html?status=success&msg=${msg}&cdr=${encodeURIComponent(state.cdr)}&dir=${encodeURIComponent(displayDir)}`;
+          irAExito(data.message);
 
         } catch (err) {
           console.error('[Propietario] Error:', err);
-          showAlert('danger', err.message || 'Ocurrió un error inesperado.');
+          // "Failed to fetch" (o "Load failed" en iPhone) es un corte de conexión:
+          // el envío puede haberse perdido... o haber LLEGADO y lo que se perdió fue
+          // la respuesta. Se le pregunta al servidor antes de decirle nada.
+          const corteDeRed = err instanceof TypeError || /failed to fetch|load failed|networkerror/i.test(err.message || '');
+          if (corteDeRed) {
+            if (await envioYaRecibido()) { irAExito('Documentación enviada correctamente.'); return; }
+            showAlert('danger', 'No pudimos enviar su información: la conexión se cortó mientras subían los archivos. Sus datos y documentos siguen guardados en este dispositivo. Revise su internet (mejor por wifi) y presione "Enviar" de nuevo.');
+          } else {
+            showAlert('danger', err.message || 'Ocurrió un error inesperado.');
+          }
         } finally {
           toggleLoading(false);
         }
       }
 
       // --------- Utilidades ----------
+      const LIMITE_ENVIO_BYTES = 45 * 1024 * 1024;   // el servidor corta en 50 MB
+
+      /** Tras un corte de conexión: ¿el servidor alcanzó a recibir el formulario? */
+      function envioYaRecibido() {
+        return new Promise((resolve) => {
+          const nombre = 'efcRecibido_' + Math.round(1e6 * Math.random());
+          let listo = false;
+          const fin = (v) => { if (listo) return; listo = true; clearTimeout(reloj); try { delete window[nombre]; } catch (e) {} resolve(v); };
+          const reloj = setTimeout(() => fin(false), 45000);
+          window[nombre] = (r) => fin(!!(r && r.success && !r.activo && r.status === 'diligenciado'));
+          const sc = document.createElement('script');
+          sc.onerror = () => fin(false);
+          sc.src = CONFIG.API_URL + '?accion=verificarLink&cdr=' + encodeURIComponent(state.cdr) + '&tipo=propietario&callback=' + nombre;
+          document.body.appendChild(sc);
+        });
+      }
+
       function showAlert(type, text) {
         const map = { success: 'alert-success', warning: 'alert-warning', danger: 'alert-danger', info: 'alert-info' };
         el.alertBox.className = `alert ${map[type] || 'alert-info'}`;
