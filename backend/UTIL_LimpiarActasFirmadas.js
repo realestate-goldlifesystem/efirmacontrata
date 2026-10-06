@@ -240,3 +240,109 @@ function _actaPonerLink(sheet, r, col, url, rotulo) {
   sheet.getRange(r + 1, col + 1)
     .setFormula('=HYPERLINK("' + url + '"; "' + String(rotulo).replace(/"/g, "'") + '")');
 }
+
+// ==========================================
+// ACTAS CON EL NOMBRE DEL ARCHIVO SIN LLENAR
+// ==========================================
+
+/**
+ * Arregla las actas cuyo ARCHIVO quedó llamado "… de <<Ingrese Nombres y
+ * Apellidos>>" (registros del 23–24 de junio de 2026: PP402012 y CL500666).
+ * Por dentro están bien — nombre del propietario, sin marcadores y con su
+ * certificado de firma —; lo único malo es el título del archivo.
+ *
+ * Por cada una:
+ *   1. Se comprueba que el propietario de la hoja aparezca DENTRO del
+ *      documento. Si no aparece, no se toca: no se le pone el nombre de una
+ *      persona a un documento que no la menciona.
+ *   2. Se renombran el Doc y su PDF firmado con el nombre real.
+ *   3. Si está firmada: el link de la hoja pasa al PDF, DOCUMENTO FIRMADO se
+ *      llena si estaba vacío y el Doc va a la papelera (lo mismo que hace la
+ *      firma). La autorización de ingreso solo se renombra.
+ *
+ * Uso: revisarActasConNombreSinLlenar()  /  arreglarActasConNombreSinLlenar_CONFIRMADO()
+ */
+function revisarActasConNombreSinLlenar() { _actasNombreSinLlenar(false); }
+function arreglarActasConNombreSinLlenar_CONFIRMADO() { _actasNombreSinLlenar(true); }
+
+function _actasNombreSinLlenar(aplicar) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG_INMUEBLES.HOJA_PRINCIPAL);
+  var rango = sheet.getDataRange();
+  var datos = rango.getValues();
+  var formulas = rango.getFormulas();
+  var ricos = rango.getRichTextValues();
+  var headers = datos[0].map(function (h) { return String(h).trim(); });
+  var colId = headers.indexOf('ID DE REGISTRO');
+  var colNombre = headers.indexOf('NOMBRES Y APELLIDOS DEL PROPIETARIO');
+  var colFirmado = headers.indexOf('DOCUMENTO FIRMADO');
+  var MARCADOR = /<<[^>]*>>/;
+  var sinTildes = function (s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase(); };
+
+  Logger.log(aplicar ? '🧹 APLICANDO' : '🔎 SIMULACIÓN');
+  var arregladas = 0, saltadas = 0;
+
+  for (var r = 1; r < datos.length; r++) {
+    var id = String(datos[r][colId] || '').trim();
+    if (!id) continue;
+    var propietario = String(datos[r][colNombre] || '').replace(/\s+/g, ' ').trim();
+
+    for (var n = 0; n < ACTAS_POR_NEGOCIO.length; n++) {
+      var def = ACTAS_POR_NEGOCIO[n];
+      var colDoc = headers.indexOf('Merged Doc ID - ' + def.negocio);
+      var colLink = headers.indexOf('Link to merged Doc - ' + def.negocio);
+      if (colDoc === -1) continue;
+      var doc = _actaArchivoVivo(String(datos[r][colDoc] || '').trim());
+      if (!doc || doc.getMimeType() !== MimeType.GOOGLE_DOCS || !MARCADOR.test(doc.getName())) continue;
+
+      var nombreViejo = doc.getName();
+      Logger.log('📄 fila ' + (r + 1) + ' — ' + id + ' [' + def.negocio + ']');
+      Logger.log('     ' + nombreViejo);
+
+      // 1. ¿El documento es de verdad de este propietario?
+      var primerNombre = sinTildes(propietario).split(' ')[0];
+      var texto = sinTildes(DocumentApp.openById(doc.getId()).getBody().getText());
+      if (!propietario || !primerNombre || texto.indexOf(primerNombre) === -1) {
+        Logger.log('     ⚠️ "' + propietario + '" no aparece dentro del documento. No se toca.');
+        saltadas++; continue;
+      }
+      if (MARCADOR.test(texto)) {
+        Logger.log('     ⚠️ Por dentro todavía tiene marcadores sin llenar. No se toca.');
+        saltadas++; continue;
+      }
+
+      var nombreNuevo = nombreViejo.replace(MARCADOR, propietario.toUpperCase());
+
+      // 2. Su PDF firmado (mismo criterio que la sala: el que nació justo después del Doc)
+      var pdf = null, menor = Infinity;
+      if (def.seFirma) {
+        var padres = doc.getParents();
+        if (padres.hasNext()) {
+          var candidatos = padres.next().getFilesByName(nombreViejo + ' - FIRMADO.pdf');
+          while (candidatos.hasNext()) {
+            var c = candidatos.next();
+            var dif = c.getDateCreated().getTime() - doc.getDateCreated().getTime();
+            if (!c.isTrashed() && dif >= 0 && dif < menor) { menor = dif; pdf = c; }
+          }
+        }
+      }
+
+      Logger.log('     → ' + nombreNuevo + (pdf ? '  (+ su PDF FIRMADO; el Doc va a la papelera)' : (def.seFirma ? '  (sin firmar: solo se renombra)' : '  (solo se renombra)')));
+      arregladas++;
+      if (!aplicar) continue;
+
+      doc.setName(nombreNuevo);
+      if (pdf) {
+        pdf.setName(nombreNuevo + ' - FIRMADO.pdf');
+        if (colLink !== -1) _actaPonerLink(sheet, r, colLink, pdf.getUrl(), pdf.getName());
+        var firmadoActual = _actaIdDeUrl(_actaUrlDeCelda(formulas[r][colFirmado], datos[r][colFirmado], ricos[r][colFirmado]));
+        if (!firmadoActual || !_actaArchivoVivo(firmadoActual)) _actaPonerLink(sheet, r, colFirmado, pdf.getUrl(), '📄✅ FIRMADO');
+        doc.setTrashed(true);
+      }
+      Logger.log('     ✅ hecho');
+    }
+  }
+
+  Logger.log('───────────────────────────────');
+  Logger.log('Actas ' + (aplicar ? 'arregladas' : 'por arreglar') + ': ' + arregladas + ' | no se tocaron: ' + saltadas);
+  if (!aplicar && arregladas) Logger.log('(simulación: ejecuta arreglarActasConNombreSinLlenar_CONFIRMADO para hacerlo)');
+}
