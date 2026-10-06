@@ -562,6 +562,10 @@ function recopilarDatosContrato(cdr) {
         const mimeType = file.getMimeType();
         
         if (mimeType === MimeType.FOLDER || name.includes('DATOS DE ELABORACION') || name.includes('BORRADOR')) continue;
+        // La búsqueda trae TODO archivo que lleve el código en el nombre, y las piezas
+        // de publicidad también lo llevan: salían la portada y el cartel de ventanilla
+        // entre los documentos del contrato.
+        if (esPiezaDePublicacion(file.getName(), mimeType)) continue;
         
         const docObj = { nombre: file.getName(), url: url };
         
@@ -599,6 +603,20 @@ function recopilarDatosContrato(cdr) {
       message: error.message
     };
   }
+}
+
+/**
+ * ¿Es una pieza de la publicación (portada, fotos, cartel, video) y no un documento
+ * del trámite? Los soportes del contrato siempre llevan su etiqueta (CEDULA_,
+ * CERT_TRADICION_, FACTURA_…) y esos nunca se descartan, aunque sean una foto.
+ * Pura (probada en _herramientas_locales/test_pieza_publicacion.js).
+ */
+function esPiezaDePublicacion(nombre, mimeType) {
+  const n = String(nombre || '').toUpperCase();
+  if (/CEDULA|CERT_?BANCARIO|CERT_?TRADICION|COMPROBANTE|FACTURA|SARLAFT|SOPORTES?_INGRESO|(^|[^A-Z])RUT([^A-Z]|$)/.test(n)) return false;
+  if (/PORTADA|CARTEL|VENTANILLA|(^|[-_ \d])FOTO[-_ ]|^TOP_\d|RECORRIDO|VIDEO/.test(n)) return true;
+  // Una imagen o un video sin etiqueta de soporte no es un documento del contrato
+  return /^(image|video)\//.test(String(mimeType || ''));
 }
 
 /**
