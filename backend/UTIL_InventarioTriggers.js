@@ -33,7 +33,8 @@ var CATALOGO_TRIGGERS = {
   },
   'cronJobActualizarBancos': {
     frecuencia: 'DIARIO 3:00 AM', clase: 'recurrente',
-    para: 'Actualiza la lista de bancos.', nota: ''
+    para: 'Actualiza la lista de bancos.',
+    nota: 'YA NO HACE FALTA (oct-2026): la lista se refresca al abrir un formulario. Se borra sola la próxima vez que corra.'
   },
   'sincroTasasSFC': {
     frecuencia: 'SEMANAL, lunes 2:00 AM', clase: 'recurrente',

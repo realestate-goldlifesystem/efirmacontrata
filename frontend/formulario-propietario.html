@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Formulario Propietario - E-FirmaContrata</title>
-  <link rel="stylesheet" href="style.css?v=9.2">
+  <link rel="stylesheet" href="style.css?v=9.3">
 
   <style>
     /* =========================================
@@ -792,14 +792,14 @@
         <!-- Step 4: Servicios Públicos -->
         <div class="step-pane" data-pane="3">
           <h3>Servicios Públicos del Inmueble</h3>
-          <p class="muted">Seleccione los servicios que incluye el inmueble y adjunte las facturas</p>
+          <p class="muted">Agua y energía son obligatorios: márquelos y adjunte la factura de cada uno. Los demás, solo si el inmueble los tiene.</p>
 
           <div class="servicios-grid">
             <div class="servicio-item" data-servicio="agua">
               <div class="servicio-checkbox">
                 <label>
                   <input type="checkbox" id="servicioAgua">
-                  💧 Agua/Acueducto
+                  💧 Agua/Acueducto <span class="required">*</span>
                 </label>
               </div>
               <div class="servicio-upload">
@@ -815,7 +815,7 @@
               <div class="servicio-checkbox">
                 <label>
                   <input type="checkbox" id="servicioLuz">
-                  💡 Energía/Luz
+                  💡 Energía/Luz <span class="required">*</span>
                 </label>
               </div>
               <div class="servicio-upload">
@@ -983,6 +983,7 @@
   <script src="config.js"></script>
   <!-- Portero: comprueba en qué va el trámite antes de dejar llenar el formulario -->
   <script src="js/estado-tramite.js?v=1" data-tipo="propietario"></script>
+  <script src="js/bancos.js?v=2"></script>
 
   <script>
     (function () {
@@ -2063,7 +2064,8 @@
           }
           case 3: {
             if (state.modoCorreccion) return ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
-            // Requerir archivo si el servicio fue seleccionado
+            // Agua y luz son obligatorios; de los demás, factura solo si se marcaron
+            if (!['agua', 'luz'].every(s => state.servicios.includes(s))) return false;
             const check = state.servicios.every(tipo => {
               const key = `factura${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
               return !!state.archivos[key];
@@ -2162,7 +2164,7 @@
             }
             return true;
 
-          case 3: // Servicios - opcional
+          case 3: // Servicios: agua y luz obligatorios, el resto opcional
             if (state.modoCorreccion) {
               const srAcorregir = ['facturaAgua', 'facturaLuz', 'facturaGas', 'facturaTelefono', 'facturaInternet'].filter(k => state.docsCorreccion.includes(k));
               for (const d of srAcorregir) {
@@ -2174,6 +2176,14 @@
               return true;
             }
             
+            {
+              const faltan = [['agua', 'Agua/Acueducto'], ['luz', 'Energía/Luz']].filter(s => !state.servicios.includes(s[0])).map(s => s[1]);
+              if (faltan.length) {
+                showAlert('warning', `Marque ${faltan.join(' y ')} y adjunte su factura: ${faltan.length > 1 ? 'son obligatorios' : 'es obligatorio'}.`);
+                return false;
+              }
+            }
+
             // Validar que se hayan adjuntado los archivos de los servicios marcados
             for (const tipo of state.servicios) {
               const key = `factura${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
@@ -2384,16 +2394,13 @@
         return div.innerHTML;
       }
 
-      // LISTA DE BANCOS: es la fija del <select id="banco"> (23 entidades) y es la que vale.
+      // LISTA DE BANCOS: la fija del <select id="banco"> es la base. js/bancos.js le
+      // SUMA las entidades nuevas que publique el servidor (las de PSE según Mercado
+      // Pago, backend/GESTOR_BANCOS.js). Solo agrega: si el servidor falla, queda la fija.
       //
-      // Aquí había una "actualización mixta" que 1 s después de cargar intentaba
-      // reemplazarla con una lista del servidor. Nunca funcionó: usaba
-      // google.script.run, que no existe en GitHub Pages, y dejaba un error en cada
-      // carga ("google is not defined"). Y fue una suerte: lo que el servidor tiene
-      // guardado (cronJobActualizarBancos, UTIL_Triggers.js) es una SIMULACIÓN de 12
-      // bancos que incluye uno inventado, "Banco Nuevo Colombia (Test API)". Si se
-      // quiere una lista viva, primero hay que conectar una fuente real; mientras
-      // tanto, para agregar un banco se agrega su <option> arriba.
+      // Aquí había una "actualización mixta" que nunca funcionó (usaba
+      // google.script.run, que no existe en GitHub Pages) y que habría REEMPLAZADO la
+      // lista por una simulada de 12 bancos con uno inventado.
 
     })();
 

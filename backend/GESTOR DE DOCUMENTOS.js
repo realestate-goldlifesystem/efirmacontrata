@@ -476,6 +476,11 @@ function doGet(e) {
         }
         break;
 
+      case 'obtenerBancos':
+        // Lista de bancos para el formulario del propietario (GESTOR_BANCOS.js)
+        result = obtenerBancosParaFormulario(false);
+        break;
+
       case 'obtenerDireccion':
         const dir = handleObtenerDireccionInmueble(e.parameter.cdr);
         let pago_completado = false;

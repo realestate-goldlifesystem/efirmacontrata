@@ -64,77 +64,26 @@ function desinstalarTriggerAutoRename() {
 }
 
 /**
- * Instala el Cron Job Diario para actualizar bancos en caché
- */
-function instalarTriggerCacheBancos() {
-    const fnName = 'cronJobActualizarBancos';
-    const triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(t => {
-        if (t.getHandlerFunction() === fnName) ScriptApp.deleteTrigger(t);
-    });
-
-    // Se ejecutará todos los días a las 3:00 AM (Aprox)
-    ScriptApp.newTrigger(fnName)
-        .timeBased()
-        .everyDays(1)
-        .atHour(3)
-        .create();
-
-    SpreadsheetApp.getUi().alert('✅ Cron Trigger de Bancos activado (Ejecución Diaria 3:00 AM).');
-}
-
-/**
- * Este es el "Robot" que se ejecuta oculto cada día.
- * Descarga de la API y lo salva en PropertiesService para velocidad luz.
+ * BANCOS: ya no hay tarea diaria. La lista se refresca sola al abrir un
+ * formulario (GESTOR_BANCOS.js → obtenerBancosParaFormulario).
+ *
+ * Esta función se conserva solo porque la tarea diaria de las 3:00 AM puede
+ * seguir instalada: la próxima vez que corra, trae la lista real y SE BORRA A
+ * SÍ MISMA, liberando ese cupo de los 20. (Antes guardaba una simulación de 12
+ * bancos escritos a mano, con uno inventado.)
  */
 function cronJobActualizarBancos() {
     try {
-        const URL_API_BANCOS = 'https://ejemplo.com/api/bancos-colombia'; // Reemplazar con endpoint Wompi/PayZen
-        
-        // --- SIMULACIÓN SI NO HAY API OFICIAL CONFIGURADA AUN ---
-        // (Aquí harías const res = UrlFetchApp.fetch(URL_API_BANCOS); const bancosApi = JSON.parse(res.getContentText());)
-        
-        // Simulación: La API retornó una lista fresca que incluye "Banco Nuevo Colombia"
-        const bancosSimuladosDesdeAPI = [
-            { nombre: "Bancolombia" },
-            { nombre: "Nequi" },
-            { nombre: "Daviplata" },
-            { nombre: "Banco Davivienda" },
-            { nombre: "Banco de Bogotá" },
-            { nombre: "BBVA Colombia" },
-            { nombre: "Itaú" },
-            { nombre: "Lulo Bank" },
-            { nombre: "RappiPay" },
-            { nombre: "Banco Falabella" },
-            { nombre: "Mibanco" },
-            { nombre: "Banco Nuevo Colombia (Test API)" } // <-- Dato Nuevo
-        ];
-        
-        const jsonBancos = JSON.stringify(bancosSimuladosDesdeAPI);
-        
-        // GUARDAMOS EN MEMORIA ULTRA-RAPIDA (Caché duradera)
-        PropertiesService.getScriptProperties().setProperty('CACHE_BANCOS_COLOMBIA', jsonBancos);
-        Logger.log('✅ CronJob: Bancos actualizados con éxito a las 3:00 AM');
-        
+        obtenerBancosParaFormulario(true);
     } catch (e) {
-        Logger.log('❌ Error en CronJob Bancos: ' + e.message);
+        Logger.log("❌ Bancos: " + e.message);
     }
-}
-
-/**
- * Lee la caché instantánea desde el Frontend
- * @returns {Array} Lista de Bancos (o null si está vacío)
- */
-function obtenerBancosDesdeCaché() {
-    try {
-        const str = PropertiesService.getScriptProperties().getProperty('CACHE_BANCOS_COLOMBIA');
-        if (str) {
-            return JSON.parse(str);
+    ScriptApp.getProjectTriggers().forEach(t => {
+        if (t.getHandlerFunction() === "cronJobActualizarBancos") {
+            ScriptApp.deleteTrigger(t);
+            Logger.log("🧹 Tarea diaria de bancos retirada: ya no hace falta.");
         }
-        return null;
-    } catch (e) {
-        return null;
-    }
+    });
 }
 
 /**
