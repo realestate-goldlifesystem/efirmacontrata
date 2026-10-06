@@ -1740,6 +1740,15 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
       return { success: false, message: 'Código de registro no encontrado' };
     }
 
+    // Candado de turno: el formulario solo se recibe si a esta persona le toca
+    // llenarlo (pendiente o en corrección). La página ya lo comprueba al abrir,
+    // pero la decisión de fondo es del servidor: sin esto, un formulario abierto
+    // desde el historial volvía a guardar encima de lo ya aprobado.
+    const turnoProp = verificarEstadoLink(codigoRegistro, 'propietario');
+    if (turnoProp && turnoProp.success && !turnoProp.activo) {
+      return { success: false, message: turnoProp.mensaje, fueraDeTurno: true };
+    }
+
     // Asegurar que tenemos el email del propietario en modo corrección
     if (datosFormulario.modoCorreccion || !datosFormulario.propietario.email) {
       const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
@@ -1818,6 +1827,53 @@ function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivos
 /**
  * Verificar estado del link y determinar acción
  */
+/**
+ * ¿Qué debe ver el inquilino o el propietario al abrir su formulario, según la
+ * ETAPA real del trámite (ESTADO DOCUMENTAL)? Función pura.
+ *
+ * Existe porque la regla anterior leía el TEXTO de "DETALLES DEL ESTADO DEL
+ * INMUEBLE", y ese texto cambia con cada paso: cuando el propietario cargaba,
+ * el detalle decía "Formulario del propietario diligenciado", ya no mencionaba
+ * al inquilino y su formulario volvía a quedar "disponible" (visto el 06-oct-2026).
+ *
+ * @param {string} estadoDoc  ESTADO DOCUMENTAL (puede traer "|documentos")
+ * @param {string} tipo       'inquilino' | 'propietario'
+ * @return {{status:string, mensaje:string}|null}  null = la etapa no dice nada
+ *         (hoja vieja sin ESTADO DOCUMENTAL): se usa la regla por texto.
+ *         status: 'pendiente' y 'correccion' dejan entrar; los demás no.
+ */
+function estadoLinkSegunEtapa(estadoDoc, tipo) {
+  const etapa = String(estadoDoc || '').split('|')[0].trim().toUpperCase();
+  if (!etapa) return null;
+
+  const CONTRATO = ['PROP_VALIDATED', 'READY_CONTRACT', 'CONTRACT_GENERATED', 'CONTRACT_REVIEW', 'CONTRACT_FINAL', 'COMPLETED'];
+  const enContrato = CONTRATO.indexOf(etapa) !== -1;
+  const VALIDANDO = { status: 'diligenciado', mensaje: 'Ya recibimos tu formulario. Estamos validando tus documentos y te avisaremos por correo.' };
+  const CORRECCION = { status: 'correccion', mensaje: 'Se requieren correcciones en tu formulario.' };
+  const DISPONIBLE = { status: 'pendiente', mensaje: 'Formulario disponible' };
+  const CON_CONTRATO = { status: 'aprobado', mensaje: 'Los documentos ya fueron aprobados y el contrato está en proceso. Revisa tu correo: ahí te llegará el siguiente paso.' };
+
+  if (tipo === 'inquilino') {
+    if (etapa === 'INQ_SUBMITTED') return VALIDANDO;
+    if (etapa === 'INQ_CORRECTION') return CORRECCION;
+    if (etapa === 'INQ_VALIDATED') return { status: 'aprobado', mensaje: 'Tus documentos ya fueron aprobados. Ahora estamos esperando los documentos del propietario; te avisaremos por correo.' };
+    if (etapa === 'PROP_SUBMITTED' || etapa === 'PROP_CORRECTION') return { status: 'aprobado', mensaje: 'Tus documentos ya fueron aprobados. Estamos validando los documentos del propietario; te avisaremos por correo.' };
+    if (enContrato) return CON_CONTRATO;
+    return null;
+  }
+
+  if (tipo === 'propietario') {
+    if (etapa === 'PROP_SUBMITTED') return VALIDANDO;
+    if (etapa === 'PROP_CORRECTION') return CORRECCION;
+    if (enContrato) return CON_CONTRATO;
+    // Mientras se atiende al inquilino (INQ_*), el formulario del propietario
+    // sigue disponible: el agente puede enviárselo antes desde el popup.
+    if (etapa.indexOf('INQ_') === 0) return DISPONIBLE;
+    return null;
+  }
+  return null;
+}
+
 function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
   try {
     Logger.log('verificarEstadoLink: cdr=' + cdr + ', tipo=' + tipo);
@@ -1891,6 +1947,23 @@ function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
       } else if (detalles.includes('Documentos completos') || detalles.includes('Listo para generar contrato')) {
         status = 'aprobado';
         mensaje = 'Tus documentos han sido aprobados y el contrato está en proceso.';
+      }
+    }
+
+    // La ETAPA real del trámite manda sobre el texto de DETALLES (ver
+    // estadoLinkSegunEtapa). Lo de arriba queda como respaldo para filas viejas
+    // que no tienen ESTADO DOCUMENTAL.
+    const colEstadoDocLink = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+    const porEtapa = colEstadoDocLink > 0
+      ? estadoLinkSegunEtapa(sheet.getRange(fila, colEstadoDocLink).getValue(), tipo)
+      : null;
+    if (porEtapa) {
+      status = porEtapa.status;
+      mensaje = porEtapa.mensaje;
+      redirectUrl = redirectUrl.split('&modo=correccion')[0];
+      if (status === 'correccion') {
+        redirectUrl += '&modo=correccion';
+        if (docsParaCorreccion) redirectUrl += '&docs=' + encodeURIComponent(docsParaCorreccion);
       }
     }
 
@@ -2086,6 +2159,14 @@ function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBa
     // Buscar la fila correspondiente (la necesitamos temprano)
     const fila = buscarFilaPorCDR(codigoRegistro);
     if (!fila) throw new Error('Código de registro no encontrado');
+
+    // Candado de turno: el formulario solo se recibe si al inquilino le toca
+    // llenarlo (pendiente o en corrección). Ver la misma nota en
+    // procesarFormularioPropietario.
+    const turnoInq = verificarEstadoLink(codigoRegistro, 'inquilino');
+    if (turnoInq && turnoInq.success && !turnoInq.activo) {
+      throw new Error(turnoInq.mensaje);
+    }
 
     // Candado anti-cracking: el envío del formulario NUNCA se acepta solo porque el
     // frontend "cree" que el pago pasó. Se vuelve a confirmar contra el estado real

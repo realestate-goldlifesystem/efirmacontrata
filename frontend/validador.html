@@ -231,7 +231,25 @@
       if (urlBtn) {
         document.getElementById('actions-container').innerHTML = `<a href="${urlBtn}" class="btn">Continuar</a>`;
       } else {
-        document.getElementById('actions-container').innerHTML = `<a href="index.html" class="btn btn-secondary">Volver al Inicio</a>`;
+        // Aquí la persona ya no tiene nada que hacer: en vez de un botón "Volver
+        // al Inicio" (que la llevaba a una página que no le sirve), la ventana se
+        // cierra sola. Un navegador solo deja cerrar las pestañas que abrió un
+        // script; si no puede, se le dice que ya la puede cerrar.
+        const cont = document.getElementById('actions-container');
+        const aviso = document.createElement('p');
+        aviso.style.cssText = 'color:#71717A; font-size:13px; margin-top:18px;';
+        cont.innerHTML = '';
+        cont.appendChild(aviso);
+        let quedan = 10;
+        const pintar = () => { aviso.textContent = 'Esta ventana se cerrará en ' + quedan + ' s…'; };
+        pintar();
+        const reloj = setInterval(() => {
+          quedan--;
+          if (quedan > 0) { pintar(); return; }
+          clearInterval(reloj);
+          try { window.close(); } catch (e) { /* no se pudo: se avisa abajo */ }
+          setTimeout(() => { aviso.textContent = 'Ya puedes cerrar esta ventana.'; }, 400);
+        }, 1000);
       }
     }
 
@@ -318,6 +336,10 @@
               if (modo && !targetUrl.includes('modo=')) targetUrl += `&modo=${modo}`;
               if (docs && !targetUrl.includes('docs=')) targetUrl += `&docs=${encodeURIComponent(docs)}`;
             }
+
+            // Pase para el portero del formulario (js/estado-tramite.js): esta
+            // misma verificación acaba de hacerse, no hay que repetirla allá.
+            try { sessionStorage.setItem('efc_pase_' + rol + '_' + cdr, String(Date.now())); } catch (e) {}
 
             window.location.href = targetUrl;
           } else {
