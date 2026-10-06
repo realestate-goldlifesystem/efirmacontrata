@@ -3739,6 +3739,19 @@
                     btn.disabled = false;
 
                     if (res.success) {
+                        // Un solo PDF con varios recibos (OCR_RECIBOS.js): se tomó la página de esta casilla
+                        const d = res.datos || {};
+                        const NOMBRES = { AGUA: 'agua', LUZ: 'luz', GAS: 'gas', INTERNET: 'internet', TELEFONO: 'teléfono' };
+                        if (d.noCorresponde) {
+                            const trae = (d.otros || []).map(o => (NOMBRES[o.tipo] || o.tipo) + ' (pág. ' + o.pagina + ')').join(', ');
+                            alert('Este archivo no trae un recibo de ' + (NOMBRES[d.tipoEsperado] || d.tipoEsperado) + '.\nLo que trae: ' + (trae || 'no se reconoció') + '.\n\nNo se guardó nada. Escriba la referencia a mano o pida el recibo correcto.');
+                            return;
+                        }
+                        // Solo hay un aviso flotante a la vez: la nota viaja con el de "guardado"
+                        let notaRecibo = '';
+                        if (d.combinado) notaRecibo += ' · El archivo trae varios recibos: se leyó la página ' + d.pagina + ' de ' + d.totalPaginas + '.';
+                        if (d.origenReferencia === 'codigo_barras') notaRecibo += ' · La referencia salió del código de barras: verifíquela.';
+
                         const empresa = res.datos.empresa || 'Desconocida';
                         const referencia = res.datos.referenciaPago || 'No detectada';
 
@@ -3765,7 +3778,7 @@
 
                         google.script.run
                             .withSuccessHandler(function() {
-                                mostrarToast(' Servicio guardado en el Cerebro: ' + empresa, 'success');
+                                mostrarToast(' Servicio guardado en el Cerebro: ' + empresa + notaRecibo, 'success');
                                 // Actualizar caché local
                                 const reg = getRegistroData();
                                 if (reg) {

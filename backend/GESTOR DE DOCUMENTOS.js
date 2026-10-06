@@ -1261,7 +1261,8 @@ function analizarReciboServicio(fileId) {
     let base64Content = Utilities.base64Encode(blob.getBytes());
     
     // 2. Ejecutar OCR completo para Recibos
-    const resultadoOCR = procesarReciboOCR(base64Content);
+    // La casilla sale del nombre con que se guardó: FACTURA_AGUA_[…], FACTURA_LUZ_[…]
+    const resultadoOCR = procesarReciboOCR(base64Content, recTipoDeNombre(file.getName()));
     
     if (!resultadoOCR.exito) {
       return { success: false, message: resultadoOCR.mensaje };

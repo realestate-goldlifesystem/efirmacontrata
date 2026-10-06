@@ -177,10 +177,19 @@ function llamarVisionAPIConReintentos(base64Content, accessToken) {
  * vigentes están en las últimas. Una imagen suelta se lee como siempre.
  */
 function leerPdfCompletoConVision(base64Content, accessToken) {
-  if (!base64Content.startsWith('JVBERi0')) return llamarVisionAPIConReintentos(base64Content, accessToken);
+  const paginas = leerPdfPorPaginasConVision(base64Content, accessToken);
+  return paginas.length ? paginas.join(String.fromCharCode(10)) : null;
+}
+
+/** El texto de cada página, en orden. Una imagen cuenta como una sola página. */
+function leerPdfPorPaginasConVision(base64Content, accessToken) {
+  if (!base64Content.startsWith('JVBERi0')) {
+    const unico = llamarVisionAPIConReintentos(base64Content, accessToken);
+    return unico ? [unico] : [];
+  }
 
   const MAX_PAGINAS = 40;
-  let texto = '';
+  const textos = [];
   let leidas = 0;
   for (let desde = 1; desde <= MAX_PAGINAS; desde += 5) {
     const response = UrlFetchApp.fetch('https://vision.googleapis.com/v1/files:annotate', {
@@ -201,11 +210,11 @@ function leerPdfCompletoConVision(base64Content, accessToken) {
       throw new Error('Vision API error ' + response.getResponseCode() + ': ' + JSON.stringify(lote.error || cuerpo.error || {}));
     }
     const paginas = lote.responses || [];
-    paginas.forEach(p => { texto += ((p.fullTextAnnotation || {}).text || '') + String.fromCharCode(10); });
+    paginas.forEach(p => { textos.push((p.fullTextAnnotation || {}).text || ''); });
     leidas += paginas.length;
     if (paginas.length < 5 || leidas >= (lote.totalPages || 0)) break;
   }
-  return texto || null;
+  return textos;
 }
 
 function llamarVisionAPI(base64Content, accessToken) {
@@ -793,14 +802,20 @@ function procesarCertificadoDesdeFormulario(archivoBase64) {
 // PROCESAMIENTO OCR PARA RECIBOS DE SERVICIOS
 // ==========================================
 
-function procesarReciboOCR(base64Content) {
+/**
+ * @param {string} base64Content
+ * @param {string=} tipoEsperado  casilla del recibo ('AGUA', 'LUZ', 'GAS'…): cuando el
+ *        propietario sube un solo PDF con todos, se toma la página de ese servicio.
+ */
+function procesarReciboOCR(base64Content, tipoEsperado) {
   const inicio = new Date();
   
   try {
     const accessToken = obtenerTokenConCache();
-    const textoDetectado = llamarVisionAPIConReintentos(base64Content, accessToken);
+    const paginas = leerPdfPorPaginasConVision(base64Content, accessToken);
+    const textoDetectado = paginas.join(String.fromCharCode(10));
     
-    if (!textoDetectado) {
+    if (!textoDetectado.trim()) {
       return {
         exito: false,
         mensaje: 'La API de Vision no detectó texto en el recibo.',
@@ -808,7 +823,13 @@ function procesarReciboOCR(base64Content) {
       };
     }
 
-    const datosExtraidos = extraerDatosRecibo(textoDetectado);
+    // Lectura por páginas (OCR_RECIBOS.js). Si no reconoce nada, queda la búsqueda vieja.
+    let datosExtraidos = recAnalizar(paginas, tipoEsperado);
+    if (!datosExtraidos.tipo && !datosExtraidos.noCorresponde && datosExtraidos.referenciaPago === 'No detectada') {
+      const viejo = extraerDatosRecibo(textoDetectado);
+      datosExtraidos.empresa = viejo.empresa;
+      datosExtraidos.referenciaPago = viejo.referenciaPago;
+    }
     
     return {
       exito: true,
