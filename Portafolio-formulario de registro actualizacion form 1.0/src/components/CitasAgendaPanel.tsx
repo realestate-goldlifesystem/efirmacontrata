@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Loader2, AlertTriangle,
-  X, Phone, MessageCircle, Mail, MapPin, Clock, Home, StickyNote, History, ExternalLink,
+  Clock,
 } from 'lucide-react';
+import DetalleCita from './DetalleCita';
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+export const API_URL = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
 
-interface Cita {
+export interface Cita {
   idCita: string;
   estado: string;
   timestamp: number;
@@ -19,15 +20,17 @@ interface Cita {
   direccion: string;
   notas: string;
   ultimoCambio: string;
+  notasAgente?: string;
+  idInmueble?: string;
 }
 
 // Cómo se ve cada estado. Varios estados internos se agrupan en uno visible:
 // para el agente "confirmada" y "confirmada ya avisada" son lo mismo.
-type Grupo = 'pendiente' | 'confirmada' | 'reagendar' | 'reagendada' | 'cancelada' | 'asistio' | 'noasistio' | 'sinrespuesta';
+export type Grupo = 'pendiente' | 'confirmada' | 'reagendar' | 'reagendada' | 'cancelada' | 'asistio' | 'noasistio' | 'sinrespuesta';
 
 // chip: sobre las tarjetas oscuras (calendario, lista, detalle).
 // claro: sobre el fondo crema de la página (filtros), donde los tonos 300 no se leen.
-const GRUPOS: Record<Grupo, { etiqueta: string; chip: string; claro: string; punto: string }> = {
+export const GRUPOS: Record<Grupo, { etiqueta: string; chip: string; claro: string; punto: string }> = {
   pendiente:    { etiqueta: 'Por confirmar',     chip: 'bg-amber-500/15 text-amber-300 border-amber-500/40', claro: 'bg-amber-50 text-amber-800 border-amber-300',       punto: 'bg-amber-400' },
   confirmada:   { etiqueta: 'Confirmada',        chip: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40', claro: 'bg-emerald-50 text-emerald-800 border-emerald-300', punto: 'bg-emerald-400' },
   reagendar:    { etiqueta: 'Quiere reagendar',  chip: 'bg-orange-500/20 text-orange-300 border-orange-500/50', claro: 'bg-orange-50 text-orange-800 border-orange-300',    punto: 'bg-orange-400' },
@@ -38,7 +41,7 @@ const GRUPOS: Record<Grupo, { etiqueta: string; chip: string; claro: string; pun
   sinrespuesta: { etiqueta: 'Sin respuesta',     chip: 'bg-stone-500/15 text-stone-400 border-stone-500/40', claro: 'bg-stone-100 text-stone-700 border-stone-300',       punto: 'bg-stone-500' },
 };
 
-function grupoDe(estado: string): Grupo {
+export function grupoDe(estado: string): Grupo {
   switch ((estado || '').trim().toUpperCase()) {
     case 'CONFIRMADA':
     case 'CONFIRMADA_NOTIFICADA': return 'confirmada';
@@ -58,7 +61,7 @@ const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const claveDia = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
 /** Celular colombiano a formato internacional para WhatsApp / llamada. */
-function internacional(celular: string) {
+export function internacional(celular: string) {
   const d = (celular || '').replace(/\D/g, '');
   return d.length === 10 ? '57' + d : d;
 }
@@ -72,7 +75,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mes, setMes] = useState(() => { const h = new Date(); return new Date(h.getFullYear(), h.getMonth(), 1); });
-  const [diaSel, setDiaSel] = useState(() => new Date());
+  // null = sin día elegido: la lista de la derecha muestra todas las citas del mes.
+  const [diaSel, setDiaSel] = useState<Date | null>(null);
   const [filtro, setFiltro] = useState<Grupo | null>(null);
   const [detalle, setDetalle] = useState<Cita | null>(null);
   const listaRef = useRef<HTMLDivElement | null>(null);
@@ -99,6 +103,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   // En móvil la lista del día queda DEBAJO del calendario, fuera de la vista:
   // al tocar un día con citas se baja hasta ella. En escritorio está al lado.
   const elegirDia = (d: Date, hayCitas: boolean) => {
+    // Tocar otra vez el día elegido vuelve a la lista de todas
+    if (diaSel && claveDia(d) === claveDia(diaSel)) { setDiaSel(null); return; }
     setDiaSel(d);
     if (hayCitas && window.matchMedia('(max-width: 1023px)').matches) {
       setTimeout(() => listaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
@@ -161,10 +167,31 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   }, [mes]);
 
   const hoyClave = claveDia(new Date());
-  const citasDelDia = porDia.get(claveDia(diaSel)) || [];
+  const citasDelDia = diaSel ? porDia.get(claveDia(diaSel)) || [] : [];
+
+  // Sin día elegido: todas las citas del mes que se ve, agrupadas por día.
+  // Primero las que vienen (de la más cercana a la más lejana) y al final las
+  // que ya pasaron, atenuadas.
+  const gruposDelMes = useMemo(() => {
+    const delMes = visibles.filter(c => { const d = new Date(c.timestamp); return d.getFullYear() === mes.getFullYear() && d.getMonth() === mes.getMonth(); });
+    const inicioHoy = new Date(); inicioHoy.setHours(0, 0, 0, 0);
+    const proximas = delMes.filter(c => c.timestamp >= inicioHoy.getTime()).sort((a, b) => a.timestamp - b.timestamp);
+    const pasadas = delMes.filter(c => c.timestamp < inicioHoy.getTime()).sort((a, b) => b.timestamp - a.timestamp);
+    const agrupar = (lista: Cita[], pasada: boolean) => {
+      const out: { clave: string; dia: Date; citas: Cita[]; pasada: boolean }[] = [];
+      lista.forEach(c => {
+        const d = new Date(c.timestamp); const k = claveDia(d);
+        const ult = out[out.length - 1];
+        if (ult && ult.clave === k) ult.citas.push(c); else out.push({ clave: k, dia: d, citas: [c], pasada });
+      });
+      return out;
+    };
+    return { grupos: [...agrupar(proximas, false), ...agrupar(pasadas, true)], total: delMes.length };
+  }, [visibles, mes]);
 
   const moverMes = (n: number) => setMes(m => new Date(m.getFullYear(), m.getMonth() + n, 1));
   const irAHoy = () => { const h = new Date(); setMes(new Date(h.getFullYear(), h.getMonth(), 1)); setDiaSel(h); };
+  const DIAS_LARGOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   return (
     <div className="w-full max-w-[1760px] mx-auto px-[clamp(1rem,2.5vw,3rem)] pt-20 xl:pt-0 xl:pl-[15rem]">
@@ -274,7 +301,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                 const k = claveDia(d);
                 const del = porDia.get(k) || [];
                 const fueraDeMes = d.getMonth() !== mes.getMonth();
-                const seleccionado = k === claveDia(diaSel);
+                const seleccionado = !!diaSel && k === claveDia(diaSel);
                 const esHoy = k === hoyClave;
                 return (
                   <button
@@ -309,92 +336,81 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
 
         {/* Citas del día seleccionado */}
         <div ref={listaRef} className="min-w-0 lg:max-h-[calc(100dvh-13rem)] lg:overflow-y-auto bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)] scroll-mt-28">
-          <h3 className="text-white font-semibold mb-1">
-            {diaSel.getDate()} de {MESES[diaSel.getMonth()]} {diaSel.getFullYear()}
-          </h3>
-          <p className="text-stone-500 text-sm mb-4">
-            {citasDelDia.length === 0 ? 'Sin citas este día.' : `${citasDelDia.length} cita${citasDelDia.length > 1 ? 's' : ''}`}
-          </p>
-          <div className="space-y-3">
-            {citasDelDia.map(c => {
-              const g = GRUPOS[grupoDe(c.estado)];
-              return (
-                <button
-                  key={c.idCita}
-                  onClick={() => setDetalle(c)}
-                  className="w-full text-left p-3 rounded-2xl border border-stone-800 bg-stone-950/50 hover:border-brand-gold/60 transition-all"
-                >
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-brand-gold font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> {c.hora}</span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full border ${g.chip}`}>{g.etiqueta}</span>
-                  </div>
-                  <p className="text-white font-medium">{c.nombre}</p>
-                  <p className="text-stone-400 text-sm truncate">{c.servicio}{c.direccion ? ` · ${c.direccion}` : ''}</p>
+          {diaSel ? (
+            <>
+              <div className="flex items-start justify-between gap-3 mb-1">
+                <h3 className="text-white font-semibold">
+                  {diaSel.getDate()} de {MESES[diaSel.getMonth()]} {diaSel.getFullYear()}
+                </h3>
+                <button onClick={() => setDiaSel(null)} className="shrink-0 text-xs px-2.5 py-1 rounded-full border border-stone-700 text-stone-300 hover:border-brand-gold hover:text-brand-gold">
+                  Ver todas
                 </button>
-              );
-            })}
-          </div>
+              </div>
+              <p className="text-stone-500 text-sm mb-4">
+                {citasDelDia.length === 0 ? 'Sin citas este día.' : `${citasDelDia.length} cita${citasDelDia.length > 1 ? 's' : ''}`}
+              </p>
+              <div className="space-y-3">
+                {citasDelDia.map(c => <TarjetaCita key={c.idCita} c={c} onAbrir={() => setDetalle(c)} />)}
+              </div>
+            </>
+          ) : (
+            <>
+              <h3 className="text-white font-semibold mb-1">
+                {filtro ? GRUPOS[filtro].etiqueta : 'Todas las citas'} · {MESES[mes.getMonth()]}
+              </h3>
+              <p className="text-stone-500 text-sm mb-4">
+                {gruposDelMes.total === 0 ? 'Sin citas este mes.' : `${gruposDelMes.total} cita${gruposDelMes.total > 1 ? 's' : ''} · toca un día para ver solo ese`}
+              </p>
+              <div className="space-y-5">
+                {gruposDelMes.grupos.map((g, i) => (
+                  <div key={g.clave + (g.pasada ? 'p' : '')} className={g.pasada ? 'opacity-55' : ''}>
+                    {g.pasada && (i === 0 || !gruposDelMes.grupos[i - 1].pasada) && (
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-stone-500 mb-3 pt-2 border-t border-stone-800">Ya pasaron</p>
+                    )}
+                    <button
+                      onClick={() => setDiaSel(g.dia)}
+                      className="text-xs uppercase tracking-wide text-stone-400 hover:text-brand-gold mb-2"
+                    >
+                      {DIAS_LARGOS[g.dia.getDay()]} {g.dia.getDate()} de {MESES[g.dia.getMonth()].toLowerCase()}
+                    </button>
+                    <div className="space-y-3">
+                      {g.citas.map(c => <TarjetaCita key={c.idCita} c={c} onAbrir={() => setDetalle(c)} />)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Detalle de una cita */}
+      {/* Detalle de una cita, con las acciones del agente (DetalleCita.tsx) */}
       {detalle && (
-        <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onClick={() => setDetalle(null)}>
-          <div
-            className="w-full md:max-w-lg bg-stone-900 border border-stone-800 rounded-t-3xl md:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div>
-                <span className={`inline-block text-xs px-2.5 py-1 rounded-full border mb-2 ${GRUPOS[grupoDe(detalle.estado)].chip}`}>
-                  {GRUPOS[grupoDe(detalle.estado)].etiqueta}
-                </span>
-                <h3 className="text-2xl text-white font-semibold">{detalle.nombre}</h3>
-                <p className="text-stone-500 text-xs mt-1">{detalle.idCita}</p>
-              </div>
-              <button onClick={() => setDetalle(null)} className="p-2 rounded-full bg-stone-800 text-stone-400 hover:text-white" aria-label="Cerrar">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-stone-300 text-sm">
-              <p className="flex items-center gap-2"><Clock className="w-4 h-4 text-brand-gold" /> {detalle.fecha} · {detalle.hora}</p>
-              <p className="flex items-center gap-2"><Home className="w-4 h-4 text-brand-gold" /> {detalle.servicio || '—'}</p>
-              <p className="flex items-start gap-2"><MapPin className="w-4 h-4 text-brand-gold mt-0.5" /> {detalle.direccion || 'Sin dirección'}</p>
-              {detalle.notas && <p className="flex items-start gap-2"><StickyNote className="w-4 h-4 text-brand-gold mt-0.5" /> {detalle.notas}</p>}
-              {detalle.ultimoCambio && <p className="flex items-start gap-2 text-stone-500"><History className="w-4 h-4 mt-0.5" /> {detalle.ultimoCambio}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 mt-6">
-              {detalle.celular && (
-                <a href={`https://wa.me/${internacional(detalle.celular)}`} target="_blank" rel="noreferrer"
-                   className="flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">
-                  <MessageCircle className="w-4 h-4" /> WhatsApp
-                </a>
-              )}
-              {detalle.celular && (
-                <a href={`tel:+${internacional(detalle.celular)}`}
-                   className="flex items-center justify-center gap-2 py-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-semibold">
-                  <Phone className="w-4 h-4" /> Llamar
-                </a>
-              )}
-              {detalle.correo && (
-                <a href={`mailto:${detalle.correo}`}
-                   className="flex items-center justify-center gap-2 py-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-semibold">
-                  <Mail className="w-4 h-4" /> Correo
-                </a>
-              )}
-              <a
-                href={(() => { const d = new Date(detalle.timestamp); return `https://calendar.google.com/calendar/r/day/${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; })()}
-                target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-brand-gold/50 text-brand-gold hover:bg-brand-gold/10 font-semibold"
-              >
-                <ExternalLink className="w-4 h-4" /> Calendar
-              </a>
-            </div>
-          </div>
-        </div>
+        <DetalleCita
+          cita={detalle}
+          agentCredential={agentCredential}
+          onCerrar={() => setDetalle(null)}
+          onCambio={() => { setDetalle(null); cargar(); }}
+        />
       )}
     </div>
+  );
+}
+
+/** Tarjeta de una cita en la lista de la derecha. */
+function TarjetaCita({ c, onAbrir }: { c: Cita; onAbrir: () => void; key?: string }) {
+  const g = GRUPOS[grupoDe(c.estado)];
+  return (
+    <button
+      onClick={onAbrir}
+      className="w-full text-left p-3 rounded-2xl border border-stone-800 bg-stone-950/50 hover:border-brand-gold/60 transition-all"
+    >
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className="text-brand-gold font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> {c.hora}</span>
+        <span className={`text-[11px] px-2 py-0.5 rounded-full border ${g.chip}`}>{g.etiqueta}</span>
+      </div>
+      <p className="text-white font-medium">{c.nombre}</p>
+      <p className="text-stone-400 text-sm truncate">{c.servicio}{c.direccion ? ` · ${c.direccion}` : ''}</p>
+    </button>
   );
 }

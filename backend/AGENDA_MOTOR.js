@@ -74,6 +74,8 @@ function agHoraAmPm(ms) {
  *   o.apartados  [{ inicio, fin }] en ms: horarios retenidos mientras se negocia (bloque 2)
  *   o.ahoraMs    momento actual
  *   o.festivo    nombre del festivo, o '' si no lo es
+ *   o.anticipacionMin  (opcional) reemplaza la del tipo: el agente, que ya habló
+ *                con el propietario, puede reagendar con menos aviso
  * @return {{libre:boolean, motivo:string, slots:Array<{timestamp:number, horaAmPm:string}>}}
  */
 function agHorariosLibres(o) {
@@ -93,7 +95,8 @@ function agHorariosLibres(o) {
     .map(b => ({ inicio: b.inicio - colchon, fin: b.fin + colchon }));
 
   const finDia = agMs(o.dia, horario[1], 0);
-  const minimo = (o.ahoraMs || 0) + cfg.anticipacionMin * 60000;
+  const anticipacion = isFinite(o.anticipacionMin) ? o.anticipacionMin : cfg.anticipacionMin;
+  const minimo = (o.ahoraMs || 0) + anticipacion * 60000;
   const slots = [];
   for (let t = agMs(o.dia, horario[0], 0); t + duracion <= finDia; t += AG_PASO_MIN * 60000) {
     if (t < minimo) continue;
@@ -110,8 +113,11 @@ function agHorariosLibres(o) {
  * Leonardo y el de festivos de Colombia.
  * @param {string} fechaIso  "2026-10-15" (o "2026-10-15T08:00:00", como manda el formulario)
  * @param {string} tipo      clave de TIPOS_AGENDA
+ * @param {Object=} opciones { anticipacionMin, excluirEventoId }: para reagendar
+ *   desde el panel (el evento de la propia cita no cuenta como ocupado)
  */
-function obtenerDisponibilidadAgenda(fechaIso, tipo) {
+function obtenerDisponibilidadAgenda(fechaIso, tipo, opciones) {
+  opciones = opciones || {};
   try {
     const dia = agLeerDia(fechaIso);
     if (!dia) return { success: false, error: 'Fecha no válida' };
@@ -125,9 +131,10 @@ function obtenerDisponibilidadAgenda(fechaIso, tipo) {
     } catch (e) { Logger.log('⚠️ No se pudo leer el calendario de festivos: ' + e.message); }
 
     const ocupados = CalendarApp.getDefaultCalendar().getEventsForDay(referencia)
+      .filter(e => !opciones.excluirEventoId || e.getId() !== opciones.excluirEventoId)
       .map(e => ({ inicio: e.getStartTime().getTime(), fin: e.getEndTime().getTime() }));
 
-    const r = agHorariosLibres({ dia: dia, tipo: tipo || 'PROPIETARIO', ocupados: ocupados, apartados: [], ahoraMs: Date.now(), festivo: festivo });
+    const r = agHorariosLibres({ dia: dia, tipo: tipo || 'PROPIETARIO', ocupados: ocupados, apartados: [], ahoraMs: Date.now(), festivo: festivo, anticipacionMin: opciones.anticipacionMin });
     // Mismo formato que devolvía obtenerDisponibilidad, para no romper el formulario actual
     return {
       success: true, libre: r.libre, motivo: r.motivo,

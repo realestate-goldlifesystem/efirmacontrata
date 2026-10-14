@@ -35,7 +35,9 @@ const COLUMNAS_CITAS = [
   'ID EVENTO CALENDAR', 'NOTAS', 'RECORDATORIO ENVIADO',
   'TOKEN PROPIETARIO', 'TOKEN AGENTE', 'ULTIMO CAMBIO',
   // oct-2026: cuatro agendas en la misma hoja (AGENDA_MOTOR.js). Vacío = PROPIETARIO.
-  'TIPO AGENDA', 'ID INMUEBLE'
+  'TIPO AGENDA', 'ID INMUEBLE',
+  // oct-2026: notas del agente desde el panel (NOTAS es lo que escribió el propietario)
+  'NOTAS AGENTE'
 ];
 
 // Estados posibles de una cita.
@@ -324,7 +326,9 @@ function obtenerCitasPanel(datos) {
         servicio: String(valorCita(f, col, 'TIPO SERVICIO') || ''),
         direccion: String(valorCita(f, col, 'DIRECCION') || ''),
         notas: String(valorCita(f, col, 'NOTAS') || ''),
-        ultimoCambio: String(valorCita(f, col, 'ULTIMO CAMBIO') || '')
+        ultimoCambio: String(valorCita(f, col, 'ULTIMO CAMBIO') || ''),
+        notasAgente: String(valorCita(f, col, 'NOTAS AGENTE') || ''),
+        idInmueble: String(valorCita(f, col, 'ID INMUEBLE') || '')
         // Los tokens NO se envían al navegador.
       });
     });

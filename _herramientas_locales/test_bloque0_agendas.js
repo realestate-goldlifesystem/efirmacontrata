@@ -61,6 +61,12 @@ igual('anticipación interesado', horas(r)[0], '10:30 AM');
 r = ctx.agHorariosLibres({ dia: jue, tipo: 'ENTREGA', ahoraMs: h(jue, 9) });
 igual('anticipación entrega', horas(r)[0], '11:00 AM');
 
+// Anticipación propia (panel del agente): propietario con 1 h en vez de 12 h
+r = ctx.agHorariosLibres({ dia: jue, tipo: 'PROPIETARIO', ahoraMs: h(jue, 9), anticipacionMin: 60 });
+igual('anticipación del panel', horas(r)[0], '10:00 AM');
+r = ctx.agHorariosLibres({ dia: jue, tipo: 'PROPIETARIO', ahoraMs: h(jue, 9) });
+igual('sin anticipación propia: 12 h', r.libre, false);
+
 // ================= Contratos vigentes =================
 const F = (s) => ctx.cvLeerFecha(s);
 const T = ctx.cvTexto;

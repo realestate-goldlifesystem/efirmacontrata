@@ -638,6 +638,13 @@ function doPost(e) {
           ? obtenerCitasPanel(datos)
           : { success: false, message: 'API_AGENDA no cargada' };
         break;
+      case 'gestionarCita':
+        // Reagendar, cancelar, asistencia y notas desde el panel (GESTION_CITAS_PANEL.js)
+        result = gestionarCitaPanel(datos);
+        break;
+      case 'disponibilidadReagendar':
+        result = disponibilidadReagendarCita(datos);
+        break;
       case 'payment':
       case 'payment.created':
       case 'payment.updated':
