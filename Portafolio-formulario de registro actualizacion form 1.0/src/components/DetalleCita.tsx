@@ -5,6 +5,11 @@ import {
 } from 'lucide-react';
 import { API_URL, GRUPOS, TIPOS, grupoDe, tipoDe, internacional, type Cita, type TipoAgenda } from './CitasAgendaPanel';
 
+// Quién es la persona de la cita, según el tipo de agenda
+const PERSONA_TIPO: Record<TipoAgenda, string> = {
+  PROPIETARIO: 'Propietario', INTERESADO: 'Interesado', ENTREGA: 'Inquilino', DEVOLUCION: 'Inquilino',
+};
+
 const ICONO_TIPO: Record<TipoAgenda, typeof Home> = {
   PROPIETARIO: Home, INTERESADO: Users, ENTREGA: KeyRound, DEVOLUCION: DoorOpen,
 };
@@ -87,7 +92,7 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   return (
     <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onClick={onCerrar}>
       <div
-        className="relative w-full md:max-w-lg bg-stone-900 border border-stone-800 rounded-t-3xl md:rounded-3xl p-6 pt-7 max-h-[90vh] overflow-y-auto"
+        className="relative w-full md:max-w-lg bg-stone-900 border border-stone-800 rounded-t-3xl md:rounded-3xl p-6 pt-7 max-h-[90vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Franja del color del tipo de agenda */}
@@ -106,6 +111,7 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
           </button>
         </div>
         <div className="mb-4">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-stone-500">{PERSONA_TIPO[tipoDe(cita)]}</p>
           <h3 className="text-2xl text-white font-semibold">{cita.nombre}</h3>
           <p className="text-stone-500 text-xs mt-1">{cita.idCita}</p>
         </div>

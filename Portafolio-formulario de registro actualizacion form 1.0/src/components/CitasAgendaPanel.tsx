@@ -348,7 +348,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         </div>
 
         {/* Citas del día seleccionado */}
-        <div ref={listaRef} className="min-w-0 lg:max-h-[calc(100dvh-13rem)] lg:overflow-y-auto bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)] scroll-mt-28">
+        <div ref={listaRef} className="min-w-0 lg:max-h-[calc(100dvh-13rem)] lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)] scroll-mt-28">
           {diaSel ? (
             <>
               <div className="flex items-start justify-between gap-3 mb-1">
