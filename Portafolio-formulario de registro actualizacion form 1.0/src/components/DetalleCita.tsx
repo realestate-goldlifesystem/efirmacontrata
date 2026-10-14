@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  X, Phone, MessageCircle, Mail, MapPin, Clock, Home, StickyNote, History, ExternalLink,
+  X, Phone, MessageCircle, Mail, MapPin, Clock, Home, StickyNote, History, Pencil,
   CalendarClock, Ban, UserCheck, UserX, Save, Loader2,
 } from 'lucide-react';
 import { API_URL, GRUPOS, grupoDe, internacional, type Cita } from './CitasAgendaPanel';
@@ -32,7 +32,10 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   const grupo = grupoDe(cita.estado);
   const cerrada = grupo === 'cancelada' || grupo === 'asistio' || grupo === 'noasistio' || grupo === 'sinrespuesta';
   const yaEmpezo = cita.timestamp <= Date.now();
-  const [modo, setModo] = useState<null | 'reagendar' | 'cancelar'>(null);
+  const [modo, setModo] = useState<null | 'reagendar' | 'cancelar' | 'editar'>(null);
+  const [campos, setCampos] = useState({
+    nombre: cita.nombre, celular: cita.celular, correo: cita.correo, servicio: cita.servicio, direccion: cita.direccion,
+  });
   const [fecha, setFecha] = useState(hoyIso());
   const [slots, setSlots] = useState<{ timestamp: number; horaAmPm: string }[] | null>(null);
   const [motivoSlots, setMotivoSlots] = useState('');
@@ -119,14 +122,33 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
               <Mail className="w-4 h-4" /> Correo
             </a>
           )}
-          <a
-            href={(() => { const d = new Date(cita.timestamp); return `https://calendar.google.com/calendar/r/day/${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; })()}
-            target="_blank" rel="noreferrer"
-            className={`${boton} border border-brand-gold/50 text-brand-gold hover:bg-brand-gold/10`}
+          <button
+            onClick={() => setModo(modo === 'editar' ? null : 'editar')}
+            className={`${boton} border border-brand-gold/50 ${modo === 'editar' ? 'bg-brand-gold text-stone-950' : 'text-brand-gold hover:bg-brand-gold/10'}`}
           >
-            <ExternalLink className="w-4 h-4" /> Calendar
-          </a>
+            <Pencil className="w-4 h-4" /> Editar
+          </button>
         </div>
+
+        {modo === 'editar' && (
+          <div className="mt-4 p-4 rounded-2xl border border-stone-800 bg-stone-950/50 space-y-3">
+            {([
+              ['nombre', 'Nombre', 'text'], ['celular', 'Celular', 'tel'], ['correo', 'Correo', 'email'],
+              ['servicio', 'Servicio', 'text'], ['direccion', 'Dirección del inmueble', 'text'],
+            ] as const).map(([k, etiqueta, tipo]) => (
+              <label key={k} className="block text-sm text-stone-300">
+                {etiqueta}
+                <input type={tipo} value={campos[k]} onChange={e => setCampos({ ...campos, [k]: e.target.value })}
+                  className="mt-1 w-full rounded-xl bg-stone-900 border border-stone-700 px-3 py-2 text-white" />
+              </label>
+            ))}
+            <button disabled={enviando || !campos.nombre.trim()} onClick={() => ejecutar({ tipo: 'editar', campos })}
+              className={`${boton} w-full bg-brand-gold text-stone-950 hover:brightness-110`}>
+              {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar cambios
+            </button>
+            <p className="text-xs text-stone-500">Actualiza la hoja y el evento de tu Calendar. Para cambiar la fecha o la hora usa "Reagendar".</p>
+          </div>
+        )}
 
         {/* Gestión de la cita */}
         <div className="mt-6 pt-5 border-t border-stone-800">

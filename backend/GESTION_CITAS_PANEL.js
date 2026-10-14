@@ -62,6 +62,33 @@ function gestionarCitaPanel(datos) {
         return { success: true, mensaje: 'Notas guardadas.' };
       }
 
+      case 'editar': {
+        // Datos de contacto y del inmueble. La fecha y la hora NO se editan aquí:
+        // eso es "reagendar", que revisa la disponibilidad y avisa al propietario.
+        const c = datos.campos || {};
+        const limpio = (v, max) => String(v === undefined || v === null ? '' : v).trim().slice(0, max);
+        const nuevos = {
+          NOMBRE: limpio(c.nombre, 120), CELULAR: limpio(c.celular, 30), CORREO: limpio(c.correo, 120),
+          'TIPO SERVICIO': limpio(c.servicio, 80), DIRECCION: limpio(c.direccion, 200)
+        };
+        if (!nuevos.NOMBRE) return { success: false, message: 'El nombre no puede quedar vacío.' };
+        if (nuevos.CORREO && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nuevos.CORREO)) return { success: false, message: 'El correo no es válido.' };
+        Object.keys(nuevos).forEach(k => escribir(k, nuevos[k]));
+        escribir('ULTIMO CAMBIO', ahoraTxt + ' · agente editó los datos desde el panel');
+
+        const idEv = String(valorCita(fila, col, 'ID EVENTO CALENDAR') || '');
+        try {
+          const ev = idEv ? CalendarApp.getDefaultCalendar().getEventById(idEv) : null;
+          if (ev) {
+            ev.setTitle(tituloEventoCita(estado, nuevos['TIPO SERVICIO'], nuevos.NOMBRE));
+            ev.setLocation(nuevos.DIRECCION);
+            ev.setDescription(`Cita ${datos.idCita}\nPropietario: ${nuevos.NOMBRE}\nCelular: ${nuevos.CELULAR}\n` +
+              `Correo: ${nuevos.CORREO}\nServicio: ${nuevos['TIPO SERVICIO']}\nDirección: ${nuevos.DIRECCION || 'N/A'}`);
+          }
+        } catch (e) { Logger.log('No se pudo actualizar el evento: ' + e.message); }
+        return { success: true, mensaje: 'Datos actualizados.' };
+      }
+
       case 'asistio':
       case 'noasistio': {
         if (!fechaActual || fechaActual.getTime() > Date.now()) {
