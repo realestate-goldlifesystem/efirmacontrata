@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
   X, Phone, MessageCircle, Mail, MapPin, Clock, Home, StickyNote, History, Pencil,
-  CalendarClock, Ban, UserCheck, UserX, Save, Loader2,
+  CalendarClock, Ban, UserCheck, UserX, Save, Loader2, Users, KeyRound, DoorOpen,
 } from 'lucide-react';
-import { API_URL, GRUPOS, grupoDe, internacional, type Cita } from './CitasAgendaPanel';
+import { API_URL, GRUPOS, TIPOS, grupoDe, tipoDe, internacional, type Cita, type TipoAgenda } from './CitasAgendaPanel';
+
+const ICONO_TIPO: Record<TipoAgenda, typeof Home> = {
+  PROPIETARIO: Home, INTERESADO: Users, ENTREGA: KeyRound, DEVOLUCION: DoorOpen,
+};
 
 /** Llama al backend con la sesión del agente. */
 async function llamar(cuerpo: Record<string, unknown>) {
@@ -30,6 +34,8 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   cita: Cita; agentCredential: string | null; onCerrar: () => void; onCambio: () => void;
 }) {
   const grupo = grupoDe(cita.estado);
+  const tipo = TIPOS[tipoDe(cita)];
+  const IconoTipo = ICONO_TIPO[tipoDe(cita)];
   const cerrada = grupo === 'cancelada' || grupo === 'asistio' || grupo === 'noasistio' || grupo === 'sinrespuesta';
   const yaEmpezo = cita.timestamp <= Date.now();
   const [modo, setModo] = useState<null | 'reagendar' | 'cancelar' | 'editar'>(null);
@@ -81,20 +87,27 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   return (
     <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onClick={onCerrar}>
       <div
-        className="w-full md:max-w-lg bg-stone-900 border border-stone-800 rounded-t-3xl md:rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
+        className="relative w-full md:max-w-lg bg-stone-900 border border-stone-800 rounded-t-3xl md:rounded-3xl p-6 pt-7 max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div>
-            <span className={`inline-block text-xs px-2.5 py-1 rounded-full border mb-2 ${GRUPOS[grupo].chip}`}>
-              {GRUPOS[grupo].etiqueta}
-            </span>
-            <h3 className="text-2xl text-white font-semibold">{cita.nombre}</h3>
-            <p className="text-stone-500 text-xs mt-1">{cita.idCita}</p>
-          </div>
-          <button onClick={onCerrar} className="p-2 rounded-full bg-stone-800 text-stone-400 hover:text-white" aria-label="Cerrar">
+        {/* Franja del color del tipo de agenda */}
+        <div className={`absolute top-0 left-0 right-0 h-1.5 ${tipo.franja}`} aria-hidden="true" />
+
+        {/* Estado a la izquierda, tipo de cita al centro, cerrar a la derecha */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 mb-3">
+          <span className={`justify-self-start text-xs px-2.5 py-1 rounded-full border ${GRUPOS[grupo].chip}`}>
+            {GRUPOS[grupo].etiqueta}
+          </span>
+          <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full shadow-sm ${tipo.solido}`}>
+            <IconoTipo className="w-3.5 h-3.5" /> {tipo.etiqueta}
+          </span>
+          <button onClick={onCerrar} className="justify-self-end p-2 rounded-full bg-stone-800 text-stone-400 hover:text-white" aria-label="Cerrar">
             <X className="w-5 h-5" />
           </button>
+        </div>
+        <div className="mb-4">
+          <h3 className="text-2xl text-white font-semibold">{cita.nombre}</h3>
+          <p className="text-stone-500 text-xs mt-1">{cita.idCita}</p>
         </div>
 
         <div className="space-y-3 text-stone-300 text-sm">

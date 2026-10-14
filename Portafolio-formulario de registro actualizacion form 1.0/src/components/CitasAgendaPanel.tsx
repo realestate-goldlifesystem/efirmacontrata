@@ -22,7 +22,20 @@ export interface Cita {
   ultimoCambio: string;
   notasAgente?: string;
   idInmueble?: string;
+  tipoAgenda?: string;
 }
+
+// Tipo de agenda: QUÉ es la cita (el estado dice en qué va). Etiqueta sólida con
+// ícono y franja de color, en tonos que no usan los estados para no confundirlos.
+export type TipoAgenda = 'PROPIETARIO' | 'INTERESADO' | 'ENTREGA' | 'DEVOLUCION';
+export const TIPOS: Record<TipoAgenda, { etiqueta: string; solido: string; franja: string; borde: string }> = {
+  PROPIETARIO: { etiqueta: 'Presentación al propietario', solido: 'bg-brand-gold text-stone-950',  franja: 'bg-brand-gold',  borde: 'border-l-brand-gold' },
+  INTERESADO:  { etiqueta: 'Visita de interesado',        solido: 'bg-indigo-500 text-white',      franja: 'bg-indigo-500',  borde: 'border-l-indigo-500' },
+  ENTREGA:     { etiqueta: 'Entrega del inmueble',        solido: 'bg-cyan-500 text-stone-950',    franja: 'bg-cyan-500',    borde: 'border-l-cyan-500' },
+  DEVOLUCION:  { etiqueta: 'Recibo del inmueble',         solido: 'bg-fuchsia-500 text-white',     franja: 'bg-fuchsia-500', borde: 'border-l-fuchsia-500' },
+};
+export const tipoDe = (c: Cita): TipoAgenda =>
+  (c.tipoAgenda && c.tipoAgenda in TIPOS ? c.tipoAgenda : 'PROPIETARIO') as TipoAgenda;
 
 // Cómo se ve cada estado. Varios estados internos se agrupan en uno visible:
 // para el agente "confirmada" y "confirmada ya avisada" son lo mismo.
@@ -403,7 +416,8 @@ function TarjetaCita({ c, onAbrir }: { c: Cita; onAbrir: () => void; key?: strin
   return (
     <button
       onClick={onAbrir}
-      className="w-full text-left p-3 rounded-2xl border border-stone-800 bg-stone-950/50 hover:border-brand-gold/60 transition-all"
+      className={`w-full text-left p-3 rounded-2xl border border-stone-800 border-l-4 ${TIPOS[tipoDe(c)].borde} bg-stone-950/50 hover:border-brand-gold/60 transition-all`}
+      title={TIPOS[tipoDe(c)].etiqueta}
     >
       <div className="flex items-center justify-between gap-2 mb-1">
         <span className="text-brand-gold font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> {c.hora}</span>

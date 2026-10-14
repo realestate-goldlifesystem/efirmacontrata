@@ -328,7 +328,9 @@ function obtenerCitasPanel(datos) {
         notas: String(valorCita(f, col, 'NOTAS') || ''),
         ultimoCambio: String(valorCita(f, col, 'ULTIMO CAMBIO') || ''),
         notasAgente: String(valorCita(f, col, 'NOTAS AGENTE') || ''),
-        idInmueble: String(valorCita(f, col, 'ID INMUEBLE') || '')
+        idInmueble: String(valorCita(f, col, 'ID INMUEBLE') || ''),
+        // Vacío = citas viejas, todas de propietario
+        tipoAgenda: String(valorCita(f, col, 'TIPO AGENDA') || 'PROPIETARIO').trim().toUpperCase()
         // Los tokens NO se envían al navegador.
       });
     });
