@@ -76,6 +76,25 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   const [filtro, setFiltro] = useState<Grupo | null>(null);
   const [detalle, setDetalle] = useState<Cita | null>(null);
   const listaRef = useRef<HTMLDivElement | null>(null);
+  const cuadriculaRef = useRef<HTMLDivElement | null>(null);
+  const [altoCelda, setAltoCelda] = useState<number | null>(null);
+
+  // En PC la agenda cabe entera en la pantalla, sin deslizar: el alto de cada
+  // casilla sale del espacio que queda debajo de donde empieza la cuadrícula
+  // (cambia si hay avisos arriba). En celular las casillas tienen su alto fijo.
+  useEffect(() => {
+    const medir = () => {
+      const g = cuadriculaRef.current;
+      if (!g || !window.matchMedia('(min-width: 1024px)').matches) { setAltoCelda(null); return; }
+      const gap = parseFloat(getComputedStyle(g).rowGap) || 0;
+      const libre = window.innerHeight - (g.getBoundingClientRect().top + window.scrollY) - 40;
+      setAltoCelda(Math.max(48, Math.min(150, (libre - 5 * gap) / 6)));
+    };
+    medir();
+    const t = setTimeout(medir, 300);
+    window.addEventListener('resize', medir);
+    return () => { clearTimeout(t); window.removeEventListener('resize', medir); };
+  });
 
   // En móvil la lista del día queda DEBAJO del calendario, fuera de la vista:
   // al tocar un día con citas se baja hasta ella. En escritorio está al lado.
@@ -250,7 +269,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
               <Loader2 className="w-5 h-5 animate-spin" /> Cargando citas...
             </div>
           ) : (
-            <div className="grid grid-cols-7 gap-[clamp(0.25rem,0.5vw,0.625rem)]">
+            <div ref={cuadriculaRef} className="grid grid-cols-7 gap-[clamp(0.25rem,0.5vw,0.625rem)]">
               {celdas.map(d => {
                 const k = claveDia(d);
                 const del = porDia.get(k) || [];
@@ -261,9 +280,10 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                   <button
                     key={k}
                     onClick={() => elegirDia(d, del.length > 0)}
-                    className={`min-h-[56px] lg:min-h-0 lg:h-[clamp(48px,calc((100dvh-25rem)/6),150px)] overflow-hidden rounded-xl p-[clamp(0.25rem,0.6vw,0.75rem)] text-left border transition-all flex flex-col ${
+                    className={`min-h-[56px] lg:min-h-0 overflow-hidden rounded-xl p-[clamp(0.25rem,0.6vw,0.75rem)] text-left border transition-all flex flex-col ${
                       seleccionado ? 'border-brand-gold bg-brand-gold/10' : 'border-stone-800 hover:border-stone-600 bg-stone-950/40'
                     } ${fueraDeMes ? 'opacity-40' : ''}`}
+                    style={altoCelda ? { height: altoCelda } : undefined}
                   >
                     <span className={`text-[clamp(0.75rem,0.9vw,1rem)] mb-1 w-[clamp(1.5rem,1.8vw,2rem)] h-[clamp(1.5rem,1.8vw,2rem)] flex items-center justify-center rounded-full ${esHoy ? 'bg-brand-gold text-stone-950 font-bold' : 'text-stone-300'}`}>
                       {d.getDate()}
