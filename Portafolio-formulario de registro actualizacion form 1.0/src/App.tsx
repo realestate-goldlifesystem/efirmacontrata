@@ -53,6 +53,34 @@ export default function App() {
     }
   });
 
+  // Si el token de Google falta (pestaña nueva) o ya venció, no tiene sentido
+  // mostrar las herramientas: ninguna funciona sin él. Se cierra la sesión y se
+  // abre directo el inicio de sesión. Se revisa al entrar y cada minuto.
+  useEffect(() => {
+    const tokenVigente = (t: string | null) => {
+      if (!t) return false;
+      try {
+        const p = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return typeof p.exp !== 'number' || p.exp * 1000 > Date.now() + 30000;
+      } catch {
+        return true; // si no se puede leer, que decida el servidor
+      }
+    };
+    const revisar = () => {
+      if (!isAgentLoggedIn || tokenVigente(agentCredential)) return;
+      setIsAgentLoggedIn(false);
+      setAgentCredential(null);
+      try { localStorage.removeItem('agentLoggedIn'); } catch {}
+      try { sessionStorage.removeItem('agentCredential'); } catch {}
+      setShowRegisterPage(false);
+      setShowCalculatorPage(false);
+      setShowRolesModal(true);
+    };
+    revisar();
+    const id = setInterval(revisar, 60000);
+    return () => clearInterval(id);
+  }, [isAgentLoggedIn, agentCredential]);
+
   const scrollToSection = (sectionId: string) => {
     if (showRegisterPage) {
       setShowRegisterPage(false);
