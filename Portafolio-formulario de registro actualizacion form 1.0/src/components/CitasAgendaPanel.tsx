@@ -261,7 +261,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                   <button
                     key={k}
                     onClick={() => elegirDia(d, del.length > 0)}
-                    className={`min-h-[clamp(56px,7.5vw,150px)] rounded-xl p-[clamp(0.25rem,0.6vw,0.75rem)] text-left border transition-all flex flex-col ${
+                    className={`min-h-[56px] lg:min-h-0 lg:h-[clamp(48px,calc((100dvh-25rem)/6),150px)] overflow-hidden rounded-xl p-[clamp(0.25rem,0.6vw,0.75rem)] text-left border transition-all flex flex-col ${
                       seleccionado ? 'border-brand-gold bg-brand-gold/10' : 'border-stone-800 hover:border-stone-600 bg-stone-950/40'
                     } ${fueraDeMes ? 'opacity-40' : ''}`}
                   >
@@ -288,7 +288,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         </div>
 
         {/* Citas del día seleccionado */}
-        <div ref={listaRef} className="min-w-0 bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)] scroll-mt-28">
+        <div ref={listaRef} className="min-w-0 lg:max-h-[calc(100dvh-13rem)] lg:overflow-y-auto bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)] scroll-mt-28">
           <h3 className="text-white font-semibold mb-1">
             {diaSel.getDate()} de {MESES[diaSel.getMonth()]} {diaSel.getFullYear()}
           </h3>
