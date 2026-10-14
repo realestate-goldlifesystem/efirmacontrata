@@ -148,11 +148,11 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   const irAHoy = () => { const h = new Date(); setMes(new Date(h.getFullYear(), h.getMonth(), 1)); setDiaSel(h); };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 pt-20 min-[1540px]:pt-0">
-      {/* pt-20 en casi todas las pantallas: el botón fijo "Volver al Panel" del
-          AgentDashboard ocupa esa franja y tapaba el título. En pantallas anchas
-          (≥1540 px) el botón queda a la izquierda del contenido y el título sube
-          a su altura. */}
+    <div className="w-full max-w-[1760px] mx-auto px-[clamp(1rem,2.5vw,3rem)] pt-20 xl:pt-0 xl:pl-[15rem]">
+      {/* El botón fijo "Volver al Panel" del AgentDashboard ocupa la esquina
+          izquierda. Hasta xl se deja la franja de arriba (pt-20); desde xl el
+          contenido arranca a su derecha (pl-15rem), el título sube a su altura y el
+          calendario crece con el ancho de la pantalla (medidas con clamp). */}
       {/* Cabecera */}
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
@@ -225,15 +225,15 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_clamp(280px,26vw,420px)] gap-[clamp(1rem,1.6vw,2rem)]">
         {/* Calendario del mes */}
-        <div className="lg:col-span-2 bg-stone-900 border border-stone-800 rounded-3xl p-3 md:p-5">
+        <div className="min-w-0 bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(0.75rem,1.4vw,1.75rem)]">
           <div className="flex items-center justify-between mb-4">
             <button onClick={() => moverMes(-1)} className="p-2 rounded-full text-stone-400 hover:text-brand-gold hover:bg-stone-800" aria-label="Mes anterior">
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-3">
-              <h2 className="text-lg md:text-xl text-white font-semibold">{MESES[mes.getMonth()]} {mes.getFullYear()}</h2>
+              <h2 className="text-[clamp(1.125rem,1.5vw,1.75rem)] text-white font-semibold">{MESES[mes.getMonth()]} {mes.getFullYear()}</h2>
               <button onClick={irAHoy} className="text-xs px-2.5 py-1 rounded-full border border-stone-700 text-stone-300 hover:border-brand-gold hover:text-brand-gold">Hoy</button>
             </div>
             <button onClick={() => moverMes(1)} className="p-2 rounded-full text-stone-400 hover:text-brand-gold hover:bg-stone-800" aria-label="Mes siguiente">
@@ -241,8 +241,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {DIAS.map(d => <div key={d} className="text-center text-[11px] md:text-xs uppercase tracking-wide text-stone-500 py-1">{d}</div>)}
+          <div className="grid grid-cols-7 gap-[clamp(0.25rem,0.5vw,0.625rem)] mb-1">
+            {DIAS.map(d => <div key={d} className="text-center text-[clamp(0.6875rem,0.8vw,0.875rem)] uppercase tracking-wide text-stone-500 py-1">{d}</div>)}
           </div>
 
           {cargando && citas.length === 0 ? (
@@ -250,7 +250,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
               <Loader2 className="w-5 h-5 animate-spin" /> Cargando citas...
             </div>
           ) : (
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-[clamp(0.25rem,0.5vw,0.625rem)]">
               {celdas.map(d => {
                 const k = claveDia(d);
                 const del = porDia.get(k) || [];
@@ -261,11 +261,11 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                   <button
                     key={k}
                     onClick={() => elegirDia(d, del.length > 0)}
-                    className={`min-h-[56px] md:min-h-[92px] rounded-xl p-1 md:p-1.5 text-left border transition-all flex flex-col ${
+                    className={`min-h-[clamp(56px,7.5vw,150px)] rounded-xl p-[clamp(0.25rem,0.6vw,0.75rem)] text-left border transition-all flex flex-col ${
                       seleccionado ? 'border-brand-gold bg-brand-gold/10' : 'border-stone-800 hover:border-stone-600 bg-stone-950/40'
                     } ${fueraDeMes ? 'opacity-40' : ''}`}
                   >
-                    <span className={`text-xs md:text-sm mb-1 w-6 h-6 flex items-center justify-center rounded-full ${esHoy ? 'bg-brand-gold text-stone-950 font-bold' : 'text-stone-300'}`}>
+                    <span className={`text-[clamp(0.75rem,0.9vw,1rem)] mb-1 w-[clamp(1.5rem,1.8vw,2rem)] h-[clamp(1.5rem,1.8vw,2rem)] flex items-center justify-center rounded-full ${esHoy ? 'bg-brand-gold text-stone-950 font-bold' : 'text-stone-300'}`}>
                       {d.getDate()}
                     </span>
                     {/* Móvil: puntos. Escritorio: chips con hora y nombre. */}
@@ -274,11 +274,11 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                     </div>
                     <div className="hidden md:flex flex-col gap-1 w-full">
                       {del.slice(0, 2).map(c => (
-                        <span key={c.idCita} className={`truncate text-[10px] px-1.5 py-0.5 rounded border ${GRUPOS[grupoDe(c.estado)].chip}`}>
+                        <span key={c.idCita} className={`truncate text-[clamp(10px,0.7vw,13px)] px-1.5 py-0.5 rounded border ${GRUPOS[grupoDe(c.estado)].chip}`}>
                           {c.hora} {c.nombre}
                         </span>
                       ))}
-                      {del.length > 2 && <span className="text-[10px] text-stone-400 px-1">+{del.length - 2} más</span>}
+                      {del.length > 2 && <span className="text-[clamp(10px,0.7vw,13px)] text-stone-400 px-1">+{del.length - 2} más</span>}
                     </div>
                   </button>
                 );
@@ -288,7 +288,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         </div>
 
         {/* Citas del día seleccionado */}
-        <div ref={listaRef} className="bg-stone-900 border border-stone-800 rounded-3xl p-4 md:p-5 scroll-mt-28">
+        <div ref={listaRef} className="min-w-0 bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)] scroll-mt-28">
           <h3 className="text-white font-semibold mb-1">
             {diaSel.getDate()} de {MESES[diaSel.getMonth()]} {diaSel.getFullYear()}
           </h3>
