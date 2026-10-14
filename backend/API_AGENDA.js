@@ -33,7 +33,9 @@ const COLUMNAS_CITAS = [
   'ID CITA', 'FECHA CREACION', 'ESTADO', 'FECHA CITA', 'HORA CITA',
   'NOMBRE', 'CELULAR', 'CORREO', 'TIPO SERVICIO', 'DIRECCION',
   'ID EVENTO CALENDAR', 'NOTAS', 'RECORDATORIO ENVIADO',
-  'TOKEN PROPIETARIO', 'TOKEN AGENTE', 'ULTIMO CAMBIO'
+  'TOKEN PROPIETARIO', 'TOKEN AGENTE', 'ULTIMO CAMBIO',
+  // oct-2026: cuatro agendas en la misma hoja (AGENDA_MOTOR.js). Vacío = PROPIETARIO.
+  'TIPO AGENDA', 'ID INMUEBLE'
 ];
 
 // Estados posibles de una cita.
@@ -130,78 +132,13 @@ function fechaHoraDeCita(fechaVal, horaVal) {
 }
 
 /**
- * Obtiene los bloques de 1 hora disponibles para una fecha específica.
- * Maneja bloqueo de festivos, zonas ocupadas y márgenes de tiempo.
+ * Horarios libres para la agenda del propietario (la que usa hoy el formulario de
+ * la página principal). Desde oct-2026 el cálculo vive en AGENDA_MOTOR.js, común
+ * a las cuatro agendas; esta función se conserva con el mismo nombre y la misma
+ * respuesta para no romper nada.
  */
 function obtenerDisponibilidad(fechaIsoString) {
-  try {
-    const fechaSolicitada = new Date(fechaIsoString);
-    const tz = Session.getScriptTimeZone();
-    const ahora = new Date();
-
-    // Domingo o festivo en Colombia
-    const diaSemana = fechaSolicitada.getDay(); // 0 = Domingo
-    if (diaSemana === 0) {
-      return { success: true, libre: false, motivo: 'Día de descanso (Domingo)', slots: [] };
-    }
-    const calFestivos = CalendarApp.getCalendarById(CONFIG_AGENDA.CALENDARIO_FESTIVOS_COLOMBIA);
-    if (calFestivos) {
-      const eventosFestivos = calFestivos.getEventsForDay(fechaSolicitada);
-      if (eventosFestivos.length > 0) {
-        return { success: true, libre: false, motivo: `Día festivo: ${eventosFestivos[0].getTitle()}`, slots: [] };
-      }
-    }
-
-    // Horario laboral del día
-    let horaInicio = CONFIG_AGENDA.HORARIO.LUNES_VIERNES.inicio;
-    let horaFin = CONFIG_AGENDA.HORARIO.LUNES_VIERNES.fin;
-    if (diaSemana === 6) {
-      horaInicio = CONFIG_AGENDA.HORARIO.SABADO.inicio;
-      horaFin = CONFIG_AGENDA.HORARIO.SABADO.fin;
-    }
-
-    // Zonas ocupadas del calendario principal del agente
-    const calendario = CalendarApp.getDefaultCalendar();
-    const zonasOcupadas = calendario.getEventsForDay(fechaSolicitada).map(e => ({
-      inicio: e.getStartTime().getTime(),
-      fin: e.getEndTime().getTime()
-    }));
-
-    // Slots cada 30 minutos
-    const slotsDisponibles = [];
-    let currentSlot = new Date(fechaSolicitada.getFullYear(), fechaSolicitada.getMonth(), fechaSolicitada.getDate(), horaInicio, 0, 0);
-    const finDia = new Date(fechaSolicitada.getFullYear(), fechaSolicitada.getMonth(), fechaSolicitada.getDate(), horaFin, 0, 0);
-
-    while (currentSlot.getTime() + (CONFIG_AGENDA.DURACION_CITA_MINUTOS * 60000) <= finDia.getTime()) {
-      const inicioSlot = currentSlot.getTime();
-      const finCitaSlot = inicioSlot + (CONFIG_AGENDA.DURACION_CITA_MINUTOS * 60000);
-      const finTotalConBuffer = finCitaSlot + (CONFIG_AGENDA.TIEMPO_BUFFER_MINUTOS * 60000);
-
-      const horasParaSlot = (inicioSlot - ahora.getTime()) / (1000 * 60 * 60);
-      if (horasParaSlot >= CONFIG_AGENDA.MINIMO_AVISO_HORAS) {
-        const hayChoque = zonasOcupadas.some(occ => inicioSlot < occ.fin && finTotalConBuffer > occ.inicio);
-        if (!hayChoque) {
-          slotsDisponibles.push({
-            horaString: Utilities.formatDate(currentSlot, tz, "HH:mm"),
-            horaAmPm: formatAmPm(currentSlot),
-            timestamp: inicioSlot
-          });
-        }
-      }
-      currentSlot = new Date(currentSlot.getTime() + 30 * 60000);
-    }
-
-    return {
-      success: true,
-      libre: slotsDisponibles.length > 0,
-      motivo: slotsDisponibles.length === 0 ? 'Sin horarios disponibles' : 'Horarios encontrados',
-      slots: slotsDisponibles
-    };
-
-  } catch (error) {
-    Logger.log("Error en obtenerDisponibilidad: " + error.message);
-    return { success: false, error: error.message };
-  }
+  return obtenerDisponibilidadAgenda(fechaIsoString, 'PROPIETARIO');
 }
 
 /**
@@ -214,9 +151,10 @@ function agendarCita(datos) {
     const fechaInicio = new Date(datos.fechaTimestamp);
     const fechaFin = new Date(fechaInicio.getTime() + (CONFIG_AGENDA.DURACION_CITA_MINUTOS * 60000));
 
-    // 1. Doble check de disponibilidad
+    // 1. Doble check de disponibilidad, con el colchón antes y después
     const calendario = CalendarApp.getDefaultCalendar();
-    if (calendario.getEvents(fechaInicio, fechaFin).length > 0) {
+    const colchonMs = TIPOS_AGENDA.PROPIETARIO.colchonMin * 60000;
+    if (calendario.getEvents(new Date(fechaInicio.getTime() - colchonMs), new Date(fechaFin.getTime() + colchonMs)).length > 0) {
       return { success: false, error: "El horario acaba de ser ocupado. Por favor elige otro." };
     }
 
@@ -269,6 +207,7 @@ function agendarCita(datos) {
     poner('TOKEN PROPIETARIO', tokenPropietario);
     poner('TOKEN AGENTE', tokenAgente);
     poner('ULTIMO CAMBIO', ahoraTxt + ' · agendada');
+    poner('TIPO AGENDA', 'PROPIETARIO');
     sheet.appendRow(fila);
     const filaNueva = sheet.getLastRow();
     if (col['FECHA CITA']) sheet.getRange(filaNueva, col['FECHA CITA']).setNumberFormat('dd/MM/yyyy');

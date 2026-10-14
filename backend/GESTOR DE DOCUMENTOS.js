@@ -616,7 +616,10 @@ function doPost(e) {
 
     switch (accion) {
       case 'obtenerDisponibilidad':
-        if (typeof obtenerDisponibilidad === 'function') {
+        // Con datos.tipo responde la agenda que corresponda (AGENDA_MOTOR.js); sin él, la del propietario
+        if (datos.tipo && typeof obtenerDisponibilidadAgenda === 'function') {
+          result = obtenerDisponibilidadAgenda(datos.fecha, datos.tipo);
+        } else if (typeof obtenerDisponibilidad === 'function') {
           result = obtenerDisponibilidad(datos.fecha);
         } else {
           result = { success: false, error: 'API_AGENDA no cargada' };

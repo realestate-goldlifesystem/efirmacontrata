@@ -5,15 +5,19 @@
 // ==========================================
 
 /**
- * Instala el trigger horario. Solo hace falta una vez desde el editor
- * (ya está instalado: ejecutarMotorAgenda corre cada hora).
+ * Instala la tarea de la agenda. Correr una vez desde el editor cada vez que
+ * cambie la frecuencia: borra la anterior y deja una sola.
+ *
+ * oct-2026: pasa de cada hora a CADA 15 MINUTOS. Los recordatorios nuevos de
+ * confirmación (1 h, 45 y 30 min antes) no se pueden cumplir revisando una vez por
+ * hora. Es la misma tarea con otra frecuencia: no gasta un cupo nuevo de los 20.
  */
 function instalarCronAgenda() {
   ScriptApp.getProjectTriggers().forEach(t => {
     if (t.getHandlerFunction() === 'ejecutarMotorAgenda') ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger('ejecutarMotorAgenda').timeBased().everyHours(1).create();
-  Logger.log("✅ Cron Motor Agenda instalado para ejecutarse cada hora.");
+  ScriptApp.newTrigger('ejecutarMotorAgenda').timeBased().everyMinutes(15).create();
+  Logger.log("✅ Tarea de la agenda instalada: corre cada 15 minutos.");
 }
 
 /**
