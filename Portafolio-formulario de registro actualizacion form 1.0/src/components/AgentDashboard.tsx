@@ -347,130 +347,47 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:gap-6 w-full max-w-5xl">
-        
-        {/* Tarjeta de la Calculadora */}
-        <button 
-          onClick={onOpenCalculator}
-          className="group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-            <Calculator className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
+      {/* Menú del agente, en dos grupos que llenan siempre sus filas:
+          4 herramientas de operación y 3 para trabajar con el cliente.
+          En PC son tarjetas verticales (4 y 3 columnas); en el celular, una lista
+          de tarjetas horizontales del mismo alto, con la descripción visible. */}
+      <div className="w-full max-w-6xl flex flex-col gap-8 md:gap-10">
+        <section className="flex flex-col gap-3 md:gap-4" aria-labelledby="menu-operacion">
+          <h2 id="menu-operacion" className="text-xs md:text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
+            Operación del día a día
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+            <TarjetaMenu destacada icono={CalendarDays} titulo="Agenda de Citas"
+              descripcion="Citas de propietarios: confirmadas, canceladas y por reagendar."
+              onClick={() => setActiveView('citas')} />
+            <TarjetaMenu destacada icono={Building2} titulo="Portafolio de Inmuebles"
+              descripcion="Inmuebles publicados y PDFs interactivos para compartir."
+              onClick={() => setActiveView('portafolio')} />
+            <TarjetaMenu icono={ClipboardList} titulo="Registro de Inmuebles"
+              descripcion="Captación de propiedades, contratos y checklist de exclusividad."
+              onClick={onOpenForm} />
+            <TarjetaMenu icono={Bot} titulo="Miguel · Agente Captador"
+              descripcion="Barrido de propietarios directos en Fincaraiz y Metrocuadrado."
+              onClick={() => setShowMiguelModal(true)} />
           </div>
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Calculadora Inmobiliaria</h2>
-            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
-              Simulador avanzado de crédito, retorno de inversión, flujo de caja y rentabilidad.
-            </p>
-          </div>
-        </button>
+        </section>
 
-        {/* Tarjeta del Formulario */}
-        <button 
-          onClick={onOpenForm}
-          className="group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-            <ClipboardList className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
+        <section className="flex flex-col gap-3 md:gap-4" aria-labelledby="menu-cliente">
+          <h2 id="menu-cliente" className="text-xs md:text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
+            Herramientas para el cliente
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-5">
+            <TarjetaMenu icono={Calculator} titulo="Calculadora Inmobiliaria"
+              descripcion="Crédito, retorno de inversión, flujo de caja y rentabilidad."
+              onClick={onOpenCalculator} />
+            <TarjetaMenu icono={Route} titulo="Guía de Cierre de Venta"
+              descripcion="De la oferta a la escritura: documentos, pagos y tu comisión."
+              onClick={() => setShowGuiaCierreModal(true)} />
+            <TarjetaMenu icono={Landmark} titulo="Estrategias SAS"
+              descripcion="Ingeniería financiera, aportes en especie y liquidez corporativa."
+              onClick={() => setShowSasModal(true)} />
           </div>
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Registro de Inmuebles</h2>
-            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
-              Captación de propiedades, generación de contratos y checklist de exclusividad.
-            </p>
-          </div>
-        </button>
-
-        {/* Tarjeta de Estrategias SAS */}
-        <button 
-          onClick={() => setShowSasModal(true)}
-          className="group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-            <Landmark className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
-          </div>
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Estrategias SAS</h2>
-            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
-              Módulo educativo de ingeniería financiera, aportes en especie y liquidez corporativa.
-            </p>
-          </div>
-        </button>
-
-        {/* Tarjeta de Portafolio VIP */}
-        <button 
-          onClick={() => setActiveView('portafolio')}
-          className="group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-brand-gold/30 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-[0_0_30px_rgba(212,175,55,0.1)] hover:shadow-[0_0_40px_rgba(212,175,55,0.2)] hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-gold/10 rounded-full blur-2xl group-hover:bg-brand-gold/20 transition-colors" />
-          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors relative z-10 border border-brand-gold/20">
-            <Building2 className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
-          </div>
-          <div className="flex flex-col items-center relative z-10">
-            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Portafolio de Inmuebles</h2>
-            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
-              Accede al catálogo de inmuebles publicados. Genera y comparte PDFs interactivos.
-            </p>
-          </div>
-        </button>
-
-        {/* Tarjeta de la Agenda de Citas: las que agendan los propietarios desde
-            la página principal, con el estado que marcan desde su correo */}
-        <button
-          onClick={() => setActiveView('citas')}
-          className="col-span-2 group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-brand-gold/30 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-[0_0_30px_rgba(212,175,55,0.1)] hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors border border-brand-gold/20">
-            <CalendarDays className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
-          </div>
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Agenda de Citas</h2>
-            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
-              Citas de propietarios: confirmadas, por confirmar, canceladas y quién pidió reagendar.
-            </p>
-          </div>
-        </button>
-
-        {/* Tarjeta de la Guía de Cierre de Venta */}
-        <button
-          onClick={() => setShowGuiaCierreModal(true)}
-          className="col-span-2 group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-            <Route className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
-          </div>
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Guía de Cierre de Venta</h2>
-            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
-              Paso a paso desde la oferta hasta la escritura: qué documentos pedir, quién paga qué y cómo asegurar tu comisión.
-            </p>
-          </div>
-        </button>
-
-        {/* Tarjeta de Miguel: ocupa las dos columnas para no quedar sola
-            impar al final de la grilla */}
-        <button
-          onClick={() => setShowMiguelModal(true)}
-          className="col-span-2 group flex flex-col items-center text-center p-4 md:p-8 bg-stone-900 border border-stone-800 rounded-2xl md:rounded-3xl hover:border-brand-gold hover:bg-stone-900/80 transition-all duration-300 shadow-2xl hover:-translate-y-2 relative overflow-hidden gap-3 md:gap-4"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-14 h-14 md:w-20 md:h-20 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors">
-            <Bot className="w-6 h-6 md:w-10 md:h-10 text-brand-gold" />
-          </div>
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm md:text-xl font-bold text-white mb-1 md:mb-2 leading-tight">Miguel · Agente Captador</h2>
-            <p className="text-stone-400 text-[10px] md:text-sm leading-relaxed hidden sm:block">
-              Lanza el barrido de propietarios directos en Fincaraiz y Metrocuadrado por sector y habitaciones.
-            </p>
-          </div>
-        </button>
-
+        </section>
       </div>
 
       {showMiguelModal && (
@@ -480,5 +397,31 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
         />
       )}
     </div>
+  );
+}
+
+/** Tarjeta del menú del agente: horizontal en el celular, vertical desde tablet. */
+function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = false }: {
+  icono: React.ComponentType<{ className?: string }>;
+  titulo: string;
+  descripcion: string;
+  onClick: () => void;
+  destacada?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative h-full flex sm:flex-col items-center gap-4 p-4 sm:p-6 text-left sm:text-center rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className={`relative w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors duration-300 ${destacada ? "border border-brand-gold/30" : ""}`}>
+        <Icono className="w-6 h-6 sm:w-8 sm:h-8 text-brand-gold" />
+      </div>
+      <div className="relative flex flex-col gap-1 min-w-0">
+        <h3 className="text-base sm:text-lg font-bold text-white leading-tight">{titulo}</h3>
+        <p className="text-stone-400 text-xs sm:text-sm leading-relaxed">{descripcion}</p>
+      </div>
+    </button>
   );
 }
