@@ -148,9 +148,11 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   const irAHoy = () => { const h = new Date(); setMes(new Date(h.getFullYear(), h.getMonth(), 1)); setDiaSel(h); };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 pt-20">
-      {/* pt-20 en todas las pantallas: el botón fijo "Volver al Panel" del
-          AgentDashboard ocupa esa franja y tapaba el título en escritorio. */}
+    <div className="max-w-6xl mx-auto px-4 pt-20 min-[1540px]:pt-0">
+      {/* pt-20 en casi todas las pantallas: el botón fijo "Volver al Panel" del
+          AgentDashboard ocupa esa franja y tapaba el título. En pantallas anchas
+          (≥1540 px) el botón queda a la izquierda del contenido y el título sube
+          a su altura. */}
       {/* Cabecera */}
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
