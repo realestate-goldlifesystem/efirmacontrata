@@ -71,12 +71,36 @@
     .precioGrande { margin-top: 14px; font-size: clamp(26px, 3vw, 32px); font-weight: 700; color: var(--oro); }
     .precioGrande small { font-size: 15px; color: var(--suave); font-weight: 400; }
     .admin { color: var(--suave); font-size: 14px; margin-top: 2px; }
-    /* Datos clave: fila compacta de 4 (en PC, hasta 8) */
-    .datos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 20px; }
-    @media (min-width: 640px) { .datos { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); } }
-    .dato { background: var(--panel); border: 1px solid var(--linea); border-radius: 14px; padding: 10px 6px; text-align: center; }
-    .dato b { display: block; font-size: 16px; }
-    .dato span { font-size: 11px; color: var(--suave); }
+    /* Datos clave: un solo panel con borde de brillo dorado, íconos de línea y separadores finos */
+    .datos { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 22px; border-radius: 22px;
+      background: linear-gradient(160deg, rgba(212,175,55,.10), rgba(28,25,23,.95) 38%, rgba(28,25,23,.95) 70%, rgba(212,175,55,.06));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 20px 50px rgba(0,0,0,.35); overflow: hidden; }
+    .datos::before { content: ''; position: absolute; inset: 0; border-radius: 22px; padding: 1px; pointer-events: none;
+      background: linear-gradient(135deg, rgba(212,175,55,.55), rgba(255,255,255,.06) 40%, rgba(255,255,255,.04) 60%, rgba(212,175,55,.35));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+    .dato { padding: 18px 6px 16px; text-align: center; position: relative; }
+    .dato + .dato::before { content: ''; position: absolute; left: 0; top: 22%; bottom: 22%; width: 1px; background: linear-gradient(transparent, rgba(255,255,255,.12), transparent); }
+    .dato:nth-child(4n + 1)::before { display: none; }
+    .dato:nth-child(n + 5) { border-top: 1px solid rgba(255,255,255,.06); }
+    .dato svg { width: 22px; height: 22px; stroke: var(--oro); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
+    .dato b { display: block; font-size: clamp(17px, 2.2vw, 21px); font-weight: 600; margin-top: 8px; letter-spacing: -.3px; }
+    .dato span { display: block; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--suave); margin-top: 3px; }
+    @media (min-width: 1000px) {
+      .datos { grid-template-columns: repeat(var(--columnas, 4), 1fr); }
+      .dato:nth-child(4n + 1)::before { display: block; } .dato:first-child::before { display: none; }
+      .dato:nth-child(n + 5) { border-top: 0; }
+    }
+
+    /* Interruptor Fotos | Video, en vidrio sobre la galería */
+    .interruptor { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; padding: 4px; gap: 2px;
+      border-radius: 999px; background: rgba(12,10,9,.55); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.12); }
+    .interruptor button { border: 0; background: transparent; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #e7e5e4; transition: all .25s; white-space: nowrap; }
+    .interruptor button.activo { background: var(--oro); color: var(--fondo); box-shadow: 0 4px 14px rgba(212,175,55,.35); }
+    .escenario .videoEnGaleria { position: absolute; inset: 0; z-index: 2; background: #000; overflow: hidden; }
+    .escenario .videoEnGaleria iframe { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 100%; aspect-ratio: 16 / 9; border: 0; pointer-events: none; }
+    .escenario .videoEnGaleria.vertical iframe { aspect-ratio: 9 / 16; }
+    .escenario.modoVideo { cursor: default; }
+    .escenario.modoVideo .flecha, .escenario.modoVideo .ampliar, .escenario.modoVideo .contador { display: none; }
     .seccion { margin-top: 34px; }
     .seccion h2 { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--suave); margin: 0 0 14px; font-weight: 700; }
     .descripcion { color: #d6d3d1; line-height: 1.75; font-size: 15.5px; position: relative; }
@@ -171,6 +195,11 @@
         <img id="fotoActual" alt="Foto del inmueble">
         <button class="flecha izq" id="ant" aria-label="Foto anterior">‹</button>
         <button class="flecha der" id="sig" aria-label="Foto siguiente">›</button>
+        <div class="interruptor oculto" id="interruptor" role="tablist">
+          <button class="activo" id="verFotos" role="tab">📷 Fotos <span id="numFotos"></span></button>
+          <button id="verVideo" role="tab">▶ Video</button>
+        </div>
+        <div class="videoEnGaleria oculto" id="videoEnGaleria"></div>
         <span class="ampliar">⤢ Ver en grande</span>
         <span class="contador" id="contador"></span>
       </div>
@@ -186,11 +215,6 @@
         <div class="precioGrande" id="precio"></div>
         <div class="admin" id="admin"></div>
         <div class="datos" id="datos"></div>
-      </section>
-
-      <section class="seccion oculto" id="seccionVideo">
-        <h2>Recorrido en video</h2>
-        <div class="video" id="video"></div>
       </section>
 
       <section class="seccion" id="seccionDescripcion">
@@ -528,20 +552,48 @@
       $('direccion').textContent = dir; $('direccionTarjeta').textContent = dir;
 
       // Video de YouTube: solo, sin sonido, en bucle y sin controles (el logo de YouTube no se puede quitar)
-      if (r.video && r.video.id) {
+      // Va dentro de la galería con el interruptor Fotos | Video. El iframe se crea
+      // al tocar "Video", así YouTube no carga si nadie lo ve.
+      if (r.video && r.video.id && r.fotos && r.fotos.length) {
         const v = r.video.id;
-        $('video').classList.toggle('vertical', !!r.video.vertical);
-        $('video').innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&loop=1&playlist=${v}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3" title="Recorrido en video" allow="autoplay; encrypted-media; picture-in-picture" loading="lazy"></iframe>`;
-        $('seccionVideo').classList.remove('oculto');
+        $('numFotos').textContent = r.fotos.length;
+        $('interruptor').classList.remove('oculto');
+        $('videoEnGaleria').classList.toggle('vertical', !!r.video.vertical);
+        const modo = (video) => {
+          $('verVideo').classList.toggle('activo', video); $('verFotos').classList.toggle('activo', !video);
+          $('escenario').classList.toggle('modoVideo', video);
+          $('videoEnGaleria').classList.toggle('oculto', !video);
+          $('miniaturas').style.visibility = video ? 'hidden' : '';
+          $('videoEnGaleria').innerHTML = video
+            ? `<iframe src="https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&loop=1&playlist=${v}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3" title="Recorrido en video" allow="autoplay; encrypted-media"></iframe>`
+            : '';
+        };
+        $('verFotos').onclick = (e) => { e.stopPropagation(); modo(false); };
+        $('verVideo').onclick = (e) => { e.stopPropagation(); modo(true); };
       }
 
       // Datos clave (solo los que existen)
-      const dato = (v, t) => v && String(v).trim() && !/^ning/i.test(v) ? `<div class="dato"><b>${esc(v)}</b><span>${t}</span></div>` : '';
-      $('datos').innerHTML = [
-        dato(r.habitaciones, 'Habitaciones'), dato(r.banos, 'Baños'), dato(r.area && r.area + ' m²', 'Área'),
-        dato(r.garajes, 'Garajes'), dato(r.estrato, 'Estrato'), dato(r.piso, 'Piso'),
-        dato(r.antiguedad && r.antiguedad + ' años', 'Antigüedad'), dato(/^s/i.test(r.mascotas || '') ? 'Sí' : '', 'Mascotas')
-      ].join('');
+      // Íconos de línea (trazo dorado fino)
+      const ICONO = {
+        cama: '<path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 14h18M5 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M13 10V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M3 18v2M21 18v2"/>',
+        bano: '<path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-3zM6 12V6a2 2 0 0 1 3.5-1.3M7 19l-1 2M17 19l1 2"/>',
+        area: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+        auto: '<path d="M5 16V11l2-5h10l2 5v5M5 16h14M5 16v2M19 16v2M7.5 13.5h.01M16.5 13.5h.01"/>',
+        estrella: '<path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.5-4 6-.6z"/>',
+        edificio: '<path d="M5 21V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v17M15 9h3a1 1 0 0 1 1 1v11M3 21h18M8 7h4M8 11h4M8 15h4"/>',
+        reloj: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/>',
+        huella: '<circle cx="7" cy="10" r="1.6"/><circle cx="11" cy="6.5" r="1.6"/><circle cx="15.5" cy="7" r="1.6"/><circle cx="18" cy="11" r="1.6"/><path d="M8.5 17.5c0-2.5 1.8-4.5 4-4.5s4 2 4 4.2c0 1.4-1 2.3-2.3 2.3-1 0-1.4-.6-1.9-.6s-.9.6-1.9.6c-1.2 0-1.9-.9-1.9-2z"/>'
+      };
+      const dato = (v, t, i) => v && String(v).trim() && !/^ning/i.test(v)
+        ? `<div class="dato"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONO[i]}</svg><b>${esc(v)}</b><span>${t}</span></div>` : '';
+      const datos = [
+        dato(r.habitaciones, 'Habitaciones', 'cama'), dato(r.banos, 'Baños', 'bano'), dato(r.area && r.area + ' m²', 'Área', 'area'),
+        dato(r.garajes, 'Garajes', 'auto'), dato(r.estrato, 'Estrato', 'estrella'), dato(r.piso, 'Piso', 'edificio'),
+        dato(r.antiguedad && r.antiguedad + ' años', 'Antigüedad', 'reloj'), dato(/^s/i.test(r.mascotas || '') ? 'Sí' : '', 'Mascotas', 'huella')
+      ].filter(Boolean);
+      $('datos').innerHTML = datos.join('');
+      // En PC, todos en una sola fila
+      $('datos').style.setProperty('--columnas', Math.min(datos.length, 8));
 
       // Galería
       if (inm.fotos.length) {
