@@ -205,7 +205,9 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   // Primero las que vienen (de la más cercana a la más lejana) y al final las
   // que ya pasaron, atenuadas.
   const gruposDelMes = useMemo(() => {
-    const delMes = visibles.filter(c => { const d = new Date(c.timestamp); return d.getFullYear() === mes.getFullYear() && d.getMonth() === mes.getMonth(); });
+    // "Activas": solo el mes que se ve. Con un filtro: TODAS las citas de ese estado,
+    // de cualquier mes, para que el número del filtro y la lista coincidan.
+    const delMes = filtro ? visibles : visibles.filter(c => { const d = new Date(c.timestamp); return d.getFullYear() === mes.getFullYear() && d.getMonth() === mes.getMonth(); });
     const inicioHoy = new Date(); inicioHoy.setHours(0, 0, 0, 0);
     const proximas = delMes.filter(c => c.timestamp >= inicioHoy.getTime()).sort((a, b) => a.timestamp - b.timestamp);
     const pasadas = delMes.filter(c => c.timestamp < inicioHoy.getTime()).sort((a, b) => b.timestamp - a.timestamp);
@@ -218,7 +220,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
       });
       return out;
     };
-    // En "Activas" solo lo que viene; con un filtro también el historial del mes
+    // En "Activas" solo lo que viene; con un filtro, lo que viene y luego el historial (lo más reciente primero)
     const grupos = filtro ? [...agrupar(proximas, false), ...agrupar(pasadas, true)] : agrupar(proximas, false);
     return { grupos, total: grupos.reduce((n, g) => n + g.citas.length, 0) };
   }, [visibles, mes, filtro]);
@@ -377,10 +379,10 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
           ) : (
             <>
               <h3 className="text-white font-semibold mb-1">
-                {filtro ? GRUPOS[filtro].etiqueta : 'Próximas citas'} · {MESES[mes.getMonth()]}
+                {filtro ? `${GRUPOS[filtro].etiqueta} · todas` : `Próximas citas · ${MESES[mes.getMonth()]}`}
               </h3>
               <p className="text-stone-500 text-sm mb-4">
-                {gruposDelMes.total === 0 ? (filtro ? 'Sin citas este mes.' : 'No tienes citas próximas este mes.') : `${gruposDelMes.total} cita${gruposDelMes.total > 1 ? 's' : ''} · toca un día para ver solo ese`}
+                {gruposDelMes.total === 0 ? (filtro ? 'No hay citas en este estado.' : 'No tienes citas próximas este mes.') : `${gruposDelMes.total} cita${gruposDelMes.total > 1 ? 's' : ''}` + (filtro ? '' : ' · toca un día para ver solo ese')}
               </p>
               <div className="space-y-5">
                 {gruposDelMes.grupos.map((g, i) => (
@@ -389,10 +391,10 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                       <p className="text-[11px] uppercase tracking-[0.16em] text-stone-500 mb-3 pt-2 border-t border-stone-800">Ya pasaron</p>
                     )}
                     <button
-                      onClick={() => setDiaSel(g.dia)}
+                      onClick={() => { setDiaSel(g.dia); setMes(new Date(g.dia.getFullYear(), g.dia.getMonth(), 1)); }}
                       className="text-xs uppercase tracking-wide text-stone-400 hover:text-brand-gold mb-2"
                     >
-                      {DIAS_LARGOS[g.dia.getDay()]} {g.dia.getDate()} de {MESES[g.dia.getMonth()].toLowerCase()}
+                      {DIAS_LARGOS[g.dia.getDay()]} {g.dia.getDate()} de {MESES[g.dia.getMonth()].toLowerCase()}{g.dia.getFullYear() !== new Date().getFullYear() ? ` de ${g.dia.getFullYear()}` : ''}
                     </button>
                     <div className="space-y-3">
                       {g.citas.map(c => <TarjetaCita key={c.idCita} c={c} onAbrir={() => setDetalle(c)} />)}
