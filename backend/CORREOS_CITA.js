@@ -50,7 +50,7 @@ function correoPasoCita(paso, c) {
 
   // Línea pequeña para cambiar o cancelar, en los correos sin botones
   const lineaCambio =
-    '<p style="margin:18px 0 0 0;font-size:13px;color:#78716c;text-align:center;">¿No puedes asistir? ' +
+    '<p style="margin:18px 0 0 0;font-size:13px;color:#78716c;text-align:center;">¿No puedes asistir?<br>' +
     `<a href="${urlEstadoCita(c.idCita, ESTADOS_CITA.QUIERE_REAGENDAR, c.token)}" style="color:#a16207;">Cambiar fecha</a> · ` +
     `<a href="${urlEstadoCita(c.idCita, ESTADOS_CITA.CANCELADA, c.token)}" style="color:#a16207;">Cancelar cita</a></p>`;
 

@@ -287,10 +287,12 @@ function htmlBotonesCorreo(botones) {
 }
 
 function botonesPropietarioCita(idCita, token) {
+  // Confirmar a la DERECHA: el celular se usa casi siempre con la mano derecha
+  // y queda bajo el pulgar. Cancelar a la izquierda (Leonardo, 14-oct-2026).
   return htmlBotonesCorreo([
-    { texto: '✅ Confirmar', color: '#1f7a4d', url: urlEstadoCita(idCita, ESTADOS_CITA.CONFIRMADA, token) },
+    { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, token) },
     { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, token) },
-    { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, token) }
+    { texto: '✅ Confirmar', color: '#1f7a4d', url: urlEstadoCita(idCita, ESTADOS_CITA.CONFIRMADA, token) }
   ]);
 }
 

@@ -90,8 +90,8 @@ function ejecutarMotorAgenda() {
               : '<strong>Por favor confirma tu asistencia.</strong> Si no la confirmas, la cita se liberará automáticamente 2 horas antes.'),
             yaConfirmo
               ? htmlBotonesCorreo([
-                  { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) },
-                  { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, tokenProp) }
+                  { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, tokenProp) },
+                  { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) }
                 ])
               : botonesPropietarioCita(idCita, tokenProp)
           );

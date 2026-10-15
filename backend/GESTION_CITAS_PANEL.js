@@ -236,8 +236,8 @@ function moverCita(cita, timestamp, op) {
         ? '<br><br>Si algo cambia, puedes reagendar o cancelar aquí:'
         : '<br><br><strong>Confirma tu asistencia con el botón verde.</strong> Si no la confirmas, la cita se liberará automáticamente 2 horas antes.'),
       !tokenProp ? '' : op.quien !== 'agente' ? botonesPropietarioCita(idCita, tokenProp) : htmlBotonesCorreo([
-        { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) },
-        { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, tokenProp) }
+        { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, tokenProp) },
+        { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) }
       ])
     );
   } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
