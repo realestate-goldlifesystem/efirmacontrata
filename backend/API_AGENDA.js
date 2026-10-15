@@ -266,17 +266,24 @@ function urlEstadoCita(idCita, nuevoEstado, token) {
  * Bloque HTML de botones para correo. Estilos en línea: los clientes de correo
  * ignoran las hojas CSS.
  *
- * oct-2026: uno debajo del otro y a todo el ancho. Lado a lado no cabían en el
- * celular y el último se salía de la pantalla. El primero es la acción
- * principal: va más alto para que se entienda que hay que tocarlo.
+ * oct-2026: en UNA fila que ocupa el 100 % del ancho, cada botón con su parte
+ * (un tercio si son tres) y el ícono encima del texto. La primera versión los
+ * ponía lado a lado sin ancho fijo y en el celular el último se salía.
+ * Si un texto no trae emoji delante, el botón queda en una sola línea.
  */
 function htmlBotonesCorreo(botones) {
-  const filas = botones.map((b, i) =>
-    `<tr><td style="padding:5px 0;"><a href="${b.url}" style="display:block;text-align:center;` +
-    `padding:${i === 0 ? '16px' : '12px'} 16px;background:${b.color};color:#ffffff;text-decoration:none;` +
-    `border-radius:10px;font-weight:bold;font-size:${i === 0 ? '16px' : '14px'};font-family:Arial,sans-serif;">${b.texto}</a></td></tr>`
-  ).join('');
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0;">${filas}</table>`;
+  const ancho = Math.floor(100 / botones.length);
+  const celdas = botones.map(b => {
+    const m = String(b.texto).match(/^(\S+)\s+(.+)$/);
+    const conIcono = m && !/[A-Za-zÁÉÍÓÚáéíóúÑñ0-9]/.test(m[1]);
+    const contenido = conIcono
+      ? `<span style="display:block;font-size:20px;line-height:1;margin-bottom:6px;">${m[1]}</span>${m[2]}`
+      : b.texto;
+    return `<td width="${ancho}%" style="padding:0 4px;"><a href="${b.url}" style="display:block;text-align:center;` +
+      `padding:14px 4px;background:${b.color};color:#ffffff;text-decoration:none;border-radius:10px;` +
+      `font-weight:bold;font-size:14px;line-height:1.2;font-family:Arial,sans-serif;">${contenido}</a></td>`;
+  }).join('');
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0;table-layout:fixed;"><tr>${celdas}</tr></table>`;
 }
 
 function botonesPropietarioCita(idCita, token) {
