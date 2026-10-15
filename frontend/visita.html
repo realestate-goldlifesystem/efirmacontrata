@@ -404,12 +404,12 @@
       const p = venta ? inm.precioVenta : inm.precioArriendo;
       const txt = p ? pesos(p) : 'Consultar';
       // En arriendo el canon publicado ya incluye la administración (Leonardo, 15-oct-2026)
-      const sufijo = p && !venta ? ' <small>/ mes · incluye administración</small>' : '';
+      const sufijo = p && !venta ? ' <small>/ mes</small>' : '';
       $('precio').innerHTML = txt + sufijo; $('precioTarjeta').innerHTML = txt + sufijo;
       $('precioBarra').innerHTML = txt + (p && !venta ? '<small>al mes · admin. incluida</small>' : '<small>precio de venta</small>');
-      const adm = !inm.administracion ? '' : venta
-        ? 'Administración: ' + pesos(inm.administracion) + ' al mes'
-        : '✓ Administración incluida (' + pesos(inm.administracion) + ')';
+      const adm = venta
+        ? (inm.administracion ? 'Administración: ' + pesos(inm.administracion) + ' al mes' : '')
+        : '✓ Incluye administración' + (inm.administracion ? ' · ' + pesos(inm.administracion) : '');
       ['admin', 'adminTarjeta'].forEach(id => { $(id).textContent = adm; $(id).className = venta ? 'admin' : 'incluye'; });
       $('etiquetaNegocio').textContent = venta ? 'En venta' : 'En arriendo';
       $('etiquetaTarjeta').textContent = $('etiquetaNegocio').textContent;
