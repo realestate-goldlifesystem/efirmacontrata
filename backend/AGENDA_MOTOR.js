@@ -34,6 +34,11 @@ const TIPOS_AGENDA = {
 // Lunes a viernes 8:00 a 18:00; sábados 8:00 a 13:00; domingo y festivos, nada.
 const AG_HORARIO = { 1: [8, 18], 2: [8, 18], 3: [8, 18], 4: [8, 18], 5: [8, 18], 6: [8, 13] };
 
+// Almuerzo de Leonardo, lunes a viernes de 1:00 a 2:00 p. m. (decidido 14-oct-2026).
+// Se bloquea SIN colchón: la hora de almuerzo ya sirve para desplazarse, así
+// que a las 2:00 se puede empezar. Con esto caben 6 citas de propietario al día.
+const AG_ALMUERZO = { 1: [13, 14], 2: [13, 14], 3: [13, 14], 4: [13, 14], 5: [13, 14] };
+
 // ---------- Puras ----------
 
 /** "2026-10-15" → { y, m, d } (m de 1 a 12). null si no es una fecha válida. */
@@ -93,6 +98,8 @@ function agHorariosLibres(o) {
   const bloqueos = (o.ocupados || []).concat(o.apartados || [])
     .filter(b => b && isFinite(b.inicio) && isFinite(b.fin))
     .map(b => ({ inicio: b.inicio - colchon, fin: b.fin + colchon }));
+  const almuerzo = AG_ALMUERZO[ds];
+  if (almuerzo) bloqueos.push({ inicio: agMs(o.dia, almuerzo[0], 0), fin: agMs(o.dia, almuerzo[1], 0) });
 
   const finDia = agMs(o.dia, horario[1], 0);
   const anticipacion = isFinite(o.anticipacionMin) ? o.anticipacionMin : cfg.anticipacionMin;
