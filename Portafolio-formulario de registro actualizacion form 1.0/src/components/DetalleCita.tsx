@@ -4,7 +4,7 @@ import {
   CalendarClock, Ban, UserCheck, UserX, Save, Loader2, Users, KeyRound, DoorOpen,
 } from 'lucide-react';
 import PhoneCountrySelector, { ALL_COUNTRIES, separarCelular } from './PhoneCountrySelector';
-import { API_URL, GRUPOS, TIPOS, grupoDe, tipoDe, internacional, type Cita, type TipoAgenda } from './CitasAgendaPanel';
+import { API_URL, GRUPOS, TIPOS, grupoDe, tipoDe, motivoCancelacion, internacional, type Cita, type TipoAgenda } from './CitasAgendaPanel';
 
 // Mismos servicios que ofrece el formulario de agendar (ScheduleVisitForm)
 const SERVICIOS = [
@@ -137,6 +137,10 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
           <p className="flex items-center gap-2"><Home className="w-4 h-4 text-brand-gold" /> {cita.servicio || '—'}</p>
           <p className="flex items-start gap-2"><MapPin className="w-4 h-4 text-brand-gold mt-0.5" /> {cita.direccion || 'Sin dirección'}</p>
           {cita.notas && <p className="flex items-start gap-2"><StickyNote className="w-4 h-4 text-brand-gold mt-0.5" /> {cita.notas}</p>}
+          {motivoCancelacion(cita) && (
+            <p className="flex items-start gap-2 text-red-300"><Ban className="w-4 h-4 mt-0.5 shrink-0" />
+              <span><span className="text-stone-400">Motivo de la cancelación: </span>{motivoCancelacion(cita)!.largo}</span></p>
+          )}
           {cita.ultimoCambio && <p className="flex items-start gap-2 text-stone-500"><History className="w-4 h-4 mt-0.5" /> {cita.ultimoCambio}</p>}
         </div>
 

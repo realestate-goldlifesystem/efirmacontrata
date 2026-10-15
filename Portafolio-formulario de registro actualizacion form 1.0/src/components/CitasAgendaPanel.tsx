@@ -54,6 +54,20 @@ export const GRUPOS: Record<Grupo, { etiqueta: string; chip: string; claro: stri
   sinrespuesta: { etiqueta: 'Sin respuesta',     chip: 'bg-stone-500/15 text-stone-400 border-stone-500/40', claro: 'bg-stone-100 text-stone-700 border-stone-300',       punto: 'bg-stone-500' },
 };
 
+/** Por qué se canceló una cita, leído de su estado y su último cambio. '' si no está cancelada. */
+export function motivoCancelacion(c: Cita): { corto: string; largo: string } | null {
+  const estado = (c.estado || '').trim().toUpperCase();
+  const cambio = c.ultimoCambio || '';
+  if (estado === 'SIN RESPUESTA' || /cancelada automáticamente/i.test(cambio)) {
+    return { corto: 'Sin respuesta', largo: 'Sin respuesta: no confirmó a tiempo.' };
+  }
+  if (estado !== 'CANCELADA') return null;
+  const delAgente = cambio.match(/agente canceló desde el panel:\s*(.+)$/i);
+  if (delAgente) return { corto: 'Por ti', largo: 'La cancelaste tú: ' + delAgente[1].trim() };
+  if (/propietario/i.test(cambio)) return { corto: 'Por el propietario', largo: 'La canceló el propietario desde su correo.' };
+  return { corto: 'Cancelada', largo: 'Sin motivo registrado.' };
+}
+
 export function grupoDe(estado: string): Grupo {
   switch ((estado || '').trim().toUpperCase()) {
     case 'CONFIRMADA':
@@ -63,7 +77,9 @@ export function grupoDe(estado: string): Grupo {
     case 'CANCELADA': return 'cancelada';
     case 'ASISTIDA': return 'asistio';
     case 'INASISTIDA': return 'noasistio';
-    case 'SIN RESPUESTA': return 'sinrespuesta';
+    // Sin respuesta es una forma de cancelada (Leonardo, 14-oct-2026): un solo
+    // filtro; el motivo se ve en la tarjeta y en la ventana (motivoCancelacion).
+    case 'SIN RESPUESTA': return 'cancelada';
     default: return 'pendiente';
   }
 }
@@ -414,7 +430,10 @@ function TarjetaCita({ c, onAbrir }: { c: Cita; onAbrir: () => void; key?: strin
     >
       <div className="flex items-center justify-between gap-2 mb-1">
         <span className="text-brand-gold font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> {c.hora}</span>
-        <span className={`text-[11px] px-2 py-0.5 rounded-full border ${g.chip}`}>{g.etiqueta}</span>
+        <span className="flex flex-col items-end gap-0.5">
+          <span className={`text-[11px] px-2 py-0.5 rounded-full border ${g.chip}`}>{g.etiqueta}</span>
+          {motivoCancelacion(c) && <span className="text-[10px] text-stone-500">{motivoCancelacion(c)!.corto}</span>}
+        </span>
       </div>
       <p className="text-white font-medium">{c.nombre}</p>
       <p className="text-stone-400 text-sm truncate">{c.servicio}{c.direccion ? ` · ${c.direccion}` : ''}</p>
