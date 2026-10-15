@@ -102,9 +102,7 @@
       </div>
 
       <button id="confirmarNueva" type="button" class="oculto" style="background:#1f7a4d;margin-top:18px;"></button>
-      <p style="text-align:center;margin-top:18px;font-size:13px;">
-        <a href="#" id="llamenme" style="color:#a8a29e;">Ninguna fecha me sirve, prefiero que me llamen</a>
-      </p>
+
     </section>
 
     <section id="resultado" class="oculto">
@@ -140,7 +138,8 @@
     // ---------- Reagendar: el propietario elige día y hora (oct-2026) ----------
     // Antes "Reagendar" solo avisaba al agente para que lo llamara. Ahora el
     // propietario ve la disponibilidad real y se reagenda solo; el agente recibe
-    // un aviso. "Prefiero que me llamen" conserva el camino anterior.
+    // un aviso. Ya no hay "prefiero que me llamen": eligiendo un horario libre
+    // no hay nada que acordar (si ninguna fecha le sirve, cancela y agenda después).
     const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const DIAS_L = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
     const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -165,11 +164,6 @@
           if (x.ok) mostrarResultado('¡Listo!', x.mensaje, '✓');
           else { b.disabled = false; b.textContent = 'Confirmar nueva fecha'; alert(x.mensaje); if (diaElegido) elegirDia(diaElegido); }
         }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
-      };
-      $('llamenme').onclick = (e) => {
-        e.preventDefault();
-        if (!confirm('¿Quieres que un asesor te llame para acordar la fecha?')) return;
-        llamar('aplicarEstadoCita').then(x => mostrarResultado(x.ok ? 'Te llamaremos' : 'Aviso', x.mensaje || '', x.ok ? '✓' : '!'));
       };
     }
 

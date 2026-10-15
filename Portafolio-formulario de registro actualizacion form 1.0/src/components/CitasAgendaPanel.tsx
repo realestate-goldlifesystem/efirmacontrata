@@ -150,7 +150,12 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
 
   useEffect(() => { cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
-  const visibles = useMemo(() => (filtro ? citas.filter(c => grupoDe(c.estado) === filtro) : citas), [citas, filtro]);
+  // Sin filtro se ven las ACTIVAS: lo que tengo por delante. Canceladas, sin
+  // respuesta y "quiere reagendar" no ocupan espacio; se ven con su propio filtro.
+  // (Desde oct-2026 el propietario se reagenda solo y la cita queda confirmada:
+  // "quiere reagendar" solo puede quedar en citas de correos viejos.)
+  const esActiva = (c: Cita) => ['pendiente', 'confirmada', 'reagendada'].includes(grupoDe(c.estado));
+  const visibles = useMemo(() => (filtro ? citas.filter(c => grupoDe(c.estado) === filtro) : citas.filter(esActiva)), [citas, filtro]);
 
   const porDia = useMemo(() => {
     const m = new Map<string, Cita[]>();
@@ -168,8 +173,6 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
     return n;
   }, [citas]);
 
-  // Los que pidieron reagendar esperan una llamada: van arriba, bien visibles.
-  const porLlamar = useMemo(() => citas.filter(c => grupoDe(c.estado) === 'reagendar'), [citas]);
 
   // Cuadrícula del mes, empezando en lunes.
   const celdas = useMemo(() => {
@@ -199,8 +202,10 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
       });
       return out;
     };
-    return { grupos: [...agrupar(proximas, false), ...agrupar(pasadas, true)], total: delMes.length };
-  }, [visibles, mes]);
+    // En "Activas" solo lo que viene; con un filtro también el historial del mes
+    const grupos = filtro ? [...agrupar(proximas, false), ...agrupar(pasadas, true)] : agrupar(proximas, false);
+    return { grupos, total: grupos.reduce((n, g) => n + g.citas.length, 0) };
+  }, [visibles, mes, filtro]);
 
   const moverMes = (n: number) => setMes(m => new Date(m.getFullYear(), m.getMonth() + n, 1));
   const irAHoy = () => { const h = new Date(); setMes(new Date(h.getFullYear(), h.getMonth(), 1)); setDiaSel(h); };
@@ -238,26 +243,6 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         </div>
       )}
 
-      {/* Aviso: propietarios que esperan una llamada */}
-      {porLlamar.length > 0 && (
-        <div className="mb-6 p-4 rounded-2xl border border-orange-300 bg-orange-50">
-          <p className="text-orange-900 font-semibold mb-3">
-            📞 {porLlamar.length === 1 ? '1 propietario pidió' : `${porLlamar.length} propietarios pidieron`} reagendar: llámalos para acordar una nueva fecha.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {porLlamar.map(c => (
-              <button
-                key={c.idCita}
-                onClick={() => setDetalle(c)}
-                className="px-3 py-1.5 rounded-full bg-white border border-orange-300 text-sm text-stone-800 hover:border-orange-500"
-              >
-                {c.nombre} · {c.fecha}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Filtros por estado (con conteo) */}
       {/* Móvil: cuadrícula de botones grandes, fáciles de tocar con el pulgar.
           Escritorio: chips en varias filas. */}
@@ -267,8 +252,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
           aria-pressed={filtro === null}
           className={`col-span-2 md:col-span-1 min-h-[48px] md:min-h-0 px-4 md:px-3 py-3 md:py-1.5 rounded-xl md:rounded-full border text-sm flex items-center justify-between md:justify-start gap-2 transition-all active:scale-[0.98] ${filtro === null ? "bg-brand-gold text-stone-950 border-brand-gold font-semibold" : "bg-white text-stone-700 border-stone-300 hover:border-stone-400"}`}
         >
-          <span>Todas</span>
-          <span className="text-xs md:text-sm opacity-80 bg-black/5 md:bg-transparent rounded-full px-2 md:px-0">{citas.length}</span>
+          <span>Activas</span>
+          <span className="text-xs md:text-sm opacity-80 bg-black/5 md:bg-transparent rounded-full px-2 md:px-0">{citas.filter(esActiva).length}</span>
         </button>
         {(Object.keys(GRUPOS) as Grupo[]).filter(g => conteo[g]).map(g => (
           <button
@@ -348,7 +333,10 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         </div>
 
         {/* Citas del día seleccionado */}
-        <div ref={listaRef} className="min-w-0 lg:max-h-[calc(100dvh-13rem)] lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)] scroll-mt-28">
+        {/* En PC la lista mide lo mismo que el calendario (el contenedor no
+            aporta alto a la fila: va en absolute) y se desplaza por dentro. */}
+        <div ref={listaRef} className="min-w-0 relative scroll-mt-28">
+        <div className="lg:absolute lg:inset-0 lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)]">
           {diaSel ? (
             <>
               <div className="flex items-start justify-between gap-3 mb-1">
@@ -369,10 +357,10 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
           ) : (
             <>
               <h3 className="text-white font-semibold mb-1">
-                {filtro ? GRUPOS[filtro].etiqueta : 'Todas las citas'} · {MESES[mes.getMonth()]}
+                {filtro ? GRUPOS[filtro].etiqueta : 'Próximas citas'} · {MESES[mes.getMonth()]}
               </h3>
               <p className="text-stone-500 text-sm mb-4">
-                {gruposDelMes.total === 0 ? 'Sin citas este mes.' : `${gruposDelMes.total} cita${gruposDelMes.total > 1 ? 's' : ''} · toca un día para ver solo ese`}
+                {gruposDelMes.total === 0 ? (filtro ? 'Sin citas este mes.' : 'No tienes citas próximas este mes.') : `${gruposDelMes.total} cita${gruposDelMes.total > 1 ? 's' : ''} · toca un día para ver solo ese`}
               </p>
               <div className="space-y-5">
                 {gruposDelMes.grupos.map((g, i) => (
@@ -394,6 +382,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
               </div>
             </>
           )}
+        </div>
         </div>
       </div>
 
