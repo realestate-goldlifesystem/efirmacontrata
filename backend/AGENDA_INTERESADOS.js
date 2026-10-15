@@ -76,7 +76,8 @@ function _inmueblePorId(idInmueble) {
     antiguedad: String(v('Antiguedad del Inmueble') || ''),
     garajes: String(v('N° de Garajes') || ''),
     administracion: Number(v('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)')) || 0,
-    mascotas: String(v('¿Se permite mascota?') || '')
+    mascotas: String(v('¿Se permite mascota?') || ''),
+    video: String(v('LINK DEL VIDEO DEL INMUEBLE') || '')
   };
 }
 
@@ -159,6 +160,16 @@ function _fotoPortadaInmueble(carpeta) {
   return '';
 }
 
+/**
+ * Id de un video de YouTube y si es vertical (Short). null si no es de YouTube.
+ * Acepta youtu.be/ID, youtube.com/watch?v=ID, /shorts/ID y /embed/ID.
+ */
+function videoYoutube(url) {
+  const u = String(url || '');
+  const m = u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/|\/live\/)([A-Za-z0-9_-]{11})/);
+  return m ? { id: m[1], vertical: /\/shorts\//.test(u) } : null;
+}
+
 /** Para la página pública: lo publicable del inmueble y cómo se agenda. */
 function infoInmuebleVisita(datos) {
   try {
@@ -182,6 +193,9 @@ function infoInmuebleVisita(datos) {
       descripcion: _descripcionInmueble(inm.carpeta),
       estrato: inm.estrato, piso: inm.piso, antiguedad: inm.antiguedad, garajes: inm.garajes,
       administracion: inm.administracion, mascotas: inm.mascotas,
+      // La dirección ya es pública: va en el afiche y en la descripción (Leonardo, 15-oct-2026)
+      direccion: inm.direccion,
+      video: videoYoutube(inm.video),
       modo: modoVisita(inm.autorizacion)
     };
   } catch (e) {

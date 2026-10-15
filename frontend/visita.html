@@ -61,6 +61,13 @@
     .etiqueta { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(212,175,55,.12); color: var(--oro); border: 1px solid rgba(212,175,55,.35); }
     h1 { margin: 12px 0 4px; font-size: clamp(24px, 3vw, 34px); font-weight: 600; letter-spacing: -.5px; }
     .lugar { color: var(--suave); }
+    .direccion { color: #d6d3d1; font-size: 14px; margin-top: 4px; }
+    .direccion:empty { display: none; }
+    .incluye { color: #86efac; font-size: 14px; margin-top: 4px; }
+    /* Video de YouTube: se reproduce solo, sin sonido, en bucle y sin controles */
+    .video { position: relative; border-radius: 22px; overflow: hidden; background: #000; aspect-ratio: 16 / 9; }
+    .video.vertical { aspect-ratio: 9 / 16; max-width: 360px; margin: 0 auto; }
+    .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
     .precioGrande { margin-top: 14px; font-size: clamp(26px, 3vw, 32px); font-weight: 700; color: var(--oro); }
     .precioGrande small { font-size: 15px; color: var(--suave); font-weight: 400; }
     .admin { color: var(--suave); font-size: 14px; margin-top: 2px; }
@@ -83,7 +90,7 @@
     .leerMas { margin-top: 6px; background: none; border: 0; color: var(--oro); font-weight: 600; padding: 0; }
 
     /* ---------- Tarjeta para agendar ---------- */
-    @media (min-width: 1000px) { .ficha > .etiqueta, .ficha > h1, .ficha > .lugar, .ficha > .precioGrande, .ficha > .admin { display: none; } .ficha .datos { margin-top: 0; } }
+    @media (min-width: 1000px) { .ficha > .etiqueta, .ficha > h1, .ficha > .lugar, .ficha > .direccion, .ficha > .precioGrande, .ficha > .admin { display: none; } .ficha .datos { margin-top: 0; } }
     .tarjetaAgendar { background: var(--panel); border: 1px solid var(--linea); border-radius: 22px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
     @media (min-width: 1000px) { .tarjetaAgendar { position: sticky; top: 76px; } }
     @media (max-width: 999px) { .tarjetaAgendar { display: none; } }
@@ -174,10 +181,16 @@
         <span class="etiqueta" id="etiquetaNegocio"></span>
         <h1 id="titulo"></h1>
         <div class="lugar" id="lugar"></div>
+        <div class="direccion" id="direccion"></div>
         <div class="negocios oculto" id="negocios"></div>
         <div class="precioGrande" id="precio"></div>
         <div class="admin" id="admin"></div>
         <div class="datos" id="datos"></div>
+      </section>
+
+      <section class="seccion oculto" id="seccionVideo">
+        <h2>Recorrido en video</h2>
+        <div class="video" id="video"></div>
       </section>
 
       <section class="seccion" id="seccionDescripcion">
@@ -192,6 +205,7 @@
       <span class="etiqueta" id="etiquetaTarjeta"></span>
       <h1 id="tituloTarjeta" style="font-size:24px;"></h1>
       <div class="lugar" id="lugarTarjeta"></div>
+      <div class="direccion" id="direccionTarjeta"></div>
       <div class="precioGrande" id="precioTarjeta"></div>
       <div class="admin" id="adminTarjeta"></div>
       <button class="principal" data-agendar style="margin-top:18px;">Agendar visita</button>
@@ -365,11 +379,14 @@
       const venta = negocio === 'VENTA';
       const p = venta ? inm.precioVenta : inm.precioArriendo;
       const txt = p ? pesos(p) : 'Consultar';
-      const sufijo = p && !venta ? ' <small>/ mes</small>' : '';
+      // En arriendo el canon publicado ya incluye la administración (Leonardo, 15-oct-2026)
+      const sufijo = p && !venta ? ' <small>/ mes · incluye administración</small>' : '';
       $('precio').innerHTML = txt + sufijo; $('precioTarjeta').innerHTML = txt + sufijo;
-      $('precioBarra').innerHTML = txt + (p && !venta ? '<small>al mes</small>' : '<small>precio de venta</small>');
-      const adm = inm.administracion ? 'Administración: ' + pesos(inm.administracion) : '';
-      $('admin').textContent = adm; $('adminTarjeta').textContent = adm;
+      $('precioBarra').innerHTML = txt + (p && !venta ? '<small>al mes · admin. incluida</small>' : '<small>precio de venta</small>');
+      const adm = !inm.administracion ? '' : venta
+        ? 'Administración: ' + pesos(inm.administracion) + ' al mes'
+        : '✓ Administración incluida (' + pesos(inm.administracion) + ')';
+      ['admin', 'adminTarjeta'].forEach(id => { $(id).textContent = adm; $(id).className = venta ? 'admin' : 'incluye'; });
       $('etiquetaNegocio').textContent = venta ? 'En venta' : 'En arriendo';
       $('etiquetaTarjeta').textContent = $('etiquetaNegocio').textContent;
     }
@@ -507,6 +524,16 @@
       const ciudad = ciudades[String(r.ciudad || '').toUpperCase().trim()] || String(r.ciudad || '').toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
       $('lugar').textContent = ciudad;
       $('tituloTarjeta').textContent = titulo; $('lugarTarjeta').textContent = ciudad;
+      const dir = r.direccion ? '📍 ' + r.direccion : '';
+      $('direccion').textContent = dir; $('direccionTarjeta').textContent = dir;
+
+      // Video de YouTube: solo, sin sonido, en bucle y sin controles (el logo de YouTube no se puede quitar)
+      if (r.video && r.video.id) {
+        const v = r.video.id;
+        $('video').classList.toggle('vertical', !!r.video.vertical);
+        $('video').innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&loop=1&playlist=${v}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3" title="Recorrido en video" allow="autoplay; encrypted-media; picture-in-picture" loading="lazy"></iframe>`;
+        $('seccionVideo').classList.remove('oculto');
+      }
 
       // Datos clave (solo los que existen)
       const dato = (v, t) => v && String(v).trim() && !/^ning/i.test(v) ? `<div class="dato"><b>${esc(v)}</b><span>${t}</span></div>` : '';
