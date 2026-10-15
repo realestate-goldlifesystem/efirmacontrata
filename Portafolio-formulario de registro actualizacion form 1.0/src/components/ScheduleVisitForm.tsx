@@ -95,8 +95,9 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // La agenda pide 12 h de anticipación: el primer día posible es mañana.
-  const manana = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 1); return d; }, []);
+  // La agenda pide 2 h de anticipación (AGENDA_MOTOR.js): se puede elegir hoy.
+  // Si hoy ya no quedan horarios, el paso 2 lo dice.
+  const manana = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
   const mesMinimo = new Date(manana.getFullYear(), manana.getMonth(), 1);
   // Se ofrecen los próximos 3 meses
   const mesMaximo = new Date(manana.getFullYear(), manana.getMonth() + 3, 1);

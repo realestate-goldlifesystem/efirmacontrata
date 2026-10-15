@@ -72,7 +72,7 @@ igual('3 citas el sábado', llenar(sab), ['8:00 AM', '9:30 AM', '11:00 AM']);
 r = ctx.agHorariosLibres({ dia: jue, tipo: 'PROPIETARIO', ahoraMs: h(jue, 9), anticipacionMin: 60 });
 igual('anticipación del panel', horas(r)[0], '10:00 AM');
 r = ctx.agHorariosLibres({ dia: jue, tipo: 'PROPIETARIO', ahoraMs: h(jue, 9) });
-igual('sin anticipación propia: 12 h', r.libre, false);
+igual('propietario: 2 h de anticipación', horas(r)[0], '11:00 AM');
 
 // ================= Contratos vigentes =================
 const F = (s) => ctx.cvLeerFecha(s);

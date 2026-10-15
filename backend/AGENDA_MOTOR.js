@@ -22,9 +22,9 @@ const AG_PASO_MIN = 30;             // se ofrecen horarios cada 30 minutos
 const TIPOS_AGENDA = {
   // Etapa 1 (decidido 12-oct-2026): visitas de interesados
   INTERESADO: { nombre: 'Visita de interesado', duracionMin: 40, colchonMin: 30, anticipacionMin: 60 },
-  // Etapa 2: presentación del negocio y registro del inmueble. La anticipación
-  // pasa a 2 h en el bloque 3; mientras tanto conserva la de hoy (12 h).
-  PROPIETARIO: { nombre: 'Presentación y registro del inmueble', duracionMin: 60, colchonMin: 30, anticipacionMin: 12 * 60 },
+  // Etapa 2: presentación del negocio y registro del inmueble. Anticipación de
+  // 2 h desde el 14-oct-2026 (antes 12 h): se puede agendar para el mismo día.
+  PROPIETARIO: { nombre: 'Presentación y registro del inmueble', duracionMin: 60, colchonMin: 30, anticipacionMin: 120 },
   // Etapa 3: entrega del inmueble al inquilino
   ENTREGA: { nombre: 'Entrega del inmueble', duracionMin: 60, colchonMin: 30, anticipacionMin: 120 },
   // Etapa 4: devolución del inmueble (cuando Leonardo asiste)
