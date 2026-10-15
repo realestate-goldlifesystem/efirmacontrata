@@ -214,32 +214,19 @@ function moverCita(cita, timestamp, op) {
   if (col['FECHA CITA']) sheet.getRange(numFila, col['FECHA CITA']).setNumberFormat('dd/MM/yyyy');
   escribir('HORA CITA', formatAmPm(inicio));
   escribir('ESTADO', estadoNuevo);
-  // Con menos de 24 h, este correo ya hace de recordatorio
-  const horas = (inicio.getTime() - Date.now()) / 3600000;
-  escribir('RECORDATORIO ENVIADO', horas <= 24 ? ahoraTxt : '');
+  // La línea de avisos vuelve a empezar desde la fecha nueva (CORREOS_CITA.js)
+  escribir('ULTIMO AVISO', avisoVigenteCita((inicio.getTime() - Date.now()) / 60000));
+  escribir('FECHA ULTIMO AVISO', '');
   const antes = fechaActual ? textoFecha(fechaActual) : '';
   escribir('ULTIMO CAMBIO', ahoraTxt + ' · ' + (op.quien === 'agente' ? 'agente reagendó desde el panel' : 'propietario reagendó desde su correo') +
     (antes ? ' (antes: ' + antes + ')' : ''));
 
   try {
-    const tokenProp = String(valorCita(fila, col, 'TOKEN PROPIETARIO') || '');
-    enviarCorreoCita(
-      correo,
-      `🔄 Tu cita quedó para el ${textoFecha(inicio)} - Gold Life`,
-      'CITA REAGENDADA',
-      nombre,
-      (op.quien === 'agente' ? 'Como lo acordamos, tu' : 'Listo, tu') +
-      ` cita para el servicio de <strong>${servicio}</strong> quedó en la nueva fecha:<br><br>` +
-      `🗓️ <strong>Fecha:</strong> ${Utilities.formatDate(inicio, tz, 'dd/MM/yyyy')}<br>⏰ <strong>Hora:</strong> ${formatAmPm(inicio)}<br>` +
-      `📍 <strong>Inmueble:</strong> ${direccion || 'A convenir'}` +
-      (!tokenProp ? '' : op.quien === 'agente'
-        ? '<br><br>Si algo cambia, puedes reagendar o cancelar aquí:'
-        : '<br><br><strong>Confirma tu asistencia con el botón verde.</strong> Si no la confirmas, la cita se liberará automáticamente 2 horas antes.'),
-      !tokenProp ? '' : op.quien !== 'agente' ? botonesPropietarioCita(idCita, tokenProp) : htmlBotonesCorreo([
-        { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, tokenProp) },
-        { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) }
-      ])
-    );
+    // Solo informa, sin botones: la confirmación se pide 1 hora antes
+    enviarPasoCita('REAGENDADA', correo, {
+      idCita: idCita, token: String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''), nombre: nombre,
+      servicio: servicio, direccion: direccion, inicio: inicio, confirmada: op.quien === 'agente'
+    });
   } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
   return { ok: true, textoNueva: textoFecha(inicio), textoAntes: antes };
 }
@@ -303,11 +290,11 @@ function reagendarPorPropietario(datos) {
         'Agente',
         `<strong>${nombre}</strong> reagendó su cita desde el correo.<br><br>` +
         (m.textoAntes ? `Antes: ${m.textoAntes}<br>` : '') + `<strong>Ahora: ${m.textoNueva}</strong><br><br>` +
-        'Ya quedó movida en tu Calendar, por confirmar: le llegó el correo para confirmar. No tienes que hacer nada.',
+        'Ya quedó movida en tu Calendar, por confirmar: una hora antes se le pedirá que la confirme. No tienes que hacer nada.',
         ''
       );
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
-    return { ok: true, mensaje: 'Tu cita quedó para el ' + m.textoNueva + '. Te enviamos un correo: confírmala desde ahí con el botón verde.' };
+    return { ok: true, mensaje: 'Tu cita quedó para el ' + m.textoNueva + '. Te avisaremos antes y, una hora antes, te pediremos que la confirmes.' };
   } finally {
     lock.releaseLock();
   }

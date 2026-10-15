@@ -8,20 +8,20 @@
  * Instala la tarea de la agenda. Correr una vez desde el editor cada vez que
  * cambie la frecuencia: borra la anterior y deja una sola.
  *
- * oct-2026: pasa de cada hora a CADA 15 MINUTOS. Los recordatorios nuevos de
- * confirmación (1 h, 45 y 30 min antes) no se pueden cumplir revisando una vez por
- * hora. Es la misma tarea con otra frecuencia: no gasta un cupo nuevo de los 20.
+ * oct-2026: CADA 5 MINUTOS. Los avisos de confirmar salen 60, 45 y 30 min antes,
+ * y la cita se libera con 5 min de margen: con una revisión cada 15 min no se
+ * puede cumplir. Es la misma tarea con otra frecuencia: no gasta un cupo nuevo.
  */
 function instalarCronAgenda() {
   ScriptApp.getProjectTriggers().forEach(t => {
     if (t.getHandlerFunction() === 'ejecutarMotorAgenda') ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger('ejecutarMotorAgenda').timeBased().everyMinutes(15).create();
-  Logger.log("✅ Tarea de la agenda instalada: corre cada 15 minutos.");
+  ScriptApp.newTrigger('ejecutarMotorAgenda').timeBased().everyMinutes(5).create();
+  Logger.log("✅ Tarea de la agenda instalada: corre cada 5 minutos.");
 }
 
 /**
- * Motor principal. Corre cada hora y decide qué hacer con cada cita según el
+ * Motor principal. Corre cada 5 minutos y decide qué hacer con cada cita según el
  * tiempo que falta y su estado.
  *
  * ⚠️ Hasta sep-2026 este motor NO procesó ninguna cita: leía la fecha con
@@ -68,62 +68,48 @@ function ejecutarMotorAgenda() {
       // pueden mandar botones válidos. Solo se cierran si ya pasaron.
       const tieneTokens = !!(tokenProp && tokenAgente);
 
-      // ── REGLA 1: RECORDATORIO (24 h antes, UNA sola vez) ───────────────
-      // Antes la ventana era "entre 23 y 24,5 h": con el motor cada hora podía
-      // mandarlo dos veces, y una cita agendada con menos de 23 h de antelación
-      // no lo recibía nunca. Ahora se marca RECORDATORIO ENVIADO.
-      if (tieneTokens && !recordatorioEnviado && horasFaltantes > 2 && horasFaltantes <= 24 &&
-          (estado === ESTADOS_CITA.PENDIENTE || estado === ESTADOS_CITA.CONFIRMADA)) {
-        try {
-          const yaConfirmo = estado === ESTADOS_CITA.CONFIRMADA;
-          enviarCorreoCita(
-            correo,
-            yaConfirmo ? `⏰ Te esperamos mañana: ${fechaStr} a las ${horaStr} - Gold Life`
-                       : `⏳ Confirma tu cita del ${fechaStr} a las ${horaStr} - Gold Life`,
-            'RECORDATORIO DE CITA',
-            nombre,
-            `Te recordamos tu cita para el servicio de <strong>${servicio}</strong>.<br><br>` +
-            `🗓️ <strong>Fecha:</strong> ${fechaStr}<br>⏰ <strong>Hora:</strong> ${horaStr}<br>` +
-            `📍 <strong>Inmueble:</strong> ${direccion || 'A convenir'}<br><br>` +
-            (yaConfirmo
-              ? 'Ya confirmaste tu asistencia, ¡gracias! Si algo cambió, puedes reagendar o cancelar aquí:'
-              : '<strong>Por favor confirma tu asistencia.</strong> Si no la confirmas, la cita se liberará automáticamente 2 horas antes.'),
-            yaConfirmo
-              ? htmlBotonesCorreo([
-                  { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, tokenProp) },
-                  { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) }
-                ])
-              : botonesPropietarioCita(idCita, tokenProp)
-          );
-          escribir(numFila, 'RECORDATORIO ENVIADO', ahoraTxt);
-        } catch (e) {
-          Logger.log('Error enviando recordatorio de ' + idCita + ': ' + e.message);
-        }
-        return;
-      }
+      // ── REGLAS 1 y 2: LÍNEA DE TIEMPO DE AVISOS (bloque 3, oct-2026) ─────
+      // 48 h, 24 h, 3 h y 2 h antes: solo informan. 60, 45 y 30 min antes: piden
+      // confirmar (solo si aún no confirmó). Si no confirma, faltando 25 min y con
+      // 5 min de margen desde el último aviso, la cita se libera.
+      // Qué aviso toca lo deciden avisoQueTocaCita / debeLiberarCita (CORREOS_CITA.js).
+      const activa = [ESTADOS_CITA.PENDIENTE, ESTADOS_CITA.CONFIRMADA, ESTADOS_CITA.REAGENDADA].indexOf(estado) !== -1;
+      if (tieneTokens && activa) {
+        const minFaltan = (fechaCita.getTime() - ahora.getTime()) / 60000;
+        // Citas de antes de este cambio: si ya tenían el recordatorio de 24 h, se parte de ahí
+        const ultimoPaso = String(valorCita(f, col, 'ULTIMO AVISO') || '').trim() || (recordatorioEnviado ? 'H24' : '');
+        const fechaUltimo = valorCita(f, col, 'FECHA ULTIMO AVISO');
+        const minDesdeUltimo = fechaUltimo instanceof Date ? (ahora.getTime() - fechaUltimo.getTime()) / 60000 : 9999;
+        const pendiente = estado === ESTADOS_CITA.PENDIENTE;
 
-      // ── REGLA 2: AUTO-CANCELACIÓN (2 h antes, si nunca confirmó) ────────
-      // Solo si de verdad se le avisó: cancelar una cita sin haber mandado el
-      // recordatorio (p. ej. porque falló el correo) sería injusto con él.
-      if (estado === ESTADOS_CITA.PENDIENTE && recordatorioEnviado &&
-          horasFaltantes > 0 && horasFaltantes <= 2) {
-        aplicarCambioEstadoCita(sheet, col, numFila, f, ESTADOS_CITA.CANCELADA, 'cancelada automáticamente: no se confirmó a tiempo');
-        try {
-          enviarCorreoCita(
-            correo,
-            '❌ Tu cita fue liberada por falta de confirmación - Gold Life',
-            'CITA LIBERADA',
-            nombre,
-            `Como no recibimos la confirmación de tu cita del <strong>${fechaStr} a las ${horaStr}</strong>, liberamos ese horario.<br><br>` +
-            'Si aún deseas la visita, elige un nuevo horario. Si no, no tienes que hacer nada: la cita queda cancelada.',
-            // Reagendar abre la disponibilidad real (frontend/cita.html) y revive la misma cita
-            tokenProp
-              ? htmlBotonesCorreo([{ texto: '🔄 Elegir nuevo horario', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) }])
-              : htmlBotonesCorreo([{ texto: '📅 Agendar de nuevo', color: '#b8860b',
-                  url: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/portafolio/' }])
-          );
-        } catch (e) { Logger.log('Error avisando auto-cancelación de ' + idCita + ': ' + e.message); }
-        return;
+        if (debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimo, pendiente)) {
+          aplicarCambioEstadoCita(sheet, col, numFila, f, ESTADOS_CITA.CANCELADA, 'cancelada automáticamente: no se confirmó a tiempo');
+          try {
+            enviarCorreoCita(
+              correo,
+              '❌ Tu cita fue liberada por falta de confirmación - Gold Life',
+              'CITA LIBERADA',
+              nombre,
+              `Como no recibimos la confirmación de tu cita del <strong>${fechaStr} a las ${horaStr}</strong>, liberamos ese horario.<br><br>` +
+              'Si aún deseas la visita, elige un nuevo horario. Si no, no tienes que hacer nada: la cita queda cancelada.',
+              // Reagendar abre la disponibilidad real (frontend/cita.html) y revive la misma cita
+              htmlBotonesCorreo([{ texto: '🔄 Elegir nuevo horario', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) }])
+            );
+          } catch (e) { Logger.log('Error avisando la liberación de ' + idCita + ': ' + e.message); }
+          return;
+        }
+
+        const paso = avisoQueTocaCita(minFaltan, ultimoPaso, !pendiente);
+        if (paso) {
+          try {
+            enviarPasoCita(paso, correo, { idCita: idCita, token: tokenProp, nombre: nombre, servicio: servicio, direccion: direccion, inicio: fechaCita });
+            escribir(numFila, 'ULTIMO AVISO', paso);
+            escribir(numFila, 'FECHA ULTIMO AVISO', ahora);
+          } catch (e) {
+            Logger.log('Error enviando el aviso ' + paso + ' de ' + idCita + ': ' + e.message);
+          }
+          return;
+        }
       }
 
       // ── REGLA 3: AVISO AL AGENTE AL EMPEZAR UNA CITA CONFIRMADA ────────

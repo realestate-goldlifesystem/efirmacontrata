@@ -37,7 +37,9 @@ const COLUMNAS_CITAS = [
   // oct-2026: cuatro agendas en la misma hoja (AGENDA_MOTOR.js). Vacío = PROPIETARIO.
   'TIPO AGENDA', 'ID INMUEBLE',
   // oct-2026: notas del agente desde el panel (NOTAS es lo que escribió el propietario)
-  'NOTAS AGENTE'
+  'NOTAS AGENTE',
+  // oct-2026 (bloque 3): último aviso enviado (H48, H24, H3, H2, M60, M45, M30) y cuándo
+  'ULTIMO AVISO', 'FECHA ULTIMO AVISO'
 ];
 
 // Estados posibles de una cita.
@@ -185,10 +187,6 @@ function agendarCita(datos) {
     const ahoraTxt = Utilities.formatDate(new Date(), tz, "dd/MM/yyyy HH:mm:ss");
     const horaCitaStr = formatAmPm(fechaInicio);
 
-    // Si la cita es en menos de 24 h, el correo de agendado YA hace de
-    // recordatorio. Sin esta marca el motor enviaría otro enseguida.
-    const horasFaltantes = (fechaInicio.getTime() - Date.now()) / 3600000;
-
     const fila = new Array(Math.max(sheet.getLastColumn(), COLUMNAS_CITAS.length)).fill('');
     const poner = (nombre, valor) => { if (col[nombre]) fila[col[nombre] - 1] = valor; };
     poner('ID CITA', idCita);
@@ -205,7 +203,9 @@ function agendarCita(datos) {
     poner('DIRECCION', datos.direccion || '');
     poner('ID EVENTO CALENDAR', evento.getId());
     poner('NOTAS', datos.detalles || '');
-    poner('RECORDATORIO ENVIADO', horasFaltantes <= 24 ? ahoraTxt : '');
+    // Los avisos que ya "pasaron" al agendar (p. ej. el de 48 h si la cita es en
+    // 40 h) los cubre el correo de agendada: el motor sigue desde el siguiente.
+    poner('ULTIMO AVISO', avisoVigenteCita((fechaInicio.getTime() - Date.now()) / 60000));
     poner('TOKEN PROPIETARIO', tokenPropietario);
     poner('TOKEN AGENTE', tokenAgente);
     poner('ULTIMO CAMBIO', ahoraTxt + ' · agendada');
@@ -214,20 +214,14 @@ function agendarCita(datos) {
     const filaNueva = sheet.getLastRow();
     if (col['FECHA CITA']) sheet.getRange(filaNueva, col['FECHA CITA']).setNumberFormat('dd/MM/yyyy');
 
-    // 4. Correo al propietario con los tres botones
-    const fechaCitaStr = Utilities.formatDate(fechaInicio, tz, "dd/MM/yyyy");
+    // 4. Correo al propietario: solo informa, sin botones (bloque 3, oct-2026).
+    //    La confirmación se pide 1 hora antes; al final va la línea pequeña para
+    //    cambiar la fecha o cancelar.
     try {
-      enviarCorreoCita(
-        datos.correo,
-        `📅 Cita agendada para el ${fechaCitaStr} a las ${horaCitaStr} — confirma tu asistencia`,
-        'VISITA AGENDADA',
-        datos.nombreCliente,
-        `Hemos registrado tu cita para el servicio de <strong>${datos.tipoServicio}</strong>.<br><br>` +
-        `🗓️ <strong>Fecha:</strong> ${fechaCitaStr}<br>⏰ <strong>Hora:</strong> ${horaCitaStr}<br>` +
-        `📍 <strong>Inmueble:</strong> ${datos.direccion || 'A convenir'}` +
-        `<br><br><strong>Confirma tu asistencia con el botón verde.</strong> Si no puedes a esa hora, toca reagendar y elige otra fecha.`,
-        botonesPropietarioCita(idCita, tokenPropietario)
-      );
+      enviarPasoCita('AGENDADA', datos.correo, {
+        idCita: idCita, token: tokenPropietario, nombre: datos.nombreCliente,
+        servicio: datos.tipoServicio, direccion: datos.direccion, inicio: fechaInicio
+      });
     } catch (errMail) {
       Logger.log("Error enviando correo de cita agendada: " + errMail.message);
     }

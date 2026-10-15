@@ -13,8 +13,45 @@
  * con la plantilla email_cita.html.
  */
 
+// ---------- Puras: qué aviso toca (probadas en _herramientas_locales/test_avisos_cita.js) ----------
+
+// Avisos en orden, con los minutos que faltan para la cita cuando les toca salir.
+const ORDEN_AVISOS_CITA = [['H48', 2880], ['H24', 1440], ['H3', 180], ['H2', 120], ['M60', 60], ['M45', 45], ['M30', 30]];
+// La cita se libera si, faltando 25 min o menos, ya salió algún aviso de
+// confirmación y pasaron al menos 5 min sin respuesta (el margen que pidió Leonardo).
+const LIBERAR_FALTANDO_MIN = 25;
+const MARGEN_RESPUESTA_MIN = 5;
+
+/** El aviso más reciente cuyo momento ya llegó ('' si ninguno). */
+function avisoVigenteCita(minFaltan) {
+  let paso = '';
+  ORDEN_AVISOS_CITA.forEach(([p, umbral]) => { if (minFaltan <= umbral) paso = p; });
+  return paso;
+}
+
+/**
+ * Qué aviso hay que mandar ahora, o null.
+ * Solo el más reciente: si el motor se atrasó, no se mandan varios de golpe.
+ * Las citas ya confirmadas no reciben los avisos de confirmar (M60, M45, M30).
+ */
+function avisoQueTocaCita(minFaltan, ultimoPaso, confirmada) {
+  if (minFaltan <= 0) return null;
+  const orden = ORDEN_AVISOS_CITA.map(x => x[0]);
+  const vigente = avisoVigenteCita(minFaltan);
+  if (!vigente || orden.indexOf(vigente) <= orden.indexOf(ultimoPaso || '')) return null;
+  if (confirmada && vigente.charAt(0) === 'M') return null;
+  return vigente;
+}
+
+/** ¿Hay que liberar la cita por falta de confirmación? */
+function debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimoAviso, pendiente) {
+  return !!pendiente && String(ultimoPaso || '').charAt(0) === 'M' &&
+    minFaltan <= LIBERAR_FALTANDO_MIN && minDesdeUltimoAviso >= MARGEN_RESPUESTA_MIN;
+}
+
 const PASOS_CORREO_CITA = {
   AGENDADA: { asunto: 'Tu cita quedó agendada', titulo: 'VISITA AGENDADA' },
+  REAGENDADA: { asunto: 'Tu cita cambió de fecha', titulo: 'CITA REAGENDADA' },
   H48:      { asunto: 'Tienes una cita en 2 días', titulo: 'RECORDATORIO' },
   H24:      { asunto: 'Tienes una cita mañana', titulo: 'RECORDATORIO' },
   H3:       { asunto: 'Tienes una cita en 3 horas', titulo: 'RECORDATORIO' },
@@ -58,6 +95,12 @@ function correoPasoCita(paso, c) {
   switch (paso) {
     case 'AGENDADA':
       mensaje = 'Tu cita quedó agendada.' + tarjeta + 'Te avisaremos antes de la cita. <strong>Una hora antes te pediremos que la confirmes.</strong>';
+      secundario = lineaCambio;
+      break;
+    case 'REAGENDADA':
+      // c.confirmada: la movió el agente tras hablar con él (queda confirmada)
+      mensaje = 'Tu cita quedó en la nueva fecha.' + tarjeta +
+        (c.confirmada ? '¡Te esperamos!' : 'Te avisaremos antes de la cita. <strong>Una hora antes te pediremos que la confirmes.</strong>');
       secundario = lineaCambio;
       break;
     case 'H48':
