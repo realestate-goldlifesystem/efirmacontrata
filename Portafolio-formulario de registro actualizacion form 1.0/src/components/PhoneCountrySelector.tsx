@@ -44,7 +44,6 @@ export function Bandera({ code, className = '' }: { code: string; className?: st
       alt=""
       width={20}
       height={15}
-      loading="lazy"
       className={`w-5 h-[15px] rounded-[2px] object-cover shadow-sm shrink-0 ${className}`}
     />
   );
