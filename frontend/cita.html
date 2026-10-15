@@ -111,6 +111,9 @@
       <h1 id="tituloResultado"></h1>
       <p id="textoResultado"></p>
       <p id="contador" class="oculto" style="margin-top:22px;font-size:13px;color:#78716c;"></p>
+      <a id="irPortafolio" class="oculto" href="https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/portafolio/"
+         style="display:block;margin-top:14px;padding:14px;border-radius:12px;background:#292524;color:#d4af37;text-decoration:none;font-weight:700;">
+        Ir a Gold Life Real Estate</a>
     </section>
   </main>
 
@@ -150,7 +153,12 @@
         if (n > 0) { pintar(); return; }
         clearInterval(t);
         window.close();
-        setTimeout(() => { c.textContent = 'Ya puedes cerrar esta página.'; }, 300);
+        // Si el navegador no dejó cerrarla (pasa con enlaces abiertos desde el
+        // correo), se ofrece ir al portafolio en vez de dejar la pantalla quieta
+        setTimeout(() => {
+          c.textContent = 'Ya puedes cerrar esta página.';
+          $('irPortafolio').classList.remove('oculto');
+        }, 300);
       }, 1000);
     }
 
