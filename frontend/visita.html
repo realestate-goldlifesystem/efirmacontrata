@@ -43,7 +43,7 @@
     .escenario { position: relative; aspect-ratio: 4 / 3; border-radius: 22px; overflow: hidden; background: var(--panel); cursor: zoom-in; touch-action: pan-y; }
     /* En PC la galería se ajusta al alto de la pantalla: de entrada se ven las fotos,
        las miniaturas y, a la derecha, el título, el precio y el botón */
-    @media (min-width: 1000px) { .escenario { aspect-ratio: auto; height: clamp(380px, calc(100vh - 190px), 640px); } }
+    @media (min-width: 1000px) { .escenario { aspect-ratio: auto; height: clamp(360px, calc(100vh - 240px), 620px); } }
     .escenario .fondo { position: absolute; inset: -30px; background-size: cover; background-position: center; filter: blur(28px) brightness(.45); transform: scale(1.1); transition: background-image .3s; }
     .escenario img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .35s; }
     .escenario img.lista { opacity: 1; }
@@ -91,9 +91,9 @@
       .dato:nth-child(n + 5) { border-top: 0; }
     }
 
-    /* Interruptor Fotos | Video, en vidrio sobre la galería */
-    .interruptor { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; padding: 4px; gap: 2px;
-      border-radius: 999px; background: rgba(12,10,9,.55); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.12); }
+    /* Interruptor Fotos | Video, encima de la galería */
+    .interruptor { display: flex; width: max-content; margin: 0 auto 12px; padding: 4px; gap: 2px;
+      border-radius: 999px; background: var(--panel); border: 1px solid rgba(255,255,255,.1); box-shadow: 0 8px 24px rgba(0,0,0,.3); }
     .interruptor button { border: 0; background: transparent; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #e7e5e4; transition: all .25s; white-space: nowrap; }
     .interruptor button.activo { background: var(--oro); color: var(--fondo); box-shadow: 0 4px 14px rgba(212,175,55,.35); }
     .escenario .videoEnGaleria { position: absolute; inset: 0; z-index: 2; background: #000; overflow: hidden; }
@@ -114,7 +114,7 @@
     .leerMas { margin-top: 6px; background: none; border: 0; color: var(--oro); font-weight: 600; padding: 0; }
 
     /* ---------- Tarjeta para agendar ---------- */
-    @media (min-width: 1000px) { .ficha > .etiqueta, .ficha > h1, .ficha > .lugar, .ficha > .direccion, .ficha > .precioGrande, .ficha > .admin { display: none; } .ficha .datos { margin-top: 0; } }
+    @media (min-width: 1000px) { .ficha > .etiqueta, .ficha > h1, .ficha > .lugar, .ficha > .direccion, .ficha > .precioGrande, .ficha > .admin, .ficha > .incluye { display: none; } .ficha .datos { margin-top: 0; } }
     .tarjetaAgendar { background: var(--panel); border: 1px solid var(--linea); border-radius: 22px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
     @media (min-width: 1000px) { .tarjetaAgendar { position: sticky; top: 76px; } }
     @media (max-width: 999px) { .tarjetaAgendar { display: none; } }
@@ -189,16 +189,16 @@
 
   <div id="contenido" class="pagina oculto">
     <main>
-      <!-- Galería -->
+      <!-- Galería (el interruptor Fotos | Video va encima, fuera de la foto) -->
+      <div class="interruptor oculto" id="interruptor" role="tablist">
+        <button class="activo" id="verFotos" role="tab">📷 Fotos <span id="numFotos"></span></button>
+        <button id="verVideo" role="tab">▶ Video</button>
+      </div>
       <div class="escenario" id="escenario">
         <div class="fondo" id="fondoFoto"></div>
         <img id="fotoActual" alt="Foto del inmueble">
         <button class="flecha izq" id="ant" aria-label="Foto anterior">‹</button>
         <button class="flecha der" id="sig" aria-label="Foto siguiente">›</button>
-        <div class="interruptor oculto" id="interruptor" role="tablist">
-          <button class="activo" id="verFotos" role="tab">📷 Fotos <span id="numFotos"></span></button>
-          <button id="verVideo" role="tab">▶ Video</button>
-        </div>
         <div class="videoEnGaleria oculto" id="videoEnGaleria"></div>
         <span class="ampliar">⤢ Ver en grande</span>
         <span class="contador" id="contador"></span>
