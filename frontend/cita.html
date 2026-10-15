@@ -64,6 +64,7 @@
     .dia.elegido, .hora.elegido { background: #f5f5f4; color: #0c0a09; box-shadow: 0 0 0 2px var(--oro); }
     .subtitulo { margin: 22px 0 10px; font-size: 14px; color: #a8a29e; }
     .horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .grupoHora { margin: 16px 0 8px; font-size: 13px; color: #a8a29e; font-weight: 600; }
     .hora { padding: 12px 0; font-size: 14px; background: #292524; border: 1px solid #3f3a36; border-radius: 10px; }
   </style>
 </head>
@@ -98,7 +99,7 @@
 
       <div id="horas" class="oculto">
         <p class="subtitulo" id="tituloHoras"></p>
-        <div class="horas" id="listaHoras"></div>
+        <div id="listaHoras"></div>
       </div>
 
       <button id="confirmarNueva" type="button" class="oculto" style="background:#1f7a4d;margin-top:18px;"></button>
@@ -109,6 +110,7 @@
       <div class="icono" id="iconoResultado">✓</div>
       <h1 id="tituloResultado"></h1>
       <p id="textoResultado"></p>
+      <p id="contador" class="oculto" style="margin-top:22px;font-size:13px;color:#78716c;"></p>
     </section>
   </main>
 
@@ -126,13 +128,30 @@
       }).then(r => r.json());
     }
 
-    function mostrarResultado(titulo, texto, icono) {
-      $('cargando').classList.add('oculto');
-      $('pregunta').classList.add('oculto');
+    /**
+     * Pantalla final. Con cerrar=true (la acción salió bien) cuenta de 10 a 0 y
+     * cierra la página. Algunos navegadores del celular no dejan que una página
+     * se cierre sola: en ese caso, al llegar a 0, se pide cerrarla.
+     */
+    function mostrarResultado(titulo, texto, icono, cerrar) {
+      ['cargando', 'pregunta', 'reagendar'].forEach(id => $(id).classList.add('oculto'));
       $('iconoResultado').textContent = icono || '✓';
       $('tituloResultado').textContent = titulo;
       $('textoResultado').textContent = texto;
       $('resultado').classList.remove('oculto');
+      if (!cerrar) return;
+      const c = $('contador');
+      c.classList.remove('oculto');
+      let n = 10;
+      const pintar = () => { c.textContent = 'Esta página se cerrará en ' + n + '…'; };
+      pintar();
+      const t = setInterval(() => {
+        n--;
+        if (n > 0) { pintar(); return; }
+        clearInterval(t);
+        window.close();
+        setTimeout(() => { c.textContent = 'Ya puedes cerrar esta página.'; }, 300);
+      }, 1000);
     }
 
     // ---------- Reagendar: el propietario elige día y hora (oct-2026) ----------
@@ -161,7 +180,8 @@
       $('confirmarNueva').onclick = () => {
         const b = $('confirmarNueva'); b.disabled = true; b.textContent = 'Guardando…';
         llamar2('reagendarCitaPropietario', { timestamp: horaElegida.timestamp }).then(x => {
-          if (x.ok) mostrarResultado('¡Listo!', x.mensaje, '✓');
+          // Éxito sin repetir el horario: ya lo eligió y le llega por correo
+          if (x.ok) mostrarResultado('¡Listo!', 'Tu nueva fecha quedó registrada. Te avisaremos antes de la cita y, una hora antes, te pediremos que la confirmes.', '✓', true);
           else { b.disabled = false; b.textContent = 'Confirmar nueva fecha'; alert(x.mensaje); if (diaElegido) elegirDia(diaElegido); }
         }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
       };
@@ -211,7 +231,12 @@
           $('listaHoras').innerHTML = `<p style="grid-column:1/-1;color:#a8a29e;">${(r && (r.motivo || r.error)) || 'Sin horarios disponibles'}. Elige otro día.</p>`;
           return;
         }
-        $('listaHoras').innerHTML = slots.map((s, i) => `<button type="button" class="hora" data-i="${i}">${s.horaAmPm}</button>`).join('');
+        // Separados en mañana y tarde, como en el formulario del portafolio
+        const grupo = (titulo, icono, lista) => !lista.length ? '' :
+          `<p class="grupoHora">${icono} ${titulo}</p><div class="horas">` +
+          lista.map(s => `<button type="button" class="hora" data-i="${slots.indexOf(s)}">${s.horaAmPm}</button>`).join('') + '</div>';
+        const esManana = s => new Date(s.timestamp).getHours() < 12;
+        $('listaHoras').innerHTML = grupo('Mañana', '☀️', slots.filter(esManana)) + grupo('Tarde', '🌇', slots.filter(s => !esManana(s)));
         $('listaHoras').querySelectorAll('.hora').forEach(b => {
           b.onclick = () => {
             horaElegida = slots[Number(b.dataset.i)];
@@ -244,7 +269,7 @@
         b.onclick = () => {
           b.disabled = true; b.textContent = 'Guardando…';
           llamar('aplicarEstadoCita').then(x => {
-            mostrarResultado(x.ok ? 'Listo' : 'No se pudo aplicar', x.mensaje || '', x.ok ? '✓' : '!');
+            mostrarResultado(x.ok ? 'Listo' : 'No se pudo aplicar', x.mensaje || '', x.ok ? '✓' : '!', !!x.ok);
           }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
         };
       }).catch(() => mostrarResultado('Sin conexión', 'No pudimos cargar tu cita. Revisa tu internet e intenta de nuevo.', '!'));
