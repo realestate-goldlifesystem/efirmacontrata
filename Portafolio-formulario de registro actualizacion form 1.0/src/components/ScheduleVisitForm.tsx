@@ -18,7 +18,7 @@ interface TimeSlot {
 export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
   const [formData, setFormData] = useState({
     name: '',
-    countryCode: '+57',
+    countryCode: 'CO',
     phone: '',
     email: '',
     address: '',
@@ -110,7 +110,8 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
         body: JSON.stringify({
           accion: 'agendarCita',
           nombreCliente: formData.name,
-          celular: `${formData.countryCode} ${formData.phone}`,
+          // Se guarda con el indicativo (+57), no con la sigla del país (CO)
+          celular: `${ALL_COUNTRIES.find(c => c.code === formData.countryCode)?.prefix || '+57'} ${formData.phone}`,
           correo: formData.email,
           tipoServicio: formData.serviceType,
           direccion: formData.address,

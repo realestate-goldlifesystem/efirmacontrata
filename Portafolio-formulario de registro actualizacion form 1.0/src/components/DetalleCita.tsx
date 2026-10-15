@@ -3,7 +3,19 @@ import {
   X, Phone, MessageCircle, Mail, MapPin, Clock, Home, StickyNote, History, Pencil,
   CalendarClock, Ban, UserCheck, UserX, Save, Loader2, Users, KeyRound, DoorOpen,
 } from 'lucide-react';
+import PhoneCountrySelector, { ALL_COUNTRIES, separarCelular } from './PhoneCountrySelector';
 import { API_URL, GRUPOS, TIPOS, grupoDe, tipoDe, internacional, type Cita, type TipoAgenda } from './CitasAgendaPanel';
+
+// Mismos servicios que ofrece el formulario de agendar (ScheduleVisitForm)
+const SERVICIOS = [
+  { valor: 'Venta', texto: 'Venta (Corretaje Inmobiliario)' },
+  { valor: 'Arriendo', texto: 'Arriendo (Corretaje Inmobiliario)' },
+  { valor: 'Administración', texto: 'Administración Integral de Inmuebles' },
+  { valor: 'Vendi-Renta', texto: 'Vendi-Renta (Doble promoción)' },
+  { valor: 'Admi-Venta', texto: 'Admi-Venta (Administración con opción de venta)' },
+];
+const largoPais = (code: string) => ALL_COUNTRIES.find(c => c.code === code)?.maxLength || 10;
+const prefijoPais = (code: string) => ALL_COUNTRIES.find(c => c.code === code)?.prefix || '+57';
 
 // Quién es la persona de la cita, según el tipo de agenda
 const PERSONA_TIPO: Record<TipoAgenda, string> = {
@@ -45,8 +57,12 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   const yaEmpezo = cita.timestamp <= Date.now();
   const [modo, setModo] = useState<null | 'reagendar' | 'cancelar' | 'editar'>(null);
   const [campos, setCampos] = useState({
-    nombre: cita.nombre, celular: cita.celular, correo: cita.correo, servicio: cita.servicio, direccion: cita.direccion,
+    nombre: cita.nombre, correo: cita.correo, servicio: cita.servicio, direccion: cita.direccion,
   });
+  const celularInicial = separarCelular(cita.celular);
+  const [pais, setPais] = useState(celularInicial.code);
+  const [numero, setNumero] = useState(celularInicial.numero);
+  const entrada = 'mt-1 w-full rounded-xl bg-stone-900 border border-stone-700 px-3 py-2 text-white';
   const [fecha, setFecha] = useState(hoyIso());
   const [slots, setSlots] = useState<{ timestamp: number; horaAmPm: string }[] | null>(null);
   const [motivoSlots, setMotivoSlots] = useState('');
@@ -151,17 +167,53 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
 
         {modo === 'editar' && (
           <div className="mt-4 p-4 rounded-2xl border border-stone-800 bg-stone-950/50 space-y-3">
-            {([
-              ['nombre', 'Nombre', 'text'], ['celular', 'Celular', 'tel'], ['correo', 'Correo', 'email'],
-              ['servicio', 'Servicio', 'text'], ['direccion', 'Dirección del inmueble', 'text'],
-            ] as const).map(([k, etiqueta, tipo]) => (
-              <label key={k} className="block text-sm text-stone-300">
-                {etiqueta}
-                <input type={tipo} value={campos[k]} onChange={e => setCampos({ ...campos, [k]: e.target.value })}
-                  className="mt-1 w-full rounded-xl bg-stone-900 border border-stone-700 px-3 py-2 text-white" />
-              </label>
-            ))}
-            <button disabled={enviando || !campos.nombre.trim()} onClick={() => ejecutar({ tipo: 'editar', campos })}
+            <label className="block text-sm text-stone-300">
+              Nombre
+              <input type="text" value={campos.nombre} onChange={e => setCampos({ ...campos, nombre: e.target.value })}
+                className={entrada} />
+            </label>
+
+            {/* Celular: país con bandera + solo dígitos, con el largo del país */}
+            <div className="text-sm text-stone-300">
+              Celular
+              <div className="mt-1 flex rounded-xl bg-stone-900 border border-stone-700 focus-within:border-brand-gold">
+                <PhoneCountrySelector oscuro value={pais} onChange={code => { setPais(code); setNumero(numero.slice(0, largoPais(code))); }} />
+                <input type="tel" inputMode="numeric" value={numero} maxLength={largoPais(pais)} placeholder="Número"
+                  onChange={e => setNumero(e.target.value.replace(/\D/g, '').slice(0, largoPais(pais)))}
+                  className="w-full bg-transparent px-3 py-2 text-white font-mono outline-none" />
+              </div>
+              {numero && numero.length !== largoPais(pais) && (
+                <p className="text-xs text-amber-400 mt-1">El número debe tener {largoPais(pais)} dígitos.</p>
+              )}
+            </div>
+
+            <label className="block text-sm text-stone-300">
+              Correo
+              <input type="email" value={campos.correo} onChange={e => setCampos({ ...campos, correo: e.target.value })}
+                className={entrada} />
+            </label>
+
+            <label className="block text-sm text-stone-300">
+              Servicio
+              <select value={campos.servicio} onChange={e => setCampos({ ...campos, servicio: e.target.value })}
+                className={`${entrada} [color-scheme:dark]`}>
+                {/* Si la cita trae un servicio que no está en la lista, se conserva */}
+                {campos.servicio && !SERVICIOS.some(s => s.valor === campos.servicio) && (
+                  <option value={campos.servicio}>{campos.servicio}</option>
+                )}
+                {SERVICIOS.map(s => <option key={s.valor} value={s.valor}>{s.texto}</option>)}
+              </select>
+            </label>
+
+            <label className="block text-sm text-stone-300">
+              Dirección del inmueble
+              <input type="text" value={campos.direccion} onChange={e => setCampos({ ...campos, direccion: e.target.value })}
+                className={entrada} />
+            </label>
+
+            <button
+              disabled={enviando || !campos.nombre.trim() || (!!numero && numero.length !== largoPais(pais))}
+              onClick={() => ejecutar({ tipo: 'editar', campos: { ...campos, celular: numero ? `${prefijoPais(pais)} ${numero}` : '' } })}
               className={`${boton} w-full bg-brand-gold text-stone-950 hover:brightness-110`}>
               {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Guardar cambios
             </button>
