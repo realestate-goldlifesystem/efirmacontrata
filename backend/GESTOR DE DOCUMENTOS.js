@@ -638,6 +638,13 @@ function doPost(e) {
           ? obtenerCitasPanel(datos)
           : { success: false, message: 'API_AGENDA no cargada' };
         break;
+      case 'infoInmuebleVisita':
+        // Página pública de agendar visita (frontend/visita.html): solo lo publicable
+        result = infoInmuebleVisita(datos);
+        break;
+      case 'agendarVisitaInteresado':
+        result = agendarVisitaInteresado(datos);
+        break;
       case 'infoEstadoCita':
         // Página de citas en GitHub Pages: lee la pregunta (no cambia nada)
         result = infoEstadoCita(datos);

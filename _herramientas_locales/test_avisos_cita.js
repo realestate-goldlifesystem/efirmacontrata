@@ -38,6 +38,15 @@ for (let min = 4 * 1440; min > 0; min -= 5) {
 }
 igual('confirmada sin avisos de confirmar', conf, ['H48', 'H24', 'H3', 'H2']);
 
+// Interesado: empieza 3 días antes
+const inter = []; ultimo = '';
+for (let min = 5 * 1440; min > 0; min -= 5) {
+  const p = toca(min, ultimo, false, 'INTERESADO');
+  if (p) { inter.push(p); ultimo = p; }
+}
+igual('interesado desde 72 h', inter, ['H72', 'H48', 'H24', 'H3', 'H2', 'M60', 'M45', 'M30']);
+igual('propietario no recibe 72 h', toca(70 * 60, '', false, 'PROPIETARIO'), null);
+
 // Motor atrasado: con 50 min y último H2, manda solo M60 (no H... ni varios)
 igual('atraso: uno solo', toca(50, 'H2', false), 'M60');
 igual('atraso grande: el más reciente', toca(40, 'H24', false), 'M45');

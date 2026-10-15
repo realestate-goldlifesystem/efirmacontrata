@@ -99,7 +99,7 @@ function ejecutarMotorAgenda() {
           return;
         }
 
-        const paso = avisoQueTocaCita(minFaltan, ultimoPaso, !pendiente);
+        const paso = avisoQueTocaCita(minFaltan, ultimoPaso, !pendiente, valorCita(f, col, 'TIPO AGENDA'));
         if (paso) {
           try {
             enviarPasoCita(paso, correo, { idCita: idCita, token: tokenProp, nombre: nombre, servicio: servicio, direccion: direccion, inicio: fechaCita });

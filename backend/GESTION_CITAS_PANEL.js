@@ -19,13 +19,19 @@
 // En el panel el agente ya habló con el propietario: puede reagendar con 1 h de aviso.
 const PANEL_ANTICIPACION_MIN = 60;
 
+/** Tipo de agenda de una cita (PROPIETARIO, INTERESADO…). Vacío = citas viejas, de propietario. */
+function tipoDeCita(cita) {
+  const t = String(valorCita(cita.fila, cita.col, 'TIPO AGENDA') || '').trim().toUpperCase();
+  return TIPOS_AGENDA[t] ? t : 'PROPIETARIO';
+}
+
 /** Horarios libres de un día para reagendar una cita (excluye el evento de la propia cita). */
 function disponibilidadReagendarCita(datos) {
   const permiso = _verificarAgenteGoogle(datos && datos.credential);
   if (!permiso.ok) return { success: false, message: permiso.mensaje };
   const cita = _citaPorId(datos.idCita);
   if (!cita) return { success: false, message: 'No encontramos esa cita.' };
-  return obtenerDisponibilidadAgenda(datos.fecha, 'PROPIETARIO', {
+  return obtenerDisponibilidadAgenda(datos.fecha, tipoDeCita(cita), {
     anticipacionMin: PANEL_ANTICIPACION_MIN,
     excluirEventoId: String(valorCita(cita.fila, cita.col, 'ID EVENTO CALENDAR') || '')
   });
@@ -182,12 +188,13 @@ function moverCita(cita, timestamp, op) {
   // El horario tiene que seguir libre (se revisa aquí, no se confía en la pantalla)
   const idEvento = String(valorCita(fila, col, 'ID EVENTO CALENDAR') || '');
   const diaIso = Utilities.formatDate(inicio, 'America/Bogota', 'yyyy-MM-dd');
-  const disp = obtenerDisponibilidadAgenda(diaIso, 'PROPIETARIO', { anticipacionMin: op.anticipacionMin, excluirEventoId: idEvento });
+  const tipo = tipoDeCita(cita);
+  const disp = obtenerDisponibilidadAgenda(diaIso, tipo, { anticipacionMin: op.anticipacionMin, excluirEventoId: idEvento });
   if (!disp.success || !disp.slots.some(x => x.timestamp === inicio.getTime())) {
     return { ok: false, mensaje: 'Ese horario ya no está libre. Elige otro.' };
   }
 
-  const fin = new Date(inicio.getTime() + TIPOS_AGENDA.PROPIETARIO.duracionMin * 60000);
+  const fin = new Date(inicio.getTime() + TIPOS_AGENDA[tipo].duracionMin * 60000);
   const cal = CalendarApp.getDefaultCalendar();
   let evento = null;
   try { evento = idEvento ? cal.getEventById(idEvento) : null; } catch (e) { evento = null; }
@@ -219,7 +226,7 @@ function moverCita(cita, timestamp, op) {
   escribir('HORA CITA', formatAmPm(inicio));
   escribir('ESTADO', estadoNuevo);
   // La línea de avisos vuelve a empezar desde la fecha nueva (CORREOS_CITA.js)
-  escribir('ULTIMO AVISO', avisoVigenteCita((inicio.getTime() - Date.now()) / 60000));
+  escribir('ULTIMO AVISO', avisoVigenteCita((inicio.getTime() - Date.now()) / 60000, tipo));
   escribir('FECHA ULTIMO AVISO', '');
   const antes = fechaActual ? textoFecha(fechaActual) : '';
   escribir('ULTIMO CAMBIO', ahoraTxt + ' · ' + (op.quien === 'agente' ? 'agente reagendó desde el panel' : 'propietario reagendó desde su correo') +
@@ -229,7 +236,7 @@ function moverCita(cita, timestamp, op) {
     // Solo informa, sin botones: la confirmación se pide 1 hora antes
     enviarPasoCita('REAGENDADA', correo, {
       idCita: idCita, token: String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''), nombre: nombre,
-      servicio: servicio, direccion: direccion, inicio: inicio, confirmada: op.quien === 'agente'
+      servicio: servicio, direccion: direccion, inicio: inicio, confirmada: op.quien === 'agente', duracionMin: TIPOS_AGENDA[tipo].duracionMin
     });
   } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
   return { ok: true, textoNueva: textoFecha(inicio), textoAntes: antes };
@@ -271,7 +278,7 @@ function infoReagendarPropietario(datos) {
 function disponibilidadReagendarPropietario(datos) {
   const r = _citaDelPropietario(datos.idCita, datos.t);
   if (r.error) return { success: false, error: r.error };
-  return obtenerDisponibilidadAgenda(datos.fecha, 'PROPIETARIO', {
+  return obtenerDisponibilidadAgenda(datos.fecha, tipoDeCita(r.cita), {
     excluirEventoId: String(valorCita(r.cita.fila, r.cita.col, 'ID EVENTO CALENDAR') || '')
   });
 }
@@ -284,7 +291,7 @@ function reagendarPorPropietario(datos) {
     const r = _citaDelPropietario(datos.idCita, datos.t);
     if (r.error) return { ok: false, mensaje: r.error };
     const nombre = String(valorCita(r.cita.fila, r.cita.col, 'NOMBRE') || '');
-    const m = moverCita(r.cita, Number(datos.timestamp), { anticipacionMin: TIPOS_AGENDA.PROPIETARIO.anticipacionMin, quien: 'propietario' });
+    const m = moverCita(r.cita, Number(datos.timestamp), { anticipacionMin: TIPOS_AGENDA[tipoDeCita(r.cita)].anticipacionMin, quien: 'propietario' });
     if (!m.ok) return { ok: false, mensaje: m.mensaje };
     try {
       enviarCorreoCita(

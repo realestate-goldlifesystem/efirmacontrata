@@ -17,15 +17,18 @@
 
 // Avisos en orden, con los minutos que faltan para la cita cuando les toca salir.
 const ORDEN_AVISOS_CITA = [['H48', 2880], ['H24', 1440], ['H3', 180], ['H2', 120], ['M60', 60], ['M45', 45], ['M30', 30]];
+// Las visitas de interesados empiezan 3 días antes (plan 6.1.2): uno por día, 72, 48 y 24 h
+const ORDEN_AVISOS_INTERESADO = [['H72', 4320]].concat(ORDEN_AVISOS_CITA);
+const ordenAvisosDe = (tipo) => String(tipo || '').toUpperCase() === 'INTERESADO' ? ORDEN_AVISOS_INTERESADO : ORDEN_AVISOS_CITA;
 // La cita se libera si, faltando 25 min o menos, ya salió algún aviso de
 // confirmación y pasaron al menos 5 min sin respuesta (el margen que pidió Leonardo).
 const LIBERAR_FALTANDO_MIN = 25;
 const MARGEN_RESPUESTA_MIN = 5;
 
 /** El aviso más reciente cuyo momento ya llegó ('' si ninguno). */
-function avisoVigenteCita(minFaltan) {
+function avisoVigenteCita(minFaltan, tipo) {
   let paso = '';
-  ORDEN_AVISOS_CITA.forEach(([p, umbral]) => { if (minFaltan <= umbral) paso = p; });
+  ordenAvisosDe(tipo).forEach(([p, umbral]) => { if (minFaltan <= umbral) paso = p; });
   return paso;
 }
 
@@ -34,10 +37,10 @@ function avisoVigenteCita(minFaltan) {
  * Solo el más reciente: si el motor se atrasó, no se mandan varios de golpe.
  * Las citas ya confirmadas no reciben los avisos de confirmar (M60, M45, M30).
  */
-function avisoQueTocaCita(minFaltan, ultimoPaso, confirmada) {
+function avisoQueTocaCita(minFaltan, ultimoPaso, confirmada, tipo) {
   if (minFaltan <= 0) return null;
-  const orden = ORDEN_AVISOS_CITA.map(x => x[0]);
-  const vigente = avisoVigenteCita(minFaltan);
+  const orden = ordenAvisosDe(tipo).map(x => x[0]);
+  const vigente = avisoVigenteCita(minFaltan, tipo);
   if (!vigente || orden.indexOf(vigente) <= orden.indexOf(ultimoPaso || '')) return null;
   if (confirmada && vigente.charAt(0) === 'M') return null;
   return vigente;
@@ -68,6 +71,7 @@ function etiquetaTipoCitaHtml(tipo) {
 const PASOS_CORREO_CITA = {
   AGENDADA: { asunto: 'Tu cita quedó agendada', titulo: 'VISITA AGENDADA' },
   REAGENDADA: { asunto: 'Tu cita cambió de fecha', titulo: 'CITA REAGENDADA' },
+  H72:      { asunto: 'Tienes una cita en 3 días', titulo: 'RECORDATORIO' },
   H48:      { asunto: 'Tienes una cita en 2 días', titulo: 'RECORDATORIO' },
   H24:      { asunto: 'Tienes una cita mañana', titulo: 'RECORDATORIO' },
   H3:       { asunto: 'Tienes una cita en 3 horas', titulo: 'RECORDATORIO' },
@@ -126,6 +130,10 @@ function correoPasoCita(paso, c) {
         (c.confirmada ? '¡Te esperamos!' : 'Te avisaremos antes de la cita. <strong>Una hora antes te pediremos que la confirmes.</strong>');
       secundario = lineaCalendario + lineaCambio;
       break;
+    case 'H72':
+      mensaje = 'Te recordamos que tienes una cita <strong>en 3 días</strong>.' + tarjeta;
+      secundario = lineaCambio;
+      break;
     case 'H48':
       mensaje = 'Te recordamos que tienes una cita <strong>en 2 días</strong>.' + tarjeta;
       secundario = lineaCambio;
@@ -176,7 +184,7 @@ function fechaCalendarioUtc(d) { return Utilities.formatDate(d, 'UTC', "yyyyMMdd
 
 /** Enlace que abre Google Calendar con la cita lista para guardar. */
 function urlGoogleCalendarCita(c) {
-  const fin = new Date(c.inicio.getTime() + DURACION_CITA_CALENDARIO_MIN * 60000);
+  const fin = new Date(c.inicio.getTime() + (c.duracionMin || DURACION_CITA_CALENDARIO_MIN) * 60000);
   const p = {
     action: 'TEMPLATE',
     text: 'Cita Gold Life Real Estate' + (c.servicio ? ' · ' + c.servicio : ''),
@@ -190,7 +198,7 @@ function urlGoogleCalendarCita(c) {
 
 /** La cita como archivo .ics: Outlook y Apple Mail lo muestran con "Agregar al calendario". */
 function archivoCalendarioCita(c) {
-  const fin = new Date(c.inicio.getTime() + DURACION_CITA_CALENDARIO_MIN * 60000);
+  const fin = new Date(c.inicio.getTime() + (c.duracionMin || DURACION_CITA_CALENDARIO_MIN) * 60000);
   // En .ics las comas, puntos y comas y barras van escapados, y nada de saltos de línea
   const limpio = (t) => String(t || '').replace(/([\\;,])/g, '\\$1').replace(/\r?\n/g, ' ');
   const ics = [

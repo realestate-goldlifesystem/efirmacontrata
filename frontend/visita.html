@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda tu visita · Gold Life Real Estate</title>
+  <meta name="description" content="Agenda tu visita a este inmueble con Gold Life Real Estate.">
+  <!--
+    AGENDAR VISITA A UN INMUEBLE (bloque 1 del plan de agendas, oct-2026)
+
+    Página pública que comparte el agente desde su "Portafolio de Inmuebles":
+      visita.html?i=<ID DE REGISTRO>
+    Asistente: preguntas cortas → fecha → hora → datos.
+    Backend: infoInmuebleVisita / agendarVisitaInteresado (AGENDA_INTERESADOS.js),
+    horarios con obtenerDisponibilidad tipo INTERESADO (AGENDA_MOTOR.js).
+
+    Inmuebles con acompañamiento del propietario: el interesado elige el horario que
+    prefiere y queda como solicitud por coordinar (el bloque 2 la llevará al propietario).
+  -->
+  <style>
+    :root { --oro: #d4af37; --fondo: #0c0a09; --tarjeta: #1c1917; --linea: rgba(255,255,255,.08); }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 24px 16px 40px; color: #f5f5f4;
+      font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--fondo);
+      background-image: radial-gradient(ellipse 80% 45% at 50% -10%, rgba(212,175,55,.16), transparent 70%);
+    }
+    .marco { max-width: 520px; margin: 0 auto; }
+    .marca { text-align: center; font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); margin-bottom: 18px; }
+    .marca span { color: #a8a29e; font-weight: 400; }
+    .tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 24px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+    .foto { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #292524; }
+    .inmueble { padding: 18px 22px; border-bottom: 1px solid var(--linea); }
+    .inmueble h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    .inmueble .lugar { color: #a8a29e; margin-top: 4px; font-size: 14px; }
+    .datos { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 12px; font-size: 13px; color: #d6d3d1; }
+    .precio { margin-top: 12px; font-size: 18px; font-weight: 700; color: var(--oro); }
+    .cuerpo { padding: 22px; }
+    .pasos { display: flex; gap: 6px; margin-bottom: 20px; }
+    .pasos div { flex: 1; height: 4px; border-radius: 4px; background: #292524; transition: background .3s; }
+    .pasos div.hecho { background: var(--oro); }
+    .rotulo { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #a8a29e; font-weight: 700; }
+    h2 { margin: 6px 0 16px; font-size: 22px; font-weight: 600; }
+    .pregunta { margin-bottom: 18px; }
+    .pregunta p { margin: 0 0 10px; color: #d6d3d1; font-size: 15px; }
+    .opciones { display: flex; flex-wrap: wrap; gap: 8px; }
+    .opcion, .dia, .hora, .negocio {
+      font: inherit; cursor: pointer; border-radius: 12px; border: 1px solid #3f3a36; background: #292524; color: #f5f5f4; transition: all .15s;
+    }
+    .opcion { padding: 10px 14px; font-size: 14px; }
+    .opcion.elegido, .dia.elegido, .hora.elegido, .negocio.elegido { background: #f5f5f4; color: var(--fondo); border-color: #f5f5f4; box-shadow: 0 0 0 2px var(--oro); }
+    .mes { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; text-transform: capitalize; }
+    .flecha { width: 40px; height: 40px; border-radius: 50%; border: 0; background: #292524; color: #f5f5f4; font-size: 20px; cursor: pointer; }
+    .flecha:disabled { opacity: .25; cursor: default; }
+    .semana, .dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .semana div { text-align: center; font-size: 11px; color: #78716c; padding: 4px 0; font-weight: 700; }
+    .dia { padding: 10px 0; font-size: 14px; border-color: transparent; background: transparent; }
+    .dia:hover:not(:disabled) { background: #292524; }
+    .dia:disabled { color: #44403c; text-decoration: line-through; cursor: default; }
+    .grupo { margin: 16px 0 8px; font-size: 13px; color: #a8a29e; font-weight: 600; }
+    .horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .hora { padding: 12px 0; font-size: 14px; }
+    label { display: block; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #a8a29e; font-weight: 700; margin: 0 0 6px; }
+    .campo { margin-bottom: 14px; }
+    input, select {
+      width: 100%; font: inherit; font-size: 15px; color: #f5f5f4; background: var(--fondo); border: 1px solid #3f3a36;
+      border-radius: 12px; padding: 12px 14px; outline: none;
+    }
+    input:focus, select:focus { border-color: var(--oro); }
+    .tel { display: flex; gap: 8px; } .tel select { width: 110px; }
+    .resumen { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--fondo); border: 1px solid var(--linea); border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
+    .resumen b { color: var(--oro); } .resumen a { color: var(--oro); font-size: 13px; cursor: pointer; }
+    .principal { width: 100%; border: 0; border-radius: 12px; padding: 16px; font: inherit; font-size: 16px; font-weight: 700; color: var(--fondo); background: var(--oro); cursor: pointer; margin-top: 6px; }
+    .principal:disabled { opacity: .45; cursor: default; }
+    .secundario { background: none; border: 0; color: #a8a29e; font: inherit; font-size: 14px; cursor: pointer; margin-top: 12px; width: 100%; }
+    .aviso { color: #a8a29e; font-size: 14px; line-height: 1.6; }
+    .error { color: #fca5a5; font-size: 14px; margin-top: 10px; }
+    .exito { text-align: center; padding: 10px 0; }
+    .exito .icono { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; background: rgba(212,175,55,.12); box-shadow: 0 0 0 1px rgba(212,175,55,.35); }
+    .oculto { display: none !important; }
+    .negocios { display: flex; gap: 8px; margin-top: 12px; } .negocio { flex: 1; padding: 10px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="marco">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <main class="tarjeta">
+      <p id="cargando" class="aviso" style="padding:40px;text-align:center;">Cargando el inmueble…</p>
+
+      <div id="contenido" class="oculto">
+        <img id="foto" class="foto oculto" alt="">
+        <section class="inmueble">
+          <h1 id="titulo"></h1>
+          <div class="lugar" id="lugar"></div>
+          <div class="datos" id="datos"></div>
+          <div class="negocios oculto" id="negocios"></div>
+          <div class="precio" id="precio"></div>
+        </section>
+
+        <section class="cuerpo">
+          <div class="pasos" id="barra"><div></div><div></div><div></div><div></div></div>
+
+          <!-- Paso 1: preguntas cortas -->
+          <div id="p1">
+            <div class="rotulo">Paso 1 de 4</div>
+            <h2>Cuéntanos un poco de ti</h2>
+            <div id="preguntas"></div>
+            <button class="principal" id="ir2" disabled>Continuar</button>
+          </div>
+
+          <!-- Paso 2: fecha -->
+          <div id="p2" class="oculto">
+            <div class="rotulo">Paso 2 de 4</div>
+            <h2 id="tituloFecha">¿Qué día quieres visitarlo?</h2>
+            <div class="mes"><button class="flecha" id="mesAnt" aria-label="Mes anterior">‹</button><strong id="tituloMes"></strong><button class="flecha" id="mesSig" aria-label="Mes siguiente">›</button></div>
+            <div class="semana"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+            <div class="dias" id="dias"></div>
+            <button class="secundario" data-volver="1">‹ Volver</button>
+          </div>
+
+          <!-- Paso 3: hora -->
+          <div id="p3" class="oculto">
+            <div class="rotulo">Paso 3 de 4</div>
+            <h2 id="tituloHora">Elige la hora</h2>
+            <div class="resumen"><span id="diaElegido"></span><a data-volver="2">Cambiar</a></div>
+            <div id="horas"></div>
+            <button class="secundario" data-volver="2">‹ Volver</button>
+          </div>
+
+          <!-- Paso 4: datos -->
+          <div id="p4" class="oculto">
+            <div class="rotulo">Paso 4 de 4</div>
+            <h2>Tus datos</h2>
+            <div class="resumen"><span id="citaElegida"></span><a data-volver="3">Cambiar</a></div>
+            <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" autocomplete="name" placeholder="Juan Pérez"></div>
+            <div class="campo"><label for="celular">Celular</label>
+              <div class="tel">
+                <select id="indicativo" aria-label="Indicativo del país">
+                  <option value="57" data-largo="10">CO +57</option><option value="1" data-largo="10">US +1</option>
+                  <option value="52" data-largo="10">MX +52</option><option value="34" data-largo="9">ES +34</option>
+                  <option value="58" data-largo="10">VE +58</option><option value="593" data-largo="9">EC +593</option>
+                  <option value="51" data-largo="9">PE +51</option><option value="56" data-largo="9">CL +56</option>
+                  <option value="54" data-largo="10">AR +54</option><option value="507" data-largo="8">PA +507</option>
+                </select>
+                <input id="celular" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="Número">
+              </div>
+            </div>
+            <div class="campo"><label for="correo">Correo electrónico</label><input id="correo" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></div>
+            <p class="aviso" id="avisoCoordinado" style="font-size:13px;"></p>
+            <button class="principal" id="enviar" disabled>Agendar visita</button>
+            <p class="error oculto" id="error"></p>
+            <button class="secundario" data-volver="3">‹ Volver</button>
+          </div>
+
+          <!-- Éxito -->
+          <div id="ok" class="oculto exito">
+            <div class="icono">✓</div>
+            <h2 id="okTitulo"></h2>
+            <p class="aviso" id="okTexto"></p>
+          </div>
+        </section>
+      </div>
+
+      <div id="sinInmueble" class="oculto exito" style="padding:40px 22px;">
+        <div class="icono">!</div>
+        <h2>No pudimos abrir este inmueble</h2>
+        <p class="aviso" id="sinInmuebleTexto"></p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+    const $ = (id) => document.getElementById(id);
+    const idInmueble = new URLSearchParams(location.search).get('i') || '';
+    const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const pesos = (n) => '$ ' + Number(n).toLocaleString('es-CO');
+    const llamar = (cuerpo) => fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo) }).then(r => r.json());
+
+    let inm = null, negocio = '', respuestas = {}, mesVisible, dia = null, hora = null, pedido = 0;
+
+    // ---------- Navegación entre pasos ----------
+    function irA(n, sinDesplazar) {
+      [1, 2, 3, 4].forEach(k => $('p' + k).classList.toggle('oculto', k !== n));
+      [...$('barra').children].forEach((b, k) => b.classList.toggle('hecho', k < n));
+      if (!sinDesplazar) window.scrollTo({ top: $('barra').getBoundingClientRect().top + window.scrollY - 20, behavior: 'smooth' });
+    }
+    document.querySelectorAll('[data-volver]').forEach(b => b.onclick = () => irA(Number(b.dataset.volver)));
+
+    // ---------- Paso 1: preguntas cortas (plan 6.1.1-a) ----------
+    const PREGUNTAS = {
+      ARRIENDO: [
+        { clave: 'personas', texto: '¿Cuántas personas van a vivir?', opciones: ['1', '2', '3', '4', '5 o más'] },
+        { clave: 'ocupacion', texto: '¿A qué te dedicas?', opciones: ['Empleado', 'Independiente', 'Pensionado', 'Estudiante', 'Otro'] }
+      ],
+      VENTA: [
+        { clave: 'pago', texto: '¿Cómo piensas comprar?', opciones: ['De contado', 'Con crédito'] },
+        { clave: 'preaprobado', texto: '¿Tienes crédito preaprobado?', opciones: ['Sí', 'No', 'En trámite', 'No aplica'] }
+      ]
+    };
+    function pintarPreguntas() {
+      respuestas = {};
+      $('preguntas').innerHTML = PREGUNTAS[negocio].map(p =>
+        `<div class="pregunta"><p>${p.texto}</p><div class="opciones">` +
+        p.opciones.map(o => `<button class="opcion" data-clave="${p.clave}" data-valor="${o}">${o}</button>`).join('') +
+        '</div></div>').join('');
+      $('preguntas').querySelectorAll('.opcion').forEach(b => b.onclick = () => {
+        respuestas[b.dataset.clave] = b.dataset.valor;
+        $('preguntas').querySelectorAll(`[data-clave="${b.dataset.clave}"]`).forEach(x => x.classList.toggle('elegido', x === b));
+        $('ir2').disabled = PREGUNTAS[negocio].some(p => !respuestas[p.clave]);
+      });
+      $('ir2').disabled = true;
+    }
+    function pintarPrecio() {
+      const p = negocio === 'VENTA' ? inm.precioVenta : inm.precioArriendo;
+      $('precio').textContent = p ? pesos(p) + (negocio === 'VENTA' ? '' : ' / mes') : '';
+    }
+    $('ir2').onclick = () => irA(2);
+
+    // ---------- Paso 2: fecha ----------
+    function pintarMes() {
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const minimo = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      const maximo = new Date(hoy.getFullYear(), hoy.getMonth() + 2, 1);
+      $('tituloMes').textContent = MESES[mesVisible.getMonth()] + ' ' + mesVisible.getFullYear();
+      $('mesAnt').disabled = mesVisible <= minimo;
+      $('mesSig').disabled = mesVisible >= maximo;
+      const desfase = (mesVisible.getDay() + 6) % 7;
+      const total = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 0).getDate();
+      let html = '<div></div>'.repeat(desfase);
+      for (let d = 1; d <= total; d++) {
+        const f = new Date(mesVisible.getFullYear(), mesVisible.getMonth(), d);
+        const ok = f >= hoy && f.getDay() !== 0;
+        html += `<button class="dia${dia && iso(f) === iso(dia) ? ' elegido' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
+      }
+      $('dias').innerHTML = html;
+      $('dias').querySelectorAll('button[data-f]').forEach(b => b.onclick = () => {
+        const [y, m, d] = b.dataset.f.split('-').map(Number);
+        elegirDia(new Date(y, m - 1, d));
+      });
+    }
+    $('mesAnt').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() - 1, 1); pintarMes(); };
+    $('mesSig').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 1); pintarMes(); };
+
+    // ---------- Paso 3: hora (mañana y tarde, como el formulario del portafolio) ----------
+    function elegirDia(f) {
+      dia = f; hora = null; pintarMes();
+      const texto = DIAS[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()];
+      $('diaElegido').innerHTML = '📅 <b>' + texto.charAt(0).toUpperCase() + texto.slice(1) + '</b>';
+      $('horas').innerHTML = '<p class="aviso">Buscando horarios libres…</p>';
+      irA(3);
+      const n = ++pedido;
+      llamar({ accion: 'obtenerDisponibilidad', fecha: iso(f), tipo: 'INTERESADO' }).then(r => {
+        if (n !== pedido) return;
+        const slots = (r && r.success && r.slots) || [];
+        if (!slots.length) {
+          $('horas').innerHTML = `<p class="aviso">${(r && r.motivo) || 'No hay horarios libres este día'}. Elige otro día.</p>`;
+          return;
+        }
+        const grupo = (titulo, lista) => !lista.length ? '' :
+          `<p class="grupo">${titulo}</p><div class="horas">` +
+          lista.map(s => `<button class="hora" data-i="${slots.indexOf(s)}">${s.horaAmPm}</button>`).join('') + '</div>';
+        const manana = (s) => new Date(s.timestamp).getHours() < 12;
+        $('horas').innerHTML = grupo('☀️ Mañana', slots.filter(manana)) + grupo('🌇 Tarde', slots.filter(s => !manana(s)));
+        $('horas').querySelectorAll('.hora').forEach(b => b.onclick = () => {
+          hora = slots[Number(b.dataset.i)];
+          $('citaElegida').innerHTML = $('diaElegido').innerHTML + ' · <b>' + hora.horaAmPm + '</b>';
+          irA(4);
+          validar();
+        });
+      }).catch(() => { $('horas').innerHTML = '<p class="aviso">Error de red. Intenta de nuevo.</p>'; });
+    }
+
+    // ---------- Paso 4: datos ----------
+    function largoTel() { return Number($('indicativo').selectedOptions[0].dataset.largo); }
+    function validar() {
+      const cel = $('celular').value.replace(/\D/g, '');
+      $('enviar').disabled = !$('nombre').value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('correo').value.trim()) || cel.length !== largoTel();
+    }
+    $('celular').oninput = () => { $('celular').value = $('celular').value.replace(/\D/g, '').slice(0, largoTel()); validar(); };
+    $('indicativo').onchange = () => { $('celular').value = $('celular').value.slice(0, largoTel()); validar(); };
+    $('nombre').oninput = validar; $('correo').oninput = validar;
+
+    $('enviar').onclick = () => {
+      const b = $('enviar'); b.disabled = true; b.textContent = 'Agendando…'; $('error').classList.add('oculto');
+      llamar({
+        accion: 'agendarVisitaInteresado', i: idInmueble, negocio: negocio, precalificacion: respuestas,
+        nombre: $('nombre').value.trim(), correo: $('correo').value.trim(),
+        celular: '+' + $('indicativo').value + ' ' + $('celular').value, timestamp: hora.timestamp
+      }).then(r => {
+        if (!r.success) {
+          b.disabled = false; b.textContent = inm.modo === 'DIRECTO' ? 'Agendar visita' : 'Enviar solicitud';
+          $('error').textContent = r.error || 'No pudimos agendar la visita.'; $('error').classList.remove('oculto');
+          if (/ocupado/i.test(r.error || '') && dia) elegirDia(dia);
+          return;
+        }
+        ['p1', 'p2', 'p3', 'p4'].forEach(id => $(id).classList.add('oculto'));
+        [...$('barra').children].forEach(x => x.classList.add('hecho'));
+        $('okTitulo').textContent = r.modo === 'DIRECTO' ? '¡Visita agendada!' : '¡Solicitud enviada!';
+        $('okTexto').textContent = r.modo === 'DIRECTO'
+          ? 'Te enviamos un correo con la dirección y los detalles. Te avisaremos antes y, una hora antes, te pediremos que confirmes.'
+          : 'Este inmueble se visita con el propietario. Coordinamos la hora con él y te escribimos para confirmarte.';
+        $('ok').classList.remove('oculto');
+      }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
+    };
+
+    // ---------- Inicio ----------
+    if (!idInmueble) {
+      $('cargando').classList.add('oculto'); $('sinInmueble').classList.remove('oculto');
+      $('sinInmuebleTexto').textContent = 'El enlace está incompleto. Pídele al asesor que te lo comparta de nuevo.';
+    } else {
+      llamar({ accion: 'infoInmuebleVisita', i: idInmueble }).then(r => {
+        $('cargando').classList.add('oculto');
+        if (!r.ok) { $('sinInmueble').classList.remove('oculto'); $('sinInmuebleTexto').textContent = r.mensaje || ''; return; }
+        inm = r;
+        $('titulo').textContent = r.tipoInmueble + (r.barrio ? ' en ' + r.barrio : '');
+        $('lugar').textContent = [r.barrio, r.ciudad].filter(Boolean).join(', ');
+        $('datos').innerHTML = [
+          r.habitaciones && `🛏️ ${r.habitaciones} hab.`, r.banos && `🛁 ${r.banos} baños`, r.area && `📐 ${r.area} m²`
+        ].filter(Boolean).map(x => `<span>${x}</span>`).join('');
+        if (r.foto) { $('foto').src = r.foto; $('foto').classList.remove('oculto'); }
+        negocio = r.negocios[0];
+        if (r.negocios.length > 1) {
+          $('negocios').innerHTML = r.negocios.map(n => `<button class="negocio${n === negocio ? ' elegido' : ''}" data-n="${n}">${n === 'VENTA' ? 'Comprar' : 'Arrendar'}</button>`).join('');
+          $('negocios').classList.remove('oculto');
+          $('negocios').querySelectorAll('.negocio').forEach(b => b.onclick = () => {
+            negocio = b.dataset.n;
+            $('negocios').querySelectorAll('.negocio').forEach(x => x.classList.toggle('elegido', x === b));
+            pintarPreguntas(); pintarPrecio();
+          });
+        }
+        if (r.modo !== 'DIRECTO') {
+          $('tituloFecha').textContent = '¿Qué día te gustaría visitarlo?';
+          $('tituloHora').textContent = '¿A qué hora te queda bien?';
+          $('avisoCoordinado').textContent = 'Este inmueble se visita con el propietario: coordinamos la hora con él y te confirmamos por correo.';
+          $('enviar').textContent = 'Enviar solicitud';
+        }
+        pintarPreguntas(); pintarPrecio();
+        const h = new Date(); mesVisible = new Date(h.getFullYear(), h.getMonth(), 1); pintarMes();
+        $('contenido').classList.remove('oculto');
+        irA(1, true);
+      }).catch(() => {
+        $('cargando').classList.add('oculto'); $('sinInmueble').classList.remove('oculto');
+        $('sinInmuebleTexto').textContent = 'Revisa tu conexión a internet e intenta de nuevo.';
+      });
+    }
+  </script>
+</body>
+</html>
