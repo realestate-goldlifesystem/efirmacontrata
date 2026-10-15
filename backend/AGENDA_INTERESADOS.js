@@ -68,7 +68,15 @@ function _inmueblePorId(idInmueble) {
     precioGeneral: v('PRECIO DE PROMOCION GENERAL'),
     precioVenta: v('PRECIO DE PROMOCION EN VENTA'),
     autorizacion: String(v('¿Qué tipo de autorización desea con el agente?') || v('¿Qué tipo de autorización desea con el agente para administración?') || ''),
-    carpeta: String(carpeta || '')
+    carpeta: String(carpeta || ''),
+    // Datos clave para la página pública. Se dejan fuera torre, número de
+    // apartamento, garaje y depósito: identifican el inmueble exacto.
+    estrato: String(v('¿Cual es el estrato?') || ''),
+    piso: String(v('N° de piso') || ''),
+    antiguedad: String(v('Antiguedad del Inmueble') || ''),
+    garajes: String(v('N° de Garajes') || ''),
+    administracion: Number(v('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)')) || 0,
+    mascotas: String(v('¿Se permite mascota?') || '')
   };
 }
 
@@ -86,6 +94,53 @@ function negociosDeEstado(estado) {
   if (/PUBLICADO ARRIENDO|VENTA\/RENTA/.test(e)) out.push('ARRIENDO');
   if (/PUBLICADO VENTA/.test(e)) out.push('VENTA');
   return out;
+}
+
+// Todas las fotos de la carpeta (Leonardo, 15-oct-2026). El tope solo protege la
+// página si una carpeta trae cientos de archivos por error.
+const MAX_FOTOS_VISITA = 200;
+
+/**
+ * Fotos de la carpeta FOTOGRAFÍAS, en orden de nombre (la portada primero), todas.
+ * Cada una con su miniatura y su versión grande, públicas de Drive.
+ */
+function _fotosInmueble(carpeta) {
+  try {
+    const m = String(carpeta || '').match(/(?:id=|folders\/|d\/)([a-zA-Z0-9_-]{25,})/);
+    if (!m) return [];
+    const carpetas = DriveApp.getFolderById(m[1]).getFoldersByName('FOTOGRAFÍAS');
+    if (!carpetas.hasNext()) return [];
+    const archivos = carpetas.next().getFiles();
+    const lista = [];
+    while (archivos.hasNext()) {
+      const a = archivos.next();
+      if (String(a.getMimeType()).indexOf('image/') === 0) lista.push({ id: a.getId(), nombre: a.getName() });
+    }
+    lista.sort((x, y) => x.nombre.localeCompare(y.nombre, 'es', { numeric: true }));
+    return lista.slice(0, MAX_FOTOS_VISITA).map(f => ({
+      mini: 'https://drive.google.com/thumbnail?id=' + f.id + '&sz=w400',
+      grande: 'https://drive.google.com/thumbnail?id=' + f.id + '&sz=w1600'
+    }));
+  } catch (e) { Logger.log('Sin fotos: ' + e.message); return []; }
+}
+
+/**
+ * Texto del Doc "DESCRIPCIÓN DE INMUEBLE" (carpeta DESCRIPCIÓN DE LA PUBLICACIÓN),
+ * el que se genera al registrar el inmueble y se publica en redes.
+ */
+function _descripcionInmueble(carpeta) {
+  try {
+    const m = String(carpeta || '').match(/(?:id=|folders\/|d\/)([a-zA-Z0-9_-]{25,})/);
+    if (!m) return '';
+    const carpetas = DriveApp.getFolderById(m[1]).getFoldersByName('DESCRIPCIÓN DE LA PUBLICACIÓN');
+    if (!carpetas.hasNext()) return '';
+    const docs = carpetas.next().searchFiles("title contains 'DESCRIPCIÓN' and trashed = false");
+    while (docs.hasNext()) {
+      const d = docs.next();
+      if (d.getMimeType() === MimeType.GOOGLE_DOCS) return DocumentApp.openById(d.getId()).getBody().getText().trim();
+    }
+  } catch (e) { Logger.log('Sin descripción: ' + e.message); }
+  return '';
 }
 
 /** Primera foto de la carpeta FOTOGRAFÍAS, como miniatura pública de Drive. */
@@ -123,7 +178,10 @@ function infoInmuebleVisita(datos) {
       negocios: negocios,
       precioArriendo: Number(inm.precioGeneral) || 0,
       precioVenta: Number(inm.precioVenta) || Number(inm.precioGeneral) || 0,
-      foto: _fotoPortadaInmueble(inm.carpeta),
+      fotos: _fotosInmueble(inm.carpeta),
+      descripcion: _descripcionInmueble(inm.carpeta),
+      estrato: inm.estrato, piso: inm.piso, antiguedad: inm.antiguedad, garajes: inm.garajes,
+      administracion: inm.administracion, mascotas: inm.mascotas,
       modo: modoVisita(inm.autorizacion)
     };
   } catch (e) {

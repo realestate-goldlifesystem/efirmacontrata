@@ -2,171 +2,270 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Agenda tu visita · Gold Life Real Estate</title>
-  <meta name="description" content="Agenda tu visita a este inmueble con Gold Life Real Estate.">
+  <meta name="description" content="Conoce este inmueble y agenda tu visita con Gold Life Real Estate.">
   <!--
-    AGENDAR VISITA A UN INMUEBLE (bloque 1 del plan de agendas, oct-2026)
+    PÁGINA DEL INMUEBLE + AGENDAR VISITA (bloque 1 del plan de agendas, oct-2026)
 
-    Página pública que comparte el agente desde su "Portafolio de Inmuebles":
-      visita.html?i=<ID DE REGISTRO>
-    Asistente: preguntas cortas → fecha → hora → datos.
-    Backend: infoInmuebleVisita / agendarVisitaInteresado (AGENDA_INTERESADOS.js),
-    horarios con obtenerDisponibilidad tipo INTERESADO (AGENDA_MOTOR.js).
+    La comparte el agente desde su "Portafolio de Inmuebles":  visita.html?i=<ID DE REGISTRO>
+    Primero se ve como la página del inmueble (todas las fotos de su carpeta, la
+    descripción del Doc "DESCRIPCIÓN DE INMUEBLE" y los datos clave). El botón
+    "Agendar visita" abre encima el asistente: preguntas cortas → fecha → hora → datos.
 
-    Inmuebles con acompañamiento del propietario: el interesado elige el horario que
-    prefiere y queda como solicitud por coordinar (el bloque 2 la llevará al propietario).
+    Fotos: la portada es cuadrada (1080×1080) y las demás 4:3. Cada una se muestra
+    completa, sin recortes; el espacio que sobra se llena con la misma foto desenfocada.
+
+    Backend: infoInmuebleVisita / agendarVisitaInteresado (AGENDA_INTERESADOS.js) y
+    obtenerDisponibilidad tipo INTERESADO (AGENDA_MOTOR.js).
   -->
   <style>
-    :root { --oro: #d4af37; --fondo: #0c0a09; --tarjeta: #1c1917; --linea: rgba(255,255,255,.08); }
+    :root { --oro: #d4af37; --fondo: #0c0a09; --panel: #1c1917; --panel2: #292524; --linea: rgba(255,255,255,.08); --texto: #f5f5f4; --suave: #a8a29e; }
     * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; padding: 24px 16px 40px; color: #f5f5f4;
-      font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--fondo);
-      background-image: radial-gradient(ellipse 80% 45% at 50% -10%, rgba(212,175,55,.16), transparent 70%);
-    }
-    .marco { max-width: 520px; margin: 0 auto; }
-    .marca { text-align: center; font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); margin-bottom: 18px; }
-    .marca span { color: #a8a29e; font-weight: 400; }
-    .tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 24px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,.5); }
-    .foto { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: #292524; }
-    .inmueble { padding: 18px 22px; border-bottom: 1px solid var(--linea); }
-    .inmueble h1 { margin: 0; font-size: 20px; font-weight: 600; }
-    .inmueble .lugar { color: #a8a29e; margin-top: 4px; font-size: 14px; }
-    .datos { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 12px; font-size: 13px; color: #d6d3d1; }
-    .precio { margin-top: 12px; font-size: 18px; font-weight: 700; color: var(--oro); }
-    .cuerpo { padding: 22px; }
-    .pasos { display: flex; gap: 6px; margin-bottom: 20px; }
-    .pasos div { flex: 1; height: 4px; border-radius: 4px; background: #292524; transition: background .3s; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--fondo); color: var(--texto); font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    .oculto { display: none !important; }
+    .sin-barra { scrollbar-width: none; } .sin-barra::-webkit-scrollbar { display: none; }
+
+    /* ---------- Encabezado ---------- */
+    header { position: sticky; top: 0; z-index: 30; display: flex; justify-content: center; align-items: center; height: 56px;
+      background: rgba(12,10,9,.82); backdrop-filter: blur(12px); border-bottom: 1px solid var(--linea); }
+    .marca { font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); }
+    .marca span { color: var(--suave); font-weight: 400; }
+
+    /* ---------- Estructura ---------- */
+    .pagina { max-width: 1180px; margin: 0 auto; padding: 20px 16px 120px; display: grid; gap: 28px; }
+    @media (min-width: 1000px) { .pagina { grid-template-columns: minmax(0, 1fr) 360px; padding-bottom: 60px; align-items: start; } }
+
+    /* ---------- Galería ---------- */
+    .escenario { position: relative; aspect-ratio: 4 / 3; border-radius: 22px; overflow: hidden; background: var(--panel); cursor: zoom-in; touch-action: pan-y; }
+    .escenario .fondo { position: absolute; inset: -30px; background-size: cover; background-position: center; filter: blur(28px) brightness(.45); transform: scale(1.1); transition: background-image .3s; }
+    .escenario img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .35s; }
+    .escenario img.lista { opacity: 1; }
+    .flecha { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0;
+      background: rgba(12,10,9,.55); backdrop-filter: blur(6px); color: #fff; font-size: 22px; display: flex; align-items: center; justify-content: center; z-index: 2; transition: background .2s; }
+    .flecha:hover { background: rgba(12,10,9,.85); } .flecha.izq { left: 12px; } .flecha.der { right: 12px; }
+    .contador { position: absolute; right: 12px; bottom: 12px; z-index: 2; padding: 6px 12px; border-radius: 999px; font-size: 13px; background: rgba(12,10,9,.65); backdrop-filter: blur(6px); }
+    .ampliar { position: absolute; left: 12px; bottom: 12px; z-index: 2; padding: 6px 12px; border-radius: 999px; font-size: 13px; background: rgba(12,10,9,.65); backdrop-filter: blur(6px); }
+    .miniaturas { display: flex; gap: 8px; overflow-x: auto; margin-top: 10px; padding: 2px; }
+    .miniaturas button { flex: 0 0 auto; width: 76px; height: 57px; border-radius: 10px; overflow: hidden; border: 0; padding: 0; opacity: .5; outline: 2px solid transparent; transition: all .2s; background: var(--panel2); }
+    .miniaturas button.activa { opacity: 1; outline-color: var(--oro); }
+    .miniaturas img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* ---------- Ficha ---------- */
+    .etiqueta { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(212,175,55,.12); color: var(--oro); border: 1px solid rgba(212,175,55,.35); }
+    h1 { margin: 12px 0 4px; font-size: clamp(24px, 3vw, 34px); font-weight: 600; letter-spacing: -.5px; }
+    .lugar { color: var(--suave); }
+    .precioGrande { margin-top: 14px; font-size: clamp(26px, 3vw, 32px); font-weight: 700; color: var(--oro); }
+    .precioGrande small { font-size: 15px; color: var(--suave); font-weight: 400; }
+    .admin { color: var(--suave); font-size: 14px; margin-top: 2px; }
+    .datos { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 22px; }
+    .dato { background: var(--panel); border: 1px solid var(--linea); border-radius: 14px; padding: 12px 14px; }
+    .dato b { display: block; font-size: 17px; }
+    .dato span { font-size: 12px; color: var(--suave); }
+    .seccion { margin-top: 34px; }
+    .seccion h2 { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--suave); margin: 0 0 14px; font-weight: 700; }
+    .descripcion { color: #d6d3d1; line-height: 1.75; font-size: 15.5px; position: relative; }
+    .descripcion p { margin: 0 0 14px; }
+    .descripcion .titular { font-size: 17px; color: var(--texto); font-weight: 600; }
+    .descripcion h3 { font-size: 15px; color: var(--texto); margin: 20px 0 10px; }
+    .descripcion.recortada { max-height: 340px; overflow: hidden; }
+    .descripcion.recortada::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(transparent, var(--fondo)); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+    .chips span { padding: 7px 12px; border-radius: 999px; font-size: 13px; background: var(--panel); border: 1px solid var(--linea); color: #e7e5e4; }
+    .leerMas { margin-top: 6px; background: none; border: 0; color: var(--oro); font-weight: 600; padding: 0; }
+
+    /* ---------- Tarjeta para agendar ---------- */
+    .tarjetaAgendar { background: var(--panel); border: 1px solid var(--linea); border-radius: 22px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+    @media (min-width: 1000px) { .tarjetaAgendar { position: sticky; top: 76px; } }
+    @media (max-width: 999px) { .tarjetaAgendar { display: none; } }
+    .principal { width: 100%; border: 0; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700; color: var(--fondo); background: var(--oro); transition: transform .1s, filter .2s; }
+    .principal:hover { filter: brightness(1.08); } .principal:active { transform: scale(.98); }
+    .principal:disabled { opacity: .45; cursor: default; filter: none; }
+    .nota { font-size: 13px; color: var(--suave); margin-top: 12px; line-height: 1.5; }
+    .barraMovil { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: rgba(28,25,23,.92); backdrop-filter: blur(14px); border-top: 1px solid var(--linea); }
+    .barraMovil .precio { flex: 1; font-weight: 700; color: var(--oro); font-size: 17px; line-height: 1.2; }
+    .barraMovil .precio small { display: block; color: var(--suave); font-weight: 400; font-size: 12px; }
+    .barraMovil .principal { width: auto; padding: 14px 22px; }
+    @media (min-width: 1000px) { .barraMovil { display: none; } }
+
+    /* ---------- Visor de fotos a pantalla completa ---------- */
+    .visor { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.96); display: flex; align-items: center; justify-content: center; touch-action: pan-y; }
+    .visor img { max-width: 100vw; max-height: 100vh; object-fit: contain; user-select: none; }
+    .visor .cerrar, .modal .cerrar { position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font-size: 22px; z-index: 3; }
+    .visor .contador { bottom: 18px; right: 50%; transform: translateX(50%); }
+
+    /* ---------- Ventana para agendar ---------- */
+    .modal { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.7); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
+    @media (min-width: 640px) { .modal { align-items: center; padding: 20px; } }
+    .ventana { position: relative; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--linea);
+      border-radius: 24px 24px 0 0; padding: 26px 22px 30px; animation: subir .3s ease; }
+    @media (min-width: 640px) { .ventana { border-radius: 24px; } }
+    @keyframes subir { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .ventana .cerrar { top: 12px; right: 12px; width: 38px; height: 38px; font-size: 18px; background: var(--panel2); }
+    .pasos { display: flex; gap: 6px; margin: 6px 44px 20px 0; }
+    .pasos div { flex: 1; height: 4px; border-radius: 4px; background: var(--panel2); transition: background .3s; }
     .pasos div.hecho { background: var(--oro); }
-    .rotulo { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #a8a29e; font-weight: 700; }
-    h2 { margin: 6px 0 16px; font-size: 22px; font-weight: 600; }
-    .pregunta { margin-bottom: 18px; }
-    .pregunta p { margin: 0 0 10px; color: #d6d3d1; font-size: 15px; }
+    .rotulo { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--suave); font-weight: 700; }
+    .ventana h2 { margin: 6px 0 16px; font-size: 22px; font-weight: 600; }
+    .pregunta { margin-bottom: 18px; } .pregunta p { margin: 0 0 10px; color: #d6d3d1; }
     .opciones { display: flex; flex-wrap: wrap; gap: 8px; }
-    .opcion, .dia, .hora, .negocio {
-      font: inherit; cursor: pointer; border-radius: 12px; border: 1px solid #3f3a36; background: #292524; color: #f5f5f4; transition: all .15s;
-    }
+    .opcion, .dia, .hora, .negocio { border-radius: 12px; border: 1px solid #3f3a36; background: var(--panel2); transition: all .15s; }
     .opcion { padding: 10px 14px; font-size: 14px; }
-    .opcion.elegido, .dia.elegido, .hora.elegido, .negocio.elegido { background: #f5f5f4; color: var(--fondo); border-color: #f5f5f4; box-shadow: 0 0 0 2px var(--oro); }
+    .opcion.elegido, .dia.elegido, .hora.elegido, .negocio.elegido { background: var(--texto); color: var(--fondo); border-color: var(--texto); box-shadow: 0 0 0 2px var(--oro); }
     .mes { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; text-transform: capitalize; }
-    .flecha { width: 40px; height: 40px; border-radius: 50%; border: 0; background: #292524; color: #f5f5f4; font-size: 20px; cursor: pointer; }
-    .flecha:disabled { opacity: .25; cursor: default; }
+    .mes button { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--panel2); font-size: 20px; }
+    .mes button:disabled { opacity: .25; cursor: default; }
     .semana, .dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
     .semana div { text-align: center; font-size: 11px; color: #78716c; padding: 4px 0; font-weight: 700; }
     .dia { padding: 10px 0; font-size: 14px; border-color: transparent; background: transparent; }
-    .dia:hover:not(:disabled) { background: #292524; }
+    .dia:hover:not(:disabled) { background: var(--panel2); }
     .dia:disabled { color: #44403c; text-decoration: line-through; cursor: default; }
-    .grupo { margin: 16px 0 8px; font-size: 13px; color: #a8a29e; font-weight: 600; }
-    .horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .hora { padding: 12px 0; font-size: 14px; }
-    label { display: block; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #a8a29e; font-weight: 700; margin: 0 0 6px; }
+    .grupo { margin: 16px 0 8px; font-size: 13px; color: var(--suave); font-weight: 600; }
+    .horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .hora { padding: 12px 0; font-size: 14px; }
+    label { display: block; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--suave); font-weight: 700; margin: 0 0 6px; }
     .campo { margin-bottom: 14px; }
-    input, select {
-      width: 100%; font: inherit; font-size: 15px; color: #f5f5f4; background: var(--fondo); border: 1px solid #3f3a36;
-      border-radius: 12px; padding: 12px 14px; outline: none;
-    }
+    input, select { width: 100%; font: inherit; font-size: 15px; color: var(--texto); background: var(--fondo); border: 1px solid #3f3a36; border-radius: 12px; padding: 12px 14px; outline: none; }
     input:focus, select:focus { border-color: var(--oro); }
     .tel { display: flex; gap: 8px; } .tel select { width: 110px; }
     .resumen { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--fondo); border: 1px solid var(--linea); border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
     .resumen b { color: var(--oro); } .resumen a { color: var(--oro); font-size: 13px; cursor: pointer; }
-    .principal { width: 100%; border: 0; border-radius: 12px; padding: 16px; font: inherit; font-size: 16px; font-weight: 700; color: var(--fondo); background: var(--oro); cursor: pointer; margin-top: 6px; }
-    .principal:disabled { opacity: .45; cursor: default; }
-    .secundario { background: none; border: 0; color: #a8a29e; font: inherit; font-size: 14px; cursor: pointer; margin-top: 12px; width: 100%; }
-    .aviso { color: #a8a29e; font-size: 14px; line-height: 1.6; }
+    .secundario { background: none; border: 0; color: var(--suave); font-size: 14px; margin-top: 12px; width: 100%; }
+    .aviso { color: var(--suave); font-size: 14px; line-height: 1.6; }
     .error { color: #fca5a5; font-size: 14px; margin-top: 10px; }
     .exito { text-align: center; padding: 10px 0; }
     .exito .icono { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; background: rgba(212,175,55,.12); box-shadow: 0 0 0 1px rgba(212,175,55,.35); }
-    .oculto { display: none !important; }
-    .negocios { display: flex; gap: 8px; margin-top: 12px; } .negocio { flex: 1; padding: 10px; font-size: 14px; }
+    .negocios { display: flex; gap: 8px; margin-top: 16px; } .negocio { flex: 1; padding: 10px; font-size: 14px; }
+    .cargando { min-height: 70vh; display: flex; align-items: center; justify-content: center; color: var(--suave); }
   </style>
 </head>
 <body>
-  <div class="marco">
-    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
-    <main class="tarjeta">
-      <p id="cargando" class="aviso" style="padding:40px;text-align:center;">Cargando el inmueble…</p>
+  <header><div class="marca">GOLD LIFE <span>REAL ESTATE</span></div></header>
 
-      <div id="contenido" class="oculto">
-        <img id="foto" class="foto oculto" alt="">
-        <section class="inmueble">
-          <h1 id="titulo"></h1>
-          <div class="lugar" id="lugar"></div>
-          <div class="datos" id="datos"></div>
-          <div class="negocios oculto" id="negocios"></div>
-          <div class="precio" id="precio"></div>
-        </section>
+  <div id="cargando" class="cargando">Cargando el inmueble…</div>
+  <div id="sinInmueble" class="cargando oculto" style="flex-direction:column;text-align:center;padding:24px;">
+    <h2 style="margin:0 0 8px;">No pudimos abrir este inmueble</h2><p class="aviso" id="sinInmuebleTexto"></p>
+  </div>
 
-        <section class="cuerpo">
-          <div class="pasos" id="barra"><div></div><div></div><div></div><div></div></div>
-
-          <!-- Paso 1: preguntas cortas -->
-          <div id="p1">
-            <div class="rotulo">Paso 1 de 4</div>
-            <h2>Cuéntanos un poco de ti</h2>
-            <div id="preguntas"></div>
-            <button class="principal" id="ir2" disabled>Continuar</button>
-          </div>
-
-          <!-- Paso 2: fecha -->
-          <div id="p2" class="oculto">
-            <div class="rotulo">Paso 2 de 4</div>
-            <h2 id="tituloFecha">¿Qué día quieres visitarlo?</h2>
-            <div class="mes"><button class="flecha" id="mesAnt" aria-label="Mes anterior">‹</button><strong id="tituloMes"></strong><button class="flecha" id="mesSig" aria-label="Mes siguiente">›</button></div>
-            <div class="semana"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
-            <div class="dias" id="dias"></div>
-            <button class="secundario" data-volver="1">‹ Volver</button>
-          </div>
-
-          <!-- Paso 3: hora -->
-          <div id="p3" class="oculto">
-            <div class="rotulo">Paso 3 de 4</div>
-            <h2 id="tituloHora">Elige la hora</h2>
-            <div class="resumen"><span id="diaElegido"></span><a data-volver="2">Cambiar</a></div>
-            <div id="horas"></div>
-            <button class="secundario" data-volver="2">‹ Volver</button>
-          </div>
-
-          <!-- Paso 4: datos -->
-          <div id="p4" class="oculto">
-            <div class="rotulo">Paso 4 de 4</div>
-            <h2>Tus datos</h2>
-            <div class="resumen"><span id="citaElegida"></span><a data-volver="3">Cambiar</a></div>
-            <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" autocomplete="name" placeholder="Juan Pérez"></div>
-            <div class="campo"><label for="celular">Celular</label>
-              <div class="tel">
-                <select id="indicativo" aria-label="Indicativo del país">
-                  <option value="57" data-largo="10">CO +57</option><option value="1" data-largo="10">US +1</option>
-                  <option value="52" data-largo="10">MX +52</option><option value="34" data-largo="9">ES +34</option>
-                  <option value="58" data-largo="10">VE +58</option><option value="593" data-largo="9">EC +593</option>
-                  <option value="51" data-largo="9">PE +51</option><option value="56" data-largo="9">CL +56</option>
-                  <option value="54" data-largo="10">AR +54</option><option value="507" data-largo="8">PA +507</option>
-                </select>
-                <input id="celular" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="Número">
-              </div>
-            </div>
-            <div class="campo"><label for="correo">Correo electrónico</label><input id="correo" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></div>
-            <p class="aviso" id="avisoCoordinado" style="font-size:13px;"></p>
-            <button class="principal" id="enviar" disabled>Agendar visita</button>
-            <p class="error oculto" id="error"></p>
-            <button class="secundario" data-volver="3">‹ Volver</button>
-          </div>
-
-          <!-- Éxito -->
-          <div id="ok" class="oculto exito">
-            <div class="icono">✓</div>
-            <h2 id="okTitulo"></h2>
-            <p class="aviso" id="okTexto"></p>
-          </div>
-        </section>
+  <div id="contenido" class="pagina oculto">
+    <main>
+      <!-- Galería -->
+      <div class="escenario" id="escenario">
+        <div class="fondo" id="fondoFoto"></div>
+        <img id="fotoActual" alt="Foto del inmueble">
+        <button class="flecha izq" id="ant" aria-label="Foto anterior">‹</button>
+        <button class="flecha der" id="sig" aria-label="Foto siguiente">›</button>
+        <span class="ampliar">⤢ Ver en grande</span>
+        <span class="contador" id="contador"></span>
       </div>
+      <div class="miniaturas sin-barra" id="miniaturas"></div>
 
-      <div id="sinInmueble" class="oculto exito" style="padding:40px 22px;">
-        <div class="icono">!</div>
-        <h2>No pudimos abrir este inmueble</h2>
-        <p class="aviso" id="sinInmuebleTexto"></p>
-      </div>
+      <!-- Ficha -->
+      <section style="margin-top:22px;">
+        <span class="etiqueta" id="etiquetaNegocio"></span>
+        <h1 id="titulo"></h1>
+        <div class="lugar" id="lugar"></div>
+        <div class="negocios oculto" id="negocios"></div>
+        <div class="precioGrande" id="precio"></div>
+        <div class="admin" id="admin"></div>
+        <div class="datos" id="datos"></div>
+      </section>
+
+      <section class="seccion" id="seccionDescripcion">
+        <h2>Sobre el inmueble</h2>
+        <div class="descripcion recortada" id="descripcion"></div>
+        <button class="leerMas" id="leerMas">Leer toda la descripción</button>
+      </section>
     </main>
+
+    <!-- PC: tarjeta fija a la derecha -->
+    <aside class="tarjetaAgendar">
+      <div class="rotulo">Visítalo</div>
+      <div class="precioGrande" id="precioTarjeta" style="margin-top:6px;"></div>
+      <div class="admin" id="adminTarjeta"></div>
+      <button class="principal" data-agendar style="margin-top:18px;">Agendar visita</button>
+      <p class="nota" id="notaTarjeta"></p>
+    </aside>
+  </div>
+
+  <!-- Celular: barra fija abajo -->
+  <div class="barraMovil oculto" id="barraMovil">
+    <div class="precio" id="precioBarra"></div>
+    <button class="principal" data-agendar>Agendar visita</button>
+  </div>
+
+  <!-- Visor de fotos -->
+  <div class="visor oculto" id="visor">
+    <button class="cerrar" id="cerrarVisor" aria-label="Cerrar">✕</button>
+    <button class="flecha izq" id="visorAnt" aria-label="Foto anterior">‹</button>
+    <img id="visorFoto" alt="Foto del inmueble">
+    <button class="flecha der" id="visorSig" aria-label="Foto siguiente">›</button>
+    <span class="contador" id="visorContador"></span>
+  </div>
+
+  <!-- Ventana para agendar -->
+  <div class="modal oculto" id="modal">
+    <div class="ventana" role="dialog" aria-modal="true" aria-label="Agendar visita">
+      <button class="cerrar" id="cerrarModal" aria-label="Cerrar">✕</button>
+      <div class="pasos" id="barra"><div></div><div></div><div></div><div></div></div>
+
+      <div id="p1">
+        <div class="rotulo">Paso 1 de 4</div>
+        <h2>Cuéntanos un poco de ti</h2>
+        <div id="preguntas"></div>
+        <button class="principal" id="ir2" disabled>Continuar</button>
+      </div>
+
+      <div id="p2" class="oculto">
+        <div class="rotulo">Paso 2 de 4</div>
+        <h2 id="tituloFecha">¿Qué día quieres visitarlo?</h2>
+        <div class="mes"><button id="mesAnt" aria-label="Mes anterior">‹</button><strong id="tituloMes"></strong><button id="mesSig" aria-label="Mes siguiente">›</button></div>
+        <div class="semana"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
+        <div class="dias" id="dias"></div>
+        <button class="secundario" data-volver="1">‹ Volver</button>
+      </div>
+
+      <div id="p3" class="oculto">
+        <div class="rotulo">Paso 3 de 4</div>
+        <h2 id="tituloHora">Elige la hora</h2>
+        <div class="resumen"><span id="diaElegido"></span><a data-volver="2">Cambiar</a></div>
+        <div id="horas"></div>
+        <button class="secundario" data-volver="2">‹ Volver</button>
+      </div>
+
+      <div id="p4" class="oculto">
+        <div class="rotulo">Paso 4 de 4</div>
+        <h2>Tus datos</h2>
+        <div class="resumen"><span id="citaElegida"></span><a data-volver="3">Cambiar</a></div>
+        <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" autocomplete="name" placeholder="Juan Pérez"></div>
+        <div class="campo"><label for="celular">Celular</label>
+          <div class="tel">
+            <select id="indicativo" aria-label="Indicativo del país">
+              <option value="57" data-largo="10">CO +57</option><option value="1" data-largo="10">US +1</option>
+              <option value="52" data-largo="10">MX +52</option><option value="34" data-largo="9">ES +34</option>
+              <option value="58" data-largo="10">VE +58</option><option value="593" data-largo="9">EC +593</option>
+              <option value="51" data-largo="9">PE +51</option><option value="56" data-largo="9">CL +56</option>
+              <option value="54" data-largo="10">AR +54</option><option value="507" data-largo="8">PA +507</option>
+            </select>
+            <input id="celular" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="Número">
+          </div>
+        </div>
+        <div class="campo"><label for="correo">Correo electrónico</label><input id="correo" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></div>
+        <p class="aviso" id="avisoCoordinado" style="font-size:13px;"></p>
+        <button class="principal" id="enviar" disabled>Agendar visita</button>
+        <p class="error oculto" id="error"></p>
+        <button class="secundario" data-volver="3">‹ Volver</button>
+      </div>
+
+      <div id="ok" class="oculto exito">
+        <div class="icono">✓</div>
+        <h2 id="okTitulo"></h2>
+        <p class="aviso" id="okTexto"></p>
+        <button class="principal" id="cerrarOk" style="margin-top:18px;">Listo</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -177,19 +276,109 @@
     const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
     const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const pesos = (n) => '$ ' + Number(n).toLocaleString('es-CO');
+    const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const llamar = (cuerpo) => fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo) }).then(r => r.json());
 
-    let inm = null, negocio = '', respuestas = {}, mesVisible, dia = null, hora = null, pedido = 0;
+    let inm = null, negocio = '', respuestas = {}, mesVisible, dia = null, hora = null, pedido = 0, fotoIdx = 0;
 
-    // ---------- Navegación entre pasos ----------
-    function irA(n, sinDesplazar) {
+    // ================= Galería =================
+    function mostrarFoto(n) {
+      const fotos = inm.fotos; if (!fotos.length) return;
+      fotoIdx = (n + fotos.length) % fotos.length;
+      const img = $('fotoActual');
+      img.classList.remove('lista');
+      img.onload = () => img.classList.add('lista');
+      img.src = fotos[fotoIdx].grande;
+      $('fondoFoto').style.backgroundImage = `url("${fotos[fotoIdx].mini}")`;
+      $('contador').textContent = (fotoIdx + 1) + ' / ' + fotos.length;
+      [...$('miniaturas').children].forEach((b, k) => b.classList.toggle('activa', k === fotoIdx));
+      const activa = $('miniaturas').children[fotoIdx];
+      if (activa) $('miniaturas').scrollTo({ left: activa.offsetLeft - $('miniaturas').clientWidth / 2 + 38, behavior: 'smooth' });
+      // Precarga la siguiente para que pase sin espera
+      const sig = fotos[(fotoIdx + 1) % fotos.length]; if (sig) new Image().src = sig.grande;
+      if (!$('visor').classList.contains('oculto')) pintarVisor();
+    }
+    function deslizar(el, alIzq, alDer) {
+      let x0 = null;
+      el.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+      el.addEventListener('touchend', e => {
+        if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+        if (Math.abs(dx) > 40) { dx < 0 ? alDer() : alIzq(); el.dataset.deslizo = '1'; setTimeout(() => delete el.dataset.deslizo, 300); }
+      });
+    }
+    $('ant').onclick = (e) => { e.stopPropagation(); mostrarFoto(fotoIdx - 1); };
+    $('sig').onclick = (e) => { e.stopPropagation(); mostrarFoto(fotoIdx + 1); };
+    $('escenario').onclick = () => { if (!$('escenario').dataset.deslizo) abrirVisor(); };
+    deslizar($('escenario'), () => mostrarFoto(fotoIdx - 1), () => mostrarFoto(fotoIdx + 1));
+
+    // Visor a pantalla completa
+    function pintarVisor() { $('visorFoto').src = inm.fotos[fotoIdx].grande; $('visorContador').textContent = (fotoIdx + 1) + ' / ' + inm.fotos.length; }
+    function abrirVisor() { if (!inm.fotos.length) return; pintarVisor(); $('visor').classList.remove('oculto'); document.body.style.overflow = 'hidden'; }
+    function cerrarVisor() { $('visor').classList.add('oculto'); document.body.style.overflow = ''; }
+    $('visorAnt').onclick = () => mostrarFoto(fotoIdx - 1);
+    $('visorSig').onclick = () => mostrarFoto(fotoIdx + 1);
+    $('cerrarVisor').onclick = cerrarVisor;
+    deslizar($('visor'), () => mostrarFoto(fotoIdx - 1), () => mostrarFoto(fotoIdx + 1));
+    document.addEventListener('keydown', e => {
+      if ($('visor').classList.contains('oculto')) { if (e.key === 'Escape') cerrarModal(); return; }
+      if (e.key === 'ArrowLeft') mostrarFoto(fotoIdx - 1);
+      if (e.key === 'ArrowRight') mostrarFoto(fotoIdx + 1);
+      if (e.key === 'Escape') cerrarVisor();
+    });
+
+    // ================= Descripción (Doc "DESCRIPCIÓN DE INMUEBLE") =================
+    // Primera línea = titular. Líneas con varios "•" = etiquetas. Líneas cortas que
+    // terminan en ":" = subtítulo. El resto, párrafos.
+    function pintarDescripcion(texto) {
+      const lineas = String(texto || '').split(/\n+/).map(l => l.trim()).filter(Boolean);
+      if (!lineas.length) { $('seccionDescripcion').classList.add('oculto'); return; }
+      const html = lineas.map((l, k) => {
+        if (k === 0) return `<p class="titular">${esc(l)}</p>`;
+        const vinetas = l.split('•').map(x => x.trim()).filter(Boolean);
+        if ((l.match(/•/g) || []).length >= 2) {
+          const antes = l.indexOf('•') > 0 ? `<p>${esc(l.slice(0, l.indexOf('•')).trim())}</p>` : '';
+          return antes + '<div class="chips">' + vinetas.slice(l.indexOf('•') > 0 ? 1 : 0).map(v => `<span>${esc(v.replace(/[.,]$/, ''))}</span>`).join('') + '</div>';
+        }
+        if (l.length < 60 && /:\.?$/.test(l)) return `<h3>${esc(l.replace(/:\.?$/, ''))}</h3>`;
+        return `<p>${esc(l)}</p>`;
+      }).join('');
+      $('descripcion').innerHTML = html;
+      requestAnimationFrame(() => {
+        if ($('descripcion').scrollHeight <= 360) { $('descripcion').classList.remove('recortada'); $('leerMas').classList.add('oculto'); }
+      });
+    }
+    $('leerMas').onclick = () => {
+      const corta = $('descripcion').classList.toggle('recortada');
+      $('leerMas').textContent = corta ? 'Leer toda la descripción' : 'Mostrar menos';
+    };
+
+    function pintarPrecio() {
+      const venta = negocio === 'VENTA';
+      const p = venta ? inm.precioVenta : inm.precioArriendo;
+      const txt = p ? pesos(p) : 'Consultar';
+      const sufijo = p && !venta ? ' <small>/ mes</small>' : '';
+      $('precio').innerHTML = txt + sufijo; $('precioTarjeta').innerHTML = txt + sufijo;
+      $('precioBarra').innerHTML = txt + (p && !venta ? '<small>al mes</small>' : '<small>precio de venta</small>');
+      const adm = inm.administracion ? 'Administración: ' + pesos(inm.administracion) : '';
+      $('admin').textContent = adm; $('adminTarjeta').textContent = adm;
+      $('etiquetaNegocio').textContent = venta ? 'En venta' : 'En arriendo';
+    }
+
+    // ================= Ventana para agendar =================
+    function abrirModal() { $('modal').classList.remove('oculto'); document.body.style.overflow = 'hidden'; }
+    function cerrarModal() { $('modal').classList.add('oculto'); document.body.style.overflow = ''; }
+    document.querySelectorAll('[data-agendar]').forEach(b => b.onclick = abrirModal);
+    $('cerrarModal').onclick = cerrarModal; $('cerrarOk').onclick = cerrarModal;
+    $('modal').onclick = (e) => { if (e.target === $('modal')) cerrarModal(); };
+
+    function irA(n) {
       [1, 2, 3, 4].forEach(k => $('p' + k).classList.toggle('oculto', k !== n));
       [...$('barra').children].forEach((b, k) => b.classList.toggle('hecho', k < n));
-      if (!sinDesplazar) window.scrollTo({ top: $('barra').getBoundingClientRect().top + window.scrollY - 20, behavior: 'smooth' });
+      document.querySelector('.ventana').scrollTop = 0;
     }
     document.querySelectorAll('[data-volver]').forEach(b => b.onclick = () => irA(Number(b.dataset.volver)));
 
-    // ---------- Paso 1: preguntas cortas (plan 6.1.1-a) ----------
+    // Paso 1: preguntas cortas (plan 6.1.1-a)
     const PREGUNTAS = {
       ARRIENDO: [
         { clave: 'personas', texto: '¿Cuántas personas van a vivir?', opciones: ['1', '2', '3', '4', '5 o más'] },
@@ -204,8 +393,7 @@
       respuestas = {};
       $('preguntas').innerHTML = PREGUNTAS[negocio].map(p =>
         `<div class="pregunta"><p>${p.texto}</p><div class="opciones">` +
-        p.opciones.map(o => `<button class="opcion" data-clave="${p.clave}" data-valor="${o}">${o}</button>`).join('') +
-        '</div></div>').join('');
+        p.opciones.map(o => `<button class="opcion" data-clave="${p.clave}" data-valor="${o}">${o}</button>`).join('') + '</div></div>').join('');
       $('preguntas').querySelectorAll('.opcion').forEach(b => b.onclick = () => {
         respuestas[b.dataset.clave] = b.dataset.valor;
         $('preguntas').querySelectorAll(`[data-clave="${b.dataset.clave}"]`).forEach(x => x.classList.toggle('elegido', x === b));
@@ -213,20 +401,15 @@
       });
       $('ir2').disabled = true;
     }
-    function pintarPrecio() {
-      const p = negocio === 'VENTA' ? inm.precioVenta : inm.precioArriendo;
-      $('precio').textContent = p ? pesos(p) + (negocio === 'VENTA' ? '' : ' / mes') : '';
-    }
     $('ir2').onclick = () => irA(2);
 
-    // ---------- Paso 2: fecha ----------
+    // Paso 2: fecha
     function pintarMes() {
       const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
       const minimo = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
       const maximo = new Date(hoy.getFullYear(), hoy.getMonth() + 2, 1);
       $('tituloMes').textContent = MESES[mesVisible.getMonth()] + ' ' + mesVisible.getFullYear();
-      $('mesAnt').disabled = mesVisible <= minimo;
-      $('mesSig').disabled = mesVisible >= maximo;
+      $('mesAnt').disabled = mesVisible <= minimo; $('mesSig').disabled = mesVisible >= maximo;
       const desfase = (mesVisible.getDay() + 6) % 7;
       const total = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 0).getDate();
       let html = '<div></div>'.repeat(desfase);
@@ -236,45 +419,37 @@
         html += `<button class="dia${dia && iso(f) === iso(dia) ? ' elegido' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
       }
       $('dias').innerHTML = html;
-      $('dias').querySelectorAll('button[data-f]').forEach(b => b.onclick = () => {
-        const [y, m, d] = b.dataset.f.split('-').map(Number);
-        elegirDia(new Date(y, m - 1, d));
-      });
+      $('dias').querySelectorAll('button[data-f]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.f.split('-').map(Number); elegirDia(new Date(y, m - 1, d)); });
     }
     $('mesAnt').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() - 1, 1); pintarMes(); };
     $('mesSig').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 1); pintarMes(); };
 
-    // ---------- Paso 3: hora (mañana y tarde, como el formulario del portafolio) ----------
+    // Paso 3: hora, en mañana y tarde
     function elegirDia(f) {
       dia = f; hora = null; pintarMes();
-      const texto = DIAS[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()];
-      $('diaElegido').innerHTML = '📅 <b>' + texto.charAt(0).toUpperCase() + texto.slice(1) + '</b>';
+      const t = DIAS[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()];
+      $('diaElegido').innerHTML = '📅 <b>' + t.charAt(0).toUpperCase() + t.slice(1) + '</b>';
       $('horas').innerHTML = '<p class="aviso">Buscando horarios libres…</p>';
       irA(3);
       const n = ++pedido;
       llamar({ accion: 'obtenerDisponibilidad', fecha: iso(f), tipo: 'INTERESADO' }).then(r => {
         if (n !== pedido) return;
         const slots = (r && r.success && r.slots) || [];
-        if (!slots.length) {
-          $('horas').innerHTML = `<p class="aviso">${(r && r.motivo) || 'No hay horarios libres este día'}. Elige otro día.</p>`;
-          return;
-        }
-        const grupo = (titulo, lista) => !lista.length ? '' :
-          `<p class="grupo">${titulo}</p><div class="horas">` +
+        if (!slots.length) { $('horas').innerHTML = `<p class="aviso">${esc((r && r.motivo) || 'No hay horarios libres este día')}. Elige otro día.</p>`; return; }
+        const grupo = (titulo, lista) => !lista.length ? '' : `<p class="grupo">${titulo}</p><div class="horas">` +
           lista.map(s => `<button class="hora" data-i="${slots.indexOf(s)}">${s.horaAmPm}</button>`).join('') + '</div>';
         const manana = (s) => new Date(s.timestamp).getHours() < 12;
         $('horas').innerHTML = grupo('☀️ Mañana', slots.filter(manana)) + grupo('🌇 Tarde', slots.filter(s => !manana(s)));
         $('horas').querySelectorAll('.hora').forEach(b => b.onclick = () => {
           hora = slots[Number(b.dataset.i)];
           $('citaElegida').innerHTML = $('diaElegido').innerHTML + ' · <b>' + hora.horaAmPm + '</b>';
-          irA(4);
-          validar();
+          irA(4); validar();
         });
       }).catch(() => { $('horas').innerHTML = '<p class="aviso">Error de red. Intenta de nuevo.</p>'; });
     }
 
-    // ---------- Paso 4: datos ----------
-    function largoTel() { return Number($('indicativo').selectedOptions[0].dataset.largo); }
+    // Paso 4: datos
+    const largoTel = () => Number($('indicativo').selectedOptions[0].dataset.largo);
     function validar() {
       const cel = $('celular').value.replace(/\D/g, '');
       $('enviar').disabled = !$('nombre').value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('correo').value.trim()) || cel.length !== largoTel();
@@ -296,56 +471,73 @@
           if (/ocupado/i.test(r.error || '') && dia) elegirDia(dia);
           return;
         }
-        ['p1', 'p2', 'p3', 'p4'].forEach(id => $(id).classList.add('oculto'));
+        // Éxito: se ocultan los pasos para que no se pueda elegir otra cosa
+        [1, 2, 3, 4].forEach(k => $('p' + k).classList.add('oculto'));
         [...$('barra').children].forEach(x => x.classList.add('hecho'));
         $('okTitulo').textContent = r.modo === 'DIRECTO' ? '¡Visita agendada!' : '¡Solicitud enviada!';
         $('okTexto').textContent = r.modo === 'DIRECTO'
           ? 'Te enviamos un correo con la dirección y los detalles. Te avisaremos antes y, una hora antes, te pediremos que confirmes.'
           : 'Este inmueble se visita con el propietario. Coordinamos la hora con él y te escribimos para confirmarte.';
         $('ok').classList.remove('oculto');
+        document.querySelectorAll('[data-agendar]').forEach(x => { x.textContent = r.modo === 'DIRECTO' ? '✓ Visita agendada' : '✓ Solicitud enviada'; x.disabled = true; });
       }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
     };
 
-    // ---------- Inicio ----------
-    if (!idInmueble) {
-      $('cargando').classList.add('oculto'); $('sinInmueble').classList.remove('oculto');
-      $('sinInmuebleTexto').textContent = 'El enlace está incompleto. Pídele al asesor que te lo comparta de nuevo.';
-    } else {
-      llamar({ accion: 'infoInmuebleVisita', i: idInmueble }).then(r => {
-        $('cargando').classList.add('oculto');
-        if (!r.ok) { $('sinInmueble').classList.remove('oculto'); $('sinInmuebleTexto').textContent = r.mensaje || ''; return; }
-        inm = r;
-        $('titulo').textContent = r.tipoInmueble + (r.barrio ? ' en ' + r.barrio : '');
-        $('lugar').textContent = [r.barrio, r.ciudad].filter(Boolean).join(', ');
-        $('datos').innerHTML = [
-          r.habitaciones && `🛏️ ${r.habitaciones} hab.`, r.banos && `🛁 ${r.banos} baños`, r.area && `📐 ${r.area} m²`
-        ].filter(Boolean).map(x => `<span>${x}</span>`).join('');
-        if (r.foto) { $('foto').src = r.foto; $('foto').classList.remove('oculto'); }
-        negocio = r.negocios[0];
-        if (r.negocios.length > 1) {
-          $('negocios').innerHTML = r.negocios.map(n => `<button class="negocio${n === negocio ? ' elegido' : ''}" data-n="${n}">${n === 'VENTA' ? 'Comprar' : 'Arrendar'}</button>`).join('');
-          $('negocios').classList.remove('oculto');
-          $('negocios').querySelectorAll('.negocio').forEach(b => b.onclick = () => {
-            negocio = b.dataset.n;
-            $('negocios').querySelectorAll('.negocio').forEach(x => x.classList.toggle('elegido', x === b));
-            pintarPreguntas(); pintarPrecio();
-          });
-        }
-        if (r.modo !== 'DIRECTO') {
-          $('tituloFecha').textContent = '¿Qué día te gustaría visitarlo?';
-          $('tituloHora').textContent = '¿A qué hora te queda bien?';
-          $('avisoCoordinado').textContent = 'Este inmueble se visita con el propietario: coordinamos la hora con él y te confirmamos por correo.';
-          $('enviar').textContent = 'Enviar solicitud';
-        }
-        pintarPreguntas(); pintarPrecio();
-        const h = new Date(); mesVisible = new Date(h.getFullYear(), h.getMonth(), 1); pintarMes();
-        $('contenido').classList.remove('oculto');
-        irA(1, true);
-      }).catch(() => {
-        $('cargando').classList.add('oculto'); $('sinInmueble').classList.remove('oculto');
-        $('sinInmuebleTexto').textContent = 'Revisa tu conexión a internet e intenta de nuevo.';
-      });
-    }
+    // ================= Inicio =================
+    function sinInmueble(texto) { $('cargando').classList.add('oculto'); $('sinInmueble').classList.remove('oculto'); $('sinInmuebleTexto').textContent = texto; }
+    if (!idInmueble) sinInmueble('El enlace está incompleto. Pídele al asesor que te lo comparta de nuevo.');
+    else llamar({ accion: 'infoInmuebleVisita', i: idInmueble }).then(r => {
+      if (!r.ok) { sinInmueble(r.mensaje || ''); return; }
+      inm = r; inm.fotos = r.fotos || [];
+      const titulo = r.tipoInmueble + (r.barrio ? ' en ' + r.barrio : '');
+      document.title = titulo + ' · Gold Life Real Estate';
+      $('titulo').textContent = titulo;
+      $('lugar').textContent = [r.barrio, r.ciudad].filter(Boolean).join(', ');
+
+      // Datos clave (solo los que existen)
+      const dato = (v, t) => v && String(v).trim() && !/^ning/i.test(v) ? `<div class="dato"><b>${esc(v)}</b><span>${t}</span></div>` : '';
+      $('datos').innerHTML = [
+        dato(r.habitaciones, 'Habitaciones'), dato(r.banos, 'Baños'), dato(r.area && r.area + ' m²', 'Área'),
+        dato(r.garajes, 'Garajes'), dato(r.estrato, 'Estrato'), dato(r.piso, 'Piso'),
+        dato(r.antiguedad && r.antiguedad + ' años', 'Antigüedad'), dato(/^s/i.test(r.mascotas || '') ? 'Sí' : '', 'Mascotas')
+      ].join('');
+
+      // Galería
+      if (inm.fotos.length) {
+        $('miniaturas').innerHTML = inm.fotos.map((f, k) => `<button aria-label="Foto ${k + 1}"><img src="${f.mini}" alt="" loading="lazy"></button>`).join('');
+        [...$('miniaturas').children].forEach((b, k) => b.onclick = () => mostrarFoto(k));
+        if (inm.fotos.length < 2) { $('ant').classList.add('oculto'); $('sig').classList.add('oculto'); $('miniaturas').classList.add('oculto'); }
+        mostrarFoto(0);
+      } else { $('escenario').classList.add('oculto'); $('miniaturas').classList.add('oculto'); }
+
+      pintarDescripcion(r.descripcion);
+
+      negocio = r.negocios[0];
+      if (r.negocios.length > 1) {
+        $('negocios').innerHTML = r.negocios.map(n => `<button class="negocio${n === negocio ? ' elegido' : ''}" data-n="${n}">${n === 'VENTA' ? 'Comprar' : 'Arrendar'}</button>`).join('');
+        $('negocios').classList.remove('oculto');
+        $('negocios').querySelectorAll('.negocio').forEach(b => b.onclick = () => {
+          negocio = b.dataset.n;
+          $('negocios').querySelectorAll('.negocio').forEach(x => x.classList.toggle('elegido', x === b));
+          pintarPreguntas(); pintarPrecio();
+        });
+      }
+      const directo = r.modo === 'DIRECTO';
+      $('notaTarjeta').textContent = directo
+        ? 'Elige día y hora en la agenda del asesor. Visitas de 40 minutos; te confirmamos por correo.'
+        : 'Este inmueble se visita con el propietario: elige el horario que te queda bien y coordinamos con él.';
+      if (!directo) {
+        $('tituloFecha').textContent = '¿Qué día te gustaría visitarlo?';
+        $('tituloHora').textContent = '¿A qué hora te queda bien?';
+        $('avisoCoordinado').textContent = 'Este inmueble se visita con el propietario: coordinamos la hora con él y te confirmamos por correo.';
+        $('enviar').textContent = 'Enviar solicitud';
+      }
+      pintarPreguntas(); pintarPrecio();
+      const h = new Date(); mesVisible = new Date(h.getFullYear(), h.getMonth(), 1); pintarMes();
+      $('cargando').classList.add('oculto');
+      $('contenido').classList.remove('oculto'); $('barraMovil').classList.remove('oculto');
+      irA(1);
+    }).catch(() => sinInmueble('Revisa tu conexión a internet e intenta de nuevo.'));
   </script>
 </body>
 </html>
