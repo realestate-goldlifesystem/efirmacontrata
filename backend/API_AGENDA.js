@@ -291,7 +291,8 @@ function botonesPropietarioCita(idCita, token) {
 }
 
 /** Envía un correo de citas con la plantilla corporativa. */
-function enviarCorreoCita(destino, asunto, titulo, nombre, mensajePrincipal, htmlSecundario) {
+/** @param {Blob[]=} adjuntos  p. ej. el archivo .ics de la cita (CORREOS_CITA.js) */
+function enviarCorreoCita(destino, asunto, titulo, nombre, mensajePrincipal, htmlSecundario, adjuntos) {
   if (!destino) return;
   // Plantilla propia de citas, corta y para celular (email_cita.html)
   const t = HtmlService.createTemplateFromFile('backend/email_cita');
@@ -301,7 +302,9 @@ function enviarCorreoCita(destino, asunto, titulo, nombre, mensajePrincipal, htm
   t.MENSAJE_SECUNDARIO = htmlSecundario || '';
   t.URL_ACCION = '';
   t.TEXTO_BOTON = '';
-  MailApp.sendEmail({ to: destino, subject: asunto, htmlBody: t.evaluate().getContent() });
+  const correo = { to: destino, subject: asunto, htmlBody: t.evaluate().getContent() };
+  if (adjuntos && adjuntos.length) correo.attachments = adjuntos;
+  MailApp.sendEmail(correo);
 }
 
 /**

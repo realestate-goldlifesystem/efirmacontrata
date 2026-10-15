@@ -108,17 +108,23 @@ function correoPasoCita(paso, c) {
     `<a href="${urlEstadoCita(c.idCita, ESTADOS_CITA.CANCELADA, c.token)}" style="color:#a16207;">Cancelar cita</a> · ` +
     `<a href="${urlEstadoCita(c.idCita, ESTADOS_CITA.QUIERE_REAGENDAR, c.token)}" style="color:#a16207;">Cambiar fecha</a></p>`;
 
+  // "Guardar en mi calendario": enlace a Google Calendar con la cita ya llena. Para
+  // Outlook o Apple va además el archivo .ics adjunto (archivoCalendarioCita).
+  const lineaCalendario =
+    '<p style="margin:16px 0 0 0;font-size:13px;text-align:center;">📅 ' +
+    `<a href="${urlGoogleCalendarCita(c)}" style="color:#a16207;font-weight:bold;">Guardar en mi calendario</a></p>`;
+
   let mensaje, secundario;
   switch (paso) {
     case 'AGENDADA':
       mensaje = 'Tu cita quedó agendada.' + tarjeta + 'Te avisaremos antes de la cita. <strong>Una hora antes te pediremos que la confirmes.</strong>';
-      secundario = lineaCambio;
+      secundario = lineaCalendario + lineaCambio;
       break;
     case 'REAGENDADA':
       // c.confirmada: la movió el agente tras hablar con él (queda confirmada)
       mensaje = 'Tu cita quedó en la nueva fecha.' + tarjeta +
         (c.confirmada ? '¡Te esperamos!' : 'Te avisaremos antes de la cita. <strong>Una hora antes te pediremos que la confirmes.</strong>');
-      secundario = lineaCambio;
+      secundario = lineaCalendario + lineaCambio;
       break;
     case 'H48':
       mensaje = 'Te recordamos que tienes una cita <strong>en 2 días</strong>.' + tarjeta;
@@ -156,5 +162,48 @@ function correoPasoCita(paso, c) {
 /** Arma y envía un paso. */
 function enviarPasoCita(paso, correo, c) {
   const m = correoPasoCita(paso, c);
-  enviarCorreoCita(correo, m.asunto, m.titulo, m.nombre, m.mensaje, m.secundario);
+  // Al agendar y al reagendar va adjunta la cita para el calendario (Outlook, Apple…)
+  const adjuntos = (paso === 'AGENDADA' || paso === 'REAGENDADA') ? [archivoCalendarioCita(c)] : null;
+  enviarCorreoCita(correo, m.asunto, m.titulo, m.nombre, m.mensaje, m.secundario, adjuntos);
+}
+
+// ---------- La cita en el calendario del propietario ----------
+// En Gmail aparece sola: el evento de Calendar lo lleva como invitado (sin el
+// correo de invitación de Google). Para los demás: enlace y archivo .ics.
+
+const DURACION_CITA_CALENDARIO_MIN = 60;
+function fechaCalendarioUtc(d) { return Utilities.formatDate(d, 'UTC', "yyyyMMdd'T'HHmmss'Z'"); }
+
+/** Enlace que abre Google Calendar con la cita lista para guardar. */
+function urlGoogleCalendarCita(c) {
+  const fin = new Date(c.inicio.getTime() + DURACION_CITA_CALENDARIO_MIN * 60000);
+  const p = {
+    action: 'TEMPLATE',
+    text: 'Cita Gold Life Real Estate' + (c.servicio ? ' · ' + c.servicio : ''),
+    dates: fechaCalendarioUtc(c.inicio) + '/' + fechaCalendarioUtc(fin),
+    details: 'Tu cita con Gold Life Real Estate (ID ' + c.idCita + '). Te avisaremos antes por correo.',
+    location: c.direccion || ''
+  };
+  return 'https://calendar.google.com/calendar/render?' +
+    Object.keys(p).map(k => k + '=' + encodeURIComponent(p[k])).join('&');
+}
+
+/** La cita como archivo .ics: Outlook y Apple Mail lo muestran con "Agregar al calendario". */
+function archivoCalendarioCita(c) {
+  const fin = new Date(c.inicio.getTime() + DURACION_CITA_CALENDARIO_MIN * 60000);
+  // En .ics las comas, puntos y comas y barras van escapados, y nada de saltos de línea
+  const limpio = (t) => String(t || '').replace(/([\\;,])/g, '\\$1').replace(/\r?\n/g, ' ');
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Gold Life Real Estate//Citas//ES', 'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    'UID:' + c.idCita + '@goldlife-realestate',
+    'DTSTAMP:' + fechaCalendarioUtc(new Date()),
+    'DTSTART:' + fechaCalendarioUtc(c.inicio),
+    'DTEND:' + fechaCalendarioUtc(fin),
+    'SUMMARY:' + limpio('Cita Gold Life Real Estate' + (c.servicio ? ' · ' + c.servicio : '')),
+    'LOCATION:' + limpio(c.direccion),
+    'DESCRIPTION:' + limpio('Tu cita con Gold Life Real Estate (ID ' + c.idCita + ').'),
+    'END:VEVENT', 'END:VCALENDAR'
+  ].join('\r\n');
+  return Utilities.newBlob(ics, 'text/calendar', 'cita-gold-life.ics');
 }

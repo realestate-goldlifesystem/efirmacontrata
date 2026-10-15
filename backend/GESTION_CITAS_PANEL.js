@@ -205,7 +205,11 @@ function moverCita(cita, timestamp, op) {
     evento = cal.createEvent(titulo, inicio, fin, {
       description: `Cita reagendada (ID ${idCita})\nPropietario: ${nombre}\n` +
         `Celular: ${valorCita(fila, col, 'CELULAR')}\nCorreo: ${correo}\nServicio: ${servicio}\nDirección: ${direccion || 'N/A'}`,
-      location: direccion
+      location: direccion,
+      // Igual que al agendar: invitado sin correo de Google, para que en Gmail le
+      // aparezca sola en su calendario
+      guests: correo,
+      sendInvites: false
     });
     escribir('ID EVENTO CALENDAR', evento.getId());
   }
