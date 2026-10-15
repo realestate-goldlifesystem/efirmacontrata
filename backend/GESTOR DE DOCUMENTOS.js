@@ -646,6 +646,16 @@ function doPost(e) {
         // El segundo clic de esa página. Valida token, acción y estado (API_CRON_AGENDA.js)
         result = aplicarEstadoCitaDesdeCorreo(datos.idCita, datos.nuevoEstado, datos.t);
         break;
+      case 'infoReagendarCita':
+        result = infoReagendarPropietario(datos);
+        break;
+      case 'disponibilidadReagendarPropietario':
+        result = disponibilidadReagendarPropietario(datos);
+        break;
+      case 'reagendarCitaPropietario':
+        // El propietario elige él mismo el horario nuevo (GESTION_CITAS_PANEL.js)
+        result = reagendarPorPropietario(datos);
+        break;
       case 'gestionarCita':
         // Reagendar, cancelar, asistencia y notas desde el panel (GESTION_CITAS_PANEL.js)
         result = gestionarCitaPanel(datos);

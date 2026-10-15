@@ -52,7 +52,19 @@
     button:active { transform: scale(.98); }
     button:disabled { opacity: .6; cursor: wait; }
     .cargando { margin: 32px 0 8px; color: #a8a29e; }
-    .oculto { display: none; }
+    .oculto { display: none !important; }
+    .mes { display: flex; align-items: center; justify-content: space-between; margin: 22px 0 10px; text-transform: capitalize; }
+    .flecha { width: 40px; padding: 8px 0; background: #292524; font-size: 20px; border-radius: 50%; }
+    .flecha:disabled { opacity: .25; cursor: default; }
+    .dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    #encabezado div { text-align: center; font-size: 11px; color: #78716c; padding: 4px 0; font-weight: 700; }
+    .dia { padding: 10px 0; font-size: 14px; font-weight: 500; background: transparent; color: #f5f5f4; border-radius: 10px; }
+    .dia:hover:not(:disabled) { background: #292524; }
+    .dia:disabled { color: #44403c; text-decoration: line-through; cursor: default; }
+    .dia.elegido, .hora.elegido { background: #f5f5f4; color: #0c0a09; box-shadow: 0 0 0 2px var(--oro); }
+    .subtitulo { margin: 22px 0 10px; font-size: 14px; color: #a8a29e; }
+    .horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .hora { padding: 12px 0; font-size: 14px; background: #292524; border: 1px solid #3f3a36; border-radius: 10px; }
   </style>
 </head>
 <body>
@@ -68,6 +80,31 @@
         <div class="fecha" id="fecha"></div>
       </div>
       <button id="boton" type="button"></button>
+    </section>
+
+    <!-- Reagendar: el propietario elige día y hora él mismo -->
+    <section id="reagendar" class="oculto" style="text-align:left;">
+      <div class="icono">🔄</div>
+      <h1 style="text-align:center;">Elige tu nueva fecha</h1>
+      <p style="text-align:center;font-size:14px;" id="citaActual"></p>
+
+      <div class="mes">
+        <button type="button" class="flecha" id="mesAnt" aria-label="Mes anterior">‹</button>
+        <strong id="tituloMes"></strong>
+        <button type="button" class="flecha" id="mesSig" aria-label="Mes siguiente">›</button>
+      </div>
+      <div class="dias" id="encabezado"></div>
+      <div class="dias" id="dias"></div>
+
+      <div id="horas" class="oculto">
+        <p class="subtitulo" id="tituloHoras"></p>
+        <div class="horas" id="listaHoras"></div>
+      </div>
+
+      <button id="confirmarNueva" type="button" class="oculto" style="background:#1f7a4d;margin-top:18px;"></button>
+      <p style="text-align:center;margin-top:18px;font-size:13px;">
+        <a href="#" id="llamenme" style="color:#a8a29e;">Ninguna fecha me sirve, prefiero que me llamen</a>
+      </p>
     </section>
 
     <section id="resultado" class="oculto">
@@ -100,8 +137,104 @@
       $('resultado').classList.remove('oculto');
     }
 
+    // ---------- Reagendar: el propietario elige día y hora (oct-2026) ----------
+    // Antes "Reagendar" solo avisaba al agente para que lo llamara. Ahora el
+    // propietario ve la disponibilidad real y se reagenda solo; el agente recibe
+    // un aviso. "Prefiero que me llamen" conserva el camino anterior.
+    const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const DIAS_L = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    let mesVisible, diaElegido = null, horaElegida = null, pedido = 0;
+
+    function iniciarReagendar() {
+      llamar('infoReagendarCita').then(r => {
+        if (!r.ok) { mostrarResultado('No se puede reagendar', r.mensaje || '', '!'); return; }
+        $('citaActual').textContent = (r.fechaActual ? 'Tu cita actual: ' + r.fechaActual : '') + (r.servicio ? ' · ' + r.servicio : '');
+        $('encabezado').innerHTML = ['L','M','M','J','V','S','D'].map(d => `<div>${d}</div>`).join('');
+        const h = new Date(); mesVisible = new Date(h.getFullYear(), h.getMonth(), 1);
+        pintarMes();
+        $('cargando').classList.add('oculto');
+        $('reagendar').classList.remove('oculto');
+      }).catch(() => mostrarResultado('Sin conexión', 'No pudimos cargar tu cita. Revisa tu internet e intenta de nuevo.', '!'));
+
+      $('mesAnt').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() - 1, 1); pintarMes(); };
+      $('mesSig').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 1); pintarMes(); };
+      $('confirmarNueva').onclick = () => {
+        const b = $('confirmarNueva'); b.disabled = true; b.textContent = 'Guardando…';
+        llamar2('reagendarCitaPropietario', { timestamp: horaElegida.timestamp }).then(x => {
+          if (x.ok) mostrarResultado('¡Listo!', x.mensaje, '✓');
+          else { b.disabled = false; b.textContent = 'Confirmar nueva fecha'; alert(x.mensaje); if (diaElegido) elegirDia(diaElegido); }
+        }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
+      };
+      $('llamenme').onclick = (e) => {
+        e.preventDefault();
+        if (!confirm('¿Quieres que un asesor te llame para acordar la fecha?')) return;
+        llamar('aplicarEstadoCita').then(x => mostrarResultado(x.ok ? 'Te llamaremos' : 'Aviso', x.mensaje || '', x.ok ? '✓' : '!'));
+      };
+    }
+
+    function llamar2(accion, extra) {
+      return fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ accion: accion }, datos, extra))
+      }).then(r => r.json());
+    }
+
+    function pintarMes() {
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      const minimo = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      const maximo = new Date(hoy.getFullYear(), hoy.getMonth() + 3, 1);
+      $('tituloMes').textContent = MESES[mesVisible.getMonth()] + ' ' + mesVisible.getFullYear();
+      $('mesAnt').disabled = mesVisible <= minimo;
+      $('mesSig').disabled = mesVisible >= maximo;
+      const desfase = (mesVisible.getDay() + 6) % 7;
+      const total = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 0).getDate();
+      let html = '<div></div>'.repeat(desfase);
+      for (let d = 1; d <= total; d++) {
+        const f = new Date(mesVisible.getFullYear(), mesVisible.getMonth(), d);
+        const ok = f >= hoy && f.getDay() !== 0;
+        const sel = diaElegido && iso(f) === iso(diaElegido);
+        html += `<button type="button" class="dia${sel ? ' elegido' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
+      }
+      $('dias').innerHTML = html;
+      $('dias').querySelectorAll('button[data-f]').forEach(b => {
+        b.onclick = () => { const [y, m, d] = b.dataset.f.split('-').map(Number); elegirDia(new Date(y, m - 1, d)); };
+      });
+    }
+
+    function elegirDia(f) {
+      diaElegido = f; horaElegida = null; pintarMes();
+      $('confirmarNueva').classList.add('oculto');
+      $('horas').classList.remove('oculto');
+      $('tituloHoras').textContent = DIAS_L[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()];
+      $('listaHoras').innerHTML = '<p style="grid-column:1/-1;color:#a8a29e;">Buscando horarios libres…</p>';
+      const n = ++pedido;
+      llamar2('disponibilidadReagendarPropietario', { fecha: iso(f) }).then(r => {
+        if (n !== pedido) return;
+        const slots = (r && r.success && r.slots) || [];
+        if (!slots.length) {
+          $('listaHoras').innerHTML = `<p style="grid-column:1/-1;color:#a8a29e;">${(r && (r.motivo || r.error)) || 'Sin horarios disponibles'}. Elige otro día.</p>`;
+          return;
+        }
+        $('listaHoras').innerHTML = slots.map((s, i) => `<button type="button" class="hora" data-i="${i}">${s.horaAmPm}</button>`).join('');
+        $('listaHoras').querySelectorAll('.hora').forEach(b => {
+          b.onclick = () => {
+            horaElegida = slots[Number(b.dataset.i)];
+            $('listaHoras').querySelectorAll('.hora').forEach(x => x.classList.toggle('elegido', x === b));
+            const c = $('confirmarNueva');
+            c.textContent = 'Confirmar: ' + DIAS_L[f.getDay()] + ' ' + f.getDate() + ' · ' + horaElegida.horaAmPm;
+            c.classList.remove('oculto');
+            c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          };
+        });
+      }).catch(() => { $('listaHoras').innerHTML = '<p style="grid-column:1/-1;color:#a8a29e;">Error de red. Intenta de nuevo.</p>'; });
+    }
+
     if (!datos.idCita || !datos.nuevoEstado || !datos.t) {
       mostrarResultado('Enlace incompleto', 'Abre de nuevo el botón desde tu correo.', '!');
+    } else if (datos.nuevoEstado === 'QUIERE REAGENDAR') {
+      iniciarReagendar();
     } else {
       llamar('infoEstadoCita').then(r => {
         if (!r.ok) { mostrarResultado(r.titulo || 'Aviso', r.mensaje || '', r.titulo === 'Todo en orden' ? '✓' : '!'); return; }

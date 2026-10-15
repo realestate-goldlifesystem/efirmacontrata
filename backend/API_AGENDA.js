@@ -225,7 +225,7 @@ function agendarCita(datos) {
         `Hemos registrado tu cita para el servicio de <strong>${datos.tipoServicio}</strong>.<br><br>` +
         `🗓️ <strong>Fecha:</strong> ${fechaCitaStr}<br>⏰ <strong>Hora:</strong> ${horaCitaStr}<br>` +
         `📍 <strong>Inmueble:</strong> ${datos.direccion || 'A convenir'}` +
-        `<br><br><strong>Confirma tu asistencia con el botón verde.</strong> Si no puedes a esa hora, elige reagendar y te llamamos.`,
+        `<br><br><strong>Confirma tu asistencia con el botón verde.</strong> Si no puedes a esa hora, toca reagendar y elige otra fecha.`,
         botonesPropietarioCita(idCita, tokenPropietario)
       );
     } catch (errMail) {

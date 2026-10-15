@@ -124,64 +124,10 @@ function gestionarCitaPanel(datos) {
       }
 
       case 'reagendar': {
-        if (estado === ESTADOS_CITA.ASISTIDA) return { success: false, message: 'Esta cita ya se realizó.' };
-        const inicio = new Date(Number(datos.timestamp));
-        if (isNaN(inicio.getTime())) return { success: false, message: 'Horario no válido.' };
-
-        // El horario tiene que seguir libre (se revisa aquí, no se confía en la pantalla)
-        const idEvento = String(valorCita(fila, col, 'ID EVENTO CALENDAR') || '');
-        const diaIso = Utilities.formatDate(inicio, 'America/Bogota', 'yyyy-MM-dd');
-        const disp = obtenerDisponibilidadAgenda(diaIso, 'PROPIETARIO', { anticipacionMin: PANEL_ANTICIPACION_MIN, excluirEventoId: idEvento });
-        if (!disp.success || !disp.slots.some(x => x.timestamp === inicio.getTime())) {
-          return { success: false, message: 'Ese horario ya no está libre. Elige otro.' };
-        }
-
-        const fin = new Date(inicio.getTime() + TIPOS_AGENDA.PROPIETARIO.duracionMin * 60000);
-        const cal = CalendarApp.getDefaultCalendar();
-        let evento = null;
-        try { evento = idEvento ? cal.getEventById(idEvento) : null; } catch (e) { evento = null; }
-        // El propietario ya aceptó la nueva hora por teléfono: queda confirmada
-        const titulo = tituloEventoCita(ESTADOS_CITA.CONFIRMADA, servicio, nombre);
-        if (evento) {
-          evento.setTime(inicio, fin);
-          evento.setTitle(titulo);
-        } else {
-          // Cancelada o "quiere reagendar" ya habían borrado el evento: se crea otro
-          evento = cal.createEvent(titulo, inicio, fin, {
-            description: `Cita reagendada desde el panel (ID ${datos.idCita})\nPropietario: ${nombre}\n` +
-              `Celular: ${valorCita(fila, col, 'CELULAR')}\nCorreo: ${correo}\nServicio: ${servicio}\nDirección: ${direccion || 'N/A'}`,
-            location: direccion
-          });
-          escribir('ID EVENTO CALENDAR', evento.getId());
-        }
-
-        escribir('FECHA CITA', new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate()));
-        if (col['FECHA CITA']) sheet.getRange(numFila, col['FECHA CITA']).setNumberFormat('dd/MM/yyyy');
-        escribir('HORA CITA', formatAmPm(inicio));
-        escribir('ESTADO', ESTADOS_CITA.CONFIRMADA);
-        // Con menos de 24 h, este correo ya hace de recordatorio
-        const horas = (inicio.getTime() - Date.now()) / 3600000;
-        escribir('RECORDATORIO ENVIADO', horas <= 24 ? ahoraTxt : '');
-        escribir('ULTIMO CAMBIO', ahoraTxt + ' · agente reagendó desde el panel' + (fechaActual ? ' (antes: ' + textoFecha(fechaActual) + ')' : ''));
-
-        try {
-          const tokenProp = String(valorCita(fila, col, 'TOKEN PROPIETARIO') || '');
-          enviarCorreoCita(
-            correo,
-            `🔄 Tu cita quedó para el ${textoFecha(inicio)} - Gold Life`,
-            'CITA REAGENDADA',
-            nombre,
-            `Como lo acordamos, tu cita para el servicio de <strong>${servicio}</strong> quedó en la nueva fecha:<br><br>` +
-            `🗓️ <strong>Fecha:</strong> ${Utilities.formatDate(inicio, tz, 'dd/MM/yyyy')}<br>⏰ <strong>Hora:</strong> ${formatAmPm(inicio)}<br>` +
-            `📍 <strong>Inmueble:</strong> ${direccion || 'A convenir'}` +
-            (tokenProp ? '<br><br>Si algo cambia, puedes reagendar o cancelar aquí:' : ''),
-            tokenProp ? htmlBotonesCorreo([
-              { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(datos.idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) },
-              { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(datos.idCita, ESTADOS_CITA.CANCELADA, tokenProp) }
-            ]) : ''
-          );
-        } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
-        return { success: true, mensaje: 'Cita reagendada para el ' + textoFecha(inicio) + '. Se le avisó al propietario por correo.' };
+        const r = moverCita(cita, Number(datos.timestamp), { anticipacionMin: PANEL_ANTICIPACION_MIN, quien: 'agente' });
+        return r.ok
+          ? { success: true, mensaje: 'Cita reagendada para el ' + r.textoNueva + '. Se le avisó al propietario por correo.' }
+          : { success: false, message: r.mensaje };
       }
 
       default:
@@ -203,4 +149,158 @@ function _citaPorId(idCita) {
   const filas = sheet.getRange(2, 1, ultima - 1, sheet.getLastColumn()).getValues();
   const idx = filas.findIndex(f => String(valorCita(f, col, 'ID CITA')).trim() === String(idCita || '').trim());
   return idx === -1 ? null : { sheet: sheet, col: col, numFila: idx + 2, fila: filas[idx] };
+}
+
+
+/**
+ * Mueve una cita a otro horario: revisa que siga libre, mueve (o recrea) el
+ * evento de Calendar, la deja CONFIRMADA y le manda al propietario el correo con
+ * la nueva fecha. La usan el panel del agente y el propietario desde su correo.
+ * @param {{sheet,col,numFila,fila}} cita  de _citaPorId
+ * @param {number} timestamp  inicio nuevo (uno de los horarios que dio el motor)
+ * @param {{anticipacionMin:number, quien:'agente'|'propietario'}} op
+ * @return {{ok:boolean, mensaje?:string, textoNueva?:string, textoAntes?:string}}
+ */
+function moverCita(cita, timestamp, op) {
+  const { sheet, col, numFila, fila } = cita;
+  const tz = Session.getScriptTimeZone();
+  const ahoraTxt = Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm:ss');
+  const escribir = (n, v) => { if (col[n]) sheet.getRange(numFila, col[n]).setValue(v); };
+  const idCita = String(valorCita(fila, col, 'ID CITA'));
+  const estado = String(valorCita(fila, col, 'ESTADO') || '').trim();
+  const nombre = String(valorCita(fila, col, 'NOMBRE') || '');
+  const correo = String(valorCita(fila, col, 'CORREO') || '');
+  const servicio = String(valorCita(fila, col, 'TIPO SERVICIO') || '');
+  const direccion = String(valorCita(fila, col, 'DIRECCION') || '');
+  const fechaActual = fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA'));
+  const textoFecha = (d) => Utilities.formatDate(d, tz, 'dd/MM/yyyy') + ' a las ' + formatAmPm(d);
+
+  if (estado === ESTADOS_CITA.ASISTIDA) return { ok: false, mensaje: 'Esta cita ya se realizó.' };
+  const inicio = new Date(Number(timestamp));
+  if (isNaN(inicio.getTime())) return { ok: false, mensaje: 'Horario no válido.' };
+
+  // El horario tiene que seguir libre (se revisa aquí, no se confía en la pantalla)
+  const idEvento = String(valorCita(fila, col, 'ID EVENTO CALENDAR') || '');
+  const diaIso = Utilities.formatDate(inicio, 'America/Bogota', 'yyyy-MM-dd');
+  const disp = obtenerDisponibilidadAgenda(diaIso, 'PROPIETARIO', { anticipacionMin: op.anticipacionMin, excluirEventoId: idEvento });
+  if (!disp.success || !disp.slots.some(x => x.timestamp === inicio.getTime())) {
+    return { ok: false, mensaje: 'Ese horario ya no está libre. Elige otro.' };
+  }
+
+  const fin = new Date(inicio.getTime() + TIPOS_AGENDA.PROPIETARIO.duracionMin * 60000);
+  const cal = CalendarApp.getDefaultCalendar();
+  let evento = null;
+  try { evento = idEvento ? cal.getEventById(idEvento) : null; } catch (e) { evento = null; }
+  // La eligió (o la acordó) el propietario: queda confirmada
+  const titulo = tituloEventoCita(ESTADOS_CITA.CONFIRMADA, servicio, nombre);
+  if (evento) {
+    evento.setTime(inicio, fin);
+    evento.setTitle(titulo);
+  } else {
+    // Cancelada o "quiere reagendar" ya habían borrado el evento: se crea otro
+    evento = cal.createEvent(titulo, inicio, fin, {
+      description: `Cita reagendada (ID ${idCita})\nPropietario: ${nombre}\n` +
+        `Celular: ${valorCita(fila, col, 'CELULAR')}\nCorreo: ${correo}\nServicio: ${servicio}\nDirección: ${direccion || 'N/A'}`,
+      location: direccion
+    });
+    escribir('ID EVENTO CALENDAR', evento.getId());
+  }
+
+  escribir('FECHA CITA', new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate()));
+  if (col['FECHA CITA']) sheet.getRange(numFila, col['FECHA CITA']).setNumberFormat('dd/MM/yyyy');
+  escribir('HORA CITA', formatAmPm(inicio));
+  escribir('ESTADO', ESTADOS_CITA.CONFIRMADA);
+  // Con menos de 24 h, este correo ya hace de recordatorio
+  const horas = (inicio.getTime() - Date.now()) / 3600000;
+  escribir('RECORDATORIO ENVIADO', horas <= 24 ? ahoraTxt : '');
+  const antes = fechaActual ? textoFecha(fechaActual) : '';
+  escribir('ULTIMO CAMBIO', ahoraTxt + ' · ' + (op.quien === 'agente' ? 'agente reagendó desde el panel' : 'propietario reagendó desde su correo') +
+    (antes ? ' (antes: ' + antes + ')' : ''));
+
+  try {
+    const tokenProp = String(valorCita(fila, col, 'TOKEN PROPIETARIO') || '');
+    enviarCorreoCita(
+      correo,
+      `🔄 Tu cita quedó para el ${textoFecha(inicio)} - Gold Life`,
+      'CITA REAGENDADA',
+      nombre,
+      (op.quien === 'agente' ? 'Como lo acordamos, tu' : 'Listo, tu') +
+      ` cita para el servicio de <strong>${servicio}</strong> quedó en la nueva fecha:<br><br>` +
+      `🗓️ <strong>Fecha:</strong> ${Utilities.formatDate(inicio, tz, 'dd/MM/yyyy')}<br>⏰ <strong>Hora:</strong> ${formatAmPm(inicio)}<br>` +
+      `📍 <strong>Inmueble:</strong> ${direccion || 'A convenir'}` +
+      (tokenProp ? '<br><br>Si algo cambia, puedes reagendar o cancelar aquí:' : ''),
+      tokenProp ? htmlBotonesCorreo([
+        { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) },
+        { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, tokenProp) }
+      ]) : ''
+    );
+  } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
+  return { ok: true, textoNueva: textoFecha(inicio), textoAntes: antes };
+}
+
+// ---------- El propietario reagenda solo, desde el botón de su correo (frontend/cita.html) ----------
+
+/** Valida el token del propietario y que la cita admita reagendar. */
+function _citaDelPropietario(idCita, token) {
+  const cita = _citaPorId(idCita);
+  if (!cita) return { error: 'No encontramos esta cita.' };
+  const t = String(token || '');
+  if (!t || t !== String(valorCita(cita.fila, cita.col, 'TOKEN PROPIETARIO') || '')) return { error: 'Este enlace no es válido para esta acción.' };
+  const estado = String(valorCita(cita.fila, cita.col, 'ESTADO') || '').trim();
+  if (['ASISTIDA', 'INASISTIDA', 'CANCELADA'].indexOf(estado) !== -1) {
+    return { error: 'Esta cita ya está cerrada (' + estado.toLowerCase() + '). Si quieres una visita nueva, agéndala desde nuestra página.' };
+  }
+  return { cita: cita };
+}
+
+/** Datos para la pantalla de reagendar (no cambia nada). */
+function infoReagendarPropietario(datos) {
+  const r = _citaDelPropietario(datos.idCita, datos.t);
+  if (r.error) return { ok: false, mensaje: r.error };
+  const { fila, col } = r.cita;
+  const tz = Session.getScriptTimeZone();
+  const f = fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA'));
+  return {
+    ok: true,
+    nombre: String(valorCita(fila, col, 'NOMBRE') || ''),
+    servicio: String(valorCita(fila, col, 'TIPO SERVICIO') || ''),
+    fechaActual: f ? Utilities.formatDate(f, tz, 'dd/MM/yyyy') + ' a las ' + formatAmPm(f) : ''
+  };
+}
+
+/** Horarios libres de un día para el propietario (su propia cita no cuenta como ocupada). */
+function disponibilidadReagendarPropietario(datos) {
+  const r = _citaDelPropietario(datos.idCita, datos.t);
+  if (r.error) return { success: false, error: r.error };
+  return obtenerDisponibilidadAgenda(datos.fecha, 'PROPIETARIO', {
+    excluirEventoId: String(valorCita(r.cita.fila, r.cita.col, 'ID EVENTO CALENDAR') || '')
+  });
+}
+
+/** El propietario confirma el horario nuevo. Al agente le llega un aviso corto. */
+function reagendarPorPropietario(datos) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const r = _citaDelPropietario(datos.idCita, datos.t);
+    if (r.error) return { ok: false, mensaje: r.error };
+    const nombre = String(valorCita(r.cita.fila, r.cita.col, 'NOMBRE') || '');
+    const m = moverCita(r.cita, Number(datos.timestamp), { anticipacionMin: TIPOS_AGENDA.PROPIETARIO.anticipacionMin, quien: 'propietario' });
+    if (!m.ok) return { ok: false, mensaje: m.mensaje };
+    try {
+      enviarCorreoCita(
+        correoAgenteCitas(),
+        `🔄 ${nombre} reagendó su cita para el ${m.textoNueva}`,
+        'CITA REAGENDADA POR EL PROPIETARIO',
+        'Agente',
+        `<strong>${nombre}</strong> reagendó su cita desde el correo.<br><br>` +
+        (m.textoAntes ? `Antes: ${m.textoAntes}<br>` : '') + `<strong>Ahora: ${m.textoNueva}</strong><br><br>` +
+        'Ya quedó confirmada y movida en tu Calendar. No tienes que hacer nada.',
+        ''
+      );
+    } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
+    return { ok: true, mensaje: 'Tu cita quedó para el ' + m.textoNueva + '. Te enviamos la confirmación a tu correo.' };
+  } finally {
+    lock.releaseLock();
+  }
 }
