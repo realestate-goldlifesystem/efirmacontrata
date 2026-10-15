@@ -225,7 +225,7 @@ function agendarCita(datos) {
         `Hemos registrado tu cita para el servicio de <strong>${datos.tipoServicio}</strong>.<br><br>` +
         `🗓️ <strong>Fecha:</strong> ${fechaCitaStr}<br>⏰ <strong>Hora:</strong> ${horaCitaStr}<br>` +
         `📍 <strong>Inmueble:</strong> ${datos.direccion || 'A convenir'}` +
-        `<br><br>Por favor <strong>confirma tu asistencia</strong>. Si no puedes en ese horario, elige reagendar y te llamaremos.`,
+        `<br><br><strong>Confirma tu asistencia con el botón verde.</strong> Si no puedes a esa hora, elige reagendar y te llamamos.`,
         botonesPropietarioCita(idCita, tokenPropietario)
       );
     } catch (errMail) {
@@ -260,14 +260,21 @@ function urlEstadoCita(idCita, nuevoEstado, token) {
          `&nuevoEstado=${encodeURIComponent(nuevoEstado)}&t=${encodeURIComponent(token)}`;
 }
 
-/** Bloque HTML de botones para correo. Estilos en línea: los clientes de correo ignoran las hojas CSS. */
+/**
+ * Bloque HTML de botones para correo. Estilos en línea: los clientes de correo
+ * ignoran las hojas CSS.
+ *
+ * oct-2026: uno debajo del otro y a todo el ancho. Lado a lado no cabían en el
+ * celular y el último se salía de la pantalla. El primero es la acción
+ * principal: va más alto para que se entienda que hay que tocarlo.
+ */
 function htmlBotonesCorreo(botones) {
-  const celdas = botones.map(b =>
-    `<td style="padding:6px;"><a href="${b.url}" style="display:inline-block;padding:12px 18px;` +
-    `background:${b.color};color:#ffffff;text-decoration:none;border-radius:8px;` +
-    `font-weight:bold;font-size:14px;font-family:Arial,sans-serif;">${b.texto}</a></td>`
+  const filas = botones.map((b, i) =>
+    `<tr><td style="padding:5px 0;"><a href="${b.url}" style="display:block;text-align:center;` +
+    `padding:${i === 0 ? '16px' : '12px'} 16px;background:${b.color};color:#ffffff;text-decoration:none;` +
+    `border-radius:10px;font-weight:bold;font-size:${i === 0 ? '16px' : '14px'};font-family:Arial,sans-serif;">${b.texto}</a></td></tr>`
   ).join('');
-  return `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:18px auto;"><tr>${celdas}</tr></table>`;
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0;">${filas}</table>`;
 }
 
 function botonesPropietarioCita(idCita, token) {
@@ -281,7 +288,8 @@ function botonesPropietarioCita(idCita, token) {
 /** Envía un correo de citas con la plantilla corporativa. */
 function enviarCorreoCita(destino, asunto, titulo, nombre, mensajePrincipal, htmlSecundario) {
   if (!destino) return;
-  const t = HtmlService.createTemplateFromFile('backend/email_notificacion');
+  // Plantilla propia de citas, corta y para celular (email_cita.html)
+  const t = HtmlService.createTemplateFromFile('backend/email_cita');
   t.TITULO = titulo;
   t.NOMBRE_CLIENTE = nombre;
   t.MENSAJE_PRINCIPAL = mensajePrincipal;
