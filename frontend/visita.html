@@ -41,6 +41,9 @@
 
     /* ---------- Galería ---------- */
     .escenario { position: relative; aspect-ratio: 4 / 3; border-radius: 22px; overflow: hidden; background: var(--panel); cursor: zoom-in; touch-action: pan-y; }
+    /* En PC la galería se ajusta al alto de la pantalla: de entrada se ven las fotos,
+       las miniaturas y, a la derecha, el título, el precio y el botón */
+    @media (min-width: 1000px) { .escenario { aspect-ratio: auto; height: clamp(380px, calc(100vh - 190px), 640px); } }
     .escenario .fondo { position: absolute; inset: -30px; background-size: cover; background-position: center; filter: blur(28px) brightness(.45); transform: scale(1.1); transition: background-image .3s; }
     .escenario img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .35s; }
     .escenario img.lista { opacity: 1; }
@@ -80,6 +83,7 @@
     .leerMas { margin-top: 6px; background: none; border: 0; color: var(--oro); font-weight: 600; padding: 0; }
 
     /* ---------- Tarjeta para agendar ---------- */
+    @media (min-width: 1000px) { .ficha > .etiqueta, .ficha > h1, .ficha > .lugar, .ficha > .precioGrande, .ficha > .admin { display: none; } .ficha .datos { margin-top: 0; } }
     .tarjetaAgendar { background: var(--panel); border: 1px solid var(--linea); border-radius: 22px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
     @media (min-width: 1000px) { .tarjetaAgendar { position: sticky; top: 76px; } }
     @media (max-width: 999px) { .tarjetaAgendar { display: none; } }
@@ -165,8 +169,8 @@
       </div>
       <div class="miniaturas sin-barra" id="miniaturas"></div>
 
-      <!-- Ficha -->
-      <section style="margin-top:22px;">
+      <!-- Ficha (en PC el encabezado va en la tarjeta de la derecha) -->
+      <section style="margin-top:22px;" class="ficha">
         <span class="etiqueta" id="etiquetaNegocio"></span>
         <h1 id="titulo"></h1>
         <div class="lugar" id="lugar"></div>
@@ -185,8 +189,10 @@
 
     <!-- PC: tarjeta fija a la derecha -->
     <aside class="tarjetaAgendar">
-      <div class="rotulo">Visítalo</div>
-      <div class="precioGrande" id="precioTarjeta" style="margin-top:6px;"></div>
+      <span class="etiqueta" id="etiquetaTarjeta"></span>
+      <h1 id="tituloTarjeta" style="font-size:24px;"></h1>
+      <div class="lugar" id="lugarTarjeta"></div>
+      <div class="precioGrande" id="precioTarjeta"></div>
       <div class="admin" id="adminTarjeta"></div>
       <button class="principal" data-agendar style="margin-top:18px;">Agendar visita</button>
       <p class="nota" id="notaTarjeta"></p>
@@ -365,6 +371,7 @@
       const adm = inm.administracion ? 'Administración: ' + pesos(inm.administracion) : '';
       $('admin').textContent = adm; $('adminTarjeta').textContent = adm;
       $('etiquetaNegocio').textContent = venta ? 'En venta' : 'En arriendo';
+      $('etiquetaTarjeta').textContent = $('etiquetaNegocio').textContent;
     }
 
     // ================= Ventana para agendar =================
@@ -499,6 +506,7 @@
       const ciudades = { BOGOTA: 'Bogotá', 'BOGOTÁ': 'Bogotá', MEDELLIN: 'Medellín', CALI: 'Cali', CHIA: 'Chía', CAJICA: 'Cajicá' };
       const ciudad = ciudades[String(r.ciudad || '').toUpperCase().trim()] || String(r.ciudad || '').toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
       $('lugar').textContent = ciudad;
+      $('tituloTarjeta').textContent = titulo; $('lugarTarjeta').textContent = ciudad;
 
       // Datos clave (solo los que existen)
       const dato = (v, t) => v && String(v).trim() && !/^ning/i.test(v) ? `<div class="dato"><b>${esc(v)}</b><span>${t}</span></div>` : '';
