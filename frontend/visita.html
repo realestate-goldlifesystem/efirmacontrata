@@ -43,7 +43,10 @@
     .escenario { position: relative; aspect-ratio: 4 / 3; border-radius: 22px; overflow: hidden; background: var(--panel); cursor: zoom-in; touch-action: pan-y; }
     /* En PC la galería se ajusta al alto de la pantalla: de entrada se ven las fotos,
        las miniaturas y, a la derecha, el título, el precio y el botón */
-    @media (min-width: 1000px) { .escenario { aspect-ratio: auto; height: clamp(360px, calc(100vh - 240px), 620px); } }
+    /* En PC, en la primera pantalla caben completos el interruptor, la galería, las
+       miniaturas y la fila de características, en cualquier alto de pantalla:
+       360 px = encabezado + interruptor + miniaturas + fila de características + aire */
+    @media (min-width: 1000px) { .escenario { aspect-ratio: auto; height: clamp(280px, calc(100vh - 360px), 640px); } }
     .escenario .fondo { position: absolute; inset: -30px; background-size: cover; background-position: center; filter: blur(28px) brightness(.45); transform: scale(1.1); transition: background-image .3s; }
     .escenario img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .35s; }
     .escenario img.lista { opacity: 1; }
@@ -97,8 +100,18 @@
     .interruptor button { border: 0; background: transparent; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #e7e5e4; transition: all .25s; white-space: nowrap; }
     .interruptor button.activo { background: var(--oro); color: var(--fondo); box-shadow: 0 4px 14px rgba(212,175,55,.35); }
     .escenario .videoEnGaleria { position: absolute; inset: 0; z-index: 2; background: #000; overflow: hidden; }
+    /* El iframe no recibe toques: se maneja solo con los controles propios */
     .escenario .videoEnGaleria iframe { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); height: 100%; aspect-ratio: 16 / 9; border: 0; pointer-events: none; }
     .escenario .videoEnGaleria.vertical iframe { aspect-ratio: 9 / 16; }
+    .controlesVideo { position: absolute; right: 12px; bottom: 12px; z-index: 3; display: flex; gap: 8px; }
+    .controlesVideo button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); font-size: 16px; color: #fff;
+      background: rgba(12,10,9,.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; transition: background .2s, transform .1s; }
+    .controlesVideo button:hover { background: rgba(212,175,55,.85); color: var(--fondo); }
+    .controlesVideo button:active { transform: scale(.94); }
+    /* Pantalla completa (nativa o, en iPhone, ocupando toda la página) */
+    .videoEnGaleria:fullscreen, .videoEnGaleria.pantallaCompleta { position: fixed; inset: 0; z-index: 70; border-radius: 0; }
+    .videoEnGaleria:fullscreen iframe, .videoEnGaleria.pantallaCompleta iframe { width: 100%; height: 100%; aspect-ratio: auto; }
+    .videoEnGaleria:fullscreen .controlesVideo, .videoEnGaleria.pantallaCompleta .controlesVideo { right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); }
     .escenario.modoVideo { cursor: default; }
     .escenario.modoVideo .flecha, .escenario.modoVideo .ampliar, .escenario.modoVideo .contador { display: none; }
     .seccion { margin-top: 34px; }
@@ -114,8 +127,14 @@
     .leerMas { margin-top: 6px; background: none; border: 0; color: var(--oro); font-weight: 600; padding: 0; }
 
     /* ---------- Tarjeta para agendar ---------- */
-    @media (min-width: 1000px) { .ficha > .etiqueta, .ficha > h1, .ficha > .lugar, .ficha > .direccion, .ficha > .precioGrande, .ficha > .admin, .ficha > .incluye { display: none; } .ficha .datos { margin-top: 0; } }
-    .tarjetaAgendar { background: var(--panel); border: 1px solid var(--linea); border-radius: 22px; padding: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+    @media (min-width: 1000px) { .ficha > .etiqueta, .ficha > h1, .ficha > .lugar, .ficha > .direccion, .ficha > .precioGrande, .ficha > .admin, .ficha > .incluye { display: none; } .ficha { margin-top: 16px !important; } .ficha .datos { margin-top: 0; } }
+    /* Tarjeta para agendar: flota, con un halo de luz dorada detrás */
+    .tarjetaAgendar { background: linear-gradient(180deg, #221e1b, var(--panel)); border: 1px solid rgba(212,175,55,.22); border-radius: 22px; padding: 22px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.03), 0 0 70px rgba(212,175,55,.16), 0 40px 90px rgba(0,0,0,.6); }
+    .tarjetaAgendar::before { content: ''; position: absolute; inset: -40px; z-index: -1; border-radius: 50%; pointer-events: none;
+      background: radial-gradient(closest-side, rgba(212,175,55,.20), transparent 75%); filter: blur(10px); animation: halo 6s ease-in-out infinite; }
+    @keyframes halo { 0%, 100% { opacity: .75; transform: scale(1); } 50% { opacity: 1; transform: scale(1.04); } }
+    @media (prefers-reduced-motion: reduce) { .tarjetaAgendar::before { animation: none; } }
     @media (min-width: 1000px) { .tarjetaAgendar { position: sticky; top: 76px; } }
     @media (max-width: 999px) { .tarjetaAgendar { display: none; } }
     .principal { width: 100%; border: 0; border-radius: 14px; padding: 16px; font-size: 16px; font-weight: 700; color: var(--fondo); background: var(--oro); transition: transform .1s, filter .2s; }
@@ -355,7 +374,8 @@
     }
     $('ant').onclick = (e) => { e.stopPropagation(); mostrarFoto(fotoIdx - 1); };
     $('sig').onclick = (e) => { e.stopPropagation(); mostrarFoto(fotoIdx + 1); };
-    $('escenario').onclick = () => { if (!$('escenario').dataset.deslizo) abrirVisor(); };
+    // Con el video activo la galería no responde: el toque es del video (pausa/reanuda)
+    $('escenario').onclick = () => { if ($('escenario').classList.contains('modoVideo')) return; if (!$('escenario').dataset.deslizo) abrirVisor(); };
     deslizar($('escenario'), () => mostrarFoto(fotoIdx - 1), () => mostrarFoto(fotoIdx + 1));
 
     // Visor a pantalla completa
@@ -564,10 +584,43 @@
           $('escenario').classList.toggle('modoVideo', video);
           $('videoEnGaleria').classList.toggle('oculto', !video);
           $('miniaturas').style.visibility = video ? 'hidden' : '';
+          // Controles propios: solo reproducir/pausa y ampliar. El iframe no recibe
+          // toques (sin títulos, botones ni sugerencias de YouTube); se maneja con la
+          // API de mensajes del reproductor (enablejsapi). vq=hd1080 pide HD, pero
+          // YouTube decide la calidad según el tamaño y la conexión.
           $('videoEnGaleria').innerHTML = video
-            ? `<iframe src="https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&loop=1&playlist=${v}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3" title="Recorrido en video" allow="autoplay; encrypted-media"></iframe>`
+            ? `<iframe id="reproductor" src="https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&loop=1&playlist=${v}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1&vq=hd1080&origin=${encodeURIComponent(location.origin)}" title="Recorrido en video" allow="autoplay; encrypted-media; fullscreen"></iframe>
+               <div class="controlesVideo">
+                 <button id="videoPlay" aria-label="Pausar">❚❚</button>
+                 <button id="videoAmpliar" aria-label="Ver en pantalla completa">⤢</button>
+               </div>`
             : '';
+          if (!video) { salirPantallaCompleta(); return; }
+          let reproduciendo = true;
+          const orden = (func) => $('reproductor').contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: [] }), '*');
+          $('videoPlay').onclick = (e) => {
+            e.stopPropagation();
+            reproduciendo = !reproduciendo;
+            orden(reproduciendo ? 'playVideo' : 'pauseVideo');
+            $('videoPlay').textContent = reproduciendo ? '❚❚' : '▶';
+            $('videoPlay').setAttribute('aria-label', reproduciendo ? 'Pausar' : 'Reproducir');
+          };
+          $('videoAmpliar').onclick = (e) => {
+            e.stopPropagation();
+            const caja = $('videoEnGaleria');
+            if (caja.classList.contains('pantallaCompleta') || document.fullscreenElement) { salirPantallaCompleta(); return; }
+            // Pantalla completa nativa; si el celular no la permite (iPhone), se ocupa toda la pantalla dentro de la página
+            if (caja.requestFullscreen) caja.requestFullscreen().catch(() => caja.classList.add('pantallaCompleta'));
+            else caja.classList.add('pantallaCompleta');
+            $('videoAmpliar').textContent = '✕';
+          };
         };
+        function salirPantallaCompleta() {
+          if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+          $('videoEnGaleria').classList.remove('pantallaCompleta');
+          if ($('videoAmpliar')) $('videoAmpliar').textContent = '⤢';
+        }
+        document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && $('videoAmpliar')) $('videoAmpliar').textContent = '⤢'; });
         $('verFotos').onclick = (e) => { e.stopPropagation(); modo(false); };
         $('verVideo').onclick = (e) => { e.stopPropagation(); modo(true); };
       }
