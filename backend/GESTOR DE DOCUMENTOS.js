@@ -638,6 +638,14 @@ function doPost(e) {
           ? obtenerCitasPanel(datos)
           : { success: false, message: 'API_AGENDA no cargada' };
         break;
+      case 'infoEstadoCita':
+        // Página de citas en GitHub Pages: lee la pregunta (no cambia nada)
+        result = infoEstadoCita(datos);
+        break;
+      case 'aplicarEstadoCita':
+        // El segundo clic de esa página. Valida token, acción y estado (API_CRON_AGENDA.js)
+        result = aplicarEstadoCitaDesdeCorreo(datos.idCita, datos.nuevoEstado, datos.t);
+        break;
       case 'gestionarCita':
         // Reagendar, cancelar, asistencia y notas desde el panel (GESTION_CITAS_PANEL.js)
         result = gestionarCitaPanel(datos);

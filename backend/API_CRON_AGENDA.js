@@ -303,6 +303,25 @@ function handleEstadoCitaGet(idCita, nuevoEstado, token) {
 }
 
 /**
+ * Para la página de citas en GitHub Pages (frontend/cita.html, oct-2026): lo
+ * mismo que muestra handleEstadoCitaGet, pero en JSON. La página de Apps Script
+ * mostraba arriba "Un usuario de Google Apps Script creó esta aplicación", y eso
+ * le resta confianza al propietario. Tampoco cambia nada: solo lee.
+ */
+function infoEstadoCita(datos) {
+  try {
+    const estado = String(datos.nuevoEstado || '').trim();
+    const textos = TEXTOS_ACCION_CITA[estado];
+    if (!textos) return { ok: false, titulo: 'Enlace no válido', mensaje: 'La acción solicitada no existe.' };
+    const cita = localizarCitaConToken(datos.idCita, estado, datos.t);
+    if (!cita.ok) return { ok: false, titulo: cita.yaHecho ? 'Todo en orden' : 'No se pudo aplicar', mensaje: cita.mensaje };
+    return { ok: true, pregunta: textos.pregunta, boton: textos.boton, color: textos.color, nombre: cita.nombre, fechaTxt: cita.fechaTxt };
+  } catch (e) {
+    return { ok: false, titulo: 'Error', mensaje: 'Ocurrió un error interno. Intenta de nuevo más tarde.' };
+  }
+}
+
+/**
  * Aplica el cambio pedido desde la página del correo (google.script.run).
  * Vuelve a validar todo: la página es pública y no se puede confiar en ella.
  */

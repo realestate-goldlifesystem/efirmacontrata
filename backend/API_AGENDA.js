@@ -252,11 +252,13 @@ function tituloEventoCita(estado, servicio, nombre) {
 }
 
 /** URL de la página que aplica un cambio de estado (pide confirmar el clic). */
+// oct-2026: los botones abren la página de GitHub Pages (frontend/cita.html) y no
+// la de Apps Script, que mostraba el aviso "Un usuario de Google Apps Script creó
+// esta aplicación". Los correos viejos con el enlace de Apps Script siguen
+// funcionando (doGet accion=estadoCita).
+const URL_PAGINA_CITA = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/cita.html';
 function urlEstadoCita(idCita, nuevoEstado, token) {
-  const props = PropertiesService.getScriptProperties();
-  const base = props.getProperty('WEB_APP_URL') ||
-    'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
-  return `${base}?accion=estadoCita&idCita=${encodeURIComponent(idCita)}` +
+  return `${URL_PAGINA_CITA}?idCita=${encodeURIComponent(idCita)}` +
          `&nuevoEstado=${encodeURIComponent(nuevoEstado)}&t=${encodeURIComponent(token)}`;
 }
 

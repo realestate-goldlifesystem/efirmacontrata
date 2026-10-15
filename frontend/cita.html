@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Tu cita · Gold Life Real Estate</title>
+  <!--
+    Página de los botones de los correos de citas (Confirmar, Reagendar, Cancelar,
+    y los del agente: Asistió, No asistió, Reagendada). Oct-2026.
+
+    Antes la servía Apps Script, que pone arriba "Un usuario de Google Apps Script
+    creó esta aplicación". Desde GitHub Pages ese aviso no aparece.
+
+    ⚠️ Abrir el enlace NO cambia nada: muestra la pregunta y el cambio lo hace un
+    segundo clic. Los antivirus de correo visitan los enlaces por su cuenta; si el
+    enlace aplicara el cambio, podrían confirmar o cancelar citas solos.
+    El servidor vuelve a validar el token, la acción y el estado de la cita.
+  -->
+  <style>
+    :root { --oro: #d4af37; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #0c0a09; color: #f5f5f4;
+      background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.16), transparent 70%);
+    }
+    .tarjeta {
+      width: 100%; max-width: 420px; background: #1c1917; border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px; padding: 32px 24px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    }
+    .marca { font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); }
+    .marca span { color: #a8a29e; font-weight: 400; }
+    .icono {
+      width: 56px; height: 56px; margin: 24px auto 16px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+      background: rgba(212,175,55,.1); box-shadow: 0 0 0 1px rgba(212,175,55,.3);
+    }
+    h1 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
+    p { margin: 0; line-height: 1.6; color: #d6d3d1; }
+    .detalle {
+      margin: 20px 0 24px; padding: 14px 16px; border-radius: 14px; background: #0c0a09;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .detalle .nombre { color: #fff; font-weight: 600; }
+    .detalle .fecha { color: var(--oro); }
+    button {
+      width: 100%; padding: 16px; border: 0; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: opacity .2s, transform .1s;
+    }
+    button:active { transform: scale(.98); }
+    button:disabled { opacity: .6; cursor: wait; }
+    .cargando { margin: 32px 0 8px; color: #a8a29e; }
+    .oculto { display: none; }
+  </style>
+</head>
+<body>
+  <main class="tarjeta">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <p id="cargando" class="cargando">Cargando tu cita…</p>
+
+    <section id="pregunta" class="oculto">
+      <div class="icono">📅</div>
+      <h1 id="textoPregunta"></h1>
+      <div class="detalle">
+        <div class="nombre" id="nombre"></div>
+        <div class="fecha" id="fecha"></div>
+      </div>
+      <button id="boton" type="button"></button>
+    </section>
+
+    <section id="resultado" class="oculto">
+      <div class="icono" id="iconoResultado">✓</div>
+      <h1 id="tituloResultado"></h1>
+      <p id="textoResultado"></p>
+    </section>
+  </main>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+    const q = new URLSearchParams(location.search);
+    const datos = { idCita: q.get('idCita') || '', nuevoEstado: q.get('nuevoEstado') || '', t: q.get('t') || '' };
+    const $ = (id) => document.getElementById(id);
+
+    function llamar(accion) {
+      return fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ accion: accion }, datos))
+      }).then(r => r.json());
+    }
+
+    function mostrarResultado(titulo, texto, icono) {
+      $('cargando').classList.add('oculto');
+      $('pregunta').classList.add('oculto');
+      $('iconoResultado').textContent = icono || '✓';
+      $('tituloResultado').textContent = titulo;
+      $('textoResultado').textContent = texto;
+      $('resultado').classList.remove('oculto');
+    }
+
+    if (!datos.idCita || !datos.nuevoEstado || !datos.t) {
+      mostrarResultado('Enlace incompleto', 'Abre de nuevo el botón desde tu correo.', '!');
+    } else {
+      llamar('infoEstadoCita').then(r => {
+        if (!r.ok) { mostrarResultado(r.titulo || 'Aviso', r.mensaje || '', r.titulo === 'Todo en orden' ? '✓' : '!'); return; }
+        $('textoPregunta').textContent = r.pregunta;
+        $('nombre').textContent = r.nombre || '';
+        $('fecha').textContent = r.fechaTxt || '';
+        const b = $('boton');
+        b.textContent = r.boton;
+        b.style.background = r.color;
+        $('cargando').classList.add('oculto');
+        $('pregunta').classList.remove('oculto');
+
+        b.onclick = () => {
+          b.disabled = true; b.textContent = 'Guardando…';
+          llamar('aplicarEstadoCita').then(x => {
+            mostrarResultado(x.ok ? 'Listo' : 'No se pudo aplicar', x.mensaje || '', x.ok ? '✓' : '!');
+          }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
+        };
+      }).catch(() => mostrarResultado('Sin conexión', 'No pudimos cargar tu cita. Revisa tu internet e intenta de nuevo.', '!'));
+    }
+  </script>
+</body>
+</html>
