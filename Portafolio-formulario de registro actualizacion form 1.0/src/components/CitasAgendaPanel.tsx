@@ -113,8 +113,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
     return () => { clearTimeout(t); window.removeEventListener('resize', medir); };
   });
 
-  // En móvil la lista del día queda DEBAJO del calendario, fuera de la vista:
-  // al tocar un día con citas se baja hasta ella. En escritorio está al lado.
+  // En móvil la lista va ARRIBA del calendario: al tocar un día con citas se sube
+  // hasta ella para ver el detalle. En escritorio está al lado.
   const elegirDia = (d: Date, hayCitas: boolean) => {
     // Tocar otra vez el día elegido vuelve a la lista de todas
     if (diaSel && claveDia(d) === claveDia(diaSel)) { setDiaSel(null); return; }
@@ -271,7 +271,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
 
       <div className="grid lg:grid-cols-[minmax(0,1fr)_clamp(280px,26vw,420px)] gap-[clamp(1rem,1.6vw,2rem)]">
         {/* Calendario del mes */}
-        <div className="min-w-0 bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(0.75rem,1.4vw,1.75rem)]">
+        {/* En celular el calendario va DEBAJO de la lista (order-2): primero lo próximo */}
+        <div className="order-2 lg:order-1 min-w-0 bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(0.75rem,1.4vw,1.75rem)]">
           <div className="flex items-center justify-between mb-4">
             <button onClick={() => moverMes(-1)} className="p-2 rounded-full text-stone-400 hover:text-brand-gold hover:bg-stone-800" aria-label="Mes anterior">
               <ChevronLeft className="w-5 h-5" />
@@ -313,18 +314,21 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                     <span className={`text-[clamp(0.75rem,0.9vw,1rem)] mb-1 w-[clamp(1.5rem,1.8vw,2rem)] h-[clamp(1.5rem,1.8vw,2rem)] flex items-center justify-center rounded-full ${esHoy ? 'bg-brand-gold text-stone-950 font-bold' : 'text-stone-300'}`}>
                       {d.getDate()}
                     </span>
-                    {/* Móvil: puntos. Escritorio: chips con hora y nombre. */}
-                    <div className="flex flex-wrap gap-1 md:hidden">
-                      {del.slice(0, 4).map(c => <span key={c.idCita} className={`w-1.5 h-1.5 rounded-full ${GRUPOS[grupoDe(c.estado)].punto}`} />)}
-                    </div>
-                    <div className="hidden md:flex flex-col gap-1 w-full">
-                      {del.slice(0, 2).map(c => (
-                        <span key={c.idCita} className={`truncate text-[clamp(10px,0.7vw,13px)] px-1.5 py-0.5 rounded border ${GRUPOS[grupoDe(c.estado)].chip}`}>
-                          {c.hora} {c.nombre}
-                        </span>
-                      ))}
-                      {del.length > 2 && <span className="text-[clamp(10px,0.7vw,13px)] text-stone-400 px-1">+{del.length - 2} más</span>}
-                    </div>
+                    {/* Contadores por estado: el calendario dice qué tan ocupado está
+                        cada día; el detalle (hora, nombre) está en la lista. */}
+                    {del.length > 0 && (
+                      <div className="mt-auto flex flex-wrap gap-1">
+                        {(Object.keys(GRUPOS) as Grupo[]).map(g => {
+                          const n = del.filter(c => grupoDe(c.estado) === g).length;
+                          return n ? (
+                            <span key={g} title={`${n} ${GRUPOS[g].etiqueta.toLowerCase()}`}
+                              className={`min-w-[clamp(1.25rem,1.5vw,1.6rem)] h-[clamp(1.25rem,1.5vw,1.6rem)] px-1 rounded-full flex items-center justify-center text-[clamp(10px,0.75vw,13px)] font-bold text-stone-950 ${GRUPOS[g].punto}`}>
+                              {n}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -335,8 +339,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         {/* Citas del día seleccionado */}
         {/* En PC la lista mide lo mismo que el calendario (el contenedor no
             aporta alto a la fila: va en absolute) y se desplaza por dentro. */}
-        <div ref={listaRef} className="min-w-0 relative scroll-mt-28">
-        <div className="lg:absolute lg:inset-0 lg:overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)]">
+        <div ref={listaRef} className="order-1 lg:order-2 min-w-0 relative scroll-mt-28">
+        <div className="max-h-[60vh] overflow-y-auto lg:max-h-none lg:absolute lg:inset-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden bg-stone-900 border border-stone-800 rounded-3xl p-[clamp(1rem,1.4vw,1.75rem)]">
           {diaSel ? (
             <>
               <div className="flex items-start justify-between gap-3 mb-1">
