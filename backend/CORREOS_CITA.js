@@ -49,6 +49,22 @@ function debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimoAviso, pendiente) 
     minFaltan <= LIBERAR_FALTANDO_MIN && minDesdeUltimoAviso >= MARGEN_RESPUESTA_MIN;
 }
 
+/**
+ * Etiqueta de color con el tipo de cita, para los correos del agente. Mismos
+ * nombres y colores que en la Agenda del panel (CitasAgendaPanel.tsx).
+ */
+const ETIQUETA_TIPO_CITA = {
+  PROPIETARIO: { texto: 'Presentación al propietario', fondo: '#d4af37', letra: '#1c1917' },
+  INTERESADO:  { texto: 'Visita de interesado',        fondo: '#6366f1', letra: '#ffffff' },
+  ENTREGA:     { texto: 'Entrega del inmueble',        fondo: '#06b6d4', letra: '#1c1917' },
+  DEVOLUCION:  { texto: 'Recibo del inmueble',         fondo: '#d946ef', letra: '#ffffff' }
+};
+function etiquetaTipoCitaHtml(tipo) {
+  const e = ETIQUETA_TIPO_CITA[String(tipo || '').trim().toUpperCase()] || ETIQUETA_TIPO_CITA.PROPIETARIO;
+  return `<div style="text-align:center;margin:0 0 14px 0;"><span style="display:inline-block;padding:6px 14px;border-radius:999px;` +
+    `background:${e.fondo};color:${e.letra};font-size:12px;font-weight:bold;letter-spacing:.5px;">${e.texto}</span></div>`;
+}
+
 const PASOS_CORREO_CITA = {
   AGENDADA: { asunto: 'Tu cita quedó agendada', titulo: 'VISITA AGENDADA' },
   REAGENDADA: { asunto: 'Tu cita cambió de fecha', titulo: 'CITA REAGENDADA' },

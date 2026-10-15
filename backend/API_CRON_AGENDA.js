@@ -120,6 +120,7 @@ function ejecutarMotorAgenda() {
             `🔔 Empieza tu cita con ${nombre} - control de asistencia`,
             'INICIO DE CITA',
             'Agente',
+            etiquetaTipoCitaHtml(valorCita(f, col, 'TIPO AGENDA')) +
             `La cita con <strong>${nombre}</strong> (${servicio}, ${direccion || 'sin dirección'}) acaba de empezar.<br><br><strong>¿Asistió?</strong>`,
             htmlBotonesCorreo([
               { texto: '✅ Sí asistió', color: '#1f7a4d', url: urlEstadoCita(idCita, ESTADOS_CITA.ASISTIDA, tokenAgente) },
@@ -342,6 +343,7 @@ function aplicarEstadoCitaDesdeCorreo(idCita, nuevoEstado, token) {
             : `🔄 ${cita.nombre} quiere REAGENDAR su cita — llámalo`,
           estado === 'CANCELADA' ? 'CITA CANCELADA' : 'SOLICITUD DE REAGENDAR',
           'Agente',
+          etiquetaTipoCitaHtml(valorCita(f, c, 'TIPO AGENDA')) +
           `<strong>${cita.nombre}</strong> ${estado === 'CANCELADA' ? 'canceló' : 'pidió reagendar'} su cita del <strong>${cita.fechaTxt}</strong>.<br><br>` +
           `🏠 <strong>Servicio:</strong> ${valorCita(f, c, 'TIPO SERVICIO')}<br>` +
           `📍 <strong>Inmueble:</strong> ${valorCita(f, c, 'DIRECCION') || 'N/A'}<br>` +

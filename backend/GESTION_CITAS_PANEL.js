@@ -286,8 +286,9 @@ function reagendarPorPropietario(datos) {
       enviarCorreoCita(
         correoAgenteCitas(),
         `🔄 ${nombre} reagendó su cita para el ${m.textoNueva}`,
-        'CITA REAGENDADA POR EL PROPIETARIO',
+        'CITA REAGENDADA',
         'Agente',
+        etiquetaTipoCitaHtml(valorCita(r.cita.fila, r.cita.col, 'TIPO AGENDA')) +
         `<strong>${nombre}</strong> reagendó su cita desde el correo.<br><br>` +
         (m.textoAntes ? `Antes: ${m.textoAntes}<br>` : '') + `<strong>Ahora: ${m.textoNueva}</strong><br><br>` +
         'Ya quedó movida en tu Calendar, por confirmar: una hora antes se le pedirá que la confirme. No tienes que hacer nada.',
