@@ -219,6 +219,21 @@ export default function VIPPropertiesPanel() {
     }
   };
 
+  // Compartir el enlace para AGENDAR UNA VISITA a este inmueble (bloque 1, oct-2026).
+  // En el celular abre la ventana de compartir del dispositivo (WhatsApp, Instagram…);
+  // en el PC, o si el usuario la cierra sin elegir, copia el enlace.
+  const compartirVisita = async (p: VIPProperty) => {
+    const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/visita.html?i=${encodeURIComponent(p.idRegistro)}`;
+    const texto = `Agenda tu visita a este inmueble en ${p.barrio || p.ciudad} con Gold Life Real Estate:`;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Agenda tu visita · Gold Life', text: texto, url }); return; }
+      catch (e) { if ((e as Error).name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(`${texto} ${url}`); } catch { window.prompt('Copia el enlace:', url); return; }
+    setCopiedId('visita-' + p.idRegistro);
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
   const copyToClipboard = (p: VIPProperty) => {
     const txt = `🏡 *${p.tipoNegocio.toUpperCase()} - ${p.barrio || p.ciudad}*\n📍 ${p.direccion}\n🛏️ Hab: ${p.habitaciones} | 🛁 Baños: ${p.banos} | 🚗 Garajes: ${p.garajes}\n\n🎬 *Video Tour:* ${p.youtube || 'Pronto'}\n\n🆔 ID: ${p.idRegistro}`;
     navigator.clipboard.writeText(txt);
@@ -1260,6 +1275,13 @@ export default function VIPPropertiesPanel() {
                   >
                     <Download className="w-4 h-4" />
                   </button>
+                  <button 
+                    onClick={() => compartirVisita(prop)}
+                    title="Compartir enlace para agendar visita"
+                    className="col-span-1 bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded-xl h-10 flex items-center justify-center transition-colors"
+                  >
+                    {copiedId === 'visita-' + prop.idRegistro ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                  </button>
                   {prop.youtube && (
                     <a 
                       href={prop.youtube} target="_blank" rel="noreferrer" title="Ver YouTube"
@@ -1374,7 +1396,7 @@ export default function VIPPropertiesPanel() {
                 </div>
               </div>
 
-              <div className="w-full md:w-28 px-2 flex items-center gap-2 justify-center shrink-0 mt-3 md:mt-0 border-t border-stone-800 pt-3 md:border-0 md:pt-0">
+              <div className="w-full md:w-32 px-2 flex items-center gap-2 justify-center shrink-0 mt-3 md:mt-0 border-t border-stone-800 pt-3 md:border-0 md:pt-0">
                 <button 
                   onClick={() => copyToClipboard(prop)}
                   title="Copiar Resumen WhatsApp"
@@ -1388,6 +1410,13 @@ export default function VIPPropertiesPanel() {
                   className="bg-stone-800 hover:bg-brand-gold hover:text-stone-950 text-stone-400 rounded-lg w-9 h-9 flex items-center justify-center transition-colors"
                 >
                   <Download className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => compartirVisita(prop)}
+                  title="Compartir enlace para agendar visita"
+                  className="bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded-lg w-9 h-9 flex items-center justify-center transition-colors"
+                >
+                  {copiedId === 'visita-' + prop.idRegistro ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
                 </button>
               </div>
 

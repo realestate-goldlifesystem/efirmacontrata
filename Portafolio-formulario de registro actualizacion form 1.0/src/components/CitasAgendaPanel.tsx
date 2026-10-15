@@ -39,11 +39,14 @@ export const tipoDe = (c: Cita): TipoAgenda =>
 
 // Cómo se ve cada estado. Varios estados internos se agrupan en uno visible:
 // para el agente "confirmada" y "confirmada ya avisada" son lo mismo.
-export type Grupo = 'pendiente' | 'confirmada' | 'reagendar' | 'reagendada' | 'cancelada' | 'asistio' | 'noasistio' | 'sinrespuesta';
+export type Grupo = 'porcoordinar' | 'pendiente' | 'confirmada' | 'reagendar' | 'reagendada' | 'cancelada' | 'asistio' | 'noasistio' | 'sinrespuesta';
 
 // chip: sobre las tarjetas oscuras (calendario, lista, detalle).
 // claro: sobre el fondo crema de la página (filtros), donde los tonos 300 no se leen.
 export const GRUPOS: Record<Grupo, { etiqueta: string; chip: string; claro: string; punto: string }> = {
+  // Visita de interesado a un inmueble con acompañamiento del propietario: espera
+  // que el agente (y, en el bloque 2, el propietario) coordine la hora
+  porcoordinar: { etiqueta: 'Por coordinar',     chip: 'bg-orange-500/20 text-orange-300 border-orange-500/50', claro: 'bg-orange-50 text-orange-800 border-orange-300',    punto: 'bg-orange-400' },
   pendiente:    { etiqueta: 'Por confirmar',     chip: 'bg-amber-500/15 text-amber-300 border-amber-500/40', claro: 'bg-amber-50 text-amber-800 border-amber-300',       punto: 'bg-amber-400' },
   confirmada:   { etiqueta: 'Confirmada',        chip: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40', claro: 'bg-emerald-50 text-emerald-800 border-emerald-300', punto: 'bg-emerald-400' },
   reagendar:    { etiqueta: 'Quiere reagendar',  chip: 'bg-orange-500/20 text-orange-300 border-orange-500/50', claro: 'bg-orange-50 text-orange-800 border-orange-300',    punto: 'bg-orange-400' },
@@ -73,6 +76,7 @@ export function grupoDe(estado: string): Grupo {
     case 'CONFIRMADA':
     case 'CONFIRMADA_NOTIFICADA': return 'confirmada';
     case 'QUIERE REAGENDAR': return 'reagendar';
+    case 'POR COORDINAR': return 'porcoordinar';
     case 'REAGENDADA': return 'reagendada';
     case 'CANCELADA': return 'cancelada';
     case 'ASISTIDA': return 'asistio';
@@ -170,7 +174,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   // respuesta y "quiere reagendar" no ocupan espacio; se ven con su propio filtro.
   // (Desde oct-2026 el propietario se reagenda solo y la cita queda confirmada:
   // "quiere reagendar" solo puede quedar en citas de correos viejos.)
-  const esActiva = (c: Cita) => ['pendiente', 'confirmada', 'reagendada'].includes(grupoDe(c.estado));
+  const esActiva = (c: Cita) => ['porcoordinar', 'pendiente', 'confirmada', 'reagendada'].includes(grupoDe(c.estado));
   const visibles = useMemo(() => (filtro ? citas.filter(c => grupoDe(c.estado) === filtro) : citas.filter(esActiva)), [citas, filtro]);
 
   const porDia = useMemo(() => {
@@ -242,7 +246,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
             <CalendarDays className="w-8 h-8" /> Agenda de Citas
           </h1>
           <p className="text-stone-600 mt-1 text-sm md:text-base">
-            Citas agendadas por propietarios desde la página principal, con su estado en tiempo real.
+            Presentaciones a propietarios y visitas de interesados, con su estado en tiempo real.
           </p>
         </div>
         <button
