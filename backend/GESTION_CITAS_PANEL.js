@@ -191,8 +191,12 @@ function moverCita(cita, timestamp, op) {
   const cal = CalendarApp.getDefaultCalendar();
   let evento = null;
   try { evento = idEvento ? cal.getEventById(idEvento) : null; } catch (e) { evento = null; }
-  // La eligió (o la acordó) el propietario: queda confirmada
-  const titulo = tituloEventoCita(ESTADOS_CITA.CONFIRMADA, servicio, nombre);
+  // Agendar no es confirmar (Leonardo, 14-oct-2026): si el propietario reagenda,
+  // vuelve a POR CONFIRMAR y sigue el flujo normal (recordatorio, y si no confirma
+  // a tiempo se libera). Si reagenda el agente desde el panel, ya lo acordó con
+  // él por teléfono: queda confirmada.
+  const estadoNuevo = op.quien === 'agente' ? ESTADOS_CITA.CONFIRMADA : ESTADOS_CITA.PENDIENTE;
+  const titulo = tituloEventoCita(estadoNuevo, servicio, nombre);
   if (evento) {
     evento.setTime(inicio, fin);
     evento.setTitle(titulo);
@@ -209,7 +213,7 @@ function moverCita(cita, timestamp, op) {
   escribir('FECHA CITA', new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate()));
   if (col['FECHA CITA']) sheet.getRange(numFila, col['FECHA CITA']).setNumberFormat('dd/MM/yyyy');
   escribir('HORA CITA', formatAmPm(inicio));
-  escribir('ESTADO', ESTADOS_CITA.CONFIRMADA);
+  escribir('ESTADO', estadoNuevo);
   // Con menos de 24 h, este correo ya hace de recordatorio
   const horas = (inicio.getTime() - Date.now()) / 3600000;
   escribir('RECORDATORIO ENVIADO', horas <= 24 ? ahoraTxt : '');
@@ -228,11 +232,13 @@ function moverCita(cita, timestamp, op) {
       ` cita para el servicio de <strong>${servicio}</strong> quedó en la nueva fecha:<br><br>` +
       `🗓️ <strong>Fecha:</strong> ${Utilities.formatDate(inicio, tz, 'dd/MM/yyyy')}<br>⏰ <strong>Hora:</strong> ${formatAmPm(inicio)}<br>` +
       `📍 <strong>Inmueble:</strong> ${direccion || 'A convenir'}` +
-      (tokenProp ? '<br><br>Si algo cambia, puedes reagendar o cancelar aquí:' : ''),
-      tokenProp ? htmlBotonesCorreo([
+      (!tokenProp ? '' : op.quien === 'agente'
+        ? '<br><br>Si algo cambia, puedes reagendar o cancelar aquí:'
+        : '<br><br><strong>Confirma tu asistencia con el botón verde.</strong> Si no la confirmas, la cita se liberará automáticamente 2 horas antes.'),
+      !tokenProp ? '' : op.quien !== 'agente' ? botonesPropietarioCita(idCita, tokenProp) : htmlBotonesCorreo([
         { texto: '🔄 Reagendar', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) },
         { texto: '❌ Cancelar', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.CANCELADA, tokenProp) }
-      ]) : ''
+      ])
     );
   } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
   return { ok: true, textoNueva: textoFecha(inicio), textoAntes: antes };
@@ -247,7 +253,9 @@ function _citaDelPropietario(idCita, token) {
   const t = String(token || '');
   if (!t || t !== String(valorCita(cita.fila, cita.col, 'TOKEN PROPIETARIO') || '')) return { error: 'Este enlace no es válido para esta acción.' };
   const estado = String(valorCita(cita.fila, cita.col, 'ESTADO') || '').trim();
-  if (['ASISTIDA', 'INASISTIDA', 'CANCELADA'].indexOf(estado) !== -1) {
+  // Una cita cancelada (p. ej. liberada por no confirmar) se puede revivir
+  // reagendando: el correo de "cita liberada" trae ese botón.
+  if (['ASISTIDA', 'INASISTIDA'].indexOf(estado) !== -1) {
     return { error: 'Esta cita ya está cerrada (' + estado.toLowerCase() + '). Si quieres una visita nueva, agéndala desde nuestra página.' };
   }
   return { cita: cita };
@@ -295,11 +303,11 @@ function reagendarPorPropietario(datos) {
         'Agente',
         `<strong>${nombre}</strong> reagendó su cita desde el correo.<br><br>` +
         (m.textoAntes ? `Antes: ${m.textoAntes}<br>` : '') + `<strong>Ahora: ${m.textoNueva}</strong><br><br>` +
-        'Ya quedó confirmada y movida en tu Calendar. No tienes que hacer nada.',
+        'Ya quedó movida en tu Calendar, por confirmar: le llegó el correo para confirmar. No tienes que hacer nada.',
         ''
       );
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
-    return { ok: true, mensaje: 'Tu cita quedó para el ' + m.textoNueva + '. Te enviamos la confirmación a tu correo.' };
+    return { ok: true, mensaje: 'Tu cita quedó para el ' + m.textoNueva + '. Te enviamos un correo: confírmala desde ahí con el botón verde.' };
   } finally {
     lock.releaseLock();
   }

@@ -115,9 +115,12 @@ function ejecutarMotorAgenda() {
             'CITA LIBERADA',
             nombre,
             `Como no recibimos la confirmación de tu cita del <strong>${fechaStr} a las ${horaStr}</strong>, liberamos ese horario.<br><br>` +
-            'Si aún deseas la visita, agenda un nuevo horario desde nuestra página.',
-            htmlBotonesCorreo([{ texto: '📅 Agendar de nuevo', color: '#b8860b',
-              url: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/portafolio/' }])
+            'Si aún deseas la visita, elige un nuevo horario. Si no, no tienes que hacer nada: la cita queda cancelada.',
+            // Reagendar abre la disponibilidad real (frontend/cita.html) y revive la misma cita
+            tokenProp
+              ? htmlBotonesCorreo([{ texto: '🔄 Elegir nuevo horario', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) }])
+              : htmlBotonesCorreo([{ texto: '📅 Agendar de nuevo', color: '#b8860b',
+                  url: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/portafolio/' }])
           );
         } catch (e) { Logger.log('Error avisando auto-cancelación de ' + idCita + ': ' + e.message); }
         return;
