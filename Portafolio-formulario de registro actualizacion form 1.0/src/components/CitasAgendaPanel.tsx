@@ -324,14 +324,16 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                   <button
                     key={k}
                     onClick={() => elegirDia(d, del.length > 0)}
-                    className={`min-h-[56px] lg:min-h-0 overflow-hidden rounded-xl p-[clamp(0.25rem,0.6vw,0.75rem)] text-left border transition-all flex flex-col ${
-                      seleccionado ? 'border-brand-gold bg-brand-gold/10' : 'border-stone-800 hover:border-stone-600 bg-stone-950/40'
+                    className={`relative min-h-[56px] lg:min-h-0 overflow-hidden rounded-xl p-[clamp(0.25rem,0.6vw,0.75rem)] text-left border transition-all flex flex-col ${
+                      // Seleccionado: dorado. Hoy (si no está seleccionado): blanco suave, para ubicarse de un vistazo
+                      seleccionado ? 'border-brand-gold bg-brand-gold/10' : esHoy ? 'border-stone-300/70 bg-white/[0.07]' : 'border-stone-800 hover:border-stone-600 bg-stone-950/40'
                     } ${fueraDeMes ? 'opacity-40' : ''}`}
                     style={altoCelda ? { height: altoCelda } : undefined}
                   >
                     <span className={`text-[clamp(0.75rem,0.9vw,1rem)] mb-1 w-[clamp(1.5rem,1.8vw,2rem)] h-[clamp(1.5rem,1.8vw,2rem)] flex items-center justify-center rounded-full ${esHoy ? 'bg-brand-gold text-stone-950 font-bold' : 'text-stone-300'}`}>
                       {d.getDate()}
                     </span>
+                    {esHoy && <span className="absolute top-[clamp(0.3rem,0.6vw,0.6rem)] right-[clamp(0.35rem,0.6vw,0.7rem)] text-[clamp(9px,0.65vw,11px)] font-semibold uppercase tracking-wider text-brand-gold">Hoy</span>}
                     {/* Contadores por estado: el calendario dice qué tan ocupado está
                         cada día; el detalle (hora, nombre) está en la lista. */}
                     {del.length > 0 && (
