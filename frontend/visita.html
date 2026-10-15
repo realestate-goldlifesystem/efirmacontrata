@@ -36,6 +36,7 @@
 
     /* ---------- Estructura ---------- */
     .pagina { max-width: 1180px; margin: 0 auto; padding: 20px 16px 120px; display: grid; gap: 28px; }
+    .pagina > * { min-width: 0; }   /* sin esto la tira de miniaturas estira la columna y la página se desborda a lo ancho */
     @media (min-width: 1000px) { .pagina { grid-template-columns: minmax(0, 1fr) 360px; padding-bottom: 60px; align-items: start; } }
 
     /* ---------- Galería ---------- */
