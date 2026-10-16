@@ -964,6 +964,29 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         ...formData.gridAnswers
       };
 
+      // Renovación y cambio de negocio solo editan precios, porcentajes, autorización
+      // y negocio; las características del inmueble no pasan por el formulario y
+      // salían con los valores por defecto (garaje "Ningun", nevera 0.60x0.70x1.80,
+      // sin zonas...), pisando la fila y dejando el acta vacía (16-oct-2026,
+      // YN480228). Todo lo demás se toma tal cual de la fila del inmueble.
+      if (inmuebleOriginal) {
+        const editable = /PRECIO|PORCENTAJE|Porcentaje|autorizaci|portería|NOMBRE DEL INMUEBLE|administración desde|Correo electrónico de la administración|TIPO DE NEGOCIO|Fecha de registro/;
+        const delPropietario = /PROPIETARIO|documento|Expedicion|celular|Celular|^Correo electrónico$/;
+        const tecnicas = /^(accion|idEnvio|reutilizarMultimedia|flujoSolicitado|idInmuebleOriginal|cdrInmuebleOriginal)$/;
+        // La fila llega con los encabezados recortados (sin espacios a los lados) y el
+        // backend acepta la clave exacta o la recortada: se compara recortado.
+        const p = payload as Record<string, any>;
+        const enPayload = new Map(Object.keys(p).map(k => [k.trim(), k]));
+        const claves = new Set([...enPayload.keys(), ...Object.keys(inmuebleOriginal).filter(k => /^\[|^¿/.test(k))]);
+        claves.forEach(k => {
+          if (tecnicas.test(k) || editable.test(k) || !(k in inmuebleOriginal)) return;
+          const destino = enPayload.get(k) ?? k;
+          const original = inmuebleOriginal[k] ?? '';
+          if (delPropietario.test(k)) { if (!String(p[destino] ?? '').trim()) p[destino] = original; return; }
+          p[destino] = original;
+        });
+      }
+
       const response = await fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
         method: 'POST',
         body: JSON.stringify(payload),
