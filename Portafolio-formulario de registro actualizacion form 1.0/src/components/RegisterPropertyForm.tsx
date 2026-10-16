@@ -54,17 +54,38 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [cedulaInput, setCedulaInput] = useState('');
-  const [cedulaStatus, setCedulaStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>('idle');
-  const [validatedCedula, setValidatedCedula] = useState('');
+  // Contexto del borrador (16-oct-2026). Antes el borrador solo guardaba los datos y
+  // el paso: si la página se recargaba en medio de una RENOVACIÓN o un CAMBIO DE
+  // MODELO, volvía en modo registro nuevo con los datos del inmueble, y al enviarlo
+  // se creaba un inmueble duplicado. Ahora también se guarda el flujo, el inmueble
+  // elegido, el portafolio del propietario, la cédula y la opción de multimedia.
+  const contextoGuardado = (() => {
+    try { return JSON.parse(localStorage.getItem('registerPropertyContexto') || 'null') || {}; } catch { return {}; }
+  })();
+  const [cedulaInput, setCedulaInput] = useState<string>(contextoGuardado.cedulaInput || '');
+  const [cedulaStatus, setCedulaStatus] = useState<'idle' | 'searching' | 'found' | 'not_found'>(
+    contextoGuardado.cedulaStatus === 'found' || contextoGuardado.cedulaStatus === 'not_found' ? contextoGuardado.cedulaStatus : 'idle');
+  const [validatedCedula, setValidatedCedula] = useState<string>(contextoGuardado.validatedCedula || '');
   const [revalidatingCedula, setRevalidatingCedula] = useState(false);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
   const [shakeErrors, setShakeErrors] = useState(false);
   const [showBeds, setShowBeds] = useState(false);
-  const [ownerProperties, setOwnerProperties] = useState<any[]>([]);
-  const [activeFlow, setActiveFlow] = useState<'normal' | 'renovacion' | 'cambio_negocio'>('normal');
-  const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(null);
-  const [reutilizarMultimedia, setReutilizarMultimedia] = useState<'SI' | 'NO'>('SI');
+  const [ownerProperties, setOwnerProperties] = useState<any[]>(Array.isArray(contextoGuardado.ownerProperties) ? contextoGuardado.ownerProperties : []);
+  const [activeFlow, setActiveFlow] = useState<'normal' | 'renovacion' | 'cambio_negocio'>(
+    contextoGuardado.activeFlow === 'renovacion' || contextoGuardado.activeFlow === 'cambio_negocio' ? contextoGuardado.activeFlow : 'normal');
+  const [selectedPropertyIndex, setSelectedPropertyIndex] = useState<number | null>(
+    typeof contextoGuardado.selectedPropertyIndex === 'number' ? contextoGuardado.selectedPropertyIndex : null);
+  const [reutilizarMultimedia, setReutilizarMultimedia] = useState<'SI' | 'NO'>(contextoGuardado.reutilizarMultimedia === 'NO' ? 'NO' : 'SI');
+
+  // Se guarda el contexto cada vez que cambia
+  useEffect(() => {
+    try {
+      localStorage.setItem('registerPropertyContexto', JSON.stringify({
+        activeFlow, selectedPropertyIndex, ownerProperties, reutilizarMultimedia, cedulaInput, validatedCedula,
+        cedulaStatus: cedulaStatus === 'searching' ? 'idle' : cedulaStatus
+      }));
+    } catch (e) { /* sin almacenamiento local: el formulario sigue funcionando */ }
+  }, [activeFlow, selectedPropertyIndex, ownerProperties, reutilizarMultimedia, cedulaInput, validatedCedula, cedulaStatus]);
   const [propertySearchTerm, setPropertySearchTerm] = useState('');
   // Inmueble que el agente tocó en el paso 0 pero para el que todavía no eligió
   // acción (renovar / cambiar negocio). Primero SE ELIGE EL INMUEBLE y después
@@ -941,6 +962,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
           localStorage.removeItem('registerPropertyFormData');
           localStorage.removeItem('registerPropertyCurrentStep');
           localStorage.removeItem('registerPropertyIdEnvio');
+          localStorage.removeItem('registerPropertyContexto');
         } catch (e) {}
       } else {
         alert("Error al registrar: " + data.message);
@@ -3556,6 +3578,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                       try {
                         localStorage.removeItem('registerPropertyFormData');
                         localStorage.removeItem('registerPropertyCurrentStep');
+                        localStorage.removeItem('registerPropertyContexto');
                       } catch (e) {}
                     }}
                     className="block text-xs text-stone-500 hover:text-stone-900 underline mx-auto cursor-pointer"
