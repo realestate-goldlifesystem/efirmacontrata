@@ -746,10 +746,18 @@ function resolverPorIntencion(sheet, resultadoRPR, datosInmueble, intencion) {
   var idOriginal = leerIdRegistroDeFila(sheet, filaOriginal);
   var carpetaDestino = determinarCarpetaNegocio(datosInmueble.tipoNegocio);
 
-  // El agente pidió "cambiar de negocio" pero el inmueble ya está en la carpeta
-  // que le tocaría: en la práctica es una renovación, y tratarlo como cambio
-  // movería carpetas sin necesidad.
-  var esCambioReal = encontrado.carpeta !== carpetaDestino;
+  // ¿Es un cambio de modelo de verdad? Lo es si cambia la carpeta (ARRIENDO, VENTA,
+  // BI-NEGOCIO) o si cambia el tipo de negocio aunque la carpeta sea la misma
+  // (Corretaje ↔ Administración, Vendi-Renta ↔ Admi-Venta). Antes solo se miraba la
+  // carpeta: esos cambios se hacían como renovación y el código del inmueble se quedaba
+  // con la letra del negocio anterior (C51 siendo Administración) (16-oct-2026).
+  // El cambio completo (TIPO_4) ya sabe no mover la carpeta si es la misma.
+  var colNegocio = headers.indexOf('TIPO DE NEGOCIO');
+  var negocioActual = colNegocio !== -1
+    ? String(sheet.getRange(filaOriginal, colNegocio + 1).getValue() || '').trim()
+    : '';
+  var esCambioReal = encontrado.carpeta !== carpetaDestino ||
+    (negocioActual && negocioActual !== String(datosInmueble.tipoNegocio || '').trim());
 
   if (intencion.flujo === 'cambio_negocio' && esCambioReal) {
     return {
@@ -767,6 +775,10 @@ function resolverPorIntencion(sheet, resultadoRPR, datosInmueble, intencion) {
   return {
     tipo: 'TIPO_2',
     descripcion: 'Renovación (pedida desde el formulario)',
+    // Cambio de modelo dentro de la misma carpeta (p. ej. Corretaje → Administración,
+    // las dos en ARRIENDO): se procesa como renovación, pero el aviso debe decir que
+    // es un cambio de modelo (16-oct-2026).
+    cambioMismaCarpeta: intencion.flujo === 'cambio_negocio',
     filaOriginal: filaOriginal,
     idOriginal: idOriginal,
     regExistenteId: encontrado.folder.getId(),

@@ -434,8 +434,13 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         // Se lee de la columna general o de la de administración y se llenan las dos
         // versiones, porque cuál se guarda depende del tipo de negocio (y en un cambio
         // de modelo puede pasar de una a otra).
+        // Primero la columna del tipo de negocio actual: tras un cambio de modelo la
+        // otra puede conservar la autorización del año anterior.
+        const autGeneral = prop["¿Qué tipo de autorización desea con el agente?"] || '';
+        const autAdmin = prop["¿Qué tipo de autorización desea con el agente para administración?"] || '';
+        const negocioActual = String(prop["TIPO DE NEGOCIO"] || '');
         const modoAut = modoAutorizacion(
-          prop["¿Qué tipo de autorización desea con el agente?"] || prop["¿Qué tipo de autorización desea con el agente para administración?"] || ''
+          /Administraci|Admi-Venta/i.test(negocioActual) ? (autAdmin || autGeneral) : (autGeneral || autAdmin)
         );
         if (modoAut) {
           next.porteriaAuthAgentGeneral = AUTORIZACIONES[modoAut].general;

@@ -88,8 +88,8 @@ function datosPropietario(negocio, aut, precio) {
     if (!f) { console.log('No está', a1); return; }
     ['ID DE REGISTRO', 'CODIGO DE REGISTRO', 'TIPO DE NEGOCIO', 'ESTADO DEL INMUEBLE', 'DETALLES DEL ESTADO DEL INMUEBLE',
      'PRECIO DE PROMOCION GENERAL', '¿Qué tipo de autorización desea con el agente?', '¿Qué tipo de autorización desea con el agente para administración?',
-     'Document Merge Status - CORRETAJE', 'Document Merge Status - ADMINISTRACIÓN', 'Document Merge Status - VENTA',
-     'Document Merge Status - VENDI-RENTA', 'Document Merge Status - ADMI-VENTA', 'Document Merge Status - AUTORIZACIÓN DE INGRESO AL INMUEBLE']
+     'Merged Doc ID - CORRETAJE', 'Merged Doc ID - ADMINISTRACIÓN', 'Merged Doc ID - VENTA',
+     'Merged Doc ID - VENDI-RENTA', 'Merged Doc ID - ADMI-VENTA', 'Merged Doc ID - AUTORIZACIÓN DE INGRESO AL INMUEBLE', 'LINK DE CARPETA REG']
       .forEach(n => console.log((n.split(' - ').pop() + '                                        ').slice(0, 42), '|', String(f[col(n)] || '').slice(0, 90)));
     return;
   }

@@ -67,7 +67,11 @@ function _inmueblePorId(idInmueble) {
     area: v('AREA  M²'),
     precioGeneral: v('PRECIO DE PROMOCION GENERAL'),
     precioVenta: v('PRECIO DE PROMOCION EN VENTA'),
-    autorizacion: String(v('¿Qué tipo de autorización desea con el agente?') || v('¿Qué tipo de autorización desea con el agente para administración?') || ''),
+    // Se lee la columna que corresponde al tipo de negocio: tras un cambio de modelo
+    // la otra puede conservar la autorización del año anterior (16-oct-2026)
+    autorizacion: String((/Administraci|Admi-Venta/i.test(String(v('TIPO DE NEGOCIO')))
+      ? v('¿Qué tipo de autorización desea con el agente para administración?') || v('¿Qué tipo de autorización desea con el agente?')
+      : v('¿Qué tipo de autorización desea con el agente?') || v('¿Qué tipo de autorización desea con el agente para administración?')) || ''),
     carpeta: String(carpeta || ''),
     // Datos clave para la página pública. Se dejan fuera torre, número de
     // apartamento, garaje y depósito: identifican el inmueble exacto.

@@ -793,9 +793,13 @@ function procesarTipo13_CambioTipoNegocio(sheet, row, datos) {
     sheet.getRange(filaOriginal, linkREGCol).setFormula(formulaNueva);
     Logger.log(`✅ Link REG actualizado: ${codigoCortoNuevo}`);
 
-    // 9. Agregar links de Autocrat (solo si están vacíos)
-    Logger.log('🔗 Agregando links de nuevos documentos...');
-    agregarLinksTipo13(sheet, filaOriginal, row);
+    // 9. Links de Autocrat: se REEMPLAZAN los que trae el registro nuevo.
+    // Antes solo se agregaban si estaban vacíos (agregarLinksTipo13): el acta de
+    // ingreso nueva nunca llegaba a la fila (ya existía la del año anterior) y, si el
+    // inmueble volvía a un negocio que ya tuvo, el acta nueva de ese negocio se perdía.
+    // reemplazarLinksAutocrat solo toca las columnas que el registro nuevo sí trae.
+    Logger.log('🔗 Reemplazando links de los documentos nuevos...');
+    reemplazarLinksAutocrat(sheet, filaOriginal, row);
   }
 
   // 10. Encolar para la Parte 3 (OCR, Rollback, Notificación y Borrado)
@@ -1969,7 +1973,7 @@ function continuarRegistroInmuebleParte3() {
         transferirPreciosRenovacion(sheet, filaOriginal, row, datos.reutilizarMultimedia);
         transferirCaracteristicasFormulario(sheet, filaOriginal, datos);
         actualizarLinksTipo12(sheet, filaOriginal, row, carpetaNuevoAnio, regFolder);
-        actualizarEstadoFinal(sheet, filaOriginal, 'TIPO_2_PENDIENTE');
+        actualizarEstadoFinal(sheet, filaOriginal, datos.tipoRegistro.cambioMismaCarpeta ? 'TIPO_4_PENDIENTE' : 'TIPO_2_PENDIENTE');
 
         // Enviar correo al propietario sobre la fila original
         try {
@@ -2037,7 +2041,8 @@ function continuarRegistroInmuebleParte3() {
         sheet.getRange(filaOriginal, linkREGCol).setFormula(`=HYPERLINK("${regUrl}";"${codigoCortoNuevo}")`);
 
         // Reemplazar/agregar nuevos links de Autocrat a la fila original
-        agregarLinksTipo13(sheet, filaOriginal, row);
+        // Se reemplazan (no solo se agregan): ver el paso 9 de la Parte 2
+        reemplazarLinksAutocrat(sheet, filaOriginal, row);
         actualizarEstadoFinal(sheet, filaOriginal, 'TIPO_4_PENDIENTE');
 
         // Enviar correo de firma de cambio de negocio

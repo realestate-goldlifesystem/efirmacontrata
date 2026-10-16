@@ -10,6 +10,21 @@
  */
 function programarTriggersRollback(idRegistro, emailPropietario) {
   var fechaActual = new Date();
+
+  // Si este inmueble ya tenía recordatorio y reversión programados (se renovó o se
+  // cambió de modelo otra vez antes de firmar), se borran primero. Antes se creaban
+  // dos nuevos y los viejos quedaban huérfanos hasta 7 días: con unas pocas
+  // repeticiones se llegaba al tope de 20 tareas y el registro de inmuebles se
+  // detenía para todos (16-oct-2026).
+  var propsPrevias = PropertiesService.getScriptProperties();
+  var idsPrevios = [propsPrevias.getProperty('TRIGGERS_RECORDATORIO_' + idRegistro),
+                    propsPrevias.getProperty('TRIGGERS_ROLLBACK_' + idRegistro)].filter(Boolean);
+  if (idsPrevios.length) {
+    ScriptApp.getProjectTriggers().forEach(function (t) {
+      if (idsPrevios.indexOf(t.getUniqueId()) !== -1) ScriptApp.deleteTrigger(t);
+    });
+    Logger.log('🧹 Se borraron ' + idsPrevios.length + ' tareas anteriores de ' + idRegistro);
+  }
   
   // Día 6: Recordatorio
   var fechaRecordatorio = new Date(fechaActual.getTime() + (6 * 24 * 60 * 60 * 1000));
