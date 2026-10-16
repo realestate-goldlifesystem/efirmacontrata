@@ -361,9 +361,41 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
 
 
 
-  const selectProperty = (index: number) => {
+  // Las tres formas de entrar al inmueble, con el texto exacto que se guarda en
+  // cada columna (general o de administración) y que usa el acta de ingreso.
+  const AUTORIZACIONES = {
+    porteria: {
+      etiqueta: 'Recoge las llaves en portería y las devuelve',
+      general: 'El cual recoge las llaves en portería y después de la visita las deja nuevamente allí',
+      admin: 'Siendo el nuevo ADMINISTRADOR, el cual recoge las llaves en portería y después de la visita las deja nuevamente allí'
+    },
+    copia: {
+      etiqueta: 'Dispone de copia de las llaves',
+      general: 'Disponiendo de copia de las llaves',
+      admin: 'Siendo el nuevo ADMINISTRADOR, disponiendo de copia de las llaves'
+    },
+    acompanamiento: {
+      etiqueta: 'Con acompañamiento del propietario o su delegado',
+      general: 'Con acompañamiento de mi parte en las visitas de interesados',
+      admin: 'Siendo el nuevo ADMINISTRADOR, Con acompañamiento de mi parte en las visitas de interesados'
+    }
+  } as const;
+  type ModoAutorizacion = keyof typeof AUTORIZACIONES;
+  const modoAutorizacion = (texto: string): ModoAutorizacion | null => {
+    const t = String(texto || '').toLowerCase();
+    if (/acompa/.test(t)) return 'acompanamiento';
+    if (/copia/.test(t)) return 'copia';
+    if (/porter/.test(t)) return 'porteria';
+    return null;
+  };
+
+  // `flujo` y `lista` se pasan explícitos: quien llama acaba de hacer setActiveFlow /
+  // setOwnerProperties y, en ese mismo clic, el estado todavía tiene el valor anterior.
+  // Antes se leía `activeFlow` aquí y una RENOVACIÓN se cargaba como flujo normal: no
+  // conservaba el tipo de negocio y un Corretaje quedaba como Administración (16-oct-2026).
+  const selectProperty = (index: number, flujo: typeof activeFlow = activeFlow, lista: any[] = ownerProperties) => {
     setSelectedPropertyIndex(index);
-    const prop = ownerProperties[index];
+    const prop = lista[index];
     if (prop) {
       setFormData(prev => {
         const next = { ...prev };
@@ -395,9 +427,23 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         next.porteriaBuildingName = prop["NOMBRE DEL INMUEBLE/ADMINISTRACION"] || prop.porteriaBuildingName || '';
         next.porteriaAutoSendEmail = prop["¿Desea enviar el acta notificación de gestión inmobiliaria a la administración desde este formulario también?"] || prop.porteriaAutoSendEmail || 'SI';
         next.porteriaAdminEmail = prop["Correo electrónico de la administración"] || prop.porteriaAdminEmail || '';
-        
+
+        // Autorización de ingreso que tenía el inmueble. Antes no se cargaba: la
+        // renovación mandaba siempre la de por defecto ("recoge llaves en portería")
+        // y un inmueble "con acompañamiento" quedaba cambiado sin que nadie lo notara.
+        // Se lee de la columna general o de la de administración y se llenan las dos
+        // versiones, porque cuál se guarda depende del tipo de negocio (y en un cambio
+        // de modelo puede pasar de una a otra).
+        const modoAut = modoAutorizacion(
+          prop["¿Qué tipo de autorización desea con el agente?"] || prop["¿Qué tipo de autorización desea con el agente para administración?"] || ''
+        );
+        if (modoAut) {
+          next.porteriaAuthAgentGeneral = AUTORIZACIONES[modoAut].general;
+          next.porteriaAuthAgentAdmin = AUTORIZACIONES[modoAut].admin;
+        }
+
         // Si es flujo de renovación, mantener el tipo de negocio del inmueble
-        if (activeFlow === 'renovacion') {
+        if (flujo === 'renovacion') {
           const rawType = String(prop["TIPO DE NEGOCIO"] || prop.tipoNegocio || 'Administración');
           let mappedType: any = 'administracion';
           if (rawType.includes('Corretaje')) mappedType = 'corretaje';
@@ -651,7 +697,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
       }
 
       setActiveFlow(flujo);
-      selectProperty(idx);
+      selectProperty(idx, flujo, lista);
       setDupCheckStatus('idle');
       setDupMatches([]);
       setPendingPropertyIndex(null);
@@ -917,6 +963,77 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
 ¡Gracias por confiar en nosotros! 🤝`;
 
     return `https://wa.me/${clientPhone}?text=${encodeURIComponent(textMsg)}`;
+  };
+
+  /**
+   * Autorización de ingreso y portería, editable en la renovación y en el cambio de
+   * modelo (16-oct-2026). Un año el propietario acompaña las visitas y al siguiente
+   * deja las llaves en portería: con esto se actualiza y, al guardar, el acta de
+   * ingreso se genera con lo nuevo (procesarRegistroParte2, si hay portería).
+   */
+  const bloqueAutorizacionIngreso = () => {
+    const modo = modoAutorizacion(
+      (formData.serviceType === 'administracion' || formData.serviceType === 'admi-venta')
+        ? formData.porteriaAuthAgentAdmin : formData.porteriaAuthAgentGeneral
+    ) || 'porteria';
+    const entrada = 'w-full bg-white border border-stone-200 focus:border-brand-gold rounded-xl p-3 text-xs outline-none transition-colors';
+    return (
+      <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+        <div>
+          <label className="text-xs text-stone-700 font-bold block">AUTORIZACIÓN DE INGRESO AL INMUEBLE</label>
+          <p className="text-[10px] text-stone-500 mt-1">Viene con lo del registro anterior. Cámbiala si este año el propietario entrega las llaves de otra forma.</p>
+        </div>
+        <div>
+          <label className="text-[10px] text-stone-600 font-bold block mb-1">¿EL CONJUNTO/EDIFICIO DISPONE DE PORTERÍA?</label>
+          <select value={formData.hasPorteriaAndAdmin} onChange={e => setFormData({ ...formData, hasPorteriaAndAdmin: e.target.value })} className={`${entrada} cursor-pointer`}>
+            <option value="SI">SÍ, dispone de portería para autorizaciones</option>
+            <option value="NO">NO, ingreso independiente/libre</option>
+          </select>
+        </div>
+        {formData.hasPorteriaAndAdmin === 'SI' && (
+          <>
+            <div>
+              <label className="text-[10px] text-stone-600 font-bold block mb-1">¿CÓMO SE ENTRA AL INMUEBLE?</label>
+              <select
+                value={modo}
+                onChange={e => {
+                  const m = e.target.value as ModoAutorizacion;
+                  setFormData({ ...formData, porteriaAuthAgentGeneral: AUTORIZACIONES[m].general, porteriaAuthAgentAdmin: AUTORIZACIONES[m].admin });
+                }}
+                className={`${entrada} cursor-pointer`}
+              >
+                {(Object.keys(AUTORIZACIONES) as ModoAutorizacion[]).map(m => (
+                  <option key={m} value={m}>{AUTORIZACIONES[m].etiqueta}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] text-stone-600 font-bold block mb-1">NOMBRE DE COPROPIEDAD / CONJUNTO</label>
+                <input type="text" required value={formData.porteriaBuildingName}
+                  onChange={e => setFormData({ ...formData, porteriaBuildingName: e.target.value })}
+                  placeholder="Ej: CONJUNTO ALTOS DEL MORAL" className={entrada} />
+              </div>
+              <div>
+                <label className="text-[10px] text-stone-600 font-bold block mb-1">¿ENVIAR ACTA A LA ADMINISTRACIÓN?</label>
+                <select value={formData.porteriaAutoSendEmail} onChange={e => setFormData({ ...formData, porteriaAutoSendEmail: e.target.value })} className={`${entrada} cursor-pointer`}>
+                  <option value="SI">SÍ, enviar acta también a la admón</option>
+                  <option value="NO">NO, solo enviar a mi correo</option>
+                </select>
+              </div>
+            </div>
+            {formData.porteriaAutoSendEmail === 'SI' && (
+              <div>
+                <label className="text-[10px] text-stone-600 font-bold block mb-1">CORREO DE LA ADMINISTRACIÓN</label>
+                <input type="email" required value={formData.porteriaAdminEmail}
+                  onChange={e => setFormData({ ...formData, porteriaAdminEmail: e.target.value })}
+                  placeholder="admin@edificio.com" className={entrada} />
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -1331,7 +1448,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                                   setActiveFlow('renovacion');
                                                   setValidatedCedula(cedulaInput);
                                                   setFormData(p => ({ ...p, documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
-                                                  selectProperty(idx);
+                                                  selectProperty(idx, 'renovacion');
                                                   setPendingPropertyIndex(null);
                                                   setCurrentStep(1);
                                                 }}
@@ -1349,7 +1466,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                                   setActiveFlow('cambio_negocio');
                                                   setValidatedCedula(cedulaInput);
                                                   setFormData(p => ({ ...p, documentNumber: cedulaInput, confirmDocumentNumber: cedulaInput }));
-                                                  selectProperty(idx);
+                                                  selectProperty(idx, 'cambio_negocio');
                                                   setPendingPropertyIndex(null);
                                                   setCurrentStep(1);
                                                 }}
@@ -1533,13 +1650,15 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                             )}
                           </div>
 
+                          {bloqueAutorizacionIngreso()}
+
                           <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
                             <label className="text-xs text-stone-700 font-bold block mb-1">¿REUTILIZAR CONTENIDO MULTIMEDIA ANTERIOR?</label>
                             <div className="flex gap-4">
                               <label className="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                  type="radio" 
-                                  name="reutilizarMultimedia" 
+                                <input
+                                  type="radio"
+                                  name="reutilizarMultimedia"
                                   value="SI" 
                                   checked={reutilizarMultimedia === 'SI'} 
                                   onChange={() => setReutilizarMultimedia('SI')}
@@ -1737,13 +1856,15 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                             )}
                           </div>
 
+                          {bloqueAutorizacionIngreso()}
+
                           <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
                             <label className="text-xs text-stone-700 font-bold block mb-1">¿REUTILIZAR CONTENIDO MULTIMEDIA ANTERIOR?</label>
                             <div className="flex gap-4">
                               <label className="flex items-center space-x-2 cursor-pointer">
-                                <input 
-                                  type="radio" 
-                                  name="reutilizarMultimediaCD" 
+                                <input
+                                  type="radio"
+                                  name="reutilizarMultimediaCD"
                                   value="SI" 
                                   checked={reutilizarMultimedia === 'SI'} 
                                   onChange={() => setReutilizarMultimedia('SI')}
