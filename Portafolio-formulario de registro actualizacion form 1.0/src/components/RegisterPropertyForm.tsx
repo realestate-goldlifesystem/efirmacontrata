@@ -449,6 +449,24 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         next.porteriaAutoSendEmail = prop["¿Desea enviar el acta notificación de gestión inmobiliaria a la administración desde este formulario también?"] || prop.porteriaAutoSendEmail || 'SI';
         next.porteriaAdminEmail = prop["Correo electrónico de la administración"] || prop.porteriaAdminEmail || '';
 
+        // Porcentajes que tenía el inmueble. Antes no se cargaban y la renovación
+        // mandaba los de por defecto: un corretaje del 50% se renovaba al 100%
+        // (16-oct-2026). Se leen de cada columna según el negocio.
+        const pct = (v: any) => String(v || '').replace('%', '').trim();
+        const conPct = (v: any) => { const t = pct(v); return t ? t + '%' : ''; };
+        const pCorretaje = pct(prop["PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO"]);
+        if (pCorretaje) next.corretajePercent = pCorretaje;
+        const pVendiRenta = pct(prop["PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO (Vendi-Renta)"]);
+        if (pVendiRenta) next.vendiRentaArriendoPercent = pVendiRenta;
+        const pAdmin = String(prop["PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE "] || prop["PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE"] || '').trim();
+        if (pAdmin) next.adminPercentSelector = pAdmin;
+        const pAdmiVenta = String(prop["PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE (Admi-Venta)"] || '').trim();
+        if (pAdmiVenta) next.admiVentaAdminPercentSelector = pAdmiVenta;
+        const pVenta = conPct(prop["(Porcentaje en números)"]);
+        if (pVenta) next.salesCommissionSelector = pVenta;
+        const pAV = conPct(prop["(Porcentaje en números) (A-V)"]);
+        if (pAV) { if (String(prop["TIPO DE NEGOCIO"] || '').includes('Vendi-Renta')) next.salesCommissionSelector = pAV; else next.admiVentaSalesCommissionSelector = pAV; }
+
         // Autorización de ingreso que tenía el inmueble. Antes no se cargaba: la
         // renovación mandaba siempre la de por defecto ("recoge llaves en portería")
         // y un inmueble "con acompañamiento" quedaba cambiado sin que nadie lo notara.
@@ -990,6 +1008,70 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
 ¡Gracias por confiar en nosotros! 🤝`;
 
     return `https://wa.me/${clientPhone}?text=${encodeURIComponent(textMsg)}`;
+  };
+
+  /**
+   * Porcentajes del negocio en la renovación (16-oct-2026): vienen con los del año
+   * anterior y se pueden cambiar. Antes no se mostraban y se iban los de por defecto.
+   */
+  const bloquePorcentajes = () => {
+    const t = formData.serviceType;
+    const entrada = 'w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-bold';
+    const venta = t === 'venta' || t === 'admi-venta' || t === 'vendi-renta';
+    const admin = t === 'administracion' || t === 'admi-venta';
+    const corretaje = t === 'corretaje' || t === 'vendi-renta';
+    return (
+      <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-4">
+        <div>
+          <label className="text-xs text-stone-700 font-bold block">PORCENTAJES DEL NEGOCIO</label>
+          <p className="text-[10px] text-stone-500 mt-1">Vienen con los del contrato anterior. Cámbialos si este año se pactó otro valor.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {corretaje && (
+            <div>
+              <label className="text-[10px] text-stone-600 font-bold block mb-1">COMISIÓN DE CORRETAJE EN ARRIENDO (% DEL CANON)</label>
+              <div className="relative">
+                <input type="text" inputMode="numeric"
+                  value={t === 'vendi-renta' ? formData.vendiRentaArriendoPercent : formData.corretajePercent}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 3);
+                    setFormData(t === 'vendi-renta' ? { ...formData, vendiRentaArriendoPercent: v } : { ...formData, corretajePercent: v });
+                  }}
+                  placeholder="100" className={`${entrada} font-mono pr-8`} />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 font-bold text-xs">%</span>
+              </div>
+            </div>
+          )}
+          {admin && (
+            <div>
+              <label className="text-[10px] text-stone-600 font-bold block mb-1">COMISIÓN MENSUAL DE ADMINISTRACIÓN</label>
+              <select
+                value={t === 'admi-venta' ? formData.admiVentaAdminPercentSelector : formData.adminPercentSelector}
+                onChange={e => setFormData(t === 'admi-venta' ? { ...formData, admiVentaAdminPercentSelector: e.target.value } : { ...formData, adminPercentSelector: e.target.value })}
+                className={`${entrada} cursor-pointer`}>
+                <option value="8.5% desde el primer mes">8.5% desde el primer mes (Preferencial)</option>
+                <option value="9.1% desde el segundo mes">9.1% desde el segundo mes</option>
+              </select>
+            </div>
+          )}
+          {venta && (
+            <div>
+              <label className="text-[10px] text-stone-600 font-bold block mb-1">COMISIÓN DE VENTA</label>
+              <select
+                value={t === 'admi-venta' ? formData.admiVentaSalesCommissionSelector : formData.salesCommissionSelector}
+                onChange={e => setFormData(t === 'admi-venta' ? { ...formData, admiVentaSalesCommissionSelector: e.target.value } : { ...formData, salesCommissionSelector: e.target.value })}
+                className={`${entrada} cursor-pointer`}>
+                <option value="3%">3% (TRES POR CIENTO)</option>
+                <option value="2.5%">2.5% (DOS PUNTO CINCO POR CIENTO)</option>
+                <option value="2%">2% (DOS POR CIENTO)</option>
+                <option value="1.5%">1.5% (UNO PUNTO CINCO POR CIENTO)</option>
+                {(formData.isCiencuadras && t === 'venta') && <option value="1%">1% (UNO POR CIENTO)</option>}
+              </select>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   /**
@@ -1676,6 +1758,8 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                               </div>
                             )}
                           </div>
+
+                          {bloquePorcentajes()}
 
                           {bloqueAutorizacionIngreso()}
 
