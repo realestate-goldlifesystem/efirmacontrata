@@ -2104,6 +2104,10 @@ function handleProcesarFirmaElectronica(datos) {
     if (estado && estado.noDisponible) {
       return { success: false, message: "Este documento ya no está disponible para firma." };
     }
+    if (estado && estado.reemplazadoPor) {
+      // Hubo otra renovación antes de firmar: solo se firma la versión vigente
+      return { success: false, reemplazadoPor: estado.reemplazadoPor, message: "Este documento fue actualizado. Se abrirá la versión vigente para firmar." };
+    }
 
     const cuerpo = DocumentApp.openById(datos.docId).getBody().getText();
     if (cuerpo.indexOf(MARCA_CERTIFICADO_FIRMA) !== -1) {
@@ -2570,6 +2574,19 @@ function handleVerificarEstadoFirma(datos) {
       // Borrado del todo (pasaron los 30 días de la papelera): se sigue con la hoja
     }
 
+    // Si este Doc fue reemplazado por otra renovación antes de firmarse, se lleva
+    // a la versión vigente (16-oct-2026). Si la vigente ya no está viva (se revirtió),
+    // este Doc también queda retirado.
+    if (!pdfPropio) {
+      const vigente = docVigenteDe(docId);
+      if (vigente !== docId) {
+        let vigenteViva = false;
+        try { vigenteViva = !DriveApp.getFileById(vigente).isTrashed(); } catch (e) {}
+        if (vigenteViva) return { success: true, firmado: false, reemplazadoPor: vigente };
+        docVivo = false;
+      }
+    }
+
     if (docVivo && !pdfPropio) {
       return { success: true, firmado: false };
     }
@@ -2587,6 +2604,21 @@ function handleVerificarEstadoFirma(datos) {
     console.error("Error en handleVerificarEstadoFirma:", err);
     return { success: false, message: err.toString() };
   }
+}
+
+/**
+ * Sigue la cadena DOC_REEMPLAZADO_ (la anota reemplazarLinksAutocrat) hasta el acta
+ * vigente. Devuelve el mismo ID si nunca fue reemplazado.
+ */
+function docVigenteDe(docId) {
+  const props = PropertiesService.getScriptProperties();
+  let actual = docId;
+  for (let i = 0; i < 20; i++) {
+    const siguiente = props.getProperty('DOC_REEMPLAZADO_' + actual);
+    if (!siguiente || siguiente === actual) break;
+    actual = siguiente;
+  }
+  return actual;
 }
 
 /**

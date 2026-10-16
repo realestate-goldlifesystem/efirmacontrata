@@ -394,6 +394,14 @@
                 });
                 const result = await response.json();
 
+                if (result.success && result.reemplazadoPor) {
+                    // Hubo otra renovación antes de firmar: el link viejo del correo
+                    // abre la versión vigente (16-oct-2026).
+                    const u = new URL(window.location.href);
+                    u.searchParams.set('docId', result.reemplazadoPor);
+                    window.location.replace(u.toString());
+                    return;
+                }
                 if (result.success && result.firmado) {
                     // Documento YA firmado. El servidor devuelve el acta firmada
                     // MÁS RECIENTE del inmueble: un link viejo del correo lleva a
@@ -575,6 +583,14 @@
                     // yaFirmado: el servidor ignoró un envío repetido. Para el
                     // propietario es lo mismo: su firma está hecha.
                     mostrarFirmaCompletada();
+                    return;
+                }
+                if (result.reemplazadoPor) {
+                    // Se renovó otra vez mientras tenía la página abierta
+                    alert(result.message);
+                    const u = new URL(window.location.href);
+                    u.searchParams.set('docId', result.reemplazadoPor);
+                    window.location.replace(u.toString());
                     return;
                 }
                 throw new Error(result.message || 'Respuesta inesperada del servidor.');

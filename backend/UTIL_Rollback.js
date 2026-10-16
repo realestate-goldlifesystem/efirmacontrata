@@ -166,6 +166,19 @@ function ejecutarRollbackTotal(idRegistro) {
   
   Logger.log('⏪ Revertiendo datos en el Excel...');
   
+  // 0. Retirar las actas pendientes que se van a revertir (16-oct-2026): si no,
+  // el link del correo seguía abriendo un acta sin firmar que ya no aplica.
+  for (var k in backup) {
+    if (k.indexOf('Merged Doc ID') !== 0) continue;
+    var c = headers.indexOf(k);
+    if (c === -1) continue;
+    var idPendiente = String(sheet.getRange(filaA, c + 1).getValue() || '').trim();
+    if (idPendiente && idPendiente !== String(backup[k] || '').trim()) {
+      try { DriveApp.getFileById(idPendiente).setTrashed(true); Logger.log('🗑️ Acta pendiente retirada: ' + idPendiente); }
+      catch (e) { Logger.log('⚠️ No se pudo retirar el acta ' + idPendiente + ': ' + e.message); }
+    }
+  }
+
   // 1. Restaurar datos del Excel (Precios, YouTube, Status, Autocrat)
   for (var key in backup) {
     if (key === 'EXTRA_SPATIAL_DATA') continue; // Los datos espaciales no van al Excel directamente

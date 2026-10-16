@@ -1199,6 +1199,7 @@ function reemplazarLinksAutocrat(sheet, filaOriginal, filaTemp) {
   ];
 
   var linksActualizados = 0;
+  var props = PropertiesService.getScriptProperties();
 
   columnasAutocrat.forEach(function (nombreCol) {
     var colIndex = getColumnByName(sheet, nombreCol);
@@ -1207,6 +1208,15 @@ function reemplazarLinksAutocrat(sheet, filaOriginal, filaTemp) {
     var rangoTemporal = sheet.getRange(filaTemp, colIndex);
     var formulaNueva = rangoTemporal.getFormula();
     var valorNuevo = rangoTemporal.getValue();
+
+    // Cadena de reemplazos (16-oct-2026): si el acta anterior queda sustituida por
+    // una nueva (otra renovación antes de firmar), se anota para que la sala de
+    // firmas lleve el link viejo del correo a la versión vigente.
+    if (nombreCol.indexOf('Merged Doc ID') === 0 && valorNuevo) {
+      var idAnterior = String(sheet.getRange(filaOriginal, colIndex).getValue() || '').trim();
+      var idNuevo = String(valorNuevo).trim();
+      if (idAnterior && idAnterior !== idNuevo) props.setProperty('DOC_REEMPLAZADO_' + idAnterior, idNuevo);
+    }
 
     if (formulaNueva) {
       sheet.getRange(filaOriginal, colIndex).setFormula(formulaNueva);
@@ -1708,6 +1718,21 @@ function respaldarDatosFila(sheet, filaOriginal, idRegistro, extraData) {
   }
   
   var props = PropertiesService.getScriptProperties();
+
+  // Si ya hay una renovación/cambio pendiente de firma, se CONSERVA ese respaldo
+  // (16-oct-2026): es el del último contrato firmado. Antes la segunda renovación
+  // lo pisaba con los datos de la primera, que nunca se firmó, y la reversión del
+  // día 7 dejaba el inmueble en ese estado no firmado.
+  var previo = props.getProperty('ROLLBACK_' + idRegistro);
+  if (previo) {
+    var respaldoPrevio = JSON.parse(previo);
+    if (extraData && !respaldoPrevio.EXTRA_SPATIAL_DATA) {
+      respaldoPrevio.EXTRA_SPATIAL_DATA = extraData;
+      props.setProperty('ROLLBACK_' + idRegistro, JSON.stringify(respaldoPrevio));
+    }
+    Logger.log('💾 Ya había un respaldo pendiente para ' + idRegistro + ': se conserva el del último contrato firmado.');
+    return;
+  }
   props.setProperty('ROLLBACK_' + idRegistro, JSON.stringify(backup));
   Logger.log('💾 Backup guardado para rollback usando ID: ' + idRegistro);
 }
