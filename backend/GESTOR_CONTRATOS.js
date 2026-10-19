@@ -2269,6 +2269,13 @@ function procesarFirmaElectronicaSinCandado(datos) {
             sheet.getRange(i, detallesCol).setValue('✅ Proceso de firma completado exitosamente. 📂 Documento y anexos actualizados.');
           }
           
+          // Imagen de la firma, para la cuenta de cobro a cuenta externa (oct-2026)
+          if (typeof ceGuardarFirmaPropietario === 'function') {
+            const colIdReg = getCol('ID DE REGISTRO');
+            ceGuardarFirmaPropietario(sheet, i, blob, DriveApp.getFileById(docId).getParents().next(),
+              colIdReg > 0 ? sheet.getRange(i, colIdReg).getValue() : datos.cdr);
+          }
+
           // --- NUEVO: Añadir Link en "DOCUMENTO FIRMADO" ---
           const docFirmadoCol = getCol('DOCUMENTO FIRMADO');
           if (docFirmadoCol > 0) {

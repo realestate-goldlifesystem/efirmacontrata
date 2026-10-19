@@ -5998,7 +5998,20 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
     // dicho en la hoja y en la respuesta, para hacerla a mano.
     let notaCobro = '';
     try {
-      if (typeof ccGenerarYEnviar === 'function') {
+      // Cobro del primer canon (PLAN_EXCEDENTE_PRIMER_CANON.md, etapa 3): si el
+      // propietario lo autorizó, el inquilino le paga el primer mes al agente con la
+      // cuenta de cobro a cuenta externa, y NO se le cobran honorarios al propietario
+      // (salen del primer canon).
+      const hdrs = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+      const filaVals = sheet.getRange(targetRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const autorizo = typeof ceAutorizoPrimerCanon === 'function' &&
+        ceAutorizoPrimerCanon(n => { const i = hdrs.indexOf(String(n).trim()); return i === -1 ? '' : filaVals[i]; });
+      if (autorizo) {
+        const externa = ceGenerarYEnviar(sheet, targetRow);
+        notaCobro = externa.enviada
+          ? ' 📩 Cuenta de cobro del primer mes enviada al inquilino por $' + ccMiles(externa.valor) + '.'
+          : ' ⚠️ Cuenta de cobro del primer mes NO enviada: ' + externa.motivo;
+      } else if (typeof ccGenerarYEnviar === 'function') {
         const cobro = ccGenerarYEnviar(sheet, targetRow);
         // Administración/Venta no llevan esta cuenta: ahí no se anota nada.
         if (cobro.enviada) notaCobro = ' 📩 Cuenta de cobro enviada al propietario por $' + ccMiles(cobro.valor) + '.';
