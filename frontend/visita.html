@@ -182,6 +182,13 @@
     .dia:disabled { color: #44403c; text-decoration: line-through; cursor: default; }
     .grupo { margin: 16px 0 8px; font-size: 13px; color: var(--suave); font-weight: 600; }
     .horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .hora { padding: 12px 0; font-size: 14px; }
+    /* Bloque 2: horario en que el propietario ya puede (se agenda directo) y días que tienen alguno */
+    .hora.cruce { border-color: var(--oro); box-shadow: inset 0 0 0 1px var(--oro); }
+    .hora small { display: block; font-size: 10px; color: var(--oro); margin-top: 2px; }
+    .hora.elegido small { color: inherit; }
+    .dia.conCruce { position: relative; } .dia.conCruce::after { content: ''; position: absolute; bottom: 4px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--oro); }
+    .pedidos { position: sticky; bottom: -1px; background: var(--panel); padding: 12px 0 4px; margin-top: 14px; border-top: 1px solid #3f3a36; }
+    .pedidos p { font-size: 13px; color: var(--suave); margin: 0 0 10px; line-height: 1.5; }
     label { display: block; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--suave); font-weight: 700; margin: 0 0 6px; }
     .campo { margin-bottom: 14px; }
     input, select { width: 100%; font: inherit; font-size: 15px; color: var(--texto); background: var(--fondo); border: 1px solid #3f3a36; border-radius: 12px; padding: 12px 14px; outline: none; }
@@ -298,6 +305,7 @@
         <h2 id="tituloHora">Elige la hora</h2>
         <div class="resumen"><span id="diaElegido"></span><a data-volver="2">Cambiar</a></div>
         <div id="horas"></div>
+        <div id="pedidosBarra" class="pedidos oculto"><p id="pedidosTexto"></p><button class="principal" id="irDatos">Continuar</button></div>
         <button class="secundario" data-volver="2">‹ Volver</button>
       </div>
 
@@ -305,6 +313,7 @@
         <div class="rotulo">Paso 4 de 4</div>
         <h2>Tus datos</h2>
         <div class="resumen"><span id="citaElegida"></span><a data-volver="3">Cambiar</a></div>
+        <div id="camposDatos">
         <div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" autocomplete="name" placeholder="Juan Pérez"></div>
         <div class="campo"><label for="celular">Celular</label>
           <div class="tel">
@@ -319,6 +328,7 @@
           </div>
         </div>
         <div class="campo"><label for="correo">Correo electrónico</label><input id="correo" type="email" autocomplete="email" placeholder="correo@ejemplo.com"></div>
+        </div>
         <p class="aviso" id="avisoCoordinado" style="font-size:13px;"></p>
         <button class="principal" id="enviar" disabled>Agendar visita</button>
         <p class="error oculto" id="error"></p>
@@ -337,7 +347,10 @@
   <script>
     const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
     const $ = (id) => document.getElementById(id);
-    const idInmueble = new URLSearchParams(location.search).get('i') || '';
+    const parametros = new URLSearchParams(location.search);
+    const idInmueble = parametros.get('i') || '';
+    // Bloque 2: el interesado llega desde su correo para elegir del cruce o reagendar
+    const citaSolicitud = parametros.get('c') || '', tokenSolicitud = parametros.get('t') || '';
     const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
     const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -346,6 +359,12 @@
     const llamar = (cuerpo) => fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo) }).then(r => r.json());
 
     let inm = null, negocio = '', respuestas = {}, mesVisible, dia = null, hora = null, pedido = 0, fotoIdx = 0;
+    // Coordinado: hasta 3 horarios pedidos al propietario; días con horarios del propietario; modo "elegir"
+    let pedidos = [], diasCruce = new Set(), modoElegir = false;
+    const MAX_PEDIDOS = 3;
+    const coordinado = () => inm && inm.modo === 'COORDINADO';
+    function horaDe(ts) { const d = new Date(ts); let h = d.getHours(); const m = d.getMinutes(); const s = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + (m < 10 ? '0' : '') + m + ' ' + s; }
+    function textoSlot(ts) { const d = new Date(ts); const t = DIAS[d.getDay()] + ' ' + d.getDate() + ' de ' + MESES[d.getMonth()]; return t.charAt(0).toUpperCase() + t.slice(1) + ' · ' + horaDe(ts); }
 
     // ================= Galería =================
     function mostrarFoto(n) {
@@ -487,7 +506,7 @@
       for (let d = 1; d <= total; d++) {
         const f = new Date(mesVisible.getFullYear(), mesVisible.getMonth(), d);
         const ok = f >= hoy && f.getDay() !== 0;
-        html += `<button class="dia${dia && iso(f) === iso(dia) ? ' elegido' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
+        html += `<button class="dia${dia && iso(f) === iso(dia) ? ' elegido' : ''}${ok && diasCruce.has(iso(f)) ? ' conCruce' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
       }
       $('dias').innerHTML = html;
       $('dias').querySelectorAll('button[data-f]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.f.split('-').map(Number); elegirDia(new Date(y, m - 1, d)); });
@@ -503,10 +522,14 @@
       $('horas').innerHTML = '<p class="aviso">Buscando horarios libres…</p>';
       irA(3);
       const n = ++pedido;
-      llamar({ accion: 'obtenerDisponibilidad', fecha: iso(f), tipo: 'INTERESADO' }).then(r => {
+      const consulta = coordinado()
+        ? { accion: 'disponibilidadVisitaCoordinada', i: idInmueble, fecha: iso(f), c: citaSolicitud }
+        : { accion: 'obtenerDisponibilidad', fecha: iso(f), tipo: 'INTERESADO' };
+      llamar(consulta).then(r => {
         if (n !== pedido) return;
         const slots = (r && r.success && r.slots) || [];
-        if (!slots.length) { $('horas').innerHTML = `<p class="aviso">${esc((r && r.motivo) || 'No hay horarios libres este día')}. Elige otro día.</p>`; return; }
+        if (!slots.length) { $('horas').innerHTML = `<p class="aviso">${esc((r && r.motivo) || 'No hay horarios libres este día')}. Elige otro día.</p>`; pintarPedidos(); return; }
+        if (coordinado()) { pintarHorasCoordinadas(slots); return; }
         const grupo = (titulo, lista) => !lista.length ? '' : `<p class="grupo">${titulo}</p><div class="horas">` +
           lista.map(s => `<button class="hora" data-i="${slots.indexOf(s)}">${s.horaAmPm}</button>`).join('') + '</div>';
         const manana = (s) => new Date(s.timestamp).getHours() < 12;
@@ -519,9 +542,56 @@
       }).catch(() => { $('horas').innerHTML = '<p class="aviso">Error de red. Intenta de nuevo.</p>'; });
     }
 
+    // Coordinado (bloque 2): los horarios del cruce se agendan de una; los demás se
+    // piden al propietario, hasta 3 (pueden ser de días distintos)
+    function pintarHorasCoordinadas(slots) {
+      const cruce = slots.filter(s => s.cruce), resto = slots.filter(s => !s.cruce);
+      const boton = (s) => `<button class="hora${s.cruce ? ' cruce' : ''}${pedidos.includes(s.timestamp) ? ' elegido' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}${s.cruce ? '<small>Puede el propietario</small>' : ''}</button>`;
+      const grupo = (titulo, lista) => !lista.length ? '' : `<p class="grupo">${titulo}</p><div class="horas">` + lista.map(boton).join('') + '</div>';
+      const manana = (s) => new Date(s.timestamp).getHours() < 12;
+      $('horas').innerHTML =
+        (cruce.length ? grupo('🤝 El propietario puede — se agenda de una', cruce) : '') +
+        (resto.length ? `<p class="aviso" style="font-size:13px;margin-top:14px;">${cruce.length ? 'O pide otros horarios' : 'Elige hasta 3 horarios'} y le preguntamos al propietario cuál le sirve.</p>` : '') +
+        grupo('☀️ Mañana', resto.filter(manana)) + grupo('🌇 Tarde', resto.filter(s => !manana(s)));
+      $('horas').querySelectorAll('.hora').forEach(b => b.onclick = () => {
+        const ts = Number(b.dataset.ts);
+        const s = slots.find(x => x.timestamp === ts);
+        if (s.cruce) {
+          hora = s; pedidos = [];
+          $('citaElegida').innerHTML = '📅 <b>' + esc(textoSlot(ts)) + '</b>';
+          irA(4); prepararPaso4(); return;
+        }
+        hora = null;
+        if (pedidos.includes(ts)) pedidos = pedidos.filter(p => p !== ts);
+        else if (pedidos.length < MAX_PEDIDOS) pedidos.push(ts);
+        else { $('pedidosTexto').textContent = 'Ya elegiste 3 horarios. Quita uno para cambiarlo.'; return; }
+        pedidos.sort((a, c) => a - c);
+        pintarHorasCoordinadas(slots);
+      });
+      pintarPedidos();
+    }
+    function pintarPedidos() {
+      const ver = coordinado() && pedidos.length > 0;
+      $('pedidosBarra').classList.toggle('oculto', !ver);
+      if (!ver) return;
+      $('pedidosTexto').innerHTML = `Pedirás ${pedidos.length} de ${MAX_PEDIDOS}: ` + pedidos.map(t => '<b>' + esc(textoSlot(t)) + '</b>').join(' · ') +
+        (pedidos.length < MAX_PEDIDOS ? '<br>Puedes sumar más, también de otros días.' : '');
+    }
+    $('irDatos').onclick = () => {
+      $('citaElegida').innerHTML = '📅 Horarios pedidos:<br>' + pedidos.map(t => '• <b>' + esc(textoSlot(t)) + '</b>').join('<br>');
+      irA(4); prepararPaso4();
+    };
+    function prepararPaso4() {
+      const directa = !coordinado() || !!hora;
+      $('enviar').textContent = modoElegir ? (directa ? 'Confirmar este horario' : 'Pedir estos horarios') : (directa ? 'Agendar visita' : 'Enviar solicitud');
+      $('avisoCoordinado').textContent = coordinado() && !directa ? 'Le preguntamos al propietario cuál de estos horarios le sirve y te avisamos por correo. Mientras tanto quedan apartados para ti.' : '';
+      validar();
+    }
+
     // Paso 4: datos
     const largoTel = () => Number($('indicativo').selectedOptions[0].dataset.largo);
     function validar() {
+      if (modoElegir) { $('enviar').disabled = !(hora || pedidos.length); return; }
       const cel = $('celular').value.replace(/\D/g, '');
       $('enviar').disabled = !$('nombre').value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('correo').value.trim()) || cel.length !== largoTel();
     }
@@ -531,13 +601,17 @@
 
     $('enviar').onclick = () => {
       const b = $('enviar'); b.disabled = true; b.textContent = 'Agendando…'; $('error').classList.add('oculto');
-      llamar({
-        accion: 'agendarVisitaInteresado', i: idInmueble, negocio: negocio, precalificacion: respuestas,
-        nombre: $('nombre').value.trim(), correo: $('correo').value.trim(),
-        celular: '+' + $('indicativo').value + ' ' + $('celular').value, timestamp: hora.timestamp
-      }).then(r => {
+      const cuerpo = modoElegir
+        ? { accion: 'elegirHorarioCoordinado', c: citaSolicitud, t: tokenSolicitud, timestamp: hora ? hora.timestamp : '', pedidos: hora ? [] : pedidos }
+        : {
+          accion: 'agendarVisitaInteresado', i: idInmueble, negocio: negocio, precalificacion: respuestas,
+          nombre: $('nombre').value.trim(), correo: $('correo').value.trim(),
+          celular: '+' + $('indicativo').value + ' ' + $('celular').value,
+          timestamp: hora ? hora.timestamp : '', pedidos: hora ? [] : pedidos
+        };
+      llamar(cuerpo).then(r => {
         if (!r.success) {
-          b.disabled = false; b.textContent = inm.modo === 'DIRECTO' ? 'Agendar visita' : 'Enviar solicitud';
+          b.disabled = false; prepararPaso4();
           $('error').textContent = r.error || 'No pudimos agendar la visita.'; $('error').classList.remove('oculto');
           if (/ocupado/i.test(r.error || '') && dia) elegirDia(dia);
           return;
@@ -545,12 +619,13 @@
         // Éxito: se ocultan los pasos para que no se pueda elegir otra cosa
         [1, 2, 3, 4].forEach(k => $('p' + k).classList.add('oculto'));
         [...$('barra').children].forEach(x => x.classList.add('hecho'));
-        $('okTitulo').textContent = r.modo === 'DIRECTO' ? '¡Visita agendada!' : '¡Solicitud enviada!';
-        $('okTexto').textContent = r.modo === 'DIRECTO'
+        const agendada = r.modo === 'DIRECTO' || r.agendada;
+        $('okTitulo').textContent = agendada ? '¡Visita agendada!' : '¡Solicitud enviada!';
+        $('okTexto').textContent = agendada
           ? 'Te enviamos un correo con la dirección y los detalles. Te avisaremos antes y, una hora antes, te pediremos que confirmes.'
-          : 'Este inmueble se visita con el propietario. Coordinamos la hora con él y te escribimos para confirmarte.';
+          : 'Le preguntamos al propietario cuál de tus horarios le sirve. Quedan apartados para ti y te escribimos apenas responda.';
         $('ok').classList.remove('oculto');
-        document.querySelectorAll('[data-agendar]').forEach(x => { x.textContent = r.modo === 'DIRECTO' ? '✓ Visita agendada' : '✓ Solicitud enviada'; x.disabled = true; });
+        document.querySelectorAll('[data-agendar]').forEach(x => { x.textContent = agendada ? '✓ Visita agendada' : '✓ Solicitud enviada'; x.disabled = true; });
       }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
     };
 
@@ -673,16 +748,27 @@
         ? 'Elige día y hora en la agenda del asesor. Visitas de 40 minutos; te confirmamos por correo.'
         : 'Este inmueble se visita con el propietario: elige el horario que te queda bien y coordinamos con él.';
       if (!directo) {
+        $('notaTarjeta').textContent = 'Este inmueble se visita con el propietario. Los días con punto dorado tienen horarios en que él ya puede; si no, pide hasta 3 y coordinamos.';
         $('tituloFecha').textContent = '¿Qué día te gustaría visitarlo?';
         $('tituloHora').textContent = '¿A qué hora te queda bien?';
-        $('avisoCoordinado').textContent = 'Este inmueble se visita con el propietario: coordinamos la hora con él y te confirmamos por correo.';
-        $('enviar').textContent = 'Enviar solicitud';
+        diasCruce = new Set((r.cruce || []).map(t => iso(new Date(t))));
       }
       pintarPreguntas(); pintarPrecio();
       const h = new Date(); mesVisible = new Date(h.getFullYear(), h.getMonth(), 1); pintarMes();
       $('cargando').classList.add('oculto');
       $('contenido').classList.remove('oculto'); $('barraMovil').classList.remove('oculto');
       irA(1);
+      // Viene de su correo: elige del cruce (o reagenda) sin volver a llenar datos
+      if (!directo && citaSolicitud && tokenSolicitud) {
+        llamar({ accion: 'infoSolicitudCoordinada', c: citaSolicitud, t: tokenSolicitud }).then(s => {
+          if (!s || !s.ok) return;
+          modoElegir = true;
+          diasCruce = new Set((s.cruce || []).map(t => iso(new Date(t)))); pintarMes();
+          $('camposDatos').classList.add('oculto');
+          $('tituloFecha').textContent = 'Hola ' + (s.nombre || '').split(' ')[0] + ', elige el día de tu visita';
+          abrirModal(); irA(2);
+        });
+      }
     }).catch(() => sinInmueble('Revisa tu conexión a internet e intenta de nuevo.'));
   </script>
 </body>

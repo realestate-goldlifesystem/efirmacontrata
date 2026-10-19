@@ -39,7 +39,10 @@ const COLUMNAS_CITAS = [
   // oct-2026: notas del agente desde el panel (NOTAS es lo que escribió el propietario)
   'NOTAS AGENTE',
   // oct-2026 (bloque 3): último aviso enviado (H48, H24, H3, H2, M60, M45, M30) y cuándo
-  'ULTIMO AVISO', 'FECHA ULTIMO AVISO'
+  'ULTIMO AVISO', 'FECHA ULTIMO AVISO',
+  // oct-2026 (bloque 2, agendamiento coordinado): DIRECTO / COORDINADO, los hasta 3
+  // horarios que pidió el interesado (JSON de timestamps) y quién abre el inmueble
+  'MODO VISITA', 'HORARIOS PEDIDOS', 'QUIEN ABRE'
 ];
 
 // Estados posibles de una cita.

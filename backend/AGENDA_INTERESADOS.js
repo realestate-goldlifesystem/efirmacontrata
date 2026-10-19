@@ -81,7 +81,12 @@ function _inmueblePorId(idInmueble) {
     garajes: String(v('N° de Garajes') || ''),
     administracion: Number(v('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)')) || 0,
     mascotas: String(v('¿Se permite mascota?') || ''),
-    video: String(v('LINK DEL VIDEO DEL INMUEBLE') || '')
+    video: String(v('LINK DEL VIDEO DEL INMUEBLE') || ''),
+    // Solo para el agendamiento coordinado (bloque 2): NUNCA van a la página pública.
+    // infoInmuebleVisita elige sus campos uno por uno y no los incluye.
+    propietario: String(v('NOMBRES Y APELLIDOS DEL PROPIETARIO') || ''),
+    correoPropietario: String(v('Correo electrónico') || '').trim(),
+    celularPropietario: String(v('Celular') || '')
   };
 }
 
@@ -200,7 +205,9 @@ function infoInmuebleVisita(datos) {
       // La dirección ya es pública: va en el afiche y en la descripción (Leonardo, 15-oct-2026)
       direccion: inm.direccion,
       video: videoYoutube(inm.video),
-      modo: modoVisita(inm.autorizacion)
+      modo: modoVisita(inm.autorizacion),
+      // Bloque 2: horarios en que el propietario ya puede (los días salen con punto dorado)
+      cruce: modoVisita(inm.autorizacion) === 'COORDINADO' ? leerDisponibilidad(inm.id).bloques : []
     };
   } catch (e) {
     Logger.log('Error en infoInmuebleVisita: ' + e.message);
@@ -240,6 +247,9 @@ function agendarVisitaInteresado(datos) {
     }
 
     const modo = modoVisita(inm.autorizacion);
+    // Bloque 2: con acompañamiento del propietario se agenda en el cruce o se piden
+    // hasta 3 horarios (AGENDA_COORDINADA.js)
+    if (modo === 'COORDINADO') return solicitarVisitaCoordinada_(datos, inm, negocio, nombre, correo, celular);
     const inicio = new Date(Number(datos.timestamp));
     const tieneHora = !isNaN(inicio.getTime());
     if (modo === 'DIRECTO') {

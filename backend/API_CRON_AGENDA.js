@@ -49,6 +49,10 @@ function ejecutarMotorAgenda() {
       const idCita = String(valorCita(f, col, 'ID CITA') || '').trim();
       if (!idCita) return;
 
+      // Bloque 2: solicitudes de visita que esperan al propietario o al interesado
+      if (String(valorCita(f, col, 'ESTADO') || '').trim() === ESTADO_POR_COORDINAR &&
+          revisarSolicitudCoordinada_(sheet, col, numFila, f)) return;
+
       const fechaCita = fechaHoraDeCita(valorCita(f, col, 'FECHA CITA'), valorCita(f, col, 'HORA CITA'));
       if (!fechaCita) return;
 
@@ -84,6 +88,7 @@ function ejecutarMotorAgenda() {
 
         if (debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimo, pendiente)) {
           aplicarCambioEstadoCita(sheet, col, numFila, f, ESTADOS_CITA.CANCELADA, 'cancelada automáticamente: no se confirmó a tiempo');
+          avisarPropietarioVisitaCoordinada(f, col, `La visita de <strong>${nombre}</strong> del <strong>${fechaStr} a las ${horaStr}</strong> se canceló porque el interesado no la confirmó. No tienes que abrir el inmueble.`);
           try {
             enviarCorreoCita(
               correo,
@@ -328,6 +333,13 @@ function aplicarEstadoCitaDesdeCorreo(idCita, nuevoEstado, token) {
 
     const quien = cita.esAgente ? 'agente' : 'propietario';
     aplicarCambioEstadoCita(cita.sheet, cita.col, cita.numFila, cita.fila, estado, quien + ' marcó ' + estado.toLowerCase() + ' desde el correo');
+
+    // Visita coordinada: el propietario también se entera (bloque 2)
+    if (!cita.esAgente && (estado === 'QUIERE REAGENDAR' || estado === 'CANCELADA')) {
+      avisarPropietarioVisitaCoordinada(cita.fila, cita.col, estado === 'CANCELADA'
+        ? `<strong>${cita.nombre}</strong> canceló la visita del <strong>${cita.fechaTxt}</strong>. No tienes que abrir el inmueble.`
+        : `<strong>${cita.nombre}</strong> va a cambiar la visita del <strong>${cita.fechaTxt}</strong>. Te avisamos el nuevo horario.`);
+    }
 
     // El agente se entera de lo que haga el propietario.
     if (!cita.esAgente && (estado === 'QUIERE REAGENDAR' || estado === 'CANCELADA')) {

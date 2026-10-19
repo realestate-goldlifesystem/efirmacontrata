@@ -270,7 +270,12 @@ function infoReagendarPropietario(datos) {
     ok: true,
     nombre: String(valorCita(fila, col, 'NOMBRE') || ''),
     servicio: String(valorCita(fila, col, 'TIPO SERVICIO') || ''),
-    fechaActual: f ? Utilities.formatDate(f, tz, 'dd/MM/yyyy') + ' a las ' + formatAmPm(f) : ''
+    fechaActual: f ? Utilities.formatDate(f, tz, 'dd/MM/yyyy') + ' a las ' + formatAmPm(f) : '',
+    // Visita con acompañamiento (bloque 2): se reagenda en la página del inmueble,
+    // contra los horarios del propietario, no en la agenda abierta de Leonardo
+    urlCoordinada: String(valorCita(fila, col, 'MODO VISITA') || '') === 'COORDINADO'
+      ? urlVisitaInmueble(valorCita(fila, col, 'ID INMUEBLE')) + '&c=' + encodeURIComponent(datos.idCita) + '&t=' + encodeURIComponent(datos.t)
+      : ''
   };
 }
 

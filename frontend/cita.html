@@ -175,6 +175,8 @@
     function iniciarReagendar() {
       llamar('infoReagendarCita').then(r => {
         if (!r.ok) { mostrarResultado('No se puede reagendar', r.mensaje || '', '!'); return; }
+        // Visita con acompañamiento del propietario: se reagenda contra sus horarios (bloque 2)
+        if (r.urlCoordinada) { location.replace(r.urlCoordinada); return; }
         $('citaActual').textContent = (r.fechaActual ? 'Tu cita actual: ' + r.fechaActual : '') + (r.servicio ? ' · ' + r.servicio : '');
         $('encabezado').innerHTML = ['L','M','M','J','V','S','D'].map(d => `<div>${d}</div>`).join('');
         const h = new Date(); mesVisible = new Date(h.getFullYear(), h.getMonth(), 1);

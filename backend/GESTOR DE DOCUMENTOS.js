@@ -645,6 +645,28 @@ function doPost(e) {
       case 'agendarVisitaInteresado':
         result = agendarVisitaInteresado(datos);
         break;
+      // Bloque 2: agendamiento coordinado con el propietario (AGENDA_COORDINADA.js)
+      case 'disponibilidadVisitaCoordinada':
+        result = disponibilidadVisitaCoordinada(datos);
+        break;
+      case 'infoSolicitudCoordinada':
+        result = infoSolicitudCoordinada(datos);
+        break;
+      case 'elegirHorarioCoordinado':
+        result = elegirHorarioCoordinado(datos);
+        break;
+      case 'infoCoordinarPropietario':
+        result = infoCoordinarPropietario(datos);
+        break;
+      case 'semanaCoordinarPropietario':
+        result = semanaCoordinarPropietario(datos);
+        break;
+      case 'aceptarHorarioPropietario':
+        result = aceptarHorarioPropietario(datos);
+        break;
+      case 'guardarDisponibilidadPropietario':
+        result = guardarDisponibilidadPropietario(datos);
+        break;
       case 'infoEstadoCita':
         // Página de citas en GitHub Pages: lee la pregunta (no cambia nada)
         result = infoEstadoCita(datos);

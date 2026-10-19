@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Visitas a tu inmueble · Gold Life Real Estate</title>
+  <!--
+    Página del PROPIETARIO para el agendamiento coordinado (bloque 2, oct-2026).
+    Llega por el enlace personal de su correo: coordinar.html?i=<ID inmueble>&t=<token>[&c=<ID cita>]
+
+    - Si viene de una solicitud (c): ve los horarios que pidió el interesado y acepta uno.
+    - Siempre: marca los horarios en que él (o quien abra) puede, por semana, sobre
+      los horarios libres de Leonardo. Si no aceptó ninguno de los pedidos, al
+      interesado le llega un correo para elegir entre lo que marcó.
+    - Quién abre: él mismo u otra persona (nombre y celular).
+
+    Backend: AGENDA_COORDINADA.js (infoCoordinarPropietario, semanaCoordinarPropietario,
+    aceptarHorarioPropietario, guardarDisponibilidadPropietario). El servidor valida el token.
+  -->
+  <style>
+    :root { --oro: #d4af37; --fondo: #0c0a09; --panel: #1c1917; --panel2: #292524; --suave: #a8a29e; --linea: #3f3a36; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 24px 16px 40px; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--fondo); color: #f5f5f4;
+      background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.16), transparent 70%);
+    }
+    .tarjeta {
+      width: 100%; max-width: 560px; margin: 0 auto; background: var(--panel); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px; padding: clamp(22px, 5vw, 32px) clamp(16px, 4.5vw, 28px); box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    }
+    .marca { font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); text-align: center; }
+    .marca span { color: var(--suave); font-weight: 400; }
+    h1 { margin: 22px 0 6px; font-size: clamp(20px, 5vw, 24px); font-weight: 600; text-align: center; }
+    h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+    p { margin: 0; line-height: 1.6; color: #d6d3d1; }
+    .centro { text-align: center; }
+    .inmueble { color: var(--suave); font-size: 14px; text-align: center; margin-bottom: 22px; }
+    .bloque { margin-top: 18px; padding: 18px 16px; border-radius: 16px; background: var(--fondo); border: 1px solid rgba(255,255,255,.06); }
+    .bloque.destacado { border-color: rgba(212,175,55,.45); box-shadow: 0 0 0 1px rgba(212,175,55,.15); }
+    .nota { font-size: 13px; color: var(--suave); margin-top: 6px; }
+    button { font-family: inherit; cursor: pointer; transition: opacity .2s, transform .1s, background .15s; }
+    button:active { transform: scale(.98); }
+    button:disabled { opacity: .55; cursor: default; }
+    .principal { width: 100%; padding: 15px; border: 0; border-radius: 12px; font-size: 16px; font-weight: 700; color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); margin-top: 16px; }
+    .pedido { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px; margin-top: 10px;
+      border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 15px; text-align: left; }
+    .pedido b { font-weight: 600; } .pedido b::first-letter { text-transform: uppercase; }
+    .pedido span { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #0c0a09; background: var(--oro); padding: 7px 12px; border-radius: 999px; }
+    .semana { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 6px; }
+    .flecha { width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--panel2); color: #f5f5f4; font-size: 20px; }
+    .semana strong { font-size: 15px; font-weight: 600; }
+    .dia { margin-top: 14px; }
+    .dia h3 { margin: 0 0 8px; font-size: 13px; color: var(--suave); font-weight: 600; } .dia h3::first-letter { text-transform: uppercase; }
+    .horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+    .hora { padding: 11px 0; font-size: 14px; border-radius: 10px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; position: relative; }
+    .hora.marcado { background: #f5f5f4; color: #0c0a09; box-shadow: 0 0 0 2px var(--oro); font-weight: 600; }
+    .hora.pedido-int { border-color: var(--oro); }
+    .hora.pedido-int::after { content: 'pedido'; position: absolute; top: -8px; right: 6px; font-size: 9px; font-weight: 700; letter-spacing: .5px; background: var(--oro); color: #0c0a09; padding: 1px 5px; border-radius: 6px; }
+    .sinHoras { font-size: 13px; color: #78716c; }
+    .opciones { display: flex; gap: 8px; margin-top: 10px; }
+    .opcion { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 14px; }
+    .opcion.elegido { background: #f5f5f4; color: #0c0a09; box-shadow: 0 0 0 2px var(--oro); font-weight: 600; }
+    input { width: 100%; padding: 13px 14px; margin-top: 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 15px; font-family: inherit; }
+    input:focus { outline: none; border-color: var(--oro); }
+    .resumen { font-size: 13px; color: var(--suave); margin-top: 12px; text-align: center; }
+    .error { color: #fca5a5; font-size: 14px; margin-top: 10px; text-align: center; }
+    .ok { color: #86efac; }
+    .icono { width: 56px; height: 56px; margin: 20px auto 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;
+      background: rgba(212,175,55,.1); box-shadow: 0 0 0 1px rgba(212,175,55,.3); }
+    .oculto { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="tarjeta">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <p id="cargando" class="centro" style="margin-top:28px;color:var(--suave);">Cargando…</p>
+
+    <section id="error" class="oculto centro">
+      <div class="icono">!</div>
+      <h1 style="margin-top:8px;">Enlace no válido</h1>
+      <p id="errorTexto"></p>
+    </section>
+
+    <section id="contenido" class="oculto">
+      <h1 id="saludo"></h1>
+      <p class="inmueble" id="inmueble"></p>
+
+      <!-- Solicitud de un interesado -->
+      <div id="solicitud" class="bloque destacado oculto">
+        <h2 id="solTitulo"></h2>
+        <p class="nota" id="solNotas"></p>
+        <div id="solPedidos"></div>
+        <p class="nota" id="solPie"></p>
+      </div>
+
+      <!-- Disponibilidad de la semana -->
+      <div class="bloque">
+        <h2 id="dispTitulo">¿Cuándo puedes abrir el inmueble?</h2>
+        <p class="nota">Toca los horarios en que tú (o quien abra) puedes. Solo aparecen los horarios libres de Leonardo; cada visita dura 40 minutos.</p>
+        <div class="semana">
+          <button class="flecha" id="semAnt" aria-label="Semana anterior">‹</button>
+          <strong id="semTitulo"></strong>
+          <button class="flecha" id="semSig" aria-label="Semana siguiente">›</button>
+        </div>
+        <div id="dias"><p class="sinHoras">Cargando horarios…</p></div>
+
+        <h2 style="margin-top:22px;">¿Quién abre?</h2>
+        <div class="opciones">
+          <button class="opcion" id="abroYo">Yo abro</button>
+          <button class="opcion" id="abreOtro">Otra persona</button>
+        </div>
+        <div id="datosOtro" class="oculto">
+          <input id="quien" placeholder="Nombre de quien abre" maxlength="80" autocomplete="off">
+          <input id="celQuien" type="tel" inputmode="numeric" placeholder="Celular de quien abre" maxlength="15">
+        </div>
+
+        <button class="principal" id="guardar">Guardar mis horarios</button>
+        <p class="resumen" id="resumen"></p>
+        <p class="error oculto" id="msg"></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+    const q = new URLSearchParams(location.search);
+    const ID = q.get('i') || '', TOKEN = q.get('t') || '', CITA = q.get('c') || '';
+    const $ = (id) => document.getElementById(id);
+    const esc = (t) => String(t || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    function llamar(accion, extra) {
+      return fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ accion: accion, i: ID, t: TOKEN, c: CITA }, extra || {})) }).then(r => r.json());
+    }
+
+    // Lunes de la semana de una fecha (un domingo pasa a la semana siguiente)
+    function lunesDe(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const dow = x.getDay(); x.setDate(x.getDate() + (dow === 0 ? 1 : 1 - dow)); return x; }
+    const lunesHoy = lunesDe(new Date());
+    let lunes = lunesHoy, marcados = new Set(), pedidosInt = [], abreOtro = false, cambios = false, pidiendo = 0;
+
+    function pintarSemana() {
+      const fin = new Date(lunes); fin.setDate(fin.getDate() + 5);
+      $('semTitulo').textContent = lunes.getDate() + (lunes.getMonth() !== fin.getMonth() ? ' de ' + MESES[lunes.getMonth()] : '') + ' – ' + fin.getDate() + ' de ' + MESES[fin.getMonth()];
+      $('semAnt').disabled = lunes <= lunesHoy;
+      const max = new Date(lunesHoy); max.setDate(max.getDate() + 28);
+      $('semSig').disabled = lunes >= max;
+      $('dias').innerHTML = '<p class="sinHoras">Cargando horarios…</p>';
+      const n = ++pidiendo;
+      llamar('semanaCoordinarPropietario', { lunes: iso(lunes) }).then(r => {
+        if (n !== pidiendo) return;
+        if (!r.success) { $('dias').innerHTML = `<p class="sinHoras">${esc(r.error || 'No pudimos cargar los horarios.')}</p>`; return; }
+        marcados = new Set();
+        $('dias').innerHTML = r.dias.map(d => {
+          d.slots.forEach(s => { if (s.marcado) marcados.add(s.timestamp); });
+          return `<div class="dia"><h3>${esc(d.titulo)}</h3>` + (d.slots.length
+            ? '<div class="horas">' + d.slots.map(s => `<button class="hora${s.marcado ? ' marcado' : ''}${s.pedido ? ' pedido-int' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}</button>`).join('') + '</div>'
+            : `<p class="sinHoras">${esc(d.motivo || 'Sin horarios libres')}</p>`) + '</div>';
+        }).join('');
+        $('dias').querySelectorAll('.hora').forEach(b => b.onclick = () => {
+          const ts = Number(b.dataset.ts);
+          if (marcados.has(ts)) marcados.delete(ts); else marcados.add(ts);
+          b.classList.toggle('marcado', marcados.has(ts)); cambios = true; pintarResumen();
+        });
+        cambios = false; pintarResumen();
+      }).catch(() => { $('dias').innerHTML = '<p class="sinHoras">Error de red. Intenta de nuevo.</p>'; });
+    }
+    function pintarResumen() {
+      $('resumen').textContent = marcados.size ? `Marcaste ${marcados.size} horario${marcados.size > 1 ? 's' : ''} esta semana.` : 'Aún no marcas horarios esta semana.';
+    }
+    function cambiarSemana(delta) {
+      if (cambios && !confirm('No guardaste los horarios de esta semana. ¿Cambiar de semana igual?')) return;
+      lunes = new Date(lunes); lunes.setDate(lunes.getDate() + 7 * delta); pintarSemana();
+    }
+    $('semAnt').onclick = () => cambiarSemana(-1);
+    $('semSig').onclick = () => cambiarSemana(1);
+
+    function elegirQuien(otro) {
+      abreOtro = otro;
+      $('abroYo').classList.toggle('elegido', !otro); $('abreOtro').classList.toggle('elegido', otro);
+      $('datosOtro').classList.toggle('oculto', !otro);
+    }
+    $('abroYo').onclick = () => elegirQuien(false);
+    $('abreOtro').onclick = () => elegirQuien(true);
+    $('celQuien').oninput = () => { $('celQuien').value = $('celQuien').value.replace(/\D/g, '').slice(0, 15); };
+
+    function quienAbre() {
+      return abreOtro ? { quienAbre: $('quien').value.trim(), celularAbre: $('celQuien').value.trim() } : { quienAbre: '', celularAbre: '' };
+    }
+    function mensaje(texto, ok) { const m = $('msg'); m.textContent = texto; m.classList.toggle('ok', !!ok); m.classList.remove('oculto'); }
+
+    $('guardar').onclick = () => {
+      const q2 = quienAbre();
+      if (abreOtro && (!q2.quienAbre || q2.celularAbre.length < 7)) { mensaje('Escribe el nombre y el celular de quien abre.'); return; }
+      const b = $('guardar'); b.disabled = true; b.textContent = 'Guardando…';
+      llamar('guardarDisponibilidadPropietario', Object.assign({ lunes: iso(lunes), bloques: Array.from(marcados) }, q2)).then(r => {
+        b.disabled = false; b.textContent = 'Guardar mis horarios';
+        mensaje(r.mensaje || (r.ok ? 'Listo.' : 'No pudimos guardar.'), r.ok);
+        if (r.ok) { cambios = false; if (CITA) cargar(); }
+      }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; mensaje('Error de red. Intenta de nuevo.'); });
+    };
+
+    function pintarSolicitud(s) {
+      if (!s) return;
+      $('solicitud').classList.remove('oculto');
+      $('solNotas').textContent = s.notas || '';
+      $('solPedidos').innerHTML = ''; $('solPie').textContent = '';
+      pedidosInt = (s.pedidos || []).map(p => p.timestamp);
+      if (s.estado === 'PIDE' && s.pedidos.length) {
+        $('solTitulo').textContent = `${s.nombre.split(' ')[0]} quiere visitar tu inmueble`;
+        $('solPedidos').innerHTML = '<p class="nota" style="margin-top:12px;">Pidió estos horarios. Toca el que te sirva:</p>' +
+          s.pedidos.map(p => `<button class="pedido" data-ts="${p.timestamp}"><b>${esc(p.texto)}</b><span>Me sirve</span></button>`).join('');
+        $('solPie').textContent = '¿Ninguno te sirve? Marca abajo los horarios en que puedes y le pedimos que elija uno.';
+        $('solPedidos').querySelectorAll('.pedido').forEach(b => b.onclick = () => aceptar(Number(b.dataset.ts), b));
+      } else if (s.estado === 'AGENDADA') {
+        $('solTitulo').textContent = '✓ Visita agendada';
+        $('solPie').textContent = `La visita de ${s.nombre.split(' ')[0]} quedó para el ${s.agendada}. Leonardo va a estar ahí.`;
+      } else if (s.estado === 'ESPERA_INTERESADO') {
+        $('solTitulo').textContent = 'Esperando al interesado';
+        $('solPie').textContent = `Le pedimos a ${s.nombre.split(' ')[0]} que elija uno de tus horarios. Te avisamos cuando quede agendada.`;
+      } else if (s.estado === 'CANCELADA') {
+        $('solTitulo').textContent = 'Esta solicitud ya no está activa';
+        $('solPie').textContent = 'El interesado canceló o los horarios pasaron. Puedes dejar marcados tus horarios para las próximas visitas.';
+      } else {
+        $('solicitud').classList.add('oculto');
+      }
+    }
+
+    function aceptar(ts, boton) {
+      const q2 = quienAbre();
+      if (abreOtro && (!q2.quienAbre || q2.celularAbre.length < 7)) { mensaje('Escribe el nombre y el celular de quien abre (abajo) antes de aceptar.'); $('quien').focus(); return; }
+      $('solPedidos').querySelectorAll('.pedido').forEach(x => x.disabled = true);
+      boton.querySelector('span').textContent = 'Guardando…';
+      llamar('aceptarHorarioPropietario', Object.assign({ timestamp: ts }, abreOtro ? q2 : {})).then(r => {
+        if (!r.ok) {
+          $('solPedidos').querySelectorAll('.pedido').forEach(x => x.disabled = false);
+          boton.querySelector('span').textContent = 'Me sirve';
+          $('solPie').textContent = r.mensaje || 'No pudimos aceptar ese horario.';
+          return;
+        }
+        $('solTitulo').textContent = '✓ Visita agendada';
+        $('solPedidos').innerHTML = ''; $('solNotas').textContent = '';
+        $('solPie').textContent = r.mensaje;
+        pintarSemana();
+      }).catch(() => { $('solPedidos').querySelectorAll('.pedido').forEach(x => x.disabled = false); boton.querySelector('span').textContent = 'Me sirve'; });
+    }
+
+    function cargar() {
+      return llamar('infoCoordinarPropietario').then(r => {
+        $('cargando').classList.add('oculto');
+        if (!r.ok) { $('error').classList.remove('oculto'); $('errorTexto').textContent = r.mensaje || 'Pídele a Leonardo que te envíe el enlace de nuevo.'; return null; }
+        $('saludo').textContent = 'Hola' + (r.propietario ? ' ' + r.propietario.charAt(0) + r.propietario.slice(1).toLowerCase() : '');
+        $('inmueble').textContent = [r.inmueble.tipo, r.inmueble.barrio, r.inmueble.direccion].filter(Boolean).join(' · ');
+        if (r.quienAbre && !$('quien').value) { $('quien').value = r.quienAbre; $('celQuien').value = r.celularAbre || ''; elegirQuien(true); }
+        else if (!abreOtro) elegirQuien(false);
+        pintarSolicitud(r.solicitud);
+        $('contenido').classList.remove('oculto');
+        return r;
+      });
+    }
+
+    if (!ID || !TOKEN) {
+      $('cargando').classList.add('oculto'); $('error').classList.remove('oculto');
+      $('errorTexto').textContent = 'El enlace está incompleto. Pídele a Leonardo que te lo envíe de nuevo.';
+    } else {
+      cargar().then(r => {
+        if (!r) return;
+        // Abre en la semana del primer horario pedido
+        const s = r.solicitud;
+        if (s && s.pedidos && s.pedidos.length) lunes = lunesDe(new Date(s.pedidos[0].timestamp));
+        pintarSemana();
+      }).catch(() => { $('cargando').textContent = 'Error de red. Revisa tu conexión e intenta de nuevo.'; });
+    }
+  </script>
+</body>
+</html>

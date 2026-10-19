@@ -120,8 +120,10 @@ function agHorariosLibres(o) {
  * Leonardo y el de festivos de Colombia.
  * @param {string} fechaIso  "2026-10-15" (o "2026-10-15T08:00:00", como manda el formulario)
  * @param {string} tipo      clave de TIPOS_AGENDA
- * @param {Object=} opciones { anticipacionMin, excluirEventoId }: para reagendar
- *   desde el panel (el evento de la propia cita no cuenta como ocupado)
+ * @param {Object=} opciones { anticipacionMin, excluirEventoId, excluirCita }: para reagendar
+ *   desde el panel (el evento de la propia cita no cuenta como ocupado) o, en el
+ *   agendamiento coordinado, para que los horarios apartados de esa misma solicitud
+ *   no cuenten como ocupados
  */
 function obtenerDisponibilidadAgenda(fechaIso, tipo, opciones) {
   opciones = opciones || {};
@@ -141,7 +143,13 @@ function obtenerDisponibilidadAgenda(fechaIso, tipo, opciones) {
       .filter(e => !opciones.excluirEventoId || e.getId() !== opciones.excluirEventoId)
       .map(e => ({ inicio: e.getStartTime().getTime(), fin: e.getEndTime().getTime() }));
 
-    const r = agHorariosLibres({ dia: dia, tipo: tipo || 'PROPIETARIO', ocupados: ocupados, apartados: [], ahoraMs: Date.now(), festivo: festivo, anticipacionMin: opciones.anticipacionMin });
+    // Horarios que un interesado pidió y el propietario aún no responde (bloque 2):
+    // nadie más los puede tomar mientras se decide. Los de la propia solicitud no cuentan.
+    let apartados = [];
+    try { if (typeof apartadosVigentes === 'function') apartados = apartadosVigentes(opciones.excluirCita); }
+    catch (e) { Logger.log('⚠️ No se pudieron leer los horarios apartados: ' + e.message); }
+
+    const r = agHorariosLibres({ dia: dia, tipo: tipo || 'PROPIETARIO', ocupados: ocupados, apartados: apartados, ahoraMs: Date.now(), festivo: festivo, anticipacionMin: opciones.anticipacionMin });
     // Mismo formato que devolvía obtenerDisponibilidad, para no romper el formulario actual
     return {
       success: true, libre: r.libre, motivo: r.motivo,
