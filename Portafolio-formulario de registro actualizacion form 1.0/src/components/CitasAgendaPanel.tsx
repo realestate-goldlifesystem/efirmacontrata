@@ -39,7 +39,7 @@ export const tipoDe = (c: Cita): TipoAgenda =>
 
 // Cómo se ve cada estado. Varios estados internos se agrupan en uno visible:
 // para el agente "confirmada" y "confirmada ya avisada" son lo mismo.
-export type Grupo = 'porcoordinar' | 'pendiente' | 'confirmada' | 'reagendar' | 'reagendada' | 'cancelada' | 'asistio' | 'noasistio' | 'sinrespuesta';
+export type Grupo = 'porcoordinar' | 'pendiente' | 'confirmada' | 'reagendar' | 'reagendada' | 'pormarcar' | 'cancelada' | 'asistio' | 'noasistio' | 'sinrespuesta';
 
 // chip: sobre las tarjetas oscuras (calendario, lista, detalle).
 // claro: sobre el fondo crema de la página (filtros), donde los tonos 300 no se leen.
@@ -51,6 +51,8 @@ export const GRUPOS: Record<Grupo, { etiqueta: string; chip: string; claro: stri
   confirmada:   { etiqueta: 'Confirmada',        chip: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40', claro: 'bg-emerald-50 text-emerald-800 border-emerald-300', punto: 'bg-emerald-400' },
   reagendar:    { etiqueta: 'Quiere reagendar',  chip: 'bg-orange-500/20 text-orange-300 border-orange-500/50', claro: 'bg-orange-50 text-orange-800 border-orange-300',    punto: 'bg-orange-400' },
   reagendada:   { etiqueta: 'Reagendada',        chip: 'bg-sky-500/15 text-sky-300 border-sky-500/40', claro: 'bg-sky-50 text-sky-800 border-sky-300',             punto: 'bg-sky-400' },
+  // Ya pasó y nadie marcó si asistió (19-oct-2026): deja de contar como activa
+  pormarcar:    { etiqueta: 'Por marcar asistencia', chip: 'bg-violet-500/15 text-violet-300 border-violet-500/40', claro: 'bg-violet-50 text-violet-800 border-violet-300', punto: 'bg-violet-400' },
   cancelada:    { etiqueta: 'Cancelada',         chip: 'bg-red-500/15 text-red-300 border-red-500/40', claro: 'bg-red-50 text-red-800 border-red-300',             punto: 'bg-red-400' },
   asistio:      { etiqueta: 'Asistió',           chip: 'bg-teal-500/15 text-teal-300 border-teal-500/40', claro: 'bg-teal-50 text-teal-800 border-teal-300',          punto: 'bg-teal-400' },
   noasistio:    { etiqueta: 'No asistió',        chip: 'bg-rose-500/15 text-rose-300 border-rose-500/40', claro: 'bg-rose-50 text-rose-800 border-rose-300',          punto: 'bg-rose-400' },
@@ -86,6 +88,17 @@ export function grupoDe(estado: string): Grupo {
     case 'SIN RESPUESTA': return 'cancelada';
     default: return 'pendiente';
   }
+}
+
+/**
+ * Grupo de una cita según su estado Y su hora. Una cita por confirmar, confirmada
+ * o reagendada que empezó hace más de una hora ya no es "activa": queda en
+ * "Por marcar asistencia" hasta que el agente marque si asistió (19-oct-2026).
+ */
+export function grupoCita(c: Cita): Grupo {
+  const g = grupoDe(c.estado);
+  const yaPaso = c.timestamp + 60 * 60 * 1000 < Date.now();
+  return yaPaso && (g === 'pendiente' || g === 'confirmada' || g === 'reagendada') ? 'pormarcar' : g;
 }
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -174,8 +187,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   // respuesta y "quiere reagendar" no ocupan espacio; se ven con su propio filtro.
   // (Desde oct-2026 el propietario se reagenda solo y la cita queda confirmada:
   // "quiere reagendar" solo puede quedar en citas de correos viejos.)
-  const esActiva = (c: Cita) => ['porcoordinar', 'pendiente', 'confirmada', 'reagendada'].includes(grupoDe(c.estado));
-  const visibles = useMemo(() => (filtro ? citas.filter(c => grupoDe(c.estado) === filtro) : citas.filter(esActiva)), [citas, filtro]);
+  const esActiva = (c: Cita) => ['porcoordinar', 'pendiente', 'confirmada', 'reagendada'].includes(grupoCita(c));
+  const visibles = useMemo(() => (filtro ? citas.filter(c => grupoCita(c) === filtro) : citas.filter(esActiva)), [citas, filtro]);
 
   const porDia = useMemo(() => {
     const m = new Map<string, Cita[]>();
@@ -189,7 +202,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
 
   const conteo = useMemo(() => {
     const n = {} as Record<Grupo, number>;
-    citas.forEach(c => { const g = grupoDe(c.estado); n[g] = (n[g] || 0) + 1; });
+    citas.forEach(c => { const g = grupoCita(c); n[g] = (n[g] || 0) + 1; });
     return n;
   }, [citas]);
 
@@ -343,7 +356,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
                     {del.length > 0 && (
                       <div className="mt-auto flex flex-wrap gap-1">
                         {(Object.keys(GRUPOS) as Grupo[]).map(g => {
-                          const n = del.filter(c => grupoDe(c.estado) === g).length;
+                          const n = del.filter(c => grupoCita(c) === g).length;
                           return n ? (
                             <span key={g} title={`${n} ${GRUPOS[g].etiqueta.toLowerCase()}`}
                               className={`min-w-[clamp(1.25rem,1.5vw,1.6rem)] h-[clamp(1.25rem,1.5vw,1.6rem)] px-1 rounded-full flex items-center justify-center text-[clamp(10px,0.75vw,13px)] font-bold text-stone-950 ${GRUPOS[g].punto}`}>
@@ -429,7 +442,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
 
 /** Tarjeta de una cita en la lista de la derecha. */
 function TarjetaCita({ c, onAbrir }: { c: Cita; onAbrir: () => void; key?: string }) {
-  const g = GRUPOS[grupoDe(c.estado)];
+  const g = GRUPOS[grupoCita(c)];
   return (
     <button
       onClick={onAbrir}

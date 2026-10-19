@@ -4,7 +4,7 @@ import {
   CalendarClock, Ban, UserCheck, UserX, Save, Loader2, Users, KeyRound, DoorOpen,
 } from 'lucide-react';
 import PhoneCountrySelector, { ALL_COUNTRIES, separarCelular } from './PhoneCountrySelector';
-import { API_URL, GRUPOS, TIPOS, grupoDe, tipoDe, motivoCancelacion, internacional, type Cita, type TipoAgenda } from './CitasAgendaPanel';
+import { API_URL, GRUPOS, TIPOS, grupoCita, tipoDe, motivoCancelacion, internacional, type Cita, type TipoAgenda } from './CitasAgendaPanel';
 
 // Mismos servicios que ofrece el formulario de agendar (ScheduleVisitForm)
 const SERVICIOS = [
@@ -50,7 +50,7 @@ const hoyIso = () => {
 export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio }: {
   cita: Cita; agentCredential: string | null; onCerrar: () => void; onCambio: () => void;
 }) {
-  const grupo = grupoDe(cita.estado);
+  const grupo = grupoCita(cita);
   const tipo = TIPOS[tipoDe(cita)];
   const IconoTipo = ICONO_TIPO[tipoDe(cita)];
   const cerrada = grupo === 'cancelada' || grupo === 'asistio' || grupo === 'noasistio' || grupo === 'sinrespuesta';
