@@ -756,7 +756,9 @@ function ccGenerarYEnviarRecibo(sheet, fila, op) {
     var nombre = String(v('NOMBRES Y APELLIDOS DEL PROPIETARIO') || '').trim().toUpperCase();
     var cedula = ccFormatoCedula(v('Número de documento'));
     var correo = String(v('Correo electrónico') || '').trim();
-    var direccion = String(v('Ingrese la Dirección del inmueble') || '').trim();
+    // La del certificado de tradición y libertad (E-FirmaContrata, 21-oct-2026): es la
+    // misma del contrato. Si el inmueble aún no la tiene, la del registro.
+    var direccion = ccDireccionCertificado(v('CODIGO DE REGISTRO')) || String(v('Ingrese la Dirección del inmueble') || '').trim();
     var idRegistro = String(v('ID DE REGISTRO') || '').trim();
     var pago = ccPartesDeFecha(op.fechaPago);
     var desde = ccPartesDeFecha(_ccFechaISO(v('Fecha de registro del inmueble.')));
@@ -988,4 +990,23 @@ function _ccOrdenarManual(aplicar) {
     Logger.log('Hoja marcada con 🧾✅.');
   }
   Logger.log('✅ Listo.');
+}
+
+
+/**
+ * Dirección del inmueble según el certificado de tradición y libertad: la que
+ * E-FirmaContrata guarda en el Cerebro del contrato ("DIRECCION_INMUEBLE:: …") y
+ * que el contrato pone como dirección del folio de matrícula. '' si no la hay.
+ */
+function ccDireccionCertificado(cdr) {
+  try {
+    if (!cdr || typeof abrirDocCerebro !== 'function') return '';
+    var doc = abrirDocCerebro(String(cdr).trim());
+    if (!doc) return '';
+    var m = doc.getBody().getText().match(/DIRECCION_INMUEBLE::[ \t]*([^\r\n]+)/);
+    return m ? m[1].trim() : '';
+  } catch (e) {
+    Logger.log('⚠️ No se pudo leer la dirección del certificado (' + cdr + '): ' + e.message);
+    return '';
+  }
 }

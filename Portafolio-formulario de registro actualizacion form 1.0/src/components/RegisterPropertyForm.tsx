@@ -181,6 +181,10 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
     
     // Percentages & Choices
     corretajePercent: '100', // % de corretaje arriendo
+    // Corretaje / Vendi-Renta: el inquilino le paga el primer canon al agente, que se
+    // cobra la comisión y le responde al propietario por el excedente (19-oct-2026,
+    // PLAN_EXCEDENTE_PRIMER_CANON.md). 'SI' | 'NO'
+    cobroPrimerCanon: 'NO',
     corretajeCollectsFirstMonthOnly: 'Si',
     adminPercentSelector: '8.5% desde el primer mes', // or 9.1%
     salesCommissionSelector: '3%', // or 2.5%, 2%, 1.5%
@@ -456,6 +460,8 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         const conPct = (v: any) => { const t = pct(v); return t ? t + '%' : ''; };
         const pCorretaje = pct(prop["PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO"]);
         if (pCorretaje) next.corretajePercent = pCorretaje;
+        const respCobro = String(prop["¿Desea que el agente reciba el cobro del canon UNICAMENTE del primer mes para que se pueda cobrar directamente la comisión?"] || prop["¿Desea que el agente reciba el cobro del canon UNICAMENTE del primer mes para que se pueda cobrar directamente la comisión?  (V-R)"] || '').trim();
+        next.cobroPrimerCanon = /^s[ií]/i.test(respCobro) ? 'SI' : 'NO';
         const pVendiRenta = pct(prop["PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO (Vendi-Renta)"]);
         if (pVendiRenta) next.vendiRentaArriendoPercent = pVendiRenta;
         const pAdmin = String(prop["PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE "] || prop["PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE"] || '').trim();
@@ -527,6 +533,22 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
       petTypes: 'Todas las mascotas',
       customPetType: ''
     }));
+  };
+
+  // Columnas del cobro del primer canon. El acta muestra el excedente en porcentaje:
+  // "<LETRA> (<NUM>) del canon sin incluir la administración, más el valor de la administración"
+  const excedentePrimerCanon = (): Record<string, string> => {
+    const t = formData.serviceType;
+    if (t !== 'corretaje' && t !== 'vendi-renta') return {};
+    const vr = t === 'vendi-renta' ? ' (V-R)' : '';
+    const si = formData.cobroPrimerCanon === 'SI';
+    const pctComision = Math.min(100, Math.max(0, Number(vr ? formData.vendiRentaArriendoPercent : formData.corretajePercent) || 0));
+    const excedente = 100 - pctComision;
+    return {
+      [vr ? "¿Desea que el agente reciba el cobro del canon UNICAMENTE del primer mes para que se pueda cobrar directamente la comisión?  (V-R)" : "¿Desea que el agente reciba el cobro del canon UNICAMENTE del primer mes para que se pueda cobrar directamente la comisión?"]: si ? 'Si' : 'No',
+      ["VALOR RESTANTE EN NUMERO" + vr]: si ? `${excedente}%` : '',
+      ["PRECIO DEL VALOR RESTANTE EN LETRA" + vr]: si ? porcentajeEnLetras(excedente) : ''
+    };
   };
 
   const parseNum = (val: any): number => {
@@ -952,6 +974,9 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         "(3%)  (Porcentaje en letras)": formData.serviceType === 'venta' && formData.salesCommissionSelector === '3%' ? 'TRES' : '',
         
         "PORCENTAJE POR COMERCIALIZACIÓN INMOBILIARIA EN ARRIENDO (Vendi-Renta)": formData.serviceType === 'vendi-renta' ? `${formData.vendiRentaArriendoPercent}%` : '',
+
+        // Cobro del primer canon y excedente al propietario (19-oct-2026)
+        ...excedentePrimerCanon(),
         
         "PORCENTAJE DEL COSTO MENSUAL POR LOS SERVICIOS DE ADMINISTRACIÓN DEL INMUEBLE (Admi-Venta)": formData.serviceType === 'admi-venta' ? formData.admiVentaAdminPercentSelector : '',
         "(Porcentaje en números) (A-V)": formData.serviceType === 'admi-venta' ? formData.admiVentaSalesCommissionSelector : formData.serviceType === 'vendi-renta' ? formData.salesCommissionSelector : '',
@@ -970,7 +995,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
       // sin zonas...), pisando la fila y dejando el acta vacía (16-oct-2026,
       // YN480228). Todo lo demás se toma tal cual de la fila del inmueble.
       if (inmuebleOriginal) {
-        const editable = /PRECIO|PORCENTAJE|Porcentaje|autorizaci|portería|NOMBRE DEL INMUEBLE|administración desde|Correo electrónico de la administración|TIPO DE NEGOCIO|Fecha de registro/;
+        const editable = /PRECIO|PORCENTAJE|Porcentaje|autorizaci|portería|NOMBRE DEL INMUEBLE|administración desde|Correo electrónico de la administración|TIPO DE NEGOCIO|Fecha de registro|cobro del canon|VALOR RESTANTE/;
         const delPropietario = /PROPIETARIO|documento|Expedicion|celular|Celular|^Correo electrónico$/;
         const tecnicas = /^(accion|idEnvio|reutilizarMultimedia|flujoSolicitado|idInmuebleOriginal|cdrInmuebleOriginal)$/;
         // La fila llega con los encabezados recortados (sin espacios a los lados) y el
@@ -1031,6 +1056,37 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
 ¡Gracias por confiar en nosotros! 🤝`;
 
     return `https://wa.me/${clientPhone}?text=${encodeURIComponent(textMsg)}`;
+  };
+
+  /**
+   * ¿El agente recibe el primer canon? (Corretaje y Vendi-Renta, 19-oct-2026). Si sí,
+   * en el acta aparece el parágrafo con el excedente en porcentaje; si no, no aparece.
+   */
+  const bloqueCobroPrimerCanon = () => {
+    const t = formData.serviceType;
+    if (t !== 'corretaje' && t !== 'vendi-renta') return null;
+    const pctComision = Math.min(100, Math.max(0, Number(t === 'vendi-renta' ? formData.vendiRentaArriendoPercent : formData.corretajePercent) || 0));
+    const excedente = 100 - pctComision;
+    const op = (v: 'SI' | 'NO', texto: string) => (
+      <button type="button" onClick={() => setFormData({ ...formData, cobroPrimerCanon: v })}
+        className={`flex-1 p-3 rounded-xl border text-xs font-bold transition-all ${formData.cobroPrimerCanon === v ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-200 hover:border-stone-400'}`}>
+        {texto}
+      </button>
+    );
+    return (
+      <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
+        <div>
+          <label className="text-xs text-stone-700 font-bold block">¿EL PROPIETARIO AUTORIZA QUE TÚ RECIBAS EL PRIMER CANON?</label>
+          <p className="text-[10px] text-stone-500 mt-1">El inquilino te paga el primer mes, te cobras la comisión y le respondes al propietario por el excedente.</p>
+        </div>
+        <div className="flex gap-2">{op('SI', 'Sí, lo autoriza')}{op('NO', 'No')}</div>
+        {formData.cobroPrimerCanon === 'SI' && (
+          <p className="text-[11px] text-stone-600 bg-white border border-stone-200 rounded-xl p-3">
+            En el acta quedará: se le responde por el <b>{excedente}%</b> del canon sin incluir la administración, más el valor de la administración.
+          </p>
+        )}
+      </div>
+    );
   };
 
   /**
@@ -1784,6 +1840,8 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
 
                           {bloquePorcentajes()}
 
+                          {bloqueCobroPrimerCanon()}
+
                           {bloqueAutorizacionIngreso()}
 
                           <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
@@ -1989,6 +2047,8 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                               </div>
                             )}
                           </div>
+
+                          {bloqueCobroPrimerCanon()}
 
                           {bloqueAutorizacionIngreso()}
 
@@ -3282,6 +3342,8 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                           </div>
                         )}
 
+                        {activeFlow === 'normal' && bloqueCobroPrimerCanon()}
+
                         {(formData.serviceType === 'corretaje' || formData.serviceType === 'vendi-renta') && (
                           <div className="pt-2 border-t border-brand-gold/20">
                             <label className="flex items-center space-x-3 cursor-pointer select-none mb-3">
@@ -3703,4 +3765,18 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
       </section>
     </ErrorBoundary>
   );
+}
+
+/** 35 → "TREINTA Y CINCO POR CIENTO" (0 a 100). Para el excedente del acta. */
+function porcentajeEnLetras(n: number): string {
+  const u = ['CERO', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE', 'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE',
+    'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE', 'VEINTE', 'VEINTIUNO', 'VEINTIDÓS', 'VEINTITRÉS', 'VEINTICUATRO', 'VEINTICINCO',
+    'VEINTISÉIS', 'VEINTISIETE', 'VEINTIOCHO', 'VEINTINUEVE'];
+  const d = ['', '', '', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+  const k = Math.round(n);
+  let txt: string;
+  if (k >= 100) txt = 'CIEN';
+  else if (k < 30) txt = u[Math.max(0, k)];
+  else txt = d[Math.floor(k / 10)] + (k % 10 ? ' Y ' + u[k % 10] : '');
+  return txt + ' POR CIENTO';
 }

@@ -116,6 +116,10 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
       if (value === null || value === undefined) value = '';
       if (value instanceof Date) {
         value = Utilities.formatDate(value, Session.getScriptTimeZone(), 'dd/MM/yyyy');
+      } else if (typeof value === 'number' && /^\s*VALOR RESTANTE EN NUMERO/i.test(headerMap)) {
+        // El excedente del primer canon va en porcentaje ("35%"), y la hoja lo guarda
+        // como 0.35 (19-oct-2026). No es plata: no lleva formato de pesos.
+        value = Math.round(value <= 1 ? value * 100 : value) + '%';
       } else if (typeof value === 'number') {
         var headerLower = headerMap.toLowerCase();
         var esMoneda = headerLower.includes('precio') || 
@@ -130,6 +134,9 @@ function generarDocumentoNativo(sheet, row, tipoNegocio, carpetaDestinoFolder) {
       
       body.replaceText('<<' + tag + '>>', value.toString());
     });
+
+    // Bloques que solo aparecen si aplican (19-oct-2026)
+    aplicarBloquesCondicionales_(body, headers, rowData);
     
     doc.saveAndClose();
     
@@ -185,4 +192,41 @@ function documentoAutocratYaGenerado(sheet, row, tipoNegocio) {
   } catch (e) {
     return false;
   }
+}
+
+
+// ==========================================
+// BLOQUES CONDICIONALES DE LAS PLANTILLAS (19-oct-2026)
+// ==========================================
+// Un texto de la plantilla entre <<SI NOMBRE>> y <<FIN SI NOMBRE>> se deja (sin las
+// marcas) si la condición se cumple, y se borra completo si no. Las marcas van en
+// el mismo párrafo. La redacción del bloque es de Leonardo: aquí solo se muestra u
+// oculta.
+//
+// COBRO PRIMER CANON: el parágrafo de la cláusula TERCERA de Corretaje y
+// Vendi-Renta, que solo aplica si el propietario autorizó que el agente reciba el
+// primer canon y se cobre de ahí la comisión (PLAN_EXCEDENTE_PRIMER_CANON.md, D2).
+var BLOQUES_CONDICIONALES = {
+  'COBRO PRIMER CANON': function (valor) {
+    return /^s[ií]/i.test(String(valor('¿Desea que el agente reciba el cobro del canon UNICAMENTE del primer mes para que se pueda cobrar directamente la comisión?') ||
+                                  valor('¿Desea que el agente reciba el cobro del canon UNICAMENTE del primer mes para que se pueda cobrar directamente la comisión?  (V-R)') || '').trim());
+  }
+};
+
+function aplicarBloquesCondicionales_(body, headers, rowData) {
+  var valor = function (nombre) {
+    var i = headers.findIndex(function (h) { return String(h).trim() === nombre.trim(); });
+    return i === -1 ? '' : rowData[i];
+  };
+  Object.keys(BLOQUES_CONDICIONALES).forEach(function (nombre) {
+    var inicio = '<<SI ' + nombre + '>>', fin = '<<FIN SI ' + nombre + '>>';
+    if (!body.findText(inicio)) return;
+    if (BLOQUES_CONDICIONALES[nombre](valor)) {
+      body.replaceText(inicio, '');
+      body.replaceText(fin, '');
+    } else {
+      // replaceText usa expresiones regulares: el bloque completo, de marca a marca
+      body.replaceText(inicio + '.*?' + fin + ' ?', '');
+    }
+  });
 }

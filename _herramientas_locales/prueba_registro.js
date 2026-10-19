@@ -112,6 +112,8 @@ function datosPropietario(negocio, aut, precio) {
   cuerpo.accion = 'registrarInmueble';
   cuerpo.idEnvio = 'prueba-' + Date.now();
   cuerpo.reutilizarMultimedia = 'SI';
+  // Campos extra para una prueba puntual: EXTRA='{"columna":"valor"}'
+  if (process.env.EXTRA) Object.assign(cuerpo, JSON.parse(process.env.EXTRA));
   console.log(modo, '→', cuerpo['TIPO DE NEGOCIO'], '| flujo', cuerpo.flujoSolicitado, '| aut', (cuerpo['¿Qué tipo de autorización desea con el agente?'] || cuerpo['¿Qué tipo de autorización desea con el agente para administración?']).slice(0, 50));
   console.log(await post(cuerpo));
 })();
