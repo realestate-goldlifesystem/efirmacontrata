@@ -710,7 +710,10 @@ function pulirDescripcion(lineas, opciones) {
     }
     // Siempre un renglón en blanco entre el título y "Te damos la bienvenida…"
     // (20-oct-2026): según cómo venga partido el título en el acta, quedaba pegado.
-    texto = titulo + '\n\n' + partesTexto.slice(consumidas).join('\n').replace(/^\s+/, '');
+    // También se quitan los invisibles de Forms (ㅤ, de ancho cero): una línea "vacía"
+    // con uno de ellos dejaba dos renglones en blanco en el Doc.
+    texto = titulo.replace(/[\s​-‏⁠﻿ㅤ]+$/, '') + '\n\n' +
+            partesTexto.slice(consumidas).join('\n').replace(/^[\s​-‏⁠﻿ㅤ]+/, '');
 
     // Tipo real del inmueble (la plantilla asume apartamento)
     var TIPOS = {
