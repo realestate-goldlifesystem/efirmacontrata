@@ -1998,6 +1998,8 @@ function continuarRegistroInmuebleParte3() {
         transferirPreciosRenovacion(sheet, filaOriginal, row, datos.reutilizarMultimedia);
         transferirCaracteristicasFormulario(sheet, filaOriginal, datos);
         actualizarLinksTipo12(sheet, filaOriginal, row, carpetaNuevoAnio, regFolder);
+        // Si se conservó el video, su título y descripción pasan a los valores nuevos
+        if (typeof actualizarTextoVideoInmueble === 'function') actualizarTextoVideoInmueble(sheet, filaOriginal, regFolder);
         actualizarEstadoFinal(sheet, filaOriginal, datos.tipoRegistro.cambioMismaCarpeta ? 'TIPO_4_PENDIENTE' : 'TIPO_2_PENDIENTE');
 
         // Enviar correo al propietario sobre la fila original
@@ -2069,6 +2071,8 @@ function continuarRegistroInmuebleParte3() {
         // Se reemplazan (no solo se agregan): ver el paso 9 de la Parte 2
         reemplazarLinksAutocrat(sheet, filaOriginal, row);
         actualizarEstadoFinal(sheet, filaOriginal, 'TIPO_4_PENDIENTE');
+        // Si se conservó el video, su título y descripción pasan a los valores nuevos
+        if (typeof actualizarTextoVideoInmueble === 'function') actualizarTextoVideoInmueble(sheet, filaOriginal, regFolder);
 
         // Enviar correo de firma de cambio de negocio
         try {

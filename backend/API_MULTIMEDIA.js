@@ -976,3 +976,48 @@ function handleReutilizarMultimedia(datos) {
         message: "Material multimedia restaurado exitosamente."
     };
 }
+
+/**
+ * Renovación o cambio de negocio que CONSERVA el video (20-oct-2026): el título y la
+ * descripción del video de YouTube se actualizan con el Doc "DESCRIPCIÓN DE INMUEBLE"
+ * recién regenerado (valores nuevos), con la misma regla de la subida (multimedia.js):
+ * título = dos primeras líneas (máx. 95 caracteres), descripción = el Doc completo.
+ * No toca la privacidad ni nada más del video. Nunca tumba el registro.
+ */
+function actualizarTextoVideoInmueble(sheet, fila, carpetaReg) {
+    try {
+        const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => String(h).trim());
+        const col = headers.indexOf('LINK DEL VIDEO DEL INMUEBLE');
+        const link = col === -1 ? '' : String(sheet.getRange(fila, col + 1).getValue() || '');
+        const m = link.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([a-zA-Z0-9_-]{11})/);
+        if (!m) return { actualizado: false, motivo: 'sin video' };
+
+        const descFolders = carpetaReg.getFoldersByName('DESCRIPCIÓN DE LA PUBLICACIÓN');
+        if (!descFolders.hasNext()) return { actualizado: false, motivo: 'sin carpeta de descripción' };
+        const docs = descFolders.next().searchFiles("title contains 'DESCRIPCIÓN' and trashed = false");
+        let texto = '';
+        while (docs.hasNext()) {
+            const d = docs.next();
+            if (d.getMimeType() === MimeType.GOOGLE_DOCS) { texto = DocumentApp.openById(d.getId()).getBody().getText().trim(); break; }
+        }
+        if (!texto) return { actualizado: false, motivo: 'descripción vacía' };
+
+        const lineas = texto.split('\n').map(l => l.trim()).filter(Boolean);
+        let titulo = lineas.slice(0, 2).join(' | ');
+        if (titulo.length > 95) titulo = titulo.substring(0, 95) + '...';
+        // YouTube no acepta "<" ni ">" en el título ni en la descripción
+        const limpiar = t => t.replace(/[<>]/g, '');
+
+        const lista = YouTube.Videos.list('snippet', { id: m[1] });
+        if (!lista.items || !lista.items.length) return { actualizado: false, motivo: 'video no encontrado en el canal' };
+        const video = lista.items[0];
+        video.snippet.title = limpiar(titulo);
+        video.snippet.description = limpiar(texto).slice(0, 5000);
+        YouTube.Videos.update({ id: video.id, snippet: video.snippet }, 'snippet');
+        Logger.log('🎬 Texto del video ' + m[1] + ' actualizado: ' + titulo);
+        return { actualizado: true, titulo: titulo };
+    } catch (e) {
+        Logger.log('⚠️ No se pudo actualizar el texto del video: ' + e.message);
+        return { actualizado: false, motivo: e.message };
+    }
+}
