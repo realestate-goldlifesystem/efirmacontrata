@@ -170,6 +170,7 @@ function guardarEnDestino(texto, carpetaReg) {
         Logger.log("✏️ Actualizando documento existente: " + nombreDoc);
         var doc = DocumentApp.openById(docId);
         doc.getBody().setText(texto);
+        _limpiarEncabezadoYPie(doc);
         _aplicarInterlineadoSencillo(doc);
     } else {
         Logger.log("✨ Creando nuevo documento: " + nombreDoc);
@@ -184,6 +185,22 @@ function guardarEnDestino(texto, carpetaReg) {
     }
 
     return true;
+}
+
+/**
+ * La descripción es solo el cuerpo: cualquier texto en el encabezado o el pie
+ * (alguien escribió ahí "Descripcion publicacion", 20-oct-2026) se quita, porque
+ * setText solo reescribe el cuerpo y ese texto sobrevivía a cada regeneración.
+ */
+function _limpiarEncabezadoYPie(doc) {
+    try {
+        var encabezado = doc.getHeader();
+        if (encabezado && encabezado.getText().trim()) encabezado.clear();
+        var pie = doc.getFooter();
+        if (pie && pie.getText().trim()) pie.clear();
+    } catch (e) {
+        Logger.log('⚠️ No se pudo limpiar el encabezado de la descripción: ' + e.message);
+    }
 }
 
 /**
