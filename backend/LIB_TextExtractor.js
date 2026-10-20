@@ -708,7 +708,9 @@ function pulirDescripcion(lineas, opciones) {
     if (opciones.precioVentaFormat && titulo.indexOf(opciones.precioVentaFormat) === -1) {
         titulo = titulo.replace(/(\$\s*\d[\d.,]*)/, opciones.precioVentaFormat + '/$1');
     }
-    texto = [titulo].concat(partesTexto.slice(consumidas)).join('\n');
+    // Siempre un renglón en blanco entre el título y "Te damos la bienvenida…"
+    // (20-oct-2026): según cómo venga partido el título en el acta, quedaba pegado.
+    texto = titulo + '\n\n' + partesTexto.slice(consumidas).join('\n').replace(/^\s+/, '');
 
     // Tipo real del inmueble (la plantilla asume apartamento)
     var TIPOS = {
