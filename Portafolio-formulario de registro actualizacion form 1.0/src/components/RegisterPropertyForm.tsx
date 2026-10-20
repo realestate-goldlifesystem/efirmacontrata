@@ -1328,7 +1328,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                         <strong className="text-stone-800 font-mono">{FORMAT_COP(priceGeneralVal)}</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-stone-500">Cuota Administración (HOA):</span>
+                        <span className="text-stone-500">Cuota de administración:</span>
                         <strong className="text-stone-800 font-mono">-{FORMAT_COP(priceHoaVal)}</strong>
                       </div>
                       <div className="flex justify-between border-t border-stone-200 pt-1 text-brand-gold-dark-dark">
@@ -1399,7 +1399,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                     <div className="space-y-2 text-xs animate-fade-in">
                       <div className="p-2 bg-stone-800 rounded space-y-1">
                         <div className="flex justify-between text-emerald-400">
-                          <span>Renta Mensual Neta:</span>
+                          <span>Ingreso Mensual Neto:</span>
                           <strong>{FORMAT_COP(adminNetProceeds)}</strong>
                         </div>
                         <div className="flex justify-between text-brand-gold-dark">
@@ -1807,7 +1807,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
 
                             {(formData.serviceType === 'administracion' || formData.serviceType === 'corretaje' || formData.serviceType === 'admi-venta' || formData.serviceType === 'vendi-renta') && (
                               <div>
-                                <label className="text-xs text-stone-600 font-bold block mb-1">NUEVO CANON DE ARRENDAMIENTO (Renta + Administración)</label>
+                                <label className="text-xs text-stone-600 font-bold block mb-1">NUEVO VALOR DEL ARRIENDO (Canon + Administración)</label>
                                 <input 
                                   type="text" 
                                   value={new Intl.NumberFormat('es-CO').format(parseInt(formData.priceGeneral || '0') || 0)} 
@@ -1818,12 +1818,13 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                 <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
                                   En letras: <strong>{numberToWordsSpanish(parseInt(formData.priceGeneral || '0') || 0).toUpperCase()}</strong>
                                 </p>
+                                <p className="text-[10px] text-stone-500 mt-0.5">Canon sin administración: <strong className="font-mono text-stone-800">{FORMAT_COP(baseCanon)}</strong></p>
                               </div>
                             )}
 
                             {(formData.serviceType !== 'venta' || parseInt(formData.priceHoaPlena || '0') > 0) && (
                               <div>
-                                <label className="text-xs text-stone-600 font-bold block mb-1">NUEVA ADMINISTRACIÓN (HOA)</label>
+                                <label className="text-xs text-stone-600 font-bold block mb-1">NUEVA CUOTA DE ADMINISTRACIÓN</label>
                                 <input 
                                   type="text" 
                                   value={new Intl.NumberFormat('es-CO').format(parseInt(formData.priceHoaPlena || '0') || 0)} 
@@ -1976,7 +1977,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                             {(formData.serviceType === 'administracion' || formData.serviceType === 'corretaje' || formData.serviceType === 'admi-venta' || formData.serviceType === 'vendi-renta') && (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in border-b border-stone-200 pb-4">
                                 <div>
-                                  <label className="text-xs text-stone-600 font-bold block mb-1">CANON DE ARRENDAMIENTO (Renta + Admin)</label>
+                                  <label className="text-xs text-stone-600 font-bold block mb-1">VALOR DEL ARRIENDO (Canon + Administración)</label>
                                   <input 
                                     type="text" 
                                     value={new Intl.NumberFormat('es-CO').format(priceGeneralVal)} 
@@ -1987,9 +1988,10 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                   <p className="text-[10px] text-[#8A631F] italic mt-1 font-mono">
                                     En letras: <strong>{numberToWordsSpanish(priceGeneralVal).toUpperCase()}</strong>
                                   </p>
+                                  <p className="text-[10px] text-stone-500 mt-0.5">Canon sin administración: <strong className="font-mono text-stone-800">{FORMAT_COP(baseCanon)}</strong></p>
                                 </div>
                                 <div>
-                                  <label className="text-xs text-stone-600 font-bold block mb-1">CUOTA DE ADMINISTRACIÓN (HOA)</label>
+                                  <label className="text-xs text-stone-600 font-bold block mb-1">CUOTA DE ADMINISTRACIÓN</label>
                                   <input 
                                     type="text" 
                                     value={new Intl.NumberFormat('es-CO').format(priceHoaVal)} 
@@ -3537,7 +3539,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {formData.serviceType !== 'venta' && (
                             <div>
-                              <label className="text-[10px] text-stone-700 font-bold block mb-1">PRECIO PROMOCIÓN GENERAL (Renta + Administración)</label>
+                              <label className="text-[10px] text-stone-700 font-bold block mb-1">VALOR DEL ARRIENDO (Canon + Administración)</label>
                               <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-bold">$</span>
                                 <input 
@@ -3550,6 +3552,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                                 <Info className="w-3 h-3 flex-shrink-0" />
                                 <span>En letras: <strong className="text-stone-900 font-sans font-bold">{numberToWordsSpanish(priceGeneralVal)}</strong></span>
                               </p>
+                              <p className="text-[10px] text-stone-500 mt-0.5">Canon sin administración: <strong className="font-mono text-stone-800">{FORMAT_COP(baseCanon)}</strong></p>
                             </div>
                           )}
                           <div>
