@@ -880,7 +880,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
                     <div className="mt-3.5 sm:mt-5 flex items-start space-x-2.5 bg-stone-100 border border-stone-200 p-2.5 sm:p-3 rounded-lg text-xs leading-snug sm:leading-normal text-stone-550">
                       <ShieldAlert className="w-4 h-4 text-brand-gold-dark shrink-0 mt-0.5" />
                       <p className="leading-normal font-sans">
-                        <strong>Gestión autónoma:</strong> Tras la búsqueda y firma del inquilino, delegas la gestión de cobro diaria. No incluye el blindaje contra impagos de administración (HOA) o servicios recurrentes.
+                        <strong>Gestión autónoma:</strong> Tras la búsqueda y firma del inquilino, delegas la gestión de cobro diaria. No incluye el blindaje contra impagos de administración o servicios recurrentes.
                       </p>
                     </div>
                   </div>
