@@ -18,6 +18,8 @@
 //     (viva o en papelera). Si un número lo usó un inmueble real borrado, ahí se
 //     detiene: repetir un código histórico es peor que dejar un hueco.
 //   - LAST_RPR_SEQUENCE se borra: el sistema lo recalcula solo desde la hoja.
+//   - Correos de las pruebas en la bandeja del correo del sistema → papelera
+//     (necesita el permiso de Gmail; ver correosDePrueba_).
 //
 // No corre si hay registros a medio procesar (la cola guarda números de fila y
 // borrar filas en ese momento haría procesar el inmueble equivocado).
@@ -131,6 +133,9 @@ function limpiarPruebasSistema_(borrar) {
     log.push('🔢 LAST_RPR_SEQUENCE: ' + (props.getProperty('LAST_RPR_SEQUENCE') || '(vacío)') +
       ' → se borra y se recalcula desde la hoja');
 
+    // 5. Correos de las pruebas en la bandeja del correo del sistema (a la papelera)
+    var correos = correosDePrueba_(ids, log);
+
     if (borrar) {
       carpetas.forEach(function (c) { c.setTrashed(true); });
       archivos.forEach(function (f) { try { f.setTrashed(true); } catch (e) {} });
@@ -141,6 +146,7 @@ function limpiarPruebasSistema_(borrar) {
       filas.sort(function (a, b) { return b - a; }).forEach(function (f) { sheet.deleteRow(f); });
       Object.keys(nuevosContadores).forEach(function (key) { props.setProperty(key, String(nuevosContadores[key])); });
       props.deleteProperty('LAST_RPR_SEQUENCE');
+      correos.forEach(function (m) { try { m.moveToTrash(); } catch (e) {} });
       SpreadsheetApp.flush();
       log.push('✅ Listo.');
     } else {
@@ -151,6 +157,55 @@ function limpiarPruebasSistema_(borrar) {
   }
   Logger.log(log.join('\n'));
   return log;
+}
+
+// ==========================================
+// CORREOS DE PRUEBA (20-oct-2026)
+// ==========================================
+// Mensajes (no hilos: Gmail agrupa por asunto y un hilo podría mezclar uno real)
+// del correo del sistema que son inequívocamente de una prueba: "[PRUEBA]" en el
+// asunto, o que mencionan "PRUEBA SISTEMA", la cédula de prueba o el ID de un
+// inmueble de prueba que se está borrando. Últimos 30 días. Van a la PAPELERA
+// (se recuperan 30 días), nunca se borran del todo.
+// Necesita el permiso de Gmail (https://mail.google.com/ en appsscript.json). Sin
+// él, este paso se salta y el resto de la limpieza sigue igual.
+function correosDePrueba_(idsInmuebles, log) {
+  var C = LIMPIEZA_PRUEBAS;
+  var consultas = ['subject:"[PRUEBA]"', '"' + C.MARCA + '"', C.CEDULA].concat((idsInmuebles || []).filter(String));
+  var marcas = [C.MARCA, C.CEDULA].concat((idsInmuebles || []).filter(String));
+  var vistos = {}, mensajes = [];
+  try {
+    consultas.forEach(function (q) {
+      GmailApp.search(q + ' newer_than:30d', 0, 200).forEach(function (hilo) {
+        hilo.getMessages().forEach(function (m) {
+          if (vistos[m.getId()] || m.isInTrash()) return;
+          var asunto = m.getSubject() || '';
+          var esPrueba = asunto.indexOf('[PRUEBA]') === 0 || marcas.some(function (x) { return asunto.indexOf(x) !== -1; }) ||
+            marcas.some(function (x) { return m.getPlainBody().indexOf(x) !== -1; });
+          if (!esPrueba) return;
+          vistos[m.getId()] = true;
+          mensajes.push(m);
+        });
+      });
+    });
+  } catch (e) {
+    if (log) log.push('✉️ Correos: no se revisaron (' + e.message + '). Falta el permiso de Gmail; el resto de la limpieza sigue igual.');
+    return [];
+  }
+  if (log) {
+    log.push('✉️ Correos de prueba a la papelera: ' + mensajes.length);
+    mensajes.slice(0, 15).forEach(function (m) { log.push('     ' + Utilities.formatDate(m.getDate(), 'America/Bogota', 'dd/MM HH:mm') + ' · ' + m.getSubject()); });
+    if (mensajes.length > 15) log.push('     … y ' + (mensajes.length - 15) + ' más');
+  }
+  return mensajes;
+}
+
+/** Solo los correos de prueba (cuando ya no quedan inmuebles de prueba). */
+function revisarCorreosDePrueba() { var log = ['🔎 SIMULACIÓN (no se borra nada)']; correosDePrueba_([], log); Logger.log(log.join(String.fromCharCode(10))); return log; }
+function borrarCorreosDePrueba_CONFIRMADO() {
+  var log = ['🧹 CORREOS DE PRUEBA'];
+  correosDePrueba_([], log).forEach(function (m) { m.moveToTrash(); });
+  log.push('✅ Listo.'); Logger.log(log.join(String.fromCharCode(10))); return log;
 }
 
 // ¿Hay alguna carpeta REG que NO sea de prueba con ese tipo y número (viva o en
