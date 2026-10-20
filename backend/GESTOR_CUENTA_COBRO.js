@@ -519,8 +519,12 @@ function ccContextoComprobante(datos) {
     var fRec = iRec === -1 ? '' : String(formulas[iRec] || '');
     var mUrl = fRec.match(/HYPERLINK\("([^"]+)"/i);
 
+    // Cobro del primer canon: lo que se carga es la transferencia del excedente al propietario
+    var ex = (typeof ceAutorizoPrimerCanon === 'function' && ceAutorizoPrimerCanon(v)) ? ceCalcularExcedente(v) : null;
+
     return {
       success: true,
+      excedente: ex ? { comision: '$ ' + ccMiles(ex.comision), admin: '$ ' + ccMiles(ex.admin), total: '$ ' + ccMiles(ex.excedente) } : null,
       yaRegistrado: fRec.indexOf('🧾') !== -1,
       urlRecibo: fRec.indexOf('🧾') !== -1 && mUrl ? mUrl[1] : '',
       datos: {
@@ -577,12 +581,19 @@ function ccRegistrarPago(datos) {
     // es la carpeta donde quedan los pagos del propietario por los servicios que
     // adquiere con Gold Life. (En prueba no se guarda nada.)
     var idRegistro = String(sheet.getRange(fila, headers.indexOf('ID DE REGISTRO') + 1).getValue()).trim();
+    var valoresFila = sheet.getRange(fila, 1, 1, headers.length).getValues()[0];
+    var vFila = function (n) { var i = headers.indexOf(n); return i === -1 ? '' : valoresFila[i]; };
+    // Cobro del primer canon: el comprobante es la transferencia del excedente al propietario
+    var ex = (typeof ceAutorizoPrimerCanon === 'function' && ceAutorizoPrimerCanon(vFila)) ? ceCalcularExcedente(vFila) : null;
+    var comprobanteBlob = Utilities.newBlob(Utilities.base64Decode(datos.base64), String(datos.mimeType).toLowerCase(),
+      (ex ? 'Comprobante transferencia excedente primer mes - ' : 'Comprobante de pago - ') + idRegistro + '.' + ext);
     if (!esPrueba) {
       var carpetaComprobantes = _ccSubcarpetaDeSoportes(sheet, fila, headers, CUENTA_COBRO.CARPETA_COMPROBANTES);
       if (!carpetaComprobantes) {
         return { success: false, message: 'No encontré la carpeta "' + CUENTA_COBRO.CARPETA_COMPROBANTES + '…" en SOPORTES CONTABLES. No se guardó ni se envió nada.' };
       }
-      var baseComprobante = 'Comprobante de pago del propietario - Honorarios de corretaje - ' + idRegistro + '.';
+      var baseComprobante = (ex ? 'Comprobante de transferencia al propietario - Excedente del primer canon - '
+                                : 'Comprobante de pago del propietario - Honorarios de corretaje - ') + idRegistro + '.';
       var nombreComprobante = baseComprobante + ext;
       // Si un intento anterior guardó el comprobante pero el recibo falló, no se
       // duplica. Se compara SIN la extensión: en el reintento pueden subir el
@@ -597,7 +608,8 @@ function ccRegistrarPago(datos) {
                                                        String(datos.mimeType).toLowerCase(), nombreComprobante));
     }
 
-    var r = ccGenerarYEnviarRecibo(sheet, fila, { formaPago: formaPago, fechaPago: datos.fechaPago, soloAdmin: esPrueba });
+    // Con cobro del primer canon la comisión no la paga el propietario: se descontó
+    var r = ccGenerarYEnviarRecibo(sheet, fila, { formaPago: ex ? 'DESCONTADO DEL PRIMER CANON' : formaPago, fechaPago: datos.fechaPago, soloAdmin: esPrueba });
     if (!r.enviada) {
       return { success: false, message: (esPrueba ? '' : 'El comprobante quedó guardado, pero el recibo NO se envió: ') + r.motivo };
     }
@@ -613,6 +625,20 @@ function ccRegistrarPago(datos) {
       if (iRec !== -1) sheet.getRange(fila, iRec + 1).setFormula('=HYPERLINK("' + r.urlPdf + '"; "🧾✅")');
       var iDet = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
       if (iDet !== -1) sheet.getRange(fila, iDet + 1).setValue('✅ Pago del propietario recibido. 🧾 Recibo enviado por $' + ccMiles(r.valor) + '.');
+    }
+    if (ex) {
+      try {
+        ceAvisarExcedenteAlPropietario({
+          idRegistro: idRegistro, nombre: String(vFila('NOMBRES Y APELLIDOS DEL PROPIETARIO') || ''), correo: String(vFila('Correo electrónico') || '').trim(),
+          direccion: ccDireccionCertificado(vFila('CODIGO DE REGISTRO')) || String(vFila('Ingrese la Dirección del inmueble') || ''),
+          ex: ex, formaPago: formaPago, fechaPago: ccPartesDeFecha(datos.fechaPago).corta
+        }, comprobanteBlob, esPrueba);
+        if (!esPrueba) {
+          sheet.getRange(fila, _ceColumna(sheet, headers, EXCEDENTE.COL_VALIDACION)).setValue('⏳ PENDIENTE');
+          var iDet2 = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
+          if (iDet2 !== -1) sheet.getRange(fila, iDet2 + 1).setValue('✅ Excedente del primer mes consignado ($' + ccMiles(ex.excedente) + '). ⏳ Esperando que el propietario lo confirme.');
+        }
+      } catch (eAviso) { Logger.log('⚠️ No se pudo avisar el excedente al propietario: ' + eAviso.message); }
     }
     return {
       success: true, urlRecibo: r.urlPdf,

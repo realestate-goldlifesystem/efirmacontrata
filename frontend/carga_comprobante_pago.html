@@ -418,7 +418,7 @@
             </div>
 
             <div class="property-info-card">
-                <h3>🏠 Cobro al propietario</h3>
+                <h3 id="tituloCobro">🏠 Cobro al propietario</h3>
                 <div class="info-grid">
                     <div class="info-item">
                         <span class="label">ID de Registro</span>
@@ -451,7 +451,7 @@
                 </div>
             </div>
 
-            <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; color: #fff; margin-bottom: 15px;">💳 Datos del pago recibido</h2>
+            <h2 id="tituloPago" style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; color: #fff; margin-bottom: 15px;">💳 Datos del pago recibido</h2>
 
             <div class="form-group">
                 <label for="formaPago">Forma de pago</label>
@@ -522,6 +522,7 @@
         const params = new URLSearchParams(window.location.search);
         const idRegistro = params.get('id') || '';
         const esPrueba = params.get('prueba') === '1';
+        let excedente = null;   // cobro del primer canon: { comision, admin, total }
 
         // El token de Google se envía al servidor en cada llamada: es el servidor
         // quien comprueba con Google que la sesión es del correo del sistema.
@@ -589,6 +590,26 @@
             document.getElementById('infoCanon').textContent = d.canon || '—';
             document.getElementById('infoPorcentaje').textContent = d.porcentaje || '—';
             document.getElementById('infoValor').textContent = d.valor || '—';
+
+            // Cobro del primer canon (oct-2026): lo que se carga es la transferencia del
+            // excedente al propietario; la comisión ya se descontó del primer canon.
+            if (res.excedente) {
+                excedente = res.excedente;
+                document.getElementById('tituloCobro').textContent = '💸 Excedente del primer canon al propietario';
+                document.getElementById('tituloPago').textContent = '💳 Datos de la transferencia al propietario';
+                document.getElementById('infoValor').previousElementSibling.textContent = 'Tu comisión (descontada del primer canon)';
+                const grid = document.getElementById('infoValor').closest('.info-grid');
+                const fila = (etq, val, destacar) => {
+                    const div = document.createElement('div'); div.className = 'info-item';
+                    div.innerHTML = '<span class="label"></span><span class="value"></span>';
+                    div.children[0].textContent = etq; div.children[1].textContent = val;
+                    if (destacar) { div.children[1].style.color = 'var(--primary)'; div.children[1].style.fontSize = '1.25rem'; }
+                    grid.appendChild(div);
+                };
+                fila('Administración del primer mes', excedente.admin);
+                fila('Total a consignarle al propietario', excedente.total, true);
+                document.getElementById('infoValor').style.fontSize = ''; document.getElementById('infoValor').style.color = '';
+            }
 
             document.getElementById('section-login').style.display = 'none';
 
@@ -719,7 +740,7 @@
                 Swal.close();
                 enviando = false;
                 if (res.success) {
-                    mostrarExito(esPrueba ? '🧪 Prueba completada' : '¡Recibo enviado al propietario!', res.message || '', res.urlRecibo);
+                    mostrarExito(esPrueba ? '🧪 Prueba completada' : (excedente ? '¡Excedente y recibo enviados al propietario!' : '¡Recibo enviado al propietario!'), res.message || '', res.urlRecibo);
                 } else if (res.yaRegistrado) {
                     mostrarExito('✅ El recibo ya había sido enviado', res.message || '', '');
                 } else {

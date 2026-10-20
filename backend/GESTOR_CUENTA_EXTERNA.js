@@ -171,6 +171,12 @@ function ceGenerarYEnviar(sheet, fila, opciones) {
     if (!opciones.soloAdmin) mensaje.bcc = CUENTA_COBRO.CORREO_ADMIN;
     MailApp.sendEmail(mensaje);
     Logger.log('📩 Cuenta de cobro a cuenta externa enviada a ' + mensaje.to + ' por $' + ccMiles(valor));
+
+    // Etapa 4 (GESTOR_EXCEDENTE.js): cuánto consignarle al propietario y el botón del comprobante
+    try {
+      var ex = ceCalcularExcedente(v);
+      if (ex) cePedirComprobanteExcedente(sheet, fila, headers, { idRegistro: idRegistro, direccion: direccion, nombre: nombreProp, ex: ex }, !!opciones.soloAdmin);
+    } catch (eEx) { Logger.log('⚠️ No se pudo pedir el comprobante del excedente: ' + eEx.message); }
     return { enviada: true, motivo: '', valor: valor, urlPdf: pdf.getUrl() };
 
   } catch (e) {

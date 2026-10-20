@@ -285,6 +285,17 @@
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        /* VALIDAR EL EXCEDENTE DEL PRIMER CANON (oct-2026) */
+        #excedente { display: none; flex-direction: column; gap: clamp(12px, 2vh, 20px); animation: fadeIn 0.8s ease-out forwards; }
+        .tabla-excedente { background: var(--bg-card); border: 1px solid var(--border-gold); border-radius: 12px; padding: 6px 18px; }
+        .tabla-excedente div { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: clamp(14px, 3.6vw, 16px); color: #ddd; }
+        .tabla-excedente div:last-child { border-bottom: 0; }
+        .tabla-excedente .total { color: var(--primary); font-weight: 700; font-size: clamp(16px, 4.2vw, 19px); }
+        .btn-secundario { background: none; border: 1px solid var(--border-gold); color: var(--text-main); padding: 13px 20px; border-radius: 30px;
+            font-family: 'Outfit', sans-serif; font-size: 14px; cursor: pointer; width: 100%; max-width: 400px; margin: 0 auto; }
+        #comentarioExcedente { width: 100%; min-height: 90px; padding: 12px; border-radius: 12px; border: 1px solid var(--border-gold);
+            background: #1a1a1a; color: #fff; font-family: 'Outfit', sans-serif; font-size: 15px; resize: vertical; }
+
         /* LEGAL TEXT */
         .legal-text {
             font-size: 12px;
@@ -308,6 +319,26 @@
             <div class="loader" style="display: block; width: 40px; height: 40px; border-width: 5px;"></div>
             <h2 style="color: var(--primary);">Validando Documento...</h2>
             <p style="color: var(--text-muted);">Por favor espere un momento.</p>
+        </div>
+
+        <!-- VALIDAR EL EXCEDENTE DEL PRIMER CANON (sala_firmas.html?modo=excedente&id=…&t=…) -->
+        <div id="excedente">
+            <div class="info-box"><p id="excSaludo"></p></div>
+            <div class="tabla-excedente">
+                <div><span>Canon del primer mes</span><span id="excCanon"></span></div>
+                <div><span id="excPctTxt">Comisión de corretaje</span><span id="excComision"></span></div>
+                <div><span>Administración</span><span id="excAdmin"></span></div>
+                <div class="total"><span>Total consignado</span><span id="excTotal"></span></div>
+            </div>
+            <div id="excAcciones" style="display:flex; flex-direction:column; gap:12px;">
+                <button class="btn" id="excConfirmar">Sí, lo recibí</button>
+                <button class="btn-secundario" id="excProblema">Tengo un problema</button>
+            </div>
+            <div id="excFormProblema" style="display:none; flex-direction:column; gap:12px;">
+                <textarea id="comentarioExcedente" maxlength="500" placeholder="Cuéntanos qué pasó (por ejemplo: no me ha llegado, el valor no coincide…)"></textarea>
+                <button class="btn" id="excEnviarProblema">Enviar</button>
+            </div>
+            <p class="legal-text" id="excMensaje"></p>
         </div>
 
         <!-- PASO 1: LECTURA DEL DOCUMENTO -->
@@ -378,7 +409,54 @@
         let signatureData = null;
 
         // --- INICIALIZAR VISOR ---
+        // Validar el excedente del primer canon (GESTOR_EXCEDENTE.js)
+        async function iniciarExcedente() {
+            const id = urlParams.get('id'), t = urlParams.get('t');
+            const llamarExc = (cuerpo) => fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify(Object.assign({ id: id, t: t }, cuerpo)) }).then(r => r.json());
+            const $e = (x) => document.getElementById(x);
+            const terminar = (titulo, texto) => {
+                $e('excedente').style.display = 'none';
+                document.getElementById('step3').style.display = 'flex';
+                document.getElementById('step3-title').innerText = titulo;
+                document.getElementById('step3-desc').innerText = texto;
+                document.getElementById('step3-actions').innerHTML = '';
+            };
+            try {
+                const r = await llamarExc({ accion: 'infoExcedentePropietario' });
+                document.getElementById('loading-step').style.display = 'none';
+                if (!r.ok) { terminar('Enlace no válido', r.mensaje || 'Pídele a Leonardo que te envíe el enlace de nuevo.'); return; }
+                $e('excSaludo').innerHTML = '<strong>Hola ' + r.nombre.charAt(0) + r.nombre.slice(1).toLowerCase() + '.</strong> Este es el excedente del primer mes de arriendo del inmueble en ' +
+                    r.direccion + '. Te llegó en tu correo el comprobante de la transferencia: confírmanos que lo recibiste.';
+                $e('excCanon').innerText = '$ ' + r.canon;
+                $e('excPctTxt').innerText = 'Comisión de corretaje (' + r.porcentaje + '%)';
+                $e('excComision').innerText = '− $ ' + r.comision;
+                $e('excAdmin').innerText = '$ ' + r.admin;
+                $e('excTotal').innerText = '$ ' + r.excedente;
+                $e('excedente').style.display = 'flex';
+                if (/^✅/.test(r.validacion)) { $e('excAcciones').style.display = 'none'; $e('excMensaje').innerText = 'Ya confirmaste que recibiste el excedente. ¡Gracias!'; return; }
+                const responder = async (respuesta, comentario, boton) => {
+                    boton.disabled = true; const txt = boton.innerText; boton.innerText = 'Enviando…';
+                    try {
+                        const x = await llamarExc({ accion: 'responderExcedentePropietario', respuesta: respuesta, comentario: comentario || '' });
+                        if (x.ok) terminar(respuesta === 'CONFIRMA' ? '¡Gracias!' : 'Recibimos tu mensaje', x.mensaje);
+                        else { boton.disabled = false; boton.innerText = txt; $e('excMensaje').innerText = x.mensaje || 'No pudimos guardar tu respuesta.'; }
+                    } catch (e) { boton.disabled = false; boton.innerText = txt; $e('excMensaje').innerText = 'Error de red. Intenta de nuevo.'; }
+                };
+                $e('excConfirmar').onclick = () => responder('CONFIRMA', '', $e('excConfirmar'));
+                $e('excProblema').onclick = () => { $e('excAcciones').style.display = 'none'; $e('excFormProblema').style.display = 'flex'; $e('comentarioExcedente').focus(); };
+                $e('excEnviarProblema').onclick = () => {
+                    const c = $e('comentarioExcedente').value.trim();
+                    if (!c) { $e('excMensaje').innerText = 'Cuéntanos qué pasó.'; return; }
+                    responder('PROBLEMA', c, $e('excEnviarProblema'));
+                };
+            } catch (e) {
+                document.getElementById('loading-step').style.display = 'none';
+                terminar('Sin conexión', 'Revisa tu internet e intenta de nuevo.');
+            }
+        }
+
         window.onload = async function() {
+            if (urlParams.get('modo') === 'excedente') { iniciarExcedente(); return; }
             if (!docId) {
                 document.getElementById('loading-step').style.display = 'none';
                 document.getElementById('step1').style.display = 'flex';
