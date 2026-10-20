@@ -223,7 +223,10 @@ export default function VIPPropertiesPanel() {
   // En el celular abre la ventana de compartir del dispositivo (WhatsApp, Instagram…);
   // en el PC, o si el usuario la cierra sin elegir, copia el enlace.
   const compartirVisita = async (p: VIPProperty) => {
-    const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/visita.html?i=${encodeURIComponent(p.idRegistro)}`;
+    // Enlace corto /frontend/v/<ID>/: trae la foto de portada y el precio para la vista
+    // previa de WhatsApp (lo genera cada hora .github/workflows/vistas-previas.yml) y
+    // lleva a visita.html?i=<ID>. Si aún no existe, el 404.html del sitio lleva igual.
+    const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/v/${encodeURIComponent(p.idRegistro)}/`;
     const texto = `Agenda tu visita a este inmueble en ${p.barrio || p.ciudad} con Gold Life Real Estate:`;
     if (navigator.share) {
       try { await navigator.share({ title: 'Agenda tu visita · Gold Life', text: texto, url }); return; }

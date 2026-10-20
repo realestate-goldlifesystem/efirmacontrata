@@ -370,3 +370,44 @@ function agendarVisitaInteresado(datos) {
 function urlVisitaInmueble(idInmueble) {
   return URL_PAGINA_VISITA + '?i=' + encodeURIComponent(idInmueble);
 }
+
+/**
+ * Datos para las vistas previas de los enlaces (WhatsApp, Facebook…), oct-2026.
+ * La tarea automática de GitHub (.github/workflows/vistas-previas.yml) los pide
+ * cada hora y genera frontend/v/<ID>/ con la foto de portada y las etiquetas og:.
+ * Solo lo que ya es público en la página de visita: nada del propietario.
+ */
+function listarVistasPrevias() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+  const datos = sheet.getDataRange().getValues();
+  const h = datos[0].map(x => String(x).trim().toUpperCase());
+  const iId = h.indexOf('ID DE REGISTRO'), iEst = h.indexOf('ESTADO DEL INMUEBLE');
+  const pesos = n => '$' + Math.round(Number(n) || 0).toLocaleString('es-CO').replace(/,/g, '.');
+  const lista = [];
+  for (let k = 1; k < datos.length; k++) {
+    const id = String(datos[k][iId] || '').trim();
+    if (!id || !negociosDeEstado(datos[k][iEst]).length) continue;
+    try {
+      const inm = _inmueblePorId(id);
+      if (!inm) continue;
+      const negocios = negociosDeEstado(inm.estado);
+      const fotos = _fotosInmueble(inm.carpeta);
+      const venta = negocios.indexOf('ARRIENDO') === -1;
+      const precio = venta ? (Number(inm.precioVenta) || Number(inm.precioGeneral)) : Number(inm.precioGeneral);
+      // "CIUDAD LA SALLE" -> "Ciudad La Salle"; "BOGOTA" -> "Bogotá"
+      const nombre = t => String(t || '').toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()).replace(/^Bogota$/, 'Bogotá');
+      const lugar = [nombre(inm.barrio), nombre(inm.ciudad)].filter(Boolean).join(', ');
+      const plural = (n, uno, varios) => n ? n + ' ' + (Number(n) === 1 ? uno : varios) : '';
+      lista.push({
+        id: id,
+        titulo: inm.tipoInmueble + ' en ' + (negocios.length > 1 ? 'arriendo o venta' : venta ? 'venta' : 'arriendo') + (lugar ? ' · ' + lugar : ''),
+        descripcion: [
+          precio ? pesos(precio) + (venta ? '' : ' al mes, administración incluida') : '',
+          [plural(inm.habitaciones, 'habitación', 'habitaciones'), plural(inm.banos, 'baño', 'baños'), inm.area ? inm.area + ' m²' : ''].filter(Boolean).join(' · ')
+        ].filter(Boolean).join(' · ') + '. Agenda tu visita con Gold Life Real Estate.',
+        foto: fotos.length ? fotos[0].grande.replace('sz=w1600', 'sz=w1200') : ''
+      });
+    } catch (e) { Logger.log('Vista previa de ' + id + ': ' + e.message); }
+  }
+  return { ok: true, inmuebles: lista };
+}

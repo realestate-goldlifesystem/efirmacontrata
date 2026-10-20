@@ -1,0 +1,45 @@
+name: Vistas previas de los enlaces de visita
+
+# Genera frontend/v/<ID>/ (foto de portada + etiquetas og:) para cada inmueble
+# publicado, así el enlace que se comparte por WhatsApp muestra la foto y el precio.
+# Ver _herramientas_locales/generar_vistas_previas.js.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Cada hora, de 6 a. m. a 10 p. m. hora de Colombia (11 a 03 UTC)
+    - cron: '15 0-3,11-23 * * *'
+
+concurrency:
+  group: vistas-previas
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  generar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generar páginas
+        run: node _herramientas_locales/generar_vistas_previas.js
+
+      - name: Guardar cambios
+        run: |
+          git add frontend/v
+          if git diff --cached --quiet; then
+            echo "Sin cambios."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Vistas previas de los enlaces de visita (automático)"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push

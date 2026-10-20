@@ -642,6 +642,10 @@ function doPost(e) {
         // Página pública de agendar visita (frontend/visita.html): solo lo publicable
         result = infoInmuebleVisita(datos);
         break;
+      case 'listarVistasPrevias':
+        // Lo pide la tarea de GitHub que genera frontend/v/<ID>/ (AGENDA_INTERESADOS.js)
+        result = listarVistasPrevias();
+        break;
       case 'agendarVisitaInteresado':
         result = agendarVisitaInteresado(datos);
         break;
