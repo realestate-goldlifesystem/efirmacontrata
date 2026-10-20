@@ -54,6 +54,8 @@ export default function RegisterPropertyForm({ selectedServiceType, initialCalcu
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Texto del botón mientras se envía (p. ej. "Hay otro registro en proceso, reintentando…")
+  const [estadoEnvio, setEstadoEnvio] = useState('');
   // Contexto del borrador (16-oct-2026). Antes el borrador solo guardaba los datos y
   // el paso: si la página se recargaba en medio de una RENOVACIÓN o un CAMBIO DE
   // MODELO, volvía en modo registro nuevo con los datos del inmueble, y al enviarlo
@@ -1012,15 +1014,27 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
         });
       }
 
-      const response = await fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
-        }
-      });
-      
-      const data = await response.json();
+      // Si el sistema está procesando otro registro (tiene el turno ocupado), no se
+      // rinde: reintenta cada 20 s hasta 5 min (19-oct-2026). Es seguro reenviar: el
+      // idEnvio hace que el servidor reconozca el envío repetido y no lo duplique.
+      const ocupado = (m: string) => /registrando otro inmueble/i.test(m || '');
+      const inicioEnvio = Date.now();
+      let data: any;
+      for (let intento = 1; ; intento++) {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          }
+        });
+        data = await response.json();
+        if (data.success || !ocupado(data.message) || Date.now() - inicioEnvio > 5 * 60 * 1000) break;
+        setEstadoEnvio(`Hay otro registro en proceso. Reintentando (${intento})…`);
+        await new Promise(r => setTimeout(r, 20000));
+        setEstadoEnvio('Enviando de nuevo…');
+      }
+      setEstadoEnvio('');
       if (data.success) {
         setSubmitted(true);
         // Limpiar el localStorage al terminar con éxito
@@ -1031,7 +1045,7 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
           localStorage.removeItem('registerPropertyContexto');
         } catch (e) {}
       } else {
-        alert("Error al registrar: " + data.message);
+        alert("Error al registrar: " + data.message + (ocupado(data.message) ? "\n\nLo intentamos durante 5 minutos. Tus datos siguen aquí: espera un momento y vuelve a enviar." : ''));
       }
     } catch (err) {
       console.error(err);
@@ -3635,7 +3649,7 @@ Una vez lo firmes, daremos inicio inmediato a la promoción y comercialización 
                             disabled={loading || !formData.hasNoEmbargo}
                             className="inline-flex items-center space-x-1.5 bg-brand-gold hover:bg-brand-gold disabled:bg-stone-250 disabled:text-stone-500 text-stone-950 font-bold py-3.5 px-6 rounded-xl text-xs transition-all cursor-pointer shadow-md active:scale-95 animate-fade-in"
                           >
-                            {loading ? <span>Procesando...</span> : (
+                            {loading ? <span>{estadoEnvio || 'Procesando...'}</span> : (
                               <>
                                 <Send className="w-4 h-4 text-stone-950" />
                                 <span>Confirmar Transacción</span>
