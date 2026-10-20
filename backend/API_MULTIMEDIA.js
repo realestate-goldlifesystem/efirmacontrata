@@ -1003,8 +1003,10 @@ function actualizarTextoVideoInmueble(sheet, fila, carpetaReg) {
         if (!texto) return { actualizado: false, motivo: 'descripción vacía' };
 
         const lineas = texto.split('\n').map(l => l.trim()).filter(Boolean);
+        // Si la segunda línea no cabe entera, el título queda solo con la primera
+        // (cortarla a la mitad dejaba un "| ..." colgando)
         let titulo = lineas.slice(0, 2).join(' | ');
-        if (titulo.length > 95) titulo = titulo.substring(0, 95) + '...';
+        if (titulo.length > 100) titulo = lineas[0].length > 100 ? lineas[0].substring(0, 97) + '...' : lineas[0];
         // YouTube no acepta "<" ni ">" en el título ni en la descripción
         const limpiar = t => t.replace(/[<>]/g, '');
 
