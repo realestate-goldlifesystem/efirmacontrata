@@ -726,6 +726,13 @@ function doPost(e) {
       case 'procesarValidacionPropietario':
         result = handleProcesarValidacionPropietario(datos);
         break;
+      // Excedente del primer canon: el propietario lo valida en la sala (GESTOR_EXCEDENTE.js)
+      case 'infoExcedentePropietario':
+        result = infoExcedentePropietario(datos);
+        break;
+      case 'responderExcedentePropietario':
+        result = responderExcedentePropietario(datos);
+        break;
       case 'consultarPropietario':
         result = handleConsultarPropietario(datos);
         break;
@@ -845,7 +852,16 @@ function handleRegistrarInmueble(datos) {
   // registrando al mismo tiempo leen el MISMO lastRow: uno encola la fila del
   // otro y su propio inmueble queda huérfano (sin CDR, carpetas ni contrato),
   // aunque el formulario le haya respondido "registro exitoso".
-  var lock = LockService.getScriptLock();
+  //
+  // Es el candado de USUARIO, no el del script. El web app y los triggers corren
+  // como el dueño, así que es uno solo para todos los envíos, y nadie más lo usa.
+  // El del script lo sostienen la cola y las Partes 2 y 3 durante minutos
+  // (copia de carpetas y actas): con él, un envío que llegaba en ese rato esperaba
+  // 30 s y se perdía (pasó el 19-10-2026). Este candado solo cubre el envío, que
+  // dura segundos. Contra la cola, que escribe y borra filas (deleteRow de una
+  // renovación) sin este candado, protege otra cosa: la fila nueva se ubica por su
+  // ID DE REGISTRO, nunca por getLastRow().
+  var lock = LockService.getUserLock();
   try {
     lock.waitLock(30000);
   } catch (lockErr) {
@@ -939,8 +955,10 @@ function handleRegistrarInmueble(datos) {
       }
     }
 
-    // Obtener la fila recién insertada
-    const lastRow = sheet.getLastRow();
+    // Ubicar la fila recién insertada por su ID: la cola puede haber borrado o
+    // agregado filas entre el appendRow y esta lectura. getLastRow() solo si no hay ID.
+    let lastRow = idRegistro ? buscarFilaPorIdRegistro(sheet, idRegistro) : -1;
+    if (lastRow < 2) lastRow = sheet.getLastRow();
 
     // Clave de cola: el ID si lo hay, la fila solo como último recurso.
     // Con ID, mover o borrar filas deja de desalinear la cola.
@@ -972,23 +990,15 @@ function handleRegistrarInmueble(datos) {
       );
     }
 
-    // Encolar de forma asíncrona el inmueble para procesamiento pesado en segundo plano.
-    //
-    // El VALOR es la marca de tiempo de llegada, y es lo que da el orden FIFO. Antes el
-    // orden salía del número de fila que venía en la clave; al pasar la clave a ID (que
-    // es aleatorio) hizo falta guardar el orden aparte. Sin esto, los registros se
-    // procesan en el orden arbitrario en que PropertiesService devuelve las claves, y
-    // copiarFormatoFila() —que copia el formato de la fila de arriba— se rompe: una fila
-    // procesada antes que la anterior copia un formato que todavía no existe.
-    const propKey = 'PENDING_REGISTRATION_' + claveCola;
-    PropertiesService.getScriptProperties().setProperty(propKey, String(Date.now()));
-
     // Marcar la fila como EN COLA desde ya.
     //
     // Hasta que Fase 1 la tome (y ponga REGISTRANDO) pueden pasar varios minutos si
     // hay otros registros delante. Sin esto la fila se ve con el estado VACÍO, que es
     // indistinguible de un registro perdido: no se puede saber si está esperando turno
     // o si el sistema se lo tragó.
+    //
+    // Va ANTES de encolar: la cola ya no espera a este candado, y si arrancara entre
+    // el encolado y esta marca, el EN COLA taparía su REGISTRANDO.
     try {
       const colEstado = headers.indexOf('ESTADO DEL INMUEBLE');
       const colDetalle = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
@@ -1004,6 +1014,17 @@ function handleRegistrarInmueble(datos) {
       // Es informativo: si falla, el registro sigue su curso igual.
       Logger.log('⚠️ No se pudo marcar la fila ' + lastRow + ' como EN COLA: ' + e.message);
     }
+
+    // Encolar de forma asíncrona el inmueble para procesamiento pesado en segundo plano.
+    //
+    // El VALOR es la marca de tiempo de llegada, y es lo que da el orden FIFO. Antes el
+    // orden salía del número de fila que venía en la clave; al pasar la clave a ID (que
+    // es aleatorio) hizo falta guardar el orden aparte. Sin esto, los registros se
+    // procesan en el orden arbitrario en que PropertiesService devuelve las claves, y
+    // copiarFormatoFila() —que copia el formato de la fila de arriba— se rompe: una fila
+    // procesada antes que la anterior copia un formato que todavía no existe.
+    const propKey = 'PENDING_REGISTRATION_' + claveCola;
+    PropertiesService.getScriptProperties().setProperty(propKey, String(Date.now()));
 
     // Programar el worker. asegurarTriggerWorker() reutiliza el trigger que ya esté
     // encolado en vez de borrarlo y recrearlo: con varios registros simultáneos, borrar
