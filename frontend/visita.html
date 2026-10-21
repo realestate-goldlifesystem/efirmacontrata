@@ -174,6 +174,11 @@
       #p3 .rotulo, #p4 .rotulo, #p2 .rotulo { display: none; } .instruccion3 small { font-size: 11.5px !important; }
       .instruccion3 .casillas span { width: 24px !important; height: 24px !important; } .pedidos p { margin-bottom: 8px !important; }
     }
+    .opcionProp { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px; margin-top: 10px;
+      border-radius: 14px; border: 1px solid #3f3a36; background: var(--panel2); text-align: left; font-size: 14.5px; transition: all .15s; }
+    .opcionProp:hover { border-color: var(--oro); }
+    .opcionProp b { font-weight: 600; }
+    .opcionProp span { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #0c0a09; background: var(--oro); padding: 7px 12px; border-radius: 999px; }
     .ninguno { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 1.5px solid var(--oro); background: rgba(212,175,55,.08);
       color: var(--oro); font-size: 14.5px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
     .tira { display: flex; align-items: center; gap: 4px; margin: 0 0 6px; }
@@ -349,6 +354,15 @@
     <div class="ventana" role="dialog" aria-modal="true" aria-label="Agendar visita">
       <button class="cerrar" id="cerrarModal" aria-label="Cerrar">✕</button>
       <div class="pasos" id="barra"><div></div><div></div><div></div><div></div></div>
+
+      <!-- Negociación: lo que respondió el propietario, como lo ve él (botones "Me sirve") -->
+      <div id="p0" class="oculto">
+        <div class="rotulo">Respuesta del propietario</div>
+        <h2 id="tituloNegociar"></h2>
+        <p class="aviso" style="font-size:13.5px;margin:0 0 4px;">Puede en estos horarios. Toca el que te sirva:</p>
+        <div id="opcionesNegociar"></div>
+        <button class="ninguno" data-proponer="1">🗓️ Ninguno me sirve · proponer otros horarios</button>
+      </div>
 
       <div id="p1">
         <div class="rotulo">Paso 1 de 4</div>
@@ -534,8 +548,23 @@
     $('cerrarModal').onclick = cerrarModal; $('cerrarOk').onclick = cerrarModal;
     $('modal').onclick = (e) => { if (e.target === $('modal')) cerrarModal(); };
 
+    // Las opciones del propietario, una por botón (como él vio las del interesado)
+    function pintarNegociacion(s) {
+      const nombre = (s.nombre || '').split(' ')[0];
+      $('tituloNegociar').textContent = (nombre ? 'Hola ' + nombre + ', ' : '') + 'el propietario respondió';
+      const lista = (s.cruce || []).slice().sort((a, b) => a - b);
+      $('opcionesNegociar').innerHTML = lista.map(t => `<button class="opcionProp" data-ts="${t}"><b>${esc(textoSlot(t))}</b><span>Me sirve</span></button>`).join('');
+      $('opcionesNegociar').querySelectorAll('.opcionProp').forEach(b => b.onclick = () => {
+        const ts = Number(b.dataset.ts);
+        hora = { timestamp: ts, horaAmPm: horaDe(ts) }; pedidos = [];
+        $('citaElegida').innerHTML = '📅 <b>' + esc(textoSlot(ts)) + '</b>';
+        irA(4); prepararPaso4();
+      });
+    }
+
     function irA(n) {
-      [1, 2, 3, 4].forEach(k => $('p' + k).classList.toggle('oculto', k !== n));
+      if (negociando() && (n === 2 || n === 3)) n = 0;   // en la negociación, "volver" lleva a las opciones del propietario
+      [0, 1, 2, 3, 4].forEach(k => $('p' + k).classList.toggle('oculto', k !== n));
       [...$('barra').children].forEach((b, k) => b.classList.toggle('hecho', k < n));
       document.querySelector('.ventana').scrollTop = 0;
     }
@@ -938,7 +967,8 @@
           $('tituloFecha').textContent = 'Hola ' + (s.nombre || '').split(' ')[0] + ', estos son los días en que puede el propietario';
           $('proponerP2').classList.remove('oculto');
           if (!diasCruce.size) { proponerOtros = true; $('proponerP2').classList.add('oculto'); $('tituloFecha').textContent = 'Elige 3 horarios que te sirvan'; pintarMes(); }
-          abrirModal(); irA(2);
+          if (negociando()) pintarNegociacion(s);
+          abrirModal(); irA(negociando() ? 0 : 2);
         });
       }
     }).catch(() => sinInmueble('Revisa tu conexión a internet e intenta de nuevo.'));
