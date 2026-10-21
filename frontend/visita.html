@@ -176,6 +176,18 @@
     }
     .ninguno { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 1.5px solid var(--oro); background: rgba(212,175,55,.08);
       color: var(--oro); font-size: 14.5px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+    .tira { display: flex; align-items: center; gap: 4px; margin: 0 0 6px; }
+    .tiraFlecha { width: 28px; height: 52px; flex-shrink: 0; border: 0; border-radius: 10px; background: transparent; color: var(--suave); font-size: 20px; }
+    .tiraFlecha:disabled { opacity: .2; cursor: default; }
+    .tiraDias { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+    .tiraDia { position: relative; padding: 7px 0 6px; border-radius: 12px; border: 1px solid #3f3a36; background: var(--panel2); display: flex; flex-direction: column; align-items: center; gap: 1px; transition: all .2s; }
+    .tiraDia small { font-size: 10.5px; color: var(--suave); text-transform: capitalize; } .tiraDia b { font-size: 15px; }
+    .tiraDia.activo { background: var(--texto); color: var(--fondo); border-color: var(--texto); box-shadow: 0 0 0 2px var(--oro); } .tiraDia.activo small { color: #57534e; }
+    .tiraDia:disabled { opacity: .3; cursor: default; }
+    .tiraDia.conCruce::after { content: ''; position: absolute; bottom: 3px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--oro); }
+    .tiraDia .cuenta { position: absolute; top: -7px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--oro); color: #0c0a09; font-size: 10.5px; font-weight: 800; display: grid; place-items: center; }
+    .tiraPie { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; font-weight: 600; margin: 4px 2px 6px; }
+    .tiraPie a { color: var(--oro); font-weight: 500; font-size: 12.5px; cursor: pointer; }
     .elegidos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
     .elegidos:empty { display: none; }
     .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 6px 6px 11px; border-radius: 999px; font-size: 12.5px;
@@ -359,7 +371,9 @@
       <div id="p3" class="oculto">
         <div class="rotulo">Paso 3 de 4</div>
         <h2 id="tituloHora">Elige la hora</h2>
-        <div class="resumen"><span id="diaElegido"></span><a data-volver="2">Cambiar</a></div>
+        <span id="diaElegido" class="oculto"></span>
+        <div class="tira"><button class="tiraFlecha" id="tiraAnt" aria-label="Semana anterior">‹</button><div class="tiraDias" id="tiraDias"></div><button class="tiraFlecha" id="tiraSig" aria-label="Semana siguiente">›</button></div>
+        <div class="tiraPie"><span id="tiraTitulo"></span><a data-volver="2">📅 Ver calendario</a></div>
         <div id="horas"></div>
         <div id="pedidosBarra" class="pedidos oculto"><p id="pedidosTexto"></p><button class="principal" id="irDatos">Continuar</button></div>
         <button class="secundario" data-volver="2">‹ Volver</button>
@@ -553,6 +567,34 @@
     $('ir2').onclick = () => irA(2);
 
     // Paso 2: fecha
+    const diaHabil = (f, hoy) => f >= hoy && f.getDay() !== 0 && f < new Date(hoy.getFullYear(), hoy.getMonth() + 3, 1) && (!negociando() || diasCruce.has(iso(f)));
+
+    // Tira de días arriba de las horas (como la semana del propietario): pasar de un día a
+    // otro sin volver al calendario. Muestra la semana (lunes a sábado) del día abierto.
+    let tiraLunes = null;
+    function pintarTira() {
+      if (!dia) return;
+      const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+      if (!tiraLunes) { tiraLunes = new Date(dia); tiraLunes.setDate(tiraLunes.getDate() - (tiraLunes.getDay() + 6) % 7); }
+      let html = '';
+      for (let i = 0; i < 6; i++) {
+        const f = new Date(tiraLunes); f.setDate(f.getDate() + i);
+        const n = pedidos.filter(t => iso(new Date(t)) === iso(f)).length;
+        html += `<button class="tiraDia${iso(f) === iso(dia) ? ' activo' : ''}${diasCruce.has(iso(f)) ? ' conCruce' : ''}" data-f="${iso(f)}" ${diaHabil(f, hoy) ? '' : 'disabled'}>` +
+          `<small>${DIAS[f.getDay()].slice(0, 3)}</small><b>${f.getDate()}</b>${n ? `<span class="cuenta">${n}</span>` : ''}</button>`;
+      }
+      $('tiraDias').innerHTML = html;
+      const lunesHoy = new Date(hoy); lunesHoy.setDate(lunesHoy.getDate() - (lunesHoy.getDay() + 6) % 7);
+      $('tiraAnt').disabled = tiraLunes <= lunesHoy;
+      const sigLunes = new Date(tiraLunes); sigLunes.setDate(sigLunes.getDate() + 7);
+      $('tiraSig').disabled = !diaHabil(sigLunes, hoy) && ![1, 2, 3, 4, 5].some(k => { const f = new Date(sigLunes); f.setDate(f.getDate() + k); return diaHabil(f, hoy); });
+      const t = DIAS[dia.getDay()] + ' ' + dia.getDate() + ' de ' + MESES[dia.getMonth()];
+      $('tiraTitulo').textContent = t.charAt(0).toUpperCase() + t.slice(1);
+      $('tiraDias').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.f.split('-').map(Number); elegirDia(new Date(y, m - 1, d)); });
+    }
+    $('tiraAnt').onclick = () => { tiraLunes.setDate(tiraLunes.getDate() - 7); pintarTira(); };
+    $('tiraSig').onclick = () => { tiraLunes.setDate(tiraLunes.getDate() + 7); pintarTira(); };
+
     function pintarMes() {
       const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
       const minimo = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
@@ -564,19 +606,22 @@
       let html = '<div></div>'.repeat(desfase);
       for (let d = 1; d <= total; d++) {
         const f = new Date(mesVisible.getFullYear(), mesVisible.getMonth(), d);
-        const ok = f >= hoy && f.getDay() !== 0 && (!negociando() || diasCruce.has(iso(f)));
+        const ok = diaHabil(f, hoy);
         html += `<button class="dia${dia && iso(f) === iso(dia) ? ' elegido' : ''}${ok && diasCruce.has(iso(f)) ? ' conCruce' : ''}${pedidos.some(t => iso(new Date(t)) === iso(f)) ? ' conPedido' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
       }
       $('dias').innerHTML = html;
       $('dias').querySelectorAll('button[data-f]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.f.split('-').map(Number); elegirDia(new Date(y, m - 1, d)); });
       pintarElegidosP2();
+      if (dia) pintarTira();
     }
     $('mesAnt').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() - 1, 1); pintarMes(); };
     $('mesSig').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 1); pintarMes(); };
 
     // Paso 3: hora, en mañana y tarde
     function elegirDia(f) {
-      dia = f; hora = null; pintarMes();
+      dia = f; hora = null;
+      if (tiraLunes) { const fin = new Date(tiraLunes); fin.setDate(fin.getDate() + 6); if (f < tiraLunes || f >= fin) tiraLunes = null; }
+      pintarMes();
       const t = DIAS[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()];
       $('diaElegido').innerHTML = '📅 <b>' + t.charAt(0).toUpperCase() + t.slice(1) + '</b>';
       $('horas').innerHTML = '<div class="buscando"><div class="reloj"></div><p class="msg" id="msgBuscando">Buscando disponibilidad…</p>' +
@@ -682,6 +727,7 @@
     }, true);
     function pintarPedidos() {
       pintarElegidosP2();
+      if (dia) pintarTira();
       const ver = coordinado() && !negociando() && !!$('instruccion3');
       $('pedidosBarra').classList.toggle('oculto', !ver && !(coordinado() && pedidos.length));
       if (!ver && !(coordinado() && pedidos.length)) return;
