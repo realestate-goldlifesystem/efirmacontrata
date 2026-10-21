@@ -63,6 +63,16 @@
     .hora.pedido-int { border-color: var(--oro); }
     .hora.pedido-int::after { content: 'pedido'; position: absolute; top: -8px; right: 6px; font-size: 9px; font-weight: 700; letter-spacing: .5px; background: var(--oro); color: #0c0a09; padding: 1px 5px; border-radius: 6px; }
     .sinHoras { font-size: 13px; color: #78716c; }
+    .diasTabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 12px; border-radius: 14px; transition: box-shadow .4s; }
+    .diasTabs.brillar { box-shadow: 0 0 0 2px rgba(212,175,55,.6), 0 0 22px rgba(212,175,55,.25); }
+    .diaTab { position: relative; padding: 8px 0 7px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; display: flex; flex-direction: column; align-items: center; gap: 1px; transition: all .2s; }
+    .diaTab small { font-size: 11px; color: var(--suave); text-transform: capitalize; } .diaTab b { font-size: 16px; }
+    .diaTab.activo { background: #f5f5f4; color: #0c0a09; border-color: #f5f5f4; box-shadow: 0 0 0 2px var(--oro); } .diaTab.activo small { color: #57534e; }
+    .diaTab:disabled { opacity: .3; cursor: default; }
+    .diaTab .cuenta { position: absolute; top: -7px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; background: var(--oro); color: #0c0a09; font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+    .diaTitulo { margin: 16px 0 4px; font-size: 15px; } .diaTitulo::first-letter { text-transform: uppercase; }
+    .otroDia { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 1.5px solid var(--oro); background: rgba(212,175,55,.08); color: var(--oro); font-size: 15px; font-weight: 700; }
+    .chipDia { display: inline-block; margin: 6px 6px 0 0; padding: 5px 10px; border-radius: 999px; font-size: 12.5px; background: rgba(212,175,55,.14); border: 1px solid rgba(212,175,55,.5); color: #f5f5f4; }
     .opciones { display: flex; gap: 8px; margin-top: 10px; }
     .opcion { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 14px; }
     .opcion.elegido { background: #f5f5f4; color: #0c0a09; box-shadow: 0 0 0 2px var(--oro); font-weight: 600; }
@@ -191,26 +201,59 @@
         if (n !== pidiendo) return;
         if (!r.success) { $('dias').innerHTML = `<p class="sinHoras">${esc(r.error || 'No pudimos cargar los horarios.')}</p>`; return; }
         marcados = new Set();
-        $('dias').innerHTML = r.dias.map(d => {
-          d.slots.forEach(s => { if (s.marcado) marcados.add(s.timestamp); });
-          return `<div class="dia"><h3>${esc(d.titulo)}</h3>` + (d.slots.length
-            ? '<div class="horas">' + d.slots.map(s => `<button class="hora${s.marcado ? ' marcado' : ''}${s.pedido ? ' pedido-int' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}</button>`).join('') + '</div>'
-            : `<p class="sinHoras">${esc(d.motivo || 'Sin horarios libres')}</p>`) + '</div>';
-        }).join('');
-        $('dias').querySelectorAll('.hora').forEach(b => b.onclick = () => {
-          const ts = Number(b.dataset.ts);
-          if (marcados.has(ts)) marcados.delete(ts); else marcados.add(ts);
-          b.classList.toggle('marcado', marcados.has(ts)); cambios = true; pintarResumen();
-        });
+        r.dias.forEach(d => d.slots.forEach(s => { if (s.marcado) marcados.add(s.timestamp); }));
+        semanaDias = r.dias;
+        // Arranca en el primer día que tenga horarios (o el que ya tenía abierto)
+        if (!(diaSel >= 0 && diaSel < semanaDias.length && semanaDias[diaSel].slots.length)) diaSel = Math.max(0, semanaDias.findIndex(d => d.slots.length));
+        pintarDias();
         cambios = false; pintarResumen();
       }).catch(() => { $('dias').innerHTML = '<p class="sinHoras">Error de red. Intenta de nuevo.</p>'; });
     }
+    // Un día a la vez: arriba los días de la semana (con cuántos marcó en cada uno),
+    // abajo solo las horas del día abierto, y un botón para pasar a otro día.
+    let semanaDias = [], diaSel = -1;
+    const corto = (t) => { const m = String(t).match(/^(\S+)\s+(\d+)/); return m ? { d: m[1].slice(0, 3), n: m[2] } : { d: String(t).slice(0, 3), n: '' }; };
+    function pintarDias() {
+      const d = semanaDias[diaSel];
+      const pestanas = '<div class="diasTabs">' + semanaDias.map((x, i) => {
+        const c = corto(x.titulo), cuantos = x.slots.filter(s => marcados.has(s.timestamp)).length;
+        return `<button class="diaTab${i === diaSel ? ' activo' : ''}" data-i="${i}" ${x.slots.length ? '' : 'disabled'}>` +
+          `<small>${esc(c.d)}</small><b>${esc(c.n)}</b>${cuantos ? `<span class="cuenta">${cuantos}</span>` : ''}</button>`;
+      }).join('') + '</div>';
+      const otro = semanaDias.findIndex((x, i) => i > diaSel && x.slots.length) !== -1 || semanaDias.findIndex((x, i) => i < diaSel && x.slots.length) !== -1;
+      const horas = !d ? '<p class="sinHoras">Sin horarios libres esta semana.</p>' : `<h3 class="diaTitulo">${esc(d.titulo)}</h3>` + (d.slots.length
+        ? '<p class="nota" style="margin:0 0 10px;">Puedes marcar varios horarios en este día.</p><div class="horas">' +
+          d.slots.map(s => `<button class="hora${marcados.has(s.timestamp) ? ' marcado' : ''}${s.pedido ? ' pedido-int' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}</button>`).join('') + '</div>'
+        : `<p class="sinHoras">${esc(d.motivo || 'Sin horarios libres')}</p>`) +
+        (otro ? '<button class="otroDia" id="otroDia">＋ Elegir otro día</button>' : '');
+      $('dias').innerHTML = pestanas + `<div class="diaHoras entra">${horas}</div>`;
+      $('dias').querySelectorAll('.diaTab').forEach(b => b.onclick = () => { diaSel = Number(b.dataset.i); pintarDias(); });
+      $('dias').querySelectorAll('.hora').forEach(b => b.onclick = () => {
+        const ts = Number(b.dataset.ts);
+        if (marcados.has(ts)) marcados.delete(ts); else marcados.add(ts);
+        b.classList.toggle('marcado', marcados.has(ts)); cambios = true; pintarResumen();
+        // la cuenta del día en su pestaña
+        const tab = $('dias').querySelector('.diaTab.activo'), n = d.slots.filter(s => marcados.has(s.timestamp)).length;
+        let c = tab.querySelector('.cuenta'); if (!n) { if (c) c.remove(); } else { if (!c) { c = document.createElement('span'); c.className = 'cuenta'; tab.appendChild(c); } c.textContent = n; }
+      });
+      if ($('otroDia')) $('otroDia').onclick = () => {
+        // Abre las pestañas con un brillo para que elija; si no toca ninguna, pasa al siguiente día con horas
+        const sig = semanaDias.findIndex((x, i) => i > diaSel && x.slots.length);
+        diaSel = sig !== -1 ? sig : semanaDias.findIndex(x => x.slots.length);
+        pintarDias();
+        const tabs = $('dias').querySelector('.diasTabs'); tabs.classList.add('brillar'); setTimeout(() => tabs.classList.remove('brillar'), 900);
+      };
+    }
     function pintarResumen() {
-      $('resumen').textContent = marcados.size ? `Marcaste ${marcados.size} horario${marcados.size > 1 ? 's' : ''} esta semana.` : 'Aún no marcas horarios esta semana.';
+      if (!marcados.size) { $('resumen').textContent = 'Aún no marcas horarios esta semana.'; return; }
+      // Lo marcado, agrupado por día, para que vea lo que ya eligió sin volver a cada día
+      const porDia = semanaDias.map(x => ({ c: corto(x.titulo), h: x.slots.filter(s => marcados.has(s.timestamp)).map(s => s.horaAmPm) })).filter(x => x.h.length);
+      $('resumen').innerHTML = `<b>Marcaste ${marcados.size} horario${marcados.size > 1 ? 's' : ''}:</b><br>` +
+        porDia.map(x => `<span class="chipDia">${esc(x.c.d.charAt(0).toUpperCase() + x.c.d.slice(1))} ${esc(x.c.n)} · ${x.h.map(esc).join(', ')}</span>`).join('');
     }
     function cambiarSemana(delta) {
       if (cambios && !confirm('No guardaste los horarios de esta semana. ¿Cambiar de semana igual?')) return;
-      lunes = new Date(lunes); lunes.setDate(lunes.getDate() + 7 * delta); pintarSemana();
+      lunes = new Date(lunes); lunes.setDate(lunes.getDate() + 7 * delta); diaSel = -1; pintarSemana();
     }
     $('semAnt').onclick = () => cambiarSemana(-1);
     $('semSig').onclick = () => cambiarSemana(1);
