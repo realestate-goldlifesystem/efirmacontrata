@@ -182,6 +182,24 @@
     .dia:disabled { color: #44403c; text-decoration: line-through; cursor: default; }
     .grupo { margin: 16px 0 8px; font-size: 13px; color: var(--suave); font-weight: 600; }
     .horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .hora { padding: 12px 0; font-size: 14px; }
+    /* Buscando horarios: reloj dorado que respira, mensaje que cambia y casillas que brillan */
+    .buscando { text-align: center; padding: 18px 0 6px; }
+    .buscando .reloj { width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 50%; position: relative;
+      border: 2px solid rgba(212,175,55,.35); animation: respirar 2.2s ease-in-out infinite; }
+    .buscando .reloj::before, .buscando .reloj::after { content: ''; position: absolute; left: 50%; bottom: 50%; width: 2px;
+      background: var(--oro); border-radius: 2px; transform-origin: bottom center; }
+    .buscando .reloj::before { height: 16px; margin-left: -1px; animation: girar 2.4s linear infinite; }
+    .buscando .reloj::after { height: 11px; margin-left: -1px; animation: girar 14s linear infinite; }
+    .buscando .msg { color: var(--suave); font-size: 14px; min-height: 20px; transition: opacity .35s ease; }
+    .buscando .horas { margin-top: 18px; }
+    .fantasma { height: 44px; border-radius: 10px; background: linear-gradient(90deg, var(--panel) 0%, var(--panel2) 45%, var(--panel) 90%);
+      background-size: 220% 100%; animation: brillo 1.6s ease-in-out infinite; }
+    .horas-entran .hora { animation: entrar .45s ease both; }
+    @keyframes girar { to { transform: rotate(360deg); } }
+    @keyframes respirar { 0%,100% { box-shadow: 0 0 0 0 rgba(212,175,55,.25); } 50% { box-shadow: 0 0 0 10px rgba(212,175,55,0); } }
+    @keyframes brillo { from { background-position: 120% 0; } to { background-position: -100% 0; } }
+    @keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .buscando *, .buscando .reloj::before, .buscando .reloj::after, .fantasma, .horas-entran .hora { animation: none !important; } }
     /* Bloque 2: horario en que el propietario ya puede (se agenda directo) y días que tienen alguno */
     .hora.cruce { border-color: var(--oro); box-shadow: inset 0 0 0 1px var(--oro); }
     .hora small { display: block; font-size: 10px; color: var(--oro); margin-top: 2px; }
@@ -519,13 +537,27 @@
       dia = f; hora = null; pintarMes();
       const t = DIAS[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()];
       $('diaElegido').innerHTML = '📅 <b>' + t.charAt(0).toUpperCase() + t.slice(1) + '</b>';
-      $('horas').innerHTML = '<p class="aviso">Buscando horarios libres…</p>';
+      $('horas').innerHTML = '<div class="buscando"><div class="reloj"></div><p class="msg" id="msgBuscando">Buscando disponibilidad…</p>' +
+        '<div class="horas">' + '<div class="fantasma"></div>'.repeat(6) + '</div></div>';
       irA(3);
       const n = ++pedido;
+      // Mensajes que se turnan mientras llega la respuesta
+      const mensajes = coordinado()
+        ? ['Buscando disponibilidad…', 'Revisando la agenda del asesor…', 'Cruzando con los horarios del propietario…']
+        : ['Buscando disponibilidad…', 'Revisando la agenda del asesor…', 'Preparando los horarios libres…'];
+      let k = 0;
+      const turno = setInterval(() => {
+        const m = $('msgBuscando'); if (!m || n !== pedido) return clearInterval(turno);
+        m.style.opacity = 0; setTimeout(() => { m.textContent = mensajes[++k % mensajes.length]; m.style.opacity = 1; }, 350);
+      }, 1800);
+      // Un mínimo en pantalla para que la búsqueda se alcance a ver y no parpadee
+      const minimo = new Promise(z => setTimeout(z, 1200));
+      const llamarConMinimo = (c) => Promise.all([llamar(c), minimo]).then(([r]) => { clearInterval(turno); $('horas').classList.add('horas-entran'); return r; },
+        (e) => { clearInterval(turno); throw e; });
       const consulta = coordinado()
         ? { accion: 'disponibilidadVisitaCoordinada', i: idInmueble, fecha: iso(f), c: citaSolicitud }
         : { accion: 'obtenerDisponibilidad', fecha: iso(f), tipo: 'INTERESADO' };
-      llamar(consulta).then(r => {
+      llamarConMinimo(consulta).then(r => {
         if (n !== pedido) return;
         const slots = (r && r.success && r.slots) || [];
         if (!slots.length) { $('horas').innerHTML = `<p class="aviso">${esc((r && r.motivo) || 'No hay horarios libres este día')}. Elige otro día.</p>`; pintarPedidos(); return; }
