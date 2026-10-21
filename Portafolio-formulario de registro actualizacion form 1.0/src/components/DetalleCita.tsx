@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   X, Phone, MessageCircle, Mail, MapPin, Clock, Home, StickyNote, History, Pencil,
-  CalendarClock, Ban, UserCheck, UserX, Save, Loader2, Users, KeyRound, DoorOpen,
+  CalendarClock, Ban, UserCheck, UserX, Save, Loader2, Users, KeyRound, DoorOpen, Check,
 } from 'lucide-react';
 import PhoneCountrySelector, { ALL_COUNTRIES, separarCelular } from './PhoneCountrySelector';
 import { API_URL, GRUPOS, TIPOS, grupoCita, tipoDe, motivoCancelacion, internacional, type Cita, type TipoAgenda } from './CitasAgendaPanel';
@@ -72,6 +72,12 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   const [notasGuardadas, setNotasGuardadas] = useState(cita.notasAgente || '');
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState<{ ok: boolean; texto: string } | null>(null);
+  // Mientras se aplica un cambio (y al terminar, hasta que se recarga la lista) una capa
+  // cubre la ficha: así no se puede tocar otro botón ni cancelar dos veces.
+  const [capa, setCapa] = useState<null | { fase: 'aplicando' | 'listo'; tipo: string; texto: string }>(null);
+  const TEXTO_APLICANDO: Record<string, string> = {
+    cancelar: 'Cancelando la cita…', reagendar: 'Moviendo la cita…', asistio: 'Marcando asistencia…', noasistio: 'Marcando inasistencia…', editar: 'Guardando cambios…',
+  };
 
   useEffect(() => {
     if (modo !== 'reagendar') return;
@@ -88,15 +94,23 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   }, [modo, fecha, cita.idCita, agentCredential]);
 
   const ejecutar = async (cuerpo: Record<string, unknown>, recargar = true) => {
+    const tipoAccion = String(cuerpo.tipo || '');
+    const conCapa = tipoAccion !== 'notas';
     setEnviando(true); setAviso(null);
+    if (conCapa) setCapa({ fase: 'aplicando', tipo: tipoAccion, texto: TEXTO_APLICANDO[tipoAccion] || 'Aplicando el cambio…' });
     try {
       const d = await llamar({ accion: 'gestionarCita', credential: agentCredential, idCita: cita.idCita, ...cuerpo });
       if (d.success) {
         setAviso({ ok: true, texto: d.mensaje || 'Listo.' });
-        if (cuerpo.tipo === 'notas') setNotasGuardadas(String(cuerpo.texto || ''));
-        if (recargar) setTimeout(onCambio, 1600);
-      } else setAviso({ ok: false, texto: d.message || 'No se pudo aplicar el cambio.' });
+        if (conCapa) setCapa({ fase: 'listo', tipo: tipoAccion, texto: d.mensaje || 'Listo.' });
+        if (tipoAccion === 'notas') setNotasGuardadas(String(cuerpo.texto || ''));
+        if (recargar) setTimeout(onCambio, 1800);
+      } else {
+        setCapa(null);
+        setAviso({ ok: false, texto: d.message || 'No se pudo aplicar el cambio.' });
+      }
     } catch {
+      setCapa(null);
       setAviso({ ok: false, texto: 'Error de red al conectar con el servidor.' });
     } finally {
       setEnviando(false);
@@ -106,11 +120,24 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   const boton = 'flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed';
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onClick={onCerrar}>
+    <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onClick={capa ? undefined : onCerrar}>
       <div
         className="relative w-full md:max-w-lg bg-stone-900 border border-stone-800 rounded-t-3xl md:rounded-3xl p-6 pt-7 max-h-[90vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         onClick={e => e.stopPropagation()}
       >
+        {capa && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 px-8 text-center bg-stone-950/85 backdrop-blur-[3px] animate-[fadeIn_.25s_ease]">
+            {capa.fase === 'aplicando' ? (
+              <div className="w-16 h-16 rounded-full border-2 border-stone-700 border-t-brand-gold animate-spin" />
+            ) : (
+              <div className={`w-16 h-16 rounded-full grid place-items-center animate-[popIn_.35s_ease] ${capa.tipo === 'cancelar' ? 'bg-red-600' : 'bg-brand-gold'}`}>
+                {capa.tipo === 'cancelar' ? <Ban className="w-8 h-8 text-white" /> : <Check className="w-8 h-8 text-stone-950" strokeWidth={3} />}
+              </div>
+            )}
+            <p className={`text-base font-semibold ${capa.fase === 'listo' ? 'text-white' : 'text-stone-300'}`}>{capa.texto}</p>
+            {capa.fase === 'aplicando' && <p className="text-xs text-stone-500">No cierres esta ventana.</p>}
+          </div>
+        )}
         {/* Franja del color del tipo de agenda */}
         <div className={`absolute top-0 left-0 right-0 h-1.5 ${tipo.franja}`} aria-hidden="true" />
 
@@ -274,7 +301,7 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
                 className={`${boton} w-full bg-brand-gold text-stone-950 hover:brightness-110`}>
                 {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />} Confirmar nueva fecha
               </button>
-              <p className="text-xs text-stone-500">Mueve el evento en tu Calendar, deja la cita confirmada y le avisa al propietario por correo.</p>
+              <p className="text-xs text-stone-500">Mueve el evento en tu Calendar, deja la cita confirmada y le avisa a la persona por correo.</p>
             </div>
           )}
 
@@ -290,7 +317,7 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
                 className={`${boton} w-full bg-red-600 hover:bg-red-500 text-white`}>
                 {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />} Sí, cancelar la cita
               </button>
-              <p className="text-xs text-stone-500">Libera el horario en tu Calendar y le avisa al propietario por correo.</p>
+              <p className="text-xs text-stone-500">Libera el horario en tu Calendar y le avisa por correo a la persona (y al propietario, si es una visita con acompañamiento).</p>
             </div>
           )}
 
