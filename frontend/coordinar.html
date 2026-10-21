@@ -70,6 +70,19 @@
     .icono { width: 56px; height: 56px; margin: 20px auto 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;
       background: rgba(212,175,55,.1); box-shadow: 0 0 0 1px rgba(212,175,55,.3); }
     .oculto { display: none !important; }
+    /* Confirmación antes de agendar: "Me sirve" ya no agenda de un toque */
+    .confirmar { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center; padding: 20px; animation: aparecer .25s ease; }
+    .confirmar .caja { width: 100%; max-width: 400px; background: var(--panel); border: 1px solid var(--linea); border-radius: 22px;
+      padding: 24px 22px 18px; text-align: center; animation: subirC .3s ease; }
+    .confirmar .icono { font-size: 34px; margin-bottom: 6px; }
+    .confirmar h3 { margin: 0 0 8px; font-size: 19px; }
+    .confirmar .cuando { color: var(--oro); font-weight: 700; font-size: 17px; margin: 0 0 12px; }
+    .confirmar p { color: var(--suave); font-size: 13.5px; line-height: 1.5; margin: 0 0 18px; }
+    .confirmar .si { width: 100%; border: 0; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; background: var(--oro); color: #0c0a09; }
+    .confirmar .no { width: 100%; border: 0; background: none; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 4px; }
+    @keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes subirC { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
   </style>
 </head>
 <body>
@@ -213,7 +226,7 @@
         $('solPedidos').innerHTML = '<p class="nota" style="margin-top:12px;">Pidió estos horarios. Toca el que te sirva:</p>' +
           s.pedidos.map(p => `<button class="pedido" data-ts="${p.timestamp}"><b>${esc(p.texto)}</b><span>Me sirve</span></button>`).join('');
         $('solPie').textContent = '¿Ninguno te sirve? Marca abajo los horarios en que puedes y le pedimos que elija uno.';
-        $('solPedidos').querySelectorAll('.pedido').forEach(b => b.onclick = () => aceptar(Number(b.dataset.ts), b));
+        $('solPedidos').querySelectorAll('.pedido').forEach(b => b.onclick = () => confirmarAceptar(Number(b.dataset.ts), b, s));
       } else if (s.estado === 'AGENDADA') {
         $('solTitulo').textContent = '✓ Visita agendada';
         $('solPie').textContent = `La visita de ${s.nombre.split(' ')[0]} quedó para el ${s.agendada}. Leonardo va a estar ahí.`;
@@ -226,6 +239,26 @@
       } else {
         $('solicitud').classList.add('oculto');
       }
+    }
+
+    // Antes de agendar se pregunta, y se explica qué pasa al aceptar
+    function confirmarAceptar(ts, boton, s) {
+      const q2 = quienAbre();
+      if (abreOtro && (!q2.quienAbre || q2.celularAbre.length < 7)) { mensaje('Escribe el nombre y el celular de quien abre (abajo) antes de aceptar.'); $('quien').focus(); return; }
+      const texto = boton.querySelector('b').textContent;
+      const nombre = esc(String(s.nombre || 'el interesado').split(' ')[0]);
+      const capa = document.createElement('div');
+      capa.className = 'confirmar';
+      capa.innerHTML = `<div class="caja" role="dialog" aria-modal="true"><div class="icono">🗓️</div><h3>¿Agendamos la visita?</h3>` +
+        `<p class="cuando">${esc(texto)}</p>` +
+        `<p>Al aceptar, la visita de <b>${nombre}</b> queda agendada en este horario y los otros que pidió se liberan. ` +
+        `A ti y a ${nombre} les llega un correo con los detalles.</p>` +
+        `<button class="si">Sí, agendar</button><button class="no">Volver</button></div>`;
+      const cerrar = () => capa.remove();
+      capa.onclick = (e) => { if (e.target === capa) cerrar(); };
+      capa.querySelector('.no').onclick = cerrar;
+      capa.querySelector('.si').onclick = () => { cerrar(); aceptar(ts, boton); };
+      document.body.appendChild(capa);
     }
 
     function aceptar(ts, boton) {
