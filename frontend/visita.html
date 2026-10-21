@@ -167,6 +167,8 @@
       .dia { padding: 7px 0 !important; } .grupo { margin: 10px 0 6px !important; } .hora { padding: 9px 0 !important; }
       .instruccion3 { margin: 10px 0 4px !important; padding: 10px 12px !important; } .instruccion3 p { font-size: 15px !important; }
       .secundario { margin-top: 6px !important; } .principal { padding: 13px !important; }
+      #p3 .rotulo, #p4 .rotulo, #p2 .rotulo { display: none; } .instruccion3 small { font-size: 11.5px !important; }
+      .instruccion3 .casillas span { width: 24px !important; height: 24px !important; } .pedidos p { margin-bottom: 8px !important; }
     }
     .elegidos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
     .elegidos:empty { display: none; }
@@ -220,7 +222,8 @@
     .hora small { display: block; font-size: 10px; color: var(--oro); margin-top: 2px; }
     .hora.elegido small { color: inherit; }
     .dia.conCruce { position: relative; } .dia.conCruce::after { content: ''; position: absolute; bottom: 4px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--oro); }
-    .pedidos { position: sticky; bottom: -1px; background: var(--panel); padding: 12px 0 4px; margin-top: 14px; border-top: 1px solid #3f3a36; }
+    .pedidos { background: var(--panel); padding: 10px 0 2px; margin-top: 12px; border-top: 1px solid #3f3a36; }
+    .pedidos .elegidos { margin-bottom: 6px; }
     .pedidos p { font-size: 13px; color: var(--suave); margin: 0 0 10px; line-height: 1.5; }
     .pedidos .bloqueado { opacity: .55; filter: grayscale(.4); }
     .instruccion3 { display: flex; align-items: center; gap: 14px; margin: 16px 0 6px; padding: 14px 16px; border-radius: 14px;
@@ -642,7 +645,8 @@
     // Lo que ya se eligió, a la vista en el calendario y en las horas, con ✕ para quitar
     let ultimosSlots = [];
     function chipsElegidos() {
-      return pedidos.map(t => `<span class="chip">${esc(textoSlot(t))}<button data-quitar="${t}" aria-label="Quitar">✕</button></span>`).join('');
+      const corto = (t) => { const d = new Date(t); const x = DIAS[d.getDay()].slice(0, 3); return x.charAt(0).toUpperCase() + x.slice(1) + ' ' + d.getDate() + ' ' + MESES[d.getMonth()].slice(0, 3) + ' · ' + horaDe(t); };
+      return pedidos.map(t => `<span class="chip">${esc(corto(t))}<button data-quitar="${t}" aria-label="Quitar">✕</button></span>`).join('');
     }
     function pintarElegidosP2() {
       $('elegidosP2').innerHTML = coordinado() && pedidos.length ? chipsElegidos() : '';
