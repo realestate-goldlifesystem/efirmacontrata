@@ -321,7 +321,7 @@ function agendarVisitaInteresado(datos) {
     try {
       if (modo === 'DIRECTO') {
         enviarPasoCita('AGENDADA', correo, {
-          idCita: idCita, token: tokenInteresado, nombre: nombre, servicio: servicio,
+          idCita: idCita, idInmueble: inm.id, token: tokenInteresado, nombre: nombre, servicio: servicio,
           direccion: direccionCompleta, inicio: inicio, duracionMin: TIPOS_AGENDA.INTERESADO.duracionMin
         });
       } else {

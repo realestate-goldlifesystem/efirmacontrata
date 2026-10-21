@@ -103,6 +103,9 @@ function correoPasoCita(paso, c) {
     `<div style="color:#ffffff;font-size:20px;font-weight:bold;margin-top:4px;">${fechaLarga}</div>` +
     `<div style="color:#e7e5e4;font-size:16px;margin-top:2px;">${hora} · ${c.servicio || 'Visita'}</div>` +
     (c.direccion ? `<div style="color:#a8a29e;font-size:14px;margin-top:6px;">📍 ${c.direccion}</div>` : '') +
+    // Visitas de interesados: el enlace al inmueble, para que sepa cuál fue el que agendó
+    (c.idInmueble ? `<div style="margin-top:12px;"><a href="${urlVisitaInmueble(c.idInmueble)}" style="display:inline-block;padding:9px 16px;border-radius:999px;` +
+      `border:1px solid #d4af37;color:#d4af37;font-size:14px;font-weight:bold;text-decoration:none;">🏠 Ver el inmueble</a></div>` : '') +
     '</td></tr></table>';
 
   // Línea pequeña para cambiar o cancelar, en los correos sin botones

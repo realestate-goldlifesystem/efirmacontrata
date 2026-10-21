@@ -107,7 +107,8 @@ function ejecutarMotorAgenda() {
         const paso = avisoQueTocaCita(minFaltan, ultimoPaso, !pendiente, valorCita(f, col, 'TIPO AGENDA'));
         if (paso) {
           try {
-            enviarPasoCita(paso, correo, { idCita: idCita, token: tokenProp, nombre: nombre, servicio: servicio, direccion: direccion, inicio: fechaCita });
+            const idInmVisita = String(valorCita(f, col, 'TIPO AGENDA') || '').trim() === 'INTERESADO' ? String(valorCita(f, col, 'ID INMUEBLE') || '') : '';
+            enviarPasoCita(paso, correo, { idCita: idCita, idInmueble: idInmVisita, token: tokenProp, nombre: nombre, servicio: servicio, direccion: direccion, inicio: fechaCita });
             escribir(numFila, 'ULTIMO AVISO', paso);
             escribir(numFila, 'FECHA ULTIMO AVISO', ahora);
           } catch (e) {

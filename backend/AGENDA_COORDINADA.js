@@ -536,7 +536,7 @@ function _agendarVisitaCoordinada(sheet, col, numFila, fila, inm, ts, origen) {
 
   try {
     enviarPasoCita(yaEstaba ? 'REAGENDADA' : 'AGENDADA', correo, {
-      idCita: idCita, token: token, nombre: nombre, servicio: servicio, direccion: direccion,
+      idCita: idCita, idInmueble: inm.id, token: token, nombre: nombre, servicio: servicio, direccion: direccion,
       inicio: inicio, duracionMin: TIPOS_AGENDA.INTERESADO.duracionMin
     });
   } catch (e) { Logger.log('Error enviando el correo al interesado: ' + e.message); }
