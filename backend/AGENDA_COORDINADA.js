@@ -133,6 +133,11 @@ function apartadosVigentes(excluirIdCita) {
   return _cacheApartados.filter(a => a.idCita !== excluirIdCita).map(a => ({ inicio: a.inicio, fin: a.fin }));
 }
 
+function _descartadosDe(fila, col) {
+  try { return (JSON.parse(valorCita(fila, col, 'HORARIOS DESCARTADOS') || '[]') || []).map(Number).filter(isFinite); }
+  catch (e) { return []; }
+}
+
 function _pedidosDe(fila, col) {
   try { return (JSON.parse(valorCita(fila, col, 'HORARIOS PEDIDOS') || '[]') || []).map(Number).filter(isFinite); }
   catch (e) { return []; }
@@ -160,7 +165,9 @@ function disponibilidadVisitaCoordinada(datos) {
   const disp = obtenerDisponibilidadAgenda(datos.fecha, 'INTERESADO', { excluirCita: String(datos.c || '') });
   if (!disp.success) return disp;
   const marcados = leerDisponibilidad(inm.id).bloques;
-  disp.slots = disp.slots.map(s => Object.assign(s, { cruce: marcados.indexOf(s.timestamp) !== -1 }));
+  let descartados = [];
+  if (datos.c) { const cita = _citaPorId(datos.c); if (cita) descartados = _descartadosDe(cita.fila, cita.col); }
+  disp.slots = disp.slots.map(s => Object.assign(s, { cruce: marcados.indexOf(s.timestamp) !== -1, descartado: descartados.indexOf(s.timestamp) !== -1 }));
   return disp;
 }
 
@@ -268,6 +275,8 @@ function elegirHorarioCoordinado(datos) {
     let pedidos = (Array.isArray(datos.pedidos) ? datos.pedidos : []).map(Number).filter(isFinite);
     pedidos = Array.from(new Set(pedidos)).sort((a, b) => a - b).slice(0, MAX_PEDIDOS_COORDINADO);
     if (!pedidos.length) return { success: false, error: 'Elige al menos un horario.' };
+    const descartados = _descartadosDe(fila, col);
+    if (pedidos.some(t => descartados.indexOf(t) !== -1)) return { success: false, error: 'Uno de esos horarios ya lo descartó el propietario. Elige otro.' };
     const ocupado = pedidos.find(t => !_horarioLibre(t, idCita));
     if (ocupado) return { success: false, error: 'El horario del ' + _textoHorario(ocupado) + ' acaba de ser ocupado. Por favor elige otro.' };
     _liberarEventoCita(sheet, col, numFila, fila);
@@ -303,7 +312,8 @@ function infoSolicitudCoordinada(datos) {
     ok: true,
     nombre: String(valorCita(fila, col, 'NOMBRE') || ''),
     estado: String(valorCita(fila, col, 'ESTADO') || '').trim(),
-    cruce: leerDisponibilidad(valorCita(fila, col, 'ID INMUEBLE')).bloques.filter(t => t > Date.now() + TIPOS_AGENDA.INTERESADO.anticipacionMin * 60000)
+    cruce: leerDisponibilidad(valorCita(fila, col, 'ID INMUEBLE')).bloques.filter(t => t > Date.now() + TIPOS_AGENDA.INTERESADO.anticipacionMin * 60000),
+    descartados: _descartadosDe(fila, col)
   };
 }
 
@@ -438,8 +448,9 @@ function guardarDisponibilidadPropietario(datos) {
     const cruce = todos.filter(t => t > Date.now() + TIPOS_AGENDA.INTERESADO.anticipacionMin * 60000);
     if (!cruce.length) return { ok: true, mensaje: 'Guardamos tus horarios.' };
 
-    // Se liberan los pedidos y el interesado elige del cruce
+    // Se liberan los pedidos (quedan como descartados: no se le vuelven a ofrecer) y el interesado elige del cruce
     const escribir = (n, v) => { if (col[n]) sheet.getRange(numFila, col[n]).setValue(v); };
+    escribir('HORARIOS DESCARTADOS', JSON.stringify(Array.from(new Set(_descartadosDe(fila, col).concat(_pedidosDe(fila, col)))).sort((a, b) => a - b)));
     escribir('HORARIOS PEDIDOS', '');
     escribir('ULTIMO AVISO', 'ELEGIR');
     escribir('FECHA ULTIMO AVISO', new Date());

@@ -42,7 +42,10 @@ const COLUMNAS_CITAS = [
   'ULTIMO AVISO', 'FECHA ULTIMO AVISO',
   // oct-2026 (bloque 2, agendamiento coordinado): DIRECTO / COORDINADO, los hasta 3
   // horarios que pidió el interesado (JSON de timestamps) y quién abre el inmueble
-  'MODO VISITA', 'HORARIOS PEDIDOS', 'QUIEN ABRE'
+  'MODO VISITA', 'HORARIOS PEDIDOS', 'QUIEN ABRE',
+  // oct-2026 (negociación): horarios que pidió el interesado y el propietario no pudo.
+  // Ya no se le vuelven a ofrecer al interesado (JSON de timestamps).
+  'HORARIOS DESCARTADOS'
 ];
 
 // Estados posibles de una cita.

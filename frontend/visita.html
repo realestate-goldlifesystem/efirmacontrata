@@ -174,6 +174,8 @@
       #p3 .rotulo, #p4 .rotulo, #p2 .rotulo { display: none; } .instruccion3 small { font-size: 11.5px !important; }
       .instruccion3 .casillas span { width: 24px !important; height: 24px !important; } .pedidos p { margin-bottom: 8px !important; }
     }
+    .ninguno { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 1.5px solid var(--oro); background: rgba(212,175,55,.08);
+      color: var(--oro); font-size: 14.5px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
     .elegidos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
     .elegidos:empty { display: none; }
     .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 6px 6px 11px; border-radius: 999px; font-size: 12.5px;
@@ -350,6 +352,7 @@
         <div class="mes"><button id="mesAnt" aria-label="Mes anterior">‹</button><strong id="tituloMes"></strong><button id="mesSig" aria-label="Mes siguiente">›</button></div>
         <div class="semana"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
         <div class="dias" id="dias"></div>
+        <button class="ninguno oculto" id="proponerP2" data-proponer="1">🗓️ Ninguno me sirve · proponer otros horarios</button>
         <button class="secundario" data-volver="1">‹ Volver</button>
       </div>
 
@@ -413,7 +416,10 @@
 
     let inm = null, negocio = '', respuestas = {}, mesVisible, dia = null, hora = null, pedido = 0, fotoIdx = 0;
     // Coordinado: hasta 3 horarios pedidos al propietario; días con horarios del propietario; modo "elegir"
-    let pedidos = [], diasCruce = new Set(), modoElegir = false;
+    let pedidos = [], diasCruce = new Set(), modoElegir = false, proponerOtros = false;
+    // Negociación: el interesado vuelve desde su correo y ve SOLO los horarios en que puede
+    // el propietario; con "proponer otros" pide 3 nuevos (sin los que el propietario ya descartó)
+    const negociando = () => modoElegir && !proponerOtros;
     const MAX_PEDIDOS = 3;
     const coordinado = () => inm && inm.modo === 'COORDINADO';
     function horaDe(ts) { const d = new Date(ts); let h = d.getHours(); const m = d.getMinutes(); const s = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + (m < 10 ? '0' : '') + m + ' ' + s; }
@@ -558,7 +564,7 @@
       let html = '<div></div>'.repeat(desfase);
       for (let d = 1; d <= total; d++) {
         const f = new Date(mesVisible.getFullYear(), mesVisible.getMonth(), d);
-        const ok = f >= hoy && f.getDay() !== 0;
+        const ok = f >= hoy && f.getDay() !== 0 && (!negociando() || diasCruce.has(iso(f)));
         html += `<button class="dia${dia && iso(f) === iso(dia) ? ' elegido' : ''}${ok && diasCruce.has(iso(f)) ? ' conCruce' : ''}${pedidos.some(t => iso(new Date(t)) === iso(f)) ? ' conPedido' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
       }
       $('dias').innerHTML = html;
@@ -614,12 +620,14 @@
     // piden al propietario, hasta 3 (pueden ser de días distintos)
     function pintarHorasCoordinadas(slots) {
       ultimosSlots = slots;
-      const cruce = slots.filter(s => s.cruce), resto = slots.filter(s => !s.cruce);
+      const cruce = slots.filter(s => s.cruce), resto = negociando() ? [] : slots.filter(s => !s.cruce && !s.descartado);
       const boton = (s) => `<button class="hora${s.cruce ? ' cruce' : ''}${pedidos.includes(s.timestamp) ? ' elegido' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}${s.cruce ? '<small>Puede el propietario</small>' : ''}</button>`;
       const grupo = (titulo, lista) => !lista.length ? '' : `<p class="grupo">${titulo}</p><div class="horas">` + lista.map(boton).join('') + '</div>';
       const manana = (s) => new Date(s.timestamp).getHours() < 12;
       $('horas').innerHTML =
-        (cruce.length ? grupo('🤝 El propietario puede — se agenda de una', cruce) : '') +
+        (cruce.length ? grupo(negociando() ? '🤝 El propietario puede en estos horarios' : '🤝 El propietario puede — se agenda de una', cruce) : '') +
+        (negociando() ? (cruce.length ? '' : '<p class="aviso">Este día el propietario ya no tiene horarios. Elige otro día.</p>') +
+          '<button class="ninguno" data-proponer="1">🗓️ Ninguno me sirve · proponer otros horarios</button>' : '') +
         (resto.length ? instruccionTres(cruce.length) : '') +
         grupo('☀️ Mañana', resto.filter(manana)) + grupo('🌇 Tarde', resto.filter(s => !manana(s)));
       $('horas').querySelectorAll('.hora').forEach(b => b.onclick = () => {
@@ -655,6 +663,15 @@
     function pintarElegidosP2() {
       $('elegidosP2').innerHTML = coordinado() && pedidos.length ? chipsElegidos() : '';
     }
+    // Proponer otros: se abre todo el calendario (menos lo que el propietario ya descartó)
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-proponer]')) return;
+      proponerOtros = true; hora = null; pedidos = [];
+      $('proponerP2').classList.add('oculto');
+      $('tituloFecha').textContent = 'Elige 3 horarios que te sirvan';
+      $('notaNegociar') && $('notaNegociar').remove();
+      if (dia) elegirDia(dia); else { pintarMes(); irA(2); }
+    });
     document.addEventListener('click', (e) => {
       const b = e.target.closest('[data-quitar]'); if (!b) return;
       e.stopPropagation();
@@ -665,7 +682,7 @@
     }, true);
     function pintarPedidos() {
       pintarElegidosP2();
-      const ver = coordinado() && !modoElegir && !!$('instruccion3');
+      const ver = coordinado() && !negociando() && !!$('instruccion3');
       $('pedidosBarra').classList.toggle('oculto', !ver && !(coordinado() && pedidos.length));
       if (!ver && !(coordinado() && pedidos.length)) return;
       const faltan = MAX_PEDIDOS - pedidos.length;
@@ -676,7 +693,7 @@
       $('irDatos').classList.toggle('bloqueado', faltan > 0);
     }
     $('irDatos').onclick = () => {
-      if (pedidos.length < MAX_PEDIDOS && !modoElegir) {
+      if (pedidos.length < MAX_PEDIDOS && !negociando()) {
         // Que se note: la instrucción tiembla
         const ins = $('instruccion3');
         if (ins) { ins.classList.remove('sacudir'); void ins.offsetWidth; ins.classList.add('sacudir'); }
@@ -695,7 +712,7 @@
     // Paso 4: datos
     const largoTel = () => Number($('indicativo').selectedOptions[0].dataset.largo);
     function validar() {
-      if (modoElegir) { $('enviar').disabled = !(hora || pedidos.length); return; }
+      if (modoElegir) { $('enviar').disabled = !(hora || pedidos.length >= MAX_PEDIDOS); return; }
       const cel = $('celular').value.replace(/\D/g, '');
       $('enviar').disabled = !$('nombre').value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('correo').value.trim()) || cel.length !== largoTel();
     }
@@ -867,9 +884,14 @@
         llamar({ accion: 'infoSolicitudCoordinada', c: citaSolicitud, t: tokenSolicitud }).then(s => {
           if (!s || !s.ok) return;
           modoElegir = true;
-          diasCruce = new Set((s.cruce || []).map(t => iso(new Date(t)))); pintarMes();
+          diasCruce = new Set((s.cruce || []).map(t => iso(new Date(t))));
+          // Arranca en el mes del primer horario del propietario
+          if (s.cruce && s.cruce.length) { const f0 = new Date(Math.min.apply(null, s.cruce)); mesVisible = new Date(f0.getFullYear(), f0.getMonth(), 1); }
+          pintarMes();
           $('camposDatos').classList.add('oculto');
-          $('tituloFecha').textContent = 'Hola ' + (s.nombre || '').split(' ')[0] + ', elige el día de tu visita';
+          $('tituloFecha').textContent = 'Hola ' + (s.nombre || '').split(' ')[0] + ', estos son los días en que puede el propietario';
+          $('proponerP2').classList.remove('oculto');
+          if (!diasCruce.size) { proponerOtros = true; $('proponerP2').classList.add('oculto'); $('tituloFecha').textContent = 'Elige 3 horarios que te sirvan'; pintarMes(); }
           abrirModal(); irA(2);
         });
       }
