@@ -78,8 +78,30 @@ const PASOS_CORREO_CITA = {
   H2:       { asunto: 'Tienes una cita en 2 horas', titulo: 'RECORDATORIO' },
   M60:      { asunto: 'Confirma tu cita de hoy', titulo: 'CONFIRMA TU CITA' },
   M45:      { asunto: 'Segundo aviso: confirma tu cita', titulo: 'CONFIRMA TU CITA' },
-  M30:      { asunto: 'Último aviso: confirma tu cita', titulo: 'ÚLTIMO AVISO' }
+  M30:      { asunto: 'Último aviso: confirma tu cita', titulo: 'ÚLTIMO AVISO' },
+  // Respuesta a lo que hizo la persona desde su correo
+  CONFIRMADA: { asunto: 'Tu cita quedó confirmada', titulo: 'CITA CONFIRMADA' },
+  CANCELADA:  { asunto: 'Tu cita quedó cancelada', titulo: 'CITA CANCELADA' }
 };
+
+/** Los datos de una fila de citas tal como los usa correoPasoCita. */
+function datosCorreoDeCita(fila, col) {
+  const tipo = String(valorCita(fila, col, 'TIPO AGENDA') || '').trim().toUpperCase();
+  return {
+    idCita: String(valorCita(fila, col, 'ID CITA') || ''),
+    idInmueble: tipo === 'INTERESADO' ? String(valorCita(fila, col, 'ID INMUEBLE') || '') : '',
+    token: String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''),
+    nombre: String(valorCita(fila, col, 'NOMBRE') || ''),
+    servicio: String(valorCita(fila, col, 'TIPO SERVICIO') || ''),
+    direccion: String(valorCita(fila, col, 'DIRECCION') || ''),
+    inicio: fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA'))
+  };
+}
+
+/** "Agendar de nuevo": a la visita del mismo inmueble, o al portafolio. */
+function urlAgendarDeNuevo(idInmueble) {
+  return idInmueble ? urlVisitaInmueble(idInmueble) : 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/portafolio/';
+}
 
 /**
  * @param {string} paso   clave de PASOS_CORREO_CITA
@@ -105,7 +127,7 @@ function correoPasoCita(paso, c) {
     (c.direccion ? `<div style="color:#a8a29e;font-size:14px;margin-top:6px;">📍 ${c.direccion}</div>` : '') +
     // Visitas de interesados: el enlace al inmueble, para que sepa cuál fue el que agendó
     // (con ver=cita la página solo muestra el inmueble, sin el botón de agendar)
-    (c.idInmueble ? `<div style="margin-top:12px;"><a href="${urlVisitaInmueble(c.idInmueble)}&ver=cita" style="display:inline-block;padding:9px 16px;border-radius:999px;` +
+    (c.idInmueble && paso !== 'CANCELADA' ? `<div style="margin-top:12px;"><a href="${urlVisitaInmueble(c.idInmueble)}&ver=cita" style="display:inline-block;padding:9px 16px;border-radius:999px;` +
       `border:1px solid #d4af37;color:#d4af37;font-size:14px;font-weight:bold;text-decoration:none;">🏠 Ver el inmueble</a></div>` : '') +
     '</td></tr></table>';
 
@@ -165,10 +187,19 @@ function correoPasoCita(paso, c) {
       secundario = botonesPropietarioCita(c.idCita, c.token);
       break;
     }
+    case 'CONFIRMADA':
+      mensaje = '¡Listo! Tu cita quedó <strong>confirmada</strong>.' + tarjeta + 'Te esperamos.';
+      secundario = lineaCambio;
+      break;
+    case 'CANCELADA':
+      mensaje = 'Tu cita quedó <strong>cancelada</strong>, como lo pediste.' + tarjeta +
+        'Si cambias de opinión, puedes agendar de nuevo cuando quieras.';
+      secundario = htmlBotonesCorreo([{ texto: '📅 Agendar de nuevo', color: '#b8860b', url: urlAgendarDeNuevo(c.idInmueble) }]);
+      break;
     default:
       throw new Error('Paso de correo desconocido: ' + paso);
   }
-  return { asunto: (paso.charAt(0) === 'M' ? '⏰ ' : '📅 ') + cfg.asunto + ' - Gold Life', titulo: cfg.titulo, nombre: c.nombre, mensaje: mensaje, secundario: secundario };
+  return { asunto: ({ CONFIRMADA: '✅ ', CANCELADA: '❌ ' }[paso] || (paso.charAt(0) === 'M' ? '⏰ ' : '📅 ')) + cfg.asunto + ' - Gold Life', titulo: cfg.titulo, nombre: c.nombre, mensaje: mensaje, secundario: secundario };
 }
 
 /** Arma y envía un paso. */

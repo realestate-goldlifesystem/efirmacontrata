@@ -335,6 +335,28 @@ function aplicarEstadoCitaDesdeCorreo(idCita, nuevoEstado, token) {
     const quien = cita.esAgente ? 'agente' : 'propietario';
     aplicarCambioEstadoCita(cita.sheet, cita.col, cita.numFila, cita.fila, estado, quien + ' marcó ' + estado.toLowerCase() + ' desde el correo');
 
+    // La persona recibe la constancia de lo que hizo (antes solo lo veía en la página)
+    if (!cita.esAgente && (estado === 'CONFIRMADA' || estado === 'CANCELADA')) {
+      try {
+        const c = datosCorreoDeCita(cita.fila, cita.col);
+        if (c.inicio) enviarPasoCita(estado, String(valorCita(cita.fila, cita.col, 'CORREO') || ''), c);
+      } catch (e) { Logger.log('No se pudo mandar la constancia: ' + e.message); }
+    }
+
+    // Confirmó: aviso corto al agente y, en visitas con acompañamiento, al propietario
+    if (!cita.esAgente && estado === 'CONFIRMADA') {
+      try {
+        enviarCorreoCita(correoAgenteCitas(), `✅ ${cita.nombre} confirmó su cita del ${cita.fechaTxt}`, 'CITA CONFIRMADA', 'Agente',
+          etiquetaTipoCitaHtml(valorCita(cita.fila, cita.col, 'TIPO AGENDA')) +
+          `<strong>${cita.nombre}</strong> confirmó su cita del <strong>${cita.fechaTxt}</strong>.<br><br>` +
+          `🏠 <strong>Servicio:</strong> ${valorCita(cita.fila, cita.col, 'TIPO SERVICIO')}<br>` +
+          `📍 <strong>Inmueble:</strong> ${valorCita(cita.fila, cita.col, 'DIRECCION') || 'N/A'}`, '');
+      } catch (e) { Logger.log('No se pudo avisar la confirmación al agente: ' + e.message); }
+      avisarPropietarioVisitaCoordinada(cita.fila, cita.col,
+        `<strong>${cita.nombre}</strong> confirmó la visita del <strong>${cita.fechaTxt}</strong>. Leonardo va a estar ahí.`,
+        '✅ Visita confirmada - Gold Life', 'VISITA CONFIRMADA');
+    }
+
     // Visita coordinada: el propietario también se entera (bloque 2)
     if (!cita.esAgente && (estado === 'QUIERE REAGENDAR' || estado === 'CANCELADA')) {
       avisarPropietarioVisitaCoordinada(cita.fila, cita.col, estado === 'CANCELADA'

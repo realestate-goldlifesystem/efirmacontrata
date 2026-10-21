@@ -596,12 +596,13 @@ function _correoAgenteCoordinado(inm, nombre, celular, correo, precal, asunto, t
 }
 
 /** Aviso al propietario de una visita coordinada que se cancela o se reagenda. */
-function avisarPropietarioVisitaCoordinada(fila, col, texto) {
+function avisarPropietarioVisitaCoordinada(fila, col, texto, asunto, titulo) {
   try {
     if (String(valorCita(fila, col, 'MODO VISITA') || '') !== 'COORDINADO') return;
     const inm = _inmueblePorId(valorCita(fila, col, 'ID INMUEBLE'));
     if (!inm || !inm.correoPropietario) return;
-    enviarCorreoCita(inm.correoPropietario, '📅 Cambio en una visita a tu inmueble - Gold Life', 'CAMBIO EN LA VISITA', (inm.propietario || '').split(' ')[0], texto, '');
+    enviarCorreoCita(inm.correoPropietario, asunto || '📅 Cambio en una visita a tu inmueble - Gold Life', titulo || 'CAMBIO EN LA VISITA',
+      (inm.propietario || '').split(' ')[0], texto, '');
   } catch (e) { Logger.log('No se pudo avisar al propietario: ' + e.message); }
 }
 

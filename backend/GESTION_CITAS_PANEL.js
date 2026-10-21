@@ -122,11 +122,15 @@ function gestionarCitaPanel(datos) {
             `Te informamos que tu cita para el servicio de <strong>${servicio}</strong>` +
             (fechaActual ? ` del <strong>${textoFecha(fechaActual)}</strong>` : '') + ' fue cancelada.<br><br>' +
             'Si deseas una nueva visita, puedes agendarla cuando quieras desde nuestra página.',
-            htmlBotonesCorreo([{ texto: '📅 Agendar de nuevo', color: '#b8860b',
-              url: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/portafolio/' }])
+            htmlBotonesCorreo([{ texto: '📅 Agendar de nuevo', color: '#b8860b', url: urlAgendarDeNuevo(datosCorreoDeCita(fila, col).idInmueble) }])
           );
         } catch (e) { Logger.log('No se pudo avisar la cancelación: ' + e.message); }
-        return { success: true, mensaje: 'Cita cancelada. Se le avisó al propietario por correo.' };
+        // Visita con acompañamiento: el propietario no se queda esperando para abrir
+        avisarPropietarioVisitaCoordinada(fila, col,
+          `La visita de <strong>${nombre}</strong>` + (fechaActual ? ` del <strong>${textoFecha(fechaActual)}</strong>` : '') +
+          ' se canceló. No tienes que abrir el inmueble.', '❌ Visita cancelada - Gold Life', 'VISITA CANCELADA');
+        const esVisitaCoordinada = String(valorCita(fila, col, 'MODO VISITA') || '') === 'COORDINADO';
+        return { success: true, mensaje: 'Cita cancelada. Le avisamos a ' + (nombre || 'la persona') + ' por correo' + (esVisitaCoordinada ? ' y al propietario.' : '.') };
       }
 
       case 'reagendar': {
