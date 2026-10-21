@@ -19,6 +19,10 @@
     aceptarHorarioPropietario, guardarDisponibilidadPropietario). El servidor valida el token.
   -->
   <style>
+    /* Banderas: Windows no trae emojis de banderas; esta fuente solo cubre esos caracteres */
+    @font-face { font-family: 'Banderas'; unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E007F;
+      src: url('https://cdn.jsdelivr.net/npm/country-flag-emoji-polyfill@0.1.8/dist/TwemojiCountryFlags.woff2') format('woff2'); font-display: swap; }
+    select { font-family: 'Banderas', -apple-system, 'Segoe UI', Roboto, sans-serif !important; }
     :root { --oro: #d4af37; --fondo: #0c0a09; --panel: #1c1917; --panel2: #292524; --suave: #a8a29e; --linea: #3f3a36; }
     * { box-sizing: border-box; }
     body {
@@ -284,7 +288,7 @@
         `<p>Al aceptar, la visita de <b>${nombre}</b> queda agendada en este horario y los otros que pidió se liberan. ` +
         `A ti y a ${nombre} les llega un correo con los detalles.</p>` +
         `<p class="rotuloQuien">¿Quién abre?</p><div class="opciones"><button class="opcion${abreOtro ? '' : ' elegido'}" data-q="yo">Yo abro</button><button class="opcion${abreOtro ? ' elegido' : ''}" data-q="otro">Otra persona</button></div>` +
-        `<div class="datosQ${abreOtro ? '' : ' oculto'}"><input class="qN" placeholder="Nombre de quien abre" maxlength="80" value="${esc($('quien').value)}"><div class="tel"><select class="qI" aria-label="Indicativo del país"><option value="57" data-largo="10">CO +57</option><option value="1" data-largo="10">US +1</option><option value="52" data-largo="10">MX +52</option><option value="34" data-largo="9">ES +34</option><option value="58" data-largo="10">VE +58</option><option value="593" data-largo="9">EC +593</option><option value="51" data-largo="9">PE +51</option><option value="56" data-largo="9">CL +56</option><option value="54" data-largo="10">AR +54</option><option value="507" data-largo="8">PA +507</option></select>` +
+        `<div class="datosQ${abreOtro ? '' : ' oculto'}"><input class="qN" placeholder="Nombre de quien abre" maxlength="80" value="${esc($('quien').value)}"><div class="tel"><select class="qI" aria-label="Indicativo del país"><option value="57" data-largo="10">🇨🇴 +57</option><option value="1" data-largo="10">🇺🇸 +1</option><option value="52" data-largo="10">🇲🇽 +52</option><option value="34" data-largo="9">🇪🇸 +34</option><option value="58" data-largo="10">🇻🇪 +58</option><option value="593" data-largo="9">🇪🇨 +593</option><option value="51" data-largo="9">🇵🇪 +51</option><option value="56" data-largo="9">🇨🇱 +56</option><option value="54" data-largo="10">🇦🇷 +54</option><option value="507" data-largo="8">🇵🇦 +507</option></select>` +
         `<input class="qC" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="300 123 4567"></div><p class="errQ oculto"></p></div>` +
         `<div class="deslizar"><div class="relleno"></div><div class="texto">Desliza para agendar</div><div class="perilla">›</div></div>` +
         `<button class="si oculto">Sí, agendar</button><button class="no">Volver</button></div>`;
