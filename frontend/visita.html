@@ -157,8 +157,23 @@
     /* ---------- Ventana para agendar ---------- */
     .modal { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.7); backdrop-filter: blur(6px); display: flex; align-items: flex-end; justify-content: center; }
     @media (min-width: 640px) { .modal { align-items: center; padding: 20px; } }
-    .ventana { position: relative; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--linea);
-      border-radius: 24px 24px 0 0; padding: 26px 22px 30px; animation: subir .3s ease; }
+    .ventana { position: relative; width: 100%; max-width: 520px; max-height: 94vh; max-height: 94dvh; overflow-y: auto; background: var(--panel); border: 1px solid var(--linea);
+      border-radius: 24px 24px 0 0; padding: 22px 20px 22px; animation: subir .3s ease; scrollbar-width: none; overscroll-behavior: contain; }
+    .ventana::-webkit-scrollbar { display: none; }
+    /* Que el paso quepa en la pantalla sin desplazarse: en pantallas bajas todo se compacta */
+    @media (max-height: 820px) {
+      .ventana { padding: 16px 18px 16px; } .ventana h2 { margin: 4px 0 10px !important; font-size: 19px !important; }
+      .pasos { margin-bottom: 12px !important; } .resumen { padding: 9px 12px !important; margin-bottom: 10px !important; }
+      .dia { padding: 7px 0 !important; } .grupo { margin: 10px 0 6px !important; } .hora { padding: 9px 0 !important; }
+      .instruccion3 { margin: 10px 0 4px !important; padding: 10px 12px !important; } .instruccion3 p { font-size: 15px !important; }
+      .secundario { margin-top: 6px !important; } .principal { padding: 13px !important; }
+    }
+    .elegidos { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+    .elegidos:empty { display: none; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 6px 6px 11px; border-radius: 999px; font-size: 12.5px;
+      background: rgba(212,175,55,.14); border: 1px solid rgba(212,175,55,.55); color: var(--texto); animation: entrar .3s ease both; }
+    .chip button { width: 20px; height: 20px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); font-size: 11px; line-height: 1; padding: 0; }
+    .dia.conPedido { box-shadow: inset 0 0 0 1.5px var(--oro); color: var(--oro); font-weight: 700; }
     @media (min-width: 640px) { .ventana { border-radius: 24px; } }
     @keyframes subir { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
     .ventana .cerrar { top: 12px; right: 12px; width: 38px; height: 38px; font-size: 18px; background: var(--panel2); }
@@ -181,7 +196,7 @@
     .dia:hover:not(:disabled) { background: var(--panel2); }
     .dia:disabled { color: #44403c; text-decoration: line-through; cursor: default; }
     .grupo { margin: 16px 0 8px; font-size: 13px; color: var(--suave); font-weight: 600; }
-    .horas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .hora { padding: 12px 0; font-size: 14px; }
+    .horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; } .hora { padding: 12px 0; font-size: 14px; }
     /* Buscando horarios: reloj dorado que respira, mensaje que cambia y casillas que brillan */
     .buscando { text-align: center; padding: 18px 0 6px; }
     .buscando .reloj { width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 50%; position: relative;
@@ -324,6 +339,7 @@
       <div id="p2" class="oculto">
         <div class="rotulo">Paso 2 de 4</div>
         <h2 id="tituloFecha">¿Qué día quieres visitarlo?</h2>
+        <div class="elegidos" id="elegidosP2"></div>
         <div class="mes"><button id="mesAnt" aria-label="Mes anterior">‹</button><strong id="tituloMes"></strong><button id="mesSig" aria-label="Mes siguiente">›</button></div>
         <div class="semana"><div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div></div>
         <div class="dias" id="dias"></div>
@@ -536,10 +552,11 @@
       for (let d = 1; d <= total; d++) {
         const f = new Date(mesVisible.getFullYear(), mesVisible.getMonth(), d);
         const ok = f >= hoy && f.getDay() !== 0;
-        html += `<button class="dia${dia && iso(f) === iso(dia) ? ' elegido' : ''}${ok && diasCruce.has(iso(f)) ? ' conCruce' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
+        html += `<button class="dia${dia && iso(f) === iso(dia) ? ' elegido' : ''}${ok && diasCruce.has(iso(f)) ? ' conCruce' : ''}${pedidos.some(t => iso(new Date(t)) === iso(f)) ? ' conPedido' : ''}" data-f="${iso(f)}" ${ok ? '' : 'disabled'}>${d}</button>`;
       }
       $('dias').innerHTML = html;
       $('dias').querySelectorAll('button[data-f]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.f.split('-').map(Number); elegirDia(new Date(y, m - 1, d)); });
+      pintarElegidosP2();
     }
     $('mesAnt').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() - 1, 1); pintarMes(); };
     $('mesSig').onclick = () => { mesVisible = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 1); pintarMes(); };
@@ -589,6 +606,7 @@
     // Coordinado (bloque 2): los horarios del cruce se agendan de una; los demás se
     // piden al propietario, hasta 3 (pueden ser de días distintos)
     function pintarHorasCoordinadas(slots) {
+      ultimosSlots = slots;
       const cruce = slots.filter(s => s.cruce), resto = slots.filter(s => !s.cruce);
       const boton = (s) => `<button class="hora${s.cruce ? ' cruce' : ''}${pedidos.includes(s.timestamp) ? ' elegido' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}${s.cruce ? '<small>Puede el propietario</small>' : ''}</button>`;
       const grupo = (titulo, lista) => !lista.length ? '' : `<p class="grupo">${titulo}</p><div class="horas">` + lista.map(boton).join('') + '</div>';
@@ -621,13 +639,30 @@
       return `<div class="instruccion3" id="instruccion3"><div class="casillas">${casillas}</div>` +
         `<p><b>${hayCruce ? 'O marca 3 horarios' : 'Marca 3 horarios'}</b> que te sirvan<br><small>El propietario escoge uno de los 3. Pueden ser de días distintos.</small></p></div>`;
     }
+    // Lo que ya se eligió, a la vista en el calendario y en las horas, con ✕ para quitar
+    let ultimosSlots = [];
+    function chipsElegidos() {
+      return pedidos.map(t => `<span class="chip">${esc(textoSlot(t))}<button data-quitar="${t}" aria-label="Quitar">✕</button></span>`).join('');
+    }
+    function pintarElegidosP2() {
+      $('elegidosP2').innerHTML = coordinado() && pedidos.length ? chipsElegidos() : '';
+    }
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-quitar]'); if (!b) return;
+      e.stopPropagation();
+      const ts = Number(b.dataset.quitar);
+      pedidos = pedidos.filter(p => p !== ts);
+      if (typeof mesVisible !== 'undefined' && mesVisible) pintarMes();
+      if (!$('p3').classList.contains('oculto') && ultimosSlots.length && $('instruccion3')) pintarHorasCoordinadas(ultimosSlots); else pintarPedidos();
+    }, true);
     function pintarPedidos() {
+      pintarElegidosP2();
       const ver = coordinado() && !modoElegir && !!$('instruccion3');
       $('pedidosBarra').classList.toggle('oculto', !ver && !(coordinado() && pedidos.length));
       if (!ver && !(coordinado() && pedidos.length)) return;
       const faltan = MAX_PEDIDOS - pedidos.length;
       $('pedidosTexto').innerHTML = pedidos.length
-        ? 'Elegiste: ' + pedidos.map(t => '<b>' + esc(textoSlot(t)) + '</b>').join(' · ') + (faltan ? `<br>Te ${faltan === 1 ? 'falta 1' : 'faltan ' + faltan}, también puede ser de otro día.` : '')
+        ? `<div class="elegidos">${chipsElegidos()}</div>` + (faltan ? `Te ${faltan === 1 ? 'falta 1' : 'faltan ' + faltan}, también puede ser de otro día.` : '¡Listo! Ya tienes tus 3 horarios.')
         : 'Aún no has marcado ningún horario.';
       $('irDatos').textContent = faltan ? `Marca ${faltan} más para continuar` : 'Continuar';
       $('irDatos').classList.toggle('bloqueado', faltan > 0);
