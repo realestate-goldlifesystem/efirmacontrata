@@ -117,6 +117,15 @@
     .deslizar.volviendo .perilla, .deslizar.volviendo .relleno { transition: all .3s ease; }
     .deslizar.listo { border-color: var(--oro); }
     @keyframes brilloTexto { from { background-position: 200% 0; } to { background-position: 0 0; } }
+    .exito { text-align: center; padding: 10px 0 4px; }
+    .exito .check { width: 64px; height: 64px; margin: 8px auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; font-weight: 800;
+      color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); box-shadow: 0 0 0 8px rgba(212,175,55,.15); }
+    .exito h1 { font-size: 21px; margin: 0 0 14px; }
+    .exito p { color: #d6d3d1; font-size: 14px; line-height: 1.55; }
+    .exitoLista { text-align: left; margin: 0 0 14px; display: grid; gap: 8px; }
+    .exitoLista div { padding: 10px 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--linea); }
+    .exitoLista b { display: block; font-size: 13px; color: var(--oro); margin-bottom: 2px; } .exitoLista b::first-letter { text-transform: uppercase; }
+    .exitoLista span { font-size: 14px; }
     @keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
     @keyframes subirC { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
   </style>
@@ -273,6 +282,17 @@
     }
     function mensaje(texto, ok) { const m = $('msg'); m.textContent = texto; m.classList.toggle('ok', !!ok); m.classList.remove('oculto'); }
 
+    // Al guardar ya no se edita: queda la pantalla de éxito con lo que marcó
+    function pantallaExito() {
+      const porDia = semanaDias.map(x => ({ t: x.titulo, h: x.slots.filter(s => marcados.has(s.timestamp)).map(s => s.horaAmPm) })).filter(x => x.h.length);
+      const nombre = ultimaSolicitud && ultimaSolicitud.nombre ? esc(ultimaSolicitud.nombre.split(' ')[0]) : '';
+      $('contenido').innerHTML = `<div class="exito entra"><div class="check">✓</div><h1>¡Listo, guardamos tus horarios!</h1>` +
+        (porDia.length ? '<div class="exitoLista">' + porDia.map(x => `<div><b>${esc(x.t)}</b><span>${x.h.map(esc).join(' · ')}</span></div>`).join('') + '</div>' : '') +
+        `<p>${CITA && nombre ? `Le pedimos a <b>${nombre}</b> que elija uno de estos horarios. Te llega un correo cuando la visita quede agendada.`
+          : 'Leonardo los tendrá en cuenta para las próximas visitas. Te avisamos por correo cuando alguien quiera visitar tu inmueble.'}</p>` +
+        '<p class="nota">Ya puedes cerrar esta página.</p></div>';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     $('guardar').onclick = () => {
       const q2 = quienAbre();
       if (abreOtro && (!q2.quienAbre || q2.celularAbre.length < 7)) { mensaje('Escribe el nombre y el celular de quien abre.'); return; }
@@ -280,12 +300,14 @@
       llamar('guardarDisponibilidadPropietario', Object.assign({ lunes: iso(lunes), bloques: Array.from(marcados) }, q2)).then(r => {
         b.disabled = false; b.textContent = 'Guardar mis horarios';
         mensaje(r.mensaje || (r.ok ? 'Listo.' : 'No pudimos guardar.'), r.ok);
-        if (r.ok) { cambios = false; if (CITA) cargar(); }
+        if (r.ok) { cambios = false; pantallaExito(); }
       }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; mensaje('Error de red. Intenta de nuevo.'); });
     };
 
+    let ultimaSolicitud = null;
     function pintarSolicitud(s) {
       if (!s) return;
+      ultimaSolicitud = s;
       $('bloqueDisp').classList.remove('oculto');
       $('solicitud').classList.remove('oculto');
       $('solNotas').textContent = s.notas || '';
@@ -312,6 +334,7 @@
         $('solPie').textContent = `La visita de ${s.nombre.split(' ')[0]} quedó para el ${s.agendada}. Leonardo va a estar ahí.`;
       } else if (s.estado === 'ESPERA_INTERESADO') {
         $('solTitulo').textContent = 'Esperando al interesado';
+        $('bloqueDisp').classList.add('oculto');   // ya respondió: no se reedita
         $('solPie').textContent = `Le pedimos a ${s.nombre.split(' ')[0]} que elija uno de tus horarios. Te avisamos cuando quede agendada.`;
       } else if (s.estado === 'CANCELADA') {
         $('solTitulo').textContent = 'Esta solicitud ya no está activa';
