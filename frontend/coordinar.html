@@ -81,7 +81,10 @@
     .confirmar p { color: var(--suave); font-size: 13.5px; line-height: 1.5; margin: 0 0 18px; }
     .confirmar .si { margin-top: 14px; width: 100%; border: 0; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; background: var(--oro); color: #0c0a09; }
     .confirmar .no { width: 100%; border: 0; background: none; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 4px; }
-    .ninguno { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 1px dashed var(--linea); background: none; color: #d6d3d1; font-size: 14px; }
+    .ninguno { width: 100%; margin-top: 16px; padding: 15px; border-radius: 12px; border: 1.5px solid var(--oro); background: rgba(212,175,55,.08);
+      color: var(--oro); font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.25); transition: background .2s, transform .1s; cursor: pointer; }
+    .ninguno:hover { background: rgba(212,175,55,.16); } .ninguno:active { transform: scale(.98); }
     .volverPedidos { background: none; border: 0; color: var(--oro); font-size: 13.5px; padding: 8px 0 0; }
     .entra { animation: subirC .35s ease both; }
     .confirmar .opciones { margin: 0 0 6px; } .confirmar input { margin-top: 8px; }
@@ -241,7 +244,7 @@
         $('solTitulo').textContent = `${s.nombre.split(' ')[0]} quiere visitar tu inmueble`;
         $('solPedidos').innerHTML = '<p class="nota" style="margin-top:12px;">Pidió estos horarios. Toca el que te sirva:</p>' +
           s.pedidos.map(p => `<button class="pedido" data-ts="${p.timestamp}"><b>${esc(p.texto)}</b><span>Me sirve</span></button>`).join('');
-        $('solPedidos').insertAdjacentHTML('beforeend', '<button class="ninguno" id="ninguno">Ninguno me sirve · elegir cuándo puedo</button>');
+        $('solPedidos').insertAdjacentHTML('beforeend', '<button class="ninguno" id="ninguno">🗓️ Ninguno me sirve · elegir cuándo puedo</button>');
         $('bloqueDisp').classList.add('oculto');
         $('solPedidos').querySelectorAll('.pedido').forEach(b => b.onclick = () => confirmarAceptar(Number(b.dataset.ts), b, s));
         // Ninguno le sirve: recién ahí aparece su semana para marcar cuándo puede
