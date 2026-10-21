@@ -331,8 +331,8 @@
         if (!datosOk()) return;
         e.preventDefault();
         x0 = perilla.getBoundingClientRect().left + perilla.offsetWidth / 2; max = pista.clientWidth - perilla.offsetWidth - 8; pista.classList.remove('volviendo');
-        if (e.clientX > x0 + 30) x0 = e.clientX;   // si agarró lejos de la perilla, cuenta desde ahí
         try { pista.setPointerCapture(e.pointerId); } catch (_) {}
+        mover(e.clientX);   // si la agarró por el texto, la perilla salta hasta donde está el cursor
       });
       pista.addEventListener('pointermove', (e) => { if (x0 !== null) mover(e.clientX); });
       const soltar = (e) => {
