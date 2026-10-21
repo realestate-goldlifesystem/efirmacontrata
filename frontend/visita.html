@@ -150,6 +150,11 @@
     .barraMovil .precio { flex: 1; font-weight: 700; color: var(--oro); font-size: 17px; line-height: 1.2; }
     .barraMovil .precio small { display: block; color: var(--suave); font-weight: 400; font-size: 12px; }
     .barraMovil .principal { width: auto; padding: 14px 22px; }
+    /* Desde el correo de su cita (?ver=cita): solo ver el inmueble, sin volver a agendar */
+    .avisoCita { display: none; } body.soloVer [data-agendar], body.soloVer #notaTarjeta { display: none !important; }
+    body.soloVer .avisoCita { display: block; margin-top: 18px; padding: 12px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5;
+      background: rgba(212,175,55,.1); border: 1px solid rgba(212,175,55,.45); color: #f5f5f4; }
+    body.soloVer .avisoCita.barra { margin: 0; padding: 10px 14px; font-weight: 700; color: var(--oro); }
     @media (min-width: 1000px) { .barraMovil { display: none; } }
 
     /* ---------- Visor de fotos a pantalla completa ---------- */
@@ -331,6 +336,7 @@
       <div class="admin" id="adminTarjeta"></div>
       <button class="principal" data-agendar style="margin-top:18px;">Agendar visita</button>
       <p class="nota" id="notaTarjeta"></p>
+      <p class="avisoCita">✓ Ya tienes una visita agendada a este inmueble. Para confirmarla, cambiarla o cancelarla usa los botones de tu correo.</p>
     </aside>
   </div>
 
@@ -338,6 +344,7 @@
   <div class="barraMovil oculto" id="barraMovil">
     <div class="precio" id="precioBarra"></div>
     <button class="principal" data-agendar>Agendar visita</button>
+    <span class="avisoCita barra">✓ Visita agendada</span>
   </div>
 
   <!-- Visor de fotos -->
@@ -433,6 +440,7 @@
     const $ = (id) => document.getElementById(id);
     const parametros = new URLSearchParams(location.search);
     const idInmueble = parametros.get('i') || '';
+    if (parametros.get('ver') === 'cita') document.body.classList.add('soloVer');
     // Bloque 2: el interesado llega desde su correo para elegir del cruce o reagendar
     const citaSolicitud = parametros.get('c') || '', tokenSolicitud = parametros.get('t') || '';
     const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
