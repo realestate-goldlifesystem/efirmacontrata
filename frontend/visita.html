@@ -207,6 +207,18 @@
     .dia.conCruce { position: relative; } .dia.conCruce::after { content: ''; position: absolute; bottom: 4px; left: 50%; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--oro); }
     .pedidos { position: sticky; bottom: -1px; background: var(--panel); padding: 12px 0 4px; margin-top: 14px; border-top: 1px solid #3f3a36; }
     .pedidos p { font-size: 13px; color: var(--suave); margin: 0 0 10px; line-height: 1.5; }
+    .pedidos .bloqueado { opacity: .55; filter: grayscale(.4); }
+    .instruccion3 { display: flex; align-items: center; gap: 14px; margin: 16px 0 6px; padding: 14px 16px; border-radius: 14px;
+      background: linear-gradient(135deg, rgba(212,175,55,.18), rgba(212,175,55,.06)); border: 1.5px solid var(--oro); }
+    .instruccion3 p { margin: 0; font-size: 17px; line-height: 1.35; color: var(--texto); }
+    .instruccion3 p b { color: var(--oro); }
+    .instruccion3 small { font-size: 12.5px; color: var(--suave); }
+    .instruccion3 .casillas { display: flex; gap: 6px; flex-shrink: 0; }
+    .instruccion3 .casillas span { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700;
+      border: 1.5px dashed var(--oro); color: var(--oro); transition: all .3s ease; }
+    .instruccion3 .casillas span.lleno { background: var(--oro); color: #1c1917; border-style: solid; }
+    .instruccion3.sacudir { animation: sacudir .5s ease; }
+    @keyframes sacudir { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
     label { display: block; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--suave); font-weight: 700; margin: 0 0 6px; }
     .campo { margin-bottom: 14px; }
     input, select { width: 100%; font: inherit; font-size: 15px; color: var(--texto); background: var(--fondo); border: 1px solid #3f3a36; border-radius: 12px; padding: 12px 14px; outline: none; }
@@ -583,7 +595,7 @@
       const manana = (s) => new Date(s.timestamp).getHours() < 12;
       $('horas').innerHTML =
         (cruce.length ? grupo('🤝 El propietario puede — se agenda de una', cruce) : '') +
-        (resto.length ? `<p class="aviso" style="font-size:13px;margin-top:14px;">${cruce.length ? 'O pide otros horarios' : 'Elige hasta 3 horarios'} y le preguntamos al propietario cuál le sirve.</p>` : '') +
+        (resto.length ? instruccionTres(cruce.length) : '') +
         grupo('☀️ Mañana', resto.filter(manana)) + grupo('🌇 Tarde', resto.filter(s => !manana(s)));
       $('horas').querySelectorAll('.hora').forEach(b => b.onclick = () => {
         const ts = Number(b.dataset.ts);
@@ -602,14 +614,31 @@
       });
       pintarPedidos();
     }
+    // Hay que pedir los 3 horarios: el propietario escoge uno y entre más opciones,
+    // más fácil que alguno le sirva. La instrucción va grande, con 3 casillas que se llenan.
+    function instruccionTres(hayCruce) {
+      const casillas = [0, 1, 2].map(i => `<span class="${i < pedidos.length ? 'lleno' : ''}">${i < pedidos.length ? '✓' : i + 1}</span>`).join('');
+      return `<div class="instruccion3" id="instruccion3"><div class="casillas">${casillas}</div>` +
+        `<p><b>${hayCruce ? 'O marca 3 horarios' : 'Marca 3 horarios'}</b> que te sirvan<br><small>El propietario escoge uno de los 3. Pueden ser de días distintos.</small></p></div>`;
+    }
     function pintarPedidos() {
-      const ver = coordinado() && pedidos.length > 0;
-      $('pedidosBarra').classList.toggle('oculto', !ver);
-      if (!ver) return;
-      $('pedidosTexto').innerHTML = `Pedirás ${pedidos.length} de ${MAX_PEDIDOS}: ` + pedidos.map(t => '<b>' + esc(textoSlot(t)) + '</b>').join(' · ') +
-        (pedidos.length < MAX_PEDIDOS ? '<br>Puedes sumar más, también de otros días.' : '');
+      const ver = coordinado() && !modoElegir && !!$('instruccion3');
+      $('pedidosBarra').classList.toggle('oculto', !ver && !(coordinado() && pedidos.length));
+      if (!ver && !(coordinado() && pedidos.length)) return;
+      const faltan = MAX_PEDIDOS - pedidos.length;
+      $('pedidosTexto').innerHTML = pedidos.length
+        ? 'Elegiste: ' + pedidos.map(t => '<b>' + esc(textoSlot(t)) + '</b>').join(' · ') + (faltan ? `<br>Te ${faltan === 1 ? 'falta 1' : 'faltan ' + faltan}, también puede ser de otro día.` : '')
+        : 'Aún no has marcado ningún horario.';
+      $('irDatos').textContent = faltan ? `Marca ${faltan} más para continuar` : 'Continuar';
+      $('irDatos').classList.toggle('bloqueado', faltan > 0);
     }
     $('irDatos').onclick = () => {
+      if (pedidos.length < MAX_PEDIDOS && !modoElegir) {
+        // Que se note: la instrucción tiembla
+        const ins = $('instruccion3');
+        if (ins) { ins.classList.remove('sacudir'); void ins.offsetWidth; ins.classList.add('sacudir'); }
+        return;
+      }
       $('citaElegida').innerHTML = '📅 Horarios pedidos:<br>' + pedidos.map(t => '• <b>' + esc(textoSlot(t)) + '</b>').join('<br>');
       irA(4); prepararPaso4();
     };
