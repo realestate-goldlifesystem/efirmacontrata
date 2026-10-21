@@ -88,9 +88,12 @@
     .volverPedidos { background: none; border: 0; color: var(--oro); font-size: 13.5px; padding: 8px 0 0; }
     .entra { animation: subirC .35s ease both; }
     .confirmar .opciones { margin: 0 0 6px; } .confirmar input { margin-top: 8px; }
+    .confirmar .tel { display: flex; gap: 8px; margin-top: 8px; } .confirmar .tel input { margin-top: 0; }
+    .confirmar select { width: 108px; flex-shrink: 0; padding: 13px 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 15px; font-family: inherit; }
+    .confirmar .errQ { color: #fca5a5; font-size: 13px; margin: 8px 0 0; text-align: left; }
     .confirmar .rotuloQuien { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--suave); font-weight: 700; margin: 0 0 8px; text-align: left; }
     /* Desliza para agendar: el "filtro del filtro" antes del botón final */
-    .deslizar { position: relative; height: 56px; margin-top: 14px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--linea); overflow: hidden; touch-action: none; user-select: none; }
+    .deslizar { cursor: grab; position: relative; height: 56px; margin-top: 14px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--linea); overflow: hidden; touch-action: none; user-select: none; }
     .deslizar .relleno { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, rgba(212,175,55,.15), rgba(212,175,55,.45)); }
     .deslizar .texto { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14.5px; font-weight: 600; padding-left: 40px;
       background: linear-gradient(90deg, #78716c 0%, #f5f5f4 50%, #78716c 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: brilloTexto 2.4s linear infinite; }
@@ -281,7 +284,8 @@
         `<p>Al aceptar, la visita de <b>${nombre}</b> queda agendada en este horario y los otros que pidió se liberan. ` +
         `A ti y a ${nombre} les llega un correo con los detalles.</p>` +
         `<p class="rotuloQuien">¿Quién abre?</p><div class="opciones"><button class="opcion${abreOtro ? '' : ' elegido'}" data-q="yo">Yo abro</button><button class="opcion${abreOtro ? ' elegido' : ''}" data-q="otro">Otra persona</button></div>` +
-        `<div class="datosQ${abreOtro ? '' : ' oculto'}"><input class="qN" placeholder="Nombre de quien abre" maxlength="80" value="${esc($('quien').value)}"><input class="qC" type="tel" inputmode="numeric" placeholder="Celular de quien abre" maxlength="15" value="${esc($('celQuien').value)}"></div>` +
+        `<div class="datosQ${abreOtro ? '' : ' oculto'}"><input class="qN" placeholder="Nombre de quien abre" maxlength="80" value="${esc($('quien').value)}"><div class="tel"><select class="qI" aria-label="Indicativo del país"><option value="57" data-largo="10">CO +57</option><option value="1" data-largo="10">US +1</option><option value="52" data-largo="10">MX +52</option><option value="34" data-largo="9">ES +34</option><option value="58" data-largo="10">VE +58</option><option value="593" data-largo="9">EC +593</option><option value="51" data-largo="9">PE +51</option><option value="56" data-largo="9">CL +56</option><option value="54" data-largo="10">AR +54</option><option value="507" data-largo="8">PA +507</option></select>` +
+        `<input class="qC" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="300 123 4567"></div><p class="errQ oculto"></p></div>` +
         `<div class="deslizar"><div class="relleno"></div><div class="texto">Desliza para agendar</div><div class="perilla">›</div></div>` +
         `<button class="si oculto">Sí, agendar</button><button class="no">Volver</button></div>`;
       const q = (c) => capa.querySelector(c);
@@ -291,34 +295,57 @@
         capa.querySelectorAll('[data-q]').forEach(x => x.classList.toggle('elegido', x === b));
         q('.datosQ').classList.toggle('oculto', !otro);
       });
+      // Celular como en la página de agendar: indicativo del país y solo dígitos, con el largo de ese país
+      const largo = () => Number(q('.qI').selectedOptions[0].dataset.largo);
+      const formato = (d) => d.length === 10 ? d.replace(/^(\d{0,3})(\d{0,3})(\d{0,4}).*/, '$1 $2 $3') : d.replace(/(\d{3})(?=\d)/g, '$1 ');
+      const pintarCel = () => { const d = q('.qC').value.replace(/\D/g, '').slice(0, largo()); q('.qC').value = formato(d).trim(); q('.errQ').classList.add('oculto'); };
+      const previo = String($('celQuien').value || '').match(/^\+(\d{1,3})\s*(.*)$/);
+      if (previo && q(`.qI option[value="${previo[1]}"]`)) q('.qI').value = previo[1];
+      q('.qC').value = (previo ? previo[2] : $('celQuien').value).replace(/\D/g, '');
+      pintarCel();
+      q('.qC').oninput = pintarCel; q('.qI').onchange = pintarCel; q('.qN').oninput = () => q('.errQ').classList.add('oculto');
+      const datosOk = () => {
+        if (!otro) return true;
+        const faltaN = q('.qN').value.trim().length < 2, faltaC = q('.qC').value.replace(/\D/g, '').length !== largo();
+        if (!faltaN && !faltaC) return true;
+        q('.errQ').textContent = faltaN && faltaC ? 'Escribe el nombre y el celular de quien abre.' : faltaN ? 'Escribe el nombre de quien abre.' : `El celular debe tener ${largo()} dígitos.`;
+        q('.errQ').classList.remove('oculto'); (faltaN ? q('.qN') : q('.qC')).focus();
+        return false;
+      };
       const cerrar = () => capa.remove();
       capa.onclick = (e) => { if (e.target === capa) cerrar(); };
       q('.no').onclick = cerrar;
       q('.si').onclick = () => {
         // Lo que eligió en la ventana pasa al formulario de la página
         elegirQuien(otro);
-        if (otro) { $('quien').value = q('.qN').value; $('celQuien').value = q('.qC').value; }
+        if (otro) { $('quien').value = q('.qN').value.trim(); $('celQuien').value = '+' + q('.qI').value + ' ' + q('.qC').value; }
         cerrar(); aceptar(ts, boton);
       };
       // Deslizar: al llegar al final aparece el botón; si suelta antes, la perilla vuelve
       const pista = q('.deslizar'), perilla = q('.perilla'), relleno = q('.relleno');
       let x0 = null, max = 0;
       const mover = (x) => { const d = Math.max(0, Math.min(max, x - x0)); perilla.style.transform = `translateX(${d}px)`; relleno.style.width = (d + 28) + 'px'; return d; };
-      perilla.addEventListener('pointerdown', (e) => {
+      // Se puede agarrar desde cualquier parte de la barra (en PC muchos la agarran por el texto)
+      pista.addEventListener('pointerdown', (e) => {
         if (pista.classList.contains('listo')) return;
-        if (otro && (q('.qN').value.trim().length < 2 || q('.qC').value.replace(/\D/g, '').length < 7)) { q('.qN').placeholder = 'Escribe el nombre y el celular'; q('.qN').focus(); return; }
-        x0 = e.clientX; max = pista.clientWidth - perilla.offsetWidth - 8; pista.classList.remove('volviendo'); perilla.setPointerCapture(e.pointerId);
+        if (!datosOk()) return;
+        e.preventDefault();
+        x0 = perilla.getBoundingClientRect().left + perilla.offsetWidth / 2; max = pista.clientWidth - perilla.offsetWidth - 8; pista.classList.remove('volviendo');
+        if (e.clientX > x0 + 30) x0 = e.clientX;   // si agarró lejos de la perilla, cuenta desde ahí
+        try { pista.setPointerCapture(e.pointerId); } catch (_) {}
       });
-      perilla.addEventListener('pointermove', (e) => { if (x0 !== null) mover(e.clientX); });
+      pista.addEventListener('pointermove', (e) => { if (x0 !== null) mover(e.clientX); });
       const soltar = (e) => {
         if (x0 === null) return;
         const d = mover(e.clientX); x0 = null;
-        if (d >= max - 6) {
+        if (d >= max * 0.8) {
+          perilla.style.transform = `translateX(${max}px)`; relleno.style.width = '100%';
           pista.classList.add('listo'); perilla.textContent = '✓'; q('.texto').textContent = 'Listo';
           q('.si').classList.remove('oculto'); q('.si').classList.add('entra');
         } else { pista.classList.add('volviendo'); perilla.style.transform = ''; relleno.style.width = '0'; }
       };
-      perilla.addEventListener('pointerup', soltar); perilla.addEventListener('pointercancel', soltar);
+      pista.addEventListener('pointerup', soltar); pista.addEventListener('pointercancel', soltar);
+      pista.addEventListener('dragstart', (e) => e.preventDefault());
       document.body.appendChild(capa);
     }
 
