@@ -79,8 +79,23 @@
     .confirmar h3 { margin: 0 0 8px; font-size: 19px; }
     .confirmar .cuando { color: var(--oro); font-weight: 700; font-size: 17px; margin: 0 0 12px; }
     .confirmar p { color: var(--suave); font-size: 13.5px; line-height: 1.5; margin: 0 0 18px; }
-    .confirmar .si { width: 100%; border: 0; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; background: var(--oro); color: #0c0a09; }
+    .confirmar .si { margin-top: 14px; width: 100%; border: 0; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; background: var(--oro); color: #0c0a09; }
     .confirmar .no { width: 100%; border: 0; background: none; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 4px; }
+    .ninguno { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 1px dashed var(--linea); background: none; color: #d6d3d1; font-size: 14px; }
+    .volverPedidos { background: none; border: 0; color: var(--oro); font-size: 13.5px; padding: 8px 0 0; }
+    .entra { animation: subirC .35s ease both; }
+    .confirmar .opciones { margin: 0 0 6px; } .confirmar input { margin-top: 8px; }
+    .confirmar .rotuloQuien { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--suave); font-weight: 700; margin: 0 0 8px; text-align: left; }
+    /* Desliza para agendar: el "filtro del filtro" antes del botón final */
+    .deslizar { position: relative; height: 56px; margin-top: 14px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--linea); overflow: hidden; touch-action: none; user-select: none; }
+    .deslizar .relleno { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, rgba(212,175,55,.15), rgba(212,175,55,.45)); }
+    .deslizar .texto { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14.5px; font-weight: 600; padding-left: 40px;
+      background: linear-gradient(90deg, #78716c 0%, #f5f5f4 50%, #78716c 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: brilloTexto 2.4s linear infinite; }
+    .deslizar .perilla { position: absolute; top: 3px; left: 4px; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #e8c766, var(--oro));
+      display: grid; place-items: center; color: #0c0a09; font-size: 22px; font-weight: 700; cursor: grab; box-shadow: 0 4px 14px rgba(0,0,0,.35); touch-action: none; }
+    .deslizar.volviendo .perilla, .deslizar.volviendo .relleno { transition: all .3s ease; }
+    .deslizar.listo { border-color: var(--oro); }
+    @keyframes brilloTexto { from { background-position: 200% 0; } to { background-position: 0 0; } }
     @keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
     @keyframes subirC { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
   </style>
@@ -108,8 +123,8 @@
         <p class="nota" id="solPie"></p>
       </div>
 
-      <!-- Disponibilidad de la semana -->
-      <div class="bloque">
+      <!-- Disponibilidad de la semana (con una solicitud, solo si ninguno de los pedidos le sirve) -->
+      <div class="bloque" id="bloqueDisp">
         <h2 id="dispTitulo">¿Cuándo puedes abrir el inmueble?</h2>
         <p class="nota">Toca los horarios en que tú (o quien abra) puedes. Solo aparecen los horarios libres de Leonardo; cada visita dura 40 minutos.</p>
         <div class="semana">
@@ -217,6 +232,7 @@
 
     function pintarSolicitud(s) {
       if (!s) return;
+      $('bloqueDisp').classList.remove('oculto');
       $('solicitud').classList.remove('oculto');
       $('solNotas').textContent = s.notas || '';
       $('solPedidos').innerHTML = ''; $('solPie').textContent = '';
@@ -225,8 +241,18 @@
         $('solTitulo').textContent = `${s.nombre.split(' ')[0]} quiere visitar tu inmueble`;
         $('solPedidos').innerHTML = '<p class="nota" style="margin-top:12px;">Pidió estos horarios. Toca el que te sirva:</p>' +
           s.pedidos.map(p => `<button class="pedido" data-ts="${p.timestamp}"><b>${esc(p.texto)}</b><span>Me sirve</span></button>`).join('');
-        $('solPie').textContent = '¿Ninguno te sirve? Marca abajo los horarios en que puedes y le pedimos que elija uno.';
+        $('solPedidos').insertAdjacentHTML('beforeend', '<button class="ninguno" id="ninguno">Ninguno me sirve · elegir cuándo puedo</button>');
+        $('bloqueDisp').classList.add('oculto');
         $('solPedidos').querySelectorAll('.pedido').forEach(b => b.onclick = () => confirmarAceptar(Number(b.dataset.ts), b, s));
+        // Ninguno le sirve: recién ahí aparece su semana para marcar cuándo puede
+        $('ninguno').onclick = () => {
+          const nombre = esc(s.nombre.split(' ')[0]);
+          $('solTitulo').textContent = '¿Cuándo puedes?';
+          $('solPedidos').innerHTML = `<p class="nota" style="margin-top:8px;">Marca abajo los horarios en que puedes y le pedimos a ${nombre} que elija uno.</p>` +
+            '<button class="volverPedidos" id="volverPedidos">‹ Ver otra vez los horarios que pidió</button>';
+          $('volverPedidos').onclick = () => pintarSolicitud(s);
+          $('bloqueDisp').classList.remove('oculto'); $('bloqueDisp').classList.add('entra');
+        };
       } else if (s.estado === 'AGENDADA') {
         $('solTitulo').textContent = '✓ Visita agendada';
         $('solPie').textContent = `La visita de ${s.nombre.split(' ')[0]} quedó para el ${s.agendada}. Leonardo va a estar ahí.`;
@@ -243,8 +269,6 @@
 
     // Antes de agendar se pregunta, y se explica qué pasa al aceptar
     function confirmarAceptar(ts, boton, s) {
-      const q2 = quienAbre();
-      if (abreOtro && (!q2.quienAbre || q2.celularAbre.length < 7)) { mensaje('Escribe el nombre y el celular de quien abre (abajo) antes de aceptar.'); $('quien').focus(); return; }
       const texto = boton.querySelector('b').textContent;
       const nombre = esc(String(s.nombre || 'el interesado').split(' ')[0]);
       const capa = document.createElement('div');
@@ -253,11 +277,45 @@
         `<p class="cuando">${esc(texto)}</p>` +
         `<p>Al aceptar, la visita de <b>${nombre}</b> queda agendada en este horario y los otros que pidió se liberan. ` +
         `A ti y a ${nombre} les llega un correo con los detalles.</p>` +
-        `<button class="si">Sí, agendar</button><button class="no">Volver</button></div>`;
+        `<p class="rotuloQuien">¿Quién abre?</p><div class="opciones"><button class="opcion${abreOtro ? '' : ' elegido'}" data-q="yo">Yo abro</button><button class="opcion${abreOtro ? ' elegido' : ''}" data-q="otro">Otra persona</button></div>` +
+        `<div class="datosQ${abreOtro ? '' : ' oculto'}"><input class="qN" placeholder="Nombre de quien abre" maxlength="80" value="${esc($('quien').value)}"><input class="qC" type="tel" inputmode="numeric" placeholder="Celular de quien abre" maxlength="15" value="${esc($('celQuien').value)}"></div>` +
+        `<div class="deslizar"><div class="relleno"></div><div class="texto">Desliza para agendar</div><div class="perilla">›</div></div>` +
+        `<button class="si oculto">Sí, agendar</button><button class="no">Volver</button></div>`;
+      const q = (c) => capa.querySelector(c);
+      let otro = abreOtro;
+      capa.querySelectorAll('[data-q]').forEach(b => b.onclick = () => {
+        otro = b.dataset.q === 'otro';
+        capa.querySelectorAll('[data-q]').forEach(x => x.classList.toggle('elegido', x === b));
+        q('.datosQ').classList.toggle('oculto', !otro);
+      });
       const cerrar = () => capa.remove();
       capa.onclick = (e) => { if (e.target === capa) cerrar(); };
-      capa.querySelector('.no').onclick = cerrar;
-      capa.querySelector('.si').onclick = () => { cerrar(); aceptar(ts, boton); };
+      q('.no').onclick = cerrar;
+      q('.si').onclick = () => {
+        // Lo que eligió en la ventana pasa al formulario de la página
+        elegirQuien(otro);
+        if (otro) { $('quien').value = q('.qN').value; $('celQuien').value = q('.qC').value; }
+        cerrar(); aceptar(ts, boton);
+      };
+      // Deslizar: al llegar al final aparece el botón; si suelta antes, la perilla vuelve
+      const pista = q('.deslizar'), perilla = q('.perilla'), relleno = q('.relleno');
+      let x0 = null, max = 0;
+      const mover = (x) => { const d = Math.max(0, Math.min(max, x - x0)); perilla.style.transform = `translateX(${d}px)`; relleno.style.width = (d + 28) + 'px'; return d; };
+      perilla.addEventListener('pointerdown', (e) => {
+        if (pista.classList.contains('listo')) return;
+        if (otro && (q('.qN').value.trim().length < 2 || q('.qC').value.replace(/\D/g, '').length < 7)) { q('.qN').placeholder = 'Escribe el nombre y el celular'; q('.qN').focus(); return; }
+        x0 = e.clientX; max = pista.clientWidth - perilla.offsetWidth - 8; pista.classList.remove('volviendo'); perilla.setPointerCapture(e.pointerId);
+      });
+      perilla.addEventListener('pointermove', (e) => { if (x0 !== null) mover(e.clientX); });
+      const soltar = (e) => {
+        if (x0 === null) return;
+        const d = mover(e.clientX); x0 = null;
+        if (d >= max - 6) {
+          pista.classList.add('listo'); perilla.textContent = '✓'; q('.texto').textContent = 'Listo';
+          q('.si').classList.remove('oculto'); q('.si').classList.add('entra');
+        } else { pista.classList.add('volviendo'); perilla.style.transform = ''; relleno.style.width = '0'; }
+      };
+      perilla.addEventListener('pointerup', soltar); perilla.addEventListener('pointercancel', soltar);
       document.body.appendChild(capa);
     }
 
