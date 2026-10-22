@@ -18,10 +18,22 @@ const DIR = path.join(__dirname, '..', 'frontend', 'v');
 const esc = (t) => String(t || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 async function api(cuerpo) {
-  // Apps Script responde con una redirección: se sigue con GET
-  const r1 = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo), redirect: 'manual' });
-  const r2 = await fetch(r1.headers.get('location'));
-  return JSON.parse(await r2.text());
+  // Apps Script responde con una redirección: se sigue con GET. A veces devuelve una
+  // página de error de Google en vez del JSON (servidor ocupado o publicando una
+  // versión): se reintenta hasta 3 veces antes de fallar.
+  let ultimo;
+  for (let intento = 1; intento <= 3; intento++) {
+    try {
+      const r1 = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo), redirect: 'manual' });
+      const r2 = await fetch(r1.headers.get('location'));
+      return JSON.parse(await r2.text());
+    } catch (e) {
+      ultimo = e;
+      console.log(`⚠️ Intento ${intento} falló (${e.message}); reintentando…`);
+      await new Promise(z => setTimeout(z, 20000 * intento));
+    }
+  }
+  throw ultimo;
 }
 
 function pagina(inm, conFoto) {
