@@ -114,8 +114,48 @@ igual('sin casilla → lee la primera', [r.tipo, r.referenciaPago, r.noCorrespon
 r = ctx.recAnalizar(['texto ilegible'], 'AGUA');
 igual('no se reconoce nada → sin referencia y sin acusar de "no corresponde"', [r.referenciaPago, r.noCorresponde, r.tipo], ['No detectada', false, '']);
 igual('sin páginas no rompe', ctx.recAnalizar([], 'AGUA').referenciaPago, 'No detectada');
-igual('agua con "cuenta contrato" escrita → manda sobre el código de barras',
-  ctx.recReferencia('ACUEDUCTO\nCuenta contrato\n12345678\n(8020)999999999999', 'AGUA'), { referencia: '12345678', origen: 'etiqueta' });
+// --- Agua: el número PARA PAGOS, no la cuenta contrato (22-oct-2026) ---
+igual('agua: el código de barras (de pago) manda sobre la cuenta contrato',
+  ctx.recReferencia('ACUEDUCTO\nCuenta contrato\n12345678\n(8020)999999999999', 'AGUA'), { referencia: '999999999999', origen: 'codigo_barras' });
+igual('agua: sin número de pago ni código de barras → la cuenta contrato como último recurso',
+  ctx.recReferencia('ACUEDUCTO\nCuenta contrato\n12345678', 'AGUA'), { referencia: '12345678', origen: 'etiqueta' });
+
+// Así lo entrega Vision en el recibo del acueducto de Bogotá: las etiquetas juntas
+// arriba y los números más abajo, primero la cuenta y después el de pagos.
+const AGUA_ETIQUETAS_ARRIBA = `acueducto
+AGUA Y ALCANTARILLADO DE BOGOTÁ
+CUENTA CONTRATO
+Número para cualquier consulta
+Factura de Servicios Públicos No.
+Número para pagos
+TOTAL A PAGAR
+Datos del medidor
+NÚMERO 2000000001
+Datos del consumo
+000011112222
+ÚLTIMA LECTURA:
+304
+15000000001
+$ 79.800`;
+igual('agua, etiquetas arriba → el de pagos (no la cuenta ni el medidor)',
+  ctx.recReferencia(AGUA_ETIQUETAS_ARRIBA, 'AGUA'), { referencia: '15000000001', origen: 'etiqueta' });
+
+// La parte del aseo del mismo recibo: cada número pegado a su etiqueta.
+const AGUA_ETIQUETA_PEGADA = `ALCANTARILLADO
+CUENTA CONTRATO
+Número para cualquier consulta
+000011112222
+Factura de Servicios Públicos No.
+Número para pagos
+15000000001`;
+igual('agua, número pegado a su etiqueta → el de pagos',
+  ctx.recReferencia(AGUA_ETIQUETA_PEGADA, 'AGUA'), { referencia: '15000000001', origen: 'etiqueta' });
+igual('agua, en una sola línea',
+  ctx.recReferencia('ACUEDUCTO\nFactura de Servicios Públicos No. 15000000001\nCuenta contrato 000011112222', 'AGUA'), { referencia: '15000000001', origen: 'etiqueta' });
+igual('agua, recibo completo en la casilla AGUA',
+  ctx.recAnalizar([AGUA_ETIQUETAS_ARRIBA + '\n' + AGUA_ETIQUETA_PEGADA], 'AGUA').referenciaPago, '15000000001');
+igual('luz no cambia: sigue tomando el número de cliente',
+  ctx.recReferencia(LUZ, 'LUZ'), { referencia: '7654321-0', origen: 'etiqueta' });
 
 console.log(`\n${ok} bien, ${mal} mal`);
 process.exit(mal ? 1 : 0);

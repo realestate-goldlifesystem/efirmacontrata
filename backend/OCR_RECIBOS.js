@@ -71,6 +71,17 @@ function recEmpresa(texto, tipo) {
  */
 function recReferencia(texto, tipo) {
   const t = recNorm(texto);
+
+  // Agua: el número con el que se PAGA, no la cuenta contrato (decisión de Leonardo,
+  // 22-oct-2026). Si el recibo no lo trae escrito, el del código de barras también es
+  // de pago; la cuenta contrato queda solo como último recurso (patrones de abajo).
+  if (tipo === 'AGUA') {
+    const pago = recNumeroParaPagosAgua(t);
+    if (pago) return { referencia: pago, origen: 'etiqueta' };
+    const barras = t.match(/\(8020\)\s*(\d{6,24})/);
+    if (barras) return { referencia: barras[1].replace(/^0+/, ''), origen: 'codigo_barras' };
+  }
+
   const porTipo = {
     GAS: [/CUENTA O REFERENCIA DE PAGO[\s\S]{0,60}?\b(\d{6,12})\b/, /REFERENCIA DE PAGO[\s\S]{0,40}?\b(\d{6,12})\b/],
     LUZ: [/NUMERO DE CLIENTE(?:\s+ES)?\s*:?\s*(\d{5,10}(?:-\d)?)/, /N[O°.]*\s*(?:DE\s+)?CLIENTE[\s\S]{0,30}?\b(\d{5,10}(?:-\d)?)/, /N[O°.]*\s*(?:DE\s+)?CUENTA[\s\S]{0,30}?\b(\d{5,12}(?:-\d)?)/],
@@ -90,6 +101,41 @@ function recReferencia(texto, tipo) {
   const b = t.match(/\(8020\)\s*(\d{6,24})/);
   if (b) return { referencia: b[1].replace(/^0+/, ''), origen: 'codigo_barras' };
   return { referencia: '', origen: '' };
+}
+
+/**
+ * Recibo del acueducto: el número de "Factura de Servicios Públicos No. — Número para
+ * pagos", el que va arriba del total a pagar. El mismo recibo trae también la CUENTA
+ * CONTRATO ("número para cualquier consulta"), que NO es la que se quiere.
+ *
+ * Vision lo entrega de dos formas, a veces en el mismo recibo:
+ *  - el número pegado a su etiqueta ("...Número para pagos\n15946481312");
+ *  - todas las etiquetas arriba y los números más abajo, en el mismo orden: primero el
+ *    de la cuenta contrato y después el de pagos.
+ * @param {string} t texto ya normalizado (recNorm)
+ * @return {string} el número, o '' si no se encontró
+ */
+function recNumeroParaPagosAgua(t) {
+  const ETIQUETA_PAGOS = /FACTURA DEL? SERVICIOS? PUBLICOS? N[O°.]*|NUMERO PARA PAGOS/;
+  const iCuenta = t.search(/CUENTA\s*CONTRATO/);
+  // Números solos en su línea después de "CUENTA CONTRATO": el primero es la cuenta.
+  const sueltos = iCuenta === -1 ? [] : (t.slice(iCuenta).match(/^[ \t]*\d{8,14}[ \t]*$/gm) || []).map(s => s.trim());
+  const pegada = t.match(/CUENTA\s*CONTRATO[^\d]{0,40}?\b(\d{6,14})\b/);
+  const cuenta = pegada ? pegada[1] : (sueltos[0] || '');
+
+  // 1. Pegado a su etiqueta: en la misma línea o en la siguiente, sin nada en medio
+  //    (con una ventana más larga se colaba el número del medidor). No vale un número
+  //    de dentro del código de barras ("(415)7700...(8020)...") ni la cuenta contrato.
+  const junto = /(?:FACTURA DEL? SERVICIOS? PUBLICOS? N[O°.]*|NUMERO PARA PAGOS)(?:\s*NUMERO PARA PAGOS)?[\s:]*(?<!\))\b(\d{8,14})\b(?!\()/g;
+  let m;
+  while ((m = junto.exec(t)) !== null) {
+    if (m[1] !== cuenta) return m[1];
+  }
+
+  // 2. Etiquetas arriba, números abajo: el siguiente número suelto distinto de la cuenta.
+  const iPagos = t.search(ETIQUETA_PAGOS);
+  if (iCuenta === -1 || iPagos === -1 || iPagos < iCuenta || !cuenta) return '';
+  return sueltos.filter(n => n !== cuenta)[0] || '';
 }
 
 /**
