@@ -6065,6 +6065,11 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
     let notaEntrega = '';
     try {
       const idParaEntrega = idRegCol > 0 ? String(sheet.getRange(targetRow, idRegCol).getValue() || '').trim() : '';
+      // El inmueble ya se arrendó: las visitas de interesados que seguían vivas se cancelan
+      if (idParaEntrega && typeof cancelarVisitasPorArriendo === 'function') {
+        const visitas = cancelarVisitasPorArriendo(idParaEntrega);
+        if (visitas.length) notaEntrega += ' 🗓️ ' + visitas.length + ' visita(s) de interesados canceladas.';
+      }
       if (idParaEntrega && emailInq && String(emailInq).includes('@') && typeof abrirSalaEntrega === 'function') {
         const rEnt = abrirSalaEntrega(idParaEntrega);
         notaEntrega = rEnt.ok ? ' 🔑 Sala de entrega abierta.' : ' ⚠️ Sala de entrega no abierta: ' + rEnt.error;

@@ -359,3 +359,47 @@ function marcarInmuebleEntregado_(fila, col) {
     if (cDet !== -1) sheet.getRange(i + 1, cDet + 1).setValue('🔑 Inmueble entregado al inquilino el ' + Utilities.formatDate(inicio, Session.getScriptTimeZone(), 'dd/MM/yyyy') + '.');
   } catch (e) { Logger.log('No se pudo marcar el inmueble como entregado: ' + e.message); }
 }
+
+/**
+ * Al cargar el contrato autenticado el inmueble ya está arrendado: se cancelan las
+ * visitas de interesados que seguían vivas (pedidas, agendadas o confirmadas), se
+ * borran sus eventos y a cada interesado le llega un aviso amable (22-oct-2026).
+ */
+function cancelarVisitasPorArriendo(idInmueble) {
+  const canceladas = [];
+  try {
+    const { sheet, col } = hojaCitasConColumnas();
+    const ultima = sheet.getLastRow();
+    if (ultima < 2) return canceladas;
+    const filas = sheet.getRange(2, 1, ultima - 1, sheet.getLastColumn()).getValues();
+    const vivas = [ESTADO_POR_COORDINAR, ESTADOS_CITA.PENDIENTE, ESTADOS_CITA.CONFIRMADA, ESTADOS_CITA.REAGENDADA, ESTADOS_CITA.QUIERE_REAGENDAR];
+    filas.forEach((f, i) => {
+      if (String(valorCita(f, col, 'TIPO AGENDA') || '').trim() !== 'INTERESADO') return;
+      if (String(valorCita(f, col, 'ID INMUEBLE') || '') !== String(idInmueble)) return;
+      if (vivas.indexOf(String(valorCita(f, col, 'ESTADO') || '').trim()) === -1) return;
+      const numFila = i + 2;
+      aplicarCambioEstadoCita(sheet, col, numFila, f, ESTADOS_CITA.CANCELADA, 'cancelada automáticamente: el inmueble se arrendó (contrato autenticado)');
+      if (col['HORARIOS PEDIDOS']) sheet.getRange(numFila, col['HORARIOS PEDIDOS']).setValue('');
+      const nombre = String(valorCita(f, col, 'NOMBRE') || '');
+      const correo = String(valorCita(f, col, 'CORREO') || '');
+      const inicio = fechaHoraDeCita(valorCita(f, col, 'FECHA CITA'), valorCita(f, col, 'HORA CITA'));
+      canceladas.push(nombre + (inicio ? ' (' + Utilities.formatDate(inicio, Session.getScriptTimeZone(), 'dd/MM HH:mm') + ')' : ''));
+      try {
+        if (correo) enviarCorreoCita(correo, '🏠 Tu visita fue cancelada: el inmueble ya se arrendó - Gold Life', 'VISITA CANCELADA', nombre,
+          'Te contamos que el inmueble que ibas a visitar' + (inicio ? ` el <strong>${_textoHorario(inicio.getTime())}</strong>` : '') +
+          ' <strong>ya se arrendó</strong>, así que cancelamos tu visita. No tienes que hacer nada.<br><br>' +
+          'Gracias por tu interés. En nuestro portafolio tenemos más inmuebles que te pueden gustar.',
+          htmlBotonesCorreo([{ texto: '🏠 Ver más inmuebles', color: '#b8860b', url: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/portafolio/' }]));
+      } catch (e) { Logger.log('No se pudo avisar a ' + nombre + ': ' + e.message); }
+    });
+    _cacheApartados = null;
+    if (canceladas.length) {
+      try {
+        enviarCorreoCita(correoAgenteCitas(), `🏠 ${idInmueble} arrendado: se cancelaron ${canceladas.length} visita(s)`, 'VISITAS CANCELADAS', 'Agente',
+          etiquetaTipoCitaHtml('INTERESADO') + `Se cargó el contrato autenticado de <strong>${idInmueble}</strong>, así que se cancelaron las visitas que seguían pendientes y se liberó tu agenda:<br><br>` +
+          canceladas.map(x => '• ' + x).join('<br>') + '<br><br>A cada interesado le llegó un aviso.', '');
+      } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
+    }
+  } catch (e) { Logger.log('Error cancelando visitas de ' + idInmueble + ': ' + e.message); }
+  return canceladas;
+}
