@@ -877,9 +877,9 @@
           // API de mensajes del reproductor (enablejsapi). vq=hd1080 pide HD, pero
           // YouTube decide la calidad según el tamaño y la conexión.
           $('videoEnGaleria').innerHTML = video
-            ? `<iframe id="reproductor" src="https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&loop=1&playlist=${v}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1&vq=hd1080&origin=${encodeURIComponent(location.origin)}" title="Recorrido en video" allow="autoplay; encrypted-media; fullscreen"></iframe>
+            ? `<iframe id="reproductor" src="https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=0&loop=1&playlist=${v}&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0&iv_load_policy=3&enablejsapi=1&vq=hd1080&origin=${encodeURIComponent(location.origin)}" title="Recorrido en video" allow="autoplay; encrypted-media; fullscreen"></iframe>
                <div class="controlesVideo">
-                 <button id="videoSonido" class="sonido" aria-label="Activar el sonido">🔊 Activar sonido</button>
+                 <button id="videoSonido" class="sonido activo" aria-label="Silenciar">🔊</button>
                  <button id="videoPlay" aria-label="Pausar">❚❚</button>
                  <button id="videoAmpliar" aria-label="Ver en pantalla completa">${ICONO_AMPLIAR}</button>
                </div>`
@@ -894,9 +894,26 @@
             $('videoPlay').textContent = reproduciendo ? '❚❚' : '▶';
             $('videoPlay').setAttribute('aria-label', reproduciendo ? 'Pausar' : 'Reproducir');
           };
-          // Arranca en silencio (los navegadores no dejan reproducir solo con sonido);
-          // un toque activa el sonido y otro lo vuelve a silenciar
-          let conSonido = false;
+          // Arranca CON sonido: el iframe se crea al tocar "Video", y ese toque le da
+          // permiso al navegador. Si aun así lo bloquea (algunos iPhone o Messenger),
+          // el video no arranca: a los 3 s se pasa a silencio, se reproduce y queda
+          // el botón "Activar sonido" a la vista.
+          let conSonido = true, estado = -1;
+          const escuchar = (e) => {
+            if (!/youtube/.test(String(e.origin))) return;
+            try { const d = JSON.parse(e.data); if (d.info && typeof d.info.playerState === 'number') estado = d.info.playerState; } catch (_) {}
+          };
+          window.addEventListener('message', escuchar);
+          $('reproductor').addEventListener('load', () => {
+            $('reproductor').contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*');
+            setTimeout(() => {
+              if (estado === 1 || !$('reproductor')) return;   // ya suena
+              conSonido = false; orden('mute'); orden('playVideo');
+              $('videoSonido').textContent = '🔊 Activar sonido';
+              $('videoSonido').classList.remove('activo');
+              $('videoSonido').setAttribute('aria-label', 'Activar el sonido');
+            }, 3000);
+          });
           $('videoSonido').onclick = (e) => {
             e.stopPropagation();
             conSonido = !conSonido;
