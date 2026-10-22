@@ -2766,6 +2766,43 @@
                     btn.disabled = true;
                     btn.innerHTML = ' Generando...';
 
+                    // Modo "generando": una ventana que no se puede cerrar tapa todo el panel
+                    // hasta que el servidor responda, para no oprimir otro botón a mitad de la
+                    // generación. También detiene el panel en vivo (hayOperacionEnCurso).
+                    let progreso = 0;
+                    Swal.fire({
+                        title: 'Generando el contrato original...',
+                        html: `
+                            <div style="margin-bottom: 15px; color: #a1a1aa; font-size: 0.95rem;">
+                                Fusionando los datos aprobados en la plantilla original y creando el PDF.<br>
+                                <b style="color: #fff;">Por favor, espera sin cerrar la ventana...</b>
+                            </div>
+                            <div style="height: 24px; border-radius: 12px; background: rgba(255,255,255,0.05); overflow: hidden; border: 1px solid rgba(212,175,55,0.2);">
+                                <div id="swalProgressOriginal" style="height: 100%; width: 0%; background: linear-gradient(90deg, rgba(212,175,55,0.6) 0%, rgba(212,175,55,1) 100%); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 0.8rem;">0%</div>
+                            </div>
+                        `,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        background: 'rgba(30, 30, 35, 0.95)',
+                        color: '#fff',
+                        backdrop: `rgba(0,0,0,0.8)`,
+                        didOpen: () => {
+                            const barra = document.getElementById('swalProgressOriginal');
+                            window.swalProgressOriginalInterval = setInterval(() => {
+                                progreso += Math.random() * 8 + 2;
+                                if (progreso > 95) progreso = 95; // se queda en 95% esperando al servidor
+                                if (barra) {
+                                    barra.style.width = progreso + '%';
+                                    barra.innerText = Math.round(progreso) + '%';
+                                }
+                            }, 600);
+                        },
+                        willClose: () => {
+                            clearInterval(window.swalProgressOriginalInterval);
+                        }
+                    });
+
                     google.script.run
                         .withSuccessHandler(function(res) {
                             btn.disabled = false;
