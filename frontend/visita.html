@@ -308,7 +308,7 @@
         <button class="flecha izq" id="ant" aria-label="Foto anterior">‹</button>
         <button class="flecha der" id="sig" aria-label="Foto siguiente">›</button>
         <div class="videoEnGaleria oculto" id="videoEnGaleria"></div>
-        <span class="ampliar">⤢ Ver en grande</span>
+        <span class="ampliar"><svg width="14" height="14" style="vertical-align:-2px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> Ver en grande</span>
         <span class="contador" id="contador"></span>
       </div>
       <div class="miniaturas sin-barra" id="miniaturas"></div>
@@ -449,6 +449,8 @@
     if (parametros.get('ver') === 'cita') document.body.classList.add('soloVer');
     // Bloque 2: el interesado llega desde su correo para elegir del cruce o reagendar
     const citaSolicitud = parametros.get('c') || '', tokenSolicitud = parametros.get('t') || '';
+    // Íconos dibujados: los símbolos ⤢ y ✕ salen diminutos en Android
+    const ICONO_AMPLIAR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>', ICONO_CERRAR = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
     const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -879,7 +881,7 @@
                <div class="controlesVideo">
                  <button id="videoSonido" class="sonido" aria-label="Activar el sonido">🔊 Activar sonido</button>
                  <button id="videoPlay" aria-label="Pausar">❚❚</button>
-                 <button id="videoAmpliar" aria-label="Ver en pantalla completa">⤢</button>
+                 <button id="videoAmpliar" aria-label="Ver en pantalla completa">${ICONO_AMPLIAR}</button>
                </div>`
             : '';
           if (!video) { salirPantallaCompleta(); return; }
@@ -913,15 +915,15 @@
             // Pantalla completa nativa; si el celular no la permite (iPhone), se ocupa toda la pantalla dentro de la página
             if (caja.requestFullscreen) caja.requestFullscreen().catch(() => caja.classList.add('pantallaCompleta'));
             else caja.classList.add('pantallaCompleta');
-            $('videoAmpliar').textContent = '✕';
+            $('videoAmpliar').innerHTML = ICONO_CERRAR;
           };
         };
         function salirPantallaCompleta() {
           if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
           $('videoEnGaleria').classList.remove('pantallaCompleta');
-          if ($('videoAmpliar')) $('videoAmpliar').textContent = '⤢';
+          if ($('videoAmpliar')) $('videoAmpliar').innerHTML = ICONO_AMPLIAR;
         }
-        document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && $('videoAmpliar')) $('videoAmpliar').textContent = '⤢'; });
+        document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && $('videoAmpliar')) $('videoAmpliar').innerHTML = ICONO_AMPLIAR; });
         $('verFotos').onclick = (e) => { e.stopPropagation(); modo(false); };
         $('verVideo').onclick = (e) => { e.stopPropagation(); modo(true); };
       }
