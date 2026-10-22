@@ -2402,6 +2402,9 @@
                 backdrop: 'rgba(0,0,0,0.8)'
             }).then(function(result) {
                 if (result.isConfirmed) {
+                    // Se recuerda mientras el modal siga abierto: el panel en vivo recarga los
+                    // semáforos cada vez que algo cambia, y sin esto volvía a pedir la confirmación.
+                    if (contratoActualContext) contratoActualContext.borradorConfirmado = true;
                     document.getElementById('btnConfirmarBorrador').style.display = 'none';
                     document.getElementById('btnEnviarValidar').style.display = 'flex';
                 }
@@ -2684,9 +2687,11 @@
                         const btnConfirmar = document.getElementById('btnConfirmarBorrador');
                         if (btnEnviarValidar && !(todosAprobados && tienePrincipales)) {
                             if (!huboEnvioPrevio) {
-                                // Primer envío: mostrar botón de confirmar, ocultar enviar
-                                if (btnConfirmar) btnConfirmar.style.display = 'flex';
-                                btnEnviarValidar.style.display = 'none';
+                                // Primer envío: primero se confirma el borrador y después se envía.
+                                // Si ya se confirmó en este modal, se respeta (ver confirmarBorradorListo).
+                                const yaConfirmado = !!(contratoActualContext && contratoActualContext.borradorConfirmado);
+                                if (btnConfirmar) btnConfirmar.style.display = yaConfirmado ? 'none' : 'flex';
+                                btnEnviarValidar.style.display = yaConfirmado ? 'flex' : 'none';
                                 btnEnviarValidar.disabled = false;
                                 btnEnviarValidar.style.opacity = '1';
                                 btnEnviarValidar.title = '';
