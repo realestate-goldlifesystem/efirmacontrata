@@ -47,7 +47,9 @@ const COLUMNAS_CITAS = [
   // Ya no se le vuelven a ofrecer al interesado (JSON de timestamps).
   'HORARIOS DESCARTADOS',
   // oct-2026 (sala de entrega): quién hizo la última propuesta, INQUILINO o PROPIETARIO
-  'PROPUESTO POR'
+  'PROPUESTO POR',
+  // oct-2026 (sala de entrega, parte B): datos de la mudanza (JSON) y los Doc de las dos cartas
+  'DATOS ENTREGA', 'CARTAS ENTREGA'
 ];
 
 // Estados posibles de una cita.

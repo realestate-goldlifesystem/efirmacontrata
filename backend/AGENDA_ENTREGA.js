@@ -154,7 +154,10 @@ function infoSalaEntrega(datos) {
     agendada: inicio && estado !== ESTADO_POR_COORDINAR ? inicio.getTime() : null,
     pedidos: _pedidosDe(fila, col).filter(t => t > Date.now()),
     propuestoPor: String(valorCita(fila, col, 'PROPUESTO POR') || ''),
-    descartados: _descartadosDe(fila, col)
+    descartados: _descartadosDe(fila, col),
+    // Parte B: lo que ya dio el inquilino y las listas de marcas
+    mudanza: s.rol === 'INQUILINO' ? _datosMudanzaDe(fila, col) : null,
+    marcas: s.rol === 'INQUILINO' ? { MOTO: MARCAS_MOTO, CARRO: MARCAS_CARRO } : null
   };
 }
 
@@ -285,6 +288,8 @@ function aceptarSalaEntrega(datos) {
         etiquetaTipoCitaHtml('ENTREGA') + `🗓️ <strong>${_textoHorario(ts)}</strong><br>📍 ${s.d.direccion}<br>👤 Inquilino: ${s.d.inquilino} · ${s.d.celularInquilino}<br>` +
         `🏠 Propietario: ${s.d.inm.propietario || ''} · ${s.d.inm.celularPropietario || ''}`, '');
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
+    // Si el inquilino ya dio los datos de la mudanza, salen las cartas
+    if (_datosMudanzaDe(fila, col)) generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
     return { ok: true, mensaje: 'Listo: la entrega quedó para el ' + _textoHorario(ts) + '. Les enviamos los detalles por correo.' };
   } finally {
     lock.releaseLock();
@@ -402,4 +407,220 @@ function cancelarVisitasPorArriendo(idInmueble) {
     }
   } catch (e) { Logger.log('Error cancelando visitas de ' + idInmueble + ': ' + e.message); }
   return canceladas;
+}
+
+// ================= Parte B: datos de la mudanza y cartas (22-oct-2026) =================
+// El inquilino da en la sala la fecha de mudanza, quiénes más viven y sus vehículos. Con
+// eso y la fecha de entrega se generan solas, con las plantillas de siempre y sin cambiar
+// su texto, la carta de bienvenida y la carta de nuevo inquilino para la administración.
+// Quedan en "4- VARIOS…" de la entrega del inquilino y a Leonardo le llega el aviso para
+// revisarlas antes de enviarlas (PLAN_AGENDAS_Y_RECORDATORIOS.md, 6.3.0).
+
+const PLANTILLA_CARTA_BIENVENIDA = '1IHtueDehlt2DrNFeLKtIJoAuAbsAkps6vkBlq7OYwUI';
+const PLANTILLA_CARTA_ADMINISTRACION = '1NHiR1AWXNlvv6XyJnK91mdKyD9kZElDJBbKIPk8Tmxo';
+// Listas del formulario de Google "FORMULARIO DE DOCUMENTOS DE ENTREGA" (leídas el 22-oct-2026)
+const MARCAS_MOTO = ['Yamaha', 'Bajaj', 'AKT', 'Suzuki', 'Honda', 'KTM', 'BMW', 'Kawasaki', 'Royal Enfield', 'Ducati', 'Piaggio', 'TVS', 'Hero', 'Kymco', 'Triumph', 'Benelli', 'Husqvarna', 'Keeway', 'Vespa'];
+const MARCAS_CARRO = ['Audi', 'BMW', 'Chevrolet', 'Changan', 'Chery', 'Citroën', 'Deepal', 'DS', 'Fiat', 'Ford', 'Great Wall', 'Honda', 'Hyundai', 'JAC', 'JMC', 'Jaguar', 'Jeep', 'KIA', 'Land Rover', 'Lexus', 'Mazda', 'Mercedes-Benz', 'MG', 'Mini', 'Mitsubishi', 'Nissan', 'Opel', 'Peugeot', 'Porsche', 'Renault', 'SEAT', 'Seres', 'Shineray', 'SsangYong', 'Subaru', 'Suzuki', 'Toyota', 'Volkswagen', 'Volvo', 'BYD', 'Changhe', 'DFS', 'Karry', 'Landwind', 'Lifan', 'Qingling', 'Trumpchi', 'Venucia'];
+// Cupos de la plantilla: 5 personas (el inquilino + 4), 5 motos y 5 carros
+const MAX_OTRAS_PERSONAS = 4, MAX_VEHICULOS_TIPO = 5;
+
+function _datosMudanzaDe(fila, col) {
+  try { return JSON.parse(valorCita(fila, col, 'DATOS ENTREGA') || 'null'); } catch (e) { return null; }
+}
+
+/** El inquilino guarda la fecha de mudanza, las otras personas y los vehículos. */
+function guardarDatosEntrega(datos) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const s = _salaEntrega_(datos);
+    if (s.error) return { ok: false, mensaje: s.error };
+    if (s.rol !== 'INQUILINO') return { ok: false, mensaje: 'Estos datos los da el inquilino.' };
+    const { sheet, col, numFila, fila } = s.cita;
+    const estado = String(valorCita(fila, col, 'ESTADO') || '').trim();
+    if ([ESTADOS_CITA.CANCELADA, ESTADOS_CITA.ASISTIDA, ESTADOS_CITA.INASISTIDA].indexOf(estado) !== -1) return { ok: false, mensaje: 'Esta entrega ya no está activa.' };
+
+    const limpio = (t, max) => String(t || '').replace(/\s+/g, ' ').trim().slice(0, max || 80);
+    const mudanza = String(datos.mudanza || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(mudanza)) return { ok: false, mensaje: 'Elige la fecha de la mudanza.' };
+    const personas = (Array.isArray(datos.personas) ? datos.personas : []).slice(0, MAX_OTRAS_PERSONAS).map(p => ({
+      nombre: limpio(p.nombre), documento: limpio(p.documento, 20).replace(/[^\dA-Za-z]/g, ''), celular: limpio(p.celular, 20), correo: limpio(p.correo, 80)
+    }));
+    if (personas.some(p => p.nombre.length < 3 || p.documento.length < 5)) return { ok: false, mensaje: 'Escribe el nombre y el documento de cada persona.' };
+    const vehiculos = (Array.isArray(datos.vehiculos) ? datos.vehiculos : []).map(v => ({
+      tipo: v.tipo === 'MOTO' ? 'MOTO' : 'CARRO', marca: limpio(v.marca, 40), modelo: limpio(v.modelo, 40), placa: String(v.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+    }));
+    if (vehiculos.filter(v => v.tipo === 'MOTO').length > MAX_VEHICULOS_TIPO || vehiculos.filter(v => v.tipo === 'CARRO').length > MAX_VEHICULOS_TIPO) return { ok: false, mensaje: 'Máximo 5 carros y 5 motos.' };
+    const malo = vehiculos.find(v => !v.marca || !v.modelo || !(v.tipo === 'MOTO' ? /^[A-Z]{3}\d{2}[A-Z]$/ : /^[A-Z]{3}\d{3}$/).test(v.placa));
+    if (malo) return { ok: false, mensaje: 'Revisa el vehículo ' + (malo.placa || malo.marca || '') + ': marca, modelo y placa (carro ABC123, moto ABC12D).' };
+
+    const guardar = { mudanza: mudanza, personas: personas, vehiculos: vehiculos, actualizado: new Date().toISOString() };
+    if (col['DATOS ENTREGA']) sheet.getRange(numFila, col['DATOS ENTREGA']).setValue(JSON.stringify(guardar));
+    if (col['ULTIMO CAMBIO']) sheet.getRange(numFila, col['ULTIMO CAMBIO']).setValue(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss') + ' · el inquilino guardó los datos de la mudanza');
+
+    // Con la entrega ya agendada, las cartas salen de una (y se rehacen si cambia algo)
+    let cartas = null;
+    if (estado !== ESTADO_POR_COORDINAR) {
+      const filaNueva = sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0];
+      cartas = generarCartasEntrega_(sheet, col, numFila, filaNueva);
+    }
+    return { ok: true, mensaje: cartas && cartas.ok ? '¡Gracias! Guardamos tus datos y preparamos las cartas para la administración.' : '¡Gracias! Guardamos tus datos.' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** "Torre 3 - Apartamento 405" o "Apartamento 405", como se lee (decisión del 14-oct-2026). */
+function _referenciaInmueble_(idInmueble, tipoInmueble) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('1.1 - INMUEBLES REGISTRADOS');
+  const datos = sheet.getDataRange().getValues();
+  const h = datos[0].map(x => String(x).trim());
+  const f = datos.find((r, k) => k > 0 && String(r[h.indexOf('ID DE REGISTRO')]).trim() === String(idInmueble));
+  if (!f) return { referencia: '', cdr: '', admin: '', correoAdmin: '' };
+  const v = (n) => { const c = h.indexOf(n); return c < 0 ? '' : String(f[c] || '').trim(); };
+  const torre = v('N° o Letra de la Torre'), numero = v('N° de inmueble');
+  const tipo = String(tipoInmueble || 'Apartamento');
+  const conTorre = /torre/i.test(v('¿El inmueble solo lo describe el Número? o ¿Número y torre?')) && torre;
+  return {
+    referencia: numero ? (conTorre ? 'Torre ' + torre + ' - ' : '') + tipo + ' ' + numero : '',
+    cdr: v('CODIGO DE REGISTRO'), admin: v('NOMBRE DEL INMUEBLE/ADMINISTRACION'), correoAdmin: v('Correo electrónico de la administración')
+  };
+}
+
+const _fechaLarga_ = (d) => d.getDate() + ' de ' + ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][d.getMonth()] + ' de ' + d.getFullYear();
+
+/**
+ * Llena una copia de la plantilla: cada <<marcador>> con su valor; el renglón cuyos
+ * marcadores quedan todos vacíos se quita (cupos sin usar), y entre `desde` y `hasta`
+ * no quedan dos renglones vacíos seguidos.
+ */
+function _llenarCarta_(doc, valores, referencia, desde, hasta) {
+  const body = doc.getBody();
+  // La referencia del inmueble va como se lee, no "Torre y número: 3 - 405"
+  if (referencia) body.replaceText('<<APTOYTORRE>>\\s*:\\s*<<#TORRE>>\\s*-\\s*<<#APTO>>', referencia);
+  const valor = (tag) => Object.prototype.hasOwnProperty.call(valores, tag) ? String(valores[tag] == null ? '' : valores[tag]) : '';
+  body.getParagraphs().forEach(p => {
+    const texto = p.getText();
+    const tags = (texto.match(/<<[^<>]+>>/g) || []).map(t => t.slice(2, -2));
+    if (tags.length && tags.every(t => !valor(t).trim()) && !texto.replace(/<<[^<>]+>>/g, '').trim()) {
+      try { p.removeFromParent(); } catch (e) { p.setText(''); }
+    }
+  });
+  const escapar = (t) => t.replace(/[.*+?^${}()|[\]\\#]/g, '\\$&');
+  const vistos = {};
+  (body.getText().match(/<<[^<>]+>>/g) || []).forEach(m => {
+    const tag = m.slice(2, -2);
+    if (vistos[tag]) return;
+    vistos[tag] = true;
+    body.replaceText(escapar(m), valor(tag).replace(/\$/g, '\\$'));
+  });
+  if (desde && hasta) {
+    let dentro = false, anteriorVacio = false;
+    body.getParagraphs().forEach(p => {
+      const t = p.getText();
+      if (t.indexOf(desde) !== -1) { dentro = true; anteriorVacio = false; return; }
+      if (t.indexOf(hasta) !== -1) { dentro = false; return; }
+      if (!dentro) return;
+      const vacio = !t.trim();
+      if (vacio && anteriorVacio) { try { p.removeFromParent(); } catch (e) {} return; }
+      anteriorVacio = vacio;
+    });
+  }
+  doc.saveAndClose();
+}
+
+/** Genera (o rehace) las dos cartas y le avisa a Leonardo. Necesita entrega agendada y datos. */
+function generarCartasEntrega_(sheet, col, numFila, fila) {
+  try {
+    const mud = _datosMudanzaDe(fila, col);
+    const inicio = fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA'));
+    if (!mud || !inicio) return { ok: false, motivo: 'faltan datos o fecha' };
+    const idInm = String(valorCita(fila, col, 'ID INMUEBLE'));
+    const d = _datosEntregaInmueble_(idInm);
+    const ref = _referenciaInmueble_(idInm, d.inm.tipoInmueble);
+    const rc = recopilarDatosContrato(idInm);
+    const c = rc && rc.success ? rc.data : { inquilino: {}, propietario: {} };
+    const inq = c.inquilino || {}, prop = c.propietario || {};
+
+    // Carpeta "4- VARIOS…" de la entrega del inquilino
+    const carpetaContrato = buscarCarpetaContratoDinamica({ cdr: ref.cdr, tipoNegocio: 'Arriendo' });
+    if (!carpetaContrato) throw new Error('No se encontró la carpeta de entrega del inquilino');
+    const padre = carpetaContrato.getParents().next();
+    let destino = null;
+    const hijas = padre.getFolders();
+    while (hijas.hasNext()) { const h = hijas.next(); if (/^4-\s*VARIOS/i.test(h.getName())) { destino = h; break; } }
+    if (!destino) destino = padre;
+
+    // Las versiones anteriores (si el inquilino cambió algo) van a la papelera
+    String(valorCita(fila, col, 'CARTAS ENTREGA') || '').split(',').filter(Boolean).forEach(id => { try { DriveApp.getFileById(id).setTrashed(true); } catch (e) {} });
+
+    const nombreInq = inq.nombre || d.inquilino;
+    const base = {
+      'FECHA DE ENTREGA': _fechaLarga_(inicio), 'FECHA': _fechaLarga_(new Date()), 'DÍA DE MUDANZA': _fechaLarga_(new Date(mud.mudanza + 'T12:00:00')),
+      'CIUDAD DE ENTREGA': d.inm.ciudad || 'Bogotá', 'NOMBRE ADMINISTRACIÓN': ref.admin, 'correo administración': ref.correoAdmin,
+      'DIRECCIÓN INM': d.inm.direccion,
+      'NOMBRE INQUILINO#1': nombreInq, 'NÚMERO DE DOCUMENTO#1': inq.numeroDocumento || '', 'CELULAR #1': inq.celular || d.celularInquilino, 'CORREO#1': inq.email || d.correoInquilino,
+      'ARRENDATARIO #1': 'ARRENDATARIO #1', 'NOMBRE': 'NOMBRE:', 'DOCUMENTO#1': 'DOCUMENTO:', 'CELULAR-1': 'CELULAR:', 'CORREO-1': 'CORREO:',
+      'NOMBRE PROPIETARIO': prop.nombre || d.inm.propietario || '', 'NÚMERO DE DOCUMENTO PROPIETARIO': prop.numeroDocumento || '',
+      'CELULAR PROPIETARIO': prop.celular || d.inm.celularPropietario || '', 'CORREO DEL PROPIETARIO': prop.email || d.inm.correoPropietario || '',
+      'NOMBRE DEL BANCO': prop.banco || '', 'TIPO DE CUENTA': prop.tipoCuenta || '', 'NÚMERO DE CUENTA': prop.numeroCuenta || '',
+      'TITULAR DE LA CUENTA': prop.titularCuenta || prop.nombre || '', 'CÉDULA DEL TITULAR DE LA CUENTA': prop.documentoTitular || prop.numeroDocumento || ''
+    };
+    mud.personas.forEach((p, i) => {
+      const k = i + 2;
+      base['ARRENDATARIO #' + k] = 'ARRENDATARIO #' + k;
+      base['NOMBRE#' + k] = 'NOMBRE:';
+      base['NOMBRE INQUILINO#' + k] = p.nombre;
+      base['DOCUMENTO#' + k] = 'DOCUMENTO:';
+      base['NÚMERO DE DOCUMENTO#' + k] = p.documento;
+      base['CELULAR-' + k] = p.celular ? 'CELULAR:' : '';
+      base['CELULAR #' + k] = p.celular;
+      base['CORREO-' + k] = p.correo ? 'CORREO:' : '';
+      base['CORREO#' + k] = p.correo;
+    });
+    // La plantilla no es pareja en los nombres de los marcadores de vehículos: se llenan todas las variantes
+    mud.vehiculos.filter(v => v.tipo === 'MOTO').forEach((v, i) => {
+      const k = i + 1;
+      base['MOTO#' + k] = 'MOTO';
+      base['MARCA MOTO#' + k] = v.marca;
+      base['MODELO MOTO #' + k] = v.modelo;
+      base['MODELO MOTO#' + k] = v.modelo;
+      base['PLACAMOTO#' + k] = 'PLACA:';
+      base['PLACA MOTO#' + k] = 'PLACA:';
+      base['DES PLACAMOTO#' + k] = v.placa;
+      base['DES PLACA MOTO#' + k] = v.placa;
+    });
+    mud.vehiculos.filter(v => v.tipo === 'CARRO').forEach((v, i) => {
+      const k = i + 1;
+      base['CARRO#' + k] = 'CARRO';
+      base['MARCA CARRO#' + k] = v.marca;
+      base['MARCA CARRO #' + k] = v.marca;
+      base['MODELO CARRO #' + k] = v.modelo;
+      base['MODELO VEHÍCULO #' + k] = v.modelo;
+      base['PLACA CARRO#' + k] = 'PLACA:';
+      base['DES PLACA CARRO#' + k] = v.placa;
+    });
+
+    const sufijo = ' - ' + nombreInq + ' - ' + idInm;
+    const bienvenida = DriveApp.getFileById(PLANTILLA_CARTA_BIENVENIDA).makeCopy('CARTA DE BIENVENIDA' + sufijo, destino);
+    _llenarCarta_(DocumentApp.openById(bienvenida.getId()), base, ref.referencia);
+    const administracion = DriveApp.getFileById(PLANTILLA_CARTA_ADMINISTRACION).makeCopy('CARTA DE NUEVO INQUILINO PARA ADMINISTRACIÓN' + sufijo, destino);
+    _llenarCarta_(DocumentApp.openById(administracion.getId()), base, ref.referencia, 'fue arrendado a', 'A quienes se les hace entrega');
+
+    if (col['CARTAS ENTREGA']) sheet.getRange(numFila, col['CARTAS ENTREGA']).setValue(bienvenida.getId() + ',' + administracion.getId());
+    try {
+      const detalle = [mud.personas.length ? mud.personas.length + ' persona(s) más' : '', mud.vehiculos.length ? mud.vehiculos.length + ' vehículo(s)' : ''].filter(Boolean).join(', ');
+      enviarCorreoCita(correoAgenteCitas(), '📄 Cartas de entrega listas para revisar · ' + idInm, 'CARTAS DE ENTREGA', 'Agente',
+        etiquetaTipoCitaHtml('ENTREGA') + '<strong>' + nombreInq + '</strong> dio los datos de la mudanza (' + _fechaLarga_(new Date(mud.mudanza + 'T12:00:00')) +
+        (detalle ? ', ' + detalle : '') + ').<br><br>Ya quedaron las dos cartas en la carpeta de la entrega. Revísalas antes de enviarlas:',
+        htmlBotonesCorreo([
+          { texto: '📄 Carta de bienvenida', color: '#b8860b', url: bienvenida.getUrl() },
+          { texto: '🏢 Carta para la administración', color: '#555555', url: administracion.getUrl() }
+        ]));
+    } catch (e) { Logger.log('No se pudo avisar las cartas: ' + e.message); }
+    return { ok: true, bienvenida: bienvenida.getUrl(), administracion: administracion.getUrl() };
+  } catch (e) {
+    Logger.log('No se pudieron generar las cartas de entrega: ' + e.message);
+    return { ok: false, motivo: e.message };
+  }
 }

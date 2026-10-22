@@ -155,6 +155,18 @@
     .esperando .hora-p::first-letter { text-transform: uppercase; }
     .secundario { width: 100%; background: none; border: 0; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 6px; }
     .entra { animation: subirC .35s ease both; }
+    /* Parte B: datos de la mudanza */
+    .etiqueta { display: block; margin: 16px 0 0; font-size: 13.5px; font-weight: 600; color: #f5f5f4; }
+    input[type=date] { color-scheme: dark; }
+    select { width: 100%; padding: 13px 12px; margin-top: 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 15px; }
+    .ficha { margin-top: 10px; padding: 10px 12px 12px; border-radius: 14px; background: var(--panel); border: 1px solid var(--linea); }
+    .fichaCab { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--oro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+    .quitar { width: 26px; height: 26px; border-radius: 50%; border: 0; background: var(--panel2); color: var(--suave); font-size: 12px; }
+    .agregar { width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; border: 1px dashed rgba(212,175,55,.6); background: none; color: var(--oro); font-size: 14px; font-weight: 600; }
+    .placa { text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+    .placa.malo { border-color: #f87171; }
+    .resumenFila { display: flex; gap: 12px; align-items: flex-start; margin-top: 12px; font-size: 14.5px; line-height: 1.5; color: #e7e5e4; }
+    .resumenFila span { font-size: 18px; }
   </style>
 </head>
 <body>
@@ -214,7 +226,7 @@
     function pintarExito(titulo, cuando, texto, sinCheck) {
       $('vista').innerHTML = `<div class="exito entra">${sinCheck ? '<div class="icono">🔑</div>' : '<div class="check">✓</div>'}<h2>${esc(titulo)}</h2>` +
         (cuando ? `<p style="color:var(--oro);font-weight:700;font-size:17px;margin-bottom:10px;">${esc(cuando.charAt(0).toUpperCase() + cuando.slice(1))}</p>` : '') +
-        `<p>${esc(texto)}</p><p class="nota" style="margin-top:14px;">Ya puedes cerrar esta página.</p></div>`;
+        `<p>${esc(texto)}</p><p class="nota" style="margin-top:14px;">${info.rol === 'INQUILINO' && !sinCheck && !(info.mudanza || mudanza) ? '👇 Abajo te pedimos unos datos para la administración del conjunto.' : 'Ya puedes cerrar esta página.'}</p></div>`;
     }
 
     // Lo que propuso la otra parte, como botones "Me sirve"
@@ -378,13 +390,122 @@
       document.body.appendChild(capa);
     }
 
+    // ================= Parte B: datos de la mudanza (solo el inquilino) =================
+    // Fecha de mudanza, quiénes más van a vivir y sus vehículos. Con eso y la fecha de la
+    // entrega el sistema prepara la carta de bienvenida y la carta para la administración.
+    let mudanza = null, editando = false, formPersonas = [], formVehiculos = [];
+    const PLACA = { CARRO: /^[A-Z]{3}\d{3}$/, MOTO: /^[A-Z]{3}\d{2}[A-Z]$/ };
+
+    function pintarMudanza() {
+      if (info.rol !== 'INQUILINO' || info.estado === 'CERRADA') return;
+      let caja = $('bloqueMudanza');
+      if (!caja) { caja = document.createElement('div'); caja.id = 'bloqueMudanza'; caja.className = 'bloque entra'; $('contenido').appendChild(caja); }
+      mudanza = mudanza || info.mudanza;
+      if (mudanza && !editando) return pintarResumenMudanza(caja);
+      formPersonas = (mudanza && mudanza.personas || []).map(p => Object.assign({}, p));
+      formVehiculos = (mudanza && mudanza.vehiculos || []).map(v => Object.assign({}, v));
+      const hoy = iso(new Date());
+      caja.innerHTML = '<h2>🏠 Datos para la administración</h2>' +
+        '<p class="nota">Con esto preparamos tu carta de bienvenida y el aviso a la administración del conjunto.</p>' +
+        '<label class="etiqueta">¿Qué día haces la mudanza?</label>' +
+        `<input type="date" id="fMudanza" min="${hoy}" value="${esc(mudanza ? mudanza.mudanza : '')}">` +
+        '<label class="etiqueta">¿Quién más va a vivir contigo?</label><div id="listaPersonas"></div>' +
+        '<button class="agregar" id="agregarPersona">＋ Agregar persona</button>' +
+        '<label class="etiqueta">¿Tienen carro o moto?</label><div id="listaVehiculos"></div>' +
+        '<button class="agregar" id="agregarVehiculo">＋ Agregar vehículo</button>' +
+        '<p class="error oculto" id="errMudanza"></p>' +
+        '<button class="principal" id="guardarMudanza">Guardar mis datos</button>' +
+        (mudanza ? '<button class="secundario" id="cancelarMudanza">Cancelar</button>' : '');
+      $('agregarPersona').onclick = () => { if (formPersonas.length < 4) { formPersonas.push({ nombre: '', documento: '', celular: '', correo: '' }); pintarListas(); } };
+      $('agregarVehiculo').onclick = () => { if (formVehiculos.length < 10) { formVehiculos.push({ tipo: 'CARRO', marca: '', modelo: '', placa: '' }); pintarListas(); } };
+      $('guardarMudanza').onclick = guardarMudanza;
+      if ($('cancelarMudanza')) $('cancelarMudanza').onclick = () => { editando = false; pintarMudanza(); };
+      pintarListas();
+    }
+
+    function pintarListas() {
+      $('listaPersonas').innerHTML = formPersonas.length ? formPersonas.map((p, i) =>
+        `<div class="ficha"><div class="fichaCab">Persona ${i + 2}<button class="quitar" data-qp="${i}" aria-label="Quitar">✕</button></div>` +
+        `<input data-p="${i}" data-c="nombre" placeholder="Nombre completo" value="${esc(p.nombre)}">` +
+        `<input data-p="${i}" data-c="documento" inputmode="numeric" placeholder="Número de documento" value="${esc(p.documento)}">` +
+        `<input data-p="${i}" data-c="celular" type="tel" inputmode="numeric" placeholder="Celular (opcional)" value="${esc(p.celular)}">` +
+        `<input data-p="${i}" data-c="correo" type="email" placeholder="Correo (opcional)" value="${esc(p.correo)}"></div>`).join('')
+        : '<p class="nota" style="margin:4px 0 0;">Solo tú. Si alguien más vivirá contigo, agrégalo.</p>';
+      $('agregarPersona').classList.toggle('oculto', formPersonas.length >= 4);
+      const opciones = (tipo, marca) => {
+        const lista = (info.marcas && info.marcas[tipo]) || [];
+        const otra = marca && lista.indexOf(marca) === -1;
+        return '<option value="">Marca</option>' + lista.map(m => `<option${m === marca ? ' selected' : ''}>${esc(m)}</option>`).join('') + `<option value="__otra"${otra ? ' selected' : ''}>Otra…</option>`;
+      };
+      $('listaVehiculos').innerHTML = formVehiculos.length ? formVehiculos.map((v, i) => {
+        const lista = (info.marcas && info.marcas[v.tipo]) || [];
+        const otra = v.marca && lista.indexOf(v.marca) === -1;
+        return `<div class="ficha"><div class="fichaCab">Vehículo ${i + 1}<button class="quitar" data-qv="${i}" aria-label="Quitar">✕</button></div>` +
+          `<div class="opciones" style="margin-top:4px;"><button class="opcion${v.tipo === 'CARRO' ? ' elegido' : ''}" data-v="${i}" data-tipo="CARRO">🚗 Carro</button><button class="opcion${v.tipo === 'MOTO' ? ' elegido' : ''}" data-v="${i}" data-tipo="MOTO">🏍️ Moto</button></div>` +
+          `<select data-v="${i}" data-c="marcaLista">${opciones(v.tipo, v.marca)}</select>` +
+          (otra || v._otra ? `<input data-v="${i}" data-c="marca" placeholder="Escribe la marca" value="${esc(v.marca)}">` : '') +
+          `<input data-v="${i}" data-c="modelo" placeholder="Línea o modelo (ej. CX-30, NKD 125)" value="${esc(v.modelo)}">` +
+          `<input data-v="${i}" data-c="placa" class="placa" maxlength="6" placeholder="${v.tipo === 'MOTO' ? 'Placa: ABC12D' : 'Placa: ABC123'}" value="${esc(v.placa)}"></div>`;
+      }).join('') : '<p class="nota" style="margin:4px 0 0;">Sin vehículos. Si tienen, agrégalos para avisarle a la administración.</p>';
+      $('listaVehiculos').querySelectorAll('[data-qv]').forEach(b => b.onclick = () => { formVehiculos.splice(Number(b.dataset.qv), 1); pintarListas(); });
+      $('listaPersonas').querySelectorAll('[data-qp]').forEach(b => b.onclick = () => { formPersonas.splice(Number(b.dataset.qp), 1); pintarListas(); });
+      $('listaPersonas').querySelectorAll('input').forEach(inp => inp.oninput = () => {
+        let val = inp.value;
+        if (inp.dataset.c === 'documento' || inp.dataset.c === 'celular') { val = val.replace(/\D/g, '').slice(0, inp.dataset.c === 'celular' ? 10 : 12); inp.value = val; }
+        formPersonas[Number(inp.dataset.p)][inp.dataset.c] = val;
+      });
+      $('listaVehiculos').querySelectorAll('[data-tipo]').forEach(b => b.onclick = () => { const v = formVehiculos[Number(b.dataset.v)]; v.tipo = b.dataset.tipo; v.marca = ''; v._otra = false; pintarListas(); });
+      $('listaVehiculos').querySelectorAll('select').forEach(sel => sel.onchange = () => {
+        const v = formVehiculos[Number(sel.dataset.v)];
+        if (sel.value === '__otra') { v._otra = true; v.marca = ''; pintarListas(); } else { v._otra = false; v.marca = sel.value; pintarListas(); }
+      });
+      $('listaVehiculos').querySelectorAll('input').forEach(inp => inp.oninput = () => {
+        const v = formVehiculos[Number(inp.dataset.v)];
+        if (inp.dataset.c === 'placa') {
+          inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+          inp.classList.toggle('malo', inp.value.length === 6 && !PLACA[v.tipo].test(inp.value));
+        }
+        v[inp.dataset.c] = inp.value;
+      });
+    }
+
+    function guardarMudanza() {
+      const err = (t) => { $('errMudanza').textContent = t; $('errMudanza').classList.remove('oculto'); };
+      $('errMudanza').classList.add('oculto');
+      const fecha = $('fMudanza').value;
+      if (!fecha) return err('Elige el día de la mudanza.');
+      if (formPersonas.some(p => p.nombre.trim().length < 3 || p.documento.length < 5)) return err('Escribe el nombre y el documento de cada persona.');
+      const malo = formVehiculos.find(v => !v.marca.trim() || !v.modelo.trim() || !PLACA[v.tipo].test(v.placa));
+      if (malo) return err('Revisa cada vehículo: marca, modelo y placa (carro ABC123, moto ABC12D).');
+      const b = $('guardarMudanza'); b.disabled = true; b.textContent = 'Guardando…';
+      const datos = { mudanza: fecha, personas: formPersonas, vehiculos: formVehiculos.map(v => ({ tipo: v.tipo, marca: v.marca.trim(), modelo: v.modelo.trim(), placa: v.placa })) };
+      llamar('guardarDatosEntrega', datos).then(r => {
+        b.disabled = false; b.textContent = 'Guardar mis datos';
+        if (!r.ok) return err(r.mensaje || 'No pudimos guardar tus datos.');
+        mudanza = Object.assign({}, datos); editando = false;
+        pintarMudanza();
+        const ok = document.createElement('p'); ok.className = 'nota ok centro'; ok.textContent = r.mensaje; $('bloqueMudanza').appendChild(ok);
+      }).catch(() => { b.disabled = false; b.textContent = 'Guardar mis datos'; err('Error de red. Intenta de nuevo.'); });
+    }
+
+    function pintarResumenMudanza(caja) {
+      const f = new Date(mudanza.mudanza + 'T12:00:00');
+      const fila = (icono, texto) => `<div class="resumenFila"><span>${icono}</span><div>${texto}</div></div>`;
+      caja.innerHTML = '<h2>✓ Datos para la administración</h2>' +
+        fila('🚚', 'Mudanza el <b>' + esc(DIAS[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()]) + '</b>') +
+        fila('👥', mudanza.personas.length ? 'También viven: ' + mudanza.personas.map(p => '<b>' + esc(p.nombre) + '</b>').join(', ') : 'Solo tú') +
+        fila('🚗', mudanza.vehiculos.length ? mudanza.vehiculos.map(v => esc((v.tipo === 'MOTO' ? 'Moto ' : 'Carro ') + v.marca + ' ' + v.modelo) + ' · <b>' + esc(v.placa) + '</b>').join('<br>') : 'Sin vehículos') +
+        '<button class="secundario" id="editarMudanza">Cambiar mis datos</button>';
+      $('editarMudanza').onclick = () => { editando = true; pintarMudanza(); };
+    }
+
     function cargar() {
       if (!CITA || !TOKEN || !ROL) return error('El enlace está incompleto. Pídele a Leonardo que te lo envíe de nuevo.');
       llamar('infoSalaEntrega').then(r => {
         if (!r || !r.ok) return error((r && r.mensaje) || 'No pudimos abrir la entrega.');
         info = r;
         $('cargando').classList.add('oculto'); $('contenido').classList.remove('oculto');
-        pintar();
+        pintar(); pintarMudanza();
       }).catch(() => error('Revisa tu conexión a internet e intenta de nuevo.'));
     }
     cargar();

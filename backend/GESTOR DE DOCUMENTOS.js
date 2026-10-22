@@ -677,6 +677,9 @@ function doPost(e) {
       case 'aceptarSalaEntrega':
         result = aceptarSalaEntrega(datos);
         break;
+      case 'guardarDatosEntrega':
+        result = guardarDatosEntrega(datos);
+        break;
       case 'aceptarHorarioPropietario':
         result = aceptarHorarioPropietario(datos);
         break;
