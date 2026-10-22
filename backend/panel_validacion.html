@@ -1828,6 +1828,7 @@
                 if(typeof pushDebug !== 'undefined') pushDebug('Iniciando arrancarApp...');
                 configurarEventListeners(); // Primero los eventos
                 cargarDatos();
+                iniciarPanelEnVivo();
                 console.log(" App inicializada correctamente.");
                 if(typeof pushDebug !== 'undefined') pushDebug('arrancarApp completado');
             } catch(e) {
@@ -1856,6 +1857,50 @@
             cargarRegistrosPropietarios();
             cargarContratos();
         }
+
+        // ─── Panel en vivo ────────────────────────────────────────────────
+        // Cada 5 s (y al volver a la pestaña) se le pregunta al servidor por una huella
+        // liviana de lo que muestra el panel (obtenerHuellaPanel, en PANEL_EN_VIVO.js).
+        // Solo si cambió se recargan las tarjetas, en silencio. No se refresca en medio de
+        // una operación (generando un contrato, un diálogo abierto, la pantalla de carga):
+        // en ese caso se deja la huella vieja y se vuelve a intentar en la siguiente vuelta.
+        var huellaPanel = null;
+        var consultandoHuellaPanel = false;
+
+        function iniciarPanelEnVivo() {
+            revisarCambiosPanel();
+            setInterval(revisarCambiosPanel, 5000);
+            document.addEventListener('visibilitychange', revisarCambiosPanel);
+        }
+
+        function hayOperacionEnCurso() {
+            if (document.querySelector('.cardProgressCircle')) return true;
+            if (window.Swal && Swal.isVisible()) return true;
+            const overlay = document.getElementById('loadingOverlay');
+            return !!(overlay && overlay.classList.contains('show'));
+        }
+
+        function revisarCambiosPanel() {
+            if (document.visibilityState === 'hidden' || consultandoHuellaPanel) return;
+            consultandoHuellaPanel = true;
+            google.script.run
+                .withSuccessHandler(function (r) {
+                    consultandoHuellaPanel = false;
+                    if (!r || !r.success || !r.huella) return;
+                    if (huellaPanel === null) { huellaPanel = r.huella; return; }
+                    if (r.huella === huellaPanel || hayOperacionEnCurso()) return;
+                    huellaPanel = r.huella;
+                    cargarRegistrosInquilinos(true);
+                    cargarRegistrosPropietarios(true);
+                    cargarContratos(true);
+                    // El modal del contrato abierto: refrescar sus semáforos y su bitácora.
+                    if (contratoActualContext) refrescarPanelValidacion(true);
+                    mostrarToast('Panel actualizado con cambios nuevos', 'info');
+                })
+                .withFailureHandler(function () { consultandoHuellaPanel = false; })
+                .obtenerHuellaPanel();
+        }
+        // ──────────────────────────────────────────────────────────────────
 
                                                 // Event Listeners (Estandar Apps Script Moderno con Loops Compatibles)
         function configurarEventListeners() {
