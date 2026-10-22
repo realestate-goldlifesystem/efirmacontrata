@@ -34,6 +34,32 @@ const CONTRATO_CONFIG = {
  * @param {string} version - 'Borrador' o 'Original'
  */
 function generarContrato(cdr, version = 'Borrador') {
+  if (version !== 'Original') return generarContratoSinGuardia(cdr, version);
+
+  // Un solo original a la vez por contrato. Cada generación crea su Doc FINAL y su PDF y
+  // manda los correos al administrador y a las partes; si llega un segundo pedido mientras
+  // el primero sigue (el 22-oct-2026 en YN480228 el botón quedó habilitado a mitad de la
+  // generación y se generó dos veces), se rechaza.
+  const cache = CacheService.getScriptCache();
+  const clave = 'GEN_ORIGINAL_' + String(cdr || '').trim().toUpperCase();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    if (cache.get(clave)) {
+      return { success: false, message: 'El contrato original ya se está generando. Espera a que termine; no hace falta volver a generarlo.' };
+    }
+    cache.put(clave, '1', 360); // un poco más que el tope de 6 min de una ejecución
+  } finally {
+    lock.releaseLock();
+  }
+  try {
+    return generarContratoSinGuardia(cdr, version);
+  } finally {
+    cache.remove(clave);
+  }
+}
+
+function generarContratoSinGuardia(cdr, version) {
   try {
     console.log(`Iniciando generacion de contrato para CDR: ${cdr} | Version: ${version}`);
 
