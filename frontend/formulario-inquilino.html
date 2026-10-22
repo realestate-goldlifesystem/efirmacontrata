@@ -807,6 +807,7 @@
       // Debe existir ANTES de init() (que la usa al ejecutarse) para no caer en el
       // "temporal dead zone" de let/const y tumbar todo el script con un ReferenceError.
       let verificacionPagoTimer = null;
+      let consultandoPagoEnVivo = false;
 
       // --------- Init ----------
       function init() {
@@ -895,40 +896,77 @@
         }
 
         // Si venimos de MP, reintentamos varias veces por si el webhook aún no ha llegado.
-        // Si no venimos de MP (visita normal al link), solo es un chequeo silencioso de una vez.
-        const maxIntentos = vieneDeMercadoPago ? 40 : 1; // ~2 minutos de espera si venimos de MP
+        // En una visita normal basta una respuesta clara del servidor; solo se reintenta
+        // (hasta 3 veces) si no contestó, porque Apps Script a veces tarda o falla.
+        const maxIntentos = vieneDeMercadoPago ? 40 : 3; // ~2 minutos de espera si venimos de MP
         let intentos = 0;
 
         function chequear() {
           intentos++;
-          const callbackName = 'jsonp_pago_' + Math.round(100000 * Math.random());
-          window[callbackName] = function (data) {
-            delete window[callbackName];
-
-            if (data && data.success) {
-              if (data.direccion && document.getElementById('displayDir') && !document.getElementById('displayDir').textContent) {
-                document.getElementById('displayDir').textContent = data.direccion;
-              }
-              if (data.pago_completado && !state.modoCorreccion) {
-                desbloquearWizardPorPago();
-                return;
-              }
+          consultarPago(cdr).then(function (resultado) {
+            if (resultado === 'pagado') {
+              if (!state.modoCorreccion) desbloquearWizardPorPago();
+              return;
             }
-
-            if (intentos < maxIntentos) {
+            if (intentos < maxIntentos && (vieneDeMercadoPago || resultado === 'error')) {
               verificacionPagoTimer = setTimeout(chequear, 3000);
             } else if (vieneDeMercadoPago) {
               // Se agotaron los reintentos y el backend nunca confirmó el pago.
               mostrarPantallaVerificandoPago(true);
             }
-          };
-          const script = document.createElement('script');
-          script.src = CONFIG.API_URL + '?accion=obtenerDireccion&cdr=' + encodeURIComponent(cdr) + '&callback=' + callbackName;
-          document.body.appendChild(script);
+          });
         }
 
         chequear();
       }
+
+      // Pregunta una vez al backend si el registro ya pagó.
+      // Responde 'pagado', 'no_pagado' o 'error' (el servidor no contestó a tiempo o falló).
+      function consultarPago(cdr) {
+        return new Promise(function (resolve) {
+          const callbackName = 'jsonp_pago_' + Math.round(100000 * Math.random());
+          const script = document.createElement('script');
+          let reloj = null;
+          const terminar = function (resultado) {
+            clearTimeout(reloj);
+            window[callbackName] = function () {}; // una respuesta tardía no debe romper nada
+            script.remove();
+            resolve(resultado);
+          };
+          reloj = setTimeout(function () { terminar('error'); }, 20000);
+          window[callbackName] = function (data) {
+            if (data && data.success && data.direccion && document.getElementById('displayDir') && !document.getElementById('displayDir').textContent) {
+              document.getElementById('displayDir').textContent = data.direccion;
+            }
+            terminar(!data || !data.success ? 'error' : (data.pago_completado ? 'pagado' : 'no_pagado'));
+          };
+          script.onerror = function () { terminar('error'); };
+          script.src = CONFIG.API_URL + '?accion=obtenerDireccion&cdr=' + encodeURIComponent(cdr) + '&callback=' + callbackName;
+          document.body.appendChild(script);
+        });
+      }
+
+      // Pago "en vivo": la página no se queda con la foto de cuando se abrió. Mientras el
+      // formulario siga bloqueado, se vuelve a preguntar al servidor cuando la persona
+      // regresa a la pestaña (por ejemplo, después de pagar en otra) y cada 10 s mientras
+      // tiene abierta la pantalla de pago. Visto el 22-oct-2026 en YN480228: pagó y su
+      // pestaña seguía pidiéndole el pago.
+      function revisarPagoEnVivo() {
+        if (window.mercadoPagoApproved || state.modoCorreccion || !state.cdr || consultandoPagoEnVivo) return;
+        if (document.visibilityState === 'hidden') return;
+        consultandoPagoEnVivo = true;
+        consultarPago(state.cdr).then(function (resultado) {
+          consultandoPagoEnVivo = false;
+          if (resultado === 'pagado' && !window.mercadoPagoApproved) desbloquearWizardPorPago();
+        });
+      }
+      document.addEventListener('visibilitychange', revisarPagoEnVivo);
+      window.addEventListener('focus', revisarPagoEnVivo);
+      window.addEventListener('pageshow', function (e) { if (e.persisted) revisarPagoEnVivo(); });
+      setInterval(function () {
+        const pantallaPago = document.getElementById('paymentScreen');
+        if (pantallaPago && pantallaPago.style.display === 'block') revisarPagoEnVivo();
+      }, 10000);
 
       function mostrarPantallaVerificandoPago(tardando) {
         const welcome = document.getElementById('welcomeScreen');

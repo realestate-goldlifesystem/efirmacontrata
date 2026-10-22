@@ -128,7 +128,14 @@ function buscarPagoDeRegistro(cdrOId) {
 function crearPreferenciaPago(datos) {
   try {
     const url = 'https://api.mercadopago.com/checkout/preferences';
-    
+
+    // Al volver de Mercado Pago el formulario necesita saber de qué registro es: sin el
+    // `cdr` en la URL de regreso, la página mostraba "CDR no presente" y el inquilino que
+    // ya pagó quedaba sin acceso. El `status` solo sirve para mostrar la pantalla de espera;
+    // quien desbloquea es siempre el backend.
+    const formulario = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/formulario-inquilino.html?cdr=' +
+      encodeURIComponent(datos.cdr || '') + '&status=';
+
     // Configurar la preferencia
     const payload = {
       items: [
@@ -144,9 +151,9 @@ function crearPreferenciaPago(datos) {
       //   email: datos.email || 'cliente@ejemplo.com'
       // },
       back_urls: {
-        success: "https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/formulario-inquilino.html?status=success",
-        failure: "https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/formulario-inquilino.html?status=failure",
-        pending: "https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/formulario-inquilino.html?status=pending"
+        success: formulario + 'success',
+        failure: formulario + 'failure',
+        pending: formulario + 'pending'
       },
       auto_return: "approved",
       notification_url: ScriptApp.getService().getUrl(),
