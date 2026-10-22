@@ -225,7 +225,7 @@ function proponerSalaEntrega(datos) {
       enviarCorreoCita(correoAgenteCitas(), `🔑 Entrega ${s.d.inm.id}: ${quien} propuso horarios`, 'ENTREGA POR COORDINAR', 'Agente',
         etiquetaTipoCitaHtml('ENTREGA') + `<strong>${quien}</strong> propuso para la entrega de <strong>${s.d.direccion}</strong>:<br>${lista}<br><br>Quedan apartados en tu agenda mientras la otra parte responde.`, '');
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
-    return { ok: true, mensaje: 'Listo. Le enviamos tus horarios a ' + (s.rol === 'INQUILINO' ? 'el propietario' : s.d.inquilino.split(' ')[0]) + ' y te avisamos cuando responda.' };
+    return { ok: true, mensaje: 'Listo. Le enviamos tus horarios ' + (s.rol === 'INQUILINO' ? 'al propietario' : 'a ' + s.d.inquilino.split(' ')[0]) + ' y te avisamos cuando responda.' };
   } finally {
     lock.releaseLock();
   }

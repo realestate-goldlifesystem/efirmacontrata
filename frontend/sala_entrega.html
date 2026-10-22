@@ -188,6 +188,8 @@
     const textoSlot = (ts) => { const d = new Date(ts); return DIAS[d.getDay()] + ' ' + d.getDate() + ' de ' + MESES[d.getMonth()] + ' · ' + horaDe(ts); };
     const corto = (ts) => { const d = new Date(ts); const x = DIAS[d.getDay()].slice(0, 3); return x.charAt(0).toUpperCase() + x.slice(1) + ' ' + d.getDate() + ' ' + MESES[d.getMonth()].slice(0, 3) + ' · ' + horaDe(ts); };
     const MAX = 3;
+    // Los nombres llegan en mayúsculas desde la hoja: "MARÍA PÉREZ" → "María"
+    const primerNombre = (t) => { const x = String(t || '').trim().split(/\s+/)[0] || ''; return x.charAt(0).toUpperCase() + x.slice(1).toLowerCase(); };
     let info = null;
 
     function llamar(accion, extra) {
@@ -197,8 +199,8 @@
 
     // ================= Qué se muestra según cómo va la negociación =================
     function pintar() {
-      const otro = esc(String(info.otro || '').split(' ')[0] || (info.rol === 'INQUILINO' ? 'el propietario' : 'el inquilino'));
-      $('saludo').textContent = 'Hola ' + String(info.nombre || '').split(' ')[0] + ' 👋';
+      const otro = esc(primerNombre(info.otro) || (info.rol === 'INQUILINO' ? 'el propietario' : 'el inquilino'));
+      $('saludo').textContent = 'Hola ' + primerNombre(info.nombre) + ' 👋';
       $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
       if (info.estado === 'AGENDADA') return pintarExito('¡La entrega quedó agendada!', textoSlot(info.agendada), 'Te enviamos los detalles por correo. Antes de la entrega te recordaremos la cita.');
       if (info.estado === 'CERRADA') return pintarExito('Esta entrega ya no está activa', '', 'Si necesitas algo, escríbele a Leonardo.', true);
