@@ -122,10 +122,12 @@ function apartadosVigentes(excluirIdCita) {
     const ultima = sheet.getLastRow();
     if (ultima >= 2 && col['HORARIOS PEDIDOS']) {
       const filas = sheet.getRange(2, 1, ultima - 1, sheet.getLastColumn()).getValues();
-      const dur = TIPOS_AGENDA.INTERESADO.duracionMin * 60000;
       filas.forEach(f => {
         if (String(valorCita(f, col, 'ESTADO') || '').trim() !== ESTADO_POR_COORDINAR) return;
         const id = String(valorCita(f, col, 'ID CITA') || '').trim();
+        // Cada propuesta aparta lo que dura su tipo de cita (visita 40 min, entrega 60)
+        const tipo = TIPOS_AGENDA[String(valorCita(f, col, 'TIPO AGENDA') || '').trim()] || TIPOS_AGENDA.INTERESADO;
+        const dur = tipo.duracionMin * 60000;
         _pedidosDe(f, col).forEach(t => _cacheApartados.push({ idCita: id, inicio: t, fin: t + dur }));
       });
     }
@@ -598,7 +600,13 @@ function _correoAgenteCoordinado(inm, nombre, celular, correo, precal, asunto, t
 /** Aviso al propietario de una visita coordinada que se cancela o se reagenda. */
 function avisarPropietarioVisitaCoordinada(fila, col, texto, asunto, titulo) {
   try {
-    if (String(valorCita(fila, col, 'MODO VISITA') || '') !== 'COORDINADO') return;
+    const modo = String(valorCita(fila, col, 'MODO VISITA') || '');
+    if (modo !== 'COORDINADO' && modo !== 'ENTREGA') return;
+    // En la entrega el propietario también se entera; el texto habla de la entrega, no de la visita
+    if (modo === 'ENTREGA') {
+      const cambiar = (t) => String(t || '').replace(/[Vv]isita/g, m => m === 'Visita' ? 'Entrega' : 'entrega').replace(/el interesado/g, 'el inquilino').replace(/No tienes que abrir el inmueble\./g, '');
+      texto = cambiar(texto); asunto = asunto && cambiar(asunto); titulo = titulo && cambiar(titulo).toUpperCase();
+    }
     const inm = _inmueblePorId(valorCita(fila, col, 'ID INMUEBLE'));
     if (!inm || !inm.correoPropietario) return;
     enviarCorreoCita(inm.correoPropietario, asunto || '📅 Cambio en una visita a tu inmueble - Gold Life', titulo || 'CAMBIO EN LA VISITA',

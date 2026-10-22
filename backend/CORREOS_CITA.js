@@ -181,7 +181,7 @@ function correoPasoCita(paso, c) {
     case 'M30': {
       const falta = { M60: '1 hora', M45: '45 minutos', M30: '30 minutos' }[paso];
       mensaje = `Tu cita es <strong>en ${falta}</strong>. Por favor confírmala para que te esperemos.` + tarjeta +
-        (paso === 'M30'
+        (paso === 'M30' && !c.noLibera
           ? '<strong>Si no la confirmas en los próximos minutos, liberaremos el horario.</strong>'
           : '<strong>Confirma con el botón verde.</strong>');
       secundario = botonesPropietarioCita(c.idCita, c.token);

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Entrega del inmueble · Gold Life Real Estate</title>
+  <!--
+    Sala de entrega (bloque 4 de agendas, oct-2026). Llega en el correo que sale al cargar el
+    contrato autenticado: ?c=<cita>&r=i|p&t=<token> (i = inquilino, p = propietario).
+    Inquilino y propietario negocian la fecha: el que entra primero marca 3 horarios libres de
+    Leonardo; el otro acepta uno (deslizando) o propone otros 3, sin los que ya no le sirvieron.
+    Usa los estilos de coordinar.html. Servidor: backend/AGENDA_ENTREGA.js.
+  -->
+  <style>
+    /* Banderas: Windows no trae emojis de banderas; esta fuente solo cubre esos caracteres */
+    @font-face { font-family: 'Banderas'; unicode-range: U+1F1E6-1F1FF, U+1F3F4, U+E0062-E007F;
+      src: url('https://cdn.jsdelivr.net/npm/country-flag-emoji-polyfill@0.1.8/dist/TwemojiCountryFlags.woff2') format('woff2'); font-display: swap; }
+    select { font-family: 'Banderas', -apple-system, 'Segoe UI', Roboto, sans-serif !important; }
+    :root { --oro: #d4af37; --fondo: #0c0a09; --panel: #1c1917; --panel2: #292524; --suave: #a8a29e; --linea: #3f3a36; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 24px 16px 40px; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--fondo); color: #f5f5f4;
+      background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.16), transparent 70%);
+    }
+    .tarjeta {
+      width: 100%; max-width: 560px; margin: 0 auto; background: var(--panel); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px; padding: clamp(22px, 5vw, 32px) clamp(16px, 4.5vw, 28px); box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    }
+    .marca { font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); text-align: center; }
+    .marca span { color: var(--suave); font-weight: 400; }
+    h1 { margin: 22px 0 6px; font-size: clamp(20px, 5vw, 24px); font-weight: 600; text-align: center; }
+    h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+    p { margin: 0; line-height: 1.6; color: #d6d3d1; }
+    .centro { text-align: center; }
+    .inmueble { color: var(--suave); font-size: 14px; text-align: center; margin-bottom: 22px; }
+    .bloque { margin-top: 18px; padding: 18px 16px; border-radius: 16px; background: var(--fondo); border: 1px solid rgba(255,255,255,.06); }
+    .bloque.destacado { border-color: rgba(212,175,55,.45); box-shadow: 0 0 0 1px rgba(212,175,55,.15); }
+    .nota { font-size: 13px; color: var(--suave); margin-top: 6px; }
+    button { font-family: inherit; cursor: pointer; transition: opacity .2s, transform .1s, background .15s; }
+    button:active { transform: scale(.98); }
+    button:disabled { opacity: .55; cursor: default; }
+    .principal { width: 100%; padding: 15px; border: 0; border-radius: 12px; font-size: 16px; font-weight: 700; color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); margin-top: 16px; }
+    .pedido { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px; margin-top: 10px;
+      border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 15px; text-align: left; }
+    .pedido b { font-weight: 600; } .pedido b::first-letter { text-transform: uppercase; }
+    .pedido span { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #0c0a09; background: var(--oro); padding: 7px 12px; border-radius: 999px; }
+    .semana { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 6px; }
+    .flecha { width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--panel2); color: #f5f5f4; font-size: 20px; }
+    .semana strong { font-size: 15px; font-weight: 600; }
+    .dia { margin-top: 14px; }
+    .dia h3 { margin: 0 0 8px; font-size: 13px; color: var(--suave); font-weight: 600; } .dia h3::first-letter { text-transform: uppercase; }
+    .horas { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+    .hora { padding: 11px 0; font-size: 14px; border-radius: 10px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; position: relative; }
+    .hora.marcado { background: #f5f5f4; color: #0c0a09; box-shadow: 0 0 0 2px var(--oro); font-weight: 600; }
+    .hora.pedido-int { border-color: var(--oro); }
+    .hora.pedido-int::after { content: 'pedido'; position: absolute; top: -8px; right: 6px; font-size: 9px; font-weight: 700; letter-spacing: .5px; background: var(--oro); color: #0c0a09; padding: 1px 5px; border-radius: 6px; }
+    .sinHoras { font-size: 13px; color: #78716c; }
+    .diasTabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 12px; border-radius: 14px; transition: box-shadow .4s; }
+    .diasTabs.brillar { box-shadow: 0 0 0 2px rgba(212,175,55,.6), 0 0 22px rgba(212,175,55,.25); }
+    .diaTab { position: relative; padding: 8px 0 7px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; display: flex; flex-direction: column; align-items: center; gap: 1px; transition: all .2s; }
+    .diaTab small { font-size: 11px; color: var(--suave); text-transform: capitalize; } .diaTab b { font-size: 16px; }
+    .diaTab.activo { background: #f5f5f4; color: #0c0a09; border-color: #f5f5f4; box-shadow: 0 0 0 2px var(--oro); } .diaTab.activo small { color: #57534e; }
+    .diaTab:disabled { opacity: .3; cursor: default; }
+    .diaTab .cuenta { position: absolute; top: -7px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; background: var(--oro); color: #0c0a09; font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+    .diaHoras .horas { grid-template-columns: repeat(4, 1fr); gap: 6px; } .diaHoras .hora { padding: 10px 0; font-size: 13px; }
+    .diaTitulo { margin: 16px 0 4px; font-size: 15px; } .diaTitulo::first-letter { text-transform: uppercase; }
+    .otroDia { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: 1.5px solid var(--oro); background: rgba(212,175,55,.08); color: var(--oro); font-size: 15px; font-weight: 700; }
+    .chipDia { display: inline-block; margin: 6px 6px 0 0; padding: 5px 10px; border-radius: 999px; font-size: 12.5px; background: rgba(212,175,55,.14); border: 1px solid rgba(212,175,55,.5); color: #f5f5f4; }
+    .opciones { display: flex; gap: 8px; margin-top: 10px; }
+    .opcion { flex: 1; padding: 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 14px; }
+    .opcion.elegido { background: #f5f5f4; color: #0c0a09; box-shadow: 0 0 0 2px var(--oro); font-weight: 600; }
+    input { width: 100%; padding: 13px 14px; margin-top: 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 15px; font-family: inherit; }
+    input:focus { outline: none; border-color: var(--oro); }
+    .resumen { font-size: 13px; color: var(--suave); margin-top: 12px; text-align: center; }
+    .error { color: #fca5a5; font-size: 14px; margin-top: 10px; text-align: center; }
+    .ok { color: #86efac; }
+    .icono { width: 56px; height: 56px; margin: 20px auto 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;
+      background: rgba(212,175,55,.1); box-shadow: 0 0 0 1px rgba(212,175,55,.3); }
+    .oculto { display: none !important; }
+    /* Confirmación antes de agendar: "Me sirve" ya no agenda de un toque */
+    .confirmar { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center; padding: 20px; animation: aparecer .25s ease; }
+    .confirmar .caja { width: 100%; max-width: 400px; background: var(--panel); border: 1px solid var(--linea); border-radius: 22px;
+      padding: 24px 22px 18px; text-align: center; animation: subirC .3s ease; }
+    .confirmar .icono { font-size: 34px; margin-bottom: 6px; }
+    .confirmar h3 { margin: 0 0 8px; font-size: 19px; }
+    .confirmar .cuando { color: var(--oro); font-weight: 700; font-size: 17px; margin: 0 0 12px; }
+    .confirmar p { color: var(--suave); font-size: 13.5px; line-height: 1.5; margin: 0 0 18px; }
+    .confirmar .si { margin-top: 14px; width: 100%; border: 0; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; background: var(--oro); color: #0c0a09; }
+    .confirmar .no { width: 100%; border: 0; background: none; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 4px; }
+    .ninguno { width: 100%; margin-top: 16px; padding: 15px; border-radius: 12px; border: 1.5px solid var(--oro); background: rgba(212,175,55,.08);
+      color: var(--oro); font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.25); transition: background .2s, transform .1s; cursor: pointer; }
+    .ninguno:hover { background: rgba(212,175,55,.16); } .ninguno:active { transform: scale(.98); }
+    .volverPedidos { background: none; border: 0; color: var(--oro); font-size: 13.5px; padding: 8px 0 0; }
+    .entra { animation: subirC .35s ease both; }
+    .confirmar .opciones { margin: 0 0 6px; } .confirmar input { margin-top: 8px; }
+    .confirmar .tel { display: flex; gap: 8px; margin-top: 8px; } .confirmar .tel input { margin-top: 0; }
+    .confirmar select { width: 108px; flex-shrink: 0; padding: 13px 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 15px; font-family: inherit; }
+    .confirmar .errQ { color: #fca5a5; font-size: 13px; margin: 8px 0 0; text-align: left; }
+    .confirmar .rotuloQuien { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--suave); font-weight: 700; margin: 0 0 8px; text-align: left; }
+    /* Desliza para agendar: el "filtro del filtro" antes del botón final */
+    .deslizar { cursor: grab; position: relative; height: 56px; margin-top: 14px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--linea); overflow: hidden; touch-action: none; user-select: none; }
+    .deslizar .relleno { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, rgba(212,175,55,.15), rgba(212,175,55,.45)); }
+    .deslizar .texto { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14.5px; font-weight: 600; padding-left: 40px;
+      background: linear-gradient(90deg, #78716c 0%, #f5f5f4 50%, #78716c 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: brilloTexto 2.4s linear infinite; }
+    .deslizar .perilla { position: absolute; top: 3px; left: 4px; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #e8c766, var(--oro));
+      display: grid; place-items: center; color: #0c0a09; font-size: 22px; font-weight: 700; cursor: grab; box-shadow: 0 4px 14px rgba(0,0,0,.35); touch-action: none; }
+    .deslizar.volviendo .perilla, .deslizar.volviendo .relleno { transition: all .3s ease; }
+    .deslizar.listo { border-color: var(--oro); }
+    @keyframes brilloTexto { from { background-position: 200% 0; } to { background-position: 0 0; } }
+    .exito { text-align: center; padding: 10px 0 4px; }
+    .exito .check { width: 64px; height: 64px; margin: 8px auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; font-weight: 800;
+      color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); box-shadow: 0 0 0 8px rgba(212,175,55,.15); }
+    .exito h1 { font-size: 21px; margin: 0 0 14px; }
+    .exito p { color: #d6d3d1; font-size: 14px; line-height: 1.55; }
+    .exitoLista { text-align: left; margin: 0 0 14px; display: grid; gap: 8px; }
+    .exitoLista div { padding: 10px 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--linea); }
+    .exitoLista b { display: block; font-size: 13px; color: var(--oro); margin-bottom: 2px; } .exitoLista b::first-letter { text-transform: uppercase; }
+    .exitoLista span { font-size: 14px; }
+    @keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes subirC { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+    /* Propios de la sala de entrega */
+    .instruccion3 { display: flex; align-items: center; gap: 14px; margin: 14px 0 6px; padding: 12px 14px; border-radius: 14px;
+      background: linear-gradient(135deg, rgba(212,175,55,.18), rgba(212,175,55,.06)); border: 1.5px solid var(--oro); }
+    .instruccion3 p { margin: 0; font-size: 15.5px; line-height: 1.35; color: #f5f5f4; } .instruccion3 p b { color: var(--oro); }
+    .instruccion3 small { font-size: 12px; color: var(--suave); }
+    .instruccion3 .casillas { display: flex; gap: 6px; flex-shrink: 0; }
+    .instruccion3 .casillas span { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; font-weight: 700;
+      border: 1.5px dashed var(--oro); color: var(--oro); transition: all .3s ease; }
+    .instruccion3 .casillas span.lleno { background: var(--oro); color: #1c1917; border-style: solid; }
+    .instruccion3.sacudir { animation: sacudir .5s ease; }
+    @keyframes sacudir { 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+    .tira { display: flex; align-items: center; gap: 4px; margin-top: 10px; }
+    .tira .flecha { width: 30px; height: 50px; border-radius: 10px; background: transparent; color: var(--suave); flex-shrink: 0; }
+    .tira .flecha:disabled { opacity: .2; }
+    .tira .diasTabs { flex: 1; margin-top: 0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; } .chips:empty { display: none; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 6px 6px 11px; border-radius: 999px; font-size: 12.5px;
+      background: rgba(212,175,55,.14); border: 1px solid rgba(212,175,55,.55); color: #f5f5f4; }
+    .chip button { width: 20px; height: 20px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); color: #f5f5f4; font-size: 11px; padding: 0; }
+    .principal.bloqueado { opacity: .55; filter: grayscale(.4); }
+    .buscando { text-align: center; padding: 14px 0 4px; color: var(--suave); font-size: 14px; }
+    .buscando .reloj { width: 46px; height: 46px; margin: 0 auto 10px; border-radius: 50%; position: relative; border: 2px solid rgba(212,175,55,.35); }
+    .buscando .reloj::before { content: ''; position: absolute; left: 50%; bottom: 50%; width: 2px; height: 14px; margin-left: -1px; background: var(--oro); border-radius: 2px; transform-origin: bottom center; animation: girar 2.4s linear infinite; }
+    @keyframes girar { to { transform: rotate(360deg); } }
+    .exito { text-align: center; padding: 6px 0; }
+    .exito .check { width: 64px; height: 64px; margin: 8px auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; font-weight: 800;
+      color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); box-shadow: 0 0 0 8px rgba(212,175,55,.15); }
+    .exito h2 { font-size: 20px; margin-bottom: 10px; }
+    .esperando { margin-top: 6px; }
+    .esperando .hora-p { padding: 10px 14px; margin-top: 8px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--linea); font-size: 14.5px; }
+    .esperando .hora-p::first-letter { text-transform: uppercase; }
+    .secundario { width: 100%; background: none; border: 0; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 6px; }
+    .entra { animation: subirC .35s ease both; }
+  </style>
+</head>
+<body>
+  <main class="tarjeta">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <p id="cargando" class="centro" style="margin-top:28px;color:var(--suave);">Cargando…</p>
+
+    <section id="error" class="oculto centro">
+      <div class="icono">!</div>
+      <h1 style="margin-top:8px;">No pudimos abrir la entrega</h1>
+      <p id="errorTexto"></p>
+    </section>
+
+    <section id="contenido" class="oculto">
+      <h1 id="saludo"></h1>
+      <p class="inmueble" id="inmueble"></p>
+      <div id="vista"></div>
+    </section>
+  </main>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+    const q = new URLSearchParams(location.search);
+    const CITA = q.get('c') || '', ROL = q.get('r') || '', TOKEN = q.get('t') || '';
+    const $ = (id) => document.getElementById(id);
+    const esc = (t) => String(t || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const horaDe = (ts) => { const d = new Date(ts); let h = d.getHours(); const m = d.getMinutes(); const s = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + (m < 10 ? '0' : '') + m + ' ' + s; };
+    const textoSlot = (ts) => { const d = new Date(ts); return DIAS[d.getDay()] + ' ' + d.getDate() + ' de ' + MESES[d.getMonth()] + ' · ' + horaDe(ts); };
+    const corto = (ts) => { const d = new Date(ts); const x = DIAS[d.getDay()].slice(0, 3); return x.charAt(0).toUpperCase() + x.slice(1) + ' ' + d.getDate() + ' ' + MESES[d.getMonth()].slice(0, 3) + ' · ' + horaDe(ts); };
+    const MAX = 3;
+    let info = null;
+
+    function llamar(accion, extra) {
+      return fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ accion: accion, c: CITA, r: ROL, t: TOKEN }, extra || {})) }).then(r => r.json());
+    }
+    function error(texto) { $('cargando').classList.add('oculto'); $('contenido').classList.add('oculto'); $('error').classList.remove('oculto'); $('errorTexto').textContent = texto; }
+
+    // ================= Qué se muestra según cómo va la negociación =================
+    function pintar() {
+      const otro = esc(String(info.otro || '').split(' ')[0] || (info.rol === 'INQUILINO' ? 'el propietario' : 'el inquilino'));
+      $('saludo').textContent = 'Hola ' + String(info.nombre || '').split(' ')[0] + ' 👋';
+      $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
+      if (info.estado === 'AGENDADA') return pintarExito('¡La entrega quedó agendada!', textoSlot(info.agendada), 'Te enviamos los detalles por correo. Antes de la entrega te recordaremos la cita.');
+      if (info.estado === 'CERRADA') return pintarExito('Esta entrega ya no está activa', '', 'Si necesitas algo, escríbele a Leonardo.', true);
+      const deOtro = info.pedidos.length && info.propuestoPor && info.propuestoPor !== info.rol;
+      const mios = info.pedidos.length && info.propuestoPor === info.rol;
+      if (deOtro) return pintarOpciones(otro);
+      if (mios) return pintarEsperando(otro);
+      pintarElegir(otro, false);
+    }
+
+    function pintarExito(titulo, cuando, texto, sinCheck) {
+      $('vista').innerHTML = `<div class="exito entra">${sinCheck ? '<div class="icono">🔑</div>' : '<div class="check">✓</div>'}<h2>${esc(titulo)}</h2>` +
+        (cuando ? `<p style="color:var(--oro);font-weight:700;font-size:17px;margin-bottom:10px;">${esc(cuando.charAt(0).toUpperCase() + cuando.slice(1))}</p>` : '') +
+        `<p>${esc(texto)}</p><p class="nota" style="margin-top:14px;">Ya puedes cerrar esta página.</p></div>`;
+    }
+
+    // Lo que propuso la otra parte, como botones "Me sirve"
+    function pintarOpciones(otro) {
+      $('vista').innerHTML = `<div class="bloque destacado entra"><h2>${otro} propuso estos horarios</h2><p class="nota">Toca el que te sirva y la entrega queda agendada.</p>` +
+        info.pedidos.map(t => `<button class="pedido" data-ts="${t}"><b>${esc(textoSlot(t))}</b><span>Me sirve</span></button>`).join('') +
+        '<button class="ninguno" id="ninguno">🗓️ Ninguno me sirve · proponer otros</button></div>';
+      $('vista').querySelectorAll('.pedido').forEach(b => b.onclick = () => confirmar(Number(b.dataset.ts), otro));
+      $('ninguno').onclick = () => pintarElegir(otro, true);
+    }
+
+    // Ya propuso: espera a la otra parte
+    function pintarEsperando(otro) {
+      $('vista').innerHTML = `<div class="bloque entra"><h2>Esperando a ${otro}</h2><p class="nota">Le enviamos tus horarios. Te avisamos por correo cuando responda.</p>` +
+        '<div class="esperando">' + info.pedidos.map(t => `<div class="hora-p">${esc(textoSlot(t))}</div>`).join('') + '</div>' +
+        '<button class="secundario" id="cambiarMios">Cambiar mis horarios</button></div>';
+      $('cambiarMios').onclick = () => pintarElegir(otro, false);
+    }
+
+    // ================= Elegir 3 horarios =================
+    let lunes = null, diaSel = null, elegidos = [], cache = {}, pidiendo = 0;
+    function lunesDe(d) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; }
+    const hoy0 = () => { const h = new Date(); h.setHours(0, 0, 0, 0); return h; };
+    const maxDia = () => { const m = hoy0(); m.setDate(m.getDate() + 42); return m; };
+    const habil = (f) => f >= hoy0() && f.getDay() !== 0 && f <= maxDia();
+
+    function pintarElegir(otro, propuestaNueva) {
+      elegidos = []; cache = {};
+      $('vista').innerHTML =
+        `<div class="entra"><h2 style="text-align:center;margin-top:6px;">¿Cuándo puedes hacer la entrega?</h2>` +
+        (propuestaNueva ? `<p class="nota centro">Los horarios que propuso ${otro} ya no aparecen.</p>` : '') +
+        '<div class="instruccion3" id="instruccion3"><div class="casillas" id="casillas"></div>' +
+        `<p><b>Marca 3 horarios</b> que te sirvan<br><small>${otro} escoge uno de los 3. Pueden ser de días distintos.</small></p></div>` +
+        '<div class="tira"><button class="flecha" id="semAnt" aria-label="Semana anterior">‹</button><div class="diasTabs" id="tabs"></div><button class="flecha" id="semSig" aria-label="Semana siguiente">›</button></div>' +
+        '<div class="diaHoras" id="horasDia"></div>' +
+        '<div class="chips" id="chips"></div>' +
+        '<button class="principal bloqueado" id="enviar">Marca 3 horarios para continuar</button>' +
+        (info.pedidos.length && info.propuestoPor !== info.rol ? '<button class="secundario" id="volverOpc">‹ Ver otra vez los horarios que propuso ' + otro + '</button>' : '') +
+        (info.pedidos.length && info.propuestoPor === info.rol ? '<button class="secundario" id="volverOpc">‹ Volver</button>' : '') +
+        '</div>';
+      if ($('volverOpc')) $('volverOpc').onclick = pintar;
+      const primero = new Date(); primero.setHours(0, 0, 0, 0); while (!habil(primero)) primero.setDate(primero.getDate() + 1);
+      lunes = lunesDe(primero); diaSel = primero;
+      $('semAnt').onclick = () => { lunes.setDate(lunes.getDate() - 7); pintarTabs(); };
+      $('semSig').onclick = () => { lunes.setDate(lunes.getDate() + 7); pintarTabs(); };
+      $('enviar').onclick = enviar;
+      pintarTabs(); abrirDia(diaSel); pintarElegidos();
+    }
+
+    function pintarTabs() {
+      let html = '';
+      for (let i = 0; i < 6; i++) {
+        const f = new Date(lunes); f.setDate(f.getDate() + i);
+        const n = elegidos.filter(t => iso(new Date(t)) === iso(f)).length;
+        html += `<button class="diaTab${diaSel && iso(f) === iso(diaSel) ? ' activo' : ''}" data-f="${iso(f)}" ${habil(f) ? '' : 'disabled'}>` +
+          `<small>${DIAS[f.getDay()].slice(0, 3)}</small><b>${f.getDate()}</b>${n ? `<span class="cuenta">${n}</span>` : ''}</button>`;
+      }
+      $('tabs').innerHTML = html;
+      $('semAnt').disabled = lunes <= lunesDe(hoy0());
+      $('semSig').disabled = (() => { const s = new Date(lunes); s.setDate(s.getDate() + 7); return s > maxDia(); })();
+      $('tabs').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { const [y, m, d] = b.dataset.f.split('-').map(Number); abrirDia(new Date(y, m - 1, d)); });
+    }
+
+    function abrirDia(f) {
+      diaSel = f; pintarTabs();
+      const t = DIAS[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()];
+      const titulo = `<h3 class="diaTitulo">${esc(t)}</h3>`;
+      const clave = iso(f);
+      if (cache[clave]) return pintarHoras(titulo, cache[clave]);
+      $('horasDia').innerHTML = titulo + '<div class="buscando"><div class="reloj"></div>Buscando horarios libres…</div>';
+      const n = ++pidiendo;
+      llamar('disponibilidadSalaEntrega', { fecha: clave }).then(r => {
+        if (n !== pidiendo) return;
+        cache[clave] = r && r.success ? (r.slots || []) : [];
+        pintarHoras(titulo, cache[clave], r && !r.success ? (r.motivo || r.error) : (r && r.motivo));
+      }).catch(() => { if (n === pidiendo) $('horasDia').innerHTML = titulo + '<p class="sinHoras">Error de red. Intenta de nuevo.</p>'; });
+    }
+
+    function pintarHoras(titulo, slots, motivo) {
+      $('horasDia').innerHTML = titulo + (slots.length
+        ? '<div class="horas">' + slots.map(s => `<button class="hora${elegidos.includes(s.timestamp) ? ' marcado' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}</button>`).join('') + '</div>'
+        : `<p class="sinHoras">${esc(motivo || 'Sin horarios libres este día. Prueba otro día.')}</p>`);
+      $('horasDia').querySelectorAll('.hora').forEach(b => b.onclick = () => {
+        const ts = Number(b.dataset.ts);
+        if (elegidos.includes(ts)) elegidos = elegidos.filter(x => x !== ts);
+        else if (elegidos.length < MAX) elegidos.push(ts);
+        else { sacudir(); return; }
+        elegidos.sort((a, c) => a - c);
+        b.classList.toggle('marcado', elegidos.includes(ts));
+        pintarTabs(); pintarElegidos();
+      });
+    }
+
+    function pintarElegidos() {
+      $('casillas').innerHTML = [0, 1, 2].map(i => `<span class="${i < elegidos.length ? 'lleno' : ''}">${i < elegidos.length ? '✓' : i + 1}</span>`).join('');
+      $('chips').innerHTML = elegidos.map(t => `<span class="chip">${esc(corto(t))}<button data-quitar="${t}" aria-label="Quitar">✕</button></span>`).join('');
+      $('chips').querySelectorAll('[data-quitar]').forEach(b => b.onclick = () => {
+        elegidos = elegidos.filter(x => x !== Number(b.dataset.quitar));
+        pintarTabs(); pintarElegidos(); abrirDia(diaSel);
+      });
+      const faltan = MAX - elegidos.length;
+      $('enviar').textContent = faltan ? `Marca ${faltan} más para continuar` : 'Enviar mis 3 horarios';
+      $('enviar').classList.toggle('bloqueado', faltan > 0);
+    }
+
+    function sacudir() { const i = $('instruccion3'); i.classList.remove('sacudir'); void i.offsetWidth; i.classList.add('sacudir'); }
+
+    function enviar() {
+      if (elegidos.length < MAX) return sacudir();
+      const b = $('enviar'); b.disabled = true; b.textContent = 'Enviando…';
+      llamar('proponerSalaEntrega', { pedidos: elegidos }).then(r => {
+        if (!r.ok) { b.disabled = false; pintarElegidos(); alert(r.mensaje || 'No pudimos enviar tus horarios.'); cache = {}; abrirDia(diaSel); return; }
+        pintarExito('¡Listo, enviamos tus horarios!', '', r.mensaje || '');
+      }).catch(() => { b.disabled = false; pintarElegidos(); alert('Error de red. Intenta de nuevo.'); });
+    }
+
+    // ================= Aceptar: deslizar y confirmar =================
+    function confirmar(ts, otro) {
+      const capa = document.createElement('div');
+      capa.className = 'confirmar';
+      capa.innerHTML = `<div class="caja" role="dialog" aria-modal="true"><div class="icono">🔑</div><h3>¿Agendamos la entrega?</h3>` +
+        `<p class="cuando">${esc(textoSlot(ts).charAt(0).toUpperCase() + textoSlot(ts).slice(1))}</p>` +
+        `<p>Al aceptar, la entrega queda agendada en este horario y los otros que propuso ${otro} se liberan. A todos nos llega un correo con los detalles.</p>` +
+        '<div class="deslizar"><div class="relleno"></div><div class="texto">Desliza para agendar</div><div class="perilla">›</div></div>' +
+        '<button class="si oculto">Sí, agendar la entrega</button><button class="no">Volver</button></div>';
+      const qq = (c) => capa.querySelector(c);
+      const cerrar = () => capa.remove();
+      capa.onclick = (e) => { if (e.target === capa) cerrar(); };
+      qq('.no').onclick = cerrar;
+      qq('.si').onclick = () => {
+        qq('.si').disabled = true; qq('.si').textContent = 'Agendando…';
+        llamar('aceptarSalaEntrega', { timestamp: ts }).then(r => {
+          cerrar();
+          if (!r.ok) { alert(r.mensaje || 'No pudimos agendar ese horario.'); return cargar(); }
+          pintarExito('¡La entrega quedó agendada!', textoSlot(ts), r.mensaje || '');
+        }).catch(() => { qq('.si').disabled = false; qq('.si').textContent = 'Sí, agendar la entrega'; alert('Error de red. Intenta de nuevo.'); });
+      };
+      // Deslizar desde cualquier parte de la barra; al 80 % aparece el botón
+      const pista = qq('.deslizar'), perilla = qq('.perilla'), relleno = qq('.relleno');
+      let x0 = null, max = 0;
+      const mover = (x) => { const d = Math.max(0, Math.min(max, x - x0)); perilla.style.transform = `translateX(${d}px)`; relleno.style.width = (d + 28) + 'px'; return d; };
+      pista.addEventListener('pointerdown', (e) => {
+        if (pista.classList.contains('listo')) return;
+        e.preventDefault();
+        x0 = perilla.getBoundingClientRect().left + perilla.offsetWidth / 2; max = pista.clientWidth - perilla.offsetWidth - 8; pista.classList.remove('volviendo');
+        try { pista.setPointerCapture(e.pointerId); } catch (_) {}
+        mover(e.clientX);
+      });
+      pista.addEventListener('pointermove', (e) => { if (x0 !== null) mover(e.clientX); });
+      const soltar = (e) => {
+        if (x0 === null) return;
+        const d = mover(e.clientX); x0 = null;
+        if (d >= max * 0.8) {
+          perilla.style.transform = `translateX(${max}px)`; relleno.style.width = '100%';
+          pista.classList.add('listo'); perilla.textContent = '✓'; qq('.texto').textContent = 'Listo';
+          qq('.si').classList.remove('oculto'); qq('.si').classList.add('entra');
+        } else { pista.classList.add('volviendo'); perilla.style.transform = ''; relleno.style.width = '0'; }
+      };
+      pista.addEventListener('pointerup', soltar); pista.addEventListener('pointercancel', soltar);
+      pista.addEventListener('dragstart', (e) => e.preventDefault());
+      document.body.appendChild(capa);
+    }
+
+    function cargar() {
+      if (!CITA || !TOKEN || !ROL) return error('El enlace está incompleto. Pídele a Leonardo que te lo envíe de nuevo.');
+      llamar('infoSalaEntrega').then(r => {
+        if (!r || !r.ok) return error((r && r.mensaje) || 'No pudimos abrir la entrega.');
+        info = r;
+        $('cargando').classList.add('oculto'); $('contenido').classList.remove('oculto');
+        pintar();
+      }).catch(() => error('Revisa tu conexión a internet e intenta de nuevo.'));
+    }
+    cargar();
+  </script>
+</body>
+</html>

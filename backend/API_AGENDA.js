@@ -45,7 +45,9 @@ const COLUMNAS_CITAS = [
   'MODO VISITA', 'HORARIOS PEDIDOS', 'QUIEN ABRE',
   // oct-2026 (negociación): horarios que pidió el interesado y el propietario no pudo.
   // Ya no se le vuelven a ofrecer al interesado (JSON de timestamps).
-  'HORARIOS DESCARTADOS'
+  'HORARIOS DESCARTADOS',
+  // oct-2026 (sala de entrega): quién hizo la última propuesta, INQUILINO o PROPIETARIO
+  'PROPUESTO POR'
 ];
 
 // Estados posibles de una cita.

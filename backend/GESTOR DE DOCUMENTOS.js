@@ -665,6 +665,18 @@ function doPost(e) {
       case 'semanaCoordinarPropietario':
         result = semanaCoordinarPropietario(datos);
         break;
+      case 'infoSalaEntrega':
+        result = infoSalaEntrega(datos);
+        break;
+      case 'disponibilidadSalaEntrega':
+        result = disponibilidadSalaEntrega(datos);
+        break;
+      case 'proponerSalaEntrega':
+        result = proponerSalaEntrega(datos);
+        break;
+      case 'aceptarSalaEntrega':
+        result = aceptarSalaEntrega(datos);
+        break;
       case 'aceptarHorarioPropietario':
         result = aceptarHorarioPropietario(datos);
         break;
@@ -6049,9 +6061,19 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
       sheet.getRange(targetRow, colDetalles).setValue('✅ Contrato autenticado cargado en Drive.' + notaCobro);
     }
 
+    // Sala de entrega (bloque 4 de agendas): inquilino y propietario agendan la entrega
+    let notaEntrega = '';
+    try {
+      const idParaEntrega = idRegCol > 0 ? String(sheet.getRange(targetRow, idRegCol).getValue() || '').trim() : '';
+      if (idParaEntrega && emailInq && String(emailInq).includes('@') && typeof abrirSalaEntrega === 'function') {
+        const rEnt = abrirSalaEntrega(idParaEntrega);
+        notaEntrega = rEnt.ok ? ' 🔑 Sala de entrega abierta.' : ' ⚠️ Sala de entrega no abierta: ' + rEnt.error;
+      }
+    } catch (eEnt) { notaEntrega = ' ⚠️ Sala de entrega no abierta: ' + eEnt.message; }
+
     return {
       success: true,
-      message: '✅ Contrato autenticado guardado con éxito. Permisos y notificaciones enviadas.' + notaCobro,
+      message: '✅ Contrato autenticado guardado con éxito. Permisos y notificaciones enviadas.' + notaCobro + notaEntrega,
       urlDrive: urlDrive
     };
 

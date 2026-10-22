@@ -51,7 +51,8 @@ function ejecutarMotorAgenda() {
 
       // Bloque 2: solicitudes de visita que esperan al propietario o al interesado
       if (String(valorCita(f, col, 'ESTADO') || '').trim() === ESTADO_POR_COORDINAR &&
-          revisarSolicitudCoordinada_(sheet, col, numFila, f)) return;
+          (revisarSolicitudCoordinada_(sheet, col, numFila, f) || revisarSalaEntrega_(sheet, col, numFila, f))) return;
+      const esEntrega = String(valorCita(f, col, 'TIPO AGENDA') || '').trim() === 'ENTREGA';
 
       const fechaCita = fechaHoraDeCita(valorCita(f, col, 'FECHA CITA'), valorCita(f, col, 'HORA CITA'));
       if (!fechaCita) return;
@@ -86,7 +87,21 @@ function ejecutarMotorAgenda() {
         const minDesdeUltimo = fechaUltimo instanceof Date ? (ahora.getTime() - fechaUltimo.getTime()) / 60000 : 9999;
         const pendiente = estado === ESTADOS_CITA.PENDIENTE;
 
-        if (debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimo, pendiente)) {
+        // Entrega (decisión del 22-oct-2026): no se libera sola; a Leonardo le llega un aviso para llamar (una vez)
+        if (esEntrega && minFaltan > 0 && debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimo, pendiente)) {
+          // Marca en las propiedades del script (no en ULTIMO AVISO, que sigue la línea de avisos)
+          const marca = 'ENTREGA_SIN_CONFIRMAR_' + idCita, props = PropertiesService.getScriptProperties();
+          if (!props.getProperty(marca)) {
+            try {
+              enviarCorreoCita(correoAgenteCitas(), `📞 La entrega de las ${horaStr} no está confirmada · ${nombre}`, 'ENTREGA SIN CONFIRMAR', 'Agente',
+                etiquetaTipoCitaHtml('ENTREGA') + `<strong>${nombre}</strong> no confirmó la entrega de hoy a las <strong>${horaStr}</strong> (${direccion || ''}).<br><br>` +
+                'La cita sigue en pie en tu calendario: llámalo para confirmar.', '');
+            } catch (e) { Logger.log('Error avisando la entrega sin confirmar ' + idCita + ': ' + e.message); }
+            props.setProperty(marca, '1');
+          }
+          return;
+        }
+        if (!esEntrega && debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimo, pendiente)) {
           aplicarCambioEstadoCita(sheet, col, numFila, f, ESTADOS_CITA.CANCELADA, 'cancelada automáticamente: no se confirmó a tiempo');
           avisarPropietarioVisitaCoordinada(f, col, `La visita de <strong>${nombre}</strong> del <strong>${fechaStr} a las ${horaStr}</strong> se canceló porque el interesado no la confirmó. No tienes que abrir el inmueble.`);
           try {
@@ -108,7 +123,7 @@ function ejecutarMotorAgenda() {
         if (paso) {
           try {
             const idInmVisita = String(valorCita(f, col, 'TIPO AGENDA') || '').trim() === 'INTERESADO' ? String(valorCita(f, col, 'ID INMUEBLE') || '') : '';
-            enviarPasoCita(paso, correo, { idCita: idCita, idInmueble: idInmVisita, token: tokenProp, nombre: nombre, servicio: servicio, direccion: direccion, inicio: fechaCita });
+            enviarPasoCita(paso, correo, { noLibera: esEntrega, idCita: idCita, idInmueble: idInmVisita, token: tokenProp, nombre: nombre, servicio: servicio, direccion: direccion, inicio: fechaCita });
             escribir(numFila, 'ULTIMO AVISO', paso);
             escribir(numFila, 'FECHA ULTIMO AVISO', ahora);
           } catch (e) {
@@ -119,6 +134,21 @@ function ejecutarMotorAgenda() {
       }
 
       // ── REGLA 3: AVISO AL AGENTE AL EMPEZAR UNA CITA CONFIRMADA ────────
+      // Entrega: confirmada o no, al empezar se pregunta "¿Ya se hizo la entrega?"
+      if (esEntrega && (estado === ESTADOS_CITA.CONFIRMADA || estado === ESTADOS_CITA.PENDIENTE) && tieneTokens && horasFaltantes <= 0 && horasFaltantes >= -1) {
+        try {
+          enviarCorreoCita(correoAgenteCitas(), `🔑 ¿Ya se hizo la entrega a ${nombre}?`, 'ENTREGA DEL INMUEBLE', 'Agente',
+            etiquetaTipoCitaHtml('ENTREGA') + `La entrega a <strong>${nombre}</strong> (${direccion || 'sin dirección'}) estaba para las <strong>${horaStr}</strong>.<br><br>` +
+            '<strong>¿Ya se hizo la entrega?</strong> Al marcar Sí, el inmueble queda como entregado.',
+            htmlBotonesCorreo([
+              { texto: '✅ Sí, ya se entregó', color: '#1f7a4d', url: urlEstadoCita(idCita, ESTADOS_CITA.ASISTIDA, tokenAgente) },
+              { texto: '❌ No se hizo', color: '#a3322a', url: urlEstadoCita(idCita, ESTADOS_CITA.INASISTIDA, tokenAgente) },
+              { texto: '🔄 Se movió', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.REAGENDADA, tokenAgente) }
+            ]));
+        } catch (e) { Logger.log('Error preguntando por la entrega ' + idCita + ': ' + e.message); }
+        escribir(numFila, 'ESTADO', ESTADOS_CITA.CONFIRMADA_NOTIFICADA);
+        return;
+      }
       if (estado === ESTADOS_CITA.CONFIRMADA && tieneTokens && horasFaltantes <= 0 && horasFaltantes >= -1) {
         try {
           enviarCorreoCita(
@@ -334,6 +364,8 @@ function aplicarEstadoCitaDesdeCorreo(idCita, nuevoEstado, token) {
 
     const quien = cita.esAgente ? 'agente' : 'propietario';
     aplicarCambioEstadoCita(cita.sheet, cita.col, cita.numFila, cita.fila, estado, quien + ' marcó ' + estado.toLowerCase() + ' desde el correo');
+    // "Sí, ya se entregó": el inmueble queda como entregado
+    if (cita.esAgente && estado === ESTADOS_CITA.ASISTIDA && String(valorCita(cita.fila, cita.col, 'TIPO AGENDA')) === 'ENTREGA') marcarInmuebleEntregado_(cita.fila, cita.col);
 
     // La persona recibe la constancia de lo que hizo (antes solo lo veía en la página)
     if (!cita.esAgente && (estado === 'CONFIRMADA' || estado === 'CANCELADA')) {
