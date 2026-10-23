@@ -135,9 +135,18 @@ function gestionarCitaPanel(datos) {
 
       case 'reagendar': {
         const r = moverCita(cita, Number(datos.timestamp), { anticipacionMin: PANEL_ANTICIPACION_MIN, quien: 'agente' });
+        if (r.ok) avisarPropietarioVisitaCoordinada(fila, col, `La entrega con <strong>${nombre}</strong> quedó para el <strong>${r.textoNueva}</strong>.`, '🔑 Cambió la fecha de la entrega - Gold Life', 'NUEVA FECHA');
         return r.ok
-          ? { success: true, mensaje: 'Cita reagendada para el ' + r.textoNueva + '. Se le avisó al propietario por correo.' }
+          ? { success: true, mensaje: 'Cita reagendada para el ' + r.textoNueva + '. Le avisamos a ' + (nombre || 'la persona') + ' por correo.' }
           : { success: false, message: r.mensaje };
+      }
+
+      case 'reabrirEntrega': {
+        if (String(valorCita(fila, col, 'TIPO AGENDA')) !== 'ENTREGA') return { success: false, message: 'Esta acción es solo para entregas.' };
+        if (estado === ESTADOS_CITA.ASISTIDA) return { success: false, message: 'La entrega ya se hizo.' };
+        if (estado === ESTADO_POR_COORDINAR) return { success: false, message: 'La fecha ya está abierta: esperamos a que la elijan.' };
+        const r = reabrirSalaEntrega_(sheet, col, numFila, fila, String(datos.motivo || '').trim());
+        return r.ok ? { success: true, mensaje: r.mensaje } : { success: false, message: r.mensaje };
       }
 
       default:

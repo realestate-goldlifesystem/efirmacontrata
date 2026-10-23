@@ -135,7 +135,7 @@ function ejecutarMotorAgenda() {
 
       // ── REGLA 3: AVISO AL AGENTE AL EMPEZAR UNA CITA CONFIRMADA ────────
       // Entrega: confirmada o no, al empezar se pregunta "¿Ya se hizo la entrega?"
-      if (esEntrega && (estado === ESTADOS_CITA.CONFIRMADA || estado === ESTADOS_CITA.PENDIENTE) && tieneTokens && horasFaltantes <= 0 && horasFaltantes >= -1) {
+      if (esEntrega && (estado === ESTADOS_CITA.CONFIRMADA || estado === ESTADOS_CITA.PENDIENTE || estado === ESTADOS_CITA.REAGENDADA) && tieneTokens && horasFaltantes <= 0) {
         try {
           enviarCorreoCita(correoAgenteCitas(), `🔑 ¿Ya se hizo la entrega a ${nombre}?`, 'ENTREGA DEL INMUEBLE', 'Agente',
             etiquetaTipoCitaHtml('ENTREGA') + `La entrega a <strong>${nombre}</strong> (${direccion || 'sin dirección'}) estaba para las <strong>${horaStr}</strong>.<br><br>` +
@@ -172,7 +172,8 @@ function ejecutarMotorAgenda() {
       // ── REGLA 4: CITAS PASADAS QUE NADIE RESOLVIÓ ──────────────────────
       // Sin esto una cita sin confirmar queda para siempre en PENDIENTE y el
       // calendario del panel la muestra como si siguiera viva. Sin correo.
-      if (estado === ESTADOS_CITA.PENDIENTE && horasFaltantes < -2) {
+      // La entrega nunca se cierra sola: siempre espera que Leonardo diga qué pasó (23-oct-2026)
+      if (estado === ESTADOS_CITA.PENDIENTE && horasFaltantes < -2 && !esEntrega) {
         escribir(numFila, 'ESTADO', ESTADOS_CITA.SIN_RESPUESTA);
         escribir(numFila, 'ULTIMO CAMBIO', ahoraTxt + ' · pasó la fecha sin confirmar');
       }
@@ -211,7 +212,7 @@ function aplicarCambioEstadoCita(sheet, col, numFila, fila, nuevoEstado, motivo)
 
 // Qué puede hacer cada quien desde su correo.
 const ACCIONES_PROPIETARIO_CITA = ['CONFIRMADA', 'QUIERE REAGENDAR', 'CANCELADA'];
-const ACCIONES_AGENTE_CITA = ['ASISTIDA', 'INASISTIDA', 'REAGENDADA'];
+const ACCIONES_AGENTE_CITA = ['ASISTIDA', 'INASISTIDA', 'REAGENDADA', 'REABRIR'];
 // Estados en los que la cita ya está cerrada y no admite cambios desde el correo.
 const ESTADOS_CERRADOS_CITA = ['CANCELADA', 'ASISTIDA', 'INASISTIDA', 'SIN RESPUESTA'];
 
@@ -247,7 +248,11 @@ function localizarCitaConToken(idCita, nuevoEstado, token) {
   if (!esAgente && estadoActual === 'QUIERE REAGENDAR' && nuevoEstado !== 'QUIERE REAGENDAR') {
     return { ok: false, cerrada: true, mensaje: 'Ya pediste reagendar esta cita. Un asesor te llamará para acordar la nueva fecha.' };
   }
-  if (ESTADOS_CERRADOS_CITA.indexOf(estadoActual) !== -1) {
+  // Reabrir la fecha de una entrega se puede aunque esté cancelada (no si ya se hizo)
+  const reabrirEntrega = nuevoEstado === 'REABRIR' && String(valorCita(fila, col, 'TIPO AGENDA')) === 'ENTREGA';
+  if (nuevoEstado === 'REABRIR' && !reabrirEntrega) return { ok: false, mensaje: 'Esta acción es solo para entregas.' };
+  if (reabrirEntrega && estadoActual === 'POR COORDINAR') return { ok: false, yaHecho: true, mensaje: 'La fecha ya está abierta: esperamos a que la elijan.' };
+  if (ESTADOS_CERRADOS_CITA.indexOf(estadoActual) !== -1 && !(reabrirEntrega && estadoActual !== 'ASISTIDA')) {
     return { ok: false, cerrada: true, mensaje: 'Esta cita ya está cerrada (' + estadoActual.toLowerCase() + ') y no admite cambios.' };
   }
   if (estadoActual === nuevoEstado ||
@@ -270,7 +275,8 @@ const TEXTOS_ACCION_CITA = {
   'CANCELADA':        { pregunta: '¿Seguro que quieres cancelar tu cita?', boton: 'Sí, cancelar la cita', color: '#a3322a', hecho: 'Tu cita quedó cancelada. Si cambias de opinión, puedes agendar de nuevo desde nuestra página.' },
   'ASISTIDA':         { pregunta: '¿Marcar la cita como ASISTIDA?', boton: 'Sí, asistió', color: '#1f7a4d', hecho: 'Cita marcada como asistida.' },
   'INASISTIDA':       { pregunta: '¿Marcar que NO asistió?', boton: 'Sí, no asistió', color: '#a3322a', hecho: 'Cita marcada como no asistida.' },
-  'REAGENDADA':       { pregunta: '¿Marcar la cita como reagendada?', boton: 'Sí, reagendada', color: '#b8860b', hecho: 'Cita marcada como reagendada.' }
+  'REAGENDADA':       { pregunta: '¿Marcar la cita como reagendada?', boton: 'Sí, reagendada', color: '#b8860b', hecho: 'Cita marcada como reagendada.' },
+  'REABRIR':          { pregunta: '¿Volver a abrir la fecha de la entrega? Se borra la fecha actual y les pedimos al inquilino y al propietario que elijan otra.', boton: 'Sí, volver a elegir la fecha', color: '#b8860b', hecho: 'Listo: le pedimos al inquilino y al propietario que vuelvan a elegir la fecha de la entrega.' }
 };
 
 /** Página HTML común para las respuestas de los botones. */
@@ -363,6 +369,7 @@ function aplicarEstadoCitaDesdeCorreo(idCita, nuevoEstado, token) {
     if (!cita.ok) return { ok: !!cita.yaHecho, mensaje: cita.mensaje };
 
     const quien = cita.esAgente ? 'agente' : 'propietario';
+    if (estado === 'REABRIR') return reabrirSalaEntrega_(cita.sheet, cita.col, cita.numFila, cita.fila, '');
     aplicarCambioEstadoCita(cita.sheet, cita.col, cita.numFila, cita.fila, estado, quien + ' marcó ' + estado.toLowerCase() + ' desde el correo');
     // "Sí, ya se entregó": el inmueble queda como entregado
     if (cita.esAgente && estado === ESTADOS_CITA.ASISTIDA && String(valorCita(cita.fila, cita.col, 'TIPO AGENDA')) === 'ENTREGA') marcarInmuebleEntregado_(cita.fila, cita.col);

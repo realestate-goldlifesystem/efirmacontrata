@@ -55,7 +55,8 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   const IconoTipo = ICONO_TIPO[tipoDe(cita)];
   const cerrada = grupo === 'cancelada' || grupo === 'asistio' || grupo === 'noasistio' || grupo === 'sinrespuesta';
   const yaEmpezo = cita.timestamp <= Date.now();
-  const [modo, setModo] = useState<null | 'reagendar' | 'cancelar' | 'editar'>(null);
+  const [modo, setModo] = useState<null | 'reagendar' | 'cancelar' | 'editar' | 'reabrir'>(null);
+  const esEntrega = tipoDe(cita) === 'ENTREGA';
   const [campos, setCampos] = useState({
     nombre: cita.nombre, correo: cita.correo, servicio: cita.servicio, direccion: cita.direccion,
   });
@@ -76,7 +77,7 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   // cubre la ficha: así no se puede tocar otro botón ni cancelar dos veces.
   const [capa, setCapa] = useState<null | { fase: 'aplicando' | 'listo'; tipo: string; texto: string }>(null);
   const TEXTO_APLICANDO: Record<string, string> = {
-    cancelar: 'Cancelando la cita…', reagendar: 'Moviendo la cita…', asistio: 'Marcando asistencia…', noasistio: 'Marcando inasistencia…', editar: 'Guardando cambios…',
+    cancelar: 'Cancelando la cita…', reagendar: 'Moviendo la cita…', reabrirEntrega: 'Reabriendo la fecha…', asistio: 'Marcando asistencia…', noasistio: 'Marcando inasistencia…', editar: 'Guardando cambios…',
   };
 
   useEffect(() => {
@@ -302,6 +303,29 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
                 {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />} Confirmar nueva fecha
               </button>
               <p className="text-xs text-stone-500">Mueve el evento en tu Calendar, deja la cita confirmada y le avisa a la persona por correo.</p>
+            </div>
+          )}
+
+          {/* Entrega: que el inquilino y el propietario vuelvan a elegir la fecha (también si se canceló) */}
+          {esEntrega && grupo !== 'asistio' && (
+            <button disabled={enviando} onClick={() => setModo(modo === 'reabrir' ? null : 'reabrir')}
+              className={`${boton} w-full mt-2 ${modo === 'reabrir' ? 'bg-brand-gold text-stone-950' : 'bg-stone-800 hover:bg-stone-700 text-amber-200'}`}>
+              <KeyRound className="w-4 h-4" /> Volver a elegir la fecha de entrega
+            </button>
+          )}
+          {modo === 'reabrir' && (
+            <div className="mt-4 p-4 rounded-2xl border border-amber-900/60 bg-amber-950/20 space-y-3">
+              <label className="block text-sm text-stone-300">
+                Motivo (opcional, les llega en el correo)
+                <textarea value={motivo} onChange={e => setMotivo(e.target.value)} rows={2}
+                  placeholder="Ej.: la entrega es después del inicio del contrato"
+                  className="mt-1 w-full rounded-xl bg-stone-900 border border-stone-700 px-3 py-2 text-white" />
+              </label>
+              <button disabled={enviando} onClick={() => ejecutar({ tipo: 'reabrirEntrega', motivo })}
+                className={`${boton} w-full bg-brand-gold text-stone-950 hover:brightness-110`}>
+                {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />} Sí, que la vuelvan a elegir
+              </button>
+              <p className="text-xs text-stone-500">Borra la fecha actual de tu Calendar y les envía al inquilino y al propietario el enlace para elegir otra. Si prefieres moverla tú, usa "Reagendar".</p>
             </div>
           )}
 

@@ -284,9 +284,13 @@ function aceptarSalaEntrega(datos) {
         `🗓️ <strong>${_textoHorario(ts)}</strong> (alrededor de una hora)<br>📍 ${s.d.direccion}<br><br>Leonardo va a estar en la entrega. Si algo cambia, te avisamos por aquí.`, '');
     } catch (e) { Logger.log('No se pudo avisar al propietario: ' + e.message); }
     try {
-      enviarCorreoCita(correoAgenteCitas(), `🔑 Entrega agendada: ${s.d.inquilino} · ${_textoHorario(ts)} · ${s.d.inm.id}`, 'NUEVA ENTREGA', 'Agente',
+      // Leonardo revisa que la fecha tenga sentido (p. ej. no antes de lo acordado) y,
+      // si no, la reabre de una para que la vuelvan a elegir
+      enviarCorreoCita(correoAgenteCitas(), `🔑 Entrega agendada: ${s.d.inquilino} · ${_textoHorario(ts)} · ${s.d.inm.id} — revisa la fecha`, 'NUEVA ENTREGA', 'Agente',
         etiquetaTipoCitaHtml('ENTREGA') + `🗓️ <strong>${_textoHorario(ts)}</strong><br>📍 ${s.d.direccion}<br>👤 Inquilino: ${s.d.inquilino} · ${s.d.celularInquilino}<br>` +
-        `🏠 Propietario: ${s.d.inm.propietario || ''} · ${s.d.inm.celularPropietario || ''}`, '');
+        `🏠 Propietario: ${s.d.inm.propietario || ''} · ${s.d.inm.celularPropietario || ''}<br><br>` +
+        '<strong>¿La fecha está bien?</strong> Si no es la que acordaron, habla con ellos y vuelve a abrirla para que elijan otra, o muévela tú desde el panel con "Reagendar".',
+        htmlBotonesCorreo([{ texto: '🔄 Volver a elegir la fecha', color: '#b8860b', url: urlEstadoCita(idCita, 'REABRIR', String(valorCita(fila, col, 'TOKEN AGENTE') || '')) }]));
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
     // Si el inquilino ya dio los datos de la mudanza, salen las cartas
     if (_datosMudanzaDe(fila, col)) generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
@@ -623,4 +627,38 @@ function generarCartasEntrega_(sheet, col, numFila, fila) {
     Logger.log('No se pudieron generar las cartas de entrega: ' + e.message);
     return { ok: false, motivo: e.message };
   }
+}
+
+/**
+ * Reabre la fecha de una entrega (agendada mal, cancelada o que hay que mover): se borra
+ * el evento, la cita vuelve a POR COORDINAR sin propuestas ni descartados, y al inquilino
+ * y al propietario les llega el enlace para volver a elegir (23-oct-2026). La usan el
+ * botón del correo de Leonardo y el panel. Los datos de la mudanza se conservan.
+ */
+function reabrirSalaEntrega_(sheet, col, numFila, fila, motivo) {
+  const idCita = String(valorCita(fila, col, 'ID CITA'));
+  const idEvento = valorCita(fila, col, 'ID EVENTO CALENDAR');
+  if (idEvento) { try { const ev = CalendarApp.getDefaultCalendar().getEventById(idEvento); if (ev) ev.deleteEvent(); } catch (e) {} }
+  const escribir = (n, v) => { if (col[n]) sheet.getRange(numFila, col[n]).setValue(v); };
+  escribir('ESTADO', ESTADO_POR_COORDINAR);
+  ['ID EVENTO CALENDAR', 'HORARIOS PEDIDOS', 'PROPUESTO POR', 'HORARIOS DESCARTADOS', 'ULTIMO AVISO'].forEach(n => escribir(n, ''));
+  escribir('FECHA ULTIMO AVISO', new Date());
+  escribir('ULTIMO CAMBIO', Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss') + ' · se reabrió la fecha de la entrega' + (motivo ? ': ' + motivo : ''));
+  _cacheApartados = null;
+  try { PropertiesService.getScriptProperties().deleteProperty('ENTREGA_SIN_CONFIRMAR_' + idCita); } catch (e) {}
+
+  const d = _datosEntregaInmueble_(valorCita(fila, col, 'ID INMUEBLE'));
+  if (!d) return { ok: false, mensaje: 'No encontramos el inmueble de esta entrega.' };
+  const cuerpo = 'Necesitamos volver a elegir la fecha de la entrega del inmueble en <strong>' + d.direccion + '</strong>' +
+    (motivo ? ' (' + motivo + ')' : '') + '.<br><br>Elige 3 horarios en que puedas y coordinamos con la otra parte. La fecha anterior ya no aplica.';
+  try {
+    enviarCorreoCita(d.correoInquilino, '🔑 Volvamos a agendar la entrega - Gold Life', 'NUEVA FECHA DE ENTREGA', d.inquilino.split(' ')[0], cuerpo,
+      htmlBotonesCorreo([{ texto: '🔑 Elegir la fecha', color: '#b8860b', url: urlSalaEntrega(idCita, 'i', String(valorCita(fila, col, 'TOKEN PROPIETARIO'))) }]));
+  } catch (e) { Logger.log('No se pudo avisar al inquilino: ' + e.message); }
+  try {
+    if (d.inm.correoPropietario) enviarCorreoCita(d.inm.correoPropietario, '🔑 Volvamos a agendar la entrega - Gold Life', 'NUEVA FECHA DE ENTREGA',
+      String(d.inm.propietario || '').split(' ')[0], cuerpo,
+      htmlBotonesCorreo([{ texto: '🔑 Elegir la fecha', color: '#b8860b', url: urlSalaEntrega(idCita, 'p', _tokenPropietarioEntrega(idCita)) }]));
+  } catch (e) { Logger.log('No se pudo avisar al propietario: ' + e.message); }
+  return { ok: true, mensaje: 'Listo: le pedimos al inquilino y al propietario que vuelvan a elegir la fecha de la entrega.' };
 }
