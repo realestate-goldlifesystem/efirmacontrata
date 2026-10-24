@@ -700,6 +700,9 @@ function doPost(e) {
       case 'disponibilidadReagendarPropietario':
         result = disponibilidadReagendarPropietario(datos);
         break;
+      case 'reabrirEntregaDesdeCorreo':
+        result = reabrirEntregaDesdeCorreo(datos);
+        break;
       case 'reagendarCitaPropietario':
         // El propietario elige él mismo el horario nuevo (GESTION_CITAS_PANEL.js)
         result = reagendarPorPropietario(datos);

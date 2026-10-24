@@ -177,6 +177,22 @@
         if (!r.ok) { mostrarResultado('No se puede reagendar', r.mensaje || '', '!'); return; }
         // Visita con acompañamiento del propietario: se reagenda contra sus horarios (bloque 2)
         if (r.urlCoordinada) { location.replace(r.urlCoordinada); return; }
+        // Entrega: se reabre la sala para elegir otra fecha junto con el propietario
+        if (r.esEntrega) {
+          mostrarResultado('¿Cambiar la fecha de la entrega?', 'La fecha de la entrega la acordamos con el propietario. Si sigues, se libera la fecha actual y eliges 3 horarios nuevos; le preguntamos al propietario cuál le sirve.', '🔑');
+          const b = document.createElement('button');
+          b.className = 'boton'; b.textContent = 'Sí, elegir otra fecha';
+          b.style.cssText = 'margin-top:18px;width:100%;padding:15px;border:0;border-radius:12px;font-size:16px;font-weight:700;background:#d4af37;color:#0c0a09;cursor:pointer;';
+          b.onclick = () => {
+            b.disabled = true; b.textContent = 'Abriendo…';
+            llamar2('reabrirEntregaDesdeCorreo', {}).then(x => {
+              if (x.ok && x.url) location.replace(x.url);
+              else { b.disabled = false; b.textContent = 'Sí, elegir otra fecha'; alert(x.mensaje || 'No pudimos abrir la entrega.'); }
+            }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
+          };
+          $('resultado').appendChild(b);
+          return;
+        }
         $('citaActual').textContent = (r.fechaActual ? 'Tu cita actual: ' + r.fechaActual : '') + (r.servicio ? ' · ' + r.servicio : '');
         $('encabezado').innerHTML = ['L','M','M','J','V','S','D'].map(d => `<div>${d}</div>`).join('');
         const h = new Date(); mesVisible = new Date(h.getFullYear(), h.getMonth(), 1);

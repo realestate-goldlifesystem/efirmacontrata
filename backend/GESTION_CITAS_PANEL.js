@@ -286,6 +286,8 @@ function infoReagendarPropietario(datos) {
     fechaActual: f ? Utilities.formatDate(f, tz, 'dd/MM/yyyy') + ' a las ' + formatAmPm(f) : '',
     // Visita con acompañamiento (bloque 2): se reagenda en la página del inmueble,
     // contra los horarios del propietario, no en la agenda abierta de Leonardo
+    // Entrega: la fecha la aprueban inquilino y propietario; se reabre la sala, no se mueve sola
+    esEntrega: String(valorCita(fila, col, 'TIPO AGENDA') || '') === 'ENTREGA',
     urlCoordinada: String(valorCita(fila, col, 'MODO VISITA') || '') === 'COORDINADO'
       ? urlVisitaInmueble(valorCita(fila, col, 'ID INMUEBLE')) + '&c=' + encodeURIComponent(datos.idCita) + '&t=' + encodeURIComponent(datos.t)
       : ''
@@ -325,6 +327,37 @@ function reagendarPorPropietario(datos) {
       );
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
     return { ok: true, mensaje: 'Tu cita quedó para el ' + m.textoNueva + '. Te avisaremos antes y, una hora antes, te pediremos que la confirmes.' };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * El inquilino tocó "Cambiar fecha" en un correo de su entrega: se reabre la sala para
+ * que él y el propietario elijan otra (no se mueve sola, el propietario también aprueba).
+ * Devuelve el enlace de su sala para llevarlo directo a proponer (24-oct-2026).
+ */
+function reabrirEntregaDesdeCorreo(datos) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const r = _citaDelPropietario(datos.idCita, datos.t);
+    if (r.error) return { ok: false, mensaje: r.error };
+    const { sheet, col, numFila, fila } = r.cita;
+    if (String(valorCita(fila, col, 'TIPO AGENDA') || '') !== 'ENTREGA') return { ok: false, mensaje: 'Esta acción es solo para entregas.' };
+    const estado = String(valorCita(fila, col, 'ESTADO') || '').trim();
+    if (estado === ESTADOS_CITA.ASISTIDA) return { ok: false, mensaje: 'La entrega ya se hizo.' };
+    const url = urlSalaEntrega(datos.idCita, 'i', String(datos.t));
+    if (estado === ESTADO_POR_COORDINAR) return { ok: true, url: url };
+    const nombre = String(valorCita(fila, col, 'NOMBRE') || '');
+    const antes = fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA'));
+    reabrirSalaEntrega_(sheet, col, numFila, fila, 'el inquilino pidió cambiar la fecha');
+    try {
+      enviarCorreoCita(correoAgenteCitas(), `🔄 ${nombre} pidió cambiar la fecha de la entrega`, 'ENTREGA POR COORDINAR', 'Agente',
+        etiquetaTipoCitaHtml('ENTREGA') + `<strong>${nombre}</strong> pidió cambiar la entrega` + (antes ? ` del <strong>${_textoHorario(antes.getTime())}</strong>` : '') +
+        '. Se liberó tu calendario y le pedimos a él y al propietario que elijan otra fecha.', '');
+    } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
+    return { ok: true, url: url };
   } finally {
     lock.releaseLock();
   }
