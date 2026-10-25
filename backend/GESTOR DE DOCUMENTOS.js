@@ -677,6 +677,15 @@ function doPost(e) {
       case 'aceptarSalaEntrega':
         result = aceptarSalaEntrega(datos);
         break;
+      case 'infoPagoMensual':
+        result = infoPagoMensual(datos);
+        break;
+      case 'cargarComprobanteMensual':
+        result = cargarComprobanteMensual(datos);
+        break;
+      case 'revisarPagoMensual':
+        result = revisarPagoMensual(datos);
+        break;
       case 'guardarDatosEntrega':
         result = guardarDatosEntrega(datos);
         break;
@@ -5975,9 +5984,15 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
 
     const erroresPermisos = [];
 
+    // Flujo nuevo (25-oct-2026, VIDA_CONTRATO_PAGOS.js): con inquilino, al cargar el contrato
+    // solo se abre la sala de entrega. Los accesos y los cobros salen al acordar la entrega.
+    const idFlujo = idRegCol > 0 ? String(sheet.getRange(targetRow, idRegCol).getValue() || '').trim() : '';
+    const flujoNuevo = !!(idFlujo && emailInq && String(emailInq).includes('@') && typeof alAcordarEntrega_ === 'function');
+    if (flujoNuevo) PropertiesService.getScriptProperties().setProperty('FLUJO_PAGOS_NUEVO_' + idFlujo, new Date().toISOString());
+
     // A. Propietario: Acceso de LECTOR a "ENTREGAS DEL INMUEBLE" — SILENCIOSO (sin correo de Drive)
     // Usa folderProp resuelto por padres arriba (NO re-buscar con getFoldersByName para evitar huérfanas).
-    if (emailProp && emailProp.includes('@')) {
+    if (!flujoNuevo && emailProp && emailProp.includes('@')) {
       const rProp = otorgarPermisoSilencioso(folderProp, emailProp, 'reader');
       Logger.log('Permiso PROP→ENTREGAS (' + emailProp + '): ' + JSON.stringify(rProp));
       if (!rProp.success) erroresPermisos.push('ENTREGAS propietario: ' + rProp.error);
@@ -6003,7 +6018,7 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
 
     // B. Inquilino: LECTOR a "DOCUMENTOS DE ENTREGA - INQUILINO" y EDITOR a "1- COMPROBANTES DE PAGO DEL INMUEBLE"
     // Usa folderInq resuelto por padres arriba (NO re-buscar con getFoldersByName para evitar huérfanas).
-    if (emailInq && emailInq.includes('@')) {
+    if (!flujoNuevo && emailInq && emailInq.includes('@')) {
       const r1 = otorgarPermisoSilencioso(folderInq, emailInq, 'reader');
       Logger.log('Permiso INQ→DOCS ENTREGA (' + emailInq + '): ' + JSON.stringify(r1));
       if (!r1.success) erroresPermisos.push('DOCS ENTREGA inquilino: ' + r1.error);
@@ -6049,7 +6064,9 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
       const filaVals = sheet.getRange(targetRow, 1, 1, sheet.getLastColumn()).getValues()[0];
       const autorizo = typeof ceAutorizoPrimerCanon === 'function' &&
         ceAutorizoPrimerCanon(n => { const i = hdrs.indexOf(String(n).trim()); return i === -1 ? '' : filaVals[i]; });
-      if (autorizo) {
+      if (flujoNuevo) {
+        notaCobro = ' ⏳ Accesos y cobro del primer mes: salen cuando se acuerde la fecha de entrega.';
+      } else if (autorizo) {
         const externa = ceGenerarYEnviar(sheet, targetRow);
         notaCobro = externa.enviada
           ? ' 📩 Cuenta de cobro del primer mes enviada al inquilino por $' + ccMiles(externa.valor) + '.'

@@ -53,6 +53,9 @@ function ejecutarMotorAgenda() {
       if (String(valorCita(f, col, 'ESTADO') || '').trim() === ESTADO_POR_COORDINAR &&
           (revisarSolicitudCoordinada_(sheet, col, numFila, f) || revisarSalaEntrega_(sheet, col, numFila, f))) return;
       const esEntrega = String(valorCita(f, col, 'TIPO AGENDA') || '').trim() === 'ENTREGA';
+      if (esEntrega && String(valorCita(f, col, 'ESTADO') || '').trim() !== 'CANCELADA') {
+        try { recordarPagoDiaEntrega_(f, col); } catch (e) { Logger.log('⚠️ Recordatorio de pago en la entrega: ' + e.message); }
+      }
 
       const fechaCita = fechaHoraDeCita(valorCita(f, col, 'FECHA CITA'), valorCita(f, col, 'HORA CITA'));
       if (!fechaCita) return;
@@ -181,6 +184,8 @@ function ejecutarMotorAgenda() {
   } catch (error) {
     Logger.log("Error en ejecutarMotorAgenda: " + error.message);
   }
+  // Pagos del arriendo mes a mes (VIDA_CONTRATO_PAGOS.js): como mucho una vez por hora
+  try { revisarPagosMensuales_(); } catch (e) { Logger.log('Error en revisarPagosMensuales_: ' + e.message); }
 }
 
 /**

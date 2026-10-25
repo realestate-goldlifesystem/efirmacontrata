@@ -135,6 +135,9 @@ function gestionarCitaPanel(datos) {
 
       case 'reagendar': {
         const r = moverCita(cita, Number(datos.timestamp), { anticipacionMin: PANEL_ANTICIPACION_MIN, quien: 'agente' });
+        if (r.ok && String(valorCita(fila, col, 'TIPO AGENDA')) === 'ENTREGA') {
+          try { alAcordarEntrega_(String(valorCita(fila, col, 'ID INMUEBLE'))); } catch (e) { Logger.log('⚠️ alAcordarEntrega_: ' + e.message); }
+        }
         if (r.ok) avisarPropietarioVisitaCoordinada(fila, col, `La entrega con <strong>${nombre}</strong> quedó para el <strong>${r.textoNueva}</strong>.`, '🔑 Cambió la fecha de la entrega - Gold Life', 'NUEVA FECHA');
         return r.ok
           ? { success: true, mensaje: 'Cita reagendada para el ' + r.textoNueva + '. Le avisamos a ' + (nombre || 'la persona') + ' por correo.' }

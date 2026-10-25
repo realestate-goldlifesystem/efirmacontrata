@@ -158,10 +158,20 @@ function ceGenerarYEnviar(sheet, fila, opciones) {
     tpl.NOMBRE_CLIENTE = inq.nombre;
     tpl.MENSAJE_PRINCIPAL = 'Te enviamos la cuenta de cobro del <strong>primer mes de arriendo</strong> del inmueble en <strong>' + direccion + '</strong>, ' +
       'por <strong>$ ' + ccMiles(valor) + '</strong> (canon y administración).';
-    tpl.MENSAJE_SECUNDARIO = 'Por autorización del propietario, <strong>únicamente el primer mes</strong> se paga a la cuenta indicada en el documento adjunto. ' +
-      'Desde el segundo mes el pago se hace como lo indica tu contrato. Cuando pagues, sube el comprobante en tu carpeta de comprobantes de pago.';
-    tpl.URL_ACCION = pdf.getUrl();
-    tpl.TEXTO_BOTON = '📄 Ver cuenta de cobro';
+    if (opciones.urlComprobante) {
+      // Flujo de pagos mensuales (VIDA_CONTRATO_PAGOS.js): el comprobante se carga con el botón
+      tpl.MENSAJE_SECUNDARIO = 'Por autorización del propietario, <strong>este pago es solo para el primer mes</strong> y se hace a la cuenta indicada en la cuenta de cobro adjunta. ' +
+        '<strong>Desde el segundo mes le pagas directamente al propietario</strong>, a la cuenta que dice tu contrato.<br><br>' +
+        'Cuando pagues, carga aquí tu comprobante (antes o durante la entrega; sin él no se entregan las llaves). Al confirmarse el pago te llega el acceso a tu carpeta, ' +
+        'donde quedan tus documentos y tus comprobantes. Cada mes te llegará este mismo botón para cargar el comprobante del mes.';
+      tpl.URL_ACCION = opciones.urlComprobante;
+      tpl.TEXTO_BOTON = '💳 Cargar comprobante';
+    } else {
+      tpl.MENSAJE_SECUNDARIO = 'Por autorización del propietario, <strong>únicamente el primer mes</strong> se paga a la cuenta indicada en el documento adjunto. ' +
+        'Desde el segundo mes el pago se hace como lo indica tu contrato. Cuando pagues, sube el comprobante en tu carpeta de comprobantes de pago.';
+      tpl.URL_ACCION = pdf.getUrl();
+      tpl.TEXTO_BOTON = '📄 Ver cuenta de cobro';
+    }
     var mensaje = {
       to: opciones.soloAdmin ? CUENTA_COBRO.CORREO_ADMIN : inq.correo,
       subject: (opciones.soloAdmin ? '[PRUEBA] ' : '') + '📄 Cuenta de cobro · Primer mes de arriendo - ' + direccion,
@@ -172,8 +182,9 @@ function ceGenerarYEnviar(sheet, fila, opciones) {
     MailApp.sendEmail(mensaje);
     Logger.log('📩 Cuenta de cobro a cuenta externa enviada a ' + mensaje.to + ' por $' + ccMiles(valor));
 
-    // Etapa 4 (GESTOR_EXCEDENTE.js): cuánto consignarle al propietario y el botón del comprobante
-    try {
+    // Etapa 4 (GESTOR_EXCEDENTE.js): cuánto consignarle al propietario y el botón del comprobante.
+    // Con el flujo de pagos mensuales se pide después, cuando Leonardo confirma el pago.
+    if (!opciones.sinExcedente) try {
       var ex = ceCalcularExcedente(v);
       if (ex) cePedirComprobanteExcedente(sheet, fila, headers, { idRegistro: idRegistro, direccion: direccion, nombre: nombreProp, ex: ex }, !!opciones.soloAdmin);
     } catch (eEx) { Logger.log('⚠️ No se pudo pedir el comprobante del excedente: ' + eEx.message); }

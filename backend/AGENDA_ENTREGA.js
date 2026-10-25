@@ -292,6 +292,8 @@ function aceptarSalaEntrega(datos) {
         '<strong>¿La fecha está bien?</strong> Si no es la que acordaron, habla con ellos y vuelve a abrirla para que elijan otra, o muévela tú desde el panel con "Reagendar".',
         htmlBotonesCorreo([{ texto: '🔄 Volver a elegir la fecha', color: '#b8860b', url: urlEstadoCita(idCita, 'REABRIR', String(valorCita(fila, col, 'TOKEN AGENTE') || '')) }]));
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
+    // Pagos (VIDA_CONTRATO_PAGOS.js): accesos del propietario y cobro del primer mes
+    try { alAcordarEntrega_(s.d.inm.id); } catch (e) { Logger.log('⚠️ alAcordarEntrega_: ' + e.message); }
     // Si el inquilino ya dio los datos de la mudanza, salen las cartas
     if (_datosMudanzaDe(fila, col)) generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
     return { ok: true, mensaje: 'Listo: la entrega quedó para el ' + _textoHorario(ts) + '. Les enviamos los detalles por correo.' };
