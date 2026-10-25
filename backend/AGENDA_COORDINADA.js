@@ -433,6 +433,17 @@ function guardarDisponibilidadPropietario(datos) {
     const bloques = (Array.isArray(datos.bloques) ? datos.bloques : []).map(Number).filter(isFinite);
     const quien = String(datos.quienAbre || '').trim().slice(0, 80);
     const cel = String(datos.celularAbre || '').trim().slice(0, 30);
+    // Respondiendo a una solicitud sin aceptar ninguno de los pedidos: mínimo 3 horarios (25-oct-2026)
+    if (datos.c) {
+      const ci = _citaPorId(datos.c);
+      if (ci && String(valorCita(ci.fila, ci.col, 'ESTADO') || '').trim() === ESTADO_POR_COORDINAR) {
+        const pedidosInt = _pedidosDe(ci.fila, ci.col);
+        const futuros = bloques.filter(t => t > Date.now());
+        if (pedidosInt.length && !futuros.some(t => pedidosInt.indexOf(t) !== -1) && futuros.length < MAX_PEDIDOS_COORDINADO) {
+          return { ok: false, mensaje: 'Marca mínimo 3 horarios en que puedas, así es más fácil que alguno le sirva al interesado.' };
+        }
+      }
+    }
     const todos = _guardarDisponibilidad(r.inm.id, lunesMs, bloques, quien, cel);
 
     if (!datos.c) return { ok: true, mensaje: 'Guardamos tus horarios. Cuando un interesado elija uno, te avisamos.' };

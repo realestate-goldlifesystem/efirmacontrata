@@ -128,6 +128,7 @@
     .exitoLista span { font-size: 14px; }
     @keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
     @keyframes subirC { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+    .principal.bloqueado { opacity: .55; filter: grayscale(.4); }
   </style>
 </head>
 <body>
@@ -254,8 +255,16 @@
         const tabs = $('dias').querySelector('.diasTabs'); tabs.classList.add('brillar'); setTimeout(() => tabs.classList.remove('brillar'), 900);
       };
     }
+    // Respondiendo a un interesado ("Ninguno me sirve"): mínimo 3 horarios, como él
+    let respondiendo = false;
+    function pintarBotonGuardar() {
+      const faltan = respondiendo ? Math.max(0, 3 - marcados.size) : 0;
+      $('guardar').textContent = faltan ? `Marca ${faltan} más para continuar` : 'Guardar mis horarios';
+      $('guardar').classList.toggle('bloqueado', faltan > 0);
+    }
     function pintarResumen() {
-      if (!marcados.size) { $('resumen').textContent = 'Aún no marcas horarios esta semana.'; return; }
+      pintarBotonGuardar();
+      if (!marcados.size) { $('resumen').textContent = respondiendo ? 'Marca mínimo 3 horarios en que puedas.' : 'Aún no marcas horarios esta semana.'; return; }
       // Lo marcado, agrupado por día, para que vea lo que ya eligió sin volver a cada día
       const porDia = semanaDias.map(x => ({ c: corto(x.titulo), h: x.slots.filter(s => marcados.has(s.timestamp)).map(s => s.horaAmPm) })).filter(x => x.h.length);
       $('resumen').innerHTML = `<b>Marcaste ${marcados.size} horario${marcados.size > 1 ? 's' : ''}:</b><br>` +
@@ -294,6 +303,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     $('guardar').onclick = () => {
+      if (respondiendo && marcados.size < 3) { mensaje('Marca mínimo 3 horarios en que puedas, así es más fácil que alguno le sirva.'); return; }
       const q2 = quienAbre();
       if (abreOtro && (!q2.quienAbre || q2.celularAbre.length < 7)) { mensaje('Escribe el nombre y el celular de quien abre.'); return; }
       const b = $('guardar'); b.disabled = true; b.textContent = 'Guardando…';
@@ -308,6 +318,7 @@
     function pintarSolicitud(s) {
       if (!s) return;
       ultimaSolicitud = s;
+      respondiendo = false;
       $('bloqueDisp').classList.remove('oculto');
       $('solicitud').classList.remove('oculto');
       $('solNotas').textContent = s.notas || '';
@@ -324,7 +335,8 @@
         $('ninguno').onclick = () => {
           const nombre = esc(s.nombre.split(' ')[0]);
           $('solTitulo').textContent = '¿Cuándo puedes?';
-          $('solPedidos').innerHTML = `<p class="nota" style="margin-top:8px;">Marca abajo los horarios en que puedes y le pedimos a ${nombre} que elija uno.</p>` +
+          respondiendo = true; pintarResumen();
+          $('solPedidos').innerHTML = `<p class="nota" style="margin-top:8px;">Marca abajo <b>mínimo 3 horarios</b> en que puedas y le pedimos a ${nombre} que elija uno.</p>` +
             '<button class="volverPedidos" id="volverPedidos">‹ Ver otra vez los horarios que pidió</button>';
           $('volverPedidos').onclick = () => pintarSolicitud(s);
           $('bloqueDisp').classList.remove('oculto'); $('bloqueDisp').classList.add('entra');
