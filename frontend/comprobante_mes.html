@@ -270,7 +270,7 @@
       qq('.no').onclick = () => c.remove();
       qq('.si').onclick = () => {
         qq('.si').disabled = true; qq('.si').textContent = 'Confirmando…';
-        llamar('revisarPagoMensual', { accion: 'VALIDAR' }).then(r => {
+        llamar('revisarPagoMensual', { decision: 'VALIDAR' }).then(r => {
           c.remove();
           if (!r.ok) return alert(r.mensaje || 'No pudimos confirmar el pago.');
           exito('Pago confirmado', r.mensaje || '');
@@ -310,7 +310,7 @@
       qq('.no').onclick = () => c.remove();
       qq('.si').onclick = () => {
         qq('.si').disabled = true; qq('.si').textContent = 'Enviando…';
-        llamar('revisarPagoMensual', { accion: 'NO_ES', motivo: qq('#motivo').value }).then(r => {
+        llamar('revisarPagoMensual', { decision: 'NO_ES', motivo: qq('#motivo').value }).then(r => {
           c.remove();
           if (!r.ok) return alert(r.mensaje || 'No pudimos enviar.');
           exito('Listo', r.mensaje || '');
