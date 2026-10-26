@@ -121,7 +121,7 @@ function correoPasoCita(paso, c) {
   const tarjeta =
     '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-radius:12px;background:#1c1917;">' +
     '<tr><td style="padding:16px 18px;">' +
-    `<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">TU CITA</div>` +
+    `<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">${c.esEntrega ? 'TU ENTREGA' : 'TU CITA'}</div>` +
     `<div style="color:#ffffff;font-size:20px;font-weight:bold;margin-top:4px;">${fechaLarga}</div>` +
     `<div style="color:#e7e5e4;font-size:16px;margin-top:2px;">${hora} · ${c.servicio || 'Visita'}</div>` +
     (c.direccion ? `<div style="color:#a8a29e;font-size:14px;margin-top:6px;">📍 ${c.direccion}</div>` : '') +
@@ -132,7 +132,9 @@ function correoPasoCita(paso, c) {
     '</td></tr></table>';
 
   // Línea pequeña para cambiar o cancelar, en los correos sin botones
-  const lineaCambio =
+  // Entrega del inmueble (26-oct-2026): sin "Cancelar cita · Cambiar fecha" (son de las visitas);
+  // la entrega solo se cambia por la sala de entrega
+  const lineaCambio = c.esEntrega ? '' :
     '<p style="margin:18px 0 0 0;font-size:13px;color:#78716c;text-align:center;">¿No puedes asistir?<br>' +
     // Mismo orden que los botones: cancelar a la izquierda, lo positivo a la derecha (pulgar)
     `<a href="${urlEstadoCita(c.idCita, ESTADOS_CITA.CANCELADA, c.token)}" style="color:#a16207;">Cancelar cita</a> · ` +
@@ -199,7 +201,8 @@ function correoPasoCita(paso, c) {
     default:
       throw new Error('Paso de correo desconocido: ' + paso);
   }
-  return { asunto: ({ CONFIRMADA: '✅ ', CANCELADA: '❌ ' }[paso] || (paso.charAt(0) === 'M' ? '⏰ ' : '📅 ')) + cfg.asunto + ' - Gold Life', titulo: cfg.titulo, nombre: c.nombre, mensaje: mensaje, secundario: secundario };
+  const deEntrega = t => c.esEntrega ? t.replace('VISITA', 'ENTREGA').replace(/\bCITA\b/g, 'ENTREGA').replace(/\b([Tt]u|[Uu]na|la) cita\b/g, (x, a) => a + ' entrega') : t;
+  return { asunto: ({ CONFIRMADA: '✅ ', CANCELADA: '❌ ' }[paso] || (paso.charAt(0) === 'M' ? '⏰ ' : '📅 ')) + deEntrega(cfg.asunto) + ' - Gold Life', titulo: deEntrega(cfg.titulo), nombre: c.nombre, mensaje: deEntrega(mensaje), secundario: secundario };
 }
 
 /** Arma y envía un paso. */

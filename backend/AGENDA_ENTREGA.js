@@ -293,7 +293,7 @@ function aceptarSalaEntrega(datos) {
     _prog_(datos, 58, 'Enviando la confirmación al inquilino');
     try {
       const tokInq = String(valorCita(fila, col, 'TOKEN PROPIETARIO') || '');
-      const c = { idCita: idCita, token: tokInq, nombre: s.d.inquilino, servicio: 'Entrega del inmueble', direccion: s.d.direccion, inicio: inicio, duracionMin: TIPOS_AGENDA.ENTREGA.duracionMin };
+      const c = { idCita: idCita, token: tokInq, nombre: s.d.inquilino, servicio: 'Entrega del inmueble', esEntrega: true, direccion: s.d.direccion, inicio: inicio, duracionMin: TIPOS_AGENDA.ENTREGA.duracionMin };
       const m = correoPasoCita('AGENDADA', c);
       enviarCorreoCita(s.d.correoInquilino, m.asunto, m.titulo, m.nombre,
         m.mensaje + '<br><br>🚚 <strong>Ahora sigue tu mudanza:</strong> entra a tu sala de entrega y elige el día y la hora (siempre después de la entrega).',

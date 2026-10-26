@@ -127,7 +127,7 @@ function ejecutarMotorAgenda() {
         if (paso) {
           try {
             const idInmVisita = String(valorCita(f, col, 'TIPO AGENDA') || '').trim() === 'INTERESADO' ? String(valorCita(f, col, 'ID INMUEBLE') || '') : '';
-            enviarPasoCita(paso, correo, { extra: esEntrega ? recordatorioMudanza_(f, col, paso, idCita, tokenProp) : '', noLibera: esEntrega, idCita: idCita, idInmueble: idInmVisita, token: tokenProp, nombre: nombre, servicio: servicio, direccion: direccion, inicio: fechaCita });
+            enviarPasoCita(paso, correo, { extra: esEntrega ? recordatorioMudanza_(f, col, paso, idCita, tokenProp) : '', noLibera: esEntrega, esEntrega: esEntrega, idCita: idCita, idInmueble: idInmVisita, token: tokenProp, nombre: nombre, servicio: servicio, direccion: direccion, inicio: fechaCita });
             escribir(numFila, 'ULTIMO AVISO', paso);
             escribir(numFila, 'FECHA ULTIMO AVISO', ahora);
           } catch (e) {
