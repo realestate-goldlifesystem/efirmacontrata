@@ -125,6 +125,7 @@ function infoMudanza_(s) {
     version: ultimaVersion ? { numero: (p.versiones || []).length, estado: ultimaVersion.estado, comentario: ultimaVersion.comentario || '', fecha: ultimaVersion.fecha } : null,
     envio: p.envio ? { modo: p.envio.modo, correo: p.envio.correo || '', fecha: p.envio.fecha } : null,
     avisos: s.rol === 'PROPIETARIO' ? (p.avisosInq || []).map(a => a.titulo) : [],
+    envioElegido: s.rol === 'PROPIETARIO' && !p.envio ? (p.envioElegido || null) : null,
     correoAdmin: s.rol === 'PROPIETARIO' ? (_referenciaInmueble_(s.d.inm.id, s.d.inm.tipoInmueble).correoAdmin || '') : ''
   };
 }
@@ -417,6 +418,14 @@ function _encolarAvisoInquilino_(s, titulo, cuerpo) {
 
 /** El propietario terminó: le llega al inquilino un solo correo con todas sus respuestas. */
 function enviarAvisosPropietario(datos) {
+  // Primero el documento a la administración, si el propietario ya eligió cómo (paso 3)
+  const s0 = _salaEntrega_(datos);
+  if (s0.error) return { ok: false, mensaje: s0.error };
+  const p0 = _procesoMudanza_(_filaFresca_(s0.cita), s0.cita.col);
+  if (p0.envioElegido && !p0.envio) {
+    const r = enviarActaMudanza(Object.assign({}, datos, { modo: p0.envioElegido.modo, correo: p0.envioElegido.correo || '' }));
+    if (!r.ok) return r;
+  }
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     const s = _salaEntrega_(datos);
@@ -437,5 +446,28 @@ function enviarAvisosPropietario(datos) {
     _correoSala_(sInq, 'INQUILINO', listo ? '✅ Todo quedó listo para tu entrega - Gold Life' : '📬 El propietario respondió sobre tu entrega - Gold Life',
       listo ? 'TODO LISTO' : 'RESPUESTA DEL PROPIETARIO', cuerpo, listo ? '🔑 Ver mi sala de entrega' : '🔑 Abrir mi sala de entrega');
     return { ok: true, mensaje: 'Listo: le enviamos todo a ' + s.d.inquilino.split(' ')[0] + ' en un solo correo.' };
+  } finally { lock.releaseLock(); }
+}
+
+/** Paso 3: el propietario elige quién envía el documento; se envía al final, con "Enviar". */
+function elegirEnvioActa(datos) {
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const s = _salaEntrega_(datos);
+    if (s.error) return { ok: false, mensaje: s.error };
+    if (s.rol !== 'PROPIETARIO') return { ok: false, mensaje: 'Esto lo elige el propietario.' };
+    const fila = _filaFresca_(s.cita);
+    const p = _procesoMudanza_(fila, s.cita.col);
+    if (p.envio) return { ok: false, mensaje: 'Ya se envió a la administración.' };
+    if (p.estado !== 'APROBADA') return { ok: false, mensaje: 'Primero aprueba la fecha de mudanza.' };
+    const v = (p.versiones || []).slice(-1)[0];
+    if (p.formato === 'SI' && !(v && v.estado === 'APROBADA')) return { ok: false, mensaje: 'Primero aprueba el formato que llenó el inquilino.' };
+    if (!p.formato) return { ok: false, mensaje: 'Primero dinos si el conjunto tiene formato propio.' };
+    const correo = String(datos.correo || '').trim();
+    if (datos.modo === 'SISTEMA' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) return { ok: false, mensaje: 'Escribe el correo de la administración.' };
+    if (datos.modo !== 'SISTEMA' && datos.modo !== 'YO') return { ok: false, mensaje: 'Acción no válida.' };
+    p.envioElegido = { modo: datos.modo, correo: datos.modo === 'SISTEMA' ? correo : '' };
+    _guardarProcesoMudanza_(Object.assign({}, s.cita, { fila: fila }), p, 'el propietario eligió ' + (datos.modo === 'SISTEMA' ? 'que lo envíe el sistema (' + correo + ')' : 'enviarlo él mismo') + '; se envía al final');
+    return { ok: true, mensaje: 'Listo. Se envía cuando toques "Enviar" en el último paso.' };
   } finally { lock.releaseLock(); }
 }

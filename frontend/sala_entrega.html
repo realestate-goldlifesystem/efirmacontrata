@@ -784,8 +784,8 @@
     function primerPendienteProp() {
       if (!entregaResuelta()) return 1;
       if (!mudanzaResuelta()) return 2;
-      if (!esCasaP() && !P().envio && P().estado === 'APROBADA') return 3;
-      if (avisosP().length) return pasosProp().length;
+      if (!esCasaP() && !P().envio && !P().envioElegido && P().estado === 'APROBADA') return 3;
+      if (avisosP().length || P().envioElegido) return pasosProp().length;
       return P().propuesta ? 2 : 1;
     }
 
@@ -794,14 +794,14 @@
       $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
       if (todoListoProp() || info.estado === 'CERRADA') return finalPropietario();
       // Tras una acción: si ese paso quedó resuelto, pasa solo al siguiente pendiente
-      const resuelto = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : pasoP === 3 && !esCasaP() ? !!P().envio : false;
+      const resuelto = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : pasoP === 3 && !esCasaP() ? !!(P().envio || P().envioElegido) : false;
       irPasoP(mantener && !resuelto ? pasoP : primerPendienteProp());
     }
 
     function barraProp() {
       let barra = $('barraPasos');
       if (!barra) { barra = document.createElement('div'); barra.id = 'barraPasos'; $('vista').before(barra); }
-      const hecho = (i) => i === pasosProp().length ? false : i === 1 ? entregaResuelta() : i === 2 ? (P().estado === 'APROBADA') : !!P().envio;
+      const hecho = (i) => i === pasosProp().length ? false : i === 1 ? entregaResuelta() : i === 2 ? (P().estado === 'APROBADA') : !!(P().envio || P().envioElegido);
       barra.className = 'pasos';
       barra.style.gridTemplateColumns = 'repeat(' + pasosProp().length + ', 1fr)';
       barra.innerHTML = pasosProp().map((t, i) => `<button class="${i + 1 === pasoP ? 'activo' : hecho(i + 1) ? 'hecho' : ''}" data-paso="${i + 1}"><b>${hecho(i + 1) && i + 1 !== pasoP ? '✓' : i + 1}</b><small>${t}</small></button>`).join('');
@@ -811,7 +811,7 @@
     function navProp(contenedor) {
       const ultimo = pasoP === pasosProp().length;
       // Paso 3: si ya se puede enviar el documento, primero hay que elegir quién lo envía y enviarlo
-      const puedeEnviarDoc = P().estado === 'APROBADA' && !P().envio && (P().formato === 'NO' || !!(P().version && P().version.estado === 'APROBADA'));
+      const puedeEnviarDoc = P().estado === 'APROBADA' && !P().envio && !P().envioElegido && (P().formato === 'NO' || !!(P().version && P().version.estado === 'APROBADA'));
       const listo = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : !puedeEnviarDoc;
       const div = document.createElement('div'); div.className = 'nav entra'; div.id = 'navProp';
       div.innerHTML = (pasoP > 1 ? '<button class="secundario" id="atrasP">‹ Atrás</button>' : '') +
@@ -844,28 +844,29 @@
 
     // Último paso: lo que se le va a contar al inquilino, en un solo correo
     function pasoEnviarProp() {
-      const lista = avisosP();
+      const el = P().envioElegido;
+      const lista = avisosP().concat(el ? [el.modo === 'SISTEMA' ? 'DOCUMENTO A LA ADMINISTRACIÓN (' + el.correo + ')' : 'DOCUMENTO A TU CORREO PARA LA ADMINISTRACIÓN'] : []);
       const pend = [];
       if (!entregaResuelta()) pend.push('elegir o proponer los horarios de la entrega');
       if (!mudanzaResuelta()) pend.push('responder la fecha de mudanza');
       $('vista').innerHTML = '<div class="bloque entra"><h2>📬 Enviar al inquilino</h2>' +
         (lista.length
-          ? '<p class="nota">Le enviamos un solo correo con todo lo que respondiste:</p>' + lista.map(t => `<div class="resumenFila"><span>✓</span><div>${esc(t.charAt(0) + t.slice(1).toLowerCase())}</div></div>`).join('')
+          ? '<p class="nota">Al tocar “Enviar” hacemos todo de una: el documento a la administración (si lo elegiste) y un solo correo al inquilino con lo que respondiste:</p>' + lista.map(t => `<div class="resumenFila"><span>✓</span><div>${esc(t.charAt(0) + t.slice(1).toLowerCase())}</div></div>`).join('')
           : '<p class="nota">No hay nada nuevo para enviarle al inquilino.</p>') +
         (pend.length ? `<div class="aviso">Te falta ${esc(pend.join(' y '))}. Puedes enviar ya lo que tienes o completarlo primero.</div>` : '') +
         '</div>';
       const nav = document.createElement('div'); nav.className = 'nav entra'; nav.id = 'navProp';
       nav.innerHTML = '<button class="secundario" id="atrasP">‹ Atrás</button>' +
-        `<button class="principal${lista.length ? '' : ' bloqueado'}" id="enviarAvisos">Enviar al inquilino</button>`;
+        `<button class="principal${lista.length ? '' : ' bloqueado'}" id="enviarAvisos">Enviar</button>`;
       $('vista').appendChild(nav);
       $('atrasP').onclick = () => irPasoP(pasoP - 1);
       $('enviarAvisos').onclick = () => {
         if (!lista.length) return;
         const b = $('enviarAvisos'); b.disabled = true; b.textContent = 'Enviando…';
         llamar('enviarAvisosPropietario').then(r => {
-          if (!r.ok) { b.disabled = false; b.textContent = 'Enviar al inquilino'; return alert(r.mensaje || 'No se pudo enviar.'); }
+          if (!r.ok) { b.disabled = false; b.textContent = 'Enviar'; return alert(r.mensaje || 'No se pudo enviar.'); }
           recargar(null, r.mensaje);
-        }).catch(() => { b.disabled = false; b.textContent = 'Enviar al inquilino'; alert('Error de red. Intenta de nuevo.'); });
+        }).catch(() => { b.disabled = false; b.textContent = 'Enviar'; alert('Error de red. Intenta de nuevo.'); });
       };
     }
 
@@ -1023,12 +1024,13 @@
         $('cajaSistema').classList.toggle('oculto', b.dataset.modo !== 'SISTEMA');
         $('enviarActa').classList.remove('oculto');
         $('enviarActa').dataset.modo = b.dataset.modo;
-        $('enviarActa').textContent = b.dataset.modo === 'SISTEMA' ? 'Enviar a la administración' : 'Enviármelo a mi correo';
+        $('enviarActa').textContent = b.dataset.modo === 'SISTEMA' ? 'Guardar: lo envían ustedes' : 'Guardar: lo envío yo';
       });
+      if ($('cambiarEnvio')) $('cambiarEnvio').onclick = () => { formatoPropietarioHtml.cambiando = true; irPasoP(pasoP); formatoPropietarioHtml.cambiando = false; };
       if ($('enviarActa')) $('enviarActa').onclick = () => {
         const modo = $('enviarActa').dataset.modo;
         if (modo === 'SISTEMA' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('correoAdm').value.trim())) return alert('Escribe el correo de la administración.');
-        conAccion('enviarActa', 'enviarActaMudanza', { modo: modo, correo: modo === 'SISTEMA' ? $('correoAdm').value.trim() : '' });
+        conAccion('enviarActa', 'elegirEnvioActa', { modo: modo, correo: modo === 'SISTEMA' ? $('correoAdm').value.trim() : '' }, 'Guardando…');
       };
     }
 
@@ -1055,6 +1057,10 @@
       }
       const listo = p.estado === 'APROBADA' && (p.formato === 'NO' || (p.version && p.version.estado === 'APROBADA'));
       if (!listo) return h + (p.estado !== 'APROBADA' ? '<p class="nota">Cuando apruebes la fecha de mudanza, aquí eliges cómo enviarlo.</p>' : '');
+      if (p.envioElegido && !formatoPropietarioHtml.cambiando) {
+        return h + `<div class="aviso ok">✓ ${p.envioElegido.modo === 'SISTEMA' ? 'Lo enviamos nosotros a <b>' + esc(p.envioElegido.correo) + '</b> (te llega copia)' : 'Te lo enviamos a tu correo para que lo reenvíes'}. Se envía cuando toques “Enviar” en el último paso.</div>` +
+          '<button class="secundario" id="cambiarEnvio">Cambiar cómo se envía</button>';
+      }
       return h + '<label class="etiqueta">¿Cómo lo enviamos a la administración?</label>' +
         '<div class="opciones"><button class="opcion" data-modo="SISTEMA">Envíenlo ustedes</button><button class="opcion" data-modo="YO">Lo envío yo</button></div>' +
         `<div id="cajaSistema" class="oculto"><input id="correoAdm" type="email" placeholder="Correo de la administración" value="${esc(p.correoAdmin)}">` +
