@@ -157,7 +157,9 @@ function infoSalaEntrega(datos) {
     descartados: _descartadosDe(fila, col),
     // Parte B: lo que ya dio el inquilino y las listas de marcas
     mudanza: s.rol === 'INQUILINO' ? _datosMudanzaDe(fila, col) : null,
-    marcas: s.rol === 'INQUILINO' ? { MOTO: MARCAS_MOTO, CARRO: MARCAS_CARRO } : null
+    marcas: s.rol === 'INQUILINO' ? { MOTO: MARCAS_MOTO, CARRO: MARCAS_CARRO } : null,
+    // Versión 2 (26-oct-2026, MUDANZA_ENTREGA.js): aprobación de la mudanza y formato de la administración
+    proceso: infoMudanza_(s)
   };
 }
 
@@ -292,6 +294,18 @@ function aceptarSalaEntrega(datos) {
         '<strong>¿La fecha está bien?</strong> Si no es la que acordaron, habla con ellos y vuelve a abrirla para que elijan otra, o muévela tú desde el panel con "Reagendar".',
         htmlBotonesCorreo([{ texto: '🔄 Volver a elegir la fecha', color: '#b8860b', url: urlEstadoCita(idCita, 'REABRIR', String(valorCita(fila, col, 'TOKEN AGENTE') || '')) }]));
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
+    // La mudanza propuesta no puede quedar antes de recibir el inmueble (versión 2)
+    try {
+      const m = _datosMudanzaDe(fila, col);
+      const filaN = sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0];
+      const sN = { cita: { sheet: sheet, col: col, numFila: numFila, fila: filaN }, rol: s.rol, d: s.d };
+      if (m && m.mudanza && _validarMudanza_(sN, m.mudanza, m.horaMudanza || '23:00').indexOf('después de recibir') !== -1) {
+        const p = _procesoMudanza_(filaN, col); p.estado = 'NO_POSIBLE'; p.motivo = 'quedó antes de la entrega del inmueble';
+        _guardarProcesoMudanza_(sN.cita, p, 'la mudanza quedó antes de la entrega acordada: se pide otra fecha');
+        _correoSala_(sN, 'INQUILINO', '🚚 Elige otra fecha para tu mudanza - Gold Life', 'NUEVA FECHA DE MUDANZA',
+          'La entrega quedó para el <strong>' + _textoHorario(ts) + '</strong> y tu mudanza estaba antes. Por favor propón otra fecha en tu sala de entrega.', '🚚 Elegir otra fecha');
+      }
+    } catch (e) { Logger.log('⚠️ Revisión de la mudanza: ' + e.message); }
     // Pagos (VIDA_CONTRATO_PAGOS.js): accesos del propietario y cobro del primer mes
     try { alAcordarEntrega_(s.d.inm.id); } catch (e) { Logger.log('⚠️ alAcordarEntrega_: ' + e.message); }
     // Si el inquilino ya dio los datos de la mudanza, salen las cartas
@@ -448,7 +462,12 @@ function guardarDatosEntrega(datos) {
 
     const limpio = (t, max) => String(t || '').replace(/\s+/g, ' ').trim().slice(0, max || 80);
     const mudanza = String(datos.mudanza || '');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(mudanza)) return { ok: false, mensaje: 'Elige la fecha de la mudanza.' };
+    const horaMudanza = String(datos.horaMudanza || '');
+    const antes = _datosMudanzaDe(fila, col);
+    // La fecha ya aprobada no se vuelve a validar si no cambió
+    const mismaFecha = antes && antes.mudanza === mudanza && antes.horaMudanza === horaMudanza;
+    const errorFecha = mismaFecha ? '' : _validarMudanza_(s, mudanza, horaMudanza);
+    if (errorFecha) return { ok: false, mensaje: errorFecha };
     const personas = (Array.isArray(datos.personas) ? datos.personas : []).slice(0, MAX_OTRAS_PERSONAS).map(p => ({
       nombre: limpio(p.nombre), documento: limpio(p.documento, 20).replace(/[^\dA-Za-z]/g, ''), celular: limpio(p.celular, 20), correo: limpio(p.correo, 80)
     }));
@@ -460,17 +479,18 @@ function guardarDatosEntrega(datos) {
     const malo = vehiculos.find(v => !v.marca || !v.modelo || !(v.tipo === 'MOTO' ? /^[A-Z]{3}\d{2}[A-Z]$/ : /^[A-Z]{3}\d{3}$/).test(v.placa));
     if (malo) return { ok: false, mensaje: 'Revisa el vehículo ' + (malo.placa || malo.marca || '') + ': marca, modelo y placa (carro ABC123, moto ABC12D).' };
 
-    const guardar = { mudanza: mudanza, personas: personas, vehiculos: vehiculos, actualizado: new Date().toISOString() };
+    const guardar = { mudanza: mudanza, horaMudanza: horaMudanza, personas: personas, vehiculos: vehiculos, actualizado: new Date().toISOString() };
     if (col['DATOS ENTREGA']) sheet.getRange(numFila, col['DATOS ENTREGA']).setValue(JSON.stringify(guardar));
     if (col['ULTIMO CAMBIO']) sheet.getRange(numFila, col['ULTIMO CAMBIO']).setValue(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss') + ' · el inquilino guardó los datos de la mudanza');
 
-    // Con la entrega ya agendada, las cartas salen de una (y se rehacen si cambia algo)
-    let cartas = null;
+    // Al propietario le llega la fecha de mudanza para aprobar (si es nueva o cambió)
+    try { alProponerMudanza_(s, guardar, antes); } catch (e) { Logger.log('⚠️ Aviso de la mudanza: ' + e.message); }
+    // Con la entrega ya agendada, la carta de bienvenida sale de una (y se rehace si cambia algo)
     if (estado !== ESTADO_POR_COORDINAR) {
       const filaNueva = sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0];
-      cartas = generarCartasEntrega_(sheet, col, numFila, filaNueva);
+      generarCartasEntrega_(sheet, col, numFila, filaNueva);
     }
-    return { ok: true, mensaje: cartas && cartas.ok ? '¡Gracias! Guardamos tus datos y preparamos las cartas para la administración.' : '¡Gracias! Guardamos tus datos.' };
+    return { ok: true, mensaje: mismaFecha ? '¡Gracias! Guardamos tus datos.' : '¡Gracias! Guardamos tus datos y le enviamos la fecha de mudanza al propietario para que la apruebe.' };
   } finally {
     lock.releaseLock();
   }
@@ -536,7 +556,8 @@ function _llenarCarta_(doc, valores, referencia, desde, hasta) {
 }
 
 /** Genera (o rehace) las dos cartas y le avisa a Leonardo. Necesita entrega agendada y datos. */
-function generarCartasEntrega_(sheet, col, numFila, fila) {
+function generarCartasEntrega_(sheet, col, numFila, fila, que) {
+  que = que || 'BIENVENIDA';
   try {
     const mud = _datosMudanzaDe(fila, col);
     const inicio = fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA'));
@@ -557,12 +578,14 @@ function generarCartasEntrega_(sheet, col, numFila, fila) {
     while (hijas.hasNext()) { const h = hijas.next(); if (/^4-\s*VARIOS/i.test(h.getName())) { destino = h; break; } }
     if (!destino) destino = padre;
 
-    // Las versiones anteriores (si el inquilino cambió algo) van a la papelera
-    String(valorCita(fila, col, 'CARTAS ENTREGA') || '').split(',').filter(Boolean).forEach(id => { try { DriveApp.getFileById(id).setTrashed(true); } catch (e) {} });
+    // Las versiones anteriores de esa carta (si el inquilino cambió algo) van a la papelera
+    const previas = String(valorCita(fila, col, 'CARTAS ENTREGA') || '').split(',');
+    const idPrevia = que === 'BIENVENIDA' ? previas[0] : previas[1];
+    if (idPrevia) { try { DriveApp.getFileById(idPrevia).setTrashed(true); } catch (e) {} }
 
     const nombreInq = inq.nombre || d.inquilino;
     const base = {
-      'FECHA DE ENTREGA': _fechaLarga_(inicio), 'FECHA': _fechaLarga_(new Date()), 'DÍA DE MUDANZA': _fechaLarga_(new Date(mud.mudanza + 'T12:00:00')),
+      'FECHA DE ENTREGA': _fechaLarga_(inicio), 'FECHA': _fechaLarga_(new Date()), 'DÍA DE MUDANZA': _textoMudanza_(mud),
       'CIUDAD DE ENTREGA': d.inm.ciudad || 'Bogotá', 'NOMBRE ADMINISTRACIÓN': ref.admin, 'correo administración': ref.correoAdmin,
       'DIRECCIÓN INM': d.inm.direccion,
       'NOMBRE INQUILINO#1': nombreInq, 'NÚMERO DE DOCUMENTO#1': inq.numeroDocumento || '', 'CELULAR #1': inq.celular || d.celularInquilino, 'CORREO#1': inq.email || d.correoInquilino,
@@ -608,23 +631,25 @@ function generarCartasEntrega_(sheet, col, numFila, fila) {
     });
 
     const sufijo = ' - ' + nombreInq + ' - ' + idInm;
+    if (que === 'ADMINISTRACION') {
+      // El acta de solicitud de mudanza: la genera el envío del propietario (MUDANZA_ENTREGA.js)
+      const administracion = DriveApp.getFileById(PLANTILLA_CARTA_ADMINISTRACION).makeCopy('CARTA DE NUEVO INQUILINO PARA ADMINISTRACIÓN' + sufijo, destino);
+      _llenarCarta_(DocumentApp.openById(administracion.getId()), base, ref.referencia, 'fue arrendado a', 'A quienes se les hace entrega');
+      if (col['CARTAS ENTREGA']) sheet.getRange(numFila, col['CARTAS ENTREGA']).setValue((previas[0] || '') + ',' + administracion.getId());
+      return { ok: true, id: administracion.getId(), url: administracion.getUrl() };
+    }
     const bienvenida = DriveApp.getFileById(PLANTILLA_CARTA_BIENVENIDA).makeCopy('CARTA DE BIENVENIDA' + sufijo, destino);
     _llenarCarta_(DocumentApp.openById(bienvenida.getId()), base, ref.referencia);
-    const administracion = DriveApp.getFileById(PLANTILLA_CARTA_ADMINISTRACION).makeCopy('CARTA DE NUEVO INQUILINO PARA ADMINISTRACIÓN' + sufijo, destino);
-    _llenarCarta_(DocumentApp.openById(administracion.getId()), base, ref.referencia, 'fue arrendado a', 'A quienes se les hace entrega');
-
-    if (col['CARTAS ENTREGA']) sheet.getRange(numFila, col['CARTAS ENTREGA']).setValue(bienvenida.getId() + ',' + administracion.getId());
+    if (col['CARTAS ENTREGA']) sheet.getRange(numFila, col['CARTAS ENTREGA']).setValue(bienvenida.getId() + ',' + (previas[1] || ''));
     try {
       const detalle = [mud.personas.length ? mud.personas.length + ' persona(s) más' : '', mud.vehiculos.length ? mud.vehiculos.length + ' vehículo(s)' : ''].filter(Boolean).join(', ');
-      enviarCorreoCita(correoAgenteCitas(), '📄 Cartas de entrega listas para revisar · ' + idInm, 'CARTAS DE ENTREGA', 'Agente',
-        etiquetaTipoCitaHtml('ENTREGA') + '<strong>' + nombreInq + '</strong> dio los datos de la mudanza (' + _fechaLarga_(new Date(mud.mudanza + 'T12:00:00')) +
-        (detalle ? ', ' + detalle : '') + ').<br><br>Ya quedaron las dos cartas en la carpeta de la entrega. Revísalas antes de enviarlas:',
-        htmlBotonesCorreo([
-          { texto: '📄 Carta de bienvenida', color: '#b8860b', url: bienvenida.getUrl() },
-          { texto: '🏢 Carta para la administración', color: '#555555', url: administracion.getUrl() }
-        ]));
-    } catch (e) { Logger.log('No se pudo avisar las cartas: ' + e.message); }
-    return { ok: true, bienvenida: bienvenida.getUrl(), administracion: administracion.getUrl() };
+      enviarCorreoCita(correoAgenteCitas(), '📄 Carta de bienvenida lista para revisar · ' + idInm, 'CARTA DE BIENVENIDA', 'Agente',
+        etiquetaTipoCitaHtml('ENTREGA') + '<strong>' + nombreInq + '</strong> dio los datos de la mudanza (' + _textoMudanza_(mud) +
+        (detalle ? ', ' + detalle : '') + ').<br><br>Ya quedó la carta de bienvenida en la carpeta de la entrega. Revísala antes de la entrega. ' +
+        'El acta para la administración la envía el propietario desde su sala (te llega copia).',
+        htmlBotonesCorreo([{ texto: '📄 Carta de bienvenida', color: '#b8860b', url: bienvenida.getUrl() }]));
+    } catch (e) { Logger.log('No se pudo avisar la carta: ' + e.message); }
+    return { ok: true, bienvenida: bienvenida.getUrl() };
   } catch (e) {
     Logger.log('No se pudieron generar las cartas de entrega: ' + e.message);
     return { ok: false, motivo: e.message };
@@ -663,4 +688,12 @@ function reabrirSalaEntrega_(sheet, col, numFila, fila, motivo) {
       htmlBotonesCorreo([{ texto: '🔑 Elegir la fecha', color: '#b8860b', url: urlSalaEntrega(idCita, 'p', _tokenPropietarioEntrega(idCita)) }]));
   } catch (e) { Logger.log('No se pudo avisar al propietario: ' + e.message); }
   return { ok: true, mensaje: 'Listo: le pedimos al inquilino y al propietario que vuelvan a elegir la fecha de la entrega.' };
+}
+
+/** La carta de nuevo inquilino para la administración (acta de solicitud de mudanza). */
+function generarCartaAdministracion_(sheet, col, numFila, fila) {
+  if (!fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA')) || String(valorCita(fila, col, 'ESTADO')).trim() === ESTADO_POR_COORDINAR) {
+    return { ok: false, motivo: 'primero tiene que quedar acordada la fecha de entrega' };
+  }
+  return generarCartasEntrega_(sheet, col, numFila, fila, 'ADMINISTRACION');
 }

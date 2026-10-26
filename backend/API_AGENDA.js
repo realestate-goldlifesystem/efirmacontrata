@@ -49,7 +49,9 @@ const COLUMNAS_CITAS = [
   // oct-2026 (sala de entrega): quién hizo la última propuesta, INQUILINO o PROPIETARIO
   'PROPUESTO POR',
   // oct-2026 (sala de entrega, parte B): datos de la mudanza (JSON) y los Doc de las dos cartas
-  'DATOS ENTREGA', 'CARTAS ENTREGA'
+  'DATOS ENTREGA', 'CARTAS ENTREGA',
+  // oct-2026 (sala de entrega v2): aprobación de la mudanza y formato de la administración (JSON)
+  'MUDANZA'
 ];
 
 // Estados posibles de una cita.

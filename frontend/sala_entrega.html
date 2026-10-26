@@ -167,6 +167,23 @@
     .placa.malo { border-color: #f87171; }
     .resumenFila { display: flex; gap: 12px; align-items: flex-start; margin-top: 12px; font-size: 14.5px; line-height: 1.5; color: #e7e5e4; }
     .resumenFila span { font-size: 18px; }
+    /* Versión 2: dos momentos, paso a paso y aprobación del propietario */
+    .momento { display: flex; gap: 12px; align-items: flex-start; margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--panel2); border: 1px solid var(--linea); font-size: 14px; line-height: 1.5; color: #d6d3d1; }
+    .momento span { font-size: 22px; } .momento b { color: #f5f5f4; }
+    .pasos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 0 0 6px; }
+    .pasos button { background: none; border: 0; padding: 4px 0; color: var(--suave); display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: inherit; }
+    .pasos b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; border: 1.5px solid var(--linea); transition: all .3s ease; }
+    .pasos small { font-size: 10.5px; }
+    .pasos .activo b { background: var(--oro); border-color: var(--oro); color: #0c0a09; box-shadow: 0 0 0 4px rgba(212,175,55,.15); } .pasos .activo small { color: #f5f5f4; font-weight: 600; }
+    .pasos .hecho b { border-color: var(--oro); color: var(--oro); }
+    .nav { display: flex; gap: 8px; align-items: center; } .nav .secundario { width: auto; flex-shrink: 0; margin-top: 16px; } .nav .principal { flex: 1; }
+    .aviso { margin-top: 12px; padding: 11px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; background: rgba(212,175,55,.08); border: 1px solid rgba(212,175,55,.35); color: #e7e5e4; }
+    .aviso.ok { background: rgba(134,239,172,.07); border-color: rgba(134,239,172,.35); } .aviso.malo { background: rgba(252,165,165,.07); border-color: rgba(252,165,165,.4); }
+    .cambiar { margin-left: auto; flex-shrink: 0; background: none; border: 0; color: var(--oro); font-size: 13px; padding: 2px 0; }
+    .opcion.grande { width: 100%; margin-top: 14px; padding: 14px; font-size: 15px; }
+    .horasMud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; } .horasMud .nota { grid-column: 1 / -1; }
+    textarea { width: 100%; padding: 12px 14px; margin-top: 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 14.5px; font-family: inherit; resize: vertical; }
+    textarea:focus { outline: none; border-color: var(--oro); }
   </style>
 </head>
 <body>
@@ -226,7 +243,8 @@
     function pintarExito(titulo, cuando, texto, sinCheck) {
       $('vista').innerHTML = `<div class="exito entra">${sinCheck ? '<div class="icono">🔑</div>' : '<div class="check">✓</div>'}<h2>${esc(titulo)}</h2>` +
         (cuando ? `<p style="color:var(--oro);font-weight:700;font-size:17px;margin-bottom:10px;">${esc(cuando.charAt(0).toUpperCase() + cuando.slice(1))}</p>` : '') +
-        `<p>${esc(texto)}</p><p class="nota" style="margin-top:14px;">${info.rol === 'INQUILINO' && !sinCheck && !(info.mudanza || mudanza) ? '👇 Abajo te pedimos unos datos para la administración del conjunto.' : 'Ya puedes cerrar esta página.'}</p></div>`;
+        `<p>${esc(texto)}</p>${info.rol === 'INQUILINO' ? '' : '<p class="nota" style="margin-top:14px;">Abajo sigue la mudanza del inquilino.</p>'}</div>`;
+      botonSiguiente();
     }
 
     // Lo que propuso la otra parte, como botones "Me sirve"
@@ -396,31 +414,351 @@
     let mudanza = null, editando = false, formPersonas = [], formVehiculos = [];
     const PLACA = { CARRO: /^[A-Z]{3}\d{3}$/, MOTO: /^[A-Z]{3}\d{2}[A-Z]$/ };
 
-    function pintarMudanza() {
-      if (info.rol !== 'INQUILINO' || info.estado === 'CERRADA') return;
-      let caja = $('bloqueMudanza');
-      if (!caja) { caja = document.createElement('div'); caja.id = 'bloqueMudanza'; caja.className = 'bloque entra'; $('contenido').appendChild(caja); }
-      mudanza = mudanza || info.mudanza;
-      if (mudanza && !editando) return pintarResumenMudanza(caja);
+    // ================= Versión 2: dos momentos y paso a paso del inquilino =================
+    // 1 Recibir (la negociación de arriba) · 2 Mudanza (día y hora) · 3 Personas · 4 Vehículos · 5 Resumen
+    // La mudanza la aprueba el propietario; si el conjunto tiene formato propio, aquí se descarga y se carga lleno.
+    let paso = 1, formFecha = '', formHora = '';
+    const PASOS = ['Recibir', 'Mudanza', 'Personas', 'Vehículos', 'Resumen'];
+    const leerLocal = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const grabarLocal = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+    const P = () => info.proceso || {};
+    const fechaTexto = (f) => { const d = new Date(f + 'T12:00:00'); return DIAS[d.getDay()] + ' ' + d.getDate() + ' de ' + MESES[d.getMonth()]; };
+    const horaTexto = (h) => { let x = Number(h.slice(0, 2)); const s = x >= 12 ? 'PM' : 'AM'; x = x % 12 || 12; return x + ':' + h.slice(3) + ' ' + s; };
+
+    // En el paso 1, debajo de lo que muestre la negociación
+    function botonSiguiente() {
+      if (info.rol !== 'INQUILINO' || paso !== 1 || $('aMudanza') || info.estado === 'CERRADA') return;
+      const sig = document.createElement('div'); sig.className = 'entra';
+      sig.innerHTML = '<button class="principal" id="aMudanza">Siguiente: tu mudanza ›</button>' +
+        '<p class="nota centro">Puedes seguir aunque el propietario no haya respondido todavía.</p>';
+      $('vista').appendChild(sig);
+      $('aMudanza').onclick = () => irPaso(2);
+    }
+
+    function iniciarInquilino() {
+      mudanza = info.mudanza;
+      formFecha = mudanza ? mudanza.mudanza : ''; formHora = mudanza ? (mudanza.horaMudanza || '') : '';
       formPersonas = (mudanza && mudanza.personas || []).map(p => Object.assign({}, p));
       formVehiculos = (mudanza && mudanza.vehiculos || []).map(v => Object.assign({}, v));
-      const hoy = iso(new Date());
-      caja.innerHTML = '<h2>🏠 Datos para la administración</h2>' +
-        '<p class="nota">Con esto preparamos tu carta de bienvenida y el aviso a la administración del conjunto.</p>' +
-        '<label class="etiqueta">¿Qué día haces la mudanza?</label>' +
-        `<input type="date" id="fMudanza" min="${hoy}" value="${esc(mudanza ? mudanza.mudanza : '')}">` +
-        '<label class="etiqueta">¿Quién más va a vivir contigo?</label><div id="listaPersonas"></div>' +
-        '<button class="agregar" id="agregarPersona">＋ Agregar persona</button>' +
-        '<label class="etiqueta">¿Tienen carro o moto?</label><div id="listaVehiculos"></div>' +
-        '<button class="agregar" id="agregarVehiculo">＋ Agregar vehículo</button>' +
-        '<p class="error oculto" id="errMudanza"></p>' +
-        '<button class="principal" id="guardarMudanza">Guardar mis datos</button>' +
-        (mudanza ? '<button class="secundario" id="cancelarMudanza">Cancelar</button>' : '');
+      if (mudanza || leerLocal('sala2_' + CITA)) return irPaso(mudanza ? 5 : 1);
+      const casa = P().reglas && P().reglas.esCasa;
+      $('vista').innerHTML = '<div class="bloque destacado entra"><h2>Antes de empezar: son dos momentos</h2>' +
+        '<div class="momento"><span>🔑</span><div><b>1. Recibir el inmueble</b><br>El día en que te entregan las llaves y revisan juntos el inventario.</div></div>' +
+        '<div class="momento"><span>🚚</span><div><b>2. La mudanza</b><br>El día en que llegan tus cosas. Puede ser el mismo día (mínimo una hora después de recibirlo) o después. ' +
+        (casa ? 'El propietario la aprueba.' : 'El propietario la aprueba y la coordina con la administración del conjunto.') + '</div></div>' +
+        '<button class="principal" id="entendido">Entendido</button></div>';
+      $('entendido').onclick = () => {
+        const capa = document.createElement('div');
+        capa.className = 'confirmar';
+        capa.innerHTML = '<div class="caja" role="dialog" aria-modal="true"><div class="icono">🗓️</div><h3>Tengo claro que son dos fechas</h3>' +
+          '<p>Primero elegimos cuándo puedes recibir el inmueble y después el día y la hora de tu mudanza.</p>' +
+          '<button class="si" id="comenzar">Comenzar</button><button class="no">Volver</button></div>';
+        capa.querySelector('.no').onclick = () => capa.remove();
+        capa.onclick = (e) => { if (e.target === capa) capa.remove(); };
+        capa.querySelector('#comenzar').onclick = () => { capa.remove(); grabarLocal('sala2_' + CITA, '1'); irPaso(1); };
+        document.body.appendChild(capa);
+      };
+    }
+
+    function barraPasos() {
+      let barra = $('barraPasos');
+      if (!barra) { barra = document.createElement('div'); barra.id = 'barraPasos'; barra.className = 'pasos'; $('vista').before(barra); }
+      barra.innerHTML = PASOS.map((t, i) => `<button class="${i + 1 === paso ? 'activo' : i + 1 < paso ? 'hecho' : ''}" data-paso="${i + 1}"><b>${i + 1 < paso ? '✓' : i + 1}</b><small>${t}</small></button>`).join('');
+      // Se puede volver a cualquier paso ya visto; hacia adelante solo con "Siguiente"
+      barra.querySelectorAll('button').forEach(b => b.onclick = () => { const n = Number(b.dataset.paso); if (n < paso || mudanza) irPaso(n); });
+    }
+
+    function navPaso(textoSig, alSig) {
+      return `<p class="error oculto" id="errPaso"></p><div class="nav">${paso > 1 ? '<button class="secundario" id="atras">‹ Atrás</button>' : ''}` +
+        `<button class="principal" id="siguiente">${textoSig}</button></div>`;
+    }
+    function errPaso(t) { $('errPaso').textContent = t; $('errPaso').classList.remove('oculto'); }
+    function enlazarNav(alSig) {
+      if ($('atras')) $('atras').onclick = () => irPaso(paso - 1);
+      $('siguiente').onclick = alSig;
+    }
+
+    function irPaso(n) {
+      paso = n; barraPasos();
+      const caja = $('bloqueMudanza'); if (caja) caja.remove();
+      if (n === 1) {
+        pintar(); botonSiguiente();
+        return;
+      }
+      if (n === 2) return pasoFecha();
+      if (n === 3) return pasoPersonas();
+      if (n === 4) return pasoVehiculos();
+      pasoResumen();
+    }
+
+    function estadoMudanzaHtml() {
+      const p = P();
+      if (!p.propuesta) return '';
+      if (p.estado === 'APROBADA') return `<div class="aviso ok">✅ El propietario aprobó tu mudanza del <b>${esc(p.propuesta.texto)}</b>.</div>`;
+      if (p.estado === 'NO_POSIBLE') return `<div class="aviso malo">⚠️ La mudanza del <b>${esc(p.propuesta.texto)}</b> no es posible${p.motivo ? ': “' + esc(p.motivo) + '”' : ''}. Elige otra fecha.</div>`;
+      return `<div class="aviso">⏳ El propietario está revisando tu mudanza del <b>${esc(p.propuesta.texto)}</b>.</div>`;
+    }
+
+    // Las horas de inicio permitidas ese día (mismas reglas que valida el servidor)
+    function horasMudanza(fecha) {
+      const r = P().reglas || {};
+      if (!fecha || fecha < r.minFecha || (r.festivos || []).indexOf(fecha) !== -1) return [];
+      const dow = new Date(fecha + 'T12:00:00').getDay() || 7;
+      const rango = (r.horas || {})[dow];
+      if (!rango) return [];
+      const ultima = (r.entregas || []).length ? Math.max.apply(null, r.entregas) : 0;
+      const lista = [];
+      for (let h = rango[0]; h <= rango[1]; h++) {
+        [0, 30].forEach(m => {
+          if (h === rango[1] && m) return;
+          const hh = String(h).padStart(2, '0') + ':' + (m ? '30' : '00');
+          if (ultima && new Date(fecha + 'T' + hh + ':00-05:00').getTime() < ultima + 3600000) return;
+          lista.push(hh);
+        });
+      }
+      return lista;
+    }
+
+    function pasoFecha() {
+      const r = P().reglas || {};
+      const ultima = (r.entregas || []).length ? Math.max.apply(null, r.entregas) : 0;
+      $('vista').innerHTML = '<div class="bloque entra"><h2>🚚 ¿Cuándo es tu mudanza?</h2>' + estadoMudanzaHtml() +
+        '<p class="nota">' + (r.esCasa ? 'De lunes a sábado.' : 'En propiedad horizontal: lunes a viernes de 8 a. m. a 5 p. m. y sábados de 8 a. m. a 12 m., desde 2 días hábiles después de hoy.') +
+        (ultima ? ' Nunca antes de recibir el inmueble: si es el mismo día, mínimo una hora después.' : '') + '</p>' +
+        '<label class="etiqueta">Día</label>' +
+        `<input type="date" id="fMudanza" min="${esc(r.minFecha || iso(new Date()))}" value="${esc(formFecha)}">` +
+        '<label class="etiqueta">Hora de inicio</label><div class="horasMud" id="horasMud"></div>' +
+        navPaso('Siguiente ›') + '</div>';
+      const pintarHorasMud = () => {
+        const lista = horasMudanza(formFecha);
+        if (formHora && lista.indexOf(formHora) === -1) formHora = '';
+        $('horasMud').innerHTML = !formFecha ? '<p class="nota">Primero elige el día.</p>'
+          : lista.length ? lista.map(h => `<button class="hora${h === formHora ? ' marcado' : ''}" data-h="${h}">${horaTexto(h)}</button>`).join('')
+          : '<p class="nota">Ese día no hay horarios para mudanza. Prueba con otro.</p>';
+        $('horasMud').querySelectorAll('[data-h]').forEach(b => b.onclick = () => { formHora = b.dataset.h; pintarHorasMud(); });
+      };
+      $('fMudanza').onchange = () => { formFecha = $('fMudanza').value; pintarHorasMud(); };
+      pintarHorasMud();
+      enlazarNav(() => {
+        if (!formFecha) return errPaso('Elige el día de la mudanza.');
+        if (!formHora) return errPaso('Elige la hora de inicio.');
+        irPaso(3);
+      });
+    }
+
+    function pasoPersonas() {
+      $('vista').innerHTML = '<div class="bloque entra"><h2>👥 ¿Quién más va a vivir contigo?</h2>' +
+        '<p class="nota">La administración lo pide para el registro de residentes.</p>' +
+        '<button class="opcion grande" id="soloYo">🙋 Solo yo</button>' +
+        '<div id="listaPersonas"></div><button class="agregar" id="agregarPersona">＋ Agregar persona</button>' +
+        '<div id="listaVehiculos" class="oculto"></div>' + navPaso('Siguiente ›') + '</div>';
+      $('soloYo').onclick = () => { formPersonas = []; irPaso(4); };
       $('agregarPersona').onclick = () => { if (formPersonas.length < 4) { formPersonas.push({ nombre: '', documento: '', celular: '', correo: '' }); pintarListas(); } };
-      $('agregarVehiculo').onclick = () => { if (formVehiculos.length < 10) { formVehiculos.push({ tipo: 'CARRO', marca: '', modelo: '', placa: '' }); pintarListas(); } };
-      $('guardarMudanza').onclick = guardarMudanza;
-      if ($('cancelarMudanza')) $('cancelarMudanza').onclick = () => { editando = false; pintarMudanza(); };
       pintarListas();
+      enlazarNav(() => {
+        if (formPersonas.some(p => p.nombre.trim().length < 3 || p.documento.length < 5)) return errPaso('Escribe el nombre y el documento de cada persona.');
+        irPaso(4);
+      });
+    }
+
+    function pasoVehiculos() {
+      $('vista').innerHTML = '<div class="bloque entra"><h2>🚗 ¿Tienen carro o moto?</h2>' +
+        '<p class="nota">Para que la administración los registre en el parqueadero.</p>' +
+        '<button class="opcion grande" id="noTengo">🚶 No tengo</button>' +
+        '<div id="listaVehiculos"></div><button class="agregar" id="agregarVehiculo">＋ Agregar vehículo</button>' +
+        '<div id="listaPersonas" class="oculto"></div><button id="agregarPersona" class="oculto"></button>' + navPaso('Siguiente ›') + '</div>';
+      $('noTengo').onclick = () => { formVehiculos = []; irPaso(5); };
+      $('agregarVehiculo').onclick = () => { if (formVehiculos.length < 10) { formVehiculos.push({ tipo: 'CARRO', marca: '', modelo: '', placa: '' }); pintarListas(); } };
+      pintarListas();
+      enlazarNav(() => {
+        const malo = formVehiculos.find(v => !v.marca.trim() || !v.modelo.trim() || !PLACA[v.tipo].test(v.placa));
+        if (malo) return errPaso('Revisa cada vehículo: marca, modelo y placa (carro ABC123, moto ABC12D).');
+        irPaso(5);
+      });
+    }
+
+    function pasoResumen() {
+      const fila = (icono, texto, n) => `<div class="resumenFila"><span>${icono}</span><div>${texto}</div><button class="cambiar" data-ir="${n}">Cambiar</button></div>`;
+      const guardado = mudanza && mudanza.mudanza === formFecha && (mudanza.horaMudanza || '') === formHora &&
+        JSON.stringify(mudanza.personas) === JSON.stringify(formPersonas) && JSON.stringify(mudanza.vehiculos) === JSON.stringify(formVehiculos.map(v => ({ tipo: v.tipo, marca: v.marca, modelo: v.modelo, placa: v.placa })));
+      $('vista').innerHTML = '<div class="bloque entra"><h2>' + (guardado ? '✓ Tus datos de la mudanza' : 'Revisa y envía') + '</h2>' + (guardado ? estadoMudanzaHtml() : '') +
+        fila('🚚', formFecha && formHora ? 'Mudanza el <b>' + esc(fechaTexto(formFecha)) + '</b> a las <b>' + esc(horaTexto(formHora)) + '</b>' : '<span class="nota">Falta el día y la hora</span>', 2) +
+        fila('👥', formPersonas.length ? 'También viven: ' + formPersonas.map(p => '<b>' + esc(p.nombre) + '</b>').join(', ') : 'Solo tú', 3) +
+        fila('🚗', formVehiculos.length ? formVehiculos.map(v => esc((v.tipo === 'MOTO' ? 'Moto ' : 'Carro ') + v.marca + ' ' + v.modelo) + ' · <b>' + esc(v.placa) + '</b>').join('<br>') : 'Sin vehículos', 4) +
+        '<p class="error oculto" id="errPaso"></p>' +
+        (guardado ? '' : '<div class="nav"><button class="secundario" id="atras">‹ Atrás</button><button class="principal" id="siguiente">Enviar al propietario</button></div>') +
+        '</div><div id="bloqueFormato"></div>';
+      $('vista').querySelectorAll('[data-ir]').forEach(b => b.onclick = () => irPaso(Number(b.dataset.ir)));
+      if (!guardado) enlazarNav(guardarMudanza);
+      pintarFormatoInquilino();
+    }
+
+    function guardarMudanza() {
+      if (!formFecha || !formHora) return errPaso('Falta el día y la hora de la mudanza.');
+      const b = $('siguiente'); b.disabled = true; b.textContent = 'Enviando…';
+      const datos = { mudanza: formFecha, horaMudanza: formHora, personas: formPersonas, vehiculos: formVehiculos.map(v => ({ tipo: v.tipo, marca: v.marca.trim(), modelo: v.modelo.trim(), placa: v.placa })) };
+      llamar('guardarDatosEntrega', datos).then(r => {
+        if (!r.ok) { b.disabled = false; b.textContent = 'Enviar al propietario'; return errPaso(r.mensaje || 'No pudimos guardar tus datos.'); }
+        recargar(5, r.mensaje);
+      }).catch(() => { b.disabled = false; b.textContent = 'Enviar al propietario'; errPaso('Error de red. Intenta de nuevo.'); });
+    }
+
+    // ================= Archivos: descargar y cargar =================
+    function descargar(cual, boton) {
+      const t = boton ? boton.textContent : '';
+      if (boton) { boton.disabled = true; boton.textContent = 'Descargando…'; }
+      return llamar('descargarArchivoSala', { cual: cual }).then(r => {
+        if (boton) { boton.disabled = false; boton.textContent = t; }
+        if (!r.ok) return alert(r.mensaje || 'No pudimos descargar el archivo.');
+        const bytes = Uint8Array.from(atob(r.base64), c => c.charCodeAt(0));
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([bytes], { type: r.mimeType }));
+        a.download = r.nombre; document.body.appendChild(a); a.click(); a.remove();
+      }).catch(() => { if (boton) { boton.disabled = false; boton.textContent = t; } alert('Error de red. Intenta de nuevo.'); });
+    }
+
+    // Un input de archivo dentro de un botón; devuelve {base64, mimeType, nombre}
+    function elegirArchivo(alElegir) {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'application/pdf,image/*,.doc,.docx';
+      inp.onchange = () => {
+        const f = inp.files[0]; if (!f) return;
+        if (f.size > 10 * 1024 * 1024) return alert('El archivo pesa más de 10 MB.');
+        const lector = new FileReader();
+        lector.onload = () => alElegir({ base64: String(lector.result).split(',')[1], mimeType: f.type || 'application/octet-stream', nombre: f.name });
+        lector.readAsDataURL(f);
+      };
+      inp.click();
+    }
+
+    function pintarFormatoInquilino() {
+      const p = P(), caja = $('bloqueFormato');
+      if (!caja || p.formato !== 'SI') return;
+      const v = p.version;
+      let h = '<div class="bloque entra"><h2>📄 Formato de la administración</h2>';
+      if (p.envio) h += '<div class="aviso ok">✅ Ya se envió a la administración.</div>';
+      else {
+        h += '<p class="nota">El conjunto tiene su propio formato de mudanza. Descárgalo, llénalo (y fírmalo si lo pide) y cárgalo aquí. El propietario lo revisa antes de enviarlo.</p>' +
+          '<button class="agregar" id="bajarPlantilla">⬇️ Descargar el formato en blanco</button>';
+        if (v && v.estado === 'EN_REVISION') h += `<div class="aviso">⏳ El propietario está revisando tu versión ${v.numero}.</div>`;
+        if (v && v.estado === 'APROBADA') h += `<div class="aviso ok">✅ El propietario aprobó tu formato (versión ${v.numero}).</div>`;
+        if (v && v.estado === 'CORREGIR') h += `<div class="aviso malo">✏️ El propietario pide corregir la versión ${v.numero}: “${esc(v.comentario)}”</div>`;
+        if (!v || v.estado === 'CORREGIR') h += `<button class="principal" id="subirFormato">⬆️ Cargar el formato lleno${v ? ' (corregido)' : ''}</button>`;
+      }
+      caja.innerHTML = h + '</div>';
+      if ($('bajarPlantilla')) $('bajarPlantilla').onclick = () => descargar('plantilla', $('bajarPlantilla'));
+      if ($('subirFormato')) $('subirFormato').onclick = () => elegirArchivo(arch => {
+        const b = $('subirFormato'); b.disabled = true; b.textContent = 'Cargando…';
+        llamar('cargarFormatoMudanza', arch).then(r => {
+          if (!r.ok) { b.disabled = false; b.textContent = '⬆️ Cargar el formato lleno'; return alert(r.mensaje || 'No pudimos cargar el archivo.'); }
+          recargar(5, r.mensaje);
+        }).catch(() => { b.disabled = false; alert('Error de red. Intenta de nuevo.'); });
+      });
+      // Autodescarga: la primera vez que ve el formato en blanco, se le descarga solo
+      if (!p.envio && !v && p.plantilla && !leerLocal('plantilla_' + CITA + '_' + p.plantilla.nombre)) {
+        grabarLocal('plantilla_' + CITA + '_' + p.plantilla.nombre, '1');
+        descargar('plantilla');
+      }
+    }
+
+    // ================= Propietario: aprobar la mudanza, formato y envío a la administración =================
+    function pintarPropietario() {
+      const p = P();
+      let caja = $('bloqueMudanza');
+      if (!caja) { caja = document.createElement('div'); caja.id = 'bloqueMudanza'; $('contenido').appendChild(caja); }
+      const casa = p.reglas && p.reglas.esCasa;
+      let h = '<div class="bloque entra"><h2>🚚 La mudanza del inquilino</h2>';
+      if (!p.propuesta) h += '<p class="nota">El inquilino todavía no propone el día de su mudanza. Te avisamos por correo cuando lo haga.</p>';
+      else {
+        h += `<div class="resumenFila"><span>🚚</span><div><b>${esc(p.propuesta.texto.charAt(0).toUpperCase() + p.propuesta.texto.slice(1))}</b><br>` +
+          `<span class="nota">${p.propuesta.personas ? p.propuesta.personas + ' persona(s) más' : 'Vive solo'} · ${p.propuesta.vehiculos ? p.propuesta.vehiculos + ' vehículo(s)' : 'sin vehículos'}</span></div></div>`;
+        if (p.estado === 'PROPUESTA') {
+          h += '<p class="nota">' + (casa ? '¿Te sirve ese día?' : 'Valídalo con la administración (a veces hay que reservar el ascensor) y confírmanos.') + '</p>' +
+            '<div class="opciones"><button class="opcion" id="noPosible">No es posible</button><button class="opcion elegido" id="aprobarMud">✓ Aprobar</button></div>' +
+            '<div id="cajaMotivo" class="oculto"><textarea id="motivoMud" rows="3" placeholder="Cuéntale por qué (ej. ese día la administración no tiene ascensor)"></textarea>' +
+            '<button class="principal" id="enviarMotivo">Pedirle otra fecha</button></div>';
+        } else if (p.estado === 'APROBADA') h += '<div class="aviso ok">✅ Aprobaste esta fecha.</div>';
+        else if (p.estado === 'NO_POSIBLE') h += `<div class="aviso">Le pedimos otra fecha${p.motivo ? ' (“' + esc(p.motivo) + '”)' : ''}. Te avisamos cuando la proponga.</div>`;
+      }
+      h += '</div>';
+      if (!casa) h += '<div class="bloque entra"><h2>📄 Documento para la administración</h2>' + formatoPropietarioHtml(p) + '</div>';
+      caja.innerHTML = h;
+      const conAccion = (id, accion, extra, texto) => {
+        const b = $(id); b.disabled = true; b.textContent = texto || 'Enviando…';
+        return llamar(accion, extra).then(r => {
+          if (!r.ok) { b.disabled = false; alert(r.mensaje || 'No se pudo.'); return recargar(); }
+          recargar(null, r.mensaje);
+        }).catch(() => { b.disabled = false; alert('Error de red. Intenta de nuevo.'); });
+      };
+      if ($('aprobarMud')) $('aprobarMud').onclick = () => conAccion('aprobarMud', 'responderMudanza', { decision: 'APROBAR' }, 'Aprobando…');
+      if ($('noPosible')) $('noPosible').onclick = () => { $('cajaMotivo').classList.remove('oculto'); $('motivoMud').focus(); };
+      if ($('enviarMotivo')) $('enviarMotivo').onclick = () => {
+        if ($('motivoMud').value.trim().length < 5) return alert('Cuéntale al inquilino por qué no es posible.');
+        conAccion('enviarMotivo', 'responderMudanza', { decision: 'NO_POSIBLE', motivo: $('motivoMud').value });
+      };
+      if ($('formatoNo')) $('formatoNo').onclick = () => conAccion('formatoNo', 'definirFormatoMudanza', { tiene: 'NO' });
+      if ($('formatoSi')) $('formatoSi').onclick = () => elegirArchivo(arch => conAccion('formatoSi', 'definirFormatoMudanza', Object.assign({ tiene: 'SI' }, arch), 'Cargando…'));
+      if ($('bajarVersion')) $('bajarVersion').onclick = () => descargar('version', $('bajarVersion'));
+      if ($('bajarPlantillaP')) $('bajarPlantillaP').onclick = () => descargar('plantilla', $('bajarPlantillaP'));
+      if ($('aprobarVersion')) $('aprobarVersion').onclick = () => conAccion('aprobarVersion', 'revisarFormatoMudanza', { decision: 'APROBAR' });
+      if ($('corregirVersion')) $('corregirVersion').onclick = () => { $('cajaComentario').classList.remove('oculto'); $('comentarioV').focus(); };
+      if ($('enviarComentario')) $('enviarComentario').onclick = () => {
+        if ($('comentarioV').value.trim().length < 5) return alert('Cuéntale al inquilino qué debe corregir.');
+        conAccion('enviarComentario', 'revisarFormatoMudanza', { decision: 'CORREGIR', comentario: $('comentarioV').value });
+      };
+      caja.querySelectorAll('[data-modo]').forEach(b => b.onclick = () => {
+        caja.querySelectorAll('[data-modo]').forEach(x => x.classList.toggle('elegido', x === b));
+        $('cajaSistema').classList.toggle('oculto', b.dataset.modo !== 'SISTEMA');
+        $('enviarActa').classList.remove('oculto');
+        $('enviarActa').dataset.modo = b.dataset.modo;
+        $('enviarActa').textContent = b.dataset.modo === 'SISTEMA' ? 'Enviar a la administración' : 'Enviármelo a mi correo';
+      });
+      if ($('enviarActa')) $('enviarActa').onclick = () => {
+        const modo = $('enviarActa').dataset.modo;
+        if (modo === 'SISTEMA' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('correoAdm').value.trim())) return alert('Escribe el correo de la administración.');
+        conAccion('enviarActa', 'enviarActaMudanza', { modo: modo, correo: modo === 'SISTEMA' ? $('correoAdm').value.trim() : '' });
+      };
+    }
+
+    function formatoPropietarioHtml(p) {
+      if (p.envio) return `<div class="aviso ok">✅ ${p.envio.modo === 'SISTEMA' ? 'Enviado a la administración (' + esc(p.envio.correo) + ').' : 'Te lo enviamos a tu correo para que lo reenvíes a la administración.'}</div>`;
+      let h = '';
+      if (!p.formato) {
+        return '<p class="nota">¿La administración del conjunto tiene su propio formato de mudanza?</p>' +
+          '<div class="opciones"><button class="opcion" id="formatoNo">No, usen el acta del sistema</button><button class="opcion" id="formatoSi">Sí, lo cargo</button></div>';
+      }
+      if (p.formato === 'NO') h += '<p class="nota">Usamos el acta de solicitud de mudanza del sistema, con los datos del inquilino.</p>';
+      else {
+        const v = p.version;
+        h += `<div class="resumenFila"><span>📎</span><div>Formato cargado<br><span class="nota">${esc(p.plantilla ? p.plantilla.nombre : '')}</span></div><button class="cambiar" id="bajarPlantillaP">Ver</button></div>`;
+        if (!v) h += '<div class="aviso">⏳ Esperando que el inquilino lo llene y lo cargue.</div>';
+        else if (v.estado === 'EN_REVISION') {
+          h += `<div class="aviso">📄 El inquilino cargó la versión ${v.numero}. Revísala.</div>` +
+            '<button class="agregar" id="bajarVersion">⬇️ Descargar la versión ' + v.numero + '</button>' +
+            '<div class="opciones"><button class="opcion" id="corregirVersion">Pedir corrección</button><button class="opcion elegido" id="aprobarVersion">✓ Aprobar</button></div>' +
+            '<div id="cajaComentario" class="oculto"><textarea id="comentarioV" rows="3" placeholder="¿Qué debe corregir? (ej. falta la firma)"></textarea>' +
+            '<button class="principal" id="enviarComentario">Pedir la corrección</button></div>';
+        } else if (v.estado === 'CORREGIR') h += `<div class="aviso">✏️ Pediste corregir la versión ${v.numero}: “${esc(v.comentario)}”. Esperando la nueva versión.</div>`;
+        else h += `<div class="aviso ok">✅ Aprobaste la versión ${v.numero}.</div>`;
+      }
+      const listo = p.estado === 'APROBADA' && (p.formato === 'NO' || (p.version && p.version.estado === 'APROBADA'));
+      if (!listo) return h + (p.estado !== 'APROBADA' ? '<p class="nota">Cuando apruebes la fecha de mudanza, aquí eliges cómo enviarlo.</p>' : '');
+      return h + '<label class="etiqueta">¿Cómo lo enviamos a la administración?</label>' +
+        '<div class="opciones"><button class="opcion" data-modo="SISTEMA">Envíenlo ustedes</button><button class="opcion" data-modo="YO">Lo envío yo</button></div>' +
+        `<div id="cajaSistema" class="oculto"><input id="correoAdm" type="email" placeholder="Correo de la administración" value="${esc(p.correoAdmin)}">` +
+        '<p class="nota">Te llega copia a tu correo.</p></div>' +
+        '<button class="principal oculto" id="enviarActa"></button>';
+    }
+
+    // Vuelve a leer la sala y pinta lo que toca, con un mensaje opcional
+    function recargar(irA, mensaje) {
+      return llamar('infoSalaEntrega').then(r => {
+        if (!r || !r.ok) return error((r && r.mensaje) || 'No pudimos abrir la entrega.');
+        info = r;
+        if (info.rol === 'INQUILINO') { mudanza = info.mudanza; irPaso(irA || paso); }
+        else { pintar(); pintarPropietario(); }
+        if (mensaje) { const ok = document.createElement('p'); ok.className = 'nota ok centro entra'; ok.textContent = mensaje; $('vista').prepend(ok); }
+      });
     }
 
     function pintarListas() {
@@ -469,43 +807,13 @@
       });
     }
 
-    function guardarMudanza() {
-      const err = (t) => { $('errMudanza').textContent = t; $('errMudanza').classList.remove('oculto'); };
-      $('errMudanza').classList.add('oculto');
-      const fecha = $('fMudanza').value;
-      if (!fecha) return err('Elige el día de la mudanza.');
-      if (formPersonas.some(p => p.nombre.trim().length < 3 || p.documento.length < 5)) return err('Escribe el nombre y el documento de cada persona.');
-      const malo = formVehiculos.find(v => !v.marca.trim() || !v.modelo.trim() || !PLACA[v.tipo].test(v.placa));
-      if (malo) return err('Revisa cada vehículo: marca, modelo y placa (carro ABC123, moto ABC12D).');
-      const b = $('guardarMudanza'); b.disabled = true; b.textContent = 'Guardando…';
-      const datos = { mudanza: fecha, personas: formPersonas, vehiculos: formVehiculos.map(v => ({ tipo: v.tipo, marca: v.marca.trim(), modelo: v.modelo.trim(), placa: v.placa })) };
-      llamar('guardarDatosEntrega', datos).then(r => {
-        b.disabled = false; b.textContent = 'Guardar mis datos';
-        if (!r.ok) return err(r.mensaje || 'No pudimos guardar tus datos.');
-        mudanza = Object.assign({}, datos); editando = false;
-        pintarMudanza();
-        const ok = document.createElement('p'); ok.className = 'nota ok centro'; ok.textContent = r.mensaje; $('bloqueMudanza').appendChild(ok);
-      }).catch(() => { b.disabled = false; b.textContent = 'Guardar mis datos'; err('Error de red. Intenta de nuevo.'); });
-    }
-
-    function pintarResumenMudanza(caja) {
-      const f = new Date(mudanza.mudanza + 'T12:00:00');
-      const fila = (icono, texto) => `<div class="resumenFila"><span>${icono}</span><div>${texto}</div></div>`;
-      caja.innerHTML = '<h2>✓ Datos para la administración</h2>' +
-        fila('🚚', 'Mudanza el <b>' + esc(DIAS[f.getDay()] + ' ' + f.getDate() + ' de ' + MESES[f.getMonth()]) + '</b>') +
-        fila('👥', mudanza.personas.length ? 'También viven: ' + mudanza.personas.map(p => '<b>' + esc(p.nombre) + '</b>').join(', ') : 'Solo tú') +
-        fila('🚗', mudanza.vehiculos.length ? mudanza.vehiculos.map(v => esc((v.tipo === 'MOTO' ? 'Moto ' : 'Carro ') + v.marca + ' ' + v.modelo) + ' · <b>' + esc(v.placa) + '</b>').join('<br>') : 'Sin vehículos') +
-        '<button class="secundario" id="editarMudanza">Cambiar mis datos</button>';
-      $('editarMudanza').onclick = () => { editando = true; pintarMudanza(); };
-    }
-
     function cargar() {
       if (!CITA || !TOKEN || !ROL) return error('El enlace está incompleto. Pídele a Leonardo que te lo envíe de nuevo.');
       llamar('infoSalaEntrega').then(r => {
         if (!r || !r.ok) return error((r && r.mensaje) || 'No pudimos abrir la entrega.');
         info = r;
         $('cargando').classList.add('oculto'); $('contenido').classList.remove('oculto');
-        pintar(); pintarMudanza();
+        if (info.rol === 'INQUILINO') iniciarInquilino(); else { pintar(); pintarPropietario(); }
       }).catch(() => error('Revisa tu conexión a internet e intenta de nuevo.'));
     }
     cargar();
