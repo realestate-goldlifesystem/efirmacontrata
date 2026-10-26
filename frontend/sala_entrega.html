@@ -1033,9 +1033,11 @@
       const conAccion = (id, accion, extra, texto, barra) => {
         if (caja.dataset.ocupado) return;
         caja.dataset.ocupado = '1';
-        caja.querySelectorAll('button').forEach(x => { x.disabled = true; });
+        // Mientras guarda, nada del paso se puede tocar: botones, correo ni comentarios
+        caja.classList.add('congelado');
+        caja.querySelectorAll('button, input, textarea, select').forEach(x => { x.disabled = true; });
         const b = $(id); b.textContent = texto || 'Enviando…';
-        const soltar = () => { delete caja.dataset.ocupado; caja.querySelectorAll('button').forEach(x => { x.disabled = false; }); };
+        const soltar = () => { delete caja.dataset.ocupado; caja.classList.remove('congelado'); caja.querySelectorAll('button, input, textarea, select').forEach(x => { x.disabled = false; }); };
         const pr = barra ? progreso(barra) : null;
         return llamar(accion, extra).then(r => (pr ? pr.fin(r.ok) : Promise.resolve()).then(() => {
           if (!r.ok) { soltar(); alert(r.mensaje || 'No se pudo.'); return recargar(); }
