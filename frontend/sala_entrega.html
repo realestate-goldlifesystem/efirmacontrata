@@ -866,7 +866,13 @@
       else if (!p.propuesta) h += '<p class="nota">El inquilino todavía no propone el día de su mudanza. Te avisamos por correo cuando lo haga.</p>';
       else {
         h += `<div class="resumenFila"><span>🚚</span><div><b>${esc(p.propuesta.texto.charAt(0).toUpperCase() + p.propuesta.texto.slice(1))}</b><br>` +
-          `<span class="nota">${p.propuesta.personas ? p.propuesta.personas + ' persona(s) más' : 'Sin más personas'} · ${p.propuesta.vehiculos ? p.propuesta.vehiculos + ' vehículo(s)' : 'sin vehículos'}</span></div></div>`;
+          '<span class="nota">Día y hora de la mudanza</span></div></div>' +
+          `<div class="resumenFila"><span>👥</span><div>${(p.propuesta.personasDet || []).length
+            ? 'También vivirán:<br>' + p.propuesta.personasDet.map(x => '<b>' + esc(x.nombre) + '</b> · ' + esc(x.documento) + (x.celular ? ' · ' + esc(x.celular) : '')).join('<br>')
+            : 'Solo vivirá el inquilino'}</div></div>` +
+          `<div class="resumenFila"><span>🚗</span><div>${(p.propuesta.vehiculosDet || []).length
+            ? p.propuesta.vehiculosDet.map(v => (v.tipo === 'MOTO' ? '🏍️ Moto ' : '🚗 Carro ') + esc(v.marca + ' ' + v.modelo) + ' · placa <b>' + esc(v.placa) + '</b>').join('<br>')
+            : 'Sin vehículos'}</div></div>`;
         if (p.estado === 'PROPUESTA') {
           h += '<p class="nota">' + (casa ? '¿Te sirve ese día?' : 'Valídalo con la administración (a veces hay que reservar el ascensor) y confírmanos.') + '</p>' +
             '<div class="opciones"><button class="opcion" id="noPosible">No es posible</button><button class="opcion elegido" id="aprobarMud">✓ Aprobar</button></div>' +

@@ -114,7 +114,10 @@ function infoMudanza_(s) {
   const ultimaVersion = (p.versiones || []).slice(-1)[0] || null;
   return {
     reglas: s.rol === 'INQUILINO' ? reglasMudanza_(s) : { esCasa: _esCasa_(s.d) },
-    propuesta: datos ? { fecha: datos.mudanza, hora: datos.horaMudanza || '', texto: _textoMudanza_(datos), personas: (datos.personas || []).length, vehiculos: (datos.vehiculos || []).length } : null,
+    propuesta: datos ? { fecha: datos.mudanza, hora: datos.horaMudanza || '', texto: _textoMudanza_(datos), personas: (datos.personas || []).length, vehiculos: (datos.vehiculos || []).length,
+      // El detalle para que el propietario sepa a quién y qué vehículos aprueba
+      personasDet: (datos.personas || []).map(x => ({ nombre: x.nombre, documento: _documentoCorto_(x.tipoDocumento || 'CC', x.documento), celular: x.celular || '' })),
+      vehiculosDet: (datos.vehiculos || []).map(v => ({ tipo: v.tipo, marca: v.marca, modelo: v.modelo, placa: v.placa })) } : null,
     estado: p.estado || (datos ? 'PROPUESTA' : ''),
     motivo: p.motivo || '',
     formato: p.formato || '',                      // '' | 'NO' | 'SI'
