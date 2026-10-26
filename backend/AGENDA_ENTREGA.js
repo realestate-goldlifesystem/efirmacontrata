@@ -194,6 +194,8 @@ function proponerSalaEntrega(datos) {
 
     const anteriores = _pedidosDe(fila, col);
     const antesPor = String(valorCita(fila, col, 'PROPUESTO POR') || '');
+    const sinTerminar = s.rol === 'INQUILINO' && !_datosMudanzaDe(fila, col);
+    if (anteriores.length && antesPor === s.rol && !sinTerminar) return { ok: false, mensaje: 'Ya enviaste tus horarios. Te avisamos por correo cuando la otra parte responda.' };
     const escribir = (n, v) => { if (col[n]) sheet.getRange(numFila, col[n]).setValue(v); };
     // Los que propuso el otro y no le sirvieron a esta parte ya no se ofrecen
     if (anteriores.length && antesPor && antesPor !== s.rol) {
@@ -476,6 +478,12 @@ function guardarDatosEntrega(datos) {
     const mudanza = String(datos.mudanza || '');
     const horaMudanza = String(datos.horaMudanza || '');
     const antes = _datosMudanzaDe(fila, col);
+    const proc = _procesoMudanza_(fila, col);
+    if (antes && proc.estado !== 'NO_POSIBLE') return { ok: false, mensaje: 'Ya enviaste tus datos. Te avisamos por correo cuando el propietario responda.' };
+    if (!antes && proc.formato === 'SI') {
+      const v = (proc.versiones || []).slice(-1)[0];
+      if (!v || v.estado === 'CORREGIR') return { ok: false, mensaje: 'Primero carga el formato de la administración lleno.' };
+    }
     // La fecha ya aprobada no se vuelve a validar si no cambió
     const mismaFecha = antes && antes.mudanza === mudanza && antes.horaMudanza === horaMudanza;
     const errorFecha = mismaFecha ? '' : _validarMudanza_(s, mudanza, horaMudanza);

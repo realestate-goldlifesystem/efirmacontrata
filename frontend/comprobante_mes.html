@@ -185,7 +185,8 @@
     function vistaInquilino() {
       $('titulo').textContent = 'Comprobante del mes ' + info.mes;
       if (info.estado === 'VALIDADO') return exito('Tu pago está confirmado', 'El pago del mes ' + info.mes + ' ya quedó confirmado. ¡Gracias!');
-      const cargado = info.estado === 'CARGADO';
+      if (info.estado === 'CARGADO') return exito('Tu comprobante está en revisión', 'Ya lo recibimos. Te avisamos por correo cuando lo revisen; no hace falta enviarlo otra vez.');
+      const cargado = false;
       $('vista').innerHTML =
         (info.valor ? `<p class="valor">${miles(info.valor)}</p><p class="nota centro">Canon y administración${info.dia1 ? ' · periodo desde el ' + fecha(info.dia1) : ''}</p>` : '') +
         (info.estado === 'NO ES' ? `<div class="aviso rojo">El comprobante anterior no correspondía al pago${info.motivo ? ': <em>“' + esc(info.motivo) + '”</em>' : '.'} Por favor carga el correcto.</div>` : '') +

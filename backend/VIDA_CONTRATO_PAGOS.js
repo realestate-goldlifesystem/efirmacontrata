@@ -349,6 +349,7 @@ function cargarComprobanteMensual(datos) {
     if (s.rol !== 'INQUILINO') return { ok: false, mensaje: 'El comprobante lo carga el inquilino.' };
     const { p, c } = s;
     if (String(p.v('ESTADO')) === ESTADOS_PAGO.VALIDADO) return { ok: false, mensaje: 'Este pago ya quedó confirmado.' };
+    if (String(p.v('ESTADO')) === ESTADOS_PAGO.CARGADO) return { ok: false, mensaje: 'Ya cargaste el comprobante: está en revisión. Te avisamos por correo.' };
     const mime = String(datos.mimeType || '').toLowerCase();
     if (!/^image\/|application\/pdf/.test(mime) || !datos.base64) return { ok: false, mensaje: 'Sube una foto o un PDF del comprobante.' };
 

@@ -145,7 +145,8 @@ function alProponerMudanza_(s, datosNuevos, datosAntes) {
       : `<strong>${s.d.inquilino}</strong> propone su mudanza.<br><br>`) +
     `<strong>🚚 Mudanza:</strong> ${_textoMudanza_(datosNuevos)}<br>` +
     `<strong>👥 También viven:</strong> ${personas.length ? personas.join(', ') : 'nadie más'}<br>` +
-    `<strong>🚗 Vehículos:</strong> ${vehiculos.length ? vehiculos.join('; ') : 'ninguno'}<br><br>` +
+    `<strong>🚗 Vehículos:</strong> ${vehiculos.length ? vehiculos.join('; ') : 'ninguno'}<br>` +
+    (p.formato === 'SI' && (p.versiones || []).length ? '<strong>📄 Formato de la administración:</strong> ya lo llenó y cargó; revísalo en la sala.<br>' : '') + '<br>' +
     (_esCasa_(s.d) ? 'Confírmanos si el día de la mudanza está bien.' : 'Valida la mudanza con la administración del conjunto (a veces hay que reservar el ascensor) y apruébala en la sala.');
   _correoSala_(s, 'PROPIETARIO', pedidos.length ? '🔑 El inquilino eligió horarios de entrega y su mudanza - Gold Life' : '🚚 Propuesta de mudanza: ' + _textoMudanza_(datosNuevos) + ' - Gold Life',
     pedidos.length ? 'ENTREGA Y MUDANZA' : 'FECHA DE MUDANZA', cuerpo, pedidos.length ? '🔑 Abrir la sala de entrega' : '🚚 Revisar la fecha de mudanza');
@@ -161,6 +162,7 @@ function responderMudanza(datos) {
     const m = _datosMudanzaDe(s.cita.fila, s.cita.col);
     if (!m || !m.mudanza) return { ok: false, mensaje: 'El inquilino todavía no propone la fecha de mudanza.' };
     const p = _procesoMudanza_(s.cita.fila, s.cita.col);
+    if (p.estado && p.estado !== 'PROPUESTA') return { ok: false, mensaje: p.estado === 'APROBADA' ? 'Ya aprobaste esta fecha de mudanza.' : 'Ya le pediste otra fecha al inquilino.' };
     if (datos.decision === 'APROBAR') {
       p.estado = 'APROBADA'; p.motivo = '';
       _guardarProcesoMudanza_(s.cita, p, 'el propietario aprobó la mudanza');
@@ -208,6 +210,8 @@ function definirFormatoMudanza(datos) {
     if (s.error) return { ok: false, mensaje: s.error };
     if (s.rol !== 'PROPIETARIO') return { ok: false, mensaje: 'Esto lo responde el propietario.' };
     const p = _procesoMudanza_(s.cita.fila, s.cita.col);
+    if (p.envio || (p.versiones || []).length) return { ok: false, mensaje: 'El formato ya está en curso con el inquilino.' };
+    if (p.formato === 'NO' && datos.tiene === 'NO') return { ok: false, mensaje: 'Ya quedó: se usa el acta del sistema.' };
     if (datos.tiene === 'NO') {
       p.formato = 'NO';
       _guardarProcesoMudanza_(s.cita, p, 'el conjunto no tiene formato propio: se usa el acta del sistema');
@@ -251,10 +255,17 @@ function cargarFormatoMudanza(datos) {
     const p = _procesoMudanza_(s.cita.fila, s.cita.col);
     if (p.formato !== 'SI') return { ok: false, mensaje: 'Aún no hay formato de la administración.' };
     if (p.envio) return { ok: false, mensaje: 'El formato ya se envió a la administración.' };
+    const ultima = (p.versiones || []).slice(-1)[0];
+    // Antes de enviar el paso a paso todavía puede reemplazarlo (el propietario no lo ha visto)
+    const sinEnviar = !_datosMudanzaDe(s.cita.fila, s.cita.col);
+    if (ultima && ultima.estado !== 'CORREGIR' && !sinEnviar) return { ok: false, mensaje: ultima.estado === 'APROBADA' ? 'El propietario ya aprobó tu formato.' : 'Ya cargaste el formato: el propietario lo está revisando.' };
+    if (ultima && sinEnviar) { try { DriveApp.getFileById(ultima.id).setTrashed(true); } catch (e) {} p.versiones.pop(); }
     const n = (p.versiones || []).length + 1;
     const archivo = _guardarArchivoSala_(s, datos, 'FORMATO DE MUDANZA - versión ' + n + ' - ' + s.d.inm.id);
     p.versiones = (p.versiones || []).concat([{ id: archivo.getId(), fecha: new Date().toISOString(), estado: 'EN_REVISION' }]);
     _guardarProcesoMudanza_(s.cita, p, 'el inquilino cargó la versión ' + n + ' del formato');
+    // Si todavía no termina el paso a paso, el formato va en el correo único al propietario
+    if (sinEnviar) return { ok: true, mensaje: '¡Listo! Quedó cargado. Ahora revisa el resumen y envíale todo al propietario.' };
     _correoSala_(s, 'PROPIETARIO', '📄 Revisa el formato de mudanza (versión ' + n + ') - Gold Life', 'FORMATO DE MUDANZA',
       `<strong>${s.d.inquilino}</strong> cargó el formato de mudanza lleno (versión ${n}). Revísalo: si le falta algún dato o firma, pídele la corrección.`,
       '📄 Revisar el formato');
