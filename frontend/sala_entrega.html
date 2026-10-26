@@ -757,14 +757,16 @@
     // ================= Propietario: paso a paso (1 Entrega · 2 Mudanza · 3 Documento) =================
     let pasoP = 1;
     const esCasaP = () => !!(P().reglas && P().reglas.esCasa);
-    const pasosProp = () => esCasaP() ? ['Entrega', 'Mudanza'] : ['Entrega', 'Mudanza', 'Documento'];
+    const pasosProp = () => (esCasaP() ? ['Entrega', 'Mudanza'] : ['Entrega', 'Mudanza', 'Documento']).concat(['Enviar']);
+    const avisosP = () => P().avisos || [];
     const entregaResuelta = () => info.estado === 'AGENDADA' || !!(info.pedidos.length && info.propuestoPor === 'PROPIETARIO');
     const mudanzaResuelta = () => !P().propuesta || P().estado !== 'PROPUESTA';
-    const todoListoProp = () => info.estado === 'AGENDADA' && P().estado === 'APROBADA' && (esCasaP() || !!P().envio);
+    const todoListoProp = () => info.estado === 'AGENDADA' && P().estado === 'APROBADA' && (esCasaP() || !!P().envio) && !avisosP().length;
     function primerPendienteProp() {
       if (!entregaResuelta()) return 1;
       if (!mudanzaResuelta()) return 2;
       if (!esCasaP() && !P().envio && P().estado === 'APROBADA') return 3;
+      if (avisosP().length) return pasosProp().length;
       return P().propuesta ? 2 : 1;
     }
 
@@ -773,14 +775,14 @@
       $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
       if (todoListoProp() || info.estado === 'CERRADA') return finalPropietario();
       // Tras una acción: si ese paso quedó resuelto, pasa solo al siguiente pendiente
-      const resuelto = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : false;
+      const resuelto = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : pasoP === 3 && !esCasaP() ? !!P().envio : false;
       irPasoP(mantener && !resuelto ? pasoP : primerPendienteProp());
     }
 
     function barraProp() {
       let barra = $('barraPasos');
       if (!barra) { barra = document.createElement('div'); barra.id = 'barraPasos'; $('vista').before(barra); }
-      const hecho = (i) => i === 1 ? entregaResuelta() : i === 2 ? (P().estado === 'APROBADA') : !!P().envio;
+      const hecho = (i) => i === pasosProp().length ? false : i === 1 ? entregaResuelta() : i === 2 ? (P().estado === 'APROBADA') : !!P().envio;
       barra.className = 'pasos';
       barra.style.gridTemplateColumns = 'repeat(' + pasosProp().length + ', 1fr)';
       barra.innerHTML = pasosProp().map((t, i) => `<button class="${i + 1 === pasoP ? 'activo' : hecho(i + 1) ? 'hecho' : ''}" data-paso="${i + 1}"><b>${hecho(i + 1) && i + 1 !== pasoP ? '✓' : i + 1}</b><small>${t}</small></button>`).join('');
@@ -807,9 +809,37 @@
       pasoP = n; barraProp();
       const caja = $('bloqueMudanza'); if (caja) caja.remove();
       if (n === 1) { pintar(); botonSiguienteProp(); return; }
+      if (n === pasosProp().length) return pasoEnviarProp();
       $('vista').innerHTML = '';
       pintarPropietario(n === 2 ? 'mudanza' : 'documento');
       navProp($('bloqueMudanza'));
+    }
+
+    // Último paso: lo que se le va a contar al inquilino, en un solo correo
+    function pasoEnviarProp() {
+      const lista = avisosP();
+      const pend = [];
+      if (!entregaResuelta()) pend.push('elegir o proponer los horarios de la entrega');
+      if (!mudanzaResuelta()) pend.push('responder la fecha de mudanza');
+      $('vista').innerHTML = '<div class="bloque entra"><h2>📬 Enviar al inquilino</h2>' +
+        (lista.length
+          ? '<p class="nota">Le enviamos un solo correo con todo lo que respondiste:</p>' + lista.map(t => `<div class="resumenFila"><span>✓</span><div>${esc(t.charAt(0) + t.slice(1).toLowerCase())}</div></div>`).join('')
+          : '<p class="nota">No hay nada nuevo para enviarle al inquilino.</p>') +
+        (pend.length ? `<div class="aviso">Te falta ${esc(pend.join(' y '))}. Puedes enviar ya lo que tienes o completarlo primero.</div>` : '') +
+        '</div>';
+      const nav = document.createElement('div'); nav.className = 'nav entra'; nav.id = 'navProp';
+      nav.innerHTML = '<button class="secundario" id="atrasP">‹ Atrás</button>' +
+        `<button class="principal${lista.length ? '' : ' bloqueado'}" id="enviarAvisos">Enviar al inquilino</button>`;
+      $('vista').appendChild(nav);
+      $('atrasP').onclick = () => irPasoP(pasoP - 1);
+      $('enviarAvisos').onclick = () => {
+        if (!lista.length) return;
+        const b = $('enviarAvisos'); b.disabled = true; b.textContent = 'Enviando…';
+        llamar('enviarAvisosPropietario').then(r => {
+          if (!r.ok) { b.disabled = false; b.textContent = 'Enviar al inquilino'; return alert(r.mensaje || 'No se pudo enviar.'); }
+          recargar(null, r.mensaje);
+        }).catch(() => { b.disabled = false; b.textContent = 'Enviar al inquilino'; alert('Error de red. Intenta de nuevo.'); });
+      };
     }
 
     function finalPropietario() {

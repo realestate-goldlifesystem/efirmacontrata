@@ -95,6 +95,7 @@ const _textoMudanza_ = (m) => m && m.mudanza ? _fechaLarga_(new Date(m.mudanza +
 
 /** Al inquilino o al propietario, con su enlace de la sala. */
 function _correoSala_(s, rol, asunto, titulo, cuerpo, boton) {
+  if (rol === 'INQUILINO' && s.rol === 'PROPIETARIO') return _encolarAvisoInquilino_(s, titulo, cuerpo);
   try {
     const esInq = rol === 'INQUILINO';
     const para = esInq ? s.d.correoInquilino : s.d.inm.correoPropietario;
@@ -120,6 +121,7 @@ function infoMudanza_(s) {
     plantilla: p.plantilla ? { nombre: p.plantilla.nombre } : null,
     version: ultimaVersion ? { numero: (p.versiones || []).length, estado: ultimaVersion.estado, comentario: ultimaVersion.comentario || '', fecha: ultimaVersion.fecha } : null,
     envio: p.envio ? { modo: p.envio.modo, correo: p.envio.correo || '', fecha: p.envio.fecha } : null,
+    avisos: s.rol === 'PROPIETARIO' ? (p.avisosInq || []).map(a => a.titulo) : [],
     correoAdmin: s.rol === 'PROPIETARIO' ? (_referenciaInmueble_(s.d.inm.id, s.d.inm.tipoInmueble).correoAdmin || '') : ''
   };
 }
@@ -393,4 +395,44 @@ function avisarFormatoAlInquilino_(s, sinCorreo) {
   _correoSala_(s, 'INQUILINO', '📄 Llena el formato de mudanza de la administración - Gold Life', 'FORMATO DE MUDANZA',
     'La administración del conjunto tiene su propio formato de mudanza. Descárgalo en tu sala de entrega, llénalo y cárgalo; el propietario lo revisa antes de enviarlo.',
     '📄 Descargar y cargar el formato');
+}
+
+// ===== Un solo correo al inquilino cuando el propietario termina sus pasos =====
+// Cada respuesta del propietario (horarios, entrega, mudanza, formato, acta) queda en
+// MUDANZA.avisosInq; al final de su paso a paso toca "Enviar" y sale todo junto.
+
+function _filaFresca_(cita) {
+  return cita.sheet.getRange(cita.numFila, 1, 1, cita.sheet.getLastColumn()).getValues()[0];
+}
+
+function _encolarAvisoInquilino_(s, titulo, cuerpo) {
+  const fila = _filaFresca_(s.cita);
+  const p = _procesoMudanza_(fila, s.cita.col);
+  p.avisosInq = (p.avisosInq || []).filter(a => a.titulo !== titulo).concat([{ titulo: titulo, cuerpo: cuerpo }]);
+  _guardarProcesoMudanza_(Object.assign({}, s.cita, { fila: fila }), p, 'aviso al inquilino en cola: ' + titulo);
+}
+
+/** El propietario terminó: le llega al inquilino un solo correo con todas sus respuestas. */
+function enviarAvisosPropietario(datos) {
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const s = _salaEntrega_(datos);
+    if (s.error) return { ok: false, mensaje: s.error };
+    if (s.rol !== 'PROPIETARIO') return { ok: false, mensaje: 'Esto lo envía el propietario.' };
+    const fila = _filaFresca_(s.cita);
+    const p = _procesoMudanza_(fila, s.cita.col);
+    const avisos = p.avisosInq || [];
+    if (!avisos.length) return { ok: false, mensaje: 'No hay nada nuevo para enviarle al inquilino.' };
+    const agendada = String(valorCita(fila, s.cita.col, 'ESTADO') || '').trim() !== ESTADO_POR_COORDINAR;
+    const listo = agendada && p.estado === 'APROBADA' && (_esCasa_(s.d) || !!p.envio);
+    const cuerpo = 'El propietario revisó todo lo de tu entrega:<br><br>' +
+      avisos.map(a => '<strong>' + a.titulo.charAt(0) + a.titulo.slice(1).toLowerCase() + '</strong><br>' + a.cuerpo).join('<br><br>') +
+      (listo ? '<br><br>🎉 <strong>Todo quedó listo.</strong> Antes de la entrega te recordaremos la cita.' : '');
+    delete p.avisosInq;
+    _guardarProcesoMudanza_(Object.assign({}, s.cita, { fila: fila }), p, 'se le envió al inquilino el resumen del propietario (' + avisos.length + ')');
+    const sInq = Object.assign({}, s, { rol: 'INQUILINO', cita: Object.assign({}, s.cita, { fila: fila }) });
+    _correoSala_(sInq, 'INQUILINO', listo ? '✅ Todo quedó listo para tu entrega - Gold Life' : '📬 El propietario respondió sobre tu entrega - Gold Life',
+      listo ? 'TODO LISTO' : 'RESPUESTA DEL PROPIETARIO', cuerpo, listo ? '🔑 Ver mi sala de entrega' : '🔑 Abrir mi sala de entrega');
+    return { ok: true, mensaje: 'Listo: le enviamos todo a ' + s.d.inquilino.split(' ')[0] + ' en un solo correo.' };
+  } finally { lock.releaseLock(); }
 }

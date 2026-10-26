@@ -687,6 +687,7 @@ function doPost(e) {
         result = revisarPagoMensual(datos);
         break;
       case 'responderMudanza': result = responderMudanza(datos); break;
+      case 'enviarAvisosPropietario': result = enviarAvisosPropietario(datos); break;
       case 'definirFormatoMudanza': result = definirFormatoMudanza(datos); break;
       case 'descargarArchivoSala': result = descargarArchivoSala(datos); break;
       case 'cargarFormatoMudanza': result = cargarFormatoMudanza(datos); break;

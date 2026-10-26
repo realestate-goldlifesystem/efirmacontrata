@@ -231,9 +231,7 @@ function proponerSalaEntrega(datos) {
           String(s.d.inm.propietario || '').split(' ')[0], cuerpo,
           htmlBotonesCorreo([{ texto: '🔑 Ver los horarios', color: '#b8860b', url: urlSalaEntrega(idCita, 'p', _tokenPropietarioEntrega(idCita)) }]));
       } else {
-        enviarCorreoCita(s.d.correoInquilino, '🔑 Te propusieron horarios para la entrega - Gold Life', 'ELIGE EL HORARIO',
-          s.d.inquilino.split(' ')[0], cuerpo,
-          htmlBotonesCorreo([{ texto: '🔑 Ver los horarios', color: '#b8860b', url: urlSalaEntrega(idCita, 'i', String(valorCita(fila, col, 'TOKEN PROPIETARIO'))) }]));
+        _encolarAvisoInquilino_(s, 'HORARIOS DE ENTREGA', cuerpo.replace('Elige el que te sirva', 'Entra a tu sala, elige el que te sirva'));
       }
     } catch (e) { Logger.log('No se pudo avisar la propuesta de entrega: ' + e.message); }
     try {
@@ -285,7 +283,10 @@ function aceptarSalaEntrega(datos) {
     _cacheApartados = null;
 
     // Constancia a las dos partes y aviso a Leonardo
-    try {
+    if (s.rol === 'PROPIETARIO') {
+      try { _encolarAvisoInquilino_(s, 'ENTREGA AGENDADA', `La entrega del inmueble quedó para el <strong>${_textoHorario(ts)}</strong> (alrededor de una hora) en ${s.d.direccion}. Leonardo va a estar en la entrega.`); }
+      catch (e) { Logger.log('No se pudo encolar el aviso: ' + e.message); }
+    } else try {
       enviarPasoCita('AGENDADA', s.d.correoInquilino, {
         idCita: idCita, token: String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''), nombre: s.d.inquilino,
         servicio: 'Entrega del inmueble', direccion: s.d.direccion, inicio: inicio, duracionMin: TIPOS_AGENDA.ENTREGA.duracionMin
