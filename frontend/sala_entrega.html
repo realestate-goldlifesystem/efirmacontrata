@@ -638,6 +638,8 @@
 
     function pasoResumen() {
       const bloqueado = enviado();
+      // Ya enviado: página de éxito, sin la barra de pasos
+      if ($('barraPasos')) $('barraPasos').classList.toggle('oculto', bloqueado);
       const p = P();
       const fila = (icono, texto, nom) => `<div class="resumenFila"><span>${icono}</span><div>${texto}</div>` +
         (bloqueado ? '' : `<button class="cambiar" data-ir="${pasos().indexOf(nom) + 1}">Cambiar</button>`) + '</div>';
