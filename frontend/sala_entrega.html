@@ -89,6 +89,7 @@
     .confirmar .cuando { color: var(--oro); font-weight: 700; font-size: 17px; margin: 0 0 12px; }
     .confirmar p { color: var(--suave); font-size: 13.5px; line-height: 1.5; margin: 0 0 18px; }
     .confirmar .si { margin-top: 14px; width: 100%; border: 0; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; background: var(--oro); color: #0c0a09; }
+    .confirmar .no:disabled { opacity: .35; }
     .confirmar .no { width: 100%; border: 0; background: none; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 4px; }
     .ninguno { width: 100%; margin-top: 16px; padding: 15px; border-radius: 12px; border: 1.5px solid var(--oro); background: rgba(212,175,55,.08);
       color: var(--oro); font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -396,17 +397,22 @@
         '<div class="deslizar"><div class="relleno"></div><div class="texto">Desliza para agendar</div><div class="perilla">›</div></div>' +
         '<button class="si oculto">Sí, agendar la entrega</button><button class="no">Volver</button></div>';
       const qq = (c) => capa.querySelector(c);
-      const cerrar = () => capa.remove();
+      // Mientras agenda, no se puede cerrar ni volver
+      let agendando = false;
+      const cerrar = () => { if (!agendando) capa.remove(); };
       capa.onclick = (e) => { if (e.target === capa) cerrar(); };
       qq('.no').onclick = cerrar;
       qq('.si').onclick = () => {
+        if (agendando) return;
+        agendando = true;
+        qq('.no').disabled = true; qq('.no').classList.add('bloqueado');
         qq('.si').disabled = true; qq('.si').textContent = 'Agendando…';
         llamar('aceptarSalaEntrega', { timestamp: ts }).then(r => {
-          cerrar();
+          agendando = false; cerrar();
           if (!r.ok) { alert(r.mensaje || 'No pudimos agendar ese horario.'); return cargar(); }
           info.estado = 'AGENDADA';
           pintarExito('¡La entrega quedó agendada!', textoSlot(ts), r.mensaje || '');
-        }).catch(() => { qq('.si').disabled = false; qq('.si').textContent = 'Sí, agendar la entrega'; alert('Error de red. Intenta de nuevo.'); });
+        }).catch(() => { agendando = false; qq('.no').disabled = false; qq('.no').classList.remove('bloqueado'); qq('.si').disabled = false; qq('.si').textContent = 'Sí, agendar la entrega'; alert('Error de red. Intenta de nuevo.'); });
       };
       // Deslizar desde cualquier parte de la barra; al 80 % aparece el botón
       const pista = qq('.deslizar'), perilla = qq('.perilla'), relleno = qq('.relleno');
