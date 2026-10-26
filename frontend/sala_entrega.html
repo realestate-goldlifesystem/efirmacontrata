@@ -827,11 +827,11 @@
 
     // Barra con el avance REAL del servidor: el proceso anota su etapa y aquí se consulta cada segundo.
     // Entre consultas la barra se desliza suave hacia la etapa anunciada (sin pasarse de ella).
-    function progresoReal(titulo) {
+    function progresoReal(titulo, icono) {
       const prog = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
       const capa = document.createElement('div');
       capa.className = 'confirmar';
-      capa.innerHTML = `<div class="caja"><div class="icono">🗓️</div><h3>${esc(titulo)}…</h3>` +
+      capa.innerHTML = `<div class="caja"><div class="icono">${icono || '🗓️'}</div><h3>${esc(titulo)}…</h3>` +
         '<p class="cuando" id="pct">0 %</p><div class="barraP"><div id="barraP"></div></div><p id="etapaP">Iniciando…</p></div>';
       document.body.appendChild(capa);
       let v = 0, meta = 3, activo = true;
@@ -999,10 +999,11 @@
       $('enviarAvisos').onclick = () => {
         if (!lista.length) return;
         const b = $('enviarAvisos'); b.disabled = true; b.textContent = 'Enviando…';
-        llamar('enviarAvisosPropietario').then(r => {
+        const pr = progresoReal('Enviando', '📨');
+        llamar('enviarAvisosPropietario', { prog: pr.prog }).then(r => pr.fin(r && r.ok).then(() => r)).then(r => {
           if (!r.ok) { b.disabled = false; b.textContent = 'Enviar'; return alert(r.mensaje || 'No se pudo enviar.'); }
           recargar(null, r.mensaje);
-        }).catch(() => { b.disabled = false; b.textContent = 'Enviar'; alert('Error de red. Intenta de nuevo.'); });
+        }).catch(() => { pr.fin(false); b.disabled = false; b.textContent = 'Enviar'; alert('Error de red. Intenta de nuevo.'); });
       };
     }
 

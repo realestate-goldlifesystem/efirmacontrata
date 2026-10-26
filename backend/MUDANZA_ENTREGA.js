@@ -332,6 +332,7 @@ function enviarActaMudanza(datos) {
     const p = _procesoMudanza_(s.cita.fila, s.cita.col);
     if (p.estado !== 'APROBADA') return { ok: false, mensaje: 'Primero aprueba la fecha de mudanza.' };
     if (p.envio) return { ok: false, mensaje: 'Ya se envió a la administración.' };
+    _prog_(datos, 22, 'Preparando el documento de mudanza');
     let adjunto;
     if (p.formato === 'SI') {
       const v = (p.versiones || []).slice(-1)[0];
@@ -341,6 +342,7 @@ function enviarActaMudanza(datos) {
       adjunto = _actaSistemaPdf_(s);
     } else return { ok: false, mensaje: 'Primero dinos si el conjunto tiene formato propio.' };
 
+    _prog_(datos, 40, datos.modo === 'SISTEMA' ? 'Enviando el documento a la administración' : 'Enviándote el documento a tu correo');
     const ref = _referenciaInmueble_(s.d.inm.id, s.d.inm.tipoInmueble);
     const m = _datosMudanzaDe(s.cita.fila, s.cita.col);
     const asunto = 'Solicitud de mudanza · ' + (ref.referencia || s.d.direccion) + ' · ' + _textoMudanza_(m);
@@ -374,6 +376,7 @@ function enviarActaMudanza(datos) {
       p.envio = { modo: 'YO', fecha: new Date().toISOString() };
       _guardarProcesoMudanza_(s.cita, p, 'enviado al propietario para que él lo envíe a la administración');
     } else return { ok: false, mensaje: 'Acción no válida.' };
+    _prog_(datos, 55, 'Guardando el envío del documento');
     _correoSala_(s, 'INQUILINO', '🚚 Tu solicitud de mudanza va para la administración - Gold Life', 'MUDANZA',
       `La solicitud de tu mudanza del <strong>${_textoMudanza_(m)}</strong> ${datos.modo === 'SISTEMA' ? 'ya se envió a la administración del conjunto' : 'la envía el propietario a la administración'}.`);
     return { ok: true, mensaje: datos.modo === 'SISTEMA' ? 'Listo: lo enviamos a la administración y a ti te llegó copia.' : 'Listo: te lo enviamos a tu correo para que lo reenvíes.' };
@@ -423,6 +426,7 @@ function _encolarAvisoInquilino_(s, titulo, cuerpo) {
 /** El propietario terminó: le llega al inquilino un solo correo con todas sus respuestas. */
 function enviarAvisosPropietario(datos) {
   // Primero el documento a la administración, si el propietario ya eligió cómo (paso 3)
+  _prog_(datos, 8, 'Revisando lo que vas a enviar');
   const s0 = _salaEntrega_(datos);
   if (s0.error) return { ok: false, mensaje: s0.error };
   const p0 = _procesoMudanza_(_filaFresca_(s0.cita), s0.cita.col);
@@ -439,6 +443,7 @@ function enviarAvisosPropietario(datos) {
     const p = _procesoMudanza_(fila, s.cita.col);
     const avisos = p.avisosInq || [];
     if (!avisos.length) return { ok: false, mensaje: 'No hay nada nuevo para enviarle al inquilino.' };
+    _prog_(datos, 70, 'Armando el correo para el inquilino');
     const agendada = String(valorCita(fila, s.cita.col, 'ESTADO') || '').trim() !== ESTADO_POR_COORDINAR;
     const listo = agendada && p.estado === 'APROBADA' && (_esCasa_(s.d) || !!p.envio);
     const cuerpo = 'El propietario revisó todo lo de tu entrega:<br><br>' +
@@ -446,9 +451,11 @@ function enviarAvisosPropietario(datos) {
       (listo ? '<br><br>🎉 <strong>Todo quedó listo.</strong> Antes de la entrega te recordaremos la cita.' : '');
     delete p.avisosInq;
     _guardarProcesoMudanza_(Object.assign({}, s.cita, { fila: fila }), p, 'se le envió al inquilino el resumen del propietario (' + avisos.length + ')');
+    _prog_(datos, 85, 'Enviando el correo al inquilino');
     const sInq = Object.assign({}, s, { rol: 'INQUILINO', cita: Object.assign({}, s.cita, { fila: fila }) });
     _correoSala_(sInq, 'INQUILINO', listo ? '✅ Todo quedó listo para tu entrega - Gold Life' : '📬 El propietario respondió sobre tu entrega - Gold Life',
       listo ? 'TODO LISTO' : 'RESPUESTA DEL PROPIETARIO', cuerpo, listo ? '🔑 Ver mi sala de entrega' : '🔑 Abrir mi sala de entrega');
+    _prog_(datos, 96, 'Terminando');
     return { ok: true, mensaje: 'Listo: le enviamos todo a ' + s.d.inquilino.split(' ')[0] + ' en un solo correo.' };
   } finally { lock.releaseLock(); }
 }
