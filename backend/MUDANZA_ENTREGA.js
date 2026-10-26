@@ -95,7 +95,8 @@ const _textoMudanza_ = (m) => m && m.mudanza ? _fechaLarga_(new Date(m.mudanza +
 
 /** Al inquilino o al propietario, con su enlace de la sala. */
 function _correoSala_(s, rol, asunto, titulo, cuerpo, boton) {
-  if (rol === 'INQUILINO' && s.rol === 'PROPIETARIO') return _encolarAvisoInquilino_(s, titulo, cuerpo);
+  if (rol === 'INQUILINO' && s.rol === 'PROPIETARIO' &&
+    String(valorCita(_filaFresca_(s.cita), s.cita.col, 'ESTADO') || '').trim() !== ESTADO_POR_COORDINAR) return _encolarAvisoInquilino_(s, titulo, cuerpo);
   try {
     const esInq = rol === 'INQUILINO';
     const para = esInq ? s.d.correoInquilino : s.d.inm.correoPropietario;
@@ -114,11 +115,11 @@ function infoMudanza_(s) {
   const ultimaVersion = (p.versiones || []).slice(-1)[0] || null;
   return {
     reglas: s.rol === 'INQUILINO' ? reglasMudanza_(s) : { esCasa: _esCasa_(s.d) },
-    propuesta: datos ? { fecha: datos.mudanza, hora: datos.horaMudanza || '', texto: _textoMudanza_(datos), personas: (datos.personas || []).length, vehiculos: (datos.vehiculos || []).length,
+    propuesta: datos && datos.mudanza ? { fecha: datos.mudanza, hora: datos.horaMudanza || '', texto: _textoMudanza_(datos), personas: (datos.personas || []).length, vehiculos: (datos.vehiculos || []).length,
       // El detalle para que el propietario sepa a quién y qué vehículos aprueba
       personasDet: (datos.personas || []).map(x => ({ nombre: x.nombre, documento: _documentoCorto_(x.tipoDocumento || 'CC', x.documento), celular: x.celular || '' })),
       vehiculosDet: (datos.vehiculos || []).map(v => ({ tipo: v.tipo, marca: v.marca, modelo: v.modelo, placa: v.placa })) } : null,
-    estado: p.estado || (datos ? 'PROPUESTA' : ''),
+    estado: p.estado || (datos && datos.mudanza ? 'PROPUESTA' : ''),
     motivo: p.motivo || '',
     formato: p.formato || '',                      // '' | 'NO' | 'SI'
     plantilla: p.plantilla ? { nombre: p.plantilla.nombre } : null,
@@ -266,7 +267,7 @@ function cargarFormatoMudanza(datos) {
     if (p.envio) return { ok: false, mensaje: 'El formato ya se envió a la administración.' };
     const ultima = (p.versiones || []).slice(-1)[0];
     // Antes de enviar el paso a paso todavía puede reemplazarlo (el propietario no lo ha visto)
-    const sinEnviar = !_datosMudanzaDe(s.cita.fila, s.cita.col);
+    const sinEnviar = !(_datosMudanzaDe(s.cita.fila, s.cita.col) || {}).mudanza;
     if (ultima && ultima.estado !== 'CORREGIR' && !sinEnviar) return { ok: false, mensaje: ultima.estado === 'APROBADA' ? 'El propietario ya aprobó tu formato.' : 'Ya cargaste el formato: el propietario lo está revisando.' };
     if (ultima && sinEnviar) { try { DriveApp.getFileById(ultima.id).setTrashed(true); } catch (e) {} p.versiones.pop(); }
     const n = (p.versiones || []).length + 1;
@@ -473,4 +474,24 @@ function elegirEnvioActa(datos) {
     _guardarProcesoMudanza_(Object.assign({}, s.cita, { fila: fila }), p, 'el propietario eligió ' + (datos.modo === 'SISTEMA' ? 'que lo envíe el sistema (' + correo + ')' : 'enviarlo él mismo') + '; se envía al final');
     return { ok: true, mensaje: 'Listo. Se envía cuando toques "Enviar" en el último paso.' };
   } finally { lock.releaseLock(); }
+}
+
+/** El inquilino envió el formulario de la entrega: un solo correo al propietario (horarios + quién vive + vehículos). */
+function avisarEntregaAlPropietario_(s, datosEnt) {
+  const fila = _filaFresca_(s.cita);
+  const p = _procesoMudanza_(fila, s.cita.col);
+  const conHorarios = p.horariosPendientes && String(valorCita(fila, s.cita.col, 'ESTADO') || '').trim() === ESTADO_POR_COORDINAR &&
+    String(valorCita(fila, s.cita.col, 'PROPUESTO POR') || '') === 'INQUILINO';
+  const pedidos = conHorarios ? _pedidosDe(fila, s.cita.col) : [];
+  if (p.horariosPendientes) { delete p.horariosPendientes; _guardarProcesoMudanza_(Object.assign({}, s.cita, { fila: fila }), p, 'el inquilino terminó el formulario de la entrega'); }
+  const personas = (datosEnt.personas || []).map(x => x.nombre + ' (' + _documentoCorto_(x.tipoDocumento || 'CC', x.documento) + ')');
+  const vehiculos = (datosEnt.vehiculos || []).map(v => (v.tipo === 'MOTO' ? 'Moto ' : 'Carro ') + v.marca + ' ' + v.modelo + ' · ' + v.placa);
+  const cuerpo = (pedidos.length
+      ? `<strong>${s.d.inquilino}</strong> eligió estos horarios para <strong>recibir el inmueble</strong> (elige uno):<br>` + pedidos.map(t => '• ' + _textoHorario(t)).join('<br>') + '<br><br>'
+      : `<strong>${s.d.inquilino}</strong> completó sus datos para la entrega.<br><br>`) +
+    `<strong>👥 También vivirán:</strong> ${personas.length ? personas.join(', ') : 'nadie más'}<br>` +
+    `<strong>🚗 Vehículos:</strong> ${vehiculos.length ? vehiculos.join('; ') : 'ninguno'}<br><br>` +
+    '📌 Primero se acuerda la entrega; cuando quede agendada, el inquilino propone su mudanza y te llega para aprobarla.';
+  _correoSala_(s, 'PROPIETARIO', pedidos.length ? '🔑 El inquilino eligió horarios para la entrega - Gold Life' : '🔑 Datos del inquilino para la entrega - Gold Life',
+    pedidos.length ? 'ELIGE EL HORARIO' : 'DATOS DE LA ENTREGA', cuerpo, pedidos.length ? '🔑 Elegir el horario de la entrega' : '🔑 Abrir la sala de entrega');
 }

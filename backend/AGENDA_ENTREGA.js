@@ -284,14 +284,14 @@ function aceptarSalaEntrega(datos) {
     _cacheApartados = null;
 
     // Constancia a las dos partes y aviso a Leonardo
-    if (s.rol === 'PROPIETARIO') {
-      try { _encolarAvisoInquilino_(s, 'ENTREGA AGENDADA', `La entrega del inmueble quedó para el <strong>${_textoHorario(ts)}</strong> (alrededor de una hora) en ${s.d.direccion}. Leonardo va a estar en la entrega.`); }
-      catch (e) { Logger.log('No se pudo encolar el aviso: ' + e.message); }
-    } else try {
-      enviarPasoCita('AGENDADA', s.d.correoInquilino, {
-        idCita: idCita, token: String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''), nombre: s.d.inquilino,
-        servicio: 'Entrega del inmueble', direccion: s.d.direccion, inicio: inicio, duracionMin: TIPOS_AGENDA.ENTREGA.duracionMin
-      });
+    try {
+      const tokInq = String(valorCita(fila, col, 'TOKEN PROPIETARIO') || '');
+      const c = { idCita: idCita, token: tokInq, nombre: s.d.inquilino, servicio: 'Entrega del inmueble', direccion: s.d.direccion, inicio: inicio, duracionMin: TIPOS_AGENDA.ENTREGA.duracionMin };
+      const m = correoPasoCita('AGENDADA', c);
+      enviarCorreoCita(s.d.correoInquilino, m.asunto, m.titulo, m.nombre,
+        m.mensaje + '<br><br>🚚 <strong>Ahora sigue tu mudanza:</strong> entra a tu sala de entrega y elige el día y la hora (siempre después de la entrega).',
+        htmlBotonesCorreo([{ texto: '🚚 Elegir mi mudanza', color: '#b8860b', url: urlSalaEntrega(idCita, 'i', tokInq) }]) + (m.secundario || ''),
+        [archivoCalendarioCita(c)]);
     } catch (e) { Logger.log('No se pudo avisar al inquilino: ' + e.message); }
     try {
       if (s.d.inm.correoPropietario) enviarCorreoCita(s.d.inm.correoPropietario, `🔑 Entrega agendada: ${_textoHorario(ts)} - Gold Life`, 'ENTREGA AGENDADA',
@@ -323,7 +323,7 @@ function aceptarSalaEntrega(datos) {
     // Pagos (VIDA_CONTRATO_PAGOS.js): accesos del propietario y cobro del primer mes
     try { alAcordarEntrega_(s.d.inm.id); } catch (e) { Logger.log('⚠️ alAcordarEntrega_: ' + e.message); }
     // Si el inquilino ya dio los datos de la mudanza, salen las cartas
-    if (_datosMudanzaDe(fila, col)) generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
+    if ((_datosMudanzaDe(fila, col) || {}).mudanza) generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
     // Si el propietario cargó el formato antes de acordar la entrega, ahora le llega al inquilino
     try { avisarFormatoAlInquilino_(s); } catch (e) { Logger.log('⚠️ Aviso del formato: ' + e.message); }
     return { ok: true, mensaje: 'Listo: la entrega quedó para el ' + _textoHorario(ts) + '. Les enviamos los detalles por correo.' };
@@ -477,44 +477,59 @@ function guardarDatosEntrega(datos) {
     if ([ESTADOS_CITA.CANCELADA, ESTADOS_CITA.ASISTIDA, ESTADOS_CITA.INASISTIDA].indexOf(estado) !== -1) return { ok: false, mensaje: 'Esta entrega ya no está activa.' };
 
     const limpio = (t, max) => String(t || '').replace(/\s+/g, ' ').trim().slice(0, max || 80);
-    const mudanza = String(datos.mudanza || '');
-    const horaMudanza = String(datos.horaMudanza || '');
+    // Dos formularios (27-oct-2026): ENTREGA = horarios + quién vive + vehículos; MUDANZA = día y hora,
+    // solo con la entrega ya agendada. Lo de la entrega se da una vez (en el que llegue primero).
+    const etapa = datos.etapa === 'ENTREGA' ? 'ENTREGA' : 'MUDANZA';
     const antes = _datosMudanzaDe(fila, col);
     const proc = _procesoMudanza_(fila, col);
-    if (antes && proc.estado !== 'NO_POSIBLE') return { ok: false, mensaje: 'Ya enviaste tus datos. Te avisamos por correo cuando el propietario responda.' };
-    if (antes && proc.estado === 'NO_POSIBLE' && antes.mudanza === String(datos.mudanza || '') && (antes.horaMudanza || '') === String(datos.horaMudanza || ''))
-      return { ok: false, mensaje: 'Esa fecha el propietario dijo que no es posible. Elige otra.' };
-    if (!antes && proc.formato === 'SI') {
+    const datosYa = !!(antes && (antes.enviadoEntrega || antes.mudanza));
+    let personas = datosYa ? (antes.personas || []) : null, vehiculos = datosYa ? (antes.vehiculos || []) : null;
+    if (!datosYa) {
+      personas = (Array.isArray(datos.personas) ? datos.personas : []).slice(0, MAX_OTRAS_PERSONAS).map(p => ({
+        nombre: limpio(p.nombre), tipoDocumento: TIPOS_DOCUMENTO[p.tipoDocumento] ? p.tipoDocumento : 'CC', documento: limpio(p.documento, 20).replace(/[^\dA-Za-z]/g, ''), celular: limpio(p.celular, 20), correo: limpio(p.correo, 80)
+      }));
+      if (personas.some(p => p.nombre.length < 3 || p.documento.length < 5)) return { ok: false, mensaje: 'Escribe el nombre y el documento de cada persona.' };
+      vehiculos = (Array.isArray(datos.vehiculos) ? datos.vehiculos : []).map(v => ({
+        tipo: v.tipo === 'MOTO' ? 'MOTO' : 'CARRO', marca: limpio(v.marca, 40), modelo: limpio(v.modelo, 40), placa: String(v.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+      }));
+      if (vehiculos.filter(v => v.tipo === 'MOTO').length > MAX_VEHICULOS_TIPO || vehiculos.filter(v => v.tipo === 'CARRO').length > MAX_VEHICULOS_TIPO) return { ok: false, mensaje: 'Máximo 5 carros y 5 motos.' };
+      const malo = vehiculos.find(v => !v.marca || !v.modelo || !(v.tipo === 'MOTO' ? /^[A-Z]{3}\d{2}[A-Z]$/ : /^[A-Z]{3}\d{3}$/).test(v.placa));
+      if (malo) return { ok: false, mensaje: 'Revisa el vehículo ' + (malo.placa || malo.marca || '') + ': marca, modelo y placa (carro ABC123, moto ABC12D).' };
+    }
+    const escribirDatos = (g, nota) => {
+      if (col['DATOS ENTREGA']) sheet.getRange(numFila, col['DATOS ENTREGA']).setValue(JSON.stringify(g));
+      if (col['ULTIMO CAMBIO']) sheet.getRange(numFila, col['ULTIMO CAMBIO']).setValue(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss') + ' · ' + nota);
+    };
+
+    if (etapa === 'ENTREGA') {
+      if (datosYa) return { ok: false, mensaje: 'Ya enviaste tus datos. Te avisamos por correo cuando el propietario responda.' };
+      const guardar = { mudanza: '', horaMudanza: '', personas: personas, vehiculos: vehiculos, enviadoEntrega: true, actualizado: new Date().toISOString() };
+      escribirDatos(guardar, 'el inquilino envió el formulario de la entrega');
+      // Un solo correo al propietario: los horarios (si esperaban) + quién vive + vehículos
+      try { avisarEntregaAlPropietario_(s, guardar); } catch (e) { Logger.log('⚠️ Aviso de la entrega: ' + e.message); }
+      return { ok: true, mensaje: '¡Listo! Le enviamos al propietario tus horarios y tus datos. Cuando la entrega quede agendada, eliges el día de tu mudanza.' };
+    }
+
+    // ---- MUDANZA
+    if (estado === ESTADO_POR_COORDINAR) return { ok: false, mensaje: 'Primero tiene que quedar agendada la entrega del inmueble.' };
+    const mudanza = String(datos.mudanza || '');
+    const horaMudanza = String(datos.horaMudanza || '');
+    const tenia = !!(antes && antes.mudanza);
+    if (tenia && proc.estado !== 'NO_POSIBLE') return { ok: false, mensaje: 'Ya enviaste tu mudanza. Te avisamos por correo cuando el propietario responda.' };
+    if (tenia && antes.mudanza === mudanza && (antes.horaMudanza || '') === horaMudanza) return { ok: false, mensaje: 'Esa fecha el propietario dijo que no es posible. Elige otra.' };
+    if (!tenia && proc.formato === 'SI') {
       const v = (proc.versiones || []).slice(-1)[0];
       if (!v || v.estado === 'CORREGIR') return { ok: false, mensaje: 'Primero carga el formato de la administración lleno.' };
     }
-    // La fecha ya aprobada no se vuelve a validar si no cambió
-    const mismaFecha = antes && antes.mudanza === mudanza && antes.horaMudanza === horaMudanza;
-    const errorFecha = mismaFecha ? '' : _validarMudanza_(s, mudanza, horaMudanza);
+    const errorFecha = _validarMudanza_(s, mudanza, horaMudanza);
     if (errorFecha) return { ok: false, mensaje: errorFecha };
-    const personas = (Array.isArray(datos.personas) ? datos.personas : []).slice(0, MAX_OTRAS_PERSONAS).map(p => ({
-      nombre: limpio(p.nombre), tipoDocumento: TIPOS_DOCUMENTO[p.tipoDocumento] ? p.tipoDocumento : 'CC', documento: limpio(p.documento, 20).replace(/[^\dA-Za-z]/g, ''), celular: limpio(p.celular, 20), correo: limpio(p.correo, 80)
-    }));
-    if (personas.some(p => p.nombre.length < 3 || p.documento.length < 5)) return { ok: false, mensaje: 'Escribe el nombre y el documento de cada persona.' };
-    const vehiculos = (Array.isArray(datos.vehiculos) ? datos.vehiculos : []).map(v => ({
-      tipo: v.tipo === 'MOTO' ? 'MOTO' : 'CARRO', marca: limpio(v.marca, 40), modelo: limpio(v.modelo, 40), placa: String(v.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-    }));
-    if (vehiculos.filter(v => v.tipo === 'MOTO').length > MAX_VEHICULOS_TIPO || vehiculos.filter(v => v.tipo === 'CARRO').length > MAX_VEHICULOS_TIPO) return { ok: false, mensaje: 'Máximo 5 carros y 5 motos.' };
-    const malo = vehiculos.find(v => !v.marca || !v.modelo || !(v.tipo === 'MOTO' ? /^[A-Z]{3}\d{2}[A-Z]$/ : /^[A-Z]{3}\d{3}$/).test(v.placa));
-    if (malo) return { ok: false, mensaje: 'Revisa el vehículo ' + (malo.placa || malo.marca || '') + ': marca, modelo y placa (carro ABC123, moto ABC12D).' };
-
-    const guardar = { mudanza: mudanza, horaMudanza: horaMudanza, personas: personas, vehiculos: vehiculos, actualizado: new Date().toISOString() };
-    if (col['DATOS ENTREGA']) sheet.getRange(numFila, col['DATOS ENTREGA']).setValue(JSON.stringify(guardar));
-    if (col['ULTIMO CAMBIO']) sheet.getRange(numFila, col['ULTIMO CAMBIO']).setValue(Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss') + ' · el inquilino guardó los datos de la mudanza');
-
-    // Al propietario le llega la fecha de mudanza para aprobar (si es nueva o cambió)
-    try { alProponerMudanza_(s, guardar, antes); } catch (e) { Logger.log('⚠️ Aviso de la mudanza: ' + e.message); }
-    // Con la entrega ya agendada, la carta de bienvenida sale de una (y se rehace si cambia algo)
-    if (estado !== ESTADO_POR_COORDINAR) {
-      const filaNueva = sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0];
-      generarCartasEntrega_(sheet, col, numFila, filaNueva);
-    }
-    return { ok: true, mensaje: mismaFecha ? '¡Gracias! Guardamos tus datos.' : '¡Gracias! Guardamos tus datos y le enviamos la fecha de mudanza al propietario para que la apruebe.' };
+    const guardar = { mudanza: mudanza, horaMudanza: horaMudanza, personas: personas, vehiculos: vehiculos, enviadoEntrega: true, actualizado: new Date().toISOString() };
+    escribirDatos(guardar, 'el inquilino propuso la mudanza');
+    // Al propietario le llega la fecha de mudanza para aprobar
+    try { alProponerMudanza_(s, guardar, tenia ? antes : null); } catch (e) { Logger.log('⚠️ Aviso de la mudanza: ' + e.message); }
+    // La carta de bienvenida sale con la fecha de la mudanza (y se rehace si cambia)
+    generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
+    return { ok: true, mensaje: '¡Listo! Le enviamos la fecha de tu mudanza al propietario para que la apruebe.' };
   } finally {
     lock.releaseLock();
   }
