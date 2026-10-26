@@ -604,12 +604,15 @@ function ccRegistrarPago(datos) {
         var previo = previos.next();
         if (previo.getName().indexOf(baseComprobante) === 0) previo.setTrashed(true);
       }
-      carpetaComprobantes.createFile(Utilities.newBlob(Utilities.base64Decode(datos.base64),
+      var archivoComprobante = carpetaComprobantes.createFile(Utilities.newBlob(Utilities.base64Decode(datos.base64),
                                                        String(datos.mimeType).toLowerCase(), nombreComprobante));
     }
 
     // Con cobro del primer canon la comisión no la paga el propietario: se descontó
-    var r = ccGenerarYEnviarRecibo(sheet, fila, { formaPago: ex ? 'DESCONTADO DEL PRIMER CANON' : formaPago, fechaPago: datos.fechaPago, soloAdmin: esPrueba });
+    var r = ccGenerarYEnviarRecibo(sheet, fila, {
+      formaPago: formaPago, fechaPago: datos.fechaPago, soloAdmin: esPrueba,
+      excedente: ex ? { ex: ex, comprobante: comprobanteBlob, idArchivo: (typeof archivoComprobante !== 'undefined' && archivoComprobante) ? archivoComprobante.getId() : '' } : null
+    });
     if (!r.enviada) {
       return { success: false, message: (esPrueba ? '' : 'El comprobante quedó guardado, pero el recibo NO se envió: ') + r.motivo };
     }
@@ -628,11 +631,7 @@ function ccRegistrarPago(datos) {
     }
     if (ex) {
       try {
-        ceAvisarExcedenteAlPropietario({
-          idRegistro: idRegistro, nombre: String(vFila('NOMBRES Y APELLIDOS DEL PROPIETARIO') || ''), correo: String(vFila('Correo electrónico') || '').trim(),
-          direccion: ccDireccionCertificado(vFila('CODIGO DE REGISTRO')) || String(vFila('Ingrese la Dirección del inmueble') || ''),
-          ex: ex, formaPago: formaPago, fechaPago: ccPartesDeFecha(datos.fechaPago).corta
-        }, comprobanteBlob, esPrueba);
+        // El correo al propietario ya salió junto con el recibo: aquí solo se marca la hoja
         if (!esPrueba) {
           sheet.getRange(fila, _ceColumna(sheet, headers, EXCEDENTE.COL_VALIDACION)).setValue('⏳ PENDIENTE');
           var iDet2 = headers.indexOf('DETALLES DEL ESTADO DEL INMUEBLE');
@@ -779,6 +778,9 @@ function ccGenerarYEnviarRecibo(sheet, fila, op) {
 
     var canon = Number(v(CUENTA_COBRO.COL_CANON_FINAL));
     var val = ccValoresRecibo(canon, calc.valor);
+    // Cobro del primer canon (26-oct-2026): el recibo muestra lo que pagó el inquilino, los
+    // honorarios descontados y lo que se le giró al propietario, como el recibo de administración
+    var exR = op.excedente ? op.excedente.ex : null;
     var nombre = String(v('NOMBRES Y APELLIDOS DEL PROPIETARIO') || '').trim().toUpperCase();
     var cedula = ccFormatoCedula(v('Número de documento'));
     var correo = String(v('Correo electrónico') || '').trim();
@@ -844,32 +846,45 @@ function ccGenerarYEnviarRecibo(sheet, fila, op) {
         // La dirección es el último renglón del párrafo (va tras dos saltos de línea)
         par.replaceText('[^\\x0B\\r\\n]+$', direccion);
         direccionPuesta = par.getText().indexOf('ubicado en:') !== -1 && par.getText().indexOf(direccion) !== -1;
+      } else if (exR && /^Cobro Por Gesti/.test(t)) {
+        par.replaceText('Cobro Por Gesti.n', 'Pagos Recibidos Por Gestión');
+      } else if (exR && /^Beneficios y Promociones/.test(t)) {
+        par.replaceText('Beneficios y Promociones', 'Pagos Realizados Por Gestión');
       } else if (t.indexOf('Pago de arriendo del mes en mención') !== -1) {
-        par.replaceText('\\$\\s*-?[\\d\\.]+', '$  ' + ccMiles(val.gestion));
+        if (exR) par.replaceText('Pago de arriendo del mes en mención', 'Pago de arriendo del primer mes (canon y administración)');
+        par.replaceText('\\$\\s*-?[\\d\\.]+', '$  ' + ccMiles(exR ? exR.canon + exR.admin : val.gestion));
       } else if (t.indexOf('Beneficio de descuento') !== -1) {
-        par.replaceText('\\$\\s*-?[\\d\\.]+', '$    ' + (val.descuento ? '-' + ccMiles(val.descuento) : '0'));
+        if (exR) {
+          par.replaceText('Beneficio de descuento', 'Honorarios de corretaje Real Estate - Gold Life System (' + Math.round(exR.porcentaje * 100) + ' %)');
+          par.replaceText('\\$\\s*-?[\\d\\.]+', '$  ' + ccMiles(exR.comision));
+        } else {
+          par.replaceText('\\$\\s*-?[\\d\\.]+', '$    ' + (val.descuento ? '-' + ccMiles(val.descuento) : '0'));
+        }
       } else if (/^Total con deducciones:/.test(t)) {
-        par.replaceText('Total con deducciones: .*', 'Total con deducciones: $ ' + ccMiles(val.total));
+        par.replaceText('Total con deducciones: .*', 'Total con deducciones: $ ' + ccMiles(exR ? exR.excedente : val.total));
       } else if (/^Forma de pago:/.test(t)) {
-        par.replaceText('Forma de pago: .*', 'Forma de pago: ' + String(op.formaPago).toUpperCase());
+        par.replaceText('Forma de pago: .*', 'Forma de pago: ' + (exR ? 'DESCONTADO DEL PRIMER CANON' : String(op.formaPago).toUpperCase()));
       } else if (/^Pago recibido:/.test(t)) {
-        par.replaceText('Pago recibido: .*', 'Pago recibido: COMPLETO');
+        par.replaceText('Pago recibido: .*', exR ? 'Giro al propietario: ' + String(op.formaPago).toUpperCase() : 'Pago recibido: COMPLETO');
       } else if (/^Fecha de pago:/.test(t)) {
-        par.replaceText('Fecha de pago: .*', 'Fecha de pago: ' + pago.corta);
+        par.replaceText('Fecha de pago: .*', (exR ? 'Fecha de giro al propietario: ' : 'Fecha de pago: ') + pago.corta);
       }
     }
 
     // --- Control: nada de la plantilla de ejemplo puede sobrevivir ---
     var texto = body.getText();
-    var permitidas = [val.gestion, val.descuento, val.total];
+    var permitidas = exR ? [exR.canon + exR.admin, exR.comision, exR.excedente] : [val.gestion, val.descuento, val.total];
     var cifras = ccCifrasEnPesos(texto);
     var ajenas = cifras.filter(function (c) { return permitidas.indexOf(c) === -1; });
     var problemas = [];
     if (!direccionPuesta) problemas.push('no pude ubicar la dirección');
     if (cifras.length < 3 || ajenas.length) problemas.push('cifras que no cuadran (' + cifras.map(ccMiles).join(', ') + ')');
     if (cliente.getText().indexOf(nombre) === -1 || cliente.getText().indexOf(cedula) === -1) problemas.push('el cliente no quedó bien');
-    if (texto.indexOf('Fecha de pago: ' + pago.corta) === -1) problemas.push('la fecha de pago no quedó');
-    if (texto.indexOf('Total con deducciones: $ ' + ccMiles(val.total)) === -1) problemas.push('el total no quedó');
+    if (texto.indexOf((exR ? 'Fecha de giro al propietario: ' : 'Fecha de pago: ') + pago.corta) === -1) problemas.push('la fecha de pago no quedó');
+    if (texto.indexOf('Total con deducciones: $ ' + ccMiles(exR ? exR.excedente : val.total)) === -1) problemas.push('el total no quedó');
+    // El comprobante del giro va dentro del recibo, debajo de la firma (si se pudo)
+    var comprobanteDentro = false;
+    if (!problemas.length && exR) comprobanteDentro = ccPegarComprobanteEnRecibo_(body, op.excedente);
     doc.saveAndClose();
     if (problemas.length) return falla('El recibo no quedó bien llenado: ' + problemas.join('; ') + '. No se envió: revísalo a mano.', calc.valor);
 
@@ -894,6 +909,23 @@ function ccGenerarYEnviarRecibo(sheet, fila, op) {
       htmlBody: tpl.evaluate().getContent(),
       attachments: [pdfBlob]
     };
+    if (exR) {
+      var tplEx = HtmlService.createTemplateFromFile('backend/email_notificacion');
+      tplEx.TITULO = '🧾 Recibo y giro del primer mes de arriendo';
+      tplEx.NOMBRE_CLIENTE = nombre;
+      tplEx.MENSAJE_PRINCIPAL = 'Recibimos el primer mes de arriendo del inmueble en <strong>' + direccion + '</strong> y te giramos tu parte:<br><br>' +
+        '• Pago del primer mes (canon y administración): $ ' + ccMiles(exR.canon + exR.admin) + '<br>' +
+        '• Honorarios de corretaje (' + Math.round(exR.porcentaje * 100) + ' %): − $ ' + ccMiles(exR.comision) + '<br>' +
+        '<strong>Girado a tu cuenta: $ ' + ccMiles(exR.excedente) + '</strong> (' + String(op.formaPago).toUpperCase() + ', ' + pago.corta + ').';
+      tplEx.MENSAJE_SECUNDARIO = 'Te adjuntamos el recibo' + (comprobanteDentro ? ', con el comprobante del giro al final.' : ' y, aparte, el comprobante del giro.') +
+        ' Por favor confirma que lo recibiste; si algo no cuadra, cuéntanos desde el mismo botón.';
+      tplEx.URL_ACCION = urlValidarExcedente(idRegistro);
+      tplEx.TEXTO_BOTON = '✅ Confirmar que lo recibí';
+      mensaje.subject = (op.soloAdmin ? '[PRUEBA] ' : '') + '🧾 Recibo y giro del primer mes: $ ' + ccMiles(exR.excedente) + ' - ' + direccion;
+      mensaje.htmlBody = tplEx.evaluate().getContent();
+      // Si no se pudo pegar dentro del recibo, el comprobante va como segundo adjunto
+      if (!comprobanteDentro && op.excedente.comprobante) mensaje.attachments.push(op.excedente.comprobante);
+    }
     if (!op.soloAdmin) mensaje.bcc = CUENTA_COBRO.CORREO_ADMIN;
     MailApp.sendEmail(mensaje);
 
@@ -1035,4 +1067,60 @@ function ccDireccionCertificado(cdr) {
     Logger.log('⚠️ No se pudo leer la dirección del certificado (' + cdr + '): ' + e.message);
     return '';
   }
+}
+
+/**
+ * Pega el comprobante del giro al final del recibo, debajo de la firma (26-oct-2026).
+ * Foto o captura: tal cual. PDF: la imagen de su primera página que genera Drive.
+ * Si no se puede, devuelve false y el comprobante va como segundo adjunto del correo.
+ */
+function ccPegarComprobanteEnRecibo_(body, exInfo) {
+  try {
+    // Si un intento anterior ya lo había pegado en esta copia de la plantilla, se quita
+    var pars = body.getParagraphs();
+    for (var i = 0; i < pars.length; i++) {
+      if (pars[i].getText().indexOf('COMPROBANTE DEL GIRO AL PROPIETARIO') !== -1) {
+        var el = pars[i];
+        // Con el salto de página que se puso antes (si no, queda una hoja en blanco)
+        var antes = el.getPreviousSibling();
+        if (antes && antes.getType() === DocumentApp.ElementType.PARAGRAPH && !antes.asParagraph().getText().trim() &&
+            antes.asParagraph().getNumChildren() && antes.asParagraph().getChild(0).getType() === DocumentApp.ElementType.PAGE_BREAK) el = antes;
+        while (el) { var sig = el.getNextSibling(); try { el.removeFromParent(); } catch (e) { el.clear(); } el = sig; }
+        break;
+      }
+    }
+    var imagen = null;
+    var tipo = exInfo.comprobante ? String(exInfo.comprobante.getContentType()).toLowerCase() : '';
+    if (/^image\//.test(tipo)) {
+      imagen = exInfo.comprobante;
+    } else if (tipo === 'application/pdf' && exInfo.idArchivo) {
+      imagen = ccPrimeraPaginaPdf_(exInfo.idArchivo);
+    }
+    if (!imagen) return false;
+    body.appendPageBreak();
+    body.appendParagraph('COMPROBANTE DEL GIRO AL PROPIETARIO').setBold(true).setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    var img = body.appendImage(imagen);
+    var ancho = 450;
+    if (img.getWidth() > ancho) img.setHeight(Math.round(img.getHeight() * ancho / img.getWidth())).setWidth(ancho);
+    try { img.getParent().asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER); } catch (e) {}
+    return true;
+  } catch (e) {
+    Logger.log('⚠️ No se pudo pegar el comprobante en el recibo: ' + e.message);
+    return false;
+  }
+}
+
+/** Imagen grande de la primera página de un PDF guardado en Drive (la miniatura de Drive). */
+function ccPrimeraPaginaPdf_(idArchivo) {
+  var token = ScriptApp.getOAuthToken();
+  for (var intento = 0; intento < 4; intento++) {
+    var meta = JSON.parse(UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + idArchivo + '?fields=thumbnailLink',
+      { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true }).getContentText());
+    if (meta.thumbnailLink) {
+      var r = UrlFetchApp.fetch(meta.thumbnailLink.replace(/=s\d+$/, '=s1600'), { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+      if (r.getResponseCode() === 200 && /^image\//.test(String(r.getHeaders()['Content-Type'] || ''))) return r.getBlob();
+    }
+    Utilities.sleep(3000);   // Drive genera la miniatura unos segundos después de subir el archivo
+  }
+  return null;
 }
