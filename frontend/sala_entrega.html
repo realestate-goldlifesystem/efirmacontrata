@@ -213,6 +213,13 @@
       color: #fde68a; background: rgba(212,175,55,.1); border: 1px solid rgba(212,175,55,.45); border-left: 4px solid var(--oro); }
     .rechazoPide { font-weight: 600; color: #f5f5f4; }
     .congelado { pointer-events: none; } .congelado .hora, .congelado input { opacity: .6; }
+    /* Subtítulo de qué formulario es: entrega o mudanza */
+    .etiquetaForm { display: flex; justify-content: center; margin-top: 18px; }
+    .etiquetaForm span { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--oro); background: linear-gradient(135deg, rgba(212,175,55,.16), rgba(212,175,55,.05));
+      border: 1px solid rgba(212,175,55,.45); box-shadow: 0 4px 18px rgba(212,175,55,.08); }
+    .etiquetaForm + h1 { margin-top: 12px; }
+    body.visor .etiquetaForm { display: none; }
     textarea:focus { outline: none; border-color: var(--oro); }
   </style>
   <script src="aviso.js?v=1"></script>
@@ -229,6 +236,7 @@
     </section>
 
     <section id="contenido" class="oculto">
+      <div class="etiquetaForm oculto" id="etiquetaForm"></div>
       <h1 id="saludo"></h1>
       <p class="inmueble" id="inmueble"></p>
       <div id="vista"></div>
@@ -262,7 +270,7 @@
     function pintar() {
       const otro = esc(primerNombre(info.otro) || (info.rol === 'INQUILINO' ? 'el propietario' : 'el inquilino'));
       $('saludo').textContent = 'Hola ' + primerNombre(info.nombre) + ' 👋';
-      $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
+      $('inmueble').textContent = '📍 ' + (info.direccion || '');
       if (info.estado === 'AGENDADA') return pintarExito('¡La entrega quedó agendada!', textoSlot(info.agendada), 'Te enviamos los detalles por correo. Antes de la entrega te recordaremos la cita.');
       if (info.estado === 'CERRADA') return pintarExito('Esta entrega ya no está activa', '', 'Si necesitas algo, escríbele a Leonardo.', true);
       const deOtro = info.pedidos.length && info.propuestoPor && info.propuestoPor !== info.rol;
@@ -483,6 +491,13 @@
     const leerLocal = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
     const grabarLocal = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
     const P = () => info.proceso || {};
+    function etiquetaFormulario() {
+      const e = $('etiquetaForm'); if (!e || !info) return;
+      const tipo = String(info.tipoInmueble || 'inmueble').toLowerCase();
+      if (info.estado === 'CERRADA') return e.classList.add('oculto');
+      e.innerHTML = info.estado === 'AGENDADA' ? `<span>🚚 Mudanza al ${esc(tipo)}</span>` : `<span>🔑 Entrega del ${esc(tipo)}</span>`;
+      e.classList.remove('oculto');
+    }
     const fechaTexto = (f) => { const d = new Date(f + 'T12:00:00'); return DIAS[d.getDay()] + ' ' + d.getDate() + ' de ' + MESES[d.getMonth()]; };
     const horaTexto = (h) => { let x = Number(h.slice(0, 2)); const s = x >= 12 ? 'PM' : 'AM'; x = x % 12 || 12; return x + ':' + h.slice(3) + ' ' + s; };
 
@@ -507,7 +522,8 @@
 
     function iniciarInquilino() {
       $('saludo').textContent = 'Hola ' + primerNombre(info.nombre) + ' 👋';
-      $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
+      $('inmueble').textContent = '📍 ' + (info.direccion || '');
+      etiquetaFormulario();
       mudanza = info.mudanza;
       formFecha = mudanza ? (mudanza.mudanza || '') : ''; formHora = mudanza ? (mudanza.horaMudanza || '') : '';
       formPersonas = (mudanza && mudanza.personas || []).map(p => Object.assign({}, p));
@@ -587,6 +603,7 @@
     }
 
     function irPaso(n) {
+      etiquetaFormulario();
       paso = n; barraPasos();
       if ($('barraPasos')) $('barraPasos').classList.toggle('oculto', enviado());
       const caja = $('bloqueMudanza'); if (caja) caja.remove();
@@ -858,7 +875,8 @@
 
     function iniciarPropietario(mantener) {
       $('saludo').textContent = 'Hola ' + primerNombre(info.nombre) + ' 👋';
-      $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
+      $('inmueble').textContent = '📍 ' + (info.direccion || '');
+      etiquetaFormulario();
       if (todoListoProp() || info.estado === 'CERRADA') return finalPropietario();
       // Formulario de la entrega: una sola pantalla, sin pasos
       if (info.estado !== 'AGENDADA') {
@@ -910,6 +928,7 @@
     }
 
     function irPasoP(n) {
+      etiquetaFormulario();
       document.body.classList.remove('visor');
       pasoP = n; barraProp();
       const caja = $('bloqueMudanza'); if (caja) caja.remove();
