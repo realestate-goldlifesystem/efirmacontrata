@@ -643,7 +643,7 @@
         (bloqueado ? '' : `<button class="cambiar" data-ir="${pasos().indexOf(nom) + 1}">Cambiar</button>`) + '</div>';
       const todoListo = info.estado === 'AGENDADA' && p.estado === 'APROBADA' && ((p.reglas && p.reglas.esCasa) || p.envio);
       const titulo = todoListo ? '🎉 Todo quedó listo' : bloqueado ? '✓ Ya enviaste tu información' : p.estado === 'NO_POSIBLE' ? 'Elige otra fecha y envía' : 'Revisa y envía';
-      $('vista').innerHTML = '<div class="bloque entra"><h2>' + titulo + '</h2>' + (mudanza ? estadoMudanzaHtml() : '') +
+      $('vista').innerHTML = '<div class="bloque entra">' + (bloqueado ? '<div class="exito"><div class="check">✓</div></div><h2 class="centro">' : '<h2>') + titulo + '</h2>' + (mudanza ? estadoMudanzaHtml() : '') +
         fila('🚚', formFecha && formHora ? 'Mudanza el <b>' + esc(fechaTexto(formFecha)) + '</b> a las <b>' + esc(horaTexto(formHora)) + '</b>' : '<span class="nota">Falta el día y la hora</span>', 'Mudanza') +
         fila('👥', formPersonas.length ? 'También viven: ' + formPersonas.map(x => '<b>' + esc(x.nombre) + '</b>').join(', ') : 'Solo tú', 'Personas') +
         fila('🚗', formVehiculos.length ? formVehiculos.map(v => esc((v.tipo === 'MOTO' ? 'Moto ' : 'Carro ') + v.marca + ' ' + v.modelo) + ' · <b>' + esc(v.placa) + '</b>').join('<br>') : 'Sin vehículos', 'Vehículos') +
@@ -723,8 +723,11 @@
       if (!caja || p.formato !== 'SI') return;
       const v = p.version;
       let h = '<div class="bloque entra"><h2>📄 Formato de la administración</h2>';
+      const corregir = v && v.estado === 'CORREGIR';
       if (p.envio) h += '<div class="aviso ok">✅ Ya se envió a la administración.</div>';
-      else {
+      else if (mudanza && !corregir) {
+        h += v && v.estado === 'APROBADA' ? '<div class="aviso ok">✅ El propietario aprobó tu formato.</div>' : '<div class="aviso">⏳ El propietario está revisando tu formato.</div>';
+      } else {
         h += '<p class="nota">El conjunto tiene su propio formato de mudanza. Descárgalo, llénalo (y fírmalo si lo pide) y cárgalo aquí. El propietario lo revisa antes de enviarlo.</p>' +
           '<button class="agregar" id="bajarPlantilla">⬇️ Descargar el formato en blanco</button>';
         if (v && v.estado === 'EN_REVISION') h += mudanza ? `<div class="aviso">⏳ El propietario está revisando tu formato.</div>` : '<div class="aviso ok">✅ Ya cargaste tu formato. Si te equivocaste de archivo, puedes reemplazarlo antes de enviar.</div>';
