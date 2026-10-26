@@ -101,7 +101,7 @@ function triggerRecordatorioRenovacion(e) {
                  "<p>Si ya no deseas continuar con la comercialización o el cambio, por favor haz clic en el siguiente botón:</p>" +
                  "<br><a href='" + webhookUrl + "' style='padding: 10px 20px; background-color: #d32f2f; color: white; text-decoration: none; border-radius: 5px;'>No deseo continuar</a>";
                  
-  MailApp.sendEmail({
+  enviarCorreo_({
     to: email,
     subject: "Aviso Importante: Firma de Renovación Pendiente",
     htmlBody: htmlBody

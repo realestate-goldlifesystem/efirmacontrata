@@ -316,7 +316,7 @@ function enviarCorreoCita(destino, asunto, titulo, nombre, mensajePrincipal, htm
   t.TEXTO_BOTON = '';
   const correo = { to: destino, subject: asunto, htmlBody: t.evaluate().getContent() };
   if (adjuntos && adjuntos.length) correo.attachments = adjuntos;
-  MailApp.sendEmail(correo);
+  enviarCorreo_(correo);
 }
 
 /**

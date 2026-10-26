@@ -68,7 +68,7 @@ function cePedirComprobanteExcedente(sheet, fila, headers, d, esPrueba) {
     (esPrueba ? '<br><br><strong>PRUEBA:</strong> el enlace está en modo prueba.' : '');
   tpl.URL_ACCION = url;
   tpl.TEXTO_BOTON = '💳 Cargar comprobante del excedente';
-  MailApp.sendEmail({
+  enviarCorreo_({
     to: CUENTA_COBRO.CORREO_ADMIN,
     subject: (esPrueba ? '[PRUEBA] ' : '') + '💸 Excedente a consignar: $ ' + ccMiles(d.ex.excedente) + ' - ' + d.idRegistro,
     htmlBody: tpl.evaluate().getContent()
@@ -102,7 +102,7 @@ function ceAvisarExcedenteAlPropietario(d, comprobante, esPrueba) {
     attachments: comprobante ? [comprobante] : []
   };
   if (!esPrueba) mensaje.bcc = CUENTA_COBRO.CORREO_ADMIN;
-  MailApp.sendEmail(mensaje);
+  enviarCorreo_(mensaje);
 }
 
 function _ceFilaPorId(id) {
@@ -152,7 +152,7 @@ function responderExcedentePropietario(datos) {
         ? '✅ El propietario confirmó que recibió el excedente del primer mes.'
         : '⚠️ El propietario reportó un problema con el excedente: ' + comentario);
     }
-    MailApp.sendEmail({
+    enviarCorreo_({
       to: CUENTA_COBRO.CORREO_ADMIN,
       subject: (confirma ? '✅ Excedente confirmado' : '⚠️ Problema con el excedente') + ' - ' + id,
       htmlBody: '<p><strong>' + r.v('NOMBRES Y APELLIDOS DEL PROPIETARIO') + '</strong> ' +

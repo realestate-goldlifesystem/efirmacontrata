@@ -1424,7 +1424,7 @@ function enviarEmailRevisionInquilino(email, nombre, cdr, urlContrato, urlAproba
 
   const htmlBody = tpl.evaluate().getContent();
 
-  MailApp.sendEmail({
+  enviarCorreo_({
     to: email,
     subject: asunto,
     htmlBody: htmlBody
@@ -1451,7 +1451,7 @@ function enviarEmailRevisionPropietario(email, nombre, cdr, urlContrato, urlApro
 
   const htmlBody = tpl.evaluate().getContent();
 
-  MailApp.sendEmail({
+  enviarCorreo_({
     to: email,
     subject: asunto,
     htmlBody: htmlBody
@@ -1479,7 +1479,7 @@ function enviarEmailRevisionCodeudor(email, nombre, cdr, urlContrato, urlAprobac
 
   const htmlBody = tpl.evaluate().getContent();
 
-  MailApp.sendEmail({
+  enviarCorreo_({
     to: email,
     subject: asunto,
     htmlBody: htmlBody
@@ -1522,7 +1522,7 @@ function enviarNotificacionContratoAprobado(cdr) {
 
     emails.forEach(email => {
       if (email) {
-        MailApp.sendEmail({
+        enviarCorreo_({
           to: email,
           subject: asunto,
           htmlBody: htmlBody
@@ -1568,7 +1568,7 @@ function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
     const adminEmail = 'realestate.goldlifesystem@gmail.com';
     
     // 1. Primer Correo al Admin (PDF Adjunto)
-    MailApp.sendEmail({
+    enviarCorreo_({
         to: adminEmail,
         subject: asuntoAdmin,
         htmlBody: htmlBodyAdmin,
@@ -1588,7 +1588,7 @@ function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
         tplAdminCarga.TEXTO_BOTON = '📤 Cargar Contrato Autenticado';
         const htmlBodyAdminCarga = tplAdminCarga.evaluate().getContent();
 
-        MailApp.sendEmail({
+        enviarCorreo_({
             to: adminEmail,
             subject: `📤 REQUERIDO: Cargar Contrato Autenticado - ${displayId}`,
             htmlBody: htmlBodyAdminCarga
@@ -1645,7 +1645,7 @@ function enviarEmailFinalAdmin(cdr, nombreContrato, urlPdf, pdfBlob) {
     }
 
     emailsClientes.forEach(email => {
-        MailApp.sendEmail({
+        enviarCorreo_({
             to: email,
             subject: `Contrato Original Aprobado - Listo para Firma Electrónica: ${displayId}`,
             htmlBody: htmlBodyClientes
@@ -2385,7 +2385,7 @@ function procesarFirmaElectronicaSinCandado(datos) {
                 template.ANIO = new Date().getFullYear();
                 var htmlBody = template.evaluate().getContent();
 
-                MailApp.sendEmail({
+                enviarCorreo_({
                   to: emailCliente,
                   bcc: 'realestate.goldlifesystem@gmail.com',
                   subject: subject,
@@ -2495,7 +2495,7 @@ function procesarFirmaElectronicaSinCandado(datos) {
                           Logger.log("No se copia en CC a la administración (Opciones: deseaEnviarAdmin=" + deseaEnviarAAdmin + ", email=" + adminInmuebleEmail + ")");
                         }
 
-                        MailApp.sendEmail(optionsAuth);
+                        enviarCorreo_(optionsAuth);
                         console.log("Correo de Autorización de Ingreso enviado a: " + emailCliente);
                       }
                     }
@@ -2520,7 +2520,7 @@ function procesarFirmaElectronicaSinCandado(datos) {
                 }
                 const urlMultimedia = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/carga_multimedia.html?id=${encodeURIComponent(idParaUrl)}`;
                 const adminEmail = 'realestate.goldlifesystem@gmail.com'; // Correo fijo del sistema
-                MailApp.sendEmail({
+                enviarCorreo_({
                   to: adminEmail,
                   subject: `📤 LISTO PARA MULTIMEDIA: Contrato Firmado - ID: ${idParaUrl}`,
                   htmlBody: `

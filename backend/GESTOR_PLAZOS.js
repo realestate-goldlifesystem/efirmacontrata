@@ -430,7 +430,7 @@ function _plzEnviar(para, correo, cco) {
   if (!para || String(para).indexOf('@') === -1) return false;
   var m = { to: para, subject: correo.asunto, htmlBody: correo.html };
   if (cco) m.bcc = cco;
-  MailApp.sendEmail(m);
+  enviarCorreo_(m);
   return true;
 }
 
@@ -626,7 +626,7 @@ function probarCorreosDePlazos() {
         boton: { texto: 'Realizar correcciones', url: base.url } }) }
   ];
   correos.forEach(function (c, i) {
-    MailApp.sendEmail({ to: PLAZOS.CORREO_ADMIN, subject: '[PRUEBA ' + (i + 1) + '/' + correos.length + '] ' + c.asunto, htmlBody: c.html });
+    enviarCorreo_({ to: PLAZOS.CORREO_ADMIN, subject: '[PRUEBA ' + (i + 1) + '/' + correos.length + '] ' + c.asunto, htmlBody: c.html });
   });
   Logger.log('Enviados ' + correos.length + ' correos de prueba a ' + PLAZOS.CORREO_ADMIN);
 }

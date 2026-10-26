@@ -179,7 +179,7 @@ function ceGenerarYEnviar(sheet, fila, opciones) {
       attachments: [pdfBlob]
     };
     if (!opciones.soloAdmin) mensaje.bcc = CUENTA_COBRO.CORREO_ADMIN;
-    MailApp.sendEmail(mensaje);
+    enviarCorreo_(mensaje);
     Logger.log('📩 Cuenta de cobro a cuenta externa enviada a ' + mensaje.to + ' por $' + ccMiles(valor));
 
     // Etapa 4 (GESTOR_EXCEDENTE.js): cuánto consignarle al propietario y el botón del comprobante.

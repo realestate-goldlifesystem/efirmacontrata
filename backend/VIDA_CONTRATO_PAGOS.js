@@ -107,7 +107,7 @@ function _marcarAviso(p, clave) {
 }
 
 // Un correo que no sale (p. ej. se acabó el cupo diario de Gmail) no puede dejar el pago a medias
-function _correoSeguro(mensaje) { try { MailApp.sendEmail(mensaje); } catch (e) { Logger.log('⚠️ Correo no enviado (' + mensaje.subject + '): ' + e.message); } }
+function _correoSeguro(mensaje) { try { enviarCorreo_(mensaje); } catch (e) { Logger.log('⚠️ Correo no enviado (' + mensaje.subject + '): ' + e.message); } }
 function _correoCitaSeguro() { try { enviarCorreoCita.apply(null, arguments); } catch (e) { Logger.log('⚠️ Correo no enviado: ' + e.message); } }
 
 // ---------- Enlaces ----------

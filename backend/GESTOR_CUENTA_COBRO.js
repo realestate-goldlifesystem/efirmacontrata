@@ -396,7 +396,7 @@ function ccGenerarYEnviar(sheet, fila, opciones) {
       attachments: [pdfBlob]
     };
     if (!opciones.soloAdmin) mensaje.bcc = CUENTA_COBRO.CORREO_ADMIN;
-    MailApp.sendEmail(mensaje);
+    enviarCorreo_(mensaje);
 
     Logger.log('📩 Cuenta de cobro enviada a ' + mensaje.to + ' por $' + valorTxt);
 
@@ -448,7 +448,7 @@ function ccPedirComprobanteAlAdmin(sheet, fila, headers, d, esPrueba) {
   tpl.URL_ACCION = url;
   tpl.TEXTO_BOTON = '💳 Cargar comprobante de pago';
 
-  MailApp.sendEmail({
+  enviarCorreo_({
     to: CUENTA_COBRO.CORREO_ADMIN,
     subject: (esPrueba ? '[PRUEBA] ' : '') + '💳 REQUERIDO: Cargar comprobante de pago - ' + d.idRegistro,
     htmlBody: tpl.evaluate().getContent()
@@ -927,7 +927,7 @@ function ccGenerarYEnviarRecibo(sheet, fila, op) {
       if (!comprobanteDentro && op.excedente.comprobante) mensaje.attachments.push(op.excedente.comprobante);
     }
     if (!op.soloAdmin) mensaje.bcc = CUENTA_COBRO.CORREO_ADMIN;
-    MailApp.sendEmail(mensaje);
+    enviarCorreo_(mensaje);
 
     Logger.log('🧾 Recibo enviado a ' + mensaje.to + ' por $' + ccMiles(val.total));
     return { enviada: true, motivo: '', valor: val.total, urlPdf: pdf.getUrl(), idPdf: pdf.getId() };

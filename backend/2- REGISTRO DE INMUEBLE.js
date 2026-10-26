@@ -1056,7 +1056,7 @@ function enviarCorreoFirmaInicial(sheet, row, cdr, tipoNegocio) {
     template.ANIO = new Date().getFullYear();
     var htmlBody = template.evaluate().getContent();
 
-    MailApp.sendEmail({
+    enviarCorreo_({
       to: email,
       subject: subject,
       htmlBody: htmlBody

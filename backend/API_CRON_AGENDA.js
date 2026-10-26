@@ -48,6 +48,7 @@ function ejecutarMotorAgenda() {
       const numFila = idx + 2;
       const idCita = String(valorCita(f, col, 'ID CITA') || '').trim();
       if (!idCita) return;
+      activarSinCorreoFila_(valorCita(f, col, 'ID INMUEBLE'));
 
       // Bloque 2: solicitudes de visita que esperan al propietario o al interesado
       if (String(valorCita(f, col, 'ESTADO') || '').trim() === ESTADO_POR_COORDINAR &&
@@ -184,6 +185,7 @@ function ejecutarMotorAgenda() {
   } catch (error) {
     Logger.log("Error en ejecutarMotorAgenda: " + error.message);
   }
+  _SIN_CORREO_ = false;
   // Pagos del arriendo mes a mes (VIDA_CONTRATO_PAGOS.js): como mucho una vez por hora
   try { revisarPagosMensuales_(); } catch (e) { Logger.log('Error en revisarPagosMensuales_: ' + e.message); }
 }

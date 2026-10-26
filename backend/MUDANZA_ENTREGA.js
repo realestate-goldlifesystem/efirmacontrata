@@ -355,7 +355,7 @@ function enviarActaMudanza(datos) {
         const i = c.headers.indexOf('Correo electrónico de la administración');
         if (i !== -1) c.sheet.getRange(c.fila, i + 1).setValue(correo);
       }
-      MailApp.sendEmail({
+      enviarCorreo_({
         to: correo, cc: s.d.inm.correoPropietario || '', bcc: CUENTA_COBRO.CORREO_ADMIN, subject: asunto,
         htmlBody: _plantillaCorreo('🚚 Solicitud de mudanza', 'Administración ' + (ref.admin || ''),
           `En nombre del propietario <strong>${s.d.inm.propietario || ''}</strong>, les enviamos la solicitud de mudanza del inmueble <strong>${ref.referencia || s.d.direccion}</strong> ` +
@@ -366,7 +366,7 @@ function enviarActaMudanza(datos) {
       p.envio = { modo: 'SISTEMA', correo: correo, fecha: new Date().toISOString() };
       _guardarProcesoMudanza_(s.cita, p, 'enviado a la administración desde el sistema (' + correo + ')');
     } else if (datos.modo === 'YO') {
-      MailApp.sendEmail({
+      enviarCorreo_({
         to: s.d.inm.correoPropietario, bcc: CUENTA_COBRO.CORREO_ADMIN, subject: '📄 ' + asunto + ' (para que lo envíes)',
         htmlBody: _plantillaCorreo('📄 Documento de mudanza', String(s.d.inm.propietario || '').split(' ')[0],
           `Te adjuntamos el documento de mudanza de <strong>${s.d.inquilino}</strong> para el <strong>${_textoMudanza_(m)}</strong>.`,

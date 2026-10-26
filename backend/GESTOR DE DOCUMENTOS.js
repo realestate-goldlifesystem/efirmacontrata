@@ -612,6 +612,7 @@ function doPost(e) {
     const datosJson = e.postData.contents;
     const datos = JSON.parse(datosJson);
     const accion = datos.accion || datos.type || datos.action;
+    activarSinCorreoPeticion_(datos);
     let result;
 
     switch (accion) {
@@ -4394,7 +4395,7 @@ function enviarEmailInquilinoInicial(email, nombre, codigoRegistro, urlFormulari
   const asunto = correo.asunto;
   const cuerpoHtml = correo.html;
 
-  MailApp.sendEmail({
+  enviarCorreo_({
     to: email,
     subject: asunto,
     htmlBody: cuerpoHtml
@@ -4450,7 +4451,7 @@ function enviarEmailConfirmacionInquilino(codigoRegistro, datosFormulario) {
       </div>
     `;
 
-    MailApp.sendEmail({
+    enviarCorreo_({
       to: inquilino.email,
       subject: asunto,
       htmlBody: cuerpoHtml
@@ -4506,7 +4507,7 @@ function enviarEmailPropietario(cdr, venceMs) {
     const asunto = correo.asunto;
     const cuerpoHtml = correo.html;
 
-    MailApp.sendEmail({
+    enviarCorreo_({
       to: emailProp,
       subject: asunto,
       htmlBody: cuerpoHtml
@@ -4560,7 +4561,7 @@ function enviarEmailConfirmacionPropietario(codigoRegistro, datosFormulario) {
       </div>
     `;
 
-    MailApp.sendEmail({
+    enviarCorreo_({
       to: propietario.email,
       subject: asunto,
       htmlBody: cuerpoHtml
@@ -4678,7 +4679,7 @@ function enviarEmailCorreccionInquilino(cdr, observaciones, documentosCorregir =
       </div>
     `;
 
-    MailApp.sendEmail({
+    enviarCorreo_({
       to: email,
       subject: asunto,
       htmlBody: cuerpoHtml
@@ -4756,7 +4757,7 @@ function enviarEmailCorreccionPropietario(cdr, observaciones, documentosCorregir
       </div>
     `;
 
-    MailApp.sendEmail({
+    enviarCorreo_({
       to: email,
       subject: asunto,
       htmlBody: cuerpoHtml
@@ -5026,7 +5027,7 @@ function procesarEmailCorreccion(email, linkCorreccion) {
         <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
       </div>
     </body>`;
-  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
+  enviarCorreo_({ to: email, subject: asunto, htmlBody: cuerpoHTML });
 }
 
 // ✉️ Inquilino: contrato para firmar
@@ -5041,7 +5042,7 @@ function enviarContratoFirmar(email, linkContrato) {
         <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
       </div>
     </body>`;
-  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
+  enviarCorreo_({ to: email, subject: asunto, htmlBody: cuerpoHTML });
 }
 
 // ✉️ Inquilino: notificación de finalización
@@ -5056,7 +5057,7 @@ function notificarFinalizacion(email) {
         <p style="margin-top:30px; font-size:12px; color:#aaa;">Real Estate • Gold Life System</p>
       </div>
     </body>`;
-  MailApp.sendEmail({ to: email, subject: asunto, htmlBody: cuerpoHTML });
+  enviarCorreo_({ to: email, subject: asunto, htmlBody: cuerpoHTML });
 }
 
 // ==========================================
@@ -6018,7 +6019,7 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
       tplProp.URL_ACCION = folderProp.getUrl();
       tplProp.TEXTO_BOTON = '📂 Abrir Carpeta de Entregas';
 
-      MailApp.sendEmail({
+      enviarCorreo_({
         to: emailProp,
         subject: `📂 Accesos Habilitados: Entregas del Inmueble - ${direccion}`,
         htmlBody: tplProp.evaluate().getContent()
@@ -6052,7 +6053,7 @@ function guardarContratoAutenticado(cdr, base64Pdf, nombreArchivo, emailAdmin) {
       tplInq.URL_ACCION = folderInq.getUrl();
       tplInq.TEXTO_BOTON = '📂 Abrir Documentos de Entrega';
 
-      MailApp.sendEmail({
+      enviarCorreo_({
         to: emailInq,
         subject: `📂 Accesos Habilitados: Documentos de Entrega y Pagos - ${direccion}`,
         htmlBody: tplInq.evaluate().getContent()
