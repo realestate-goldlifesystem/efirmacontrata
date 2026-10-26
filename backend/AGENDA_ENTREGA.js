@@ -481,7 +481,7 @@ function guardarDatosEntrega(datos) {
     const errorFecha = mismaFecha ? '' : _validarMudanza_(s, mudanza, horaMudanza);
     if (errorFecha) return { ok: false, mensaje: errorFecha };
     const personas = (Array.isArray(datos.personas) ? datos.personas : []).slice(0, MAX_OTRAS_PERSONAS).map(p => ({
-      nombre: limpio(p.nombre), documento: limpio(p.documento, 20).replace(/[^\dA-Za-z]/g, ''), celular: limpio(p.celular, 20), correo: limpio(p.correo, 80)
+      nombre: limpio(p.nombre), tipoDocumento: TIPOS_DOCUMENTO[p.tipoDocumento] ? p.tipoDocumento : 'CC', documento: limpio(p.documento, 20).replace(/[^\dA-Za-z]/g, ''), celular: limpio(p.celular, 20), correo: limpio(p.correo, 80)
     }));
     if (personas.some(p => p.nombre.length < 3 || p.documento.length < 5)) return { ok: false, mensaje: 'Escribe el nombre y el documento de cada persona.' };
     const vehiculos = (Array.isArray(datos.vehiculos) ? datos.vehiculos : []).map(v => ({
@@ -600,7 +600,7 @@ function generarCartasEntrega_(sheet, col, numFila, fila, que) {
       'FECHA DE ENTREGA': _fechaLarga_(inicio), 'FECHA': _fechaLarga_(new Date()), 'DÍA DE MUDANZA': _textoMudanza_(mud),
       'CIUDAD DE ENTREGA': d.inm.ciudad || 'Bogotá', 'NOMBRE ADMINISTRACIÓN': ref.admin, 'correo administración': ref.correoAdmin,
       'DIRECCIÓN INM': d.inm.direccion,
-      'NOMBRE INQUILINO#1': nombreInq, 'NÚMERO DE DOCUMENTO#1': inq.numeroDocumento || '', 'CELULAR #1': inq.celular || d.celularInquilino, 'CORREO#1': inq.email || d.correoInquilino,
+      'NOMBRE INQUILINO#1': nombreInq, 'NÚMERO DE DOCUMENTO#1': _documentoCorto_(inq.tipoDocumento, inq.numeroDocumento), 'CELULAR #1': inq.celular || d.celularInquilino, 'CORREO#1': inq.email || d.correoInquilino,
       'ARRENDATARIO #1': 'ARRENDATARIO #1', 'NOMBRE': 'NOMBRE:', 'DOCUMENTO#1': 'DOCUMENTO:', 'CELULAR-1': 'CELULAR:', 'CORREO-1': 'CORREO:',
       'NOMBRE PROPIETARIO': prop.nombre || d.inm.propietario || '', 'NÚMERO DE DOCUMENTO PROPIETARIO': prop.numeroDocumento || '',
       'CELULAR PROPIETARIO': prop.celular || d.inm.celularPropietario || '', 'CORREO DEL PROPIETARIO': prop.email || d.inm.correoPropietario || '',
@@ -613,7 +613,7 @@ function generarCartasEntrega_(sheet, col, numFila, fila, que) {
       base['NOMBRE#' + k] = 'NOMBRE:';
       base['NOMBRE INQUILINO#' + k] = p.nombre;
       base['DOCUMENTO#' + k] = 'DOCUMENTO:';
-      base['NÚMERO DE DOCUMENTO#' + k] = p.documento;
+      base['NÚMERO DE DOCUMENTO#' + k] = _documentoCorto_(p.tipoDocumento || 'CC', p.documento);
       base['CELULAR-' + k] = p.celular ? 'CELULAR:' : '';
       base['CELULAR #' + k] = p.celular;
       base['CORREO-' + k] = p.correo ? 'CORREO:' : '';
@@ -708,4 +708,16 @@ function generarCartaAdministracion_(sheet, col, numFila, fila) {
     return { ok: false, motivo: 'primero tiene que quedar acordada la fecha de entrega' };
   }
   return generarCartasEntrega_(sheet, col, numFila, fila, 'ADMINISTRACION');
+}
+
+/** Tipos de documento que se piden en la sala y su abreviatura en las cartas. */
+const TIPOS_DOCUMENTO = { CC: 'C.C.', TI: 'T.I.', CE: 'C.E.', PA: 'Pasaporte', PPT: 'P.P.T.', RC: 'R.C.' };
+
+/** "C.C. 1234567": el tipo puede venir como código (CC) o escrito ("Cédula de ciudadanía"). */
+function _documentoCorto_(tipo, numero) {
+  if (!numero) return '';
+  const t = String(tipo || '').trim();
+  const porTexto = /extranjer/i.test(t) ? 'CE' : /tarjeta/i.test(t) ? 'TI' : /pasaporte/i.test(t) ? 'PA' : /permiso|ppt/i.test(t) ? 'PPT' : /registro/i.test(t) ? 'RC' : /c[ée]dula|^c\.?c\.?$/i.test(t) ? 'CC' : '';
+  const abrev = TIPOS_DOCUMENTO[t.toUpperCase()] || TIPOS_DOCUMENTO[porTexto] || '';
+  return (abrev ? abrev + ' ' : '') + numero;
 }

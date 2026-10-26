@@ -419,6 +419,7 @@
     // Fecha de mudanza, quiénes más van a vivir y sus vehículos. Con eso y la fecha de la
     // entrega el sistema prepara la carta de bienvenida y la carta para la administración.
     let mudanza = null, editando = false, formPersonas = [], formVehiculos = [];
+    const TIPOS_DOC = { CC: 'Cédula de ciudadanía', TI: 'Tarjeta de identidad', CE: 'Cédula de extranjería', PA: 'Pasaporte', PPT: 'Permiso por protección temporal (PPT)', RC: 'Registro civil' };
     const PLACA = { CARRO: /^[A-Z]{3}\d{3}$/, MOTO: /^[A-Z]{3}\d{2}[A-Z]$/ };
 
     // ================= Versión 2: dos momentos y paso a paso del inquilino =================
@@ -583,7 +584,7 @@
         '<div id="listaPersonas"></div><button class="agregar" id="agregarPersona">＋ Agregar persona</button>' +
         '<div id="listaVehiculos" class="oculto"></div>' + navPaso('Siguiente ›') + '<p class="nota centro">Si vives solo/a, toca “Solo yo”.</p></div>';
       $('soloYo').onclick = () => { formPersonas = []; irPaso(4); };
-      $('agregarPersona').onclick = () => { if (formPersonas.length < 4) { formPersonas.push({ nombre: '', documento: '', celular: '', correo: '' }); pintarListas(); } };
+      $('agregarPersona').onclick = () => { if (formPersonas.length < 4) { formPersonas.push({ nombre: '', tipoDocumento: 'CC', documento: '', celular: '', correo: '' }); pintarListas(); } };
       pintarListas();
       enlazarNav(() => {
         if (formPersonas.some(p => p.nombre.trim().length < 3 || p.documento.length < 5)) return errPaso('Escribe el nombre y el documento de cada persona.');
@@ -818,6 +819,7 @@
       $('listaPersonas').innerHTML = formPersonas.length ? formPersonas.map((p, i) =>
         `<div class="ficha"><div class="fichaCab">Persona ${i + 2}<button class="quitar" data-qp="${i}" aria-label="Quitar">✕</button></div>` +
         `<input data-p="${i}" data-c="nombre" placeholder="Nombre completo" value="${esc(p.nombre)}">` +
+        `<select data-p="${i}" data-c="tipoDocumento">${Object.keys(TIPOS_DOC).map(k => `<option value="${k}"${(p.tipoDocumento || 'CC') === k ? ' selected' : ''}>${TIPOS_DOC[k]}</option>`).join('')}</select>` +
         `<input data-p="${i}" data-c="documento" inputmode="numeric" placeholder="Número de documento" value="${esc(p.documento)}">` +
         `<input data-p="${i}" data-c="celular" type="tel" inputmode="numeric" placeholder="Celular (opcional)" value="${esc(p.celular)}">` +
         `<input data-p="${i}" data-c="correo" type="email" placeholder="Correo (opcional)" value="${esc(p.correo)}"></div>`).join('')
@@ -840,6 +842,7 @@
       }).join('') : '<p class="nota" style="margin:4px 0 0;">Sin vehículos. Si tienen, agrégalos para avisarle a la administración.</p>';
       $('listaVehiculos').querySelectorAll('[data-qv]').forEach(b => b.onclick = () => { formVehiculos.splice(Number(b.dataset.qv), 1); pintarListas(); });
       $('listaPersonas').querySelectorAll('[data-qp]').forEach(b => b.onclick = () => { formPersonas.splice(Number(b.dataset.qp), 1); pintarListas(); });
+      $('listaPersonas').querySelectorAll('select').forEach(sel => sel.onchange = () => { formPersonas[Number(sel.dataset.p)].tipoDocumento = sel.value; });
       $('listaPersonas').querySelectorAll('input').forEach(inp => inp.oninput = () => {
         let val = inp.value;
         if (inp.dataset.c === 'documento' || inp.dataset.c === 'celular') { val = val.replace(/\D/g, '').slice(0, inp.dataset.c === 'celular' ? 10 : 12); inp.value = val; }
