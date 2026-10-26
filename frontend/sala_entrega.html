@@ -183,6 +183,8 @@
     .opcion.grande { width: 100%; margin-top: 14px; padding: 14px; font-size: 15px; }
     .horasMud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; } .horasMud .nota { grid-column: 1 / -1; }
     textarea { width: 100%; padding: 12px 14px; margin-top: 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 14.5px; font-family: inherit; resize: vertical; }
+    .barraP { height: 8px; border-radius: 999px; background: var(--panel2); overflow: hidden; margin: 0 0 14px; }
+    .barraP div { height: 100%; width: 0; background: linear-gradient(90deg, #e8c766, var(--oro)); transition: width .3s ease; }
     textarea:focus { outline: none; border-color: var(--oro); }
   </style>
 </head>
@@ -633,6 +635,27 @@
       inp.click();
     }
 
+    // Capa de 0 a 100 % mientras sube un archivo: tapa la página para que no haya cargas dobles.
+    // Avanza sola hasta el 90 % y fin() la lleva al 100 % (o la cierra si falló).
+    function progreso(titulo) {
+      const capa = document.createElement('div');
+      capa.className = 'confirmar';
+      capa.innerHTML = `<div class="caja"><div class="icono">📄</div><h3>${esc(titulo)}…</h3>` +
+        '<p class="cuando" id="pct">0 %</p><div class="barraP"><div id="barraP"></div></div><p>No cierres esta página.</p></div>';
+      document.body.appendChild(capa);
+      let v = 0;
+      const pintarV = () => { capa.querySelector('#pct').textContent = Math.round(v) + ' %'; capa.querySelector('#barraP').style.width = v + '%'; };
+      const t = setInterval(() => { v += (90 - v) * 0.06; pintarV(); }, 200);
+      return {
+        fin(ok) {
+          clearInterval(t);
+          if (!ok) { capa.remove(); return Promise.resolve(); }
+          v = 100; pintarV();
+          return new Promise(r => setTimeout(() => { capa.remove(); r(); }, 600));
+        }
+      };
+    }
+
     function pintarFormatoInquilino() {
       const p = P(), caja = $('bloqueFormato');
       if (!caja || p.formato !== 'SI') return;
@@ -651,10 +674,11 @@
       if ($('bajarPlantilla')) $('bajarPlantilla').onclick = () => descargar('plantilla', $('bajarPlantilla'));
       if ($('subirFormato')) $('subirFormato').onclick = () => elegirArchivo(arch => {
         const b = $('subirFormato'); b.disabled = true; b.textContent = 'Cargando…';
-        llamar('cargarFormatoMudanza', arch).then(r => {
+        const pr = progreso('Cargando tu formato');
+        llamar('cargarFormatoMudanza', arch).then(r => pr.fin(r.ok).then(() => {
           if (!r.ok) { b.disabled = false; b.textContent = '⬆️ Cargar el formato lleno'; return alert(r.mensaje || 'No pudimos cargar el archivo.'); }
           recargar(5, r.mensaje);
-        }).catch(() => { b.disabled = false; alert('Error de red. Intenta de nuevo.'); });
+        })).catch(() => { pr.fin(false); b.disabled = false; alert('Error de red. Intenta de nuevo.'); });
       });
       // Autodescarga: la primera vez que ve el formato en blanco, se le descarga solo
       if (!p.envio && !v && p.plantilla && !leerLocal('plantilla_' + CITA + '_' + p.plantilla.nombre)) {
@@ -685,12 +709,13 @@
       h += '</div>';
       if (!casa) h += '<div class="bloque entra"><h2>📄 Documento para la administración</h2>' + formatoPropietarioHtml(p) + '</div>';
       caja.innerHTML = h;
-      const conAccion = (id, accion, extra, texto) => {
+      const conAccion = (id, accion, extra, texto, barra) => {
         const b = $(id); b.disabled = true; b.textContent = texto || 'Enviando…';
-        return llamar(accion, extra).then(r => {
+        const pr = barra ? progreso(barra) : null;
+        return llamar(accion, extra).then(r => (pr ? pr.fin(r.ok) : Promise.resolve()).then(() => {
           if (!r.ok) { b.disabled = false; alert(r.mensaje || 'No se pudo.'); return recargar(); }
           recargar(null, r.mensaje);
-        }).catch(() => { b.disabled = false; alert('Error de red. Intenta de nuevo.'); });
+        })).catch(() => { if (pr) pr.fin(false); b.disabled = false; alert('Error de red. Intenta de nuevo.'); });
       };
       if ($('aprobarMud')) $('aprobarMud').onclick = () => conAccion('aprobarMud', 'responderMudanza', { decision: 'APROBAR' }, 'Aprobando…');
       if ($('noPosible')) $('noPosible').onclick = () => { $('cajaMotivo').classList.remove('oculto'); $('motivoMud').focus(); };
@@ -699,7 +724,7 @@
         conAccion('enviarMotivo', 'responderMudanza', { decision: 'NO_POSIBLE', motivo: $('motivoMud').value });
       };
       if ($('formatoNo')) $('formatoNo').onclick = () => conAccion('formatoNo', 'definirFormatoMudanza', { tiene: 'NO' });
-      if ($('formatoSi')) $('formatoSi').onclick = () => elegirArchivo(arch => conAccion('formatoSi', 'definirFormatoMudanza', Object.assign({ tiene: 'SI' }, arch), 'Cargando…'));
+      if ($('formatoSi')) $('formatoSi').onclick = () => elegirArchivo(arch => conAccion('formatoSi', 'definirFormatoMudanza', Object.assign({ tiene: 'SI' }, arch), 'Cargando…', 'Cargando el formato'));
       if ($('bajarVersion')) $('bajarVersion').onclick = () => descargar('version', $('bajarVersion'));
       if ($('bajarPlantillaP')) $('bajarPlantillaP').onclick = () => descargar('plantilla', $('bajarPlantillaP'));
       if ($('aprobarVersion')) $('aprobarVersion').onclick = () => conAccion('aprobarVersion', 'revisarFormatoMudanza', { decision: 'APROBAR' });
