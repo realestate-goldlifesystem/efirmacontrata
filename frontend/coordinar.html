@@ -234,7 +234,7 @@
       const otro = semanaDias.findIndex((x, i) => i > diaSel && x.slots.length) !== -1 || semanaDias.findIndex((x, i) => i < diaSel && x.slots.length) !== -1;
       const horas = !d ? '<p class="sinHoras">Sin horarios libres esta semana.</p>' : `<h3 class="diaTitulo">${esc(d.titulo)}</h3>` + (d.slots.length
         ? '<p class="nota" style="margin:0 0 10px;">Puedes marcar varios horarios en este día.</p><div class="horas">' +
-          d.slots.map(s => `<button class="hora${marcados.has(s.timestamp) ? ' marcado' : ''}${s.pedido ? ' pedido-int' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}</button>`).join('') + '</div>'
+          d.slots.filter(s => !(respondiendo && s.pedido)).map(s => `<button class="hora${marcados.has(s.timestamp) ? ' marcado' : ''}${s.pedido ? ' pedido-int' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}</button>`).join('') + '</div>'
         : `<p class="sinHoras">${esc(d.motivo || 'Sin horarios libres')}</p>`) +
         (otro ? '<button class="otroDia" id="otroDia">＋ Elegir otro día</button>' : '');
       $('dias').innerHTML = pestanas + `<div class="diaHoras entra">${horas}</div>`;
@@ -335,7 +335,7 @@
         $('ninguno').onclick = () => {
           const nombre = esc(s.nombre.split(' ')[0]);
           $('solTitulo').textContent = '¿Cuándo puedes?';
-          respondiendo = true; pintarResumen();
+          respondiendo = true; pintarResumen(); if (typeof semanaDias !== "undefined" && semanaDias.length) pintarDias();
           $('solPedidos').innerHTML = `<p class="nota" style="margin-top:8px;">Marca abajo <b>mínimo 3 horarios</b> en que puedas y le pedimos a ${nombre} que elija uno.</p>` +
             '<button class="volverPedidos" id="volverPedidos">‹ Ver otra vez los horarios que pidió</button>';
           $('volverPedidos').onclick = () => pintarSolicitud(s);
