@@ -203,6 +203,15 @@
     .visorBotones { flex-shrink: 0; display: flex; gap: 8px; align-items: stretch; }
     .visorBotones .secundario { width: auto; margin: 0; padding: 0 14px; }
     .visorBotones .opcion { margin: 0; padding: 14px 8px; }
+    /* Mudanza rechazada: el motivo del propietario bien visible */
+    .rechazo { text-align: center; padding: 4px 0 6px; }
+    .rechazoIcono { width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center; font-size: 26px;
+      background: rgba(252,165,165,.1); box-shadow: 0 0 0 1px rgba(252,165,165,.45); }
+    .rechazo h2 { font-size: 18px; line-height: 1.4; margin-bottom: 14px; }
+    .rechazoQuien { font-size: 13px; color: var(--suave); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .rechazoMotivo { margin: 0 0 16px; padding: 14px 16px; border-radius: 14px; text-align: left; font-size: 16px; line-height: 1.5; font-style: italic;
+      color: #fde68a; background: rgba(212,175,55,.1); border: 1px solid rgba(212,175,55,.45); border-left: 4px solid var(--oro); }
+    .rechazoPide { font-weight: 600; color: #f5f5f4; }
     textarea:focus { outline: none; border-color: var(--oro); }
   </style>
   <script src="aviso.js?v=1"></script>
@@ -450,7 +459,9 @@
     // ================= Versión 2: dos momentos y paso a paso del inquilino =================
     // 1 Recibir (la negociación de arriba) · 2 Mudanza (día y hora) · 3 Personas · 4 Vehículos · 5 Resumen
     // La mudanza la aprueba el propietario; si el conjunto tiene formato propio, aquí se descarga y se carga lleno.
-    let paso = 1, formFecha = '', formHora = '';
+    let paso = 1, formFecha = '', formHora = '', rechazada = null;
+    // La mudanza fue rechazada: una sola pantalla para elegir la nueva fecha y enviarla
+    const nuevaFecha = () => !!mudanza && P().estado === 'NO_POSIBLE';
     const pasos = () => P().formato === 'SI' ? ['Recibir', 'Mudanza', 'Personas', 'Vehículos', 'Formato', 'Resumen'] : ['Recibir', 'Mudanza', 'Personas', 'Vehículos', 'Resumen'];
     const nombrePaso = () => pasos()[paso - 1];
     const ultimoPaso = () => pasos().length;
@@ -491,6 +502,11 @@
           const b = JSON.parse(leerLocal(claveBorrador()) || 'null');
           if (b) { formFecha = b.formFecha || ''; formHora = b.formHora || ''; formPersonas = b.formPersonas || []; formVehiculos = b.formVehiculos || []; }
         } catch (e) {}
+      }
+      if (mudanza && P().estado === 'NO_POSIBLE') {
+        rechazada = { fecha: mudanza.mudanza, hora: mudanza.horaMudanza || '' };
+        formFecha = ''; formHora = '';
+        return irPaso(pasos().indexOf('Mudanza') + 1);
       }
       if (mudanza || leerLocal('sala2_' + CITA)) return irPaso(mudanza ? ultimoPaso() : 1);
       const casa = P().reglas && P().reglas.esCasa;
@@ -597,16 +613,26 @@
 
     function pasoFecha() {
       const r = P().reglas || {};
+      const nf = nuevaFecha();
+      if ($('barraPasos')) $('barraPasos').classList.toggle('oculto', nf);
       const ultima = (r.entregas || []).length ? Math.max.apply(null, r.entregas) : 0;
-      $('vista').innerHTML = '<div class="bloque entra"><h2>🚚 ¿Cuándo es tu mudanza?</h2>' + estadoMudanzaHtml() +
+      const p = P();
+      const cabecera = nf
+        ? '<div class="rechazo entra"><div class="rechazoIcono">🚚</div>' +
+          `<h2>El propietario no puede recibir tu mudanza el ${esc(p.propuesta ? p.propuesta.texto : '')}</h2>` +
+          (p.motivo ? `<p class="rechazoQuien">El propietario te comenta:</p><blockquote class="rechazoMotivo">“${esc(p.motivo)}”</blockquote>` : '') +
+          '<p class="rechazoPide">👇 Elige una nueva fecha y hora para tu mudanza.</p></div>'
+        : '<h2>🚚 ¿Cuándo es tu mudanza?</h2>' + estadoMudanzaHtml();
+      $('vista').innerHTML = '<div class="bloque entra">' + cabecera +
         '<p class="nota">' + (r.esCasa ? 'De lunes a sábado.' : 'En propiedad horizontal: lunes a viernes de 8 a. m. a 5 p. m. y sábados de 8 a. m. a 12 m., desde 2 días hábiles después de hoy.') +
         (ultima ? ' Nunca antes de recibir el inmueble: si es el mismo día, mínimo una hora después.' : '') + '</p>' +
         '<label class="etiqueta">Día</label>' +
         `<input type="date" id="fMudanza" min="${esc(r.minFecha || iso(new Date()))}" value="${esc(formFecha)}">` +
         '<label class="etiqueta">Hora de inicio</label><div class="horasMud" id="horasMud"></div>' +
-        navPaso('Siguiente ›') + '</div>';
+        (nf ? '<p class="error oculto" id="errPaso"></p><button class="principal" id="siguiente">Enviar la nueva fecha</button>' : navPaso('Siguiente ›')) + '</div>';
       const pintarHorasMud = () => {
-        const lista = horasMudanza(formFecha);
+        // La fecha y hora rechazadas no se vuelven a ofrecer
+        const lista = horasMudanza(formFecha).filter(h => !(rechazada && rechazada.fecha === formFecha && rechazada.hora === h));
         if (formHora && lista.indexOf(formHora) === -1) formHora = '';
         $('horasMud').innerHTML = !formFecha ? '<p class="nota">Primero elige el día.</p>'
           : lista.length ? lista.map(h => `<button class="hora${h === formHora ? ' marcado' : ''}" data-h="${h}">${horaTexto(h)}</button>`).join('')
@@ -619,6 +645,7 @@
       enlazarNav(() => {
         if (!formFecha) return errPaso('Elige el día de la mudanza.');
         if (!formHora) return errPaso('Elige la hora de inicio.');
+        if (nf) return guardarMudanza();
         irPaso(paso + 1);
       });
     }
@@ -665,6 +692,7 @@
       const bloqueado = enviado();
       // Ya enviado: página de éxito, sin la barra de pasos
       if ($('barraPasos')) $('barraPasos').classList.toggle('oculto', bloqueado);
+      if (nuevaFecha()) { paso = pasos().indexOf('Mudanza') + 1; return pasoFecha(); }
       const p = P();
       const fila = (icono, texto, nom) => `<div class="resumenFila"><span>${icono}</span><div>${texto}</div>` +
         (bloqueado ? '' : `<button class="cambiar" data-ir="${pasos().indexOf(nom) + 1}">Cambiar</button>`) + '</div>';

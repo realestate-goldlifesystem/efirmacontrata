@@ -481,6 +481,8 @@ function guardarDatosEntrega(datos) {
     const antes = _datosMudanzaDe(fila, col);
     const proc = _procesoMudanza_(fila, col);
     if (antes && proc.estado !== 'NO_POSIBLE') return { ok: false, mensaje: 'Ya enviaste tus datos. Te avisamos por correo cuando el propietario responda.' };
+    if (antes && proc.estado === 'NO_POSIBLE' && antes.mudanza === String(datos.mudanza || '') && (antes.horaMudanza || '') === String(datos.horaMudanza || ''))
+      return { ok: false, mensaje: 'Esa fecha el propietario dijo que no es posible. Elige otra.' };
     if (!antes && proc.formato === 'SI') {
       const v = (proc.versiones || []).slice(-1)[0];
       if (!v || v.estado === 'CORREGIR') return { ok: false, mensaje: 'Primero carga el formato de la administración lleno.' };
