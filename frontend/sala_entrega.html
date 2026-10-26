@@ -627,8 +627,9 @@
       $('vista').innerHTML = '<div class="bloque entra">' + cabecera +
         '<p class="nota">' + (r.esCasa ? 'De lunes a sábado.' : 'En propiedad horizontal: lunes a viernes de 8 a. m. a 5 p. m. y sábados de 8 a. m. a 12 m., desde 2 días hábiles después de hoy.') +
         (ultima ? ' Nunca antes de recibir el inmueble: si es el mismo día, mínimo una hora después.' : '') + '</p>' +
+        (ultima ? `<div class="aviso">🔑 <b>Primero va la entrega y después la mudanza.</b> ${(r.entregas || []).length > 1 ? 'Tu entrega puede quedar hasta el' : 'Tu entrega es el'} <b>${esc(textoSlot(ultima))}</b>: la mudanza solo puede ser después${(r.entregas || []).length > 1 ? ' del último horario propuesto' : ''}.</div>` : '') +
         '<label class="etiqueta">Día</label>' +
-        `<input type="date" id="fMudanza" min="${esc(r.minFecha || iso(new Date()))}" value="${esc(formFecha)}">` +
+        `<input type="date" id="fMudanza" min="${esc([r.minFecha || iso(new Date()), ultima ? iso(new Date(ultima)) : ''].sort().pop())}" value="${esc(formFecha)}">` +
         '<label class="etiqueta">Hora de inicio</label><div class="horasMud" id="horasMud"></div>' +
         (nf ? '<p class="error oculto" id="errPaso"></p><button class="principal" id="siguiente">Enviar la nueva fecha</button>' : navPaso('Siguiente ›')) + '</div>';
       const pintarHorasMud = () => {
@@ -818,7 +819,8 @@
     const pasosProp = () => (esCasaP() ? ['Entrega', 'Mudanza'] : ['Entrega', 'Mudanza', 'Documento']).concat(['Enviar']);
     const avisosP = () => P().avisos || [];
     const entregaResuelta = () => info.estado === 'AGENDADA' || !!(info.pedidos.length && info.propuestoPor === 'PROPIETARIO');
-    const mudanzaResuelta = () => !P().propuesta || P().estado !== 'PROPUESTA';
+    // Mientras la entrega no esté agendada, la mudanza no se puede aprobar (primero la entrega)
+    const mudanzaResuelta = () => !P().propuesta || P().estado !== 'PROPUESTA' || info.estado !== 'AGENDADA';
     const todoListoProp = () => info.estado === 'AGENDADA' && P().estado === 'APROBADA' && (esCasaP() || !!P().envio) && !avisosP().length;
     function primerPendienteProp() {
       if (!entregaResuelta()) return 1;
@@ -1019,7 +1021,9 @@
           `<div class="resumenFila"><span>🚗</span><div>${(p.propuesta.vehiculosDet || []).length
             ? p.propuesta.vehiculosDet.map(v => (v.tipo === 'MOTO' ? '🏍️ Moto ' : '🚗 Carro ') + esc(v.marca + ' ' + v.modelo) + ' · placa <b>' + esc(v.placa) + '</b>').join('<br>')
             : 'Sin vehículos'}</div></div>`;
-        if (p.estado === 'PROPUESTA') {
+        if (p.estado === 'PROPUESTA' && info.estado !== 'AGENDADA') {
+          h += '<div class="aviso">🔑 <b>Primero acuerden la entrega del inmueble.</b> La mudanza siempre va después de la entrega: cuando la entrega quede agendada, aquí la apruebas.</div>';
+        } else if (p.estado === 'PROPUESTA') {
           h += '<p class="nota">' + (casa ? '¿Te sirve ese día?' : 'Valídalo con la administración (a veces hay que reservar el ascensor) y confírmanos.') + '</p>' +
             '<div class="opciones"><button class="opcion" id="noPosible">No es posible</button><button class="opcion elegido" id="aprobarMud">✓ Aprobar</button></div>' +
             '<div id="cajaMotivo" class="oculto"><textarea id="motivoMud" rows="3" placeholder="Cuéntale por qué (ej. ese día la administración no tiene ascensor)"></textarea>' +

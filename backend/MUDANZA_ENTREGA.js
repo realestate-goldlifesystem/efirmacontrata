@@ -153,6 +153,7 @@ function alProponerMudanza_(s, datosNuevos, datosAntes) {
     `<strong>👥 También viven:</strong> ${personas.length ? personas.join(', ') : 'nadie más'}<br>` +
     `<strong>🚗 Vehículos:</strong> ${vehiculos.length ? vehiculos.join('; ') : 'ninguno'}<br>` +
     (p.formato === 'SI' && (p.versiones || []).length ? '<strong>📄 Formato de la administración:</strong> ya lo llenó y cargó; revísalo en la sala.<br>' : '') + '<br>' +
+    (pedidos.length ? '📌 <strong>Primero elige el horario de la entrega</strong>; después apruebas la mudanza, que siempre va después de la entrega. ' : '') +
     (_esCasa_(s.d) ? 'Confírmanos si el día de la mudanza está bien.' : 'Valida la mudanza con la administración del conjunto (a veces hay que reservar el ascensor) y apruébala en la sala.');
   _correoSala_(s, 'PROPIETARIO', pedidos.length ? '🔑 El inquilino eligió horarios de entrega y su mudanza - Gold Life' : '🚚 Propuesta de mudanza: ' + _textoMudanza_(datosNuevos) + ' - Gold Life',
     pedidos.length ? 'ENTREGA Y MUDANZA' : 'FECHA DE MUDANZA', cuerpo, pedidos.length ? '🔑 Abrir la sala de entrega' : '🚚 Revisar la fecha de mudanza');
@@ -169,6 +170,8 @@ function responderMudanza(datos) {
     if (!m || !m.mudanza) return { ok: false, mensaje: 'El inquilino todavía no propone la fecha de mudanza.' };
     const p = _procesoMudanza_(s.cita.fila, s.cita.col);
     if (p.estado && p.estado !== 'PROPUESTA') return { ok: false, mensaje: p.estado === 'APROBADA' ? 'Ya aprobaste esta fecha de mudanza.' : 'Ya le pediste otra fecha al inquilino.' };
+    if (String(valorCita(s.cita.fila, s.cita.col, 'ESTADO') || '').trim() === ESTADO_POR_COORDINAR)
+      return { ok: false, mensaje: 'Primero acuerden la fecha de la entrega del inmueble; después apruebas la mudanza.' };
     if (datos.decision === 'APROBAR') {
       p.estado = 'APROBADA'; p.motivo = '';
       _guardarProcesoMudanza_(s.cita, p, 'el propietario aprobó la mudanza');

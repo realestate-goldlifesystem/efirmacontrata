@@ -101,7 +101,8 @@ function abrirSalaEntrega(idInmueble) {
 
     const lugar = d.inm.tipoInmueble.toLowerCase() + ' en <strong>' + (d.inm.barrio || d.inm.direccion || 'el inmueble') + '</strong>';
     const explicar = 'Elige 3 horarios en que puedas y le preguntamos a la otra parte cuál le sirve. ' +
-      'Si ninguno le sirve, propone otros y así hasta que coincidan. La entrega dura alrededor de una hora.';
+      'Si ninguno le sirve, propone otros y así hasta que coincidan. La entrega dura alrededor de una hora.' +
+      '<br><br>📌 <strong>Primero va la entrega y después la mudanza:</strong> primero se acuerda el día de la entrega del inmueble y después el de la mudanza, que nunca puede ser antes de la entrega.';
     try {
       enviarCorreoCita(d.correoInquilino, '🔑 Agenda la entrega de tu nuevo hogar - Gold Life', 'AGENDA LA ENTREGA', d.inquilino.split(' ')[0],
         `Tu contrato quedó listo. Ahora agendemos la entrega del ${lugar}, junto con el propietario.<br><br>${explicar}`,
@@ -700,7 +701,8 @@ function reabrirSalaEntrega_(sheet, col, numFila, fila, motivo) {
   const d = _datosEntregaInmueble_(valorCita(fila, col, 'ID INMUEBLE'));
   if (!d) return { ok: false, mensaje: 'No encontramos el inmueble de esta entrega.' };
   const cuerpo = 'Necesitamos volver a elegir la fecha de la entrega del inmueble en <strong>' + d.direccion + '</strong>' +
-    (motivo ? ' (' + motivo + ')' : '') + '.<br><br>Elige 3 horarios en que puedas y coordinamos con la otra parte. La fecha anterior ya no aplica.';
+    (motivo ? ' (' + motivo + ')' : '') + '.<br><br>Elige 3 horarios en que puedas y coordinamos con la otra parte. La fecha anterior ya no aplica.' +
+    '<br><br>📌 <strong>Primero va la entrega y después la mudanza:</strong> la mudanza se aprueba cuando la entrega quede acordada y nunca puede ser antes de la entrega.';
   try {
     enviarCorreoCita(d.correoInquilino, '🔑 Volvamos a agendar la entrega - Gold Life', 'NUEVA FECHA DE ENTREGA', d.inquilino.split(' ')[0], cuerpo,
       htmlBotonesCorreo([{ texto: '🔑 Elegir la fecha', color: '#b8860b', url: urlSalaEntrega(idCita, 'i', String(valorCita(fila, col, 'TOKEN PROPIETARIO'))) }]));
