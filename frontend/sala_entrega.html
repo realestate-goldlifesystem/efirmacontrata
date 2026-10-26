@@ -326,6 +326,9 @@
     }
 
     function pintarHoras(titulo, slots, motivo) {
+      // Los que propuso la otra parte y se están rechazando no se vuelven a ofrecer
+      const rechazados = info.propuestoPor && info.propuestoPor !== info.rol ? info.pedidos : [];
+      slots = slots.filter(s => rechazados.indexOf(s.timestamp) === -1 && (info.descartados || []).indexOf(s.timestamp) === -1);
       $('horasDia').innerHTML = titulo + (slots.length
         ? '<div class="horas">' + slots.map(s => `<button class="hora${elegidos.includes(s.timestamp) ? ' marcado' : ''}" data-ts="${s.timestamp}">${s.horaAmPm}</button>`).join('') + '</div>'
         : `<p class="sinHoras">${esc(motivo || 'Sin horarios libres este día. Prueba otro día.')}</p>`);
