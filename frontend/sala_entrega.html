@@ -245,13 +245,13 @@
     function pintarExito(titulo, cuando, texto, sinCheck) {
       $('vista').innerHTML = `<div class="exito entra">${sinCheck ? '<div class="icono">🔑</div>' : '<div class="check">✓</div>'}<h2>${esc(titulo)}</h2>` +
         (cuando ? `<p style="color:var(--oro);font-weight:700;font-size:17px;margin-bottom:10px;">${esc(cuando.charAt(0).toUpperCase() + cuando.slice(1))}</p>` : '') +
-        `<p>${esc(texto)}</p>${info.rol === 'INQUILINO' ? '' : '<p class="nota" style="margin-top:14px;">Abajo sigue la mudanza del inquilino.</p>'}</div>`;
-      botonSiguiente();
+        `<p>${esc(texto)}</p></div>`;
+      botonSiguiente(); botonSiguienteProp();
     }
 
     // Lo que propuso la otra parte, como botones "Me sirve"
     function pintarOpciones(otro) {
-      $('vista').innerHTML = `<div class="bloque destacado entra"><h2>${otro} propuso estos horarios</h2><p class="nota">Toca el que te sirva y la entrega queda agendada.</p>` +
+      $('vista').innerHTML = `<div class="bloque destacado entra"><h2>🔑 Entrega del inmueble</h2><p class="nota">${otro} propuso estos horarios para <b>recibir el inmueble</b> (la entrega de las llaves y el inventario; la mudanza va aparte). Toca el que te sirva y la entrega queda agendada.</p>` +
         info.pedidos.map(t => `<button class="pedido" data-ts="${t}"><b>${esc(textoSlot(t))}</b><span>Me sirve</span></button>`).join('') +
         '<button class="ninguno" id="ninguno">🗓️ Ninguno me sirve · proponer otros</button></div>';
       $('vista').querySelectorAll('.pedido').forEach(b => b.onclick = () => confirmar(Number(b.dataset.ts), otro));
@@ -754,14 +754,86 @@
       }
     }
 
+    // ================= Propietario: paso a paso (1 Entrega · 2 Mudanza · 3 Documento) =================
+    let pasoP = 1;
+    const esCasaP = () => !!(P().reglas && P().reglas.esCasa);
+    const pasosProp = () => esCasaP() ? ['Entrega', 'Mudanza'] : ['Entrega', 'Mudanza', 'Documento'];
+    const entregaResuelta = () => info.estado === 'AGENDADA' || !!(info.pedidos.length && info.propuestoPor === 'PROPIETARIO');
+    const mudanzaResuelta = () => !P().propuesta || P().estado !== 'PROPUESTA';
+    const todoListoProp = () => info.estado === 'AGENDADA' && P().estado === 'APROBADA' && (esCasaP() || !!P().envio);
+    function primerPendienteProp() {
+      if (!entregaResuelta()) return 1;
+      if (!mudanzaResuelta()) return 2;
+      if (!esCasaP() && !P().envio && P().estado === 'APROBADA') return 3;
+      return P().propuesta ? 2 : 1;
+    }
+
+    function iniciarPropietario(mantener) {
+      $('saludo').textContent = 'Hola ' + primerNombre(info.nombre) + ' 👋';
+      $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
+      if (todoListoProp() || info.estado === 'CERRADA') return finalPropietario();
+      // Tras una acción: si ese paso quedó resuelto, pasa solo al siguiente pendiente
+      const resuelto = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : false;
+      irPasoP(mantener && !resuelto ? pasoP : primerPendienteProp());
+    }
+
+    function barraProp() {
+      let barra = $('barraPasos');
+      if (!barra) { barra = document.createElement('div'); barra.id = 'barraPasos'; $('vista').before(barra); }
+      const hecho = (i) => i === 1 ? entregaResuelta() : i === 2 ? (P().estado === 'APROBADA') : !!P().envio;
+      barra.className = 'pasos';
+      barra.style.gridTemplateColumns = 'repeat(' + pasosProp().length + ', 1fr)';
+      barra.innerHTML = pasosProp().map((t, i) => `<button class="${i + 1 === pasoP ? 'activo' : hecho(i + 1) ? 'hecho' : ''}" data-paso="${i + 1}"><b>${hecho(i + 1) && i + 1 !== pasoP ? '✓' : i + 1}</b><small>${t}</small></button>`).join('');
+      barra.querySelectorAll('button').forEach(b => b.onclick = () => irPasoP(Number(b.dataset.paso)));
+    }
+
+    function navProp(contenedor) {
+      const ultimo = pasoP === pasosProp().length;
+      const listo = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : true;
+      const div = document.createElement('div'); div.className = 'nav entra'; div.id = 'navProp';
+      div.innerHTML = (pasoP > 1 ? '<button class="secundario" id="atrasP">‹ Atrás</button>' : '') +
+        (ultimo ? '' : `<button class="principal${listo ? '' : ' bloqueado'}" id="sigP">Siguiente: ${pasosProp()[pasoP].toLowerCase()} ›</button>`);
+      contenedor.appendChild(div);
+      if ($('atrasP')) $('atrasP').onclick = () => irPasoP(pasoP - 1);
+      if ($('sigP')) $('sigP').onclick = () => { if (listo) irPasoP(pasoP + 1); };
+    }
+    // En el paso 1, debajo de lo que muestre la negociación (también tras agendar o proponer)
+    function botonSiguienteProp() {
+      if (info.rol !== 'PROPIETARIO' || pasoP !== 1 || $('navProp')) return;
+      navProp($('vista'));
+    }
+
+    function irPasoP(n) {
+      pasoP = n; barraProp();
+      const caja = $('bloqueMudanza'); if (caja) caja.remove();
+      if (n === 1) { pintar(); botonSiguienteProp(); return; }
+      $('vista').innerHTML = '';
+      pintarPropietario(n === 2 ? 'mudanza' : 'documento');
+      navProp($('bloqueMudanza'));
+    }
+
+    function finalPropietario() {
+      const b = $('barraPasos'); if (b) b.remove();
+      const caja = $('bloqueMudanza'); if (caja) caja.remove();
+      const p = P();
+      if (info.estado === 'CERRADA') return pintarExito('Esta entrega ya no está activa', '', 'Si necesitas algo, escríbele a Leonardo.', true);
+      $('vista').innerHTML = '<div class="bloque entra"><div class="exito"><div class="check">✓</div></div><h2 class="centro">🎉 Todo quedó listo</h2>' +
+        `<div class="resumenFila"><span>🔑</span><div>Entrega del inmueble: <b>${esc(textoSlot(info.agendada))}</b></div></div>` +
+        (p.propuesta ? `<div class="resumenFila"><span>🚚</span><div>Mudanza aprobada: <b>${esc(p.propuesta.texto)}</b></div></div>` : '') +
+        (p.envio ? `<div class="resumenFila"><span>📄</span><div>${p.envio.modo === 'SISTEMA' ? 'Documento enviado a la administración' : 'Documento enviado a tu correo para la administración'}</div></div>` : '') +
+        '<p class="nota centro" style="margin-top:16px;">Este paso ya se realizó. Antes de la entrega te recordaremos la cita.</p></div>';
+    }
+
     // ================= Propietario: aprobar la mudanza, formato y envío a la administración =================
-    function pintarPropietario() {
+    function pintarPropietario(solo) {
       const p = P();
       let caja = $('bloqueMudanza');
       if (!caja) { caja = document.createElement('div'); caja.id = 'bloqueMudanza'; $('contenido').appendChild(caja); }
       const casa = p.reglas && p.reglas.esCasa;
-      let h = '<div class="bloque entra"><h2>🚚 La mudanza del inquilino</h2>';
-      if (!p.propuesta) h += '<p class="nota">El inquilino todavía no propone el día de su mudanza. Te avisamos por correo cuando lo haga.</p>';
+      let h = solo === 'documento' ? '' : '<div class="bloque entra"><h2>🚚 La mudanza del inquilino</h2>' +
+        '<p class="nota">Es el día en que el inquilino trae sus cosas (no es la entrega de las llaves).</p>';
+      if (solo === 'documento') {}
+      else if (!p.propuesta) h += '<p class="nota">El inquilino todavía no propone el día de su mudanza. Te avisamos por correo cuando lo haga.</p>';
       else {
         h += `<div class="resumenFila"><span>🚚</span><div><b>${esc(p.propuesta.texto.charAt(0).toUpperCase() + p.propuesta.texto.slice(1))}</b><br>` +
           `<span class="nota">${p.propuesta.personas ? p.propuesta.personas + ' persona(s) más' : 'Sin más personas'} · ${p.propuesta.vehiculos ? p.propuesta.vehiculos + ' vehículo(s)' : 'sin vehículos'}</span></div></div>`;
@@ -773,8 +845,8 @@
         } else if (p.estado === 'APROBADA') h += '<div class="aviso ok">✅ Aprobaste esta fecha.</div>';
         else if (p.estado === 'NO_POSIBLE') h += `<div class="aviso">Le pedimos otra fecha${p.motivo ? ' (“' + esc(p.motivo) + '”)' : ''}. Te avisamos cuando la proponga.</div>`;
       }
-      h += '</div>';
-      if (!casa) h += '<div class="bloque entra"><h2>📄 Documento para la administración</h2>' + formatoPropietarioHtml(p) + '</div>';
+      if (solo !== 'documento') h += '</div>';
+      if (!casa && solo !== 'mudanza') h += '<div class="bloque entra"><h2>📄 Documento para la administración</h2>' + formatoPropietarioHtml(p) + '</div>';
       caja.innerHTML = h;
       const conAccion = (id, accion, extra, texto, barra) => {
         const b = $(id); b.disabled = true; b.textContent = texto || 'Enviando…';
@@ -850,7 +922,7 @@
         if (!r || !r.ok) return error((r && r.mensaje) || 'No pudimos abrir la entrega.');
         info = r;
         if (info.rol === 'INQUILINO') { mudanza = info.mudanza; irPaso(irA === 'ultimo' || enviado() ? ultimoPaso() : Math.min(irA || paso, ultimoPaso())); }
-        else { pintar(); pintarPropietario(); }
+        else iniciarPropietario(true);
         if (mensaje) { const ok = document.createElement('p'); ok.className = 'nota ok centro entra'; ok.textContent = mensaje; $('vista').prepend(ok); }
       });
     }
@@ -916,7 +988,7 @@
         if (!r || !r.ok) return error((r && r.mensaje) || 'No pudimos abrir la entrega.');
         info = r;
         $('cargando').classList.add('oculto'); $('contenido').classList.remove('oculto');
-        if (info.rol === 'INQUILINO') iniciarInquilino(); else { pintar(); pintarPropietario(); }
+        if (info.rol === 'INQUILINO') iniciarInquilino(); else iniciarPropietario();
       }).catch(() => error('Revisa tu conexión a internet e intenta de nuevo.'));
     }
     cargar();
