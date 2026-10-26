@@ -436,6 +436,8 @@
     }
 
     function iniciarInquilino() {
+      $('saludo').textContent = 'Hola ' + primerNombre(info.nombre) + ' 👋';
+      $('inmueble').textContent = 'Entrega del ' + String(info.tipoInmueble || 'inmueble').toLowerCase() + ' · ' + (info.direccion || '');
       mudanza = info.mudanza;
       formFecha = mudanza ? mudanza.mudanza : ''; formHora = mudanza ? (mudanza.horaMudanza || '') : '';
       formPersonas = (mudanza && mudanza.personas || []).map(p => Object.assign({}, p));
@@ -671,7 +673,7 @@
       if (!p.propuesta) h += '<p class="nota">El inquilino todavía no propone el día de su mudanza. Te avisamos por correo cuando lo haga.</p>';
       else {
         h += `<div class="resumenFila"><span>🚚</span><div><b>${esc(p.propuesta.texto.charAt(0).toUpperCase() + p.propuesta.texto.slice(1))}</b><br>` +
-          `<span class="nota">${p.propuesta.personas ? p.propuesta.personas + ' persona(s) más' : 'Vive solo'} · ${p.propuesta.vehiculos ? p.propuesta.vehiculos + ' vehículo(s)' : 'sin vehículos'}</span></div></div>`;
+          `<span class="nota">${p.propuesta.personas ? p.propuesta.personas + ' persona(s) más' : 'Sin más personas'} · ${p.propuesta.vehiculos ? p.propuesta.vehiculos + ' vehículo(s)' : 'sin vehículos'}</span></div></div>`;
         if (p.estado === 'PROPUESTA') {
           h += '<p class="nota">' + (casa ? '¿Te sirve ese día?' : 'Valídalo con la administración (a veces hay que reservar el ascensor) y confírmanos.') + '</p>' +
             '<div class="opciones"><button class="opcion" id="noPosible">No es posible</button><button class="opcion elegido" id="aprobarMud">✓ Aprobar</button></div>' +
