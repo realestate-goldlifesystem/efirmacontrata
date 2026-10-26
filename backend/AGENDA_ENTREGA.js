@@ -232,7 +232,9 @@ function proponerSalaEntrega(datos) {
           String(s.d.inm.propietario || '').split(' ')[0], cuerpo,
           htmlBotonesCorreo([{ texto: '🔑 Ver los horarios', color: '#b8860b', url: urlSalaEntrega(idCita, 'p', _tokenPropietarioEntrega(idCita)) }]));
       } else {
-        _encolarAvisoInquilino_(s, 'HORARIOS DE ENTREGA', cuerpo.replace('Elige el que te sirva', 'Entra a tu sala, elige el que te sirva'));
+        // Mientras se coordina la entrega el propietario no tiene paso "Enviar": el correo sale ya
+        _correoSala_(s, 'INQUILINO', '🔑 Te propusieron horarios para la entrega - Gold Life', 'ELIGE EL HORARIO',
+          cuerpo, '🔑 Ver los horarios');
       }
     } catch (e) { Logger.log('No se pudo avisar la propuesta de entrega: ' + e.message); }
     try {
