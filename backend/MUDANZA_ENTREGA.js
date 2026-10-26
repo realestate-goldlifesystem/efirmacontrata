@@ -128,13 +128,27 @@ function infoMudanza_(s) {
 function alProponerMudanza_(s, datosNuevos, datosAntes) {
   const p = _procesoMudanza_(s.cita.fila, s.cita.col);
   const cambio = !datosAntes || datosAntes.mudanza !== datosNuevos.mudanza || datosAntes.horaMudanza !== datosNuevos.horaMudanza;
-  if (!cambio && p.estado) return;
-  p.estado = 'PROPUESTA'; p.motivo = '';
-  _guardarProcesoMudanza_(s.cita, p, 'el inquilino propuso mudarse el ' + _textoMudanza_(datosNuevos));
-  _correoSala_(s, 'PROPIETARIO', '🚚 Propuesta de mudanza: ' + _textoMudanza_(datosNuevos) + ' - Gold Life', 'FECHA DE MUDANZA',
-    `<strong>${s.d.inquilino}</strong> propone mudarse al inmueble el <strong>${_textoMudanza_(datosNuevos)}</strong>.<br><br>` +
-    (_esCasa_(s.d) ? 'Confírmanos si ese día está bien.' : 'Valídalo con la administración del conjunto (a veces hay que reservar el ascensor o algunos espacios) y confírmanos si es posible.'),
-    '🚚 Revisar la fecha de mudanza');
+  if (!cambio && p.estado && !p.horariosPendientes) return;
+  // Un solo correo al propietario: los horarios de entrega (si esperaban) + la mudanza + quiénes y vehículos
+  const fila = s.cita.sheet.getRange(s.cita.numFila, 1, 1, s.cita.sheet.getLastColumn()).getValues()[0];
+  const conHorarios = p.horariosPendientes && String(valorCita(fila, s.cita.col, 'ESTADO') || '').trim() === ESTADO_POR_COORDINAR &&
+    String(valorCita(fila, s.cita.col, 'PROPUESTO POR') || '') === 'INQUILINO';
+  const pedidos = conHorarios ? _pedidosDe(fila, s.cita.col) : [];
+  delete p.horariosPendientes;
+  if (cambio || !p.estado) { p.estado = 'PROPUESTA'; p.motivo = ''; }
+  _guardarProcesoMudanza_(s.cita, p, 'el inquilino propuso mudarse el ' + _textoMudanza_(datosNuevos) + (pedidos.length ? ' (junto con sus horarios de entrega)' : ''));
+  const personas = (datosNuevos.personas || []).map(x => x.nombre).filter(Boolean);
+  const vehiculos = (datosNuevos.vehiculos || []).map(v => (v.tipo === 'MOTO' ? 'Moto ' : 'Carro ') + v.marca + ' ' + v.modelo + ' · ' + v.placa);
+  const cuerpo = (pedidos.length
+      ? `<strong>${s.d.inquilino}</strong> terminó su parte de la entrega.<br><br><strong>🔑 Horarios para recibir el inmueble</strong> (elige uno):<br>` +
+        pedidos.map(t => '• ' + _textoHorario(t)).join('<br>') + '<br><br>'
+      : `<strong>${s.d.inquilino}</strong> propone su mudanza.<br><br>`) +
+    `<strong>🚚 Mudanza:</strong> ${_textoMudanza_(datosNuevos)}<br>` +
+    `<strong>👥 También viven:</strong> ${personas.length ? personas.join(', ') : 'nadie más'}<br>` +
+    `<strong>🚗 Vehículos:</strong> ${vehiculos.length ? vehiculos.join('; ') : 'ninguno'}<br><br>` +
+    (_esCasa_(s.d) ? 'Confírmanos si el día de la mudanza está bien.' : 'Valida la mudanza con la administración del conjunto (a veces hay que reservar el ascensor) y apruébala en la sala.');
+  _correoSala_(s, 'PROPIETARIO', pedidos.length ? '🔑 El inquilino eligió horarios de entrega y su mudanza - Gold Life' : '🚚 Propuesta de mudanza: ' + _textoMudanza_(datosNuevos) + ' - Gold Life',
+    pedidos.length ? 'ENTREGA Y MUDANZA' : 'FECHA DE MUDANZA', cuerpo, pedidos.length ? '🔑 Abrir la sala de entrega' : '🚚 Revisar la fecha de mudanza');
 }
 
 /** El propietario aprueba la fecha de mudanza o dice que no es posible. */

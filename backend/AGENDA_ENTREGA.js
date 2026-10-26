@@ -218,9 +218,14 @@ function proponerSalaEntrega(datos) {
     const cuerpo = `<strong>${quien}</strong> propuso estos horarios para la entrega del inmueble:<br><br>${lista}<br><br>` +
       'Elige el que te sirva y la entrega queda agendada. Si ninguno te sirve, propón otros.' +
       (conFormato ? '<br><br>📄 Además, la administración del conjunto tiene su propio <strong>formato de mudanza</strong>: en la sala de entrega lo descargas, lo llenas y lo cargas.' : '');
+    const diferir = s.rol === 'INQUILINO' && !_datosMudanzaDe(fila, col);
+    if (diferir) {
+      const pm = _procesoMudanza_(fila, col); pm.horariosPendientes = true;
+      _guardarProcesoMudanza_(s.cita, pm, 'los horarios del inquilino esperan a que termine el paso a paso');
+    }
     try {
       if (s.rol === 'INQUILINO') {
-        if (s.d.inm.correoPropietario) enviarCorreoCita(s.d.inm.correoPropietario, '🔑 Te propusieron horarios para la entrega - Gold Life', 'ELIGE EL HORARIO',
+        if (s.d.inm.correoPropietario && !diferir) enviarCorreoCita(s.d.inm.correoPropietario, '🔑 Te propusieron horarios para la entrega - Gold Life', 'ELIGE EL HORARIO',
           String(s.d.inm.propietario || '').split(' ')[0], cuerpo,
           htmlBotonesCorreo([{ texto: '🔑 Ver los horarios', color: '#b8860b', url: urlSalaEntrega(idCita, 'p', _tokenPropietarioEntrega(idCita)) }]));
       } else {
@@ -234,6 +239,7 @@ function proponerSalaEntrega(datos) {
         etiquetaTipoCitaHtml('ENTREGA') + `<strong>${quien}</strong> propuso para la entrega de <strong>${s.d.direccion}</strong>:<br>${lista}<br><br>Quedan apartados en tu agenda mientras la otra parte responde.`, '');
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
     if (conFormato) { try { avisarFormatoAlInquilino_(s, true); } catch (e) { Logger.log('⚠️ Aviso del formato: ' + e.message); } }
+    if (diferir) return { ok: true, mensaje: 'Guardamos tus horarios. Se los enviamos al propietario junto con los datos de tu mudanza cuando termines los pasos.' };
     return { ok: true, mensaje: 'Listo. Le enviamos tus horarios ' + (s.rol === 'INQUILINO' ? 'al propietario' : 'a ' + s.d.inquilino.split(' ')[0]) + ' y te avisamos cuando responda.' };
   } finally {
     lock.releaseLock();

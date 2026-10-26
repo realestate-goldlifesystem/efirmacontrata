@@ -362,7 +362,7 @@
       const b = $('enviar'); b.disabled = true; b.textContent = 'Enviando…';
       llamar('proponerSalaEntrega', { pedidos: elegidos }).then(r => {
         if (!r.ok) { b.disabled = false; pintarElegidos(); alert(r.mensaje || 'No pudimos enviar tus horarios.'); cache = {}; abrirDia(diaSel); return; }
-        pintarExito('¡Listo, enviamos tus horarios!', '', r.mensaje || '');
+        pintarExito(info.rol === 'INQUILINO' && !mudanza ? '¡Listo, guardamos tus horarios!' : '¡Listo, enviamos tus horarios!', '', r.mensaje || '');
       }).catch(() => { b.disabled = false; pintarElegidos(); alert('Error de red. Intenta de nuevo.'); });
     }
 
