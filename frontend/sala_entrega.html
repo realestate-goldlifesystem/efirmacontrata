@@ -470,6 +470,8 @@
     // MUDANZA (con la entrega ya agendada): Mudanza · (Formato) · Resumen — así solo ofrece horas después de la entrega exacta.
     // Si aceptó un horario antes de dar personas y vehículos, esos pasos pasan al formulario de la mudanza.
     let paso = 1, formFecha = '', formHora = '', rechazada = null;
+    // "Solo yo" y "No tengo" se eligen (quedan marcados) y ahí se activa "Siguiente"
+    let soloYo = false, sinVehiculos = false;
     const etapaMudanza = () => info.estado === 'AGENDADA';
     const datosEnviados = () => !!(mudanza && (mudanza.enviadoEntrega || mudanza.mudanza));
     const mudanzaEnviada = () => !!(mudanza && mudanza.mudanza);
@@ -486,7 +488,7 @@
     const claveBorrador = () => 'borrador_sala_' + CITA;
     function guardarBorrador() {
       if (enviado()) return;
-      grabarLocal(claveBorrador(), JSON.stringify({ formFecha: formFecha, formHora: formHora, formPersonas: formPersonas, formVehiculos: formVehiculos }));
+      grabarLocal(claveBorrador(), JSON.stringify({ formFecha: formFecha, formHora: formHora, formPersonas: formPersonas, formVehiculos: formVehiculos, soloYo: soloYo, sinVehiculos: sinVehiculos }));
     }
     const leerLocal = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
     const grabarLocal = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
@@ -531,7 +533,7 @@
       try {
         const b = JSON.parse(leerLocal(claveBorrador()) || 'null');
         if (b && !mudanzaEnviada()) { formFecha = b.formFecha || ''; formHora = b.formHora || ''; }
-        if (b && !datosEnviados()) { formPersonas = b.formPersonas || []; formVehiculos = b.formVehiculos || []; }
+        if (b && !datosEnviados()) { formPersonas = b.formPersonas || []; formVehiculos = b.formVehiculos || []; soloYo = !!b.soloYo; sinVehiculos = !!b.sinVehiculos; }
       } catch (e) {}
       if (nuevaFecha()) {
         rechazada = { fecha: mudanza.mudanza, hora: mudanza.horaMudanza || '' };
@@ -581,8 +583,8 @@
       const vehiculoOk = (v) => v.marca.trim() && v.modelo.trim() && PLACA[v.tipo].test(v.placa);
       const n = nombrePaso();
       if (n === 'Mudanza') return !!(formFecha && formHora);
-      if (n === 'Personas') return formPersonas.length > 0 && formPersonas.every(personaOk);
-      if (n === 'Vehículos') return formVehiculos.length > 0 && formVehiculos.every(vehiculoOk);
+      if (n === 'Personas') return formPersonas.length ? formPersonas.every(personaOk) : soloYo;
+      if (n === 'Vehículos') return formVehiculos.length ? formVehiculos.every(vehiculoOk) : sinVehiculos;
       if (n === 'Formato') return !!(P().version && P().version.estado !== 'CORREGIR');
       if (n === 'Resumen') return !etapaMudanza() || (!!(formFecha && formHora) && (P().formato !== 'SI' || !!(P().version && P().version.estado !== 'CORREGIR')));
       return true;
@@ -690,11 +692,11 @@
     function pasoPersonas() {
       $('vista').innerHTML = '<div class="bloque entra"><h2>👥 ¿Quién más va a vivir contigo?</h2>' +
         '<p class="nota">La administración lo pide para el registro de residentes.</p>' +
-        '<button class="opcion grande" id="soloYo">🙋 Solo yo</button>' +
+        `<button class="opcion grande${soloYo && !formPersonas.length ? ' elegido' : ''}" id="soloYo">${soloYo && !formPersonas.length ? '✓ ' : ''}🙋 Solo yo</button>` +
         '<div id="listaPersonas"></div><button class="agregar" id="agregarPersona">＋ Agregar persona</button>' +
-        '<div id="listaVehiculos" class="oculto"></div>' + navPaso('Siguiente ›') + '<p class="nota centro">Si vives solo/a, toca “Solo yo”.</p></div>';
-      $('soloYo').onclick = () => { formPersonas = []; guardarBorrador(); irPaso(paso + 1); };
-      $('agregarPersona').onclick = () => { if (formPersonas.length < 4) { formPersonas.push({ nombre: '', tipoDocumento: 'CC', documento: '', celular: '', correo: '' }); pintarListas(); } };
+        '<div id="listaVehiculos" class="oculto"></div>' + navPaso('Siguiente ›') + '<p class="nota centro">Si vives solo/a, elige “Solo yo” y toca Siguiente.</p></div>';
+      $('soloYo').onclick = () => { formPersonas = []; soloYo = true; guardarBorrador(); irPaso(paso); };
+      $('agregarPersona').onclick = () => { if (formPersonas.length < 4) { soloYo = false; $('soloYo').classList.remove('elegido'); $('soloYo').textContent = '🙋 Solo yo'; formPersonas.push({ nombre: '', tipoDocumento: 'CC', documento: '', celular: '', correo: '' }); pintarListas(); } };
       pintarListas();
       enlazarNav(() => {
         if (formPersonas.some(p => p.nombre.trim().length < 3 || p.documento.length < 5)) return errPaso('Escribe el nombre y el documento de cada persona.');
@@ -705,11 +707,11 @@
     function pasoVehiculos() {
       $('vista').innerHTML = '<div class="bloque entra"><h2>🚗 ¿Tienen carro o moto?</h2>' +
         '<p class="nota">Para que la administración los registre en el parqueadero.</p>' +
-        '<button class="opcion grande" id="noTengo">🚶 No tengo</button>' +
+        `<button class="opcion grande${sinVehiculos && !formVehiculos.length ? ' elegido' : ''}" id="noTengo">${sinVehiculos && !formVehiculos.length ? '✓ ' : ''}🚶 No tengo</button>` +
         '<div id="listaVehiculos"></div><button class="agregar" id="agregarVehiculo">＋ Agregar vehículo</button>' +
-        '<div id="listaPersonas" class="oculto"></div><button id="agregarPersona" class="oculto"></button>' + navPaso('Siguiente ›') + '<p class="nota centro">Si no tienes vehículo, toca “No tengo”.</p></div>';
-      $('noTengo').onclick = () => { formVehiculos = []; guardarBorrador(); irPaso(paso + 1); };
-      $('agregarVehiculo').onclick = () => { if (formVehiculos.length < 10) { formVehiculos.push({ tipo: 'CARRO', marca: '', modelo: '', placa: '' }); pintarListas(); } };
+        '<div id="listaPersonas" class="oculto"></div><button id="agregarPersona" class="oculto"></button>' + navPaso('Siguiente ›') + '<p class="nota centro">Si no tienes vehículo, elige “No tengo” y toca Siguiente.</p></div>';
+      $('noTengo').onclick = () => { formVehiculos = []; sinVehiculos = true; guardarBorrador(); irPaso(paso); };
+      $('agregarVehiculo').onclick = () => { if (formVehiculos.length < 10) { sinVehiculos = false; $('noTengo').classList.remove('elegido'); $('noTengo').textContent = '🚶 No tengo'; formVehiculos.push({ tipo: 'CARRO', marca: '', modelo: '', placa: '' }); pintarListas(); } };
       pintarListas();
       enlazarNav(() => {
         const malo = formVehiculos.find(v => !v.marca.trim() || !v.modelo.trim() || !PLACA[v.tipo].test(v.placa));
@@ -1189,7 +1191,7 @@
         `<input data-p="${i}" data-c="documento" inputmode="${p.tipoDocumento === 'PA' ? 'text' : 'numeric'}"${p.tipoDocumento === 'PA' ? ' style="text-transform:uppercase"' : ''} placeholder="${p.tipoDocumento === 'PA' ? 'Número de pasaporte' : 'Número de documento'}" value="${esc(p.documento)}">` +
         `<input data-p="${i}" data-c="celular" type="tel" inputmode="numeric" placeholder="Celular (opcional)" value="${esc(p.celular)}">` +
         `<input data-p="${i}" data-c="correo" type="email" placeholder="Correo (opcional)" value="${esc(p.correo)}"></div>`).join('')
-        : '<p class="nota" style="margin:4px 0 0;">Solo tú. Si alguien más vivirá contigo, agrégalo.</p>';
+        : '';
       $('agregarPersona').classList.toggle('oculto', formPersonas.length >= 4);
       const opciones = (tipo, marca) => {
         const lista = (info.marcas && info.marcas[tipo]) || [];
@@ -1205,7 +1207,7 @@
           (otra || v._otra ? `<input data-v="${i}" data-c="marca" placeholder="Escribe la marca" value="${esc(v.marca)}">` : '') +
           `<input data-v="${i}" data-c="modelo" placeholder="Línea o modelo (ej. CX-30, NKD 125)" value="${esc(v.modelo)}">` +
           `<input data-v="${i}" data-c="placa" class="placa" maxlength="6" placeholder="${v.tipo === 'MOTO' ? 'Placa: ABC12D' : 'Placa: ABC123'}" value="${esc(v.placa)}"></div>`;
-      }).join('') : '<p class="nota" style="margin:4px 0 0;">Sin vehículos. Si tienen, agrégalos para avisarle a la administración.</p>';
+      }).join('') : '';
       $('listaVehiculos').querySelectorAll('[data-qv]').forEach(b => b.onclick = () => { formVehiculos.splice(Number(b.dataset.qv), 1); pintarListas(); });
       $('listaPersonas').querySelectorAll('[data-qp]').forEach(b => b.onclick = () => { formPersonas.splice(Number(b.dataset.qp), 1); pintarListas(); });
       $('listaPersonas').querySelectorAll('select').forEach(sel => sel.onchange = () => {
