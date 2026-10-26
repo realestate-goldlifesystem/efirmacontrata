@@ -495,3 +495,18 @@ function avisarEntregaAlPropietario_(s, datosEnt) {
   _correoSala_(s, 'PROPIETARIO', pedidos.length ? '🔑 El inquilino eligió horarios para la entrega - Gold Life' : '🔑 Datos del inquilino para la entrega - Gold Life',
     pedidos.length ? 'ELIGE EL HORARIO' : 'DATOS DE LA ENTREGA', cuerpo, pedidos.length ? '🔑 Elegir el horario de la entrega' : '🔑 Abrir la sala de entrega');
 }
+
+// ===== Avance real de los procesos largos de la sala (27-oct-2026) =====
+// El proceso anota en qué etapa va (CacheService, 10 min) con la clave que manda la página
+// (datos.prog); la página consulta progresoSala cada segundo y mueve la barra según eso.
+function _prog_(datos, pct, texto) {
+  if (!datos || !/^[a-z0-9]{8,40}$/i.test(String(datos.prog || ''))) return;
+  try { CacheService.getScriptCache().put('PROG_' + datos.prog, JSON.stringify({ pct: pct, texto: texto }), 600); } catch (e) {}
+}
+
+/** En qué va el proceso (sin lock: corre mientras el otro trabaja). */
+function progresoSala(datos) {
+  if (!/^[a-z0-9]{8,40}$/i.test(String(datos.prog || ''))) return { ok: false };
+  const v = CacheService.getScriptCache().get('PROG_' + datos.prog);
+  return v ? Object.assign({ ok: true }, JSON.parse(v)) : { ok: true, pct: 0, texto: '' };
+}

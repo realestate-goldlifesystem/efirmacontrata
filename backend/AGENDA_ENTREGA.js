@@ -249,9 +249,11 @@ function proponerSalaEntrega(datos) {
 
 /** Una parte acepta uno de los horarios que propuso la otra: queda agendada. */
 function aceptarSalaEntrega(datos) {
+  _prog_(datos, 5, 'Preparando la agenda');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
+    _prog_(datos, 12, 'Verificando que el horario siga libre');
     const s = _salaEntrega_(datos);
     if (s.error) return { ok: false, mensaje: s.error };
     const { sheet, col, numFila, fila } = s.cita;
@@ -262,6 +264,7 @@ function aceptarSalaEntrega(datos) {
     const idCita = String(datos.c);
     if (!_horarioLibreTipo_(ts, 'ENTREGA', idCita)) return { ok: false, mensaje: 'Ese horario acaba de ser ocupado. Propón otros.' };
 
+    _prog_(datos, 30, 'Creando el evento en el calendario');
     const inicio = new Date(ts);
     const fin = new Date(ts + TIPOS_AGENDA.ENTREGA.duracionMin * 60000);
     const ev = CalendarApp.getDefaultCalendar().createEvent(
@@ -271,6 +274,7 @@ function aceptarSalaEntrega(datos) {
           `Propietario: ${s.d.inm.propietario || ''} · ${s.d.inm.celularPropietario || ''} · ${s.d.inm.correoPropietario || ''}`,
         location: s.d.direccion, guests: s.d.correoInquilino, sendInvites: false
       });
+    _prog_(datos, 45, 'Guardando la entrega en el sistema');
     const escribir = (n, v) => { if (col[n]) sheet.getRange(numFila, col[n]).setValue(v); };
     escribir('ESTADO', ESTADOS_CITA.PENDIENTE);
     escribir('FECHA CITA', new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate()));
@@ -284,6 +288,7 @@ function aceptarSalaEntrega(datos) {
     _cacheApartados = null;
 
     // Constancia a las dos partes y aviso a Leonardo
+    _prog_(datos, 58, 'Enviando la confirmación al inquilino');
     try {
       const tokInq = String(valorCita(fila, col, 'TOKEN PROPIETARIO') || '');
       const c = { idCita: idCita, token: tokInq, nombre: s.d.inquilino, servicio: 'Entrega del inmueble', direccion: s.d.direccion, inicio: inicio, duracionMin: TIPOS_AGENDA.ENTREGA.duracionMin };
@@ -293,6 +298,7 @@ function aceptarSalaEntrega(datos) {
         htmlBotonesCorreo([{ texto: '🚚 Elegir mi mudanza', color: '#b8860b', url: urlSalaEntrega(idCita, 'i', tokInq) }]) + (m.secundario || ''),
         [archivoCalendarioCita(c)]);
     } catch (e) { Logger.log('No se pudo avisar al inquilino: ' + e.message); }
+    _prog_(datos, 68, 'Enviando la confirmación al propietario');
     try {
       if (s.d.inm.correoPropietario) enviarCorreoCita(s.d.inm.correoPropietario, `🔑 Entrega agendada: ${_textoHorario(ts)} - Gold Life`, 'ENTREGA AGENDADA',
         String(s.d.inm.propietario || '').split(' ')[0],
@@ -321,11 +327,13 @@ function aceptarSalaEntrega(datos) {
       }
     } catch (e) { Logger.log('⚠️ Revisión de la mudanza: ' + e.message); }
     // Pagos (VIDA_CONTRATO_PAGOS.js): accesos del propietario y cobro del primer mes
+    _prog_(datos, 80, 'Preparando los accesos y el cobro del primer mes');
     try { alAcordarEntrega_(s.d.inm.id); } catch (e) { Logger.log('⚠️ alAcordarEntrega_: ' + e.message); }
     // Si el inquilino ya dio los datos de la mudanza, salen las cartas
     if ((_datosMudanzaDe(fila, col) || {}).mudanza) generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
     // Si el propietario cargó el formato antes de acordar la entrega, ahora le llega al inquilino
     try { avisarFormatoAlInquilino_(s); } catch (e) { Logger.log('⚠️ Aviso del formato: ' + e.message); }
+    _prog_(datos, 96, 'Terminando');
     return { ok: true, mensaje: 'Listo: la entrega quedó para el ' + _textoHorario(ts) + '. Les enviamos los detalles por correo.' };
   } finally {
     lock.releaseLock();
