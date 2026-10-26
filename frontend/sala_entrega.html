@@ -425,12 +425,14 @@
         agendando = true;
         qq('.no').disabled = true; qq('.no').classList.add('bloqueado');
         qq('.si').disabled = true; qq('.si').textContent = 'Agendando…';
-        llamar('aceptarSalaEntrega', { timestamp: ts }).then(r => {
+        // Barra de 0 a 100 % mientras se crea la agenda
+        const pr = progreso('Agendando la entrega');
+        llamar('aceptarSalaEntrega', { timestamp: ts }).then(r => pr.fin(r && r.ok).then(() => r)).then(r => {
           agendando = false; cerrar();
           if (!r.ok) { alert(r.mensaje || 'No pudimos agendar ese horario.'); return cargar(); }
           info.estado = 'AGENDADA';
           pintarExito('¡La entrega quedó agendada!', textoSlot(ts), r.mensaje || '');
-        }).catch(() => { agendando = false; qq('.no').disabled = false; qq('.no').classList.remove('bloqueado'); qq('.si').disabled = false; qq('.si').textContent = 'Sí, agendar la entrega'; alert('Error de red. Intenta de nuevo.'); });
+        }).catch(() => { pr.fin(false); agendando = false; qq('.no').disabled = false; qq('.no').classList.remove('bloqueado'); qq('.si').disabled = false; qq('.si').textContent = 'Sí, agendar la entrega'; alert('Error de red. Intenta de nuevo.'); });
       };
       // Deslizar desde cualquier parte de la barra; al 80 % aparece el botón
       const pista = qq('.deslizar'), perilla = qq('.perilla'), relleno = qq('.relleno');
