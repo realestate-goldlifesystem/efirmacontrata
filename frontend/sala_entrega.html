@@ -212,6 +212,7 @@
     .rechazoMotivo { margin: 0 0 16px; padding: 14px 16px; border-radius: 14px; text-align: left; font-size: 16px; line-height: 1.5; font-style: italic;
       color: #fde68a; background: rgba(212,175,55,.1); border: 1px solid rgba(212,175,55,.45); border-left: 4px solid var(--oro); }
     .rechazoPide { font-weight: 600; color: #f5f5f4; }
+    .congelado { pointer-events: none; } .congelado .hora, .congelado input { opacity: .6; }
     textarea:focus { outline: none; border-color: var(--oro); }
   </style>
   <script src="aviso.js?v=1"></script>
@@ -716,12 +717,16 @@
     function guardarMudanza() {
       if (!formFecha || !formHora) return errPaso('Falta el día y la hora de la mudanza.');
       const b = $('siguiente'); b.disabled = true; b.textContent = 'Enviando…';
+      // Mientras envía, nada del formulario se puede tocar (ni la fecha ni la hora)
+      const congelar = (si) => { $('vista').classList.toggle('congelado', si); $('vista').querySelectorAll('input, select, textarea, button').forEach(x => { x.disabled = si; }); };
+      congelar(true);
+      const textoB = nuevaFecha() ? 'Enviar la nueva fecha' : 'Enviar al propietario';
       const datos = { mudanza: formFecha, horaMudanza: formHora, personas: formPersonas, vehiculos: formVehiculos.map(v => ({ tipo: v.tipo, marca: v.marca.trim(), modelo: v.modelo.trim(), placa: v.placa })) };
       llamar('guardarDatosEntrega', datos).then(r => {
-        if (!r.ok) { b.disabled = false; b.textContent = 'Enviar al propietario'; return errPaso(r.mensaje || 'No pudimos guardar tus datos.'); }
+        if (!r.ok) { congelar(false); b.textContent = textoB; return errPaso(r.mensaje || 'No pudimos guardar tus datos.'); }
         try { localStorage.removeItem(claveBorrador()); } catch (e) {}
         recargar('ultimo', r.mensaje);
-      }).catch(() => { b.disabled = false; b.textContent = 'Enviar al propietario'; errPaso('Error de red. Intenta de nuevo.'); });
+      }).catch(() => { congelar(false); b.textContent = textoB; errPaso('Error de red. Intenta de nuevo.'); });
     }
 
     // ================= Archivos: descargar y cargar =================
