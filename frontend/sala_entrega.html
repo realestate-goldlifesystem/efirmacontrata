@@ -874,16 +874,22 @@
         '<button class="opcion" id="corregirVersion">Pedir corrección</button><button class="opcion elegido" id="aprobarVersion">✓ Aprobar</button></div>';
       $('atrasP').onclick = () => irPasoP(pasoP - 1);
       mostrarEnVisor('version', $('visorDoc'));
+      // Mientras responde, todos los botones quedan bloqueados (nada de aprobar y corregir a la vez)
+      let ocupado = false;
+      const bloquear = (si) => { ocupado = si; caja.querySelectorAll('.visorBotones button').forEach(b => { b.disabled = si; b.classList.toggle('bloqueado', si); }); };
       const responder = (extra, boton, texto) => {
+        if (ocupado && !boton.closest('.confirmar')) return Promise.resolve();
+        bloquear(true);
         boton.disabled = true; boton.textContent = texto;
         return llamar('revisarFormatoMudanza', extra).then(r => {
-          if (!r.ok) { boton.disabled = false; alert(r.mensaje || 'No se pudo.'); return recargar(); }
+          if (!r.ok) { bloquear(false); boton.disabled = false; alert(r.mensaje || 'No se pudo.'); return recargar(); }
           recargar(null, r.mensaje);
-        }).catch(() => { boton.disabled = false; alert('Error de red. Intenta de nuevo.'); });
+        }).catch(() => { bloquear(false); boton.disabled = false; alert('Error de red. Intenta de nuevo.'); });
       };
       $('aprobarVersion').onclick = () => responder({ decision: 'APROBAR' }, $('aprobarVersion'), 'Aprobando…');
       // La corrección se escribe en una ventana aparte: el visor no cambia de tamaño
       $('corregirVersion').onclick = () => {
+        if (ocupado) return;
         const capa = document.createElement('div');
         capa.className = 'confirmar';
         capa.innerHTML = '<div class="caja" role="dialog" aria-modal="true"><div class="icono">✏️</div><h3>¿Qué debe corregir?</h3>' +
@@ -979,12 +985,16 @@
       if (!casa && solo !== 'mudanza') h += '<div class="bloque entra"><h2>📄 Documento para la administración</h2>' + formatoPropietarioHtml(p) + '</div>';
       caja.innerHTML = h;
       const conAccion = (id, accion, extra, texto, barra) => {
-        const b = $(id); b.disabled = true; b.textContent = texto || 'Enviando…';
+        if (caja.dataset.ocupado) return;
+        caja.dataset.ocupado = '1';
+        caja.querySelectorAll('button').forEach(x => { x.disabled = true; });
+        const b = $(id); b.textContent = texto || 'Enviando…';
+        const soltar = () => { delete caja.dataset.ocupado; caja.querySelectorAll('button').forEach(x => { x.disabled = false; }); };
         const pr = barra ? progreso(barra) : null;
         return llamar(accion, extra).then(r => (pr ? pr.fin(r.ok) : Promise.resolve()).then(() => {
-          if (!r.ok) { b.disabled = false; alert(r.mensaje || 'No se pudo.'); return recargar(); }
+          if (!r.ok) { soltar(); alert(r.mensaje || 'No se pudo.'); return recargar(); }
           recargar(null, r.mensaje);
-        })).catch(() => { if (pr) pr.fin(false); b.disabled = false; alert('Error de red. Intenta de nuevo.'); });
+        })).catch(() => { if (pr) pr.fin(false); soltar(); alert('Error de red. Intenta de nuevo.'); });
       };
       if ($('aprobarMud')) $('aprobarMud').onclick = () => conAccion('aprobarMud', 'responderMudanza', { decision: 'APROBAR' }, 'Aprobando…');
       if ($('noPosible')) $('noPosible').onclick = () => { $('cajaMotivo').classList.remove('oculto'); $('motivoMud').focus(); };
