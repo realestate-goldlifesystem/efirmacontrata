@@ -205,6 +205,7 @@ function correoPasoCita(paso, c) {
 /** Arma y envía un paso. */
 function enviarPasoCita(paso, correo, c) {
   const m = correoPasoCita(paso, c);
+  if (c.extra) m.mensaje += c.extra;
   // Al agendar y al reagendar va adjunta la cita para el calendario (Outlook, Apple…)
   const adjuntos = (paso === 'AGENDADA' || paso === 'REAGENDADA') ? [archivoCalendarioCita(c)] : null;
   enviarCorreoCita(correo, m.asunto, m.titulo, m.nombre, m.mensaje, m.secundario, adjuntos);

@@ -517,3 +517,17 @@ function progresoSala(datos) {
   const v = CacheService.getScriptCache().get('PROG_' + datos.prog);
   return v ? Object.assign({ ok: true }, JSON.parse(v)) : { ok: true, pct: 0, texto: '' };
 }
+
+// ===== Recordatorio de la mudanza (26-oct-2026) =====
+// Los recordatorios de la entrega (3 días, 2 días, mañana, 3 horas) le recuerdan al
+// inquilino su mudanza mientras no la haya elegido o el propietario le haya pedido otra fecha.
+function recordatorioMudanza_(fila, col, paso, idCita, tokenInq) {
+  if (['H72', 'H48', 'H24', 'H3'].indexOf(paso) === -1) return '';
+  const datos = _datosMudanzaDe(fila, col);
+  const p = _procesoMudanza_(fila, col);
+  const falta = !datos || !datos.mudanza;
+  if (!falta && p.estado !== 'NO_POSIBLE') return '';
+  return '<br><br>🚚 <strong>' + (falta ? 'Todavía no has elegido el día de tu mudanza.' : 'El propietario te pidió otra fecha para la mudanza.') + '</strong> ' +
+    'Entra a tu sala de entrega y elígela (siempre después de la entrega).' +
+    htmlBotonesCorreo([{ texto: '🚚 Elegir mi mudanza', color: '#b8860b', url: urlSalaEntrega(idCita, 'i', tokenInq) }]);
+}
