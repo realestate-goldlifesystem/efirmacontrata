@@ -256,7 +256,7 @@
     function pintarElegir(otro, propuestaNueva) {
       elegidos = []; cache = {};
       $('vista').innerHTML =
-        `<div class="entra"><h2 style="text-align:center;margin-top:6px;">¿Cuándo puedes hacer la entrega?</h2>` +
+        `<div class="entra"><h2 style="text-align:center;margin-top:6px;">${info.rol === 'INQUILINO' ? '¿Cuándo puedes recibir el inmueble?' : '¿Cuándo puedes hacer la entrega?'}</h2>` +
         (propuestaNueva ? `<p class="nota centro">Los horarios que propuso ${otro} ya no aparecen.</p>` : '') +
         '<div class="instruccion3" id="instruccion3"><div class="casillas" id="casillas"></div>' +
         `<p><b>Marca 3 horarios</b> que te sirvan<br><small>${otro} escoge uno de los 3. Pueden ser de días distintos.</small></p></div>` +
