@@ -185,6 +185,23 @@
     textarea { width: 100%; padding: 12px 14px; margin-top: 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 14.5px; font-family: inherit; resize: vertical; }
     .barraP { height: 8px; border-radius: 999px; background: var(--panel2); overflow: hidden; margin: 0 0 14px; }
     .barraP div { height: 100%; width: 0; background: linear-gradient(90deg, #e8c766, var(--oro)); transition: width .3s ease; }
+    /* Visor del documento (propietario, paso 3): la página ocupa la pantalla exacta, sin scroll;
+       arriba los pasos, en el centro el documento y abajo los botones */
+    body.visor { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; padding: clamp(8px, 2vh, 20px) 10px; }
+    body.visor .tarjeta { height: 100%; max-width: 900px; display: flex; flex-direction: column; padding: clamp(12px, 2vh, 22px) clamp(10px, 3vw, 22px); }
+    body.visor #contenido { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    body.visor #saludo, body.visor #inmueble { display: none; }
+    body.visor .marca { margin-bottom: 8px; }
+    body.visor #bloqueMudanza { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+    .visorCab { flex-shrink: 0; text-align: center; } .visorCab b { display: block; font-size: 15px; } .visorCab .nota { margin: 2px 0 0; font-size: 12.5px; }
+    .visorDoc { flex: 1; min-height: 0; border-radius: 12px; overflow: hidden; background: #fff; border: 1px solid rgba(212,175,55,.45); box-shadow: 0 15px 40px rgba(0,0,0,.5); }
+    .visorDoc { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .visorImg { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .visorPaginas { display: flex; flex-direction: column; gap: 8px; padding: 8px; background: #e7e5e4; min-height: 100%; }
+    .visorPaginas canvas { width: 100%; height: auto; display: block; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+    .visorBotones { flex-shrink: 0; display: flex; gap: 8px; align-items: stretch; }
+    .visorBotones .secundario { width: auto; margin: 0; padding: 0 14px; }
+    .visorBotones .opcion { margin: 0; padding: 14px 8px; }
     textarea:focus { outline: none; border-color: var(--oro); }
   </style>
 </head>
@@ -206,6 +223,7 @@
     </section>
   </main>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
     const q = new URLSearchParams(location.search);
@@ -806,10 +824,13 @@
     }
 
     function irPasoP(n) {
+      document.body.classList.remove('visor');
       pasoP = n; barraProp();
       const caja = $('bloqueMudanza'); if (caja) caja.remove();
       if (n === 1) { pintar(); botonSiguienteProp(); return; }
       if (n === pasosProp().length) return pasoEnviarProp();
+      const v = P().version;
+      if (n === 3 && P().formato === 'SI' && v && v.estado === 'EN_REVISION') return pasoVisorProp(v);
       $('vista').innerHTML = '';
       pintarPropietario(n === 2 ? 'mudanza' : 'documento');
       navProp($('bloqueMudanza'));
@@ -842,7 +863,80 @@
       };
     }
 
+    // Paso 3 con una versión por revisar: el documento en el centro, sin descargarlo
+    function pasoVisorProp(v) {
+      document.body.classList.add('visor');
+      $('vista').innerHTML = '';
+      const caja = document.createElement('div'); caja.id = 'bloqueMudanza'; $('contenido').appendChild(caja);
+      caja.innerHTML = `<div class="visorCab entra"><b>📄 Formato de mudanza · versión ${v.numero}</b><p class="nota">Revisa que esté completo y firmado antes de enviarlo a la administración.</p></div>` +
+        '<div class="visorDoc entra" id="visorDoc"><p class="nota centro" style="margin-top:40px;color:#57534e;">Cargando el documento…</p></div>' +
+        '<div class="visorBotones entra"><button class="secundario" id="atrasP">‹ Atrás</button>' +
+        '<button class="opcion" id="corregirVersion">Pedir corrección</button><button class="opcion elegido" id="aprobarVersion">✓ Aprobar</button></div>';
+      $('atrasP').onclick = () => irPasoP(pasoP - 1);
+      mostrarEnVisor('version', $('visorDoc'));
+      const responder = (extra, boton, texto) => {
+        boton.disabled = true; boton.textContent = texto;
+        return llamar('revisarFormatoMudanza', extra).then(r => {
+          if (!r.ok) { boton.disabled = false; alert(r.mensaje || 'No se pudo.'); return recargar(); }
+          recargar(null, r.mensaje);
+        }).catch(() => { boton.disabled = false; alert('Error de red. Intenta de nuevo.'); });
+      };
+      $('aprobarVersion').onclick = () => responder({ decision: 'APROBAR' }, $('aprobarVersion'), 'Aprobando…');
+      // La corrección se escribe en una ventana aparte: el visor no cambia de tamaño
+      $('corregirVersion').onclick = () => {
+        const capa = document.createElement('div');
+        capa.className = 'confirmar';
+        capa.innerHTML = '<div class="caja" role="dialog" aria-modal="true"><div class="icono">✏️</div><h3>¿Qué debe corregir?</h3>' +
+          '<textarea id="comentarioV" rows="4" placeholder="Ej. falta la firma o el número de documento"></textarea>' +
+          '<button class="si" id="enviarComentario">Pedir la corrección</button><button class="no">Volver</button></div>';
+        capa.querySelector('.no').onclick = () => capa.remove();
+        capa.onclick = (e) => { if (e.target === capa) capa.remove(); };
+        document.body.appendChild(capa);
+        capa.querySelector('#comentarioV').focus();
+        capa.querySelector('#enviarComentario').onclick = () => {
+          const t = capa.querySelector('#comentarioV').value.trim();
+          if (t.length < 5) return alert('Cuéntale al inquilino qué debe corregir.');
+          responder({ decision: 'CORREGIR', comentario: t }, capa.querySelector('#enviarComentario'), 'Enviando…').then(() => capa.remove());
+        };
+      };
+    }
+
+    // El archivo llega por la sala (con su token) y se dibuja aquí: no se comparte en Drive
+    function mostrarEnVisor(cual, caja) {
+      llamar('descargarArchivoSala', { cual: cual }).then(r => {
+        if (!r.ok) { caja.innerHTML = '<p class="nota centro" style="margin-top:40px;color:#57534e;">' + esc(r.mensaje || 'No pudimos abrir el documento.') + '</p>'; return; }
+        const bytes = Uint8Array.from(atob(r.base64), c => c.charCodeAt(0));
+        if (/^image\//.test(r.mimeType)) {
+          caja.innerHTML = `<img class="visorImg" src="${URL.createObjectURL(new Blob([bytes], { type: r.mimeType }))}" alt="Formato de mudanza">`;
+          return;
+        }
+        if (r.mimeType === 'application/pdf' && window.pdfjsLib) {
+          caja.innerHTML = '<div class="visorPaginas" id="visorPaginas"></div>';
+          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          pdfjsLib.getDocument({ data: bytes }).promise.then(async pdf => {
+            const cont = $('visorPaginas');
+            const ancho = cont.clientWidth || 600;
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const pag = await pdf.getPage(i);
+              const base = pag.getViewport({ scale: 1 });
+              const escala = (ancho / base.width) * (window.devicePixelRatio || 1);
+              const vp = pag.getViewport({ scale: escala });
+              const lienzo = document.createElement('canvas');
+              lienzo.width = vp.width; lienzo.height = vp.height;
+              cont.appendChild(lienzo);
+              await pag.render({ canvasContext: lienzo.getContext('2d'), viewport: vp }).promise;
+            }
+          }).catch(() => { caja.innerHTML = '<p class="nota centro" style="margin-top:40px;color:#57534e;">No pudimos mostrar el PDF.</p>'; });
+          return;
+        }
+        // Word u otro formato: no se puede dibujar aquí, se descarga
+        caja.innerHTML = '<div class="centro" style="padding:40px 16px;color:#44403c;">Este archivo no se puede ver aquí.<br><br><button class="agregar" id="bajarVisor">⬇️ Descargar para revisarlo</button></div>';
+        $('bajarVisor').onclick = () => descargar(cual, $('bajarVisor'));
+      }).catch(() => { caja.innerHTML = '<p class="nota centro" style="margin-top:40px;color:#57534e;">Error de red. Intenta de nuevo.</p>'; });
+    }
+
     function finalPropietario() {
+      document.body.classList.remove('visor');
       const b = $('barraPasos'); if (b) b.remove();
       const caja = $('bloqueMudanza'); if (caja) caja.remove();
       const p = P();
