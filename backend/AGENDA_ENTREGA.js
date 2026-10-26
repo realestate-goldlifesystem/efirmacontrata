@@ -476,9 +476,11 @@ function _datosMudanzaDe(fila, col) {
 
 /** El inquilino guarda la fecha de mudanza, las otras personas y los vehículos. */
 function guardarDatosEntrega(datos) {
+  _prog_(datos, 5, 'Preparando el envío');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
+    _prog_(datos, 12, 'Revisando tus datos');
     const s = _salaEntrega_(datos);
     if (s.error) return { ok: false, mensaje: s.error };
     if (s.rol !== 'INQUILINO') return { ok: false, mensaje: 'Estos datos los da el inquilino.' };
@@ -514,9 +516,12 @@ function guardarDatosEntrega(datos) {
     if (etapa === 'ENTREGA') {
       if (datosYa) return { ok: false, mensaje: 'Ya enviaste tus datos. Te avisamos por correo cuando el propietario responda.' };
       const guardar = { mudanza: '', horaMudanza: '', personas: personas, vehiculos: vehiculos, enviadoEntrega: true, actualizado: new Date().toISOString() };
+      _prog_(datos, 35, 'Guardando tus datos');
       escribirDatos(guardar, 'el inquilino envió el formulario de la entrega');
+      _prog_(datos, 60, 'Enviándole todo al propietario');
       // Un solo correo al propietario: los horarios (si esperaban) + quién vive + vehículos
       try { avisarEntregaAlPropietario_(s, guardar); } catch (e) { Logger.log('⚠️ Aviso de la entrega: ' + e.message); }
+      _prog_(datos, 96, 'Terminando');
       return { ok: true, mensaje: '¡Listo! Le enviamos al propietario tus horarios y tus datos. Cuando la entrega quede agendada, eliges el día de tu mudanza.' };
     }
 
@@ -531,14 +536,19 @@ function guardarDatosEntrega(datos) {
       const v = (proc.versiones || []).slice(-1)[0];
       if (!v || v.estado === 'CORREGIR') return { ok: false, mensaje: 'Primero carga el formato de la administración lleno.' };
     }
+    _prog_(datos, 22, 'Verificando que la fecha de la mudanza esté disponible');
     const errorFecha = _validarMudanza_(s, mudanza, horaMudanza);
     if (errorFecha) return { ok: false, mensaje: errorFecha };
     const guardar = { mudanza: mudanza, horaMudanza: horaMudanza, personas: personas, vehiculos: vehiculos, enviadoEntrega: true, actualizado: new Date().toISOString() };
+    _prog_(datos, 35, 'Guardando tu mudanza');
     escribirDatos(guardar, 'el inquilino propuso la mudanza');
+    _prog_(datos, 50, 'Enviándole la fecha al propietario');
     // Al propietario le llega la fecha de mudanza para aprobar
     try { alProponerMudanza_(s, guardar, tenia ? antes : null); } catch (e) { Logger.log('⚠️ Aviso de la mudanza: ' + e.message); }
     // La carta de bienvenida sale con la fecha de la mudanza (y se rehace si cambia)
+    _prog_(datos, 70, 'Preparando la carta de bienvenida');
     generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
+    _prog_(datos, 96, 'Terminando');
     return { ok: true, mensaje: '¡Listo! Le enviamos la fecha de tu mudanza al propietario para que la apruebe.' };
   } finally {
     lock.releaseLock();

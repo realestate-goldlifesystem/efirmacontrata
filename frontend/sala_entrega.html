@@ -770,11 +770,13 @@
       congelar(true);
       const textoB = nuevaFecha() ? 'Enviar la nueva fecha' : etapa === 'MUDANZA' ? 'Enviar mi mudanza' : 'Enviar al propietario';
       const datos = { etapa: etapa, mudanza: formFecha, horaMudanza: formHora, personas: formPersonas.map(conIndicativo), vehiculos: formVehiculos.map(v => ({ tipo: v.tipo, marca: v.marca.trim(), modelo: v.modelo.trim(), placa: v.placa })) };
-      llamar('guardarDatosEntrega', datos).then(r => {
+      const pr = progresoReal(etapa === 'MUDANZA' ? 'Enviando tu mudanza' : 'Enviando tus datos', etapa === 'MUDANZA' ? '🚚' : '📨');
+      datos.prog = pr.prog;
+      llamar('guardarDatosEntrega', datos).then(r => pr.fin(r && r.ok).then(() => r)).then(r => {
         if (!r.ok) { congelar(false); b.textContent = textoB; return errPaso(r.mensaje || 'No pudimos guardar tus datos.'); }
         try { localStorage.removeItem(claveBorrador()); } catch (e) {}
         recargar('ultimo', r.mensaje);
-      }).catch(() => { congelar(false); b.textContent = textoB; errPaso('Error de red. Intenta de nuevo.'); });
+      }).catch(() => { pr.fin(false); congelar(false); b.textContent = textoB; errPaso('Error de red. Intenta de nuevo.'); });
     }
 
     // ================= Archivos: descargar y cargar =================
