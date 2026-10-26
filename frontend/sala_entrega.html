@@ -809,13 +809,18 @@
 
     function navProp(contenedor) {
       const ultimo = pasoP === pasosProp().length;
-      const listo = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : true;
+      // Paso 3: si ya se puede enviar el documento, primero hay que elegir quién lo envía y enviarlo
+      const puedeEnviarDoc = P().estado === 'APROBADA' && !P().envio && (P().formato === 'NO' || !!(P().version && P().version.estado === 'APROBADA'));
+      const listo = pasoP === 1 ? entregaResuelta() : pasoP === 2 ? mudanzaResuelta() : !puedeEnviarDoc;
       const div = document.createElement('div'); div.className = 'nav entra'; div.id = 'navProp';
       div.innerHTML = (pasoP > 1 ? '<button class="secundario" id="atrasP">‹ Atrás</button>' : '') +
         (ultimo ? '' : `<button class="principal${listo ? '' : ' bloqueado'}" id="sigP">Siguiente: ${pasosProp()[pasoP].toLowerCase()} ›</button>`);
       contenedor.appendChild(div);
       if ($('atrasP')) $('atrasP').onclick = () => irPasoP(pasoP - 1);
-      if ($('sigP')) $('sigP').onclick = () => { if (listo) irPasoP(pasoP + 1); };
+      if ($('sigP')) $('sigP').onclick = () => {
+        if (listo) return irPasoP(pasoP + 1);
+        if (puedeEnviarDoc && pasoP === 3) alert('Primero elige quién lo envía a la administración y toca el botón de enviar.');
+      };
     }
     // En el paso 1, debajo de lo que muestre la negociación (también tras agendar o proponer)
     function botonSiguienteProp() {
