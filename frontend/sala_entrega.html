@@ -162,6 +162,7 @@
     select { width: 100%; padding: 13px 12px; margin-top: 10px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 15px; }
     .ficha { margin-top: 10px; padding: 10px 12px 12px; border-radius: 14px; background: var(--panel); border: 1px solid var(--linea); }
     .fichaCab { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: var(--oro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+    .ficha .tel { display: flex; gap: 8px; } .ficha .tel select { width: 108px; flex: none; } .ficha .tel input { flex: 1; min-width: 0; }
     .quitar { width: 26px; height: 26px; border-radius: 50%; border: 0; background: var(--panel2); color: var(--suave); font-size: 12px; }
     .agregar { width: 100%; margin-top: 10px; padding: 12px; border-radius: 12px; border: 1px dashed rgba(212,175,55,.6); background: none; color: var(--oro); font-size: 14px; font-weight: 600; }
     .placa { text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
@@ -530,7 +531,7 @@
       etiquetaFormulario();
       mudanza = info.mudanza;
       formFecha = mudanza ? (mudanza.mudanza || '') : ''; formHora = mudanza ? (mudanza.horaMudanza || '') : '';
-      formPersonas = (mudanza && mudanza.personas || []).map(p => Object.assign({}, p));
+      formPersonas = (mudanza && mudanza.personas || []).map(p => separarCelular(Object.assign({}, p)));
       formVehiculos = (mudanza && mudanza.vehiculos || []).map(v => Object.assign({}, v));
       try {
         const b = JSON.parse(leerLocal(claveBorrador()) || 'null');
@@ -698,7 +699,7 @@
         '<div id="listaPersonas"></div><button class="agregar" id="agregarPersona">＋ Agregar persona</button>' +
         '<div id="listaVehiculos" class="oculto"></div>' + navPaso('Siguiente ›') + '<p class="nota centro">Si vives solo/a, elige “Solo yo” y toca Siguiente.</p></div>';
       $('soloYo').onclick = () => { formPersonas = []; soloYo = true; guardarBorrador(); irPaso(paso); };
-      $('agregarPersona').onclick = () => { if (formPersonas.length < 4) { soloYo = false; $('soloYo').classList.remove('elegido'); $('soloYo').textContent = '🙋 Solo yo'; formPersonas.push({ nombre: '', tipoDocumento: 'CC', documento: '', celular: '', correo: '' }); pintarListas(); } };
+      $('agregarPersona').onclick = () => { if (formPersonas.length < 4) { soloYo = false; $('soloYo').classList.remove('elegido'); $('soloYo').textContent = '🙋 Solo yo'; formPersonas.push({ nombre: '', tipoDocumento: 'CC', documento: '', indicativo: '57', celular: '', correo: '' }); pintarListas(); } };
       pintarListas();
       enlazarNav(() => {
         if (formPersonas.some(p => p.nombre.trim().length < 3 || p.documento.length < 5)) return errPaso('Escribe el nombre y el documento de cada persona.');
@@ -768,7 +769,7 @@
       const congelar = (si) => { $('vista').classList.toggle('congelado', si); $('vista').querySelectorAll('input, select, textarea, button').forEach(x => { x.disabled = si; }); };
       congelar(true);
       const textoB = nuevaFecha() ? 'Enviar la nueva fecha' : etapa === 'MUDANZA' ? 'Enviar mi mudanza' : 'Enviar al propietario';
-      const datos = { etapa: etapa, mudanza: formFecha, horaMudanza: formHora, personas: formPersonas, vehiculos: formVehiculos.map(v => ({ tipo: v.tipo, marca: v.marca.trim(), modelo: v.modelo.trim(), placa: v.placa })) };
+      const datos = { etapa: etapa, mudanza: formFecha, horaMudanza: formHora, personas: formPersonas.map(conIndicativo), vehiculos: formVehiculos.map(v => ({ tipo: v.tipo, marca: v.marca.trim(), modelo: v.modelo.trim(), placa: v.placa })) };
       llamar('guardarDatosEntrega', datos).then(r => {
         if (!r.ok) { congelar(false); b.textContent = textoB; return errPaso(r.mensaje || 'No pudimos guardar tus datos.'); }
         try { localStorage.removeItem(claveBorrador()); } catch (e) {}
@@ -1220,13 +1221,24 @@
       });
     }
 
+    // Celular con indicativo del país, como en los demás formularios (se guarda "+57 3001234567")
+    const PAISES_TEL = [['57', 10, '🇨🇴'], ['1', 10, '🇺🇸'], ['52', 10, '🇲🇽'], ['34', 9, '🇪🇸'], ['58', 10, '🇻🇪'], ['593', 9, '🇪🇨'], ['51', 9, '🇵🇪'], ['56', 9, '🇨🇱'], ['54', 10, '🇦🇷'], ['507', 8, '🇵🇦']];
+    const largoTel = ind => (PAISES_TEL.find(x => x[0] === ind) || [0, 10])[1];
+    function separarCelular(p) {
+      const m = String(p.celular || '').match(/^\+(\d{1,3})\s*(\d*)$/);
+      if (m) { p.indicativo = m[1]; p.celular = m[2]; } else p.indicativo = p.indicativo || '57';
+      return p;
+    }
+    const conIndicativo = p => Object.assign({}, p, { celular: p.celular ? '+' + (p.indicativo || '57') + ' ' + p.celular : '', indicativo: undefined });
+
     function pintarListas() {
       $('listaPersonas').innerHTML = formPersonas.length ? formPersonas.map((p, i) =>
         `<div class="ficha"><div class="fichaCab">Persona ${i + 2}<button class="quitar" data-qp="${i}" aria-label="Quitar">✕</button></div>` +
         `<input data-p="${i}" data-c="nombre" placeholder="Nombre completo" value="${esc(p.nombre)}">` +
         `<select data-p="${i}" data-c="tipoDocumento">${Object.keys(TIPOS_DOC).map(k => `<option value="${k}"${(p.tipoDocumento || 'CC') === k ? ' selected' : ''}>${TIPOS_DOC[k]}</option>`).join('')}</select>` +
         `<input data-p="${i}" data-c="documento" inputmode="${p.tipoDocumento === 'PA' ? 'text' : 'numeric'}"${p.tipoDocumento === 'PA' ? ' style="text-transform:uppercase"' : ''} placeholder="${p.tipoDocumento === 'PA' ? 'Número de pasaporte' : 'Número de documento'}" value="${esc(p.documento)}">` +
-        `<input data-p="${i}" data-c="celular" type="tel" inputmode="numeric" placeholder="Celular (opcional)" value="${esc(p.celular)}">` +
+        `<div class="tel"><select data-p="${i}" data-c="indicativo" aria-label="Indicativo del país">${PAISES_TEL.map(x => `<option value="${x[0]}"${(p.indicativo || '57') === x[0] ? ' selected' : ''}>${x[2]} +${x[0]}</option>`).join('')}</select>` +
+        `<input data-p="${i}" data-c="celular" type="tel" inputmode="numeric" placeholder="Celular (opcional)" value="${esc(p.celular)}"></div>` +
         `<input data-p="${i}" data-c="correo" type="email" placeholder="Correo (opcional)" value="${esc(p.correo)}"></div>`).join('')
         : '';
       $('agregarPersona').classList.toggle('oculto', formPersonas.length >= 4);
@@ -1249,6 +1261,7 @@
       $('listaPersonas').querySelectorAll('[data-qp]').forEach(b => b.onclick = () => { formPersonas.splice(Number(b.dataset.qp), 1); pintarListas(); });
       $('listaPersonas').querySelectorAll('select').forEach(sel => sel.onchange = () => {
         const per = formPersonas[Number(sel.dataset.p)];
+        if (sel.dataset.c === 'indicativo') { per.indicativo = sel.value; per.celular = (per.celular || '').slice(0, largoTel(sel.value)); guardarBorrador(); return pintarListas(); }
         per.tipoDocumento = sel.value;
         if (sel.value !== 'PA') per.documento = per.documento.replace(/\D/g, '');
         pintarListas();
@@ -1257,7 +1270,7 @@
         let val = inp.value;
         // El pasaporte lleva letras y números; los demás documentos, solo números
         if (inp.dataset.c === 'documento' && formPersonas[Number(inp.dataset.p)].tipoDocumento === 'PA') { val = val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12); inp.value = val; }
-        else if (inp.dataset.c === 'documento' || inp.dataset.c === 'celular') { val = val.replace(/\D/g, '').slice(0, inp.dataset.c === 'celular' ? 10 : 12); inp.value = val; }
+        else if (inp.dataset.c === 'documento' || inp.dataset.c === 'celular') { val = val.replace(/\D/g, '').slice(0, inp.dataset.c === 'celular' ? largoTel(formPersonas[Number(inp.dataset.p)].indicativo || '57') : 12); inp.value = val; }
         formPersonas[Number(inp.dataset.p)][inp.dataset.c] = val;
       });
       $('listaVehiculos').querySelectorAll('[data-tipo]').forEach(b => b.onclick = () => { const v = formVehiculos[Number(b.dataset.v)]; v.tipo = b.dataset.tipo; v.marca = ''; v._otra = false; pintarListas(); });
