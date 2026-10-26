@@ -213,8 +213,11 @@ function proponerSalaEntrega(datos) {
     // Aviso a la otra parte
     const quien = s.rol === 'INQUILINO' ? s.d.inquilino : String(s.d.inm.propietario || 'El propietario');
     const lista = pedidos.map(t => '• <strong>' + _textoHorario(t) + '</strong>').join('<br>');
+    // Si el propietario ya cargó el formato de la administración, va en este mismo correo
+    const conFormato = s.rol === 'PROPIETARIO' && formatoPendienteDeAviso_(fila, col);
     const cuerpo = `<strong>${quien}</strong> propuso estos horarios para la entrega del inmueble:<br><br>${lista}<br><br>` +
-      'Elige el que te sirva y la entrega queda agendada. Si ninguno te sirve, propón otros.';
+      'Elige el que te sirva y la entrega queda agendada. Si ninguno te sirve, propón otros.' +
+      (conFormato ? '<br><br>📄 Además, la administración del conjunto tiene su propio <strong>formato de mudanza</strong>: en la sala de entrega lo descargas, lo llenas y lo cargas.' : '');
     try {
       if (s.rol === 'INQUILINO') {
         if (s.d.inm.correoPropietario) enviarCorreoCita(s.d.inm.correoPropietario, '🔑 Te propusieron horarios para la entrega - Gold Life', 'ELIGE EL HORARIO',
@@ -230,6 +233,7 @@ function proponerSalaEntrega(datos) {
       enviarCorreoCita(correoAgenteCitas(), `🔑 Entrega ${s.d.inm.id}: ${quien} propuso horarios`, 'ENTREGA POR COORDINAR', 'Agente',
         etiquetaTipoCitaHtml('ENTREGA') + `<strong>${quien}</strong> propuso para la entrega de <strong>${s.d.direccion}</strong>:<br>${lista}<br><br>Quedan apartados en tu agenda mientras la otra parte responde.`, '');
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
+    if (conFormato) { try { avisarFormatoAlInquilino_(s, true); } catch (e) { Logger.log('⚠️ Aviso del formato: ' + e.message); } }
     return { ok: true, mensaje: 'Listo. Le enviamos tus horarios ' + (s.rol === 'INQUILINO' ? 'al propietario' : 'a ' + s.d.inquilino.split(' ')[0]) + ' y te avisamos cuando responda.' };
   } finally {
     lock.releaseLock();
@@ -310,6 +314,8 @@ function aceptarSalaEntrega(datos) {
     try { alAcordarEntrega_(s.d.inm.id); } catch (e) { Logger.log('⚠️ alAcordarEntrega_: ' + e.message); }
     // Si el inquilino ya dio los datos de la mudanza, salen las cartas
     if (_datosMudanzaDe(fila, col)) generarCartasEntrega_(sheet, col, numFila, sheet.getRange(numFila, 1, 1, sheet.getLastColumn()).getValues()[0]);
+    // Si el propietario cargó el formato antes de acordar la entrega, ahora le llega al inquilino
+    try { avisarFormatoAlInquilino_(s); } catch (e) { Logger.log('⚠️ Aviso del formato: ' + e.message); }
     return { ok: true, mensaje: 'Listo: la entrega quedó para el ' + _textoHorario(ts) + '. Les enviamos los detalles por correo.' };
   } finally {
     lock.releaseLock();

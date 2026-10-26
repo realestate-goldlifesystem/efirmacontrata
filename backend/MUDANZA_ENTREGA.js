@@ -204,10 +204,13 @@ function definirFormatoMudanza(datos) {
       if (p.plantilla && p.plantilla.id) { try { DriveApp.getFileById(p.plantilla.id).setTrashed(true); } catch (e) {} }
       p.formato = 'SI'; p.plantilla = { id: archivo.getId(), nombre: archivo.getName(), mime: archivo.getMimeType() };
       _guardarProcesoMudanza_(s.cita, p, 'el propietario cargó el formato de la administración');
-      _correoSala_(s, 'INQUILINO', '📄 Llena el formato de mudanza de la administración - Gold Life', 'FORMATO DE MUDANZA',
-        'La administración del conjunto tiene su propio formato de mudanza. Descárgalo en tu sala de entrega, llénalo y cárgalo; el propietario lo revisa antes de enviarlo.',
-        '📄 Descargar y cargar el formato');
-      return { ok: true, mensaje: 'Listo: le pedimos a ' + s.d.inquilino.split(' ')[0] + ' que lo llene.' };
+      // Al inquilino le llega cuando el propietario ya hizo su parte de la entrega (propuso horarios o la acordó);
+      // si no, va dentro del correo con los horarios del propietario (proponerSalaEntrega)
+      if (_propietarioYaRespondio_(s.cita.fila, s.cita.col)) {
+        avisarFormatoAlInquilino_(s);
+        return { ok: true, mensaje: 'Listo: le pedimos a ' + s.d.inquilino.split(' ')[0] + ' que lo llene.' };
+      }
+      return { ok: true, mensaje: 'Listo: el formato quedó cargado. Le llega a ' + s.d.inquilino.split(' ')[0] + ' junto con tus horarios de entrega.' };
     }
     return { ok: false, mensaje: 'Acción no válida.' };
   } finally { lock.releaseLock(); }
@@ -340,4 +343,29 @@ function enviarActaMudanza(datos) {
       `La solicitud de tu mudanza del <strong>${_textoMudanza_(m)}</strong> ${datos.modo === 'SISTEMA' ? 'ya se envió a la administración del conjunto' : 'la envía el propietario a la administración'}.`);
     return { ok: true, mensaje: datos.modo === 'SISTEMA' ? 'Listo: lo enviamos a la administración y a ti te llegó copia.' : 'Listo: te lo enviamos a tu correo para que lo reenvíes.' };
   } finally { lock.releaseLock(); }
+}
+
+/** ¿El propietario ya hizo su parte de la entrega? (propuso horarios o la entrega quedó acordada) */
+function _propietarioYaRespondio_(fila, col) {
+  return String(valorCita(fila, col, 'ESTADO') || '').trim() !== ESTADO_POR_COORDINAR ||
+    String(valorCita(fila, col, 'PROPUESTO POR') || '') === 'PROPIETARIO';
+}
+
+/** ¿Hay un formato cargado que el inquilino todavía no conoce por correo? */
+function formatoPendienteDeAviso_(fila, col) {
+  const p = _procesoMudanza_(fila, col);
+  return p.formato === 'SI' && !p.formatoAvisado && !(p.versiones || []).length;
+}
+
+/** Marca el formato como avisado; con correo propio, salvo que vaya dentro de otro correo. */
+function avisarFormatoAlInquilino_(s, sinCorreo) {
+  const fila = s.cita.sheet.getRange(s.cita.numFila, 1, 1, s.cita.sheet.getLastColumn()).getValues()[0];
+  if (!formatoPendienteDeAviso_(fila, s.cita.col)) return;
+  const p = _procesoMudanza_(fila, s.cita.col);
+  p.formatoAvisado = true;
+  _guardarProcesoMudanza_(Object.assign({}, s.cita, { fila: fila }), p, 'se le avisó al inquilino del formato de la administración');
+  if (sinCorreo) return;
+  _correoSala_(s, 'INQUILINO', '📄 Llena el formato de mudanza de la administración - Gold Life', 'FORMATO DE MUDANZA',
+    'La administración del conjunto tiene su propio formato de mudanza. Descárgalo en tu sala de entrega, llénalo y cárgalo; el propietario lo revisa antes de enviarlo.',
+    '📄 Descargar y cargar el formato');
 }
