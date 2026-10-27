@@ -99,7 +99,8 @@ function ejecutarMotorAgenda() {
             try {
               enviarCorreoCita(correoAgenteCitas(), `📞 La entrega de las ${horaStr} no está confirmada · ${nombre}`, 'ENTREGA SIN CONFIRMAR', 'Agente',
                 etiquetaTipoCitaHtml('ENTREGA') + `<strong>${nombre}</strong> no confirmó la entrega de hoy a las <strong>${horaStr}</strong> (${direccion || ''}).<br><br>` +
-                'La cita sigue en pie en tu calendario: llámalo para confirmar.', '');
+                'La cita sigue en pie en tu calendario: llámalo para confirmar.', botonesContacto_([{ quien: 'inquilino', cel: valorCita(f, col, 'CELULAR') },
+                  { quien: 'propietario', cel: (() => { try { const d = _datosEntregaInmueble_(valorCita(f, col, 'ID INMUEBLE')); return d && d.inm.celularPropietario; } catch (e) { return ''; } })() }]));
             } catch (e) { Logger.log('Error avisando la entrega sin confirmar ' + idCita + ': ' + e.message); }
             props.setProperty(marca, '1');
           }
@@ -396,7 +397,8 @@ function aplicarEstadoCitaDesdeCorreo(idCita, nuevoEstado, token) {
           etiquetaTipoCitaHtml(valorCita(cita.fila, cita.col, 'TIPO AGENDA')) +
           `<strong>${cita.nombre}</strong> confirmó su cita del <strong>${cita.fechaTxt}</strong>.<br><br>` +
           `🏠 <strong>Servicio:</strong> ${valorCita(cita.fila, cita.col, 'TIPO SERVICIO')}<br>` +
-          `📍 <strong>Inmueble:</strong> ${valorCita(cita.fila, cita.col, 'DIRECCION') || 'N/A'}`, '');
+          `📍 <strong>Inmueble:</strong> ${valorCita(cita.fila, cita.col, 'DIRECCION') || 'N/A'}`,
+          botonesContacto_([{ quien: { INTERESADO: 'interesado', ENTREGA: 'inquilino', DEVOLUCION: 'inquilino' }[String(valorCita(cita.fila, cita.col, 'TIPO AGENDA')).trim()] || 'propietario', cel: valorCita(cita.fila, cita.col, 'CELULAR') }]));
       } catch (e) { Logger.log('No se pudo avisar la confirmación al agente: ' + e.message); }
       avisarPropietarioVisitaCoordinada(cita.fila, cita.col,
         `<strong>${cita.nombre}</strong> confirmó la visita del <strong>${cita.fechaTxt}</strong>. Leonardo va a estar ahí.`,

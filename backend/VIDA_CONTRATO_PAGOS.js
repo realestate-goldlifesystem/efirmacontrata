@@ -516,19 +516,10 @@ function revisarPagosMensuales_(forzar) {
   });
 }
 
-/** Celular en formato internacional y pegado (573001234567); 10 dígitos sin indicativo = Colombia. */
-function _celularInternacional_(cel) {
-  const d = String(cel || '').replace(/\D/g, '');
-  return d.length === 10 ? '57' + d : d;
-}
-
-/** Al caso de mora: WhatsApp de cada parte y, debajo, el botón para llamarle (27-oct-2026). */
+/** Al caso de mora: WhatsApp y llamar a cada parte (27-oct-2026). */
 function _botonesContactoMora_(c) {
-  const inq = _celularInternacional_(c.v('CELULAR INQUILINO')), prop = _celularInternacional_(c.v('Celular'));
-  const wa = (n, quien) => n ? { texto: '💬 WhatsApp ' + quien, color: '#1f7a4d', url: 'https://wa.me/' + n } : { texto: '— Sin celular del ' + quien, color: '#a8a29e', url: '#' };
-  const tel = (n, quien) => n ? { texto: '📞 Llamar al ' + quien, color: '#44403c', url: 'tel:+' + n } : { texto: '—', color: '#a8a29e', url: '#' };
-  if (!inq && !prop) return '';
-  return '<br>' + htmlBotonesCorreo([wa(inq, 'inquilino'), wa(prop, 'propietario')]) + htmlBotonesCorreo([tel(inq, 'inquilino'), tel(prop, 'propietario')]);
+  const b = botonesContacto_([{ quien: 'inquilino', cel: c.v('CELULAR INQUILINO') }, { quien: 'propietario', cel: c.v('Celular') }]);
+  return b ? '<br>' + b : '';
 }
 
 /** Días 1, 4 y 5 (solo el más reciente si el motor se atrasó) y la mora del día 6. */

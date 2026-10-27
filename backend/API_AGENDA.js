@@ -292,6 +292,24 @@ function htmlBotonesCorreo(botones) {
   return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0;table-layout:fixed;"><tr>${celdas}</tr></table>`;
 }
 
+/** Celular en formato internacional y pegado (573001234567); 10 dígitos sin indicativo = Colombia. */
+function celularInternacional_(cel) {
+  const d = String(cel || '').replace(/\D/g, '');
+  return d.length === 10 ? '57' + d : d;
+}
+
+/**
+ * Correos al agente: WhatsApp de cada persona y, debajo, el botón para llamarle (27-oct-2026).
+ * personas: [{ quien: 'inquilino', cel: '+57 300…' }]
+ */
+function botonesContacto_(personas) {
+  const ps = personas.map(p => ({ quien: p.quien, n: celularInternacional_(p.cel) }));
+  if (!ps.some(p => p.n)) return '';
+  const wa = p => p.n ? { texto: '💬 WhatsApp ' + p.quien, color: '#1f7a4d', url: 'https://wa.me/' + p.n } : { texto: '— Sin celular del ' + p.quien, color: '#a8a29e', url: '#' };
+  const tel = p => p.n ? { texto: '📞 Llamar al ' + p.quien, color: '#44403c', url: 'tel:+' + p.n } : { texto: '—', color: '#a8a29e', url: '#' };
+  return htmlBotonesCorreo(ps.map(wa)) + htmlBotonesCorreo(ps.map(tel));
+}
+
 function botonesPropietarioCita(idCita, token) {
   // Confirmar a la DERECHA: el celular se usa casi siempre con la mano derecha
   // y queda bajo el pulgar. Cancelar a la izquierda (Leonardo, 14-oct-2026).
