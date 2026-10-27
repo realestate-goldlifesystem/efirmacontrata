@@ -106,7 +106,7 @@ function ejecutarMotorAgenda() {
           }
           return;
         }
-        if (!esEntrega && debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimo, pendiente)) {
+        if (!esEntrega && debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimo, pendiente, valorCita(f, col, 'TIPO AGENDA'))) {
           aplicarCambioEstadoCita(sheet, col, numFila, f, ESTADOS_CITA.CANCELADA, 'cancelada automáticamente: no se confirmó a tiempo');
           avisarPropietarioVisitaCoordinada(f, col, `La visita de <strong>${nombre}</strong> del <strong>${fechaStr} a las ${horaStr}</strong> se canceló porque el interesado no la confirmó. No tienes que abrir el inmueble.`);
           try {

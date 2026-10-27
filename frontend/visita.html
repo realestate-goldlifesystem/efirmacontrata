@@ -834,7 +834,7 @@
         const agendada = r.modo === 'DIRECTO' || r.agendada;
         $('okTitulo').textContent = agendada ? '¡Visita agendada!' : '¡Solicitud enviada!';
         $('okTexto').textContent = agendada
-          ? 'Te enviamos un correo con la dirección y los detalles. Te avisaremos antes y, una hora antes, te pediremos que confirmes.'
+          ? 'Te enviamos un correo con la dirección y los detalles. Te avisaremos antes y, hora y media antes, te pediremos que confirmes.'
           : 'Le preguntamos al propietario cuál de tus horarios le sirve. Quedan apartados para ti y te escribimos apenas responda.';
         $('ok').classList.remove('oculto');
         document.querySelectorAll('[data-agendar]').forEach(x => { x.textContent = agendada ? '✓ Visita agendada' : '✓ Solicitud enviada'; x.disabled = true; });

@@ -208,7 +208,7 @@
         const b = $('confirmarNueva'); b.disabled = true; b.textContent = 'Guardando…';
         llamar2('reagendarCitaPropietario', { timestamp: horaElegida.timestamp }).then(x => {
           // Éxito sin repetir el horario: ya lo eligió y le llega por correo
-          if (x.ok) mostrarResultado('¡Listo!', 'Tu nueva fecha quedó registrada. Te avisaremos antes de la cita y, una hora antes, te pediremos que la confirmes.', '✓', true);
+          if (x.ok) mostrarResultado('¡Listo!', 'Tu nueva fecha quedó registrada. Te avisaremos antes de la cita y te pediremos que la confirmes.', '✓', true);
           else { b.disabled = false; b.textContent = 'Confirmar nueva fecha'; alert(x.mensaje); if (diaElegido) elegirDia(diaElegido); }
         }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; });
       };

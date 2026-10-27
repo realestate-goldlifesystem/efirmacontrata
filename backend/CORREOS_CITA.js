@@ -18,11 +18,14 @@
 // Avisos en orden, con los minutos que faltan para la cita cuando les toca salir.
 const ORDEN_AVISOS_CITA = [['H48', 2880], ['H24', 1440], ['H3', 180], ['H2', 120], ['M60', 60], ['M45', 45], ['M30', 30]];
 // Las visitas de interesados empiezan 3 días antes (plan 6.1.2): uno por día, 72, 48 y 24 h
-const ORDEN_AVISOS_INTERESADO = [['H72', 4320]].concat(ORDEN_AVISOS_CITA);
+// Y la confirmación va por encima de la hora (Leonardo, 27-oct-2026): faltando 1 h 30, 1 h 15 y
+// 1 h 05; si a 1 hora no confirmó, se cancela.
+const ORDEN_AVISOS_INTERESADO = [['H72', 4320], ['H48', 2880], ['H24', 1440], ['H3', 180], ['H2', 120], ['M90', 90], ['M75', 75], ['M65', 65]];
 const ordenAvisosDe = (tipo) => String(tipo || '').toUpperCase() === 'INTERESADO' ? ORDEN_AVISOS_INTERESADO : ORDEN_AVISOS_CITA;
 // La cita se libera si, faltando 25 min o menos, ya salió algún aviso de
 // confirmación y pasaron al menos 5 min sin respuesta (el margen que pidió Leonardo).
 const LIBERAR_FALTANDO_MIN = 25;
+const LIBERAR_FALTANDO_MIN_INTERESADO = 60;
 const MARGEN_RESPUESTA_MIN = 5;
 
 /** El aviso más reciente cuyo momento ya llegó ('' si ninguno). */
@@ -47,9 +50,10 @@ function avisoQueTocaCita(minFaltan, ultimoPaso, confirmada, tipo) {
 }
 
 /** ¿Hay que liberar la cita por falta de confirmación? */
-function debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimoAviso, pendiente) {
+function debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimoAviso, pendiente, tipo) {
+  const limite = String(tipo || '').toUpperCase() === 'INTERESADO' ? LIBERAR_FALTANDO_MIN_INTERESADO : LIBERAR_FALTANDO_MIN;
   return !!pendiente && String(ultimoPaso || '').charAt(0) === 'M' &&
-    minFaltan <= LIBERAR_FALTANDO_MIN && minDesdeUltimoAviso >= MARGEN_RESPUESTA_MIN;
+    minFaltan <= limite && minDesdeUltimoAviso >= MARGEN_RESPUESTA_MIN;
 }
 
 /**
@@ -76,6 +80,9 @@ const PASOS_CORREO_CITA = {
   H24:      { asunto: 'Tienes una cita mañana', titulo: 'RECORDATORIO' },
   H3:       { asunto: 'Tienes una cita en 3 horas', titulo: 'RECORDATORIO' },
   H2:       { asunto: 'Tienes una cita en 2 horas', titulo: 'RECORDATORIO' },
+  M90:      { asunto: 'Confirma tu cita de hoy', titulo: 'CONFIRMA TU CITA' },
+  M75:      { asunto: 'Segundo aviso: confirma tu cita', titulo: 'CONFIRMA TU CITA' },
+  M65:      { asunto: 'Último aviso: confirma tu cita', titulo: 'ÚLTIMO AVISO' },
   M60:      { asunto: 'Confirma tu cita de hoy', titulo: 'CONFIRMA TU CITA' },
   M45:      { asunto: 'Segundo aviso: confirma tu cita', titulo: 'CONFIRMA TU CITA' },
   M30:      { asunto: 'Último aviso: confirma tu cita', titulo: 'ÚLTIMO AVISO' },
@@ -146,16 +153,17 @@ function correoPasoCita(paso, c) {
     '<p style="margin:16px 0 0 0;font-size:13px;text-align:center;">📅 ' +
     `<a href="${urlGoogleCalendarCita(c)}" style="color:#a16207;font-weight:bold;">Guardar en mi calendario</a></p>`;
 
+  const cuandoConfirma = c.idInmueble ? 'Hora y media antes te pediremos que la confirmes.' : 'Una hora antes te pediremos que la confirmes.';
   let mensaje, secundario;
   switch (paso) {
     case 'AGENDADA':
-      mensaje = 'Tu cita quedó agendada.' + tarjeta + 'Te avisaremos antes de la cita. <strong>Una hora antes te pediremos que la confirmes.</strong>';
+      mensaje = 'Tu cita quedó agendada.' + tarjeta + 'Te avisaremos antes de la cita. <strong>' + cuandoConfirma + '</strong>';
       secundario = lineaCalendario + lineaCambio;
       break;
     case 'REAGENDADA':
       // c.confirmada: la movió el agente tras hablar con él (queda confirmada)
       mensaje = 'Tu cita quedó en la nueva fecha.' + tarjeta +
-        (c.confirmada ? '¡Te esperamos!' : 'Te avisaremos antes de la cita. <strong>Una hora antes te pediremos que la confirmes.</strong>');
+        (c.confirmada ? '¡Te esperamos!' : 'Te avisaremos antes de la cita. <strong>' + cuandoConfirma + '</strong>');
       secundario = lineaCalendario + lineaCambio;
       break;
     case 'H72':
@@ -175,15 +183,18 @@ function correoPasoCita(paso, c) {
       secundario = lineaCambio;
       break;
     case 'H2':
-      mensaje = 'Tu cita es <strong>en 2 horas</strong>.' + tarjeta + 'En una hora te pediremos que la confirmes.';
+      mensaje = 'Tu cita es <strong>en 2 horas</strong>.' + tarjeta + (c.idInmueble ? 'En media hora te pediremos que la confirmes.' : 'En una hora te pediremos que la confirmes.');
       secundario = lineaCambio;
       break;
+    case 'M90':
+    case 'M75':
+    case 'M65':
     case 'M60':
     case 'M45':
     case 'M30': {
-      const falta = { M60: '1 hora', M45: '45 minutos', M30: '30 minutos' }[paso];
+      const falta = { M90: '1 hora y 30 minutos', M75: '1 hora y 15 minutos', M65: '1 hora y 5 minutos', M60: '1 hora', M45: '45 minutos', M30: '30 minutos' }[paso];
       mensaje = `Tu cita es <strong>en ${falta}</strong>. Por favor confírmala para que te esperemos.` + tarjeta +
-        (paso === 'M30' && !c.noLibera
+        ((paso === 'M30' || paso === 'M65') && !c.noLibera
           ? '<strong>Si no la confirmas en los próximos minutos, liberaremos el horario.</strong>'
           : '<strong>Confirma con el botón verde.</strong>');
       secundario = botonesPropietarioCita(c.idCita, c.token);

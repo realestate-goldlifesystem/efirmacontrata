@@ -325,11 +325,11 @@ function reagendarPorPropietario(datos) {
         etiquetaTipoCitaHtml(valorCita(r.cita.fila, r.cita.col, 'TIPO AGENDA')) +
         `<strong>${nombre}</strong> reagendó su cita desde el correo.<br><br>` +
         (m.textoAntes ? `Antes: ${m.textoAntes}<br>` : '') + `<strong>Ahora: ${m.textoNueva}</strong><br><br>` +
-        'Ya quedó movida en tu Calendar, por confirmar: una hora antes se le pedirá que la confirme. No tienes que hacer nada.',
+        'Ya quedó movida en tu Calendar, por confirmar: antes de la cita se le pedirá que la confirme. No tienes que hacer nada.',
         ''
       );
     } catch (e) { Logger.log('No se pudo avisar al agente: ' + e.message); }
-    return { ok: true, mensaje: 'Tu cita quedó para el ' + m.textoNueva + '. Te avisaremos antes y, una hora antes, te pediremos que la confirmes.' };
+    return { ok: true, mensaje: 'Tu cita quedó para el ' + m.textoNueva + '. Te avisaremos antes y te pediremos que la confirmes.' };
   } finally {
     lock.releaseLock();
   }
