@@ -516,6 +516,21 @@ function revisarPagosMensuales_(forzar) {
   });
 }
 
+/** Celular en formato internacional y pegado (573001234567); 10 dígitos sin indicativo = Colombia. */
+function _celularInternacional_(cel) {
+  const d = String(cel || '').replace(/\D/g, '');
+  return d.length === 10 ? '57' + d : d;
+}
+
+/** Al caso de mora: WhatsApp de cada parte y, debajo, el botón para llamarle (27-oct-2026). */
+function _botonesContactoMora_(c) {
+  const inq = _celularInternacional_(c.v('CELULAR INQUILINO')), prop = _celularInternacional_(c.v('Celular'));
+  const wa = (n, quien) => n ? { texto: '💬 WhatsApp ' + quien, color: '#1f7a4d', url: 'https://wa.me/' + n } : { texto: '— Sin celular del ' + quien, color: '#a8a29e', url: '#' };
+  const tel = (n, quien) => n ? { texto: '📞 Llamar al ' + quien, color: '#44403c', url: 'tel:+' + n } : { texto: '—', color: '#a8a29e', url: '#' };
+  if (!inq && !prop) return '';
+  return '<br>' + htmlBotonesCorreo([wa(inq, 'inquilino'), wa(prop, 'propietario')]) + htmlBotonesCorreo([tel(inq, 'inquilino'), tel(prop, 'propietario')]);
+}
+
 /** Días 1, 4 y 5 (solo el más reciente si el motor se atrasó) y la mora del día 6. */
 function _avisosDelMes_(p, c, dia) {
   const estado = String(p.v('ESTADO'));
@@ -550,7 +565,7 @@ function _avisosDelMes_(p, c, dia) {
       (p.v('MOTIVO') ? `<br>Motivo de "no es": <em>${p.v('MOTIVO')}</em>` : '') +
       '<br><br><strong>Lo que pasó:</strong><br>' + String(_celdaPago(p, 'HISTORIAL') || '').split('\n').map(l => '• ' + l).join('<br>') +
       '<br><br>Al inquilino le llegó el aviso de mora y al propietario el aviso de pago sin confirmar.',
-      p.v('ARCHIVO') ? htmlBotonesCorreo([{ texto: '🧾 Ver lo que se cargó', color: '#555555', url: String(p.v('ARCHIVO')) }]) : '');
+      _botonesContactoMora_(c) + (p.v('ARCHIVO') ? htmlBotonesCorreo([{ texto: '🧾 Ver lo que se cargó', color: '#555555', url: String(p.v('ARCHIVO')) }]) : ''));
     _marcarAviso(p, 'D6');
     _historialPago(p, 'aviso de mora (día 6) al inquilino, al propietario y a Leonardo');
     return;

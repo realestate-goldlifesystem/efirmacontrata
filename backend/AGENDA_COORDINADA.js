@@ -209,7 +209,7 @@ function solicitarVisitaCoordinada_(datos, inm, negocio, nombre, correo, celular
   poner('FECHA CITA', new Date(primera.getFullYear(), primera.getMonth(), primera.getDate()));
   poner('HORA CITA', formatAmPm(primera));
   poner('NOMBRE', nombre);
-  poner('CELULAR', celular);
+  poner('CELULAR', textoCelda_(celular));
   poner('CORREO', correo);
   poner('TIPO SERVICIO', 'Visita · ' + (negocio === 'VENTA' ? 'Venta' : 'Arriendo'));
   poner('DIRECCION', [inm.direccion, [inm.barrio, inm.ciudad].filter(Boolean).join(', ')].filter(Boolean).join(' · '));

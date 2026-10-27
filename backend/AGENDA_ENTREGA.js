@@ -86,7 +86,7 @@ function abrirSalaEntrega(idInmueble) {
     poner('FECHA CREACION', ahoraTxt);
     poner('ESTADO', ESTADO_POR_COORDINAR);
     poner('NOMBRE', d.inquilino);
-    poner('CELULAR', d.celularInquilino);
+    poner('CELULAR', textoCelda_(d.celularInquilino));
     poner('CORREO', d.correoInquilino);
     poner('TIPO SERVICIO', 'Entrega del inmueble');
     poner('DIRECCION', d.direccion);

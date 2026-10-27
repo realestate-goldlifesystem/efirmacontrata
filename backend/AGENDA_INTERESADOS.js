@@ -302,7 +302,7 @@ function agendarVisitaInteresado(datos) {
       poner('HORA CITA', formatAmPm(inicio));
     }
     poner('NOMBRE', nombre);
-    poner('CELULAR', celular);
+    poner('CELULAR', textoCelda_(celular));
     poner('CORREO', correo);
     poner('TIPO SERVICIO', servicio);
     poner('DIRECCION', direccionCompleta);

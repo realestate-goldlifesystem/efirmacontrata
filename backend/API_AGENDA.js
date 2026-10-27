@@ -209,7 +209,7 @@ function agendarCita(datos) {
     poner('FECHA CITA', new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate()));
     poner('HORA CITA', horaCitaStr);
     poner('NOMBRE', datos.nombreCliente);
-    poner('CELULAR', datos.celular);
+    poner('CELULAR', textoCelda_(datos.celular));
     poner('CORREO', datos.correo);
     poner('TIPO SERVICIO', datos.tipoServicio);
     poner('DIRECCION', datos.direccion || '');
@@ -304,6 +304,15 @@ function botonesPropietarioCita(idCita, token) {
 
 /** Envía un correo de citas con la plantilla corporativa. */
 /** @param {Blob[]=} adjuntos  p. ej. el archivo .ics de la cita (CORREOS_CITA.js) */
+/**
+ * Un texto que empieza con + (como "+57 300…") la hoja lo toma por fórmula y queda #ERROR!;
+ * con el apóstrofo se guarda tal cual, como texto (27-oct-2026).
+ */
+function textoCelda_(v) {
+  const t = v === undefined || v === null ? '' : String(v);
+  return /^[+=@-]/.test(t) ? "'" + t : t;
+}
+
 function enviarCorreoCita(destino, asunto, titulo, nombre, mensajePrincipal, htmlSecundario, adjuntos) {
   if (!destino) return;
   // Plantilla propia de citas, corta y para celular (email_cita.html)

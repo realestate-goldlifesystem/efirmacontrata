@@ -79,7 +79,7 @@ function gestionarCitaPanel(datos) {
         };
         if (!nuevos.NOMBRE) return { success: false, message: 'El nombre no puede quedar vacío.' };
         if (nuevos.CORREO && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nuevos.CORREO)) return { success: false, message: 'El correo no es válido.' };
-        Object.keys(nuevos).forEach(k => escribir(k, nuevos[k]));
+        Object.keys(nuevos).forEach(k => escribir(k, textoCelda_(nuevos[k])));
         escribir('ULTIMO CAMBIO', ahoraTxt + ' · agente editó los datos desde el panel');
 
         const idEv = String(valorCita(fila, col, 'ID EVENTO CALENDAR') || '');
