@@ -95,13 +95,13 @@ function _avisarSegunEstado_(idInm, a, partes) {
       a.estado === 'CORREGIR' ? 'CORRIGE LOS VALORES' : 'NUEVO AÑO DEL CONTRATO', _primerNombre_(p.nombre),
       (a.estado === 'CORREGIR' ? `Leonardo revisó los valores del nuevo año y te pide una corrección:<br><em>“${a.comentario || ''}”</em><br><br>` :
         `Tu contrato del inmueble en <strong>${partes.direccion}</strong> se renovó. El nuevo año empieza el <strong>${fechaDesde}</strong>.<br><br>`) +
-      `📈 El canon sube con el IPC de ${a.anioIpc} (<strong>${String(a.ipc).replace(".", ",")}%</strong>): de <strong>${_miles_(a.canonAnterior)}</strong> a <strong>${_miles_(a.canonNuevo)}</strong>.<br><br>` +
+      `📈 El canon sube con el IPC de ${a.anioIpc} (<strong>${Number(a.ipc).toFixed(2)}%</strong>): de <strong>${_miles_(a.canonAnterior)}</strong> a <strong>${_miles_(a.canonNuevo)}</strong>.<br><br>` +
       'Escribe el valor de la <strong>administración plena del nuevo año</strong> y carga el recibo de administración para validarlo.',
       htmlBotonesCorreo([{ texto: '📝 Completar los valores', color: '#b8860b', url: urlAjuste(idInm, a.anio, 'PROPIETARIO') }]));
   } else if (a.estado === 'REVISION') {
     _correoCitaSeguro(CUENTA_COBRO.CORREO_ADMIN, '📈 Revisa los valores del nuevo año · ' + idInm, 'REVISA EL NUEVO AÑO', 'Leonardo',
       `<strong>${partes.PROPIETARIO.nombre}</strong> completó los valores del nuevo año del inmueble <strong>${idInm}</strong> (${partes.direccion}), desde el <strong>${fechaDesde}</strong>:<br><br>` +
-      `Canon: ${_miles_(a.canonAnterior)} → <strong>${_miles_(a.canonNuevo)}</strong> (IPC ${a.anioIpc}: ${String(a.ipc).replace(".", ",")}%)<br>` +
+      `Canon: ${_miles_(a.canonAnterior)} → <strong>${_miles_(a.canonNuevo)}</strong> (IPC ${a.anioIpc}: ${Number(a.ipc).toFixed(2)}%)<br>` +
       `Administración: ${_miles_(a.adminAnterior)} → <strong>${_miles_(a.adminNueva)}</strong><br><br>Revisa el recibo y apruébalo para avisarle al inquilino.`,
       htmlBotonesCorreo([{ texto: '🔎 Revisar y aprobar', color: '#b8860b', url: urlAjuste(idInm, a.anio, 'AGENTE') }]));
   }
@@ -278,7 +278,7 @@ function _actaIncrementoIpc_(c, partes, a) {
   poner('\\[Nombre del Arrendatario\\]', partes.INQUILINO.nombre);
   poner('\\[Dirección del Inmueble\\]', partes.direccion);
   // El porcentaje y el año vienen escritos en la plantilla: se cambian por los de este ajuste
-  poner('incremento del [0-9]+([.,][0-9]+)?%', 'incremento del ' + String(a.ipc).replace('.', ',') + '%');
+  poner('incremento del [0-9]+([.,][0-9]+)?%', 'incremento del ' + Number(a.ipc).toFixed(2) + '%');
   poner('IPC \\(Índice de Precios al Consumidor\\) del año [0-9]{4}', 'IPC (Índice de Precios al Consumidor) del año ' + a.anioIpc);
   poner('\\[fecha de incremento\\]', _textoCv_(cvLeerFecha(a.desde)));
   poner('\\[valor actual\\]', miles(a.canonAnterior));
@@ -306,7 +306,7 @@ function _actaIncrementoIpc_(c, partes, a) {
 function _correosAjusteAprobado_(partes, a, acta) {
   const desde = _textoCv_(cvLeerFecha(a.desde));
   const tabla = `Desde el <strong>${desde}</strong> (mes ${a.mesDesde} del contrato):<br><br>` +
-    `🏠 Canon: ${_miles_(a.canonAnterior)} → <strong>${_miles_(a.canonNuevo)}</strong> (IPC ${a.anioIpc}: ${String(a.ipc).replace(".", ",")}%)<br>` +
+    `🏠 Canon: ${_miles_(a.canonAnterior)} → <strong>${_miles_(a.canonNuevo)}</strong> (IPC ${a.anioIpc}: ${Number(a.ipc).toFixed(2)}%)<br>` +
     `🏢 Administración: <strong>${_miles_(a.adminNueva)}</strong><br>` +
     `💳 Total mensual: <strong>${_miles_(a.canonNuevo + a.adminNueva)}</strong>`;
   const adj = acta ? [acta.pdf] : null;

@@ -141,8 +141,8 @@ function sincroIPC(anioForzado) {
         props.setProperty('IPC_' + anio, String(r.ipc));
         props.setProperty('IPC_FUENTE_' + anio, r.url + ' · ' + new Date().toISOString());
         Logger.log(`🎯 IPC ${anio} = ${r.ipc}% (DANE)`);
-        _correoCitaSeguro(CUENTA_COBRO.CORREO_ADMIN, '📈 IPC ' + anio + ' guardado: ' + String(r.ipc).replace('.', ',') + '%', 'IPC DEL AÑO ' + anio, 'Leonardo',
-          `El DANE publicó el IPC del año <strong>${anio}</strong>: <strong>${String(r.ipc).replace('.', ',')}%</strong>. Ya quedó guardado y se aplica solo a los contratos que renueven con ese año.<br><br>` +
+        _correoCitaSeguro(CUENTA_COBRO.CORREO_ADMIN, '📈 IPC ' + anio + ' guardado: ' + Number(r.ipc).toFixed(2) + '%', 'IPC DEL AÑO ' + anio, 'Leonardo',
+          `El DANE publicó el IPC del año <strong>${anio}</strong>: <strong>${Number(r.ipc).toFixed(2)}%</strong>. Ya quedó guardado y se aplica solo a los contratos que renueven con ese año.<br><br>` +
           'Igual revisas cada caso antes de que le llegue al inquilino.', htmlBotonesCorreo([{ texto: '📄 Ver el anexo del DANE', color: '#b8860b', url: r.url }]));
       }
       const ipc = props.getProperty('IPC_' + anio);
