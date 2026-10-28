@@ -494,8 +494,10 @@ function revisarPagosMensuales_(forzar) {
       if (!c) return;
       const inicio = cvLeerFecha(c.v('FECHA INICIO DEL CONTRATO'));
       if (!inicio) return;
-      const fechas = cvFechasClave(inicio, cvLeerFecha(c.v('FECHA FINAL DEL CONTRATO')));
+      // Con los años renovados ya sumados: un contrato renovado sigue con el mes 13, 14… (RENOVACION_CONTRATO.js)
+      const fechas = fechasContratoVigente_(idInm, c);
       if (cvMomento(fechas, hoy) !== 'vigente') return;
+      try { revisarRenovacion_(idInm, c, hoy); } catch (e) { Logger.log('⚠️ Renovación de ' + idInm + ': ' + e.message); }
       const periodo = cvPeriodo(inicio, hoy);
       if (!periodo) return;
       // Recordatorio a quien revisa, en cualquier mes

@@ -15,7 +15,7 @@ function activarSinCorreoPeticion_(datos) {
   _SIN_CORREO_ = false;
   const id = _inmueblePruebaSinCorreo_();
   if (!id || !datos) return;
-  if (String(datos.id || datos.idInmueble || '') === id) { _SIN_CORREO_ = true; return; }
+  if (String(datos.id || datos.idInmueble || datos.k || '') === id) { _SIN_CORREO_ = true; return; }
   // Página del comprobante mensual: el enlace trae el ID del pago
   if (datos.p) {
     try { const p = _pagoPorId(datos.p); _SIN_CORREO_ = !!p && String(p.v('ID INMUEBLE')) === id; } catch (e) {}

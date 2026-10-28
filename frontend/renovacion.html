@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Renovación del contrato · Gold Life Real Estate</title>
+  <!--
+    Renovar o terminar el contrato (etapa 3, parte 1 · 28-oct-2026): ?k=<inmueble>&f=<fin>&r=i|p&t=<token>[&d=RENOVAR|TERMINAR].
+    Cada parte decide una vez. Terminar: qué implica, motivo y un modal con barra deslizante.
+    Servidor: backend/RENOVACION_CONTRATO.js. Estilos de comprobante_mes.html.
+  -->
+  <style>
+    :root { --oro: #d4af37; --fondo: #0c0a09; --panel: #1c1917; --panel2: #292524; --suave: #a8a29e; --linea: #3f3a36; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 24px 16px 40px; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--fondo); color: #f5f5f4;
+      background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.16), transparent 70%);
+    }
+    .tarjeta {
+      width: 100%; max-width: 560px; margin: 0 auto; background: var(--panel); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px; padding: clamp(22px, 5vw, 32px) clamp(16px, 4.5vw, 28px); box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    }
+    .marca { font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); text-align: center; }
+    .marca span { color: var(--suave); font-weight: 400; }
+    h1 { margin: 22px 0 6px; font-size: clamp(20px, 5vw, 24px); font-weight: 600; text-align: center; }
+    h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+    p { margin: 0; line-height: 1.6; color: #d6d3d1; }
+    .centro { text-align: center; }
+    .inmueble { color: var(--suave); font-size: 14px; text-align: center; margin-bottom: 18px; }
+    .nota { font-size: 13px; color: var(--suave); margin-top: 6px; }
+    .oculto { display: none !important; }
+    button { font-family: inherit; cursor: pointer; transition: opacity .2s, transform .1s, background .15s; }
+    button:active { transform: scale(.98); }
+    button:disabled { opacity: .55; cursor: default; }
+    .icono { width: 56px; height: 56px; margin: 20px auto 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;
+      background: rgba(212,175,55,.1); box-shadow: 0 0 0 1px rgba(212,175,55,.3); }
+    .fechas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+    .fechas div { padding: 12px 14px; border-radius: 14px; background: var(--fondo); border: 1px solid rgba(255,255,255,.06); }
+    .fechas small { display: block; font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--suave); font-weight: 700; }
+    .fechas b { display: block; margin-top: 4px; font-size: 15px; } .fechas b::first-letter { text-transform: uppercase; }
+    .fechas .limite { border-color: rgba(212,175,55,.45); } .fechas .limite b { color: var(--oro); }
+    .aviso { margin-top: 14px; padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.55; }
+    .aviso.oro { background: rgba(212,175,55,.1); border: 1px solid rgba(212,175,55,.45); color: #f5f5f4; }
+    .aviso.rojo { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.45); color: #fecaca; }
+    .decidir { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    .decidir button { padding: 18px 10px; border-radius: 16px; font-size: 16px; font-weight: 700; border: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .decidir button span { font-size: 24px; }
+    .renovar { background: linear-gradient(135deg, #e8c766, var(--oro)); color: #0c0a09; }
+    .terminar { background: var(--panel2); color: #fca5a5; border: 1px solid rgba(248,113,113,.45) !important; }
+    .lista { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .lista li { padding: 12px 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--linea); font-size: 14px; line-height: 1.5; color: #e7e5e4; }
+    .lista b { color: var(--oro); }
+    .rotulo { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--suave); font-weight: 700; margin: 20px 0 4px; }
+    .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .opcion { padding: 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font-size: 14px; }
+    .opcion.elegido { background: #f5f5f4; color: #0c0a09; box-shadow: 0 0 0 2px var(--oro); font-weight: 600; }
+    textarea { width: 100%; min-height: 76px; padding: 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font: inherit; font-size: 14.5px; margin-top: 10px; }
+    textarea:focus { outline: none; border-color: var(--oro); }
+    .principal { width: 100%; padding: 15px; border: 0; border-radius: 12px; font-size: 16px; font-weight: 700; color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); margin-top: 18px; }
+    .principal.rojo { background: #b4413a; color: #fff; }
+    .principal.bloqueado { opacity: .55; filter: grayscale(.4); }
+    .volver { width: 100%; border: 0; background: none; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 4px; }
+    .error { color: #fca5a5; font-size: 14px; margin-top: 10px; text-align: center; }
+    .confirmar { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.72); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center; padding: 20px; animation: aparecer .25s ease; }
+    .confirmar .caja { width: 100%; max-width: 420px; background: var(--panel); border: 1px solid var(--linea); border-radius: 22px;
+      padding: 24px 22px 18px; text-align: center; animation: subirC .3s ease; }
+    .confirmar .icono { font-size: 30px; margin: 0 auto 8px; }
+    .confirmar h3 { margin: 0 0 8px; font-size: 19px; }
+    .confirmar p { color: #d6d3d1; font-size: 14px; line-height: 1.55; margin: 0 0 10px; text-align: left; }
+    .confirmar .si { margin-top: 14px; width: 100%; border: 0; border-radius: 14px; padding: 15px; font-size: 16px; font-weight: 700; background: var(--oro); color: #0c0a09; }
+    .confirmar .si.rojo { background: #b4413a; color: #fff; }
+    .confirmar .no { width: 100%; border: 0; background: none; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 4px; }
+    .deslizar { cursor: grab; position: relative; height: 56px; margin-top: 14px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--linea); overflow: hidden; touch-action: none; user-select: none; }
+    .deslizar .relleno { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, rgba(212,175,55,.15), rgba(212,175,55,.45)); }
+    .deslizar .texto { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14.5px; font-weight: 600; padding-left: 40px;
+      background: linear-gradient(90deg, #78716c 0%, #f5f5f4 50%, #78716c 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: brilloTexto 2.4s linear infinite; }
+    .deslizar .perilla { position: absolute; top: 3px; left: 4px; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #e8c766, var(--oro));
+      display: grid; place-items: center; color: #0c0a09; font-size: 22px; font-weight: 700; cursor: grab; box-shadow: 0 4px 14px rgba(0,0,0,.35); touch-action: none; }
+    .deslizar.volviendo .perilla, .deslizar.volviendo .relleno { transition: all .3s ease; }
+    .deslizar.listo { border-color: var(--oro); }
+    .barraP { height: 10px; border-radius: 999px; background: var(--panel2); overflow: hidden; margin: 10px 0 8px; }
+    .barraP div { height: 100%; width: 0; background: linear-gradient(90deg, #e8c766, var(--oro)); transition: width .12s linear; }
+    .pct { color: var(--oro); font-weight: 800; font-size: 22px; margin: 0; text-align: center !important; }
+    .exito { text-align: center; padding: 8px 0; }
+    .exito .check { width: 64px; height: 64px; margin: 8px auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; font-weight: 800;
+      color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); box-shadow: 0 0 0 8px rgba(212,175,55,.15); }
+    .exito p { margin-top: 8px; }
+    .entra { animation: subirC .35s ease both; }
+    @keyframes brilloTexto { from { background-position: 200% 0; } to { background-position: 0 0; } }
+    @keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes subirC { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+  </style>
+  <script src="aviso.js?v=1"></script>
+</head>
+<body>
+  <main class="tarjeta">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <p id="cargando" class="centro" style="margin-top:28px;color:var(--suave);">Cargando…</p>
+    <section id="error" class="oculto centro">
+      <div class="icono">!</div>
+      <h1 style="margin-top:8px;">No pudimos abrir esta página</h1>
+      <p id="errorTexto"></p>
+    </section>
+    <section id="contenido" class="oculto">
+      <h1 id="titulo"></h1>
+      <p class="inmueble" id="inmueble"></p>
+      <div id="vista"></div>
+    </section>
+  </main>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+    const q = new URLSearchParams(location.search);
+    const K = q.get('k') || '', F = q.get('f') || '', ROL = q.get('r') || '', TOKEN = q.get('t') || '', PRE = q.get('d') || '';
+    const $ = (id) => document.getElementById(id);
+    const esc = (t) => String(t || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const primerNombre = (t) => { const x = String(t || '').trim().split(/\s+/)[0] || ''; return x.charAt(0).toUpperCase() + x.slice(1).toLowerCase(); };
+    let info = null, motivo = '';
+
+    function llamar(accion, extra) {
+      return fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ accion: accion, k: K, f: F, r: ROL, t: TOKEN }, extra || {})) }).then(r => r.json());
+    }
+    function error(t) { $('cargando').classList.add('oculto'); $('contenido').classList.add('oculto'); $('error').classList.remove('oculto'); $('errorTexto').textContent = t; }
+    function exito(titulo, texto) {
+      $('titulo').textContent = '';
+      $('vista').innerHTML = `<div class="exito entra"><div class="check">✓</div><h2>${esc(titulo)}</h2><p>${esc(texto)}</p><p class="nota" style="margin-top:14px;">Ya puedes cerrar esta página.</p></div>`;
+    }
+    const esInq = () => info.rol === 'INQUILINO';
+    const fechasHtml = () => `<div class="fechas"><div><small>Termina el contrato</small><b>${esc(info.finTexto)}</b></div>` +
+      `<div class="limite"><small>Último día para decidir</small><b>${esc(info.limiteTexto)}</b></div></div>`;
+
+    // ================= Qué se muestra =================
+    function pintar() {
+      const otro = primerNombre(info.otro);
+      if (info.resultado === 'TERMINADO') {
+        $('titulo').textContent = 'El contrato termina';
+        $('vista').innerHTML = fechasHtml() +
+          `<div class="aviso oro">${info.terminadoPor === info.rol ? 'Notificaste la terminación del contrato.' : esc(otro) + ' notificó la terminación del contrato.'} ` +
+          `${esInq() ? 'Tienes como máximo hasta el <b>' + esc(info.topeTexto) + '</b> para entregar el inmueble, acorde al inventario.' : 'Tienes como máximo hasta el <b>' + esc(info.topeTexto) + '</b> para recibir el inmueble.'}</div>` +
+          '<p class="nota centro" style="margin-top:14px;">El documento de terminación te llegó por correo.</p>';
+        return;
+      }
+      if (info.resultado === 'RENOVADO') { exito('Tu contrato se renovó', 'Las dos partes decidieron renovar: el contrato sigue un año más.'); return; }
+      if (info.mia) {
+        $('titulo').textContent = 'Ya decidiste';
+        $('vista').innerHTML = fechasHtml() + `<div class="aviso oro">Registramos que deseas <b>renovar</b> el contrato. Te avisamos por correo cuando ${esc(otro)} decida.</div>`;
+        return;
+      }
+      if (info.faltan < 0) {
+        $('titulo').textContent = 'Venció el plazo para decidir';
+        $('vista').innerHTML = fechasHtml() + '<div class="aviso rojo">El último día para decidir ya pasó. Leonardo se comunicará contigo.</div>';
+        return;
+      }
+      $('titulo').textContent = '¿Renuevas tu contrato?';
+      const cuando = info.faltan === 0 ? '<b>Hoy es el último día</b> para decidir.' : info.faltan === 1 ? 'Mañana es el último día para decidir.' : 'Te quedan <b>' + info.faltan + ' días</b> para decidir.';
+      $('vista').innerHTML = fechasHtml() +
+        `<p class="nota centro" style="margin-top:14px;">${cuando} Puedes renovar tu contrato de arrendamiento por un nuevo año o terminarlo.</p>` +
+        '<div class="decidir"><button class="terminar" id="bTerminar"><span>✋</span>Terminar</button><button class="renovar" id="bRenovar"><span>🔄</span>Renovar</button></div>' +
+        `<p class="nota centro" style="margin-top:12px;">Si cualquiera de los dos termina, el contrato termina. Solo se renueva si ${esc(otro)} también renueva.</p>`;
+      $('bRenovar').onclick = confirmarRenovar;
+      $('bTerminar').onclick = vistaTerminar;
+    }
+
+    // ================= Terminar: qué implica, motivo y confirmación =================
+    function vistaTerminar() {
+      $('titulo').textContent = 'Terminar el contrato';
+      const lista = esInq()
+        ? `<li>El contrato termina el <b>${esc(info.finTexto)}</b>: en unos 3 meses <b>entregas el inmueble</b>.</li>` +
+          `<li>Lo entregas <b>acorde al inventario</b> con el que lo recibiste, al día en arriendo, servicios y administración.</li>` +
+          `<li>Tienes como máximo hasta el <b>${esc(info.topeTexto)}</b> (5 días después) para entregarlo. Se recomienda entregarlo unos días antes.</li>`
+        : `<li>El contrato termina el <b>${esc(info.finTexto)}</b>: en unos 3 meses <b>recibes tu inmueble</b>.</li>` +
+          `<li>Lo recibes revisando el <b>inventario</b> de la entrega.</li>` +
+          `<li>Tienes como máximo hasta el <b>${esc(info.topeTexto)}</b> (5 días después) para recibirlo, o pueden coordinar una fecha antes de que termine el año.</li>`;
+      $('vista').innerHTML = `<ul class="lista entra">${lista}<li>Le enviamos la notificación a ${esc(primerNombre(info.otro))} y les llega el documento de terminación a los dos.</li></ul>` +
+        '<p class="rotulo">¿Por qué lo terminas?</p>' +
+        `<div class="opciones">${info.motivos.map(m => `<button class="opcion${motivo === m ? ' elegido' : ''}" data-m="${esc(m)}">${esc(m)}</button>`).join('')}</div>` +
+        `<textarea id="otro" maxlength="300" placeholder="Escribe el motivo" class="${motivo === 'Otro' ? '' : 'oculto'}"></textarea>` +
+        '<button class="principal rojo bloqueado" id="bSeguir">Deseo terminar el contrato</button><p class="error oculto" id="err"></p>' +
+        '<button class="volver" id="bVolver">‹ Volver</button>';
+      const revisar = () => $('bSeguir').classList.toggle('bloqueado', !motivo || (motivo === 'Otro' && !$('otro').value.trim()));
+      $('vista').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+        motivo = b.dataset.m;
+        $('vista').querySelectorAll('[data-m]').forEach(x => x.classList.toggle('elegido', x === b));
+        $('otro').classList.toggle('oculto', motivo !== 'Otro'); if (motivo === 'Otro') $('otro').focus();
+        revisar();
+      });
+      $('otro').oninput = revisar;
+      $('bVolver').onclick = () => { motivo = ''; pintar(); };
+      $('bSeguir').onclick = () => { if (!$('bSeguir').classList.contains('bloqueado')) confirmarTerminar(); };
+    }
+
+    function confirmarTerminar() {
+      const texto = esInq()
+        ? `<p>En este momento vas a realizar la <b>terminación de tu contrato de arrendamiento</b>, con fecha de terminación el <b>${esc(info.finTexto)}</b> (mes ${info.mesFinal} del contrato).</p>` +
+          `<p>Recuerda que desde esa fecha tienes <b>máximo 5 días</b> para entregar el inmueble (hasta el ${esc(info.topeTexto)}), acorde al inventario. Se recomienda entregarlo unos días antes.</p>`
+        : `<p>En este momento vas a realizar la <b>terminación del contrato de arrendamiento</b>, con fecha de terminación el <b>${esc(info.finTexto)}</b> (mes ${info.mesFinal} del contrato).</p>` +
+          `<p>Desde esa fecha tienes <b>máximo 5 días</b> para recibir el inmueble (hasta el ${esc(info.topeTexto)}), o pueden coordinar una fecha antes de que termine el año.</p>`;
+      const c = capa('<div class="icono">✋</div><h3>¿Terminar el contrato?</h3>' + texto +
+        deslizador('Desliza para confirmar') + '<button class="si rojo oculto">Terminar mi contrato</button><button class="no">Volver</button>');
+      activarDeslizador(c);
+      c.querySelector('.no').onclick = () => c.remove();
+      c.querySelector('.si').onclick = () => { c.remove(); enviar('TERMINAR'); };
+    }
+
+    function confirmarRenovar() {
+      const c = capa('<div class="icono">🔄</div><h3>¿Renovar el contrato?</h3>' +
+        `<p>El contrato seguiría <b>un año más</b> desde el día siguiente al ${esc(info.finTexto)}. Antes de empezar te confirmamos el valor del canon del nuevo año.</p>` +
+        `<p>Solo queda renovado si ${esc(primerNombre(info.otro))} también renueva.</p>` +
+        deslizador('Desliza para confirmar') + '<button class="si oculto">Renovar mi contrato</button><button class="no">Volver</button>');
+      activarDeslizador(c);
+      c.querySelector('.no').onclick = () => c.remove();
+      c.querySelector('.si').onclick = () => { c.remove(); enviar('RENOVAR'); };
+    }
+
+    function enviar(decision) {
+      const pr = progresoReal(decision === 'TERMINAR' ? 'Registrando la terminación' : 'Registrando tu decisión');
+      llamar('decidirRenovacion', { decision: decision, motivo: motivo, motivoOtro: $('otro') ? $('otro').value : '', prog: pr.prog })
+        .then(r => pr.fin(r && r.ok).then(() => r))
+        .then(r => {
+          if (!r.ok) return alert(r.mensaje || 'No pudimos registrar tu decisión.');
+          exito(decision === 'TERMINAR' ? 'Terminación registrada' : '¡Listo!', r.mensaje || '');
+        }).catch(() => { pr.fin(false); alert('Error de red. Intenta de nuevo.'); });
+    }
+
+    // ================= Piezas: modal, deslizador y barra de avance real =================
+    function capa(html) {
+      const c = document.createElement('div'); c.className = 'confirmar'; c.innerHTML = `<div class="caja" role="dialog" aria-modal="true">${html}</div>`;
+      document.body.appendChild(c); return c;
+    }
+    const deslizador = (t) => `<div class="deslizar"><div class="relleno"></div><div class="texto">${t}</div><div class="perilla">›</div></div>`;
+    function activarDeslizador(c) {
+      const qq = (s) => c.querySelector(s);
+      const pista = qq('.deslizar'), perilla = qq('.perilla'), relleno = qq('.relleno');
+      let x0 = null, max = 0;
+      const mover = (x) => { const d = Math.max(0, Math.min(max, x - x0)); perilla.style.transform = `translateX(${d}px)`; relleno.style.width = (d + 28) + 'px'; return d; };
+      pista.addEventListener('pointerdown', (e) => {
+        if (pista.classList.contains('listo')) return;
+        e.preventDefault();
+        x0 = perilla.getBoundingClientRect().left + perilla.offsetWidth / 2; max = pista.clientWidth - perilla.offsetWidth - 8; pista.classList.remove('volviendo');
+        try { pista.setPointerCapture(e.pointerId); } catch (_) {}
+        mover(e.clientX);
+      });
+      pista.addEventListener('pointermove', (e) => { if (x0 !== null) mover(e.clientX); });
+      const soltar = (e) => {
+        if (x0 === null) return;
+        const d = mover(e.clientX); x0 = null;
+        if (d >= max * 0.8) {
+          perilla.style.transform = `translateX(${max}px)`; relleno.style.width = '100%';
+          pista.classList.add('listo'); perilla.textContent = '✓'; qq('.texto').textContent = 'Listo';
+          qq('.si').classList.remove('oculto'); qq('.si').classList.add('entra');
+        } else { pista.classList.add('volviendo'); perilla.style.transform = ''; relleno.style.width = '0'; }
+      };
+      pista.addEventListener('pointerup', soltar); pista.addEventListener('pointercancel', soltar);
+      pista.addEventListener('dragstart', (e) => e.preventDefault());
+    }
+    // El servidor anota en qué etapa va (progresoSala) y la barra lo sigue
+    function progresoReal(titulo) {
+      const prog = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+      const c = capa(`<div class="icono">📄</div><h3>${esc(titulo)}…</h3><p class="pct" id="pct">0 %</p><div class="barraP"><div id="barraP"></div></div><p class="nota centro" id="etapaP">Iniciando…</p>`);
+      let v = 0, meta = 3, activo = true;
+      const pintarV = () => { c.querySelector('#pct').textContent = Math.round(v) + ' %'; c.querySelector('#barraP').style.width = v + '%'; };
+      const t = setInterval(() => { if (v < meta) { v = Math.min(meta, v + Math.max(0.4, (meta - v) * 0.15)); pintarV(); } }, 120);
+      const consultar = () => {
+        if (!activo) return;
+        fetch(API, { method: 'POST', body: JSON.stringify({ accion: 'progresoSala', prog: prog }) }).then(r => r.json()).then(r => {
+          if (!activo || !r || !r.ok) return;
+          if (r.pct > meta) meta = Math.min(r.pct, 97);
+          if (r.texto) c.querySelector('#etapaP').textContent = r.texto + '…';
+        }).catch(() => {}).finally(() => { if (activo) setTimeout(consultar, 1000); });
+      };
+      setTimeout(consultar, 600);
+      return {
+        prog: prog,
+        fin(ok) {
+          activo = false; clearInterval(t);
+          if (!ok) { c.remove(); return Promise.resolve(); }
+          c.querySelector('#etapaP').textContent = '¡Listo!';
+          return new Promise(res => { const s = setInterval(() => { v = Math.min(100, v + 4); pintarV(); if (v >= 100) { clearInterval(s); setTimeout(() => { c.remove(); res(); }, 450); } }, 30); });
+        }
+      };
+    }
+
+    function cargar() {
+      if (!K || !F || !ROL || !TOKEN) return error('El enlace está incompleto.');
+      llamar('infoRenovacion').then(r => {
+        if (!r || !r.ok) return error((r && r.mensaje) || 'No pudimos abrir esta página.');
+        info = r;
+        $('cargando').classList.add('oculto'); $('contenido').classList.remove('oculto');
+        $('inmueble').textContent = '📍 ' + info.direccion;
+        pintar();
+        // Desde el correo del último día: el botón elegido abre su paso directamente
+        if (!info.resultado && !info.mia && info.faltan >= 0) { if (PRE === 'TERMINAR') vistaTerminar(); else if (PRE === 'RENOVAR') confirmarRenovar(); }
+      }).catch(() => error('Revisa tu conexión a internet e intenta de nuevo.'));
+    }
+    cargar();
+  </script>
+</body>
+</html>
