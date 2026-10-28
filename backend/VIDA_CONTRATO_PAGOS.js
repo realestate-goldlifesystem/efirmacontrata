@@ -489,6 +489,7 @@ function revisarPagosMensuales_(forzar) {
   const hoy = cvLeerFecha(Utilities.formatDate(ahora, tz, 'yyyy-MM-dd'));
   contratos.forEach(idInm => {
     try {
+      activarSinCorreoFila_(idInm);
       const c = _contratoDe(idInm);
       if (!c) return;
       const inicio = cvLeerFecha(c.v('FECHA INICIO DEL CONTRATO'));
@@ -514,6 +515,7 @@ function revisarPagosMensuales_(forzar) {
       _avisosDelMes_(p, c, periodo.dia);
     } catch (e) { Logger.log('⚠️ Pagos de ' + idInm + ': ' + e.message); }
   });
+  _SIN_CORREO_ = false;
 }
 
 /** Al caso de mora: WhatsApp y llamar a cada parte (27-oct-2026). */
