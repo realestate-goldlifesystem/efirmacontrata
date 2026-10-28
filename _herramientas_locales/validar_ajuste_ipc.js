@@ -95,7 +95,7 @@ const enlace = (u, extra) => { const q = new URL(u).searchParams; const o = {}; 
       const d = await T('docTexto', { url: a.ajuste.acta });
       const t = d.texto;
       console.log('     carpeta del acta:', d.carpeta);
-      ok(/incremento del 5.20%/.test(t) && new RegExp('del año ' + anioIpc).test(t) && !/5\.20%|año 2025/.test(t), `porcentaje y año corregidos: 5.20% del año ${anioIpc}`);
+      ok(/incremento del 5.20%/.test(t) && new RegExp('del año ' + anioIpc).test(t) && !/año 2025/.test(t), `porcentaje y año corregidos: 5.20% del año ${anioIpc}`);
       const fmt = x => Math.round(x).toLocaleString('es-CO');
       ok(t.includes(fmt(a.ajuste.canonAnterior)) && t.includes(fmt(a.ajuste.canonNuevo)) && t.includes(fmt(a.ajuste.canonNuevo + 260000)), 'valor actual, nuevo y total con administración');
       const quedan = t.match(/\[[^\]]{2,}\]/g) || [];
