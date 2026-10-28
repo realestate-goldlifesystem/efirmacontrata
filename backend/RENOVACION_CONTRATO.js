@@ -63,13 +63,15 @@ const _textoCv_ = (f) => _fechaLarga_(_fechaCv_(f));
 function _partesContrato_(idInm, c) {
   const rc = recopilarDatosContrato(String(idInm));
   const d = rc && rc.success ? rc.data : { inquilino: {}, propietario: {}, inmueble: {} };
+  // Celulares y documentos guardados como número en la hoja: sin notación científica
+  const txt = (v) => typeof v === 'number' ? v.toFixed(0) : String(v || '').trim();
   return {
     direccion: String(c.v('Ingrese la Dirección del inmueble') || (d.inmueble || {}).direccion || ''),
     ciudad: (d.inmueble || {}).ciudad || '',
-    INQUILINO: { nombre: d.inquilino.nombre || String(c.v('NOMBRE COMPLETO INQUILINO') || ''), documento: d.inquilino.numeroDocumento || '',
-      celular: d.inquilino.celular || String(c.v('CELULAR INQUILINO') || ''), correo: String(d.inquilino.email || c.v('CORREO INQUILINO') || '').trim(), direccion: '' },
-    PROPIETARIO: { nombre: d.propietario.nombre || String(c.v('NOMBRES Y APELLIDOS DEL PROPIETARIO') || ''), documento: d.propietario.numeroDocumento || '',
-      celular: d.propietario.celular || String(c.v('Celular') || ''), correo: String(d.propietario.email || c.v('Correo electrónico') || '').trim(), direccion: d.propietario.direccion || '' }
+    INQUILINO: { nombre: d.inquilino.nombre || String(c.v('NOMBRE COMPLETO INQUILINO') || ''), documento: txt(d.inquilino.numeroDocumento),
+      celular: txt(d.inquilino.celular || c.v('CELULAR INQUILINO')), correo: String(d.inquilino.email || c.v('CORREO INQUILINO') || '').trim(), direccion: '' },
+    PROPIETARIO: { nombre: d.propietario.nombre || String(c.v('NOMBRES Y APELLIDOS DEL PROPIETARIO') || ''), documento: txt(d.propietario.numeroDocumento),
+      celular: txt(d.propietario.celular || c.v('Celular')), correo: String(d.propietario.email || c.v('Correo electrónico') || '').trim(), direccion: d.propietario.direccion || '' }
   };
 }
 const _otroRol_ = (rol) => rol === 'INQUILINO' ? 'PROPIETARIO' : 'INQUILINO';
@@ -210,6 +212,8 @@ function decidirRenovacion(datos) {
       _guardarRenov_(idInm, f.fin, r);
       _prog_(datos, 65, 'Avisándoles a las dos partes');
       _correosRenovado_(idInm, partes, f);
+      _prog_(datos, 80, 'Preparando el canon del nuevo año');
+      try { iniciarAjusteAnual_(idInm, c, partes, f); } catch (e) { Logger.log('⚠️ Ajuste anual de ' + idInm + ': ' + e.message); }
       _prog_(datos, 96, 'Terminando');
       return { ok: true, mensaje: '¡Listo! Las dos partes renovaron: el contrato sigue un año más.' };
     }

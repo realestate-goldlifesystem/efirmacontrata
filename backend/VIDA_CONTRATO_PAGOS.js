@@ -322,8 +322,8 @@ function infoPagoMensual(datos) {
   if (s.error) return { ok: false, mensaje: s.error };
   const { p, c } = s;
   const dia1 = p.v('DIA 1');
-  const canon = Number(c.v('CANON FINAL DEL CONTRATO')) || 0;
-  const admin = Number(c.v('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)')) || 0;
+  // Desde el año 2, los valores aprobados del ajuste con IPC (AJUSTE_ANUAL_IPC.js)
+  const { canon, admin } = valoresDelMes_(String(p.v('ID INMUEBLE')), c, Number(p.v('MES')));
   return {
     ok: true, rol: s.rol, mes: Number(p.v('MES')), estado: String(p.v('ESTADO')),
     dia1: dia1 instanceof Date ? dia1.getTime() : null,

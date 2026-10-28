@@ -776,6 +776,10 @@ function doPost(e) {
         break;
       case 'infoRenovacion': result = infoRenovacion(datos); break;
       case 'decidirRenovacion': result = decidirRenovacion(datos); break;
+      case 'infoAjusteAnual': result = infoAjusteAnual(datos); break;
+      case 'guardarIpcAjuste': result = guardarIpcAjuste(datos); break;
+      case 'enviarAjustePropietario': result = enviarAjustePropietario(datos); break;
+      case 'revisarAjusteAnual': result = revisarAjusteAnual(datos); break;
       case 'consultarPropietario':
         result = handleConsultarPropietario(datos);
         break;
