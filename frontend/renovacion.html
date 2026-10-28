@@ -227,6 +227,8 @@
 
     // ================= Piezas: modal, deslizador y barra de avance real =================
     function capa(html) {
+      // Un solo modal a la vez (un doble toque no abre dos)
+      document.querySelectorAll('.confirmar').forEach(x => x.remove());
       const c = document.createElement('div'); c.className = 'confirmar'; c.innerHTML = `<div class="caja" role="dialog" aria-modal="true">${html}</div>`;
       document.body.appendChild(c); return c;
     }
