@@ -774,6 +774,8 @@ function doPost(e) {
       case 'responderExcedentePropietario':
         result = responderExcedentePropietario(datos);
         break;
+      case 'infoRenovacion': result = infoRenovacion(datos); break;
+      case 'decidirRenovacion': result = decidirRenovacion(datos); break;
       case 'consultarPropietario':
         result = handleConsultarPropietario(datos);
         break;
