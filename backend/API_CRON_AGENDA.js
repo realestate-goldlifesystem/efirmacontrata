@@ -189,6 +189,7 @@ function ejecutarMotorAgenda() {
   _SIN_CORREO_ = false;
   // Pagos del arriendo mes a mes (VIDA_CONTRATO_PAGOS.js): como mucho una vez por hora
   try { revisarPagosMensuales_(); } catch (e) { Logger.log('Error en revisarPagosMensuales_: ' + e.message); }
+  try { sincroIPCDiario_(); } catch (e) { Logger.log('Error en sincroIPCDiario_: ' + e.message); }
 }
 
 /**

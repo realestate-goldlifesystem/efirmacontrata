@@ -64,7 +64,9 @@ function iniciarAjusteAnual_(idInm, c, partes, f) {
     anio: anio, mesDesde: mesNuevo, desde: cvTexto(nuevoInicio), anioIpc: nuevoInicio.y - 1,
     canonAnterior: antes.canon, adminAnterior: antes.admin, historial: []
   };
+  if (_ipcDe_(a.anioIpc) === null) sincroIPC(a.anioIpc); // si el DANE ya lo publicó, no hay que esperar
   _ajusteConIpc_(a, _ipcDe_(a.anioIpc));
+  if (a.ipc !== undefined) a.historial.push(_ahoraTxt_() + ' · IPC ' + a.anioIpc + ': ' + a.ipc + '% (DANE)');
   _guardarAjuste_(idInm, anio, a);
   _avisarSegunEstado_(idInm, a, partes);
 }
@@ -83,7 +85,8 @@ function _avisarSegunEstado_(idInm, a, partes) {
   if (a.estado === 'ESPERANDO_IPC') {
     _correoCitaSeguro(CUENTA_COBRO.CORREO_ADMIN, '📈 Falta el IPC ' + a.anioIpc + ' para el canon de ' + idInm, 'IPC DEL AÑO ' + a.anioIpc, 'Leonardo',
       `El contrato del inmueble <strong>${idInm}</strong> (${partes.direccion}) se renovó y empieza su nuevo año el <strong>${fechaDesde}</strong>.<br><br>` +
-      `Para calcular el canon nuevo falta el <strong>IPC del año ${a.anioIpc}</strong> (DANE). Escríbelo una vez y sirve para todos los contratos de ese año.`,
+      `Para calcular el canon nuevo falta el <strong>IPC del año ${a.anioIpc}</strong>. El DANE aún no lo publica (sale hacia el 8 de enero): ` +
+      'el sistema lo revisa solo cada día y sigue el proceso apenas salga. Si lo quieres adelantar, puedes escribirlo tú.',
       htmlBotonesCorreo([{ texto: '📈 Escribir el IPC', color: '#b8860b', url: urlAjuste(idInm, a.anio, 'AGENTE') }]));
   } else if (a.estado === 'ESPERANDO_PROPIETARIO' || a.estado === 'CORREGIR') {
     const p = partes.PROPIETARIO;
@@ -92,16 +95,47 @@ function _avisarSegunEstado_(idInm, a, partes) {
       a.estado === 'CORREGIR' ? 'CORRIGE LOS VALORES' : 'NUEVO AÑO DEL CONTRATO', _primerNombre_(p.nombre),
       (a.estado === 'CORREGIR' ? `Leonardo revisó los valores del nuevo año y te pide una corrección:<br><em>“${a.comentario || ''}”</em><br><br>` :
         `Tu contrato del inmueble en <strong>${partes.direccion}</strong> se renovó. El nuevo año empieza el <strong>${fechaDesde}</strong>.<br><br>`) +
-      `📈 El canon sube con el IPC de ${a.anioIpc} (<strong>${a.ipc}%</strong>): de <strong>${_miles_(a.canonAnterior)}</strong> a <strong>${_miles_(a.canonNuevo)}</strong>.<br><br>` +
+      `📈 El canon sube con el IPC de ${a.anioIpc} (<strong>${String(a.ipc).replace(".", ",")}%</strong>): de <strong>${_miles_(a.canonAnterior)}</strong> a <strong>${_miles_(a.canonNuevo)}</strong>.<br><br>` +
       'Escribe el valor de la <strong>administración plena del nuevo año</strong> y carga el recibo de administración para validarlo.',
       htmlBotonesCorreo([{ texto: '📝 Completar los valores', color: '#b8860b', url: urlAjuste(idInm, a.anio, 'PROPIETARIO') }]));
   } else if (a.estado === 'REVISION') {
     _correoCitaSeguro(CUENTA_COBRO.CORREO_ADMIN, '📈 Revisa los valores del nuevo año · ' + idInm, 'REVISA EL NUEVO AÑO', 'Leonardo',
       `<strong>${partes.PROPIETARIO.nombre}</strong> completó los valores del nuevo año del inmueble <strong>${idInm}</strong> (${partes.direccion}), desde el <strong>${fechaDesde}</strong>:<br><br>` +
-      `Canon: ${_miles_(a.canonAnterior)} → <strong>${_miles_(a.canonNuevo)}</strong> (IPC ${a.anioIpc}: ${a.ipc}%)<br>` +
+      `Canon: ${_miles_(a.canonAnterior)} → <strong>${_miles_(a.canonNuevo)}</strong> (IPC ${a.anioIpc}: ${String(a.ipc).replace(".", ",")}%)<br>` +
       `Administración: ${_miles_(a.adminAnterior)} → <strong>${_miles_(a.adminNueva)}</strong><br><br>Revisa el recibo y apruébalo para avisarle al inquilino.`,
       htmlBotonesCorreo([{ texto: '🔎 Revisar y aprobar', color: '#b8860b', url: urlAjuste(idInm, a.anio, 'AGENTE') }]));
   }
+}
+
+/** Ajustes de todos los contratos detenidos esperando el IPC. */
+function _ajustesEsperandoIpc_() {
+  const props = PropertiesService.getScriptProperties().getProperties();
+  return Object.keys(props).filter(k => /^AJUSTE_/.test(k)).map(k => {
+    let a = null; try { a = JSON.parse(props[k]); } catch (e) {}
+    const m = k.match(/^AJUSTE_(.+)_(\d+)$/);
+    return a && m && a.estado === 'ESPERANDO_IPC' ? { idInm: m[1], anio: Number(m[2]), a: a } : null;
+  }).filter(Boolean);
+}
+
+/** Cuando ya está el IPC (del DANE o escrito a mano), cada ajuste que lo esperaba sigue al propietario. */
+function _destrabarAjustesConIpc_() {
+  _ajustesEsperandoIpc_().forEach(x => {
+    const ipc = _ipcDe_(x.a.anioIpc);
+    if (ipc === null) return;
+    const lock = LockService.getScriptLock(), antes = _SIN_CORREO_; lock.waitLock(20000);
+    try {
+      const a = _leerAjuste_(x.idInm, x.anio);
+      if (!a || a.estado !== 'ESPERANDO_IPC') return;
+      const c = _contratoDe(x.idInm);
+      if (!c) return;
+      activarSinCorreoFila_(x.idInm);
+      _ajusteConIpc_(a, ipc);
+      a.historial.push(_ahoraTxt_() + ' · IPC ' + a.anioIpc + ': ' + ipc + '% (DANE)');
+      _guardarAjuste_(x.idInm, x.anio, a);
+      _avisarSegunEstado_(x.idInm, a, _partesContrato_(x.idInm, c));
+    } catch (e) { Logger.log('Ajuste ' + x.idInm + ': ' + e.message); }
+    finally { _SIN_CORREO_ = antes; lock.releaseLock(); }
+  });
 }
 
 // ---------- 2. La página ----------
@@ -272,7 +306,7 @@ function _actaIncrementoIpc_(c, partes, a) {
 function _correosAjusteAprobado_(partes, a, acta) {
   const desde = _textoCv_(cvLeerFecha(a.desde));
   const tabla = `Desde el <strong>${desde}</strong> (mes ${a.mesDesde} del contrato):<br><br>` +
-    `🏠 Canon: ${_miles_(a.canonAnterior)} → <strong>${_miles_(a.canonNuevo)}</strong> (IPC ${a.anioIpc}: ${a.ipc}%)<br>` +
+    `🏠 Canon: ${_miles_(a.canonAnterior)} → <strong>${_miles_(a.canonNuevo)}</strong> (IPC ${a.anioIpc}: ${String(a.ipc).replace(".", ",")}%)<br>` +
     `🏢 Administración: <strong>${_miles_(a.adminNueva)}</strong><br>` +
     `💳 Total mensual: <strong>${_miles_(a.canonNuevo + a.adminNueva)}</strong>`;
   const adj = acta ? [acta.pdf] : null;

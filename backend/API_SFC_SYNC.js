@@ -122,66 +122,44 @@ function obtenerTasasParaFrontend() {
 // ==========================================
 
 /**
- * Consulta la API de inflación (usaremos Banco Mundial como ejemplo sólido JSON, 
- * aunque tenga algo de retraso, la lógica de validación lo soluciona)
- * y lo guarda ultra rápido en la memoria de Apps Script.
+ * Trae el IPC total del año anterior (variación a diciembre) del anexo oficial del DANE (IPC_DANE.js),
+ * que es el tope legal del aumento del canon (Ley 820, art. 20). Lo guarda en IPC_<año> y destraba
+ * los ajustes anuales que lo estaban esperando (AJUSTE_ANUAL_IPC.js). El DANE lo publica hacia el
+ * 8 de enero; antes de eso el anexo no existe y se vuelve a intentar al día siguiente.
+ * Lo llama el cron horario una vez al día (sincroIPCDiario_). Se puede correr a mano desde el editor.
  */
-function sincroIPC() {
+function sincroIPC(anioForzado) {
   try {
     const props = PropertiesService.getScriptProperties();
-    const currentYear = new Date().getFullYear();
-    const targetYear = (currentYear - 1).toString(); // En 2026 buscamos el IPC de 2025
-    
-    // 1. CRUCE DE MEMORIA: Verificamos si YA logramos conseguir el de este año
-    const anioGuardado = props.getProperty('IPC_ANIO_REGISTRADO');
-    if (anioGuardado === targetYear) {
-      Logger.log(`✅ IPC del ${targetYear} ya estaba guardado en memoria. Cancelando búsqueda redundante.`);
-      return; 
-    }
-
-    // 2. CONSULTA A LA API (Banco Mundial como ejemplo JSON estructural)
-    // El indicador FP.CPI.TOTL.ZG es "Inflation, consumer prices (annual %)"
-    const url = "http://api.worldbank.org/v2/country/CO/indicator/FP.CPI.TOTL.ZG?format=json"; 
-    
-    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-    if (response.getResponseCode() !== 200) {
-      Logger.log("⚠️ Error al consultar IPC: " + response.getContentText());
-      return;
-    }
-    
-    const responseData = JSON.parse(response.getContentText());
-    
-    // La API del Banco Mundial devuelve la data en el segundo elemento del arreglo: responseData[1]
-    if (responseData && responseData.length > 1 && Array.isArray(responseData[1])) {
-      
-      const apiData = responseData[1];
-      
-      // Buscar el registro exacto del año que necesitamos (targetYear)
-      // Como viene ordenado descendente, el más reciente suele ser el primero, pero lo buscamos por seguridad.
-      const registroObjetivo = apiData.find(item => item.date === targetYear && item.value !== null);
-      
-      if (registroObjetivo) {
-        // 3. ¡BINGO! Encontramos el dato oficial
-        // Lo redondeamos a 2 decimales por estética
-        const ipcActual = parseFloat(registroObjetivo.value).toFixed(2); 
-        
-        // 4. GUARDAR EN MEMORIA (Cero latencia al consultar después y auto-apagado)
-        props.setProperty('IPC_ACTUAL', ipcActual.toString());
-        props.setProperty('IPC_ANIO_REGISTRADO', targetYear);
-        props.setProperty('IPC_ULTIMA_ACTUALIZACION', new Date().toISOString());
-        
-        Logger.log(`🎯 ¡ÉXITO! IPC del ${targetYear} encontrado (${ipcActual}%). El robot se apagará hasta el otro año.`);
-      } else {
-        // La API aún no tiene el dato de este año (nos devolvió el del año antepasado).
-        Logger.log(`⏳ La API aún no ha publicado el IPC de ${targetYear}. El robot lo volverá a intentar mañana.`);
+    const anios = {};
+    anios[anioForzado || (new Date().getFullYear() - 1)] = true;
+    _ajustesEsperandoIpc_().forEach(function (x) { anios[x.a.anioIpc] = true; });
+    Object.keys(anios).forEach(function (anio) {
+      if (props.getProperty('IPC_' + anio) === null) {
+        const r = leerIpcDane_(Number(anio));
+        if (!r.ok) { Logger.log(`⏳ IPC ${anio}: ${r.mensaje}. Se intenta mañana.`); return; }
+        props.setProperty('IPC_' + anio, String(r.ipc));
+        props.setProperty('IPC_FUENTE_' + anio, r.url + ' · ' + new Date().toISOString());
+        Logger.log(`🎯 IPC ${anio} = ${r.ipc}% (DANE)`);
+        _correoCitaSeguro(CUENTA_COBRO.CORREO_ADMIN, '📈 IPC ' + anio + ' guardado: ' + String(r.ipc).replace('.', ',') + '%', 'IPC DEL AÑO ' + anio, 'Leonardo',
+          `El DANE publicó el IPC del año <strong>${anio}</strong>: <strong>${String(r.ipc).replace('.', ',')}%</strong>. Ya quedó guardado y se aplica solo a los contratos que renueven con ese año.<br><br>` +
+          'Igual revisas cada caso antes de que le llegue al inquilino.', htmlBotonesCorreo([{ texto: '📄 Ver el anexo del DANE', color: '#b8860b', url: r.url }]));
       }
-      
-    } else {
-      Logger.log("⚠️ La estructura de la API no es la esperada.");
-    }
-  } catch(e) {
+      const ipc = props.getProperty('IPC_' + anio);
+      if (ipc !== null) props.setProperty('IPC_ACTUAL', ipc), props.setProperty('IPC_ANIO_REGISTRADO', String(anio));
+    });
+    _destrabarAjustesConIpc_();
+  } catch (e) {
     Logger.log("🛑 Error crítico en sincroIPC: " + e.message);
   }
+}
+
+/** Una vez al día, desde el cron horario. */
+function sincroIPCDiario_() {
+  const cache = CacheService.getScriptCache();
+  if (cache.get('IPC_REVISADO_HOY')) return;
+  cache.put('IPC_REVISADO_HOY', '1', 6 * 3600);
+  sincroIPC();
 }
 
 /**
