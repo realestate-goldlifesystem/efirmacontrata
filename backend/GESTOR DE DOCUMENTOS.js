@@ -776,6 +776,15 @@ function doPost(e) {
         break;
       case 'infoRenovacion': result = infoRenovacion(datos); break;
       case 'decidirRenovacion': result = decidirRenovacion(datos); break;
+      case 'infoRecibo': result = infoRecibo(datos); break;
+      case 'disponibilidadRecibo': result = disponibilidadRecibo(datos); break;
+      case 'proponerRecibo': result = proponerRecibo(datos); break;
+      case 'responderRecibo': result = responderRecibo(datos); break;
+      case 'cargarReciboServicio': result = cargarReciboServicio(datos); break;
+      case 'revisarReciboServicio': result = revisarReciboServicio(datos); break;
+      case 'subirFotoRecibo': result = subirFotoRecibo(datos); break;
+      case 'guardarInventarioRecibo': result = guardarInventarioRecibo(datos); break;
+      case 'cerrarRecibo': result = cerrarRecibo(datos); break;
       case 'infoAjusteAnual': result = infoAjusteAnual(datos); break;
       case 'guardarIpcAjuste': result = guardarIpcAjuste(datos); break;
       case 'enviarAjustePropietario': result = enviarAjustePropietario(datos); break;

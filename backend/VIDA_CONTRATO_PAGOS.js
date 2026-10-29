@@ -496,6 +496,9 @@ function revisarPagosMensuales_(forzar) {
       if (!inicio) return;
       // Con los años renovados ya sumados: un contrato renovado sigue con el mes 13, 14… (RENOVACION_CONTRATO.js)
       const fechas = fechasContratoVigente_(idInm, c);
+      // Contrato terminado: la sala de recibo (RECIBO_INMUEBLE.js); ya recibido, no se cobra nada más
+      try { revisarRecibo_(idInm, c, hoy); } catch (e) { Logger.log('⚠️ Recibo de ' + idInm + ': ' + e.message); }
+      if (inmuebleRecibido_(idInm, c)) return;
       if (cvMomento(fechas, hoy) !== 'vigente') return;
       try { revisarRenovacion_(idInm, c, hoy); } catch (e) { Logger.log('⚠️ Renovación de ' + idInm + ': ' + e.message); }
       const periodo = cvPeriodo(inicio, hoy);
