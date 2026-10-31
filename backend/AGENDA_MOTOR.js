@@ -32,6 +32,7 @@ const TIPOS_AGENDA = {
 };
 
 // Lunes a viernes 8:00 a 18:00; sábados 8:00 a 13:00; domingo y festivos, nada.
+// Excepción (30-oct-2026): las visitas de interesados sí se agendan en festivo que cae en sábado.
 const AG_HORARIO = { 1: [8, 18], 2: [8, 18], 3: [8, 18], 4: [8, 18], 5: [8, 18], 6: [8, 13] };
 
 // Almuerzo de Leonardo, lunes a viernes de 1:00 a 2:00 p. m. (decidido 14-oct-2026).
@@ -89,7 +90,7 @@ function agHorariosLibres(o) {
   if (!o.dia) return { libre: false, motivo: 'Fecha no válida', slots: [] };
   const ds = agDiaSemana(o.dia);
   if (ds === 0) return { libre: false, motivo: 'Día de descanso (domingo)', slots: [] };
-  if (o.festivo) return { libre: false, motivo: 'Día festivo: ' + o.festivo, slots: [] };
+  if (o.festivo && !(ds === 6 && o.tipo === 'INTERESADO')) return { libre: false, motivo: 'Día festivo: ' + o.festivo, slots: [] };
   const horario = AG_HORARIO[ds];
 
   const colchon = cfg.colchonMin * 60000;
