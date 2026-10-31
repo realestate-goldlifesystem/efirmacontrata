@@ -20,7 +20,7 @@ const CONFIG_AGENDA = {
   MINIMO_AVISO_HORAS: 12, // No se puede agendar con menos de 12h de anticipación
   HORARIO: {
     LUNES_VIERNES: { inicio: 8, fin: 18 }, // 8:00 AM a 6:00 PM
-    SABADO: { inicio: 8, fin: 13 } // 8:00 AM a 1:00 PM
+    SABADO: { inicio: 8, fin: 18 } // 8:00 AM a 6:00 PM
   },
   CALENDARIO_FESTIVOS_COLOMBIA: 'es.co#holiday@group.v.calendar.google.com'
 };

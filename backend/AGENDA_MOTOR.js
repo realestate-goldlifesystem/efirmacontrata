@@ -31,9 +31,9 @@ const TIPOS_AGENDA = {
   DEVOLUCION: { nombre: 'Devolución del inmueble', duracionMin: 60, colchonMin: 30, anticipacionMin: 120 }
 };
 
-// Lunes a viernes 8:00 a 18:00; sábados 8:00 a 13:00; domingo y festivos, nada.
+// Lunes a sábado 8:00 a 18:00 (sábado igualado el 31-oct-2026, antes hasta las 13:00); domingo y festivos, nada.
 // Excepción (30-oct-2026): las visitas de interesados sí se agendan en festivo que cae en sábado.
-const AG_HORARIO = { 1: [8, 18], 2: [8, 18], 3: [8, 18], 4: [8, 18], 5: [8, 18], 6: [8, 13] };
+const AG_HORARIO = { 1: [8, 18], 2: [8, 18], 3: [8, 18], 4: [8, 18], 5: [8, 18], 6: [8, 18] };
 
 // Almuerzo de Leonardo, lunes a viernes de 1:00 a 2:00 p. m. (decidido 14-oct-2026).
 // Se bloquea SIN colchón: la hora de almuerzo ya sirve para desplazarse, así

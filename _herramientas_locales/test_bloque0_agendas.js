@@ -43,9 +43,9 @@ igual('a las 2:00 ya se puede', horas(r).includes('2:00 PM'), true);
 r = ctx.agHorariosLibres({ dia: jue, tipo: 'PROPIETARIO', ahoraMs: antes });
 igual('propietario último', horas(r).slice(-1)[0], '5:00 PM');
 
-// Sábado: 8 a 13 → entrega de 60 min, último 12:00 PM
+// Sábado: 8 a 18 → entrega de 60 min, último 5:00 PM
 r = ctx.agHorariosLibres({ dia: sab, tipo: 'ENTREGA', ahoraMs: antes });
-igual('sábado', [horas(r)[0], horas(r).slice(-1)[0]], ['8:00 AM', '12:00 PM']);
+igual('sábado', [horas(r)[0], horas(r).slice(-1)[0]], ['8:00 AM', '5:00 PM']);
 
 // Colchón antes y después: cita 10:00–11:00, entrega 60 min, colchón 30
 // Bloqueo efectivo 9:30–11:30 → 8:00 y 8:30 sirven (8:30+60 = 9:30), 9:00 no; 11:30 sí
@@ -63,10 +63,10 @@ igual('anticipación interesado', horas(r)[0], '10:30 AM');
 r = ctx.agHorariosLibres({ dia: jue, tipo: 'ENTREGA', ahoraMs: h(jue, 9) });
 igual('anticipación entrega', horas(r)[0], '11:00 AM');
 
-// Día lleno de captación: 6 citas entre semana, 3 el sábado
+// Día lleno de captación: 6 citas entre semana, 7 el sábado (no tiene almuerzo)
 const llenar = (dia) => { const oc = []; for (;;) { const x = ctx.agHorariosLibres({ dia, tipo: 'PROPIETARIO', ahoraMs: antes, ocupados: oc }); if (!x.slots.length) return oc.map(b => ctx.agHoraAmPm(b.inicio)); const t = x.slots[0].timestamp; oc.push({ inicio: t, fin: t + 3600000 }); } };
 igual('6 citas entre semana', llenar(jue), ['8:00 AM', '9:30 AM', '11:00 AM', '2:00 PM', '3:30 PM', '5:00 PM']);
-igual('3 citas el sábado', llenar(sab), ['8:00 AM', '9:30 AM', '11:00 AM']);
+igual('7 citas el sábado', llenar(sab), ['8:00 AM', '9:30 AM', '11:00 AM', '12:30 PM', '2:00 PM', '3:30 PM', '5:00 PM']);
 
 // Anticipación propia (panel del agente): propietario con 1 h en vez de 12 h
 r = ctx.agHorariosLibres({ dia: jue, tipo: 'PROPIETARIO', ahoraMs: h(jue, 9), anticipacionMin: 60 });
