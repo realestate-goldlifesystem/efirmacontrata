@@ -81,6 +81,15 @@ export default function App() {
     return () => clearInterval(id);
   }, [isAgentLoggedIn, agentCredential]);
 
+  const cerrarSesionAgente = () => {
+    setIsAgentLoggedIn(false);
+    setAgentCredential(null);
+    try { localStorage.removeItem('agentLoggedIn'); } catch {}
+    try { sessionStorage.removeItem('agentCredential'); } catch {}
+    setShowRegisterPage(false);
+    setShowCalculatorPage(false);
+  };
+
   const scrollToSection = (sectionId: string) => {
     if (showRegisterPage) {
       setShowRegisterPage(false);
@@ -144,7 +153,8 @@ export default function App() {
       {/* Premium Navigation Header */}
       <Navbar 
         onScrollTo={scrollToSection} 
-        onOpenRegisterForm={handleOpenRegisterForm} 
+        onOpenRegisterForm={handleOpenRegisterForm}
+        onAgentLogout={isAgentLoggedIn && !showRegisterPage && !showCalculatorPage && !showScheduleVisit ? cerrarSesionAgente : undefined}
       />
 
       {/* Main Sections */}
@@ -186,14 +196,7 @@ export default function App() {
                 setShowCalculatorPage(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onLogout={() => {
-                setIsAgentLoggedIn(false);
-                setAgentCredential(null);
-                try { localStorage.removeItem('agentLoggedIn'); } catch {}
-                try { sessionStorage.removeItem('agentCredential'); } catch {}
-                setShowRegisterPage(false);
-                setShowCalculatorPage(false);
-              }}
+              onLogout={cerrarSesionAgente}
             />
           </div>
         ) : (

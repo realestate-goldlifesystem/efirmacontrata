@@ -4,15 +4,18 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Home, Calculator, Phone, Menu, X, Landmark, Layers, User } from 'lucide-react';
+import { Home, Calculator, Phone, Menu, X, Landmark, Layers, User, LogOut } from 'lucide-react';
 import logoImg from '../assets/logo.png';
 
 interface NavbarProps {
   onScrollTo: (sectionId: string) => void;
   onOpenRegisterForm: () => void;
+  /** Solo en el panel del agente: en el celular el logo va al centro, "Salir" a
+   *  la izquierda y se quita el menú, cuyos enlaces son de la página pública. */
+  onAgentLogout?: () => void;
 }
 
-export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) {
+export default function Navbar({ onScrollTo, onOpenRegisterForm, onAgentLogout }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -54,10 +57,21 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-[72px] transition-all">
+        <div className="relative flex items-center justify-between h-16 lg:h-[72px] transition-all">
+          {onAgentLogout && (
+            <button
+              type="button"
+              onClick={onAgentLogout}
+              className="md:hidden flex items-center gap-1.5 px-3 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 text-xs font-medium z-10"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Salir</span>
+            </button>
+          )}
+
           {/* Logo Brand */}
-          <div className="flex-shrink-0 cursor-pointer flex items-center h-14 lg:h-16" onClick={() => handleNavClick('inicio')}>
-            <img src={logoImg} alt="Gold Life Real Estate" className="h-full w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform scale-110 origin-left" />
+          <div className={`flex-shrink-0 cursor-pointer flex items-center h-14 lg:h-16 ${onAgentLogout ? 'absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0' : ''}`} onClick={() => handleNavClick('inicio')}>
+            <img src={logoImg} alt="Gold Life Real Estate" className={`h-full w-auto object-contain drop-shadow-sm hover:scale-105 transition-transform scale-110 ${onAgentLogout ? 'origin-center md:origin-left' : 'origin-left'}`} />
           </div>
 
           {/* Desktop Navigation Links */}
@@ -100,7 +114,7 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex md:hidden">
+          <div className={onAgentLogout ? 'hidden' : 'flex md:hidden'}>
             <button
               id="mobile-menu-toggle"
               onClick={() => setIsOpen(!isOpen)}
@@ -113,7 +127,7 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm }: NavbarProps) 
       </div>
 
       {/* Mobile Menu Panel */}
-      {isOpen && (
+      {isOpen && !onAgentLogout && (
         <div id="mobile-menu-panel" className="md:hidden bg-brand-dark-deep border-b border-stone-200 px-4 pt-2 pb-6 space-y-3 transition-all">
           <div className="space-y-1">
             {navItems.map((item) => (
