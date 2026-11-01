@@ -338,25 +338,25 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
         <span className="text-sm md:text-base font-medium">Cerrar Sesión</span>
       </button>
 
-      <div className="text-center mb-12 max-w-2xl mt-20 md:mt-0">
-        <h1 className="text-4xl md:text-5xl font-light text-brand-gold mb-4">
+      <div className="text-center mb-8 md:mb-12 max-w-2xl mt-12 md:mt-0">
+        <h1 className="text-3xl md:text-5xl font-light text-brand-gold mb-2 md:mb-4">
           Panel de Agente
         </h1>
-        <p className="text-stone-400 text-lg">
+        <p className="text-stone-400 text-sm md:text-lg">
           Selecciona la herramienta que necesitas usar con tu cliente.
         </p>
       </div>
 
       {/* Menú del agente, en dos grupos que llenan siempre sus filas:
           4 herramientas de operación y 3 para trabajar con el cliente.
-          En PC son tarjetas verticales (4 y 3 columnas); en el celular, una lista
-          de tarjetas horizontales del mismo alto, con la descripción visible. */}
-      <div className="w-full max-w-6xl flex flex-col gap-8 md:gap-10">
+          En PC son 4 y 3 columnas; en el celular, cuadros de 2 columnas sin
+          descripción, y el séptimo ocupa la fila completa para no dejar un hueco. */}
+      <div className="w-full max-w-6xl flex flex-col gap-6 md:gap-10">
         <section className="flex flex-col gap-3 md:gap-4" aria-labelledby="menu-operacion">
           <h2 id="menu-operacion" className="text-xs md:text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
             Operación del día a día
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
             <TarjetaMenu destacada icono={CalendarDays} titulo="Agenda de Citas"
               descripcion="Citas de propietarios: confirmadas, canceladas y por reagendar."
               onClick={() => setActiveView('citas')} />
@@ -376,14 +376,14 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
           <h2 id="menu-cliente" className="text-xs md:text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
             Herramientas para el cliente
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-5">
             <TarjetaMenu icono={Calculator} titulo="Calculadora Inmobiliaria"
               descripcion="Crédito, retorno de inversión, flujo de caja y rentabilidad."
               onClick={onOpenCalculator} />
             <TarjetaMenu icono={Route} titulo="Guía de Cierre de Venta"
               descripcion="De la oferta a la escritura: documentos, pagos y tu comisión."
               onClick={() => setShowGuiaCierreModal(true)} />
-            <TarjetaMenu icono={Landmark} titulo="Estrategias SAS"
+            <TarjetaMenu ancha icono={Landmark} titulo="Estrategias SAS"
               descripcion="Ingeniería financiera, aportes en especie y liquidez corporativa."
               onClick={() => setShowSasModal(true)} />
           </div>
@@ -400,27 +400,28 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
   );
 }
 
-/** Tarjeta del menú del agente: horizontal en el celular, vertical desde tablet. */
-function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = false }: {
+/** Tarjeta del menú del agente: cuadro sin descripción en el celular, con descripción desde tablet. */
+function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = false, ancha = false }: {
   icono: React.ComponentType<{ className?: string }>;
   titulo: string;
   descripcion: string;
   onClick: () => void;
   destacada?: boolean;
+  ancha?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative h-full flex sm:flex-col items-center gap-4 p-4 sm:p-6 text-left sm:text-center rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
+      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1 min-h-[7rem]" : "aspect-square sm:aspect-auto"} flex flex-col items-center justify-center sm:justify-start gap-3 sm:gap-4 p-3 sm:p-6 text-center rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       <div className={`relative w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors duration-300 ${destacada ? "border border-brand-gold/30" : ""}`}>
         <Icono className="w-6 h-6 sm:w-8 sm:h-8 text-brand-gold" />
       </div>
       <div className="relative flex flex-col gap-1 min-w-0">
-        <h3 className="text-base sm:text-lg font-bold text-white leading-tight">{titulo}</h3>
-        <p className="text-stone-400 text-xs sm:text-sm leading-relaxed">{descripcion}</p>
+        <h3 className="text-sm sm:text-lg font-bold text-white leading-tight">{titulo}</h3>
+        <p className="hidden sm:block text-stone-400 text-sm leading-relaxed">{descripcion}</p>
       </div>
     </button>
   );
