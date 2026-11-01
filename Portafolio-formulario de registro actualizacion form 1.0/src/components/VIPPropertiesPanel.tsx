@@ -226,16 +226,15 @@ export default function VIPPropertiesPanel() {
   // En el celular abre la ventana de compartir del dispositivo (WhatsApp, Instagram…);
   // en el PC, o si el usuario la cierra sin elegir, copia el enlace.
   const compartirVisita = async (p: VIPProperty) => {
-    // Enlace corto /frontend/v/<ID>/: trae la foto de portada y el precio para la vista
+    // El enlace corto /frontend/v/<ID>/ trae la foto de portada y el precio para la vista
     // previa de WhatsApp (lo genera cada hora .github/workflows/vistas-previas.yml) y
     // lleva a visita.html?i=<ID>. Si aún no existe, el 404.html del sitio lleva igual.
-    const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/v/${encodeURIComponent(p.idRegistro)}/`;
-    const texto = `Agenda tu visita a este inmueble en ${p.barrio || p.ciudad} con Gold Life Real Estate:`;
+    const texto = armarMensajeLinks([p]);
     if (navigator.share) {
-      try { await navigator.share({ title: 'Agenda tu visita · Gold Life', text: texto, url }); return; }
+      try { await navigator.share({ text: texto }); return; }
       catch (e) { if ((e as Error).name === 'AbortError') return; }
     }
-    try { await navigator.clipboard.writeText(`${texto} ${url}`); } catch { window.prompt('Copia el enlace:', url); return; }
+    try { await navigator.clipboard.writeText(texto); } catch { window.prompt('Copia el mensaje:', texto); return; }
     setCopiedId('visita-' + p.idRegistro);
     setTimeout(() => setCopiedId(null), 2500);
   };
@@ -244,8 +243,9 @@ export default function VIPPropertiesPanel() {
 
   // Mensaje con los inmuebles seleccionados, cada uno en su bloque y con su enlace, listo
   // para WhatsApp (*negrita*). Va el barrio y no la dirección: el mensaje se reenvía.
-  const armarMensajeLinks = () => {
-    const bloques = properties.filter(p => selectedIds.has(p.idRegistro)).map((p, i) => {
+  const armarMensajeLinks = (lista: VIPProperty[]) => {
+    const unico = lista.length === 1;
+    const bloques = lista.map((p, i) => {
       const lugar = [p.barrio, p.ciudad].filter(Boolean).map(nombrePropio).filter((v, n, a) => a.indexOf(v) === n).join(', ') || 'Ubicación por confirmar';
       const datos = [
         p.habitaciones && `🛏️ ${p.habitaciones} hab`,
@@ -259,19 +259,19 @@ export default function VIPPropertiesPanel() {
           ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}*`
           : `💰 Venta: *${formatMoney(p.precioVenta)}*`;
       const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/v/${encodeURIComponent(p.idRegistro)}/`;
-      return [`*${i + 1}. ${lugar}*`, datos, precios, `👉 ${url}`].filter(Boolean).join('\n');
+      return [`*${unico ? '' : `${i + 1}. `}${lugar}*`, datos, precios, unico && p.youtube && `🎬 Video: ${p.youtube}`, `👉 ${url}`].filter(Boolean).join('\n');
     });
-    const intro = bloques.length === 1 ? 'te comparto esta opción' : `te comparto estas ${bloques.length} opciones`;
+    const intro = unico ? 'te comparto este inmueble' : `te comparto estas ${bloques.length} opciones`;
     return [
       `🏡 *Gold Life Real Estate*\n\nHola, ${intro} de nuestro portafolio:`,
       ...bloques,
-      'En cada enlace puedes ver todos los detalles y agendar tu visita. ¿Cuál te llama la atención? 😊',
+      unico ? 'En el enlace puedes ver todos los detalles y agendar tu visita. ¿Te gustaría conocerlo? 😊' : 'En cada enlace puedes ver todos los detalles y agendar tu visita. ¿Cuál te llama la atención? 😊',
     ].join('\n\n');
   };
 
   // En el celular abre la ventana de compartir; en el PC copia el mensaje.
   const compartirLinks = async () => {
-    const texto = armarMensajeLinks();
+    const texto = armarMensajeLinks(properties.filter(p => selectedIds.has(p.idRegistro)));
     if (navigator.share) {
       try { await navigator.share({ text: texto }); return; }
       catch (e) { if ((e as Error).name === 'AbortError') return; }
@@ -282,8 +282,7 @@ export default function VIPPropertiesPanel() {
   };
 
   const copyToClipboard = (p: VIPProperty) => {
-    const txt = `🏡 *${p.tipoNegocio.toUpperCase()} - ${p.barrio || p.ciudad}*\n📍 ${p.direccion}\n🛏️ Hab: ${p.habitaciones} | 🛁 Baños: ${p.banos} | 🚗 Garajes: ${p.garajes}\n\n🎬 *Video Tour:* ${p.youtube || 'Pronto'}\n\n🆔 ID: ${p.idRegistro}`;
-    navigator.clipboard.writeText(txt);
+    navigator.clipboard.writeText(armarMensajeLinks([p]));
     setCopiedId(p.idRegistro);
     setTimeout(() => setCopiedId(null), 2000);
   };
