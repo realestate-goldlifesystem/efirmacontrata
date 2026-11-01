@@ -249,8 +249,8 @@ export default function VIPPropertiesPanel() {
       const lugar = [p.barrio, p.ciudad].filter(Boolean).map(nombrePropio).filter((v, n, a) => a.indexOf(v) === n).join(', ') || 'Ubicación por confirmar';
       const datos = [
         p.habitaciones && `🛏️ ${p.habitaciones} hab`,
-        p.banos && `🛁 ${p.banos} ${p.banos === '1' ? 'baño' : 'baños'}`,
-        p.garajes && p.garajes !== 'Ningun' && `🚗 ${p.garajes === 'Comunal' ? 'Garaje comunal' : `${p.garajes} ${p.garajes === '1' ? 'garaje' : 'garajes'}`}`,
+        p.banos && `🛁 ${p.banos} ${String(p.banos) === '1' ? 'baño' : 'baños'}`,
+        p.garajes && p.garajes !== 'Ningun' && `🚗 ${p.garajes === 'Comunal' ? 'Garaje comunal' : `${p.garajes} ${String(p.garajes) === '1' ? 'garaje' : 'garajes'}`}`,
         p.area && p.area !== '0' && `📐 ${p.area} m²`,
       ].filter(Boolean).join('  ·  ');
       const precios = p.estado.includes('VENTA/RENTA')
