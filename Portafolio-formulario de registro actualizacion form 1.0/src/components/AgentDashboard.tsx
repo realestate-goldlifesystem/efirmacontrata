@@ -349,7 +349,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
 
       {/* Menú del agente, en dos grupos que llenan siempre sus filas:
           4 herramientas de operación y 3 para trabajar con el cliente.
-          En PC son 4 y 3 columnas; en el celular, cuadros de 2 columnas sin
+          En PC son 4 y 3 columnas; en el celular, cuadros de 2 columnas con su
           descripción, y el séptimo ocupa la fila completa para no dejar un hueco. */}
       <div className="w-full max-w-6xl flex flex-col gap-6 md:gap-10">
         <section className="flex flex-col gap-3 md:gap-4" aria-labelledby="menu-operacion">
@@ -400,7 +400,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
   );
 }
 
-/** Tarjeta del menú del agente: cuadro sin descripción en el celular, con descripción desde tablet. */
+/** Tarjeta del menú del agente: cuadro compacto en el celular, más amplio desde tablet. */
 function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = false, ancha = false }: {
   icono: React.ComponentType<{ className?: string }>;
   titulo: string;
@@ -413,15 +413,15 @@ function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = f
     <button
       type="button"
       onClick={onClick}
-      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1 min-h-[7rem]" : "aspect-square sm:aspect-auto"} flex flex-col items-center justify-center sm:justify-start gap-3 sm:gap-4 p-3 sm:p-6 text-center rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
+      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1" : ""} flex flex-col items-center justify-start gap-2 sm:gap-4 p-3 sm:p-6 text-center rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-      <div className={`relative w-12 h-12 sm:w-16 sm:h-16 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors duration-300 ${destacada ? "border border-brand-gold/30" : ""}`}>
+      <div className={`relative w-10 h-10 sm:w-16 sm:h-16 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors duration-300 ${destacada ? "border border-brand-gold/30" : ""}`}>
         <Icono className="w-6 h-6 sm:w-8 sm:h-8 text-brand-gold" />
       </div>
       <div className="relative flex flex-col gap-1 min-w-0">
         <h3 className="text-sm sm:text-lg font-bold text-white leading-tight">{titulo}</h3>
-        <p className="hidden sm:block text-stone-400 text-sm leading-relaxed">{descripcion}</p>
+        <p className="text-stone-400 text-[11px] sm:text-sm leading-snug sm:leading-relaxed">{descripcion}</p>
       </div>
     </button>
   );
