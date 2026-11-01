@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, Search, Filter, Loader2, MapPin, Bed, Bath, Car, Maximize,
   Youtube, Facebook, FileText, Share2, Download, Copy, Check, Lock, ChevronDown, CheckSquare, Square,
-  LayoutGrid, List, Link2, X
+  LayoutGrid, List, Link2, X, MessageCircle
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import logoImg from '../assets/logo.png';
@@ -59,6 +59,8 @@ export default function VIPPropertiesPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Inmuebles del mensaje que se está por enviar: abre la ventanita de WhatsApp / Otras apps.
+  const [paraCompartir, setParaCompartir] = useState<VIPProperty[] | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
@@ -222,28 +224,11 @@ export default function VIPPropertiesPanel() {
     }
   };
 
-  // Compartir el enlace para AGENDAR UNA VISITA a este inmueble (bloque 1, oct-2026).
-  // En el celular abre la ventana de compartir del dispositivo (WhatsApp, Instagram…);
-  // en el PC, o si el usuario la cierra sin elegir, copia el enlace.
-  const compartirVisita = async (p: VIPProperty) => {
-    // El enlace corto /frontend/v/<ID>/ trae la foto de portada y el precio para la vista
-    // previa de WhatsApp (lo genera cada hora .github/workflows/vistas-previas.yml) y
-    // lleva a visita.html?i=<ID>. Si aún no existe, el 404.html del sitio lleva igual.
-    const texto = armarMensajeLinks([p]);
-    if (navigator.share) {
-      try { await navigator.share({ text: texto }); return; }
-      catch (e) { if ((e as Error).name === 'AbortError') return; }
-    }
-    try { await navigator.clipboard.writeText(texto); } catch { window.prompt('Copia el mensaje:', texto); return; }
-    setCopiedId('visita-' + p.idRegistro);
-    setTimeout(() => setCopiedId(null), 2500);
-  };
-
   const nombrePropio = (t: string) => t.toLowerCase().replace(/(^|\s)\p{L}/gu, l => l.toUpperCase());
 
   // Mensaje con los inmuebles seleccionados, cada uno en su bloque y con su enlace, listo
   // para WhatsApp (*negrita*). Va el barrio y no la dirección: el mensaje se reenvía.
-  const armarMensajeLinks = (lista: VIPProperty[]) => {
+  const armarMensajeLinks = (lista: VIPProperty[], negrita = true) => {
     const unico = lista.length === 1;
     const bloques = lista.map((p, i) => {
       const lugar = [p.barrio, p.ciudad].filter(Boolean).map(nombrePropio).filter((v, n, a) => a.indexOf(v) === n).join(', ') || 'Ubicación por confirmar';
@@ -264,29 +249,37 @@ export default function VIPPropertiesPanel() {
     // Solo se promete el video si de verdad está en todas las publicaciones del mensaje.
     const contenido = lista.every(p => p.youtube) ? 'el video, las fotos y todos los detalles' : 'las fotos y todos los detalles';
     const intro = unico ? 'te comparto este inmueble' : `te comparto estas ${bloques.length} opciones`;
-    return [
+    const mensaje = [
       `🏡 *Gold Life Real Estate*\n\nHola, ${intro} de nuestro portafolio:`,
       ...bloques,
       unico
         ? `✨ En la publicación encuentras ${contenido}, y ahí mismo puedes agendar tu visita. ¡Ábrela y elige el horario que mejor te quede! 😊`
         : `✨ En cada publicación encuentras ${contenido}, y ahí mismo puedes agendar tu visita. ¡Ábrelas y agenda la que más te guste! 😊`,
     ].join('\n\n');
+    // Los asteriscos solo son negrita en WhatsApp; en Messenger y otras apps se verían tal cual.
+    return negrita ? mensaje : mensaje.split('*').join('');
   };
 
-  // En el celular abre la ventana de compartir; en el PC copia el mensaje.
-  const compartirLinks = async () => {
-    const texto = armarMensajeLinks(properties.filter(p => selectedIds.has(p.idRegistro)));
+  // WhatsApp directo y con negrita. api.whatsapp.com porque wa.me puede dañar los emojis.
+  const enviarPorWhatsApp = (lista: VIPProperty[]) => {
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(armarMensajeLinks(lista))}`, '_blank', 'noopener');
+    setParaCompartir(null);
+  };
+
+  // Sin negrita: en el celular abre la ventana de compartir; en el PC copia el mensaje.
+  const enviarPorOtrasApps = async (lista: VIPProperty[]) => {
+    const texto = armarMensajeLinks(lista, false);
     if (navigator.share) {
-      try { await navigator.share({ text: texto }); return; }
+      try { await navigator.share({ text: texto }); setParaCompartir(null); return; }
       catch (e) { if ((e as Error).name === 'AbortError') return; }
     }
     try { await navigator.clipboard.writeText(texto); } catch { window.prompt('Copia el mensaje:', texto); return; }
-    setCopiedId('seleccion');
-    setTimeout(() => setCopiedId(null), 2500);
+    setCopiedId('mensaje');
+    setTimeout(() => { setCopiedId(null); setParaCompartir(null); }, 1500);
   };
 
   const copyToClipboard = (p: VIPProperty) => {
-    navigator.clipboard.writeText(armarMensajeLinks([p]));
+    navigator.clipboard.writeText(armarMensajeLinks([p], false));
     setCopiedId(p.idRegistro);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -1211,11 +1204,11 @@ export default function VIPPropertiesPanel() {
           </div>
           <div className="grid grid-cols-3 sm:flex sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
-              onClick={compartirLinks}
+              onClick={() => setParaCompartir(properties.filter(p => selectedIds.has(p.idRegistro)))}
               className="w-full sm:w-auto bg-brand-gold text-stone-950 px-1 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-base font-bold hover:bg-yellow-500 hover:scale-105 transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 shadow-lg shadow-brand-gold/20"
             >
-              {copiedId === 'seleccion' ? <Check className="w-5 h-5" /> : <Link2 className="w-5 h-5" />}
-              {copiedId === 'seleccion' ? 'Copiado' : <span><span className="hidden sm:inline">Compartir </span>Links</span>}
+              <Link2 className="w-5 h-5" />
+              <span><span className="hidden sm:inline">Compartir </span>Links</span>
             </button>
             <button
               onClick={() => generatePDF()}
@@ -1340,11 +1333,11 @@ export default function VIPPropertiesPanel() {
                     <Download className="w-4 h-4" />
                   </button>
                   <button 
-                    onClick={() => compartirVisita(prop)}
+                    onClick={() => setParaCompartir([prop])}
                     title="Compartir enlace para agendar visita"
                     className="col-span-1 bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded-xl h-10 flex items-center justify-center transition-colors"
                   >
-                    {copiedId === 'visita-' + prop.idRegistro ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                    <Share2 className="w-4 h-4" />
                   </button>
                   {prop.youtube && (
                     <a 
@@ -1439,9 +1432,8 @@ export default function VIPPropertiesPanel() {
                 <button onClick={() => generatePDF(prop)} className={`${BOTON_LISTA} bg-stone-800 hover:bg-brand-gold hover:text-stone-950 text-stone-300`}>
                   <Download className="w-4 h-4" /> PDF
                 </button>
-                <button onClick={() => compartirVisita(prop)} className={`${BOTON_LISTA} bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white`}>
-                  {copiedId === 'visita-' + prop.idRegistro ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-                  {copiedId === 'visita-' + prop.idRegistro ? 'Copiado' : 'Visita'}
+                <button onClick={() => setParaCompartir([prop])} className={`${BOTON_LISTA} bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white`}>
+                  <Share2 className="w-4 h-4" /> Visita
                 </button>
                 {prop.youtube && (
                   <a href={prop.youtube} target="_blank" rel="noreferrer" className={`${BOTON_LISTA} bg-red-900/20 hover:bg-red-600 text-red-400 hover:text-white`}>
@@ -1456,6 +1448,28 @@ export default function VIPPropertiesPanel() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {paraCompartir && (
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-fade-in" onClick={() => setParaCompartir(null)}>
+          <div className="w-full max-w-sm bg-stone-900 border border-stone-800 rounded-2xl p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-white font-bold">¿Por dónde lo envías?</h3>
+              <button type="button" onClick={() => setParaCompartir(null)} aria-label="Cerrar" className="p-1 text-stone-400 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button type="button" onClick={() => enviarPorWhatsApp(paraCompartir)} className="h-20 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex flex-col items-center justify-center gap-1.5 transition-colors">
+                <MessageCircle className="w-6 h-6" /> WhatsApp
+              </button>
+              <button type="button" onClick={() => enviarPorOtrasApps(paraCompartir)} className="h-20 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-bold text-sm flex flex-col items-center justify-center gap-1.5 transition-colors">
+                {copiedId === 'mensaje' ? <Check className="w-6 h-6 text-emerald-400" /> : <Share2 className="w-6 h-6" />}
+                {copiedId === 'mensaje' ? 'Mensaje copiado' : 'Otras apps'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
