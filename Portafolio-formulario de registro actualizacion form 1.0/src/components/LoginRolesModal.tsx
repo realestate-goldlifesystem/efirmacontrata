@@ -127,6 +127,10 @@ export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner 
                     shape="pill"
                     text="signin_with"
                     auto_select={true}
+                    // En celular el botón abre otra pestaña que no vuelve sola al portafolio;
+                    // One Tap sale en esta misma página. Si Google no lo muestra, queda el botón.
+                    useOneTap={window.matchMedia('(pointer: coarse)').matches}
+                    use_fedcm_for_prompt={true}
                   />
 
                 </div>
