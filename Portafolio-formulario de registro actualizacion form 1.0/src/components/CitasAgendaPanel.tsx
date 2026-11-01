@@ -247,7 +247,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   const DIAS_LARGOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   return (
-    <div className="w-full max-w-[1760px] mx-auto px-[clamp(1rem,2.5vw,3rem)] pt-20 xl:pt-0 xl:pl-[15rem]">
+    <div className="w-full max-w-[1760px] mx-auto px-[clamp(1rem,2.5vw,3rem)] pt-2 md:pt-20 xl:pt-0 xl:pl-[15rem]">
       {/* El botón fijo "Volver al Panel" del AgentDashboard ocupa la esquina
           izquierda. Hasta xl se deja la franja de arriba (pt-20); desde xl el
           contenido arranca a su derecha (pl-15rem), el título sube a su altura y el

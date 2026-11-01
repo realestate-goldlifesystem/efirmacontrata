@@ -52,6 +52,11 @@ async function fetchImageAsBase64(originalUrl: string): Promise<string | null> {
 }
 
 // Botón de acción de la vista de lista: ícono con su nombre debajo.
+// Dato de la tarjeta (habitaciones, baños…): todos reparten el ancho por igual.
+const DATO_TARJETA = 'flex-1 min-w-0 bg-stone-950 border border-stone-800 rounded-xl py-2.5 flex flex-col items-center gap-1 text-white font-bold text-sm';
+const ETIQUETA_DATO = 'text-[10px] font-medium text-stone-500 leading-none';
+// Botón de acción de la tarjeta: como el de la lista, pero siempre reparte el ancho.
+const BOTON_TARJETA = 'flex-1 h-12 min-w-0 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors';
 const BOTON_LISTA = 'flex-1 lg:flex-none lg:w-16 h-12 min-w-0 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors';
 
 export default function VIPPropertiesPanel() {
@@ -996,7 +1001,7 @@ export default function VIPPropertiesPanel() {
 
 
   return (
-    <div className="pt-24 px-4 md:px-8 max-w-7xl mx-auto w-full relative">
+    <div className="pt-2 md:pt-24 px-4 md:px-8 max-w-7xl mx-auto w-full relative">
       
       {/* Panel de Debug Flotante */}
       {showDebug && (
@@ -1293,67 +1298,53 @@ export default function VIPPropertiesPanel() {
                   <MapPin className="w-3 h-3" /> {prop.direccion}
                 </p>
 
-                {/* Características Píldoras */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  <div className="bg-stone-950 border border-stone-800 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
-                    <Bed className="w-3.5 h-3.5 text-stone-500" /> {prop.habitaciones}
+                {/* Características: ocupan todo el ancho */}
+                <div className="flex gap-2 mb-4">
+                  <div className={DATO_TARJETA}>
+                    <Bed className="w-4 h-4 text-brand-gold" /> {prop.habitaciones}
+                    <span className={ETIQUETA_DATO}>Hab.</span>
                   </div>
-                  <div className="bg-stone-950 border border-stone-800 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
-                    <Bath className="w-3.5 h-3.5 text-stone-500" /> {prop.banos}
+                  <div className={DATO_TARJETA}>
+                    <Bath className="w-4 h-4 text-brand-gold" /> {prop.banos}
+                    <span className={ETIQUETA_DATO}>Baños</span>
+                  </div>
+                  <div className={DATO_TARJETA}>
+                    <Car className="w-4 h-4 text-brand-gold" /> {prop.garajes === 'Ningun' ? '0' : prop.garajes === 'Comunal' ? 'Com' : prop.garajes}
+                    <span className={ETIQUETA_DATO}>Garajes</span>
                   </div>
                   {prop.area && prop.area !== '0' && prop.area !== '' && (
-                    <div className="bg-stone-950 border border-stone-800 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
-                      <Maximize className="w-3.5 h-3.5 text-stone-500" /> {prop.area} m²
+                    <div className={DATO_TARJETA}>
+                      <Maximize className="w-4 h-4 text-brand-gold" /> {prop.area}
+                      <span className={ETIQUETA_DATO}>m²</span>
                     </div>
                   )}
-                  <div className="bg-stone-950 border border-stone-800 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-xs text-stone-300 font-medium">
-                    <Car className="w-3.5 h-3.5 text-stone-500" /> {prop.garajes === 'Ningun' ? '0' : prop.garajes === 'Comunal' ? 'Com' : prop.garajes}
-                  </div>
                 </div>
 
                 {/* Precios */}
-                <div className="mb-6">
+                <div className="mb-4">
                   {getPriceDisplay(prop)}
                 </div>
 
-                {/* Botones de Acción Individuales */}
-                <div className="grid grid-cols-4 gap-2 pt-4 border-t border-stone-800/50 mt-auto">
-                  <button 
-                    onClick={() => copyToClipboard(prop)}
-                    title="Copiar Resumen WhatsApp"
-                    className="col-span-1 bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white rounded-xl h-10 flex items-center justify-center transition-colors"
-                  >
+                {/* Botones de Acción Individuales: con su nombre, como en la lista */}
+                <div className="flex gap-2 pt-4 border-t border-stone-800/50 mt-auto">
+                  <button onClick={() => copyToClipboard(prop)} className={`${BOTON_TARJETA} bg-stone-800 hover:bg-stone-700 text-stone-300`}>
                     {copiedId === prop.idRegistro ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    {copiedId === prop.idRegistro ? 'Copiado' : 'Copiar'}
                   </button>
-                  <button 
-                    onClick={() => generatePDF(prop)}
-                    title="Generar PDF Individual"
-                    className="col-span-1 bg-stone-800 hover:bg-brand-gold hover:text-stone-950 text-stone-400 rounded-xl h-10 flex items-center justify-center transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
+                  <button onClick={() => generatePDF(prop)} className={`${BOTON_TARJETA} bg-stone-800 hover:bg-brand-gold hover:text-stone-950 text-stone-300`}>
+                    <Download className="w-4 h-4" /> PDF
                   </button>
-                  <button 
-                    onClick={() => setParaCompartir([prop])}
-                    title="Compartir enlace para agendar visita"
-                    className="col-span-1 bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded-xl h-10 flex items-center justify-center transition-colors"
-                  >
-                    <Share2 className="w-4 h-4" />
+                  <button onClick={() => setParaCompartir([prop])} className={`${BOTON_TARJETA} bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white`}>
+                    <Share2 className="w-4 h-4" /> Visita
                   </button>
                   {prop.youtube && (
-                    <a 
-                      href={prop.youtube} target="_blank" rel="noreferrer" title="Ver YouTube"
-                      className="col-span-1 bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white rounded-xl h-10 flex items-center justify-center transition-colors"
-                    >
-                      <Youtube className="w-4 h-4" />
+                    <a href={prop.youtube} target="_blank" rel="noreferrer" className={`${BOTON_TARJETA} bg-red-900/20 hover:bg-red-600 text-red-400 hover:text-white`}>
+                      <Youtube className="w-4 h-4" /> Video
                     </a>
                   )}
                   {prop.documentoFirmado && (
-                    <a 
-                      href={prop.documentoFirmado} target="_blank" rel="noreferrer" title="Ver Documento Firmado (Solo Agente)"
-                      className="col-span-1 bg-stone-950 hover:bg-stone-800 border border-stone-800 text-stone-500 hover:text-white rounded-xl h-10 flex items-center justify-center transition-colors relative group/doc"
-                    >
-                      <Lock className="w-3 h-3 absolute top-1 right-1 opacity-50" />
-                      <FileText className="w-4 h-4" />
+                    <a href={prop.documentoFirmado} target="_blank" rel="noreferrer" className={`${BOTON_TARJETA} bg-stone-950 hover:bg-stone-800 border border-stone-800 text-stone-400 hover:text-white`}>
+                      <FileText className="w-4 h-4" /> Firmado
                     </a>
                   )}
                 </div>
