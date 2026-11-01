@@ -363,12 +363,12 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
             <TarjetaMenu destacada icono={Building2} titulo="Portafolio de Inmuebles"
               descripcion="Inmuebles publicados y PDFs interactivos para compartir."
               onClick={() => setActiveView('portafolio')} />
-            <TarjetaMenu icono={ClipboardList} titulo="Registro de Inmuebles"
-              descripcion="Captación de propiedades, contratos y checklist de exclusividad."
-              onClick={onOpenForm} />
             <TarjetaMenu icono={Bot} titulo="Miguel · Agente Captador"
               descripcion="Barrido de propietarios directos en Fincaraiz y Metrocuadrado."
               onClick={() => setShowMiguelModal(true)} />
+            <TarjetaMenu icono={ClipboardList} titulo="Registro de Inmuebles"
+              descripcion="Captación de propiedades, contratos y checklist de exclusividad."
+              onClick={onOpenForm} />
           </div>
         </section>
 
