@@ -238,28 +238,28 @@ export default function VIPPropertiesPanel() {
     const bloques = lista.map((p, i) => {
       const lugar = [p.barrio, p.ciudad].filter(Boolean).map(nombrePropio).filter((v, n, a) => a.indexOf(v) === n).join(', ') || 'Ubicación por confirmar';
       const datos = [
-        p.habitaciones && `🛏️ ${p.habitaciones} hab`,
+        p.habitaciones && `🛏️ ${p.habitaciones} ${String(p.habitaciones) === '1' ? 'habitación' : 'habitaciones'}`,
         p.banos && `🛁 ${p.banos} ${String(p.banos) === '1' ? 'baño' : 'baños'}`,
         p.garajes && p.garajes !== 'Ningun' && `🚗 ${p.garajes === 'Comunal' ? 'Garaje comunal' : `${p.garajes} ${String(p.garajes) === '1' ? 'garaje' : 'garajes'}`}`,
         p.area && p.area !== '0' && `📐 ${p.area} m²`,
-      ].filter(Boolean).join('  ·  ');
+      ].filter(Boolean).join('\n');
       const precios = p.estado.includes('VENTA/RENTA')
-        ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}* (admin. incluida)\n💰 Venta: *${formatMoney(p.precioVenta)}*`
+        ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}*\n✅ Administración incluida\n💰 Venta: *${formatMoney(p.precioVenta)}*`
         : p.estado.includes('ARRIENDO')
-          ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}* (admin. incluida)`
+          ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}*\n✅ Administración incluida`
           : `💰 Venta: *${formatMoney(p.precioVenta)}*`;
       const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/v/${encodeURIComponent(p.idRegistro)}/`;
-      return [`*${unico ? '' : `${i + 1}. `}${lugar}*`, datos, precios, `👉 Ver publicación: ${url}`].filter(Boolean).join('\n');
+      return [`📍 *${unico ? '' : `${i + 1}. `}${lugar}*`, datos, precios, `👉 Ver publicación:\n${url}`].filter(Boolean).join('\n\n');
     });
     // Solo se promete el video si de verdad está en todas las publicaciones del mensaje.
     const contenido = lista.every(p => p.youtube) ? 'el video, las fotos y todos los detalles' : 'las fotos y todos los detalles';
     const intro = unico ? 'te comparto este inmueble' : `te comparto estas ${bloques.length} opciones`;
     const mensaje = [
       `🏡 *Gold Life Real Estate*\n\nHola, ${intro} de nuestro portafolio:`,
-      ...bloques,
+      bloques.join('\n\n───────\n\n'),
       unico
-        ? `✨ En la publicación encuentras ${contenido}, y ahí mismo puedes agendar tu visita. ¡Ábrela y elige el horario que mejor te quede! 😊`
-        : `✨ En cada publicación encuentras ${contenido}, y ahí mismo puedes agendar tu visita. ¡Ábrelas y agenda la que más te guste! 😊`,
+        ? `✨ En la publicación encuentras ${contenido}.\n\n📅 Ahí mismo puedes agendar tu visita en el horario que mejor te quede. 😊`
+        : `✨ En cada publicación encuentras ${contenido}.\n\n📅 Ahí mismo puedes agendar tu visita a la que más te guste. 😊`,
     ].join('\n\n');
     // Los asteriscos solo son negrita en WhatsApp; en Messenger y otras apps se verían tal cual.
     return negrita ? mensaje : mensaje.split('*').join('');
