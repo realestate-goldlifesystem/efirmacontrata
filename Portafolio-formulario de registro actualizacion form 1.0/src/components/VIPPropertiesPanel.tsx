@@ -259,13 +259,17 @@ export default function VIPPropertiesPanel() {
           ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}*`
           : `💰 Venta: *${formatMoney(p.precioVenta)}*`;
       const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/v/${encodeURIComponent(p.idRegistro)}/`;
-      return [`*${unico ? '' : `${i + 1}. `}${lugar}*`, datos, precios, unico && p.youtube && `🎬 Video: ${p.youtube}`, `👉 ${url}`].filter(Boolean).join('\n');
+      return [`*${unico ? '' : `${i + 1}. `}${lugar}*`, datos, precios, `👉 Ver publicación: ${url}`].filter(Boolean).join('\n');
     });
+    // Solo se promete el video si de verdad está en todas las publicaciones del mensaje.
+    const contenido = lista.every(p => p.youtube) ? 'el video, las fotos y todos los detalles' : 'las fotos y todos los detalles';
     const intro = unico ? 'te comparto este inmueble' : `te comparto estas ${bloques.length} opciones`;
     return [
       `🏡 *Gold Life Real Estate*\n\nHola, ${intro} de nuestro portafolio:`,
       ...bloques,
-      unico ? 'En el enlace puedes ver todos los detalles y agendar tu visita. ¿Te gustaría conocerlo? 😊' : 'En cada enlace puedes ver todos los detalles y agendar tu visita. ¿Cuál te llama la atención? 😊',
+      unico
+        ? `✨ En la publicación encuentras ${contenido}, y ahí mismo puedes agendar tu visita. ¡Ábrela y elige el horario que mejor te quede! 😊`
+        : `✨ En cada publicación encuentras ${contenido}, y ahí mismo puedes agendar tu visita. ¡Ábrelas y agenda la que más te guste! 😊`,
     ].join('\n\n');
   };
 
