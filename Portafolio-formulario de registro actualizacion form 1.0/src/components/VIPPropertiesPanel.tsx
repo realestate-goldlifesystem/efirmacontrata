@@ -240,15 +240,17 @@ export default function VIPPropertiesPanel() {
     setTimeout(() => setCopiedId(null), 2500);
   };
 
+  const nombrePropio = (t: string) => t.toLowerCase().replace(/(^|\s)\p{L}/gu, l => l.toUpperCase());
+
   // Mensaje con los inmuebles seleccionados, cada uno en su bloque y con su enlace, listo
   // para WhatsApp (*negrita*). Va el barrio y no la dirección: el mensaje se reenvía.
   const armarMensajeLinks = () => {
     const bloques = properties.filter(p => selectedIds.has(p.idRegistro)).map((p, i) => {
-      const lugar = [p.barrio, p.ciudad].filter(Boolean).filter((v, n, a) => a.indexOf(v) === n).join(', ') || 'Ubicación por confirmar';
+      const lugar = [p.barrio, p.ciudad].filter(Boolean).map(nombrePropio).filter((v, n, a) => a.indexOf(v) === n).join(', ') || 'Ubicación por confirmar';
       const datos = [
         p.habitaciones && `🛏️ ${p.habitaciones} hab`,
-        p.banos && `🛁 ${p.banos} baños`,
-        p.garajes && p.garajes !== 'Ningun' && `🚗 ${p.garajes === 'Comunal' ? 'Garaje comunal' : `${p.garajes} garaje(s)`}`,
+        p.banos && `🛁 ${p.banos} ${p.banos === '1' ? 'baño' : 'baños'}`,
+        p.garajes && p.garajes !== 'Ningun' && `🚗 ${p.garajes === 'Comunal' ? 'Garaje comunal' : `${p.garajes} ${p.garajes === '1' ? 'garaje' : 'garajes'}`}`,
         p.area && p.area !== '0' && `📐 ${p.area} m²`,
       ].filter(Boolean).join('  ·  ');
       const precios = p.estado.includes('VENTA/RENTA')
@@ -1190,36 +1192,36 @@ export default function VIPPropertiesPanel() {
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="bg-brand-gold/10 border border-brand-gold/30 rounded-2xl p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in shadow-xl shadow-brand-gold/5 sticky top-[280px] z-50 backdrop-blur-md">
+        <div className="bg-brand-gold/10 border border-brand-gold/30 rounded-2xl p-3 sm:p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 animate-fade-in shadow-xl shadow-brand-gold/5 max-sm:fixed max-sm:bottom-3 max-sm:left-3 max-sm:right-3 max-sm:mb-0 max-sm:bg-brand-dark sm:sticky sm:top-[280px] z-50 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-brand-gold flex items-center justify-center text-stone-950 font-black text-lg">
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-brand-gold flex items-center justify-center text-stone-950 font-black sm:text-lg">
               {selectedIds.size}
             </div>
-            <span className="text-stone-900 font-bold">Inmuebles seleccionados para el Portafolio</span>
+            <span className="text-stone-900 font-bold text-sm sm:text-base">Inmuebles seleccionados<span className="hidden sm:inline"> para el Portafolio</span></span>
           </div>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div className="grid grid-cols-3 sm:flex sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
               onClick={compartirLinks}
-              className="w-full sm:w-auto bg-brand-gold text-stone-950 px-6 py-3 rounded-xl font-bold hover:bg-yellow-500 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-gold/20"
+              className="w-full sm:w-auto bg-brand-gold text-stone-950 px-1 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-base font-bold hover:bg-yellow-500 hover:scale-105 transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 shadow-lg shadow-brand-gold/20"
             >
               {copiedId === 'seleccion' ? <Check className="w-5 h-5" /> : <Link2 className="w-5 h-5" />}
-              {copiedId === 'seleccion' ? 'Mensaje copiado' : 'Compartir Links'}
+              {copiedId === 'seleccion' ? 'Copiado' : <span><span className="hidden sm:inline">Compartir </span>Links</span>}
             </button>
             <button
               onClick={() => generatePDF()}
               disabled={isGeneratingPdf}
-              className="w-full sm:w-auto bg-brand-gold text-stone-950 px-6 py-3 rounded-xl font-bold hover:bg-yellow-500 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-gold/20 disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full sm:w-auto bg-brand-gold text-stone-950 px-1 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-base font-bold hover:bg-yellow-500 hover:scale-105 transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 shadow-lg shadow-brand-gold/20 disabled:opacity-50 disabled:hover:scale-100"
             >
               {isGeneratingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <span className="text-xl leading-none">📤</span>}
-              {isGeneratingPdf ? 'Generando PDF...' : 'Generar PDF y Compartir'}
+              {isGeneratingPdf ? 'Generando...' : <span><span className="hidden sm:inline">Generar </span>PDF<span className="hidden sm:inline"> y Compartir</span></span>}
             </button>
             <button 
               onClick={() => generatePDF(undefined, true)}
               disabled={isGeneratingPdf}
-              className="w-full sm:w-auto bg-stone-900 text-brand-gold border border-stone-700 px-6 py-3 rounded-xl font-bold hover:bg-stone-800 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
+              className="w-full sm:w-auto bg-stone-900 text-brand-gold border border-stone-700 px-1 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-base font-bold hover:bg-stone-800 hover:scale-105 transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 shadow-lg disabled:opacity-50 disabled:hover:scale-100"
             >
               {isGeneratingPdf ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-              {isGeneratingPdf ? 'Generando...' : 'Descargar Solo'}
+              {isGeneratingPdf ? 'Generando...' : <span>Descargar<span className="hidden sm:inline"> Solo</span></span>}
             </button>
           </div>
         </div>
