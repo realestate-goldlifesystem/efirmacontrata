@@ -50,7 +50,7 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm, onAgentLogout }
   return (
     <nav
       id="main-nav"
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${onAgentLogout ? 'max-md:py-2' : ''} ${
         isScrolled
           ? 'bg-brand-dark-deep/95 backdrop-blur-md shadow-md border-b border-stone-200 py-1'
           : 'bg-transparent py-3'
@@ -62,7 +62,7 @@ export default function Navbar({ onScrollTo, onOpenRegisterForm, onAgentLogout }
             <button
               type="button"
               onClick={onAgentLogout}
-              className="md:hidden flex items-center gap-1.5 px-3 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 text-xs font-medium z-10"
+              className="md:hidden ml-auto flex items-center gap-1.5 px-3 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 text-xs font-medium z-10"
             >
               <LogOut className="w-4 h-4" />
               <span>Salir</span>

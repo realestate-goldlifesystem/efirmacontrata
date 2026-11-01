@@ -24,7 +24,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
       <div className="min-h-screen bg-brand-dark animate-fade-in pb-20 relative">
         <button
           onClick={() => setActiveView('menu')}
-          className="fixed top-24 left-4 md:left-8 z-50 flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all shadow-md"
+          className="fixed top-[22px] md:top-24 left-4 md:left-8 z-[60] flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all shadow-md"
         >
           <ArrowLeft className="w-5 h-5" />
           <span className="font-medium hidden md:inline">Volver al Panel</span>
@@ -39,7 +39,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
       <div className="min-h-screen bg-brand-dark animate-fade-in pb-20 relative">
         <button 
           onClick={() => setActiveView('menu')}
-          className="fixed top-24 left-4 md:left-8 z-50 flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all shadow-md"
+          className="fixed top-[22px] md:top-24 left-4 md:left-8 z-[60] flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all shadow-md"
         >
           <ArrowLeft className="w-5 h-5" />
           <span className="font-medium hidden md:inline">Volver al Panel</span>
