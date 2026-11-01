@@ -51,6 +51,9 @@ async function fetchImageAsBase64(originalUrl: string): Promise<string | null> {
   }
 }
 
+// Botón de acción de la vista de lista: ícono con su nombre debajo.
+const BOTON_LISTA = 'flex-1 lg:flex-none lg:w-16 h-12 min-w-0 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors';
+
 export default function VIPPropertiesPanel() {
   const [properties, setProperties] = useState<VIPProperty[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1309,120 +1312,90 @@ export default function VIPPropertiesPanel() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          <div className="hidden md:flex items-center px-4 py-3 bg-stone-900 rounded-xl text-xs font-bold text-stone-500 uppercase tracking-wider border border-stone-800">
-            <div className="w-12 text-center">Sel</div>
-            <div className="w-24 px-2">ID</div>
-            <div className="w-1/4 px-2">Ubicación</div>
-            <div className="w-1/5 px-2">Características</div>
-            <div className="w-28 px-2">Negocio</div>
-            <div className="flex-1 px-2 text-right">Precio General</div>
-            <div className="w-28 text-center px-2">Acciones</div>
-          </div>
-
+        <div className="flex flex-col gap-3">
           {filteredProperties.map(prop => (
-            <div 
-              key={prop.idRegistro} 
-              className={`bg-stone-900 rounded-2xl overflow-hidden border transition-all duration-200 flex flex-col md:flex-row items-center p-3 gap-2 ${selectedIds.has(prop.idRegistro) ? 'border-brand-gold ring-1 ring-brand-gold shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'border-stone-800 hover:border-stone-600'}`}
+            <div
+              key={prop.idRegistro}
+              className={`bg-stone-900 rounded-2xl border transition-all duration-200 flex flex-col lg:flex-row lg:items-center p-3 gap-3 ${selectedIds.has(prop.idRegistro) ? 'border-brand-gold ring-1 ring-brand-gold shadow-[0_0_15px_rgba(212,175,55,0.15)]' : 'border-stone-800 hover:border-stone-600'}`}
             >
-              <div className="w-full md:w-12 flex items-center justify-between md:justify-center mb-2 md:mb-0 px-2 md:px-0">
-                <span className="md:hidden text-stone-500 text-xs font-bold uppercase">Seleccionar</span>
-                <button 
+              <div className="flex gap-3 flex-1 min-w-0">
+                {/* Foto: al tocarla se selecciona, igual que en la vista de tarjetas */}
+                <button
+                  type="button"
                   onClick={() => toggleSelection(prop.idRegistro)}
-                  className={`w-7 h-7 shrink-0 rounded-md flex items-center justify-center border-2 transition-colors ${selectedIds.has(prop.idRegistro) ? 'bg-brand-gold border-brand-gold text-stone-950' : 'bg-stone-950 border-stone-700 text-transparent hover:border-stone-500'}`}
+                  aria-pressed={selectedIds.has(prop.idRegistro)}
+                  aria-label={`Seleccionar ${prop.idRegistro}`}
+                  className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-stone-950 overflow-hidden shrink-0 border border-stone-800"
                 >
-                  <Check className="w-4 h-4" strokeWidth={3} />
-                </button>
-              </div>
-
-              <div className="w-full md:w-24 px-2 shrink-0 font-mono text-xs font-bold text-stone-400 flex items-center justify-between md:block">
-                <span className="md:hidden text-stone-500 text-xs font-bold uppercase">ID</span>
-                {prop.idRegistro}
-              </div>
-
-              <div className="w-full md:w-1/4 px-2 shrink-0 flex items-center gap-3">
-                <div className="w-12 h-12 rounded bg-stone-950 overflow-hidden shrink-0 border border-stone-800 hidden md:block">
                   {prop.imageUrl ? (
-                    <img src={prop.imageUrl} alt="thmb" className="w-full h-full object-cover opacity-80" />
+                    <img src={prop.imageUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <Building2 className="w-full h-full p-3 text-stone-700 opacity-50" />
+                    <Building2 className="w-full h-full p-6 text-stone-700 opacity-50" />
                   )}
-                </div>
-                <div>
-                  <h3 className="text-white font-bold text-sm line-clamp-1">{prop.barrio || prop.ciudad || 'Pendiente'}</h3>
-                  <p className="text-stone-500 text-[10px] line-clamp-1 flex items-center gap-1 mt-0.5">
-                    <MapPin className="w-2.5 h-2.5" /> {prop.direccion}
+                  <span className={`absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors ${selectedIds.has(prop.idRegistro) ? 'bg-brand-gold border-brand-gold text-stone-950' : 'bg-black/50 border-white/60 text-transparent'}`}>
+                    <Check className="w-3.5 h-3.5" strokeWidth={3} />
+                  </span>
+                </button>
+
+                <div className="min-w-0 flex-1 flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2 py-0.5 rounded bg-stone-800/80 text-[9px] font-black tracking-widest uppercase text-brand-gold border border-brand-gold/30 truncate">
+                      {prop.tipoNegocio}
+                    </span>
+                    <span className="font-mono text-[11px] font-bold text-stone-500 shrink-0">{prop.idRegistro}</span>
+                  </div>
+                  <h3 className="text-white font-bold text-base leading-tight line-clamp-1">{prop.barrio || prop.ciudad || 'Ubicación Pendiente'}</h3>
+                  <p className="text-stone-500 text-xs line-clamp-1 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 shrink-0" /> <span className="truncate">{prop.direccion}</span>
                   </p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-auto pt-1 text-xs text-stone-300 font-medium">
+                    <span className="flex items-center gap-1"><Bed className="w-3.5 h-3.5 text-stone-500" /> {prop.habitaciones}</span>
+                    <span className="flex items-center gap-1"><Bath className="w-3.5 h-3.5 text-stone-500" /> {prop.banos}</span>
+                    <span className="flex items-center gap-1"><Car className="w-3.5 h-3.5 text-stone-500" /> {prop.garajes === 'Ningun' ? '0' : prop.garajes === 'Comunal' ? 'Com' : prop.garajes}</span>
+                    {prop.area && prop.area !== '0' && prop.area !== '' && (
+                      <span className="flex items-center gap-1"><Maximize className="w-3.5 h-3.5 text-stone-500" /> {prop.area} m²</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="w-full md:w-1/5 px-2 shrink-0 flex items-center gap-2 mt-2 md:mt-0">
-                <div className="flex items-center gap-1.5 text-[11px] text-stone-300 font-medium bg-stone-950 border border-stone-800 px-2 py-1 rounded-md">
-                  <Bed className="w-3 h-3 text-stone-500" /> {prop.habitaciones}
-                </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-stone-300 font-medium bg-stone-950 border border-stone-800 px-2 py-1 rounded-md">
-                  <Bath className="w-3 h-3 text-stone-500" /> {prop.banos}
-                </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-stone-300 font-medium bg-stone-950 border border-stone-800 px-2 py-1 rounded-md">
-                  <Car className="w-3 h-3 text-stone-500" /> {prop.garajes}
-                </div>
+              <div className="lg:w-44 shrink-0 lg:text-right border-t border-stone-800 pt-2 lg:border-0 lg:pt-0">
+                {prop.estado.includes('VENTA/RENTA') ? (
+                  <div className="flex justify-between gap-3 lg:block">
+                    <div className="text-sm font-black text-brand-gold">Arriendo: {formatMoney(prop.precioGeneral)}</div>
+                    <div className="text-sm lg:text-[11px] font-bold text-stone-400">Venta: {formatMoney(prop.precioVenta)}</div>
+                  </div>
+                ) : prop.estado.includes('ARRIENDO') ? (
+                  <div className="text-base font-black text-brand-gold">Arriendo: {formatMoney(prop.precioGeneral)}</div>
+                ) : (
+                  <div className="text-base font-black text-white">Venta: {formatMoney(prop.precioVenta)}</div>
+                )}
               </div>
 
-              <div className="w-full md:w-28 px-2 shrink-0 flex items-center justify-between md:block mt-2 md:mt-0">
-                <span className="md:hidden text-stone-500 text-xs font-bold uppercase">Negocio</span>
-                <span className="inline-block px-2 py-1 rounded bg-stone-800/80 text-[9px] font-black tracking-widest uppercase text-brand-gold border border-brand-gold/30">
-                  {prop.tipoNegocio}
-                </span>
-              </div>
-
-              <div className="w-full md:flex-1 px-2 flex items-center justify-between md:justify-end mt-2 md:mt-0">
-                <span className="md:hidden text-stone-500 text-xs font-bold uppercase">Precio</span>
-                <div className="text-right">
-                  {prop.estado.includes('VENTA/RENTA') ? (
-                    <>
-                      <div className="text-sm font-black text-brand-gold">
-                        Arriendo: {formatMoney(prop.precioGeneral)}
-                      </div>
-                      <div className="text-[11px] font-bold text-stone-400">
-                        Venta: {formatMoney(prop.precioVenta)}
-                      </div>
-                    </>
-                  ) : prop.estado.includes('ARRIENDO') ? (
-                    <div className="text-base font-black text-brand-gold">
-                      {formatMoney(prop.precioGeneral)}
-                    </div>
-                  ) : (
-                    <div className="text-base font-black text-white">
-                      {formatMoney(prop.precioVenta)}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="w-full md:w-32 px-2 flex items-center gap-2 justify-center shrink-0 mt-3 md:mt-0 border-t border-stone-800 pt-3 md:border-0 md:pt-0">
-                <button 
-                  onClick={() => copyToClipboard(prop)}
-                  title="Copiar Resumen WhatsApp"
-                  className="bg-stone-800 hover:bg-stone-700 text-stone-400 rounded-lg w-9 h-9 flex items-center justify-center transition-colors"
-                >
+              {/* Acciones con su nombre visible: en el celular no existe el texto al pasar el mouse */}
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => copyToClipboard(prop)} className={`${BOTON_LISTA} bg-stone-800 hover:bg-stone-700 text-stone-300`}>
                   {copiedId === prop.idRegistro ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copiedId === prop.idRegistro ? 'Copiado' : 'Copiar'}
                 </button>
-                <button 
-                  onClick={() => generatePDF(prop)}
-                  title="Generar PDF Individual"
-                  className="bg-stone-800 hover:bg-brand-gold hover:text-stone-950 text-stone-400 rounded-lg w-9 h-9 flex items-center justify-center transition-colors"
-                >
-                  <Download className="w-4 h-4" />
+                <button onClick={() => generatePDF(prop)} className={`${BOTON_LISTA} bg-stone-800 hover:bg-brand-gold hover:text-stone-950 text-stone-300`}>
+                  <Download className="w-4 h-4" /> PDF
                 </button>
-                <button 
-                  onClick={() => compartirVisita(prop)}
-                  title="Compartir enlace para agendar visita"
-                  className="bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded-lg w-9 h-9 flex items-center justify-center transition-colors"
-                >
+                <button onClick={() => compartirVisita(prop)} className={`${BOTON_LISTA} bg-indigo-500/15 hover:bg-indigo-500 text-indigo-300 hover:text-white`}>
                   {copiedId === 'visita-' + prop.idRegistro ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+                  {copiedId === 'visita-' + prop.idRegistro ? 'Copiado' : 'Visita'}
                 </button>
+                {prop.youtube && (
+                  <a href={prop.youtube} target="_blank" rel="noreferrer" className={`${BOTON_LISTA} bg-red-900/20 hover:bg-red-600 text-red-400 hover:text-white`}>
+                    <Youtube className="w-4 h-4" /> Video
+                  </a>
+                )}
+                {prop.documentoFirmado && (
+                  <a href={prop.documentoFirmado} target="_blank" rel="noreferrer" className={`${BOTON_LISTA} bg-stone-950 hover:bg-stone-800 border border-stone-800 text-stone-400 hover:text-white`}>
+                    <FileText className="w-4 h-4" /> Firmado
+                  </a>
+                )}
               </div>
-
             </div>
           ))}
         </div>
