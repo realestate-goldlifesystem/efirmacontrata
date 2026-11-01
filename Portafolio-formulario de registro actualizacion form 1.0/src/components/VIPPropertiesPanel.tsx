@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, Search, Filter, Loader2, MapPin, Bed, Bath, Car, Maximize,
   Youtube, Facebook, FileText, Share2, Download, Copy, Check, Lock, ChevronDown, CheckSquare, Square,
-  LayoutGrid, List
+  LayoutGrid, List, Link2
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import logoImg from '../assets/logo.png';
@@ -237,6 +237,45 @@ export default function VIPPropertiesPanel() {
     }
     try { await navigator.clipboard.writeText(`${texto} ${url}`); } catch { window.prompt('Copia el enlace:', url); return; }
     setCopiedId('visita-' + p.idRegistro);
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  // Mensaje con los inmuebles seleccionados, cada uno en su bloque y con su enlace, listo
+  // para WhatsApp (*negrita*). Va el barrio y no la dirección: el mensaje se reenvía.
+  const armarMensajeLinks = () => {
+    const bloques = properties.filter(p => selectedIds.has(p.idRegistro)).map((p, i) => {
+      const lugar = [p.barrio, p.ciudad].filter(Boolean).filter((v, n, a) => a.indexOf(v) === n).join(', ') || 'Ubicación por confirmar';
+      const datos = [
+        p.habitaciones && `🛏️ ${p.habitaciones} hab`,
+        p.banos && `🛁 ${p.banos} baños`,
+        p.garajes && p.garajes !== 'Ningun' && `🚗 ${p.garajes === 'Comunal' ? 'Garaje comunal' : `${p.garajes} garaje(s)`}`,
+        p.area && p.area !== '0' && `📐 ${p.area} m²`,
+      ].filter(Boolean).join('  ·  ');
+      const precios = p.estado.includes('VENTA/RENTA')
+        ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}*\n💰 Venta: *${formatMoney(p.precioVenta)}*`
+        : p.estado.includes('ARRIENDO')
+          ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}*`
+          : `💰 Venta: *${formatMoney(p.precioVenta)}*`;
+      const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/v/${encodeURIComponent(p.idRegistro)}/`;
+      return [`*${i + 1}. ${lugar}*`, datos, precios, `👉 ${url}`].filter(Boolean).join('\n');
+    });
+    const intro = bloques.length === 1 ? 'te comparto esta opción' : `te comparto estas ${bloques.length} opciones`;
+    return [
+      `🏡 *Gold Life Real Estate*\n\nHola, ${intro} de nuestro portafolio:`,
+      ...bloques,
+      'En cada enlace puedes ver todos los detalles y agendar tu visita. ¿Cuál te llama la atención? 😊',
+    ].join('\n\n');
+  };
+
+  // En el celular abre la ventana de compartir; en el PC copia el mensaje.
+  const compartirLinks = async () => {
+    const texto = armarMensajeLinks();
+    if (navigator.share) {
+      try { await navigator.share({ text: texto }); return; }
+      catch (e) { if ((e as Error).name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(texto); } catch { window.prompt('Copia el mensaje:', texto); return; }
+    setCopiedId('seleccion');
     setTimeout(() => setCopiedId(null), 2500);
   };
 
@@ -1159,7 +1198,14 @@ export default function VIPPropertiesPanel() {
             <span className="text-stone-900 font-bold">Inmuebles seleccionados para el Portafolio</span>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <button 
+            <button
+              onClick={compartirLinks}
+              className="w-full sm:w-auto bg-brand-gold text-stone-950 px-6 py-3 rounded-xl font-bold hover:bg-yellow-500 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-gold/20"
+            >
+              {copiedId === 'seleccion' ? <Check className="w-5 h-5" /> : <Link2 className="w-5 h-5" />}
+              {copiedId === 'seleccion' ? 'Mensaje copiado' : 'Compartir Links'}
+            </button>
+            <button
               onClick={() => generatePDF()}
               disabled={isGeneratingPdf}
               className="w-full sm:w-auto bg-brand-gold text-stone-950 px-6 py-3 rounded-xl font-bold hover:bg-yellow-500 hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg shadow-brand-gold/20 disabled:opacity-50 disabled:hover:scale-100"
