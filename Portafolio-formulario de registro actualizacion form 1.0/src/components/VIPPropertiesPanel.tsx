@@ -271,19 +271,22 @@ export default function VIPPropertiesPanel() {
     setParaCompartir(null);
   };
 
-  // En el PC Windows también tiene ventana de compartir, pero allá se quiere copiar y pegar.
-  const esPC = window.matchMedia('(pointer: fine)').matches;
-
-  // Sin negrita: en el celular abre la ventana de compartir; en el PC copia el mensaje.
-  const enviarPorOtrasApps = async (lista: VIPProperty[]) => {
+  // Sin negrita, porque no todas las apps entienden los asteriscos de WhatsApp.
+  const copiarMensaje = async (lista: VIPProperty[]) => {
     const texto = armarMensajeLinks(lista, false);
-    if (!esPC && navigator.share) {
-      try { await navigator.share({ text: texto }); setParaCompartir(null); return; }
-      catch (e) { if ((e as Error).name === 'AbortError') return; }
-    }
     try { await navigator.clipboard.writeText(texto); } catch { window.prompt('Copia el mensaje:', texto); return; }
     setCopiedId('mensaje');
     setTimeout(() => { setCopiedId(null); setParaCompartir(null); }, 1500);
+  };
+
+  // Abre la ventana de compartir del sistema; si el navegador no la tiene, copia el mensaje.
+  const enviarPorOtrasApps = async (lista: VIPProperty[]) => {
+    const texto = armarMensajeLinks(lista, false);
+    if (navigator.share) {
+      try { await navigator.share({ text: texto }); setParaCompartir(null); return; }
+      catch (e) { if ((e as Error).name === 'AbortError') return; }
+    }
+    await copiarMensaje(lista);
   };
 
   const copyToClipboard = (p: VIPProperty) => {
@@ -1459,8 +1462,12 @@ export default function VIPPropertiesPanel() {
                 <MessageCircle className="w-6 h-6" /> WhatsApp
               </button>
               <button type="button" onClick={() => enviarPorOtrasApps(paraCompartir)} className="h-20 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-bold text-sm flex flex-col items-center justify-center gap-1.5 transition-colors">
-                {copiedId === 'mensaje' ? <Check className="w-6 h-6 text-emerald-400" /> : esPC ? <Copy className="w-6 h-6" /> : <Share2 className="w-6 h-6" />}
-                {copiedId === 'mensaje' ? 'Mensaje copiado' : esPC ? 'Copiar mensaje' : 'Otras apps'}
+                <Share2 className="w-6 h-6" />
+                Otras apps
+              </button>
+              <button type="button" onClick={() => copiarMensaje(paraCompartir)} className="col-span-2 h-12 rounded-xl bg-stone-800 hover:bg-stone-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors">
+                {copiedId === 'mensaje' ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+                {copiedId === 'mensaje' ? 'Mensaje copiado' : 'Copiar mensaje'}
               </button>
             </div>
           </div>
