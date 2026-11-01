@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Building2, Search, Filter, Loader2, MapPin, Bed, Bath, Car, Maximize,
   Youtube, Facebook, FileText, Share2, Download, Copy, Check, Lock, ChevronDown, CheckSquare, Square,
-  LayoutGrid, List, Link2
+  LayoutGrid, List, Link2, X
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import logoImg from '../assets/logo.png';
@@ -1193,11 +1193,18 @@ export default function VIPPropertiesPanel() {
 
       {selectedIds.size > 0 && (
         <div className="bg-brand-gold/10 border border-brand-gold/30 rounded-2xl p-3 sm:p-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 animate-fade-in shadow-xl shadow-brand-gold/5 max-sm:fixed max-sm:bottom-3 max-sm:left-3 max-sm:right-3 max-sm:mb-0 max-sm:bg-brand-dark sm:sticky sm:top-[280px] z-50 backdrop-blur-md">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-brand-gold flex items-center justify-center text-stone-950 font-black sm:text-lg">
               {selectedIds.size}
             </div>
             <span className="text-stone-900 font-bold text-sm sm:text-base">Inmuebles seleccionados<span className="hidden sm:inline"> para el Portafolio</span></span>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="ml-auto shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-xs sm:text-sm font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-900/5 transition-colors"
+            >
+              <X className="w-4 h-4" /> Cancelar
+            </button>
           </div>
           <div className="grid grid-cols-3 sm:flex sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <button
