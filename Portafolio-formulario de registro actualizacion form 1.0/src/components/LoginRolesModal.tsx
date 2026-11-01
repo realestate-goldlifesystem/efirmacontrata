@@ -2,6 +2,7 @@ import { X, UserCheck, Home, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
+import { CORREO_AGENTE, iniciarGoogleEnMismaPestana } from '../googleAuth';
 
 interface LoginRolesModalProps {
   onClose: () => void;
@@ -18,7 +19,7 @@ export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner 
     if (credentialResponse.credential) {
       try {
         const decoded = jwtDecode<{ email: string }>(credentialResponse.credential);
-        if (decoded.email.toLowerCase().trim() === 'realestate.goldlifesystem@gmail.com') {
+        if (decoded.email.toLowerCase().trim() === CORREO_AGENTE) {
           onSelectAgent(credentialResponse.credential);
         } else {
           alert("Acceso denegado. Este correo no cuenta con permisos de administrador.");
@@ -120,18 +121,25 @@ export default function LoginRolesModal({ onClose, onSelectAgent, onSelectOwner 
                 </div>
 
                 <div className="flex flex-col items-center gap-4 my-6">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    theme="filled_black"
-                    shape="pill"
-                    text="signin_with"
-                    auto_select={true}
-                    // En celular el botón abre otra pestaña que no vuelve sola al portafolio;
-                    // One Tap sale en esta misma página. Si Google no lo muestra, queda el botón.
-                    useOneTap={window.matchMedia('(pointer: coarse)').matches}
-                    use_fedcm_for_prompt={true}
-                  />
+                  {window.matchMedia('(pointer: coarse)').matches ? (
+                    <button
+                      type="button"
+                      onClick={iniciarGoogleEnMismaPestana}
+                      className="px-6 py-3 rounded-full bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium transition-colors"
+                    >
+                      Iniciar sesión con Google
+                    </button>
+                  ) : (
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      theme="filled_black"
+                      shape="pill"
+                      text="signin_with"
+                      auto_select={true}
+                      use_fedcm_for_prompt={true}
+                    />
+                  )}
 
                 </div>
                 <p className="text-[10px] text-center text-stone-400 mt-4">
