@@ -50,7 +50,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
   }
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 bg-brand-dark animate-fade-in relative">
+    <div className="min-h-[80vh] flex flex-col items-center justify-start md:justify-center px-6 pb-6 pt-1 md:p-6 bg-brand-dark animate-fade-in relative">
       
       {showSasModal && (
         <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
