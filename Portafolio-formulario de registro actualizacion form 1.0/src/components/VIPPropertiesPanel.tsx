@@ -254,9 +254,9 @@ export default function VIPPropertiesPanel() {
         p.area && p.area !== '0' && `📐 ${p.area} m²`,
       ].filter(Boolean).join('  ·  ');
       const precios = p.estado.includes('VENTA/RENTA')
-        ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}*\n💰 Venta: *${formatMoney(p.precioVenta)}*`
+        ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}* (admin. incluida)\n💰 Venta: *${formatMoney(p.precioVenta)}*`
         : p.estado.includes('ARRIENDO')
-          ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}*`
+          ? `💰 Arriendo: *${formatMoney(p.precioGeneral)}* (admin. incluida)`
           : `💰 Venta: *${formatMoney(p.precioVenta)}*`;
       const url = `https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/v/${encodeURIComponent(p.idRegistro)}/`;
       return [`*${unico ? '' : `${i + 1}. `}${lugar}*`, datos, precios, `👉 Ver publicación: ${url}`].filter(Boolean).join('\n');
