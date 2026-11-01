@@ -67,7 +67,7 @@ export default function VIPPropertiesPanel() {
   // Inmuebles del mensaje que se está por enviar: abre la ventanita de WhatsApp / Otras apps.
   const [paraCompartir, setParaCompartir] = useState<VIPProperty[] | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   
   // Debug panel para diagnosticar PDF
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
