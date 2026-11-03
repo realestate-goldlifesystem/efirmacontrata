@@ -452,6 +452,8 @@ function cerrarRecibo(datos) {
       `Se cerró el recibo del inmueble <strong>${idInm}</strong> (${partes.direccion}).` + resumen +
       `<br><br>Paz y salvo: <strong>${pazYSalvo ? 'enviado' : 'no salió (' + sinPaz + ')'}</strong>.<br>Los cobros mes a mes quedaron apagados y el inmueble quedó <strong>PENDIENTE</strong> para volver a publicarse.`,
       htmlBotonesCorreo([{ texto: '📄 Informe', color: '#555555', url: rec.cierre.informe }].concat(pazYSalvo ? [{ texto: '📄 Paz y salvo', color: '#b8860b', url: pazYSalvo.url }] : [])));
+    _prog_(datos, 90, 'Preguntándole al propietario si lo volvemos a promocionar');
+    try { preguntarPromocion_(idInm, partes, f.fin); } catch (e) { Logger.log('⚠️ Pregunta de promoción de ' + idInm + ': ' + e.message); }
     _prog_(datos, 96, 'Terminando');
     return { ok: true, mensaje: 'Listo: el inmueble quedó recibido.' + (pazYSalvo ? ' Salió el paz y salvo.' : ' Sin paz y salvo: ' + sinPaz + '.') };
   } finally { lock.releaseLock(); }

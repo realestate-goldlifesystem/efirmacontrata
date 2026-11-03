@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Tu inmueble · Gold Life Real Estate</title>
+  <!--
+    ¿Volvemos a promocionar el inmueble? (3-nov-2026): ?k=<inmueble>&f=<fin>&t=<token>[&d=SI|NO].
+    El propietario responde una vez. Servidor: backend/PROMOCION_NUEVA.js. Estilos de renovacion.html.
+  -->
+  <style>
+    :root { --oro: #d4af37; --fondo: #0c0a09; --panel: #1c1917; --panel2: #292524; --suave: #a8a29e; --linea: #3f3a36; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 24px 16px 40px; font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--fondo); color: #f5f5f4;
+      background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.16), transparent 70%);
+    }
+    .tarjeta {
+      width: 100%; max-width: 560px; margin: 0 auto; background: var(--panel); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 24px; padding: clamp(22px, 5vw, 32px) clamp(16px, 4.5vw, 28px); box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    }
+    .marca { font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); text-align: center; }
+    .marca span { color: var(--suave); font-weight: 400; }
+    h1 { margin: 22px 0 6px; font-size: clamp(20px, 5vw, 24px); font-weight: 600; text-align: center; }
+    h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+    p { margin: 0; line-height: 1.6; color: #d6d3d1; }
+    .centro { text-align: center; }
+    .inmueble { color: var(--suave); font-size: 14px; text-align: center; margin-bottom: 18px; }
+    .nota { font-size: 13px; color: var(--suave); margin-top: 6px; }
+    .oculto { display: none !important; }
+    button { font-family: inherit; cursor: pointer; transition: opacity .2s, transform .1s, background .15s; }
+    button:active { transform: scale(.98); }
+    button:disabled { opacity: .55; cursor: default; }
+    .icono { width: 56px; height: 56px; margin: 20px auto 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px;
+      background: rgba(212,175,55,.1); box-shadow: 0 0 0 1px rgba(212,175,55,.3); }
+    .lista { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .lista li { padding: 12px 14px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--linea); font-size: 14px; line-height: 1.5; color: #e7e5e4; }
+    .lista b { color: var(--oro); }
+    .decidir { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    .decidir button { padding: 18px 10px; border-radius: 16px; font-size: 16px; font-weight: 700; border: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .decidir button span { font-size: 24px; }
+    .si { background: linear-gradient(135deg, #e8c766, var(--oro)); color: #0c0a09; }
+    .no { background: var(--panel2); color: #e7e5e4; border: 1px solid var(--linea) !important; }
+    textarea { width: 100%; min-height: 76px; padding: 12px; border-radius: 12px; border: 1px solid var(--linea); background: var(--panel2); color: #f5f5f4; font: inherit; font-size: 14.5px; margin-top: 10px; }
+    textarea:focus { outline: none; border-color: var(--oro); }
+    .principal { width: 100%; padding: 15px; border: 0; border-radius: 12px; font-size: 16px; font-weight: 700; color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); margin-top: 18px; }
+    .principal.gris { background: var(--panel2); color: #f5f5f4; border: 1px solid var(--linea); }
+    .volver { width: 100%; border: 0; background: none; color: var(--suave); font-size: 14px; padding: 12px; margin-top: 4px; }
+    .exito { text-align: center; padding: 8px 0; }
+    .exito .check { width: 64px; height: 64px; margin: 8px auto 14px; border-radius: 50%; display: grid; place-items: center; font-size: 30px; font-weight: 800;
+      color: #0c0a09; background: linear-gradient(135deg, #e8c766, var(--oro)); box-shadow: 0 0 0 8px rgba(212,175,55,.15); }
+    .exito p { margin-top: 8px; }
+    .entra { animation: subirC .35s ease both; }
+    @keyframes subirC { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+  </style>
+  <script src="aviso.js?v=1"></script>
+</head>
+<body>
+  <main class="tarjeta">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <p id="cargando" class="centro" style="margin-top:28px;color:var(--suave);">Cargando…</p>
+    <section id="error" class="oculto centro">
+      <div class="icono">!</div>
+      <h1 style="margin-top:8px;">No pudimos abrir esta página</h1>
+      <p id="errorTexto"></p>
+    </section>
+    <section id="contenido" class="oculto">
+      <h1 id="titulo"></h1>
+      <p class="inmueble" id="inmueble"></p>
+      <div id="vista"></div>
+    </section>
+  </main>
+
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+    const q = new URLSearchParams(location.search);
+    const K = q.get('k') || '', F = q.get('f') || '', TOKEN = q.get('t') || '', PRE = q.get('d') || '';
+    const $ = (id) => document.getElementById(id);
+    const esc = (t) => String(t || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let info = null;
+
+    function llamar(accion, extra) {
+      return fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ accion: accion, k: K, f: F, t: TOKEN }, extra || {})) }).then(r => r.json());
+    }
+    function error(t) { $('cargando').classList.add('oculto'); $('contenido').classList.add('oculto'); $('error').classList.remove('oculto'); $('errorTexto').textContent = t; }
+    function exito(titulo, texto) {
+      $('titulo').textContent = '';
+      $('vista').innerHTML = `<div class="exito entra"><div class="check">✓</div><h2>${esc(titulo)}</h2><p>${esc(texto)}</p><p class="nota" style="margin-top:14px;">Ya puedes cerrar esta página.</p></div>`;
+    }
+
+    function pintar() {
+      if (info.respuesta) {
+        exito('Ya nos respondiste', info.respuesta === 'SI'
+          ? 'Nos pediste volver a promocionar tu inmueble. Leonardo te contacta para revisar los valores.'
+          : 'Nos contaste que por ahora no lo promocionamos. Si cambias de opinión, escríbenos.');
+        return;
+      }
+      $('titulo').textContent = `${info.nombre ? info.nombre + ', ¿' : '¿'}volvemos a promocionar tu inmueble?`;
+      $('vista').innerHTML =
+        '<p class="centro">Tu inmueble ya quedó recibido y está disponible.</p>' +
+        '<ul class="lista entra"><li>Si nos dices que <b>sí</b>, Leonardo te contacta para revisar los valores de arriendo y administración.</li>' +
+        '<li>Firmas de nuevo la <b>autorización</b> con los valores actualizados y lo publicamos otra vez.</li></ul>' +
+        '<div class="decidir"><button class="no" id="bNo"><span>✋</span>No por ahora</button><button class="si" id="bSi"><span>🏡</span>Sí, promocionarlo</button></div>';
+      $('bSi').onclick = vistaSi;
+      $('bNo').onclick = vistaNo;
+    }
+
+    function vistaSi() {
+      $('titulo').textContent = 'Volver a promocionar tu inmueble';
+      $('vista').innerHTML = '<p class="centro entra">Le avisamos a Leonardo para que te contacte y revisen juntos los valores.</p>' +
+        '<button class="principal" id="bOk">Sí, quiero promocionarlo</button><button class="volver" id="bVolver">‹ Volver</button>';
+      $('bOk').onclick = () => enviar('SI');
+      $('bVolver').onclick = pintar;
+    }
+
+    function vistaNo() {
+      $('titulo').textContent = 'No promocionarlo por ahora';
+      $('vista').innerHTML = '<p class="centro entra">Si quieres, cuéntanos por qué. Nos ayuda a mejorar.</p>' +
+        '<textarea id="motivo" maxlength="300" placeholder="Motivo (opcional)"></textarea>' +
+        '<button class="principal gris" id="bOk">Confirmar: no por ahora</button><button class="volver" id="bVolver">‹ Volver</button>';
+      $('bOk').onclick = () => enviar('NO', $('motivo').value);
+      $('bVolver').onclick = pintar;
+    }
+
+    function enviar(respuesta, motivo) {
+      const b = $('bOk'); b.disabled = true; b.textContent = 'Enviando…';
+      llamar('responderPromocion', { respuesta: respuesta, motivo: motivo || '' }).then(r => {
+        if (!r || !r.ok) { b.disabled = false; b.textContent = 'Intentar de nuevo'; return alert((r && r.mensaje) || 'No pudimos registrar tu respuesta.'); }
+        exito(respuesta === 'SI' ? '¡Listo!' : 'Gracias por contarnos', r.mensaje || '');
+      }).catch(() => { b.disabled = false; b.textContent = 'Intentar de nuevo'; alert('Error de red. Intenta de nuevo.'); });
+    }
+
+    function cargar() {
+      if (!K || !F || !TOKEN) return error('El enlace está incompleto.');
+      llamar('infoPromocion').then(r => {
+        if (!r || !r.ok) return error((r && r.mensaje) || 'No pudimos abrir esta página.');
+        info = r;
+        $('cargando').classList.add('oculto'); $('contenido').classList.remove('oculto');
+        $('inmueble').textContent = '📍 ' + info.direccion;
+        pintar();
+        // Desde el botón del correo: abre directamente el paso elegido
+        if (!info.respuesta) { if (PRE === 'SI') vistaSi(); else if (PRE === 'NO') vistaNo(); }
+      }).catch(() => error('Revisa tu conexión a internet e intenta de nuevo.'));
+    }
+    cargar();
+  </script>
+</body>
+</html>

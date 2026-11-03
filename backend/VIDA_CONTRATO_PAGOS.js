@@ -498,7 +498,11 @@ function revisarPagosMensuales_(forzar) {
       const fechas = fechasContratoVigente_(idInm, c);
       // Contrato terminado: la sala de recibo (RECIBO_INMUEBLE.js); ya recibido, no se cobra nada más
       try { revisarRecibo_(idInm, c, hoy); } catch (e) { Logger.log('⚠️ Recibo de ' + idInm + ': ' + e.message); }
-      if (inmuebleRecibido_(idInm, c)) return;
+      if (inmuebleRecibido_(idInm, c)) {
+        // Ya recibido: los recordatorios de "¿volvemos a promocionarlo?" (PROMOCION_NUEVA.js)
+        try { revisarPromocion_(idInm, c, hoy); } catch (e) { Logger.log('⚠️ Promoción de ' + idInm + ': ' + e.message); }
+        return;
+      }
       if (cvMomento(fechas, hoy) !== 'vigente') return;
       try { revisarRenovacion_(idInm, c, hoy); } catch (e) { Logger.log('⚠️ Renovación de ' + idInm + ': ' + e.message); }
       const periodo = cvPeriodo(inicio, hoy);
