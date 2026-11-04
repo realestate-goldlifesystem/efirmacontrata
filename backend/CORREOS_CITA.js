@@ -91,7 +91,7 @@ const PASOS_CORREO_CITA = {
   M60:      { asunto: 'Confirma tu cita de hoy', titulo: 'CONFIRMA TU CITA' },
   M45:      { asunto: 'Segundo aviso: confirma tu cita', titulo: 'CONFIRMA TU CITA' },
   M30:      { asunto: 'Último aviso: confirma tu cita', titulo: 'ÚLTIMO AVISO' },
-  R60:      { asunto: 'Tu cita es en 1 hora', titulo: 'RECORDATORIO' },
+  R60:      { asunto: 'Tu cita es muy pronto', titulo: 'RECORDATORIO' },
   // Respuesta a lo que hizo la persona desde su correo
   CONFIRMADA: { asunto: 'Tu cita quedó confirmada', titulo: 'CITA CONFIRMADA' },
   CANCELADA:  { asunto: 'Tu cita quedó cancelada', titulo: 'CITA CANCELADA' }
