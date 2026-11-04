@@ -147,10 +147,37 @@ function _descripcionInmueble(carpeta) {
     const docs = carpetas.next().searchFiles("title contains 'DESCRIPCIÓN' and trashed = false");
     while (docs.hasNext()) {
       const d = docs.next();
-      if (d.getMimeType() === MimeType.GOOGLE_DOCS) return DocumentApp.openById(d.getId()).getBody().getText().trim();
+      if (d.getMimeType() === MimeType.GOOGLE_DOCS) return limpiarDescripcion_(DocumentApp.openById(d.getId()).getBody().getText());
     }
   } catch (e) { Logger.log('Sin descripción: ' + e.message); }
   return '';
+}
+
+/**
+ * Ordena el texto del Doc de descripción antes de publicarlo (4-nov-2026):
+ * - si el Doc quedó con el texto pegado dos veces, deja solo la primera copia (hasta "CODIGO:");
+ * - los emojis que llegaron dañados (signos �) se reponen según el título de la sección;
+ * - un título de sección pegado al final de otra línea pasa a su propia línea.
+ */
+const EMOJI_SECCION_DESC_ = [
+  ['Zonas Comunales', '🏢'], ['Valor de la Administraci', '💰'], ['Zona de la Nevera', '❄️'],
+  ['Zona de la Lavadora', '🧺'], ['Cama ideal', '🛏️'], ['Mascotas', '🐾']
+];
+function limpiarDescripcion_(texto) {
+  let t = String(texto || '').replace(/\r/g, '');
+  const cod = t.match(/CODIGO:\s*[A-Z]{2}\d{6}/);
+  if (cod) t = t.slice(0, cod.index + cod[0].length);
+  EMOJI_SECCION_DESC_.forEach(([titulo, emoji]) => {
+    const esc = titulo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Emoji previo (dañado o bueno) + título, esté donde esté en la línea → línea propia con el emoji correcto
+    const re = new RegExp('[ \\t]*(?:[\\uFFFD\\uFE0F\\u200D]|[\\uD800-\\uDBFF][\\uDC00-\\uDFFF]|[\\u2600-\\u27BF])*[ \\t]*(' + esc + '[^\\n]*?:)\\.?[ \\t]*', 'g');
+    t = t.replace(re, (m, tit, pos) => (pos > 0 && t[pos - 1] !== '\n' ? '\n' : '') + emoji + ' ' + tit + (t[pos + m.length] === '\n' ? '' : '\n'));
+  });
+  t = t.replace(/�+/g, '')
+       .replace(/([^\n])(Dormitorio (?:secundario|auxiliar|principal))/g, '$1\n$2')
+       .replace(/([^\n])(CODIGO:)/g, '$1\n\n$2')
+       .replace(/\n{3,}/g, '\n\n');
+  return t.split('\n').map(l => l.trim()).join('\n').trim();
 }
 
 /** Primera foto de la carpeta FOTOGRAFÍAS, como miniatura pública de Drive. */
