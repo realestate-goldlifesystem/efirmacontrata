@@ -121,6 +121,33 @@ function urlAgendarDeNuevo(idInmueble) {
  * @param {Object} c      { idCita, token, nombre, servicio, direccion, inicio: Date }
  * @return {{asunto, titulo, nombre, mensaje, secundario}}
  */
+/**
+ * Cuatro botones dentro de la tarjeta (Leonardo, 4-nov-2026): ver la publicación, cómo llegar,
+ * WhatsApp con la cita ya escrita y llamar. Íconos PNG dorados (Gmail no muestra SVG), servidos
+ * desde GitHub Pages: frontend/assets/correo/. El celular es la línea pública de atención.
+ */
+const CELULAR_ATENCION_CITAS = '573177623878';
+const ICONOS_CORREO_CITA = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/assets/correo/';
+function botonesTarjetaCita_(c, fechaLarga, hora) {
+  const boton = (icono, texto, url) =>
+    '<td width="50%" style="padding:4px;">' +
+    `<a href="${url}" target="_blank" style="display:block;padding:11px 8px;border-radius:10px;border:1px solid #6b5a22;background:#262220;` +
+    'color:#f5f5f4;font-size:14px;font-weight:bold;text-decoration:none;text-align:center;white-space:nowrap;">' +
+    `<img src="${ICONOS_CORREO_CITA + icono}.png" width="16" height="16" alt="" style="vertical-align:-3px;margin-right:7px;border:0;">${texto}</a></td>`;
+  const botones = [];
+  // Con ver=cita la página solo muestra el inmueble, sin el botón de agendar
+  if (c.idInmueble) botones.push(boton('publicacion', 'Ver publicación', urlVisitaInmueble(c.idInmueble) + '&ver=cita'));
+  if (c.direccion) botones.push(boton('ruta', 'Cómo llegar', 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(c.direccion + ', Colombia')));
+  const texto = `Hola, soy ${c.nombre || ''}. Te escribo por mi cita del ${fechaLarga} a las ${hora}` +
+    (c.servicio ? ` (${c.servicio})` : '') + (c.direccion ? ` en ${c.direccion}` : '') + '.';
+  botones.push(boton('whatsapp', 'WhatsApp', 'https://wa.me/' + CELULAR_ATENCION_CITAS + '?text=' + encodeURIComponent(texto.replace('soy .', 'soy.'))));
+  botones.push(boton('llamar', 'Llamar', 'tel:+' + CELULAR_ATENCION_CITAS));
+  let filas = '';
+  for (let i = 0; i < botones.length; i += 2) filas += '<tr>' + botones[i] + (botones[i + 1] || '<td width="50%"></td>') + '</tr>';
+  return '<div style="margin-top:16px;padding-top:12px;border-top:1px solid #33302d;color:#a8a29e;font-size:12px;letter-spacing:.5px;text-align:center;">Toca cualquiera de estas opciones</div>' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:6px;">' + filas + '</table>';
+}
+
 function correoPasoCita(paso, c) {
   const cfg = PASOS_CORREO_CITA[paso];
   const tz = Session.getScriptTimeZone();
@@ -137,11 +164,8 @@ function correoPasoCita(paso, c) {
     `<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">${c.esEntrega ? 'TU ENTREGA' : 'TU CITA'}</div>` +
     `<div style="color:#ffffff;font-size:20px;font-weight:bold;margin-top:4px;">${fechaLarga}</div>` +
     `<div style="color:#e7e5e4;font-size:16px;margin-top:2px;">${hora} · ${c.servicio || 'Visita'}</div>` +
-    (c.direccion ? `<div style="color:#a8a29e;font-size:14px;margin-top:6px;">📍 ${c.direccion}</div>` : '') +
-    // Visitas de interesados: el enlace al inmueble, para que sepa cuál fue el que agendó
-    // (con ver=cita la página solo muestra el inmueble, sin el botón de agendar)
-    (c.idInmueble && paso !== 'CANCELADA' ? `<div style="margin-top:12px;"><a href="${urlVisitaInmueble(c.idInmueble)}&ver=cita" style="display:inline-block;padding:9px 16px;border-radius:999px;` +
-      `border:1px solid #d4af37;color:#d4af37;font-size:14px;font-weight:bold;text-decoration:none;">🏠 Ver el inmueble</a></div>` : '') +
+    (c.direccion ? `<div style="color:#a8a29e;font-size:14px;margin-top:6px;"><img src="${ICONOS_CORREO_CITA}ruta.png" width="14" height="14" alt="" style="vertical-align:-2px;margin-right:6px;border:0;">${c.direccion}</div>` : '') +
+    (paso !== 'CANCELADA' ? botonesTarjetaCita_(c, fechaLarga, hora) : '') +
     '</td></tr></table>';
 
   // Línea pequeña para cambiar o cancelar, en los correos sin botones
