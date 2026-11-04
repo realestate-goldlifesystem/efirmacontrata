@@ -36,7 +36,7 @@ for (let min = 4 * 1440; min > 0; min -= 5) {
   const p = toca(min, ultimo, true);
   if (p) { conf.push(p); ultimo = p; }
 }
-igual('confirmada sin avisos de confirmar', conf, ['H48', 'H24', 'H3', 'H2']);
+igual('confirmada: sin avisos de confirmar, recordatorio a 1 h', conf, ['H48', 'H24', 'H3', 'H2', 'R60']);
 
 // Interesado: empieza 3 días antes
 const inter = []; ultimo = '';
@@ -44,7 +44,16 @@ for (let min = 5 * 1440; min > 0; min -= 5) {
   const p = toca(min, ultimo, false, 'INTERESADO');
   if (p) { inter.push(p); ultimo = p; }
 }
-igual('interesado desde 72 h', inter, ['H72', 'H48', 'H24', 'H3', 'H2', 'M60', 'M45', 'M30']);
+igual('interesado desde 72 h', inter, ['H72', 'H48', 'H24', 'H3', 'H2', 'M90', 'M75', 'M65']);
+// Interesado confirmado: el de 1 h en vez de pedir confirmar
+const interC = []; ultimo = '';
+for (let min = 5 * 1440; min > 0; min -= 5) { const p = toca(min, ultimo, true, 'INTERESADO'); if (p) { interC.push(p); ultimo = p; } }
+igual('interesado confirmado', interC, ['H72', 'H48', 'H24', 'H3', 'H2', 'R60']);
+// Reagendada por el agente faltando 2 h (queda confirmada y con H2 marcado): igual le llega el de 1 h
+igual('reagendada a 2 h: espera', toca(100, 'H2', true, 'INTERESADO'), null);
+igual('reagendada a 2 h: a la hora', toca(60, 'H2', true, 'INTERESADO'), 'R60');
+igual('reagendada a 40 min: de una', toca(40, '', true, 'INTERESADO'), 'R60');
+igual('R60 no se repite', toca(30, 'R60', true, 'INTERESADO'), null);
 igual('propietario no recibe 72 h', toca(70 * 60, '', false, 'PROPIETARIO'), null);
 
 // Motor atrasado: con 50 min y último H2, manda solo M60 (no H... ni varios)

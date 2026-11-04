@@ -38,10 +38,15 @@ function avisoVigenteCita(minFaltan, tipo) {
 /**
  * Qué aviso hay que mandar ahora, o null.
  * Solo el más reciente: si el motor se atrasó, no se mandan varios de golpe.
- * Las citas ya confirmadas no reciben los avisos de confirmar (M60, M45, M30).
+ * Las citas ya confirmadas no reciben los avisos de confirmar (M60, M45, M30): en su lugar,
+ * faltando 1 hora, un recordatorio sin botones (R60). Así una cita que el agente reagenda
+ * (queda confirmada) también se recuerda cerca de la hora (Leonardo, 4-nov-2026).
  */
+const RECORDAR_CONFIRMADA_MIN = 60;
 function avisoQueTocaCita(minFaltan, ultimoPaso, confirmada, tipo) {
   if (minFaltan <= 0) return null;
+  if (ultimoPaso === 'R60') return null;
+  if (confirmada && minFaltan <= RECORDAR_CONFIRMADA_MIN) return 'R60';
   const orden = ordenAvisosDe(tipo).map(x => x[0]);
   const vigente = avisoVigenteCita(minFaltan, tipo);
   if (!vigente || orden.indexOf(vigente) <= orden.indexOf(ultimoPaso || '')) return null;
@@ -86,6 +91,7 @@ const PASOS_CORREO_CITA = {
   M60:      { asunto: 'Confirma tu cita de hoy', titulo: 'CONFIRMA TU CITA' },
   M45:      { asunto: 'Segundo aviso: confirma tu cita', titulo: 'CONFIRMA TU CITA' },
   M30:      { asunto: 'Último aviso: confirma tu cita', titulo: 'ÚLTIMO AVISO' },
+  R60:      { asunto: 'Tu cita es en 1 hora', titulo: 'RECORDATORIO' },
   // Respuesta a lo que hizo la persona desde su correo
   CONFIRMADA: { asunto: 'Tu cita quedó confirmada', titulo: 'CITA CONFIRMADA' },
   CANCELADA:  { asunto: 'Tu cita quedó cancelada', titulo: 'CITA CANCELADA' }
@@ -200,6 +206,13 @@ function correoPasoCita(paso, c) {
       secundario = botonesPropietarioCita(c.idCita, c.token);
       break;
     }
+    case 'R60': {
+      // Si se reagendó para dentro de menos de una hora, dice los minutos reales
+      const min = Math.round((c.inicio.getTime() - Date.now()) / 60000);
+      mensaje = `Tu cita es <strong>${min >= 50 ? 'en 1 hora' : 'en ' + Math.max(min, 1) + ' minutos'}</strong>.` + tarjeta + '¡Te esperamos!';
+      secundario = lineaCambio;
+      break;
+    }
     case 'CONFIRMADA':
       mensaje = '¡Listo! Tu cita quedó <strong>confirmada</strong>.' + tarjeta + 'Te esperamos.';
       secundario = lineaCambio;
@@ -213,7 +226,7 @@ function correoPasoCita(paso, c) {
       throw new Error('Paso de correo desconocido: ' + paso);
   }
   const deEntrega = t => c.esEntrega ? t.replace('VISITA', 'ENTREGA').replace(/\bCITA\b/g, 'ENTREGA').replace(/\b([Tt]u|[Uu]na|la) cita\b/g, (x, a) => a + ' entrega') : t;
-  return { asunto: ({ CONFIRMADA: '✅ ', CANCELADA: '❌ ' }[paso] || (paso.charAt(0) === 'M' ? '⏰ ' : '📅 ')) + deEntrega(cfg.asunto) + ' - Gold Life', titulo: deEntrega(cfg.titulo), nombre: c.nombre, mensaje: deEntrega(mensaje), secundario: secundario };
+  return { asunto: ({ CONFIRMADA: '✅ ', CANCELADA: '❌ ' }[paso] || (paso.charAt(0) === 'M' || paso === 'R60' ? '⏰ ' : '📅 ')) + deEntrega(cfg.asunto) + ' - Gold Life', titulo: deEntrega(cfg.titulo), nombre: c.nombre, mensaje: deEntrega(mensaje), secundario: secundario };
 }
 
 /** Arma y envía un paso. */
