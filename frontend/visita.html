@@ -145,6 +145,10 @@
     .descripcion .sello.no { background: rgba(248,113,113,.07); border: 1px solid rgba(248,113,113,.25); }
     .descripcion .sello.no i { background: rgba(248,113,113,.18); color: #fca5a5; }
     .descripcion .detalle { margin: -4px 0 14px; font-size: 13.5px; color: #a8a29e; }
+    .mapa { display: block; position: relative; border-radius: 16px; overflow: hidden; border: 1px solid rgba(212,175,55,.25); text-decoration: none; }
+    .mapa #mapa { height: 260px; background: var(--panel); pointer-events: none; }
+    .mapaBoton { position: absolute; right: 12px; bottom: 12px; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--oro); color: var(--fondo); box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+    .mapaNota { margin: 10px 0 0; font-size: 13.5px; color: var(--suave); }
     .descripcion.recortada { max-height: 340px; overflow: hidden; }
     .descripcion.recortada::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(transparent, var(--fondo)); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
@@ -344,6 +348,15 @@
         <h2>Sobre el inmueble</h2>
         <div class="descripcion recortada" id="descripcion"></div>
         <button class="leerMas" id="leerMas">Leer toda la descripción</button>
+      </section>
+
+      <section class="seccion oculto" id="seccionMapa">
+        <h2>Ubicación</h2>
+        <a class="mapa" id="enlaceMapa" target="_blank" rel="noopener" aria-label="Abrir la ubicación en Google Maps">
+          <div id="mapa"></div>
+          <span class="mapaBoton">Abrir en Google Maps ↗</span>
+        </a>
+        <p class="mapaNota" id="mapaNota"></p>
       </section>
     </main>
 
@@ -545,6 +558,43 @@
       return `<p class="medidasTit">Espacio disponible para la ${m[1].toLowerCase()}</p><div class="medidas">` +
         caja('Ancho', nums[0]) + caja('Profundidad', nums[1]) + caja('Alto', nums[2]) + '</div>';
     }
+    // ================= Ubicación =================
+    // Mapa oscuro con los colores de la página y un punto dorado; no se mueve: tocarlo abre Google Maps.
+    // La llave es la misma del formulario del portafolio (ya pública en su bundle, restringida por dominio).
+    const LLAVE_MAPS = 'AIzaSyDppOCGMciDpRHVAH4nuBIdKaDlu7zgy_E';
+    const ESTILO_MAPA = [
+      { elementType: 'geometry', stylers: [{ color: '#1c1917' }] },
+      { elementType: 'labels.text.fill', stylers: [{ color: '#a8a29e' }] },
+      { elementType: 'labels.text.stroke', stylers: [{ color: '#0c0a09' }] },
+      { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#292524' }] },
+      { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#3a3330' }] },
+      { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#5c4a1e' }] },
+      { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0f1417' }] },
+      { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+      { featureType: 'poi.park', elementType: 'geometry', stylers: [{ visibility: 'on' }, { color: '#1a211b' }] },
+      { featureType: 'transit', stylers: [{ visibility: 'off' }] }
+    ];
+    function pintarMapa(direccion, barrio, ciudad) {
+      if (!direccion) return;
+      const consulta = [direccion, barrio, ciudad, 'Colombia'].filter(Boolean).join(', ');
+      $('enlaceMapa').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(consulta);
+      $('mapaNota').textContent = '📍 ' + [direccion, barrio].filter(Boolean).join(' · ');
+      $('seccionMapa').classList.remove('oculto');
+      window.iniciarMapa = () => {
+        new google.maps.Geocoder().geocode({ address: consulta, region: 'co' }, (res, estado) => {
+          if (estado !== 'OK' || !res[0]) { $('mapa').style.display = 'none'; return; }
+          const pos = res[0].geometry.location;
+          const mapa = new google.maps.Map($('mapa'), { center: pos, zoom: 16, styles: ESTILO_MAPA, disableDefaultUI: true, gestureHandling: 'none', keyboardShortcuts: false, clickableIcons: false });
+          new google.maps.Marker({ position: pos, map: mapa, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#d4af37', fillOpacity: 1, strokeColor: '#0c0a09', strokeWeight: 3 } });
+        });
+      };
+      const s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + LLAVE_MAPS + '&callback=iniciarMapa';
+      s.async = true;
+      s.onerror = () => { $('mapa').style.display = 'none'; };
+      document.head.appendChild(s);
+    }
+
     // Datos que se consultan de un vistazo: valor de la administración, puntos de agua/gas y mascotas
     function pintarDatoRapido(l) {
       const limpio = l.replace(/^[●○•\s]+/, '');
@@ -901,6 +951,7 @@
       $('tituloTarjeta').textContent = titulo; $('lugarTarjeta').textContent = ciudad;
       const dir = r.direccion ? '📍 ' + r.direccion : '';
       $('direccion').textContent = dir; $('direccionTarjeta').textContent = dir;
+      pintarMapa(r.direccion, r.barrio, ciudad);
 
       // Video de YouTube: solo, en bucle, sin controles de YouTube (el logo no se puede quitar); arranca
       // en silencio y el botón "Activar sonido" lo prende y lo apaga
