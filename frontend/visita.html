@@ -130,6 +130,12 @@
     .descripcion p { margin: 0 0 14px; }
     .descripcion .titular { font-size: 17px; color: var(--texto); font-weight: 600; }
     .descripcion h3 { font-size: 15px; color: var(--texto); margin: 20px 0 10px; }
+    .descripcion .medidasTit { margin: 0 0 8px; font-size: 13.5px; color: #a8a29e; }
+    .descripcion .medidas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 14px; max-width: 420px; }
+    .descripcion .medida { border: 1px solid rgba(212,175,55,.28); border-radius: 12px; padding: 10px 6px; text-align: center; background: rgba(212,175,55,.05); }
+    .descripcion .medida b { display: block; font-size: 19px; color: var(--texto); font-weight: 600; }
+    .descripcion .medida b small { font-size: 12px; font-weight: 500; margin-left: 2px; color: #d6d3d1; }
+    .descripcion .medida span { font-size: 12px; color: #a8a29e; text-transform: uppercase; letter-spacing: .06em; }
     .descripcion.recortada { max-height: 340px; overflow: hidden; }
     .descripcion.recortada::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(transparent, var(--fondo)); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
@@ -518,11 +524,25 @@
     // ================= Descripción (Doc "DESCRIPCIÓN DE INMUEBLE") =================
     // Primera línea = titular. Líneas con varios "•" = etiquetas. Líneas cortas que
     // terminan en ":" = subtítulo. El resto, párrafos.
+    // "● Espacio de la nevera: A: 0.60m x L: 0.70m x AL: 1.80m" (o "0.60x0.70x1.80"): el formulario
+    // las pide en metros y en orden ancho × profundidad × alto. Se muestran como tres medidas legibles.
+    function pintarMedidas(l) {
+      const m = l.match(/^[●•○\s]*Espacio de la (nevera|lavadora)\s*:\s*(.+)$/i);
+      if (!m) return '';
+      const nums = (m[2].match(/\d+(?:[.,]\d+)?/g) || []).map(n => Number(n.replace(',', '.')));
+      if (nums.length !== 3 || nums.some(n => !(n > 0))) return '';
+      const medida = (v) => v < 1 ? `${Math.round(v * 100)}<small>cm</small>` : `${v.toFixed(2).replace('.', ',')}<small>m</small>`;
+      const caja = (nombre, v) => `<div class="medida"><b>${medida(v)}</b><span>${nombre}</span></div>`;
+      return `<p class="medidasTit">Espacio disponible para la ${m[1].toLowerCase()}</p><div class="medidas">` +
+        caja('Ancho', nums[0]) + caja('Profundidad', nums[1]) + caja('Alto', nums[2]) + '</div>';
+    }
     function pintarDescripcion(texto) {
       const lineas = String(texto || '').split(/\n+/).map(l => l.trim()).filter(Boolean);
       if (!lineas.length) { $('seccionDescripcion').classList.add('oculto'); return; }
       const html = lineas.map((l, k) => {
         if (k === 0) return `<p class="titular">${esc(l)}</p>`;
+        const medidas = pintarMedidas(l);
+        if (medidas) return medidas;
         const vinetas = l.split('•').map(x => x.trim()).filter(Boolean);
         if ((l.match(/•/g) || []).length >= 2) {
           const antes = l.indexOf('•') > 0 ? `<p>${esc(l.slice(0, l.indexOf('•')).trim())}</p>` : '';
