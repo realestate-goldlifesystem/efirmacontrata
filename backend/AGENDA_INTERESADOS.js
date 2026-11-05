@@ -432,7 +432,9 @@ function listarVistasPrevias() {
           precio ? pesos(precio) + (venta ? '' : ' al mes, administración incluida') : '',
           [plural(inm.habitaciones, 'habitación', 'habitaciones'), plural(inm.banos, 'baño', 'baños'), inm.area ? inm.area + ' m²' : ''].filter(Boolean).join(' · ')
         ].filter(Boolean).join(' · ') + '. Agenda tu visita con Gold Life Real Estate.',
-        foto: fotos.length ? fotos[0].grande.replace('sz=w1600', 'sz=w1200') : ''
+        foto: fotos.length ? fotos[0].grande.replace('sz=w1600', 'sz=w1200') : '',
+        // Para la lista de "Crear cita" del panel (5-nov-2026): la dirección ya es pública
+        direccion: [inm.direccion, lugar].filter(Boolean).join(' · ')
       });
     } catch (e) { Logger.log('Vista previa de ' + id + ': ' + e.message); }
   }

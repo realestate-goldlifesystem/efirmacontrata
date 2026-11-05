@@ -16,6 +16,7 @@ import PartnersAndContact from './components/PartnersAndContact';
 import Footer from './components/Footer';
 import LoginRolesModal from './components/LoginRolesModal';
 import ScheduleVisitForm from './components/ScheduleVisitForm';
+import BandaPromocionar from './components/BandaPromocionar';
 import AgentDashboard from './components/AgentDashboard';
 import InversorCalculator from './components/InversorCalculator';
 
@@ -106,6 +107,12 @@ export default function App() {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
+  };
+
+  // "Deseo promocionar mi inmueble": la misma agenda del botón Propietario del portal
+  const abrirAgendaPropietario = () => {
+    setShowScheduleVisit(true);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleSelectServiceType = (
@@ -206,6 +213,7 @@ export default function App() {
             <Hero 
               onScrollTo={scrollToSection} 
               onOpenRegisterForm={handleOpenRegisterForm} 
+              onAgendar={abrirAgendaPropietario}
             />
 
             {/* Detailed Services Tab Comparative Structure */}
@@ -222,6 +230,8 @@ export default function App() {
               onScrollTo={scrollToSection}
               onSelectServiceType={handleSelectServiceType}
             />
+
+            <BandaPromocionar onAgendar={abrirAgendaPropietario} />
 
             {/* Sales & Rentals Catalog Portfolio */}
             <PropertyListings />

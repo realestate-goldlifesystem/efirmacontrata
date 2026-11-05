@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { X, Handshake, UserSearch, ChevronRight, Loader2, Search, ArrowLeft, ExternalLink } from 'lucide-react';
+import { X, Handshake, UserSearch, ChevronRight, Loader2, Search, ArrowLeft, ExternalLink, MapPin } from 'lucide-react';
 import ScheduleVisitForm from './ScheduleVisitForm';
 import { API_URL } from './CitasAgendaPanel';
 
 const URL_VISITA = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/visita.html';
 
-interface Inmueble { id: string; titulo: string; descripcion?: string }
+interface Inmueble { id: string; titulo: string; descripcion?: string; foto?: string; direccion?: string }
 
 /**
  * "Crear cita" desde la agenda del agente (5-nov-2026). Reutiliza los mismos flujos que
@@ -19,6 +19,7 @@ export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
   const [inmuebles, setInmuebles] = useState<Inmueble[] | null>(null);
   const [error, setError] = useState('');
   const [buscar, setBuscar] = useState('');
+  const [negocio, setNegocio] = useState<'TODOS' | 'ARRIENDO' | 'VENTA' | 'MIXTO'>('TODOS');
 
   useEffect(() => {
     if (vista !== 'interesado' || inmuebles) return;
@@ -47,7 +48,12 @@ export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
     );
   }
 
-  const filtrados = (inmuebles || []).filter(i => (i.id + ' ' + i.titulo).toLowerCase().includes(buscar.trim().toLowerCase()));
+  // El título dice "en arriendo", "en venta" o "en arriendo o venta"
+  const negocioDe = (i: Inmueble) => /arriendo o venta/i.test(i.titulo) ? 'MIXTO' : / en venta/i.test(i.titulo) ? 'VENTA' : 'ARRIENDO';
+  const filtrados = (inmuebles || [])
+    .filter(i => negocio === 'TODOS' || negocioDe(i) === negocio)
+    .filter(i => (i.id + ' ' + i.titulo + ' ' + (i.direccion || '')).toLowerCase().includes(buscar.trim().toLowerCase()));
+  const cuenta = (n: string) => (inmuebles || []).filter(i => n === 'TODOS' || negocioDe(i) === n).length;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-[fadeIn_.25s_ease]" onClick={onCerrar}>
@@ -80,18 +86,36 @@ export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
               <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar por código o barrio"
                 className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white placeholder:text-stone-500 outline-none focus:border-brand-gold/60" />
             </div>
+            <div className="flex gap-1.5 mb-3 p-1 rounded-xl bg-stone-950 border border-stone-800">
+              {(['TODOS', 'ARRIENDO', 'VENTA', 'MIXTO'] as const).map(n => (
+                <button key={n} onClick={() => setNegocio(n)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${negocio === n ? 'bg-indigo-500 text-white shadow' : 'text-stone-400 hover:text-white'}`}>
+                  {{ TODOS: 'Todos', ARRIENDO: 'Arriendo', VENTA: 'Venta', MIXTO: 'Mixto' }[n]}
+                  {inmuebles && <span className="ml-1 opacity-60 font-normal">{cuenta(n)}</span>}
+                </button>
+              ))}
+            </div>
             <div className="overflow-y-auto -mx-1 px-1 space-y-2 min-h-[120px]">
+              {inmuebles && !error && !filtrados.length && <p className="text-stone-500 text-sm py-6 text-center">No hay inmuebles con ese filtro.</p>}
               {!inmuebles && !error && <p className="text-stone-400 text-sm flex items-center gap-2 py-6 justify-center"><Loader2 className="w-4 h-4 animate-spin" /> Cargando inmuebles…</p>}
               {error && <p className="text-red-300 text-sm py-4">{error}</p>}
               {filtrados.map(i => (
                 <a key={i.id} href={`${URL_VISITA}?i=${encodeURIComponent(i.id)}`} target="_blank" rel="noopener"
-                  className="flex items-center gap-3 p-3 rounded-2xl border border-stone-800 bg-stone-950/60 hover:border-indigo-400/60 transition-all group">
-                  <span className="text-[11px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-2 py-1">{i.id}</span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-white text-sm font-medium truncate">{i.titulo}</span>
-                    {i.descripcion && <span className="block text-stone-500 text-xs truncate">{i.descripcion.replace(/.? ?Agenda tu visita.*$/, '')}</span>}
+                  className="flex items-stretch gap-3 p-2.5 rounded-2xl border border-stone-800 bg-stone-950/60 hover:border-indigo-400/60 transition-all group">
+                  <span className="w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-stone-800">
+                    {i.foto
+                      ? <img src={i.foto.replace('sz=w1200', 'sz=w300')} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      : <span className="w-full h-full grid place-items-center text-stone-600"><UserSearch className="w-6 h-6" /></span>}
                   </span>
-                  <ExternalLink className="w-4 h-4 text-stone-500 group-hover:text-indigo-300 shrink-0" />
+                  <span className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                    <span className="flex items-center gap-2">
+                      <span className="text-[10.5px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 rounded-md px-1.5 py-0.5 shrink-0">{i.id}</span>
+                      <span className="text-white text-sm font-medium truncate">{i.titulo.replace(/ · .*$/, '')}</span>
+                    </span>
+                    {i.descripcion && <span className="text-brand-gold text-xs font-semibold truncate">{i.descripcion.replace(/.? ?Agenda tu visita.*$/, '')}</span>}
+                    {i.direccion && <span className="text-stone-400 text-xs truncate flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{i.direccion}</span>}
+                  </span>
+                  <ExternalLink className="w-4 h-4 text-stone-500 group-hover:text-indigo-300 shrink-0 self-center" />
                 </a>
               ))}
             </div>

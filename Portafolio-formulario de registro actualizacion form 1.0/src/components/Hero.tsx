@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ShieldCheck, ArrowDown, ChevronRight, Calculator, Home } from 'lucide-react';
+import { ShieldCheck, ArrowDown, ChevronRight, Calculator, Home, CalendarCheck } from 'lucide-react';
 
 interface HeroProps {
   onScrollTo: (sectionId: string) => void;
   onOpenRegisterForm: () => void;
+  onAgendar: () => void;
 }
 
-export default function Hero({ onScrollTo, onOpenRegisterForm }: HeroProps) {
+export default function Hero({ onScrollTo, onOpenRegisterForm, onAgendar }: HeroProps) {
   return (
     <section id="inicio" className="relative min-h-screen bg-brand-dark text-stone-800 pt-24 flex items-center overflow-hidden">
       {/* Editorial Decorative Background Details */}
@@ -41,7 +42,16 @@ export default function Hero({ onScrollTo, onOpenRegisterForm }: HeroProps) {
           </div>
 
           {/* Core Interactive Actions */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-4 pt-2">
+            {/* Agenda directa con el asesor (5-nov-2026): la acción principal */}
+            <button
+              id="hero-cta-agendar"
+              onClick={onAgendar}
+              className="bg-stone-900 hover:bg-stone-800 active:scale-98 text-brand-gold font-bold px-8 py-4 rounded-lg shadow-xl shadow-stone-900/20 ring-1 ring-brand-gold/40 transition-all flex items-center justify-center space-x-2 text-base cursor-pointer hover:-translate-y-px"
+            >
+              <CalendarCheck className="w-5 h-5" />
+              <span>Deseo promocionar mi inmueble</span>
+            </button>
             <button
               id="hero-cta-calculator"
               onClick={() => onScrollTo('calculadora')}
