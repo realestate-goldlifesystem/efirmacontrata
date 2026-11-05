@@ -12,6 +12,8 @@ interface ScheduleVisitFormProps {
   onBack: () => void;
   /** Ya elegida (botón "Crear cita" del panel): no se muestra la pantalla de elegir */
   modalidadInicial?: 'PRESENCIAL' | 'VIRTUAL';
+  /** Datos ya conocidos (nueva visita desde el correo del agente) */
+  prefill?: { nombre?: string; celular?: string; correo?: string; servicio?: string; direccion?: string };
 }
 
 interface TimeSlot {
@@ -75,16 +77,16 @@ function Marco({ onBack, children }: { onBack: () => void; children: React.React
  * pueden tocar para volver. Estética de inmobiliaria premium: grafito, blanco y
  * el dorado de la marca solo en lo activo.
  */
-export default function ScheduleVisitForm({ onBack, modalidadInicial }: ScheduleVisitFormProps) {
+export default function ScheduleVisitForm({ onBack, modalidadInicial, prefill }: ScheduleVisitFormProps) {
   // Primera pantalla: presentación presencial (captación) o virtual por Google Meet
   const [eligioModalidad, setEligioModalidad] = useState(!!modalidadInicial);
   const [formData, setFormData] = useState({
-    name: '',
+    name: prefill?.nombre || '',
     countryCode: 'CO',
-    phone: '',
-    email: '',
-    address: '',
-    serviceType: 'Venta',
+    phone: prefill?.celular || '',
+    email: prefill?.correo || '',
+    address: prefill?.direccion || '',
+    serviceType: prefill?.servicio && SERVICIOS.some(s => s.valor === prefill.servicio) ? prefill.servicio : 'Venta',
     detalles: '',
     // nov-2026: presentación en el inmueble o por Google Meet
     modalidad: (modalidadInicial || 'PRESENCIAL') as 'PRESENCIAL' | 'VIRTUAL',
