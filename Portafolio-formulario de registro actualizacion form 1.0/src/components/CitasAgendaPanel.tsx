@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Loader2, AlertTriangle,
-  Clock, MapPin, Handshake, UserSearch, KeyRound, ClipboardCheck,
+  Clock, Plus, MapPin, Handshake, UserSearch, KeyRound, ClipboardCheck,
 } from 'lucide-react';
 import DetalleCita from './DetalleCita';
+import CrearCitaModal from './CrearCitaModal';
 
 export const API_URL = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
 
@@ -125,6 +126,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   const [diaSel, setDiaSel] = useState<Date | null>(null);
   const [filtro, setFiltro] = useState<Grupo | null>(null);
   const [detalle, setDetalle] = useState<Cita | null>(null);
+  const [creando, setCreando] = useState(false);
   const listaRef = useRef<HTMLDivElement | null>(null);
   const cuadriculaRef = useRef<HTMLDivElement | null>(null);
   const [altoCelda, setAltoCelda] = useState<number | null>(null);
@@ -262,6 +264,13 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
             Presentaciones a propietarios y visitas de interesados, con su estado en tiempo real.
           </p>
         </div>
+        <div className="flex items-center gap-2">
+        <button
+          onClick={() => setCreando(true)}
+          className="flex items-center gap-2 px-5 py-2 bg-brand-gold text-stone-950 font-semibold rounded-full shadow-[0_6px_18px_rgba(212,175,55,.3)] hover:brightness-105 hover:-translate-y-px transition-all"
+        >
+          <Plus className="w-4 h-4" /> Crear cita
+        </button>
         <button
           onClick={cargar}
           disabled={cargando}
@@ -269,6 +278,7 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         >
           <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} /> Actualizar
         </button>
+        </div>
       </div>
 
       {error && (
@@ -426,6 +436,8 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
         </div>
         </div>
       </div>
+
+      {creando && <CrearCitaModal onCerrar={() => { setCreando(false); cargar(); }} />}
 
       {/* Detalle de una cita, con las acciones del agente (DetalleCita.tsx) */}
       {detalle && (

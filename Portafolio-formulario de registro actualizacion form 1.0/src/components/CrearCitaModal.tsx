@@ -1,0 +1,117 @@
+import { useEffect, useState } from 'react';
+import { X, Handshake, UserSearch, ChevronRight, Loader2, Search, ArrowLeft, ExternalLink } from 'lucide-react';
+import ScheduleVisitForm from './ScheduleVisitForm';
+import { API_URL } from './CitasAgendaPanel';
+
+const URL_VISITA = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/visita.html';
+
+interface Inmueble { id: string; titulo: string; descripcion?: string }
+
+/**
+ * "Crear cita" desde la agenda del agente (5-nov-2026). Reutiliza los mismos flujos que
+ * usa el público, para que los horarios, el calendario, los correos y los recordatorios
+ * sean idénticos:
+ *  - Presentación al propietario (captación): la agenda del botón "Propietario" del portal.
+ *  - Visita de interesado: la página del inmueble (visita.html), en otra pestaña.
+ */
+export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
+  const [vista, setVista] = useState<'elegir' | 'propietario' | 'interesado'>('elegir');
+  const [inmuebles, setInmuebles] = useState<Inmueble[] | null>(null);
+  const [error, setError] = useState('');
+  const [buscar, setBuscar] = useState('');
+
+  useEffect(() => {
+    if (vista !== 'interesado' || inmuebles) return;
+    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ accion: 'listarVistasPrevias' }) })
+      .then(r => r.json())
+      .then(r => {
+        const lista: Inmueble[] = (r.inmuebles || r.lista || r.data || (Array.isArray(r) ? r : [])) as Inmueble[];
+        if (!lista.length) setError('No hay inmuebles publicados para agendar visitas.');
+        setInmuebles(lista);
+      })
+      .catch(() => setError('No pudimos cargar los inmuebles. Intenta de nuevo.'));
+  }, [vista, inmuebles]);
+
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); };
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [onCerrar]);
+
+  // La agenda del propietario ocupa toda la pantalla, igual que en el portal
+  if (vista === 'propietario') {
+    return (
+      <div className="fixed inset-0 z-[80] overflow-y-auto bg-stone-950">
+        <ScheduleVisitForm onBack={onCerrar} />
+      </div>
+    );
+  }
+
+  const filtrados = (inmuebles || []).filter(i => (i.id + ' ' + i.titulo).toLowerCase().includes(buscar.trim().toLowerCase()));
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-[fadeIn_.25s_ease]" onClick={onCerrar}>
+      <div className="w-full max-w-lg rounded-3xl border border-stone-800 bg-stone-900 shadow-2xl p-6 max-h-[88vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div>
+            {vista === 'interesado' && (
+              <button onClick={() => setVista('elegir')} className="text-xs text-stone-400 hover:text-brand-gold flex items-center gap-1 mb-2">
+                <ArrowLeft className="w-3.5 h-3.5" /> Tipo de cita
+              </button>
+            )}
+            <p className="text-[11px] uppercase tracking-[0.2em] text-brand-gold font-semibold">Crear cita</p>
+            <h2 className="text-white text-xl font-semibold mt-1">{vista === 'elegir' ? '¿Qué tipo de cita vas a agendar?' : 'Elige el inmueble'}</h2>
+          </div>
+          <button onClick={onCerrar} className="p-2 rounded-full text-stone-400 hover:text-white hover:bg-stone-800" aria-label="Cerrar"><X className="w-5 h-5" /></button>
+        </div>
+
+        {vista === 'elegir' ? (
+          <div className="space-y-3">
+            <Opcion Icono={Handshake} color="bg-brand-gold text-stone-950" titulo="Presentación al propietario"
+              texto="Captación: presentas el servicio y evalúas el inmueble." onClick={() => setVista('propietario')} />
+            <Opcion Icono={UserSearch} color="bg-indigo-500 text-white" titulo="Visita de interesado"
+              texto="Un interesado visita uno de los inmuebles publicados." onClick={() => setVista('interesado')} />
+            <p className="text-stone-500 text-xs pt-2">Se usan los mismos horarios, correos y recordatorios que cuando agenda la persona.</p>
+          </div>
+        ) : (
+          <>
+            <div className="relative mb-3">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-500" />
+              <input value={buscar} onChange={e => setBuscar(e.target.value)} placeholder="Buscar por código o barrio"
+                className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white placeholder:text-stone-500 outline-none focus:border-brand-gold/60" />
+            </div>
+            <div className="overflow-y-auto -mx-1 px-1 space-y-2 min-h-[120px]">
+              {!inmuebles && !error && <p className="text-stone-400 text-sm flex items-center gap-2 py-6 justify-center"><Loader2 className="w-4 h-4 animate-spin" /> Cargando inmuebles…</p>}
+              {error && <p className="text-red-300 text-sm py-4">{error}</p>}
+              {filtrados.map(i => (
+                <a key={i.id} href={`${URL_VISITA}?i=${encodeURIComponent(i.id)}`} target="_blank" rel="noopener"
+                  className="flex items-center gap-3 p-3 rounded-2xl border border-stone-800 bg-stone-950/60 hover:border-indigo-400/60 transition-all group">
+                  <span className="text-[11px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-2 py-1">{i.id}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-white text-sm font-medium truncate">{i.titulo}</span>
+                    {i.descripcion && <span className="block text-stone-500 text-xs truncate">{i.descripcion.replace(/.? ?Agenda tu visita.*$/, '')}</span>}
+                  </span>
+                  <ExternalLink className="w-4 h-4 text-stone-500 group-hover:text-indigo-300 shrink-0" />
+                </a>
+              ))}
+            </div>
+            <p className="text-stone-500 text-xs pt-3">Se abre la página del inmueble en otra pestaña: llena los datos del interesado y elige la hora. Luego toca "Actualizar" en la agenda.</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Opcion({ Icono, color, titulo, texto, onClick }: { Icono: typeof X; color: string; titulo: string; texto: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-800 bg-stone-950/60 hover:border-brand-gold/60 transition-all text-left group">
+      <span className={`w-11 h-11 rounded-xl grid place-items-center shrink-0 ${color}`}><Icono className="w-5 h-5" /></span>
+      <span className="flex-1">
+        <span className="block text-white font-medium">{titulo}</span>
+        <span className="block text-stone-400 text-sm">{texto}</span>
+      </span>
+      <ChevronRight className="w-5 h-5 text-stone-500 group-hover:text-brand-gold transition-transform group-hover:translate-x-0.5" />
+    </button>
+  );
+}
