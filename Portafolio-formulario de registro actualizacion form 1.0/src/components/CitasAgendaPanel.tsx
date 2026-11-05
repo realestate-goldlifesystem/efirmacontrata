@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Loader2, AlertTriangle,
-  Clock, Plus, MapPin, Handshake, UserSearch, KeyRound, ClipboardCheck,
+  Clock, Plus, MapPin, Video, Handshake, UserSearch, KeyRound, ClipboardCheck,
 } from 'lucide-react';
 import DetalleCita from './DetalleCita';
 import CrearCitaModal from './CrearCitaModal';
@@ -24,6 +24,8 @@ export interface Cita {
   notasAgente?: string;
   idInmueble?: string;
   tipoAgenda?: string;
+  modalidad?: string;
+  linkMeet?: string;
 }
 
 // Tipo de agenda: QUÉ es la cita (el estado dice en qué va). Etiqueta sólida con
@@ -470,7 +472,9 @@ export function etiquetaTipoCita(c: Cita): { texto: string; Icono: typeof Clock 
     case 'INTERESADO': return { texto: 'Interesado' + (n ? ' · ' + n : ''), Icono: UserSearch };
     case 'ENTREGA': return { texto: 'Entrega del inmueble', Icono: KeyRound };
     case 'DEVOLUCION': return { texto: 'Recibo del inmueble', Icono: ClipboardCheck };
-    default: return { texto: 'Captación' + (n ? ' · ' + n : ''), Icono: Handshake };
+    default: return (c.modalidad || '').toUpperCase() === 'VIRTUAL'
+      ? { texto: 'Presentación virtual' + (n ? ' · ' + n : ''), Icono: Video }
+      : { texto: 'Captación' + (n ? ' · ' + n : ''), Icono: Handshake };
   }
 }
 
@@ -499,6 +503,9 @@ function TarjetaCita({ c, onAbrir }: { c: Cita; onAbrir: () => void; key?: strin
         <span className="text-brand-gold font-semibold flex items-center gap-1.5 shrink-0"><Clock className="w-4 h-4 self-center" /> {c.hora}</span>
         <span className="text-white font-medium truncate">{c.nombre}</span>
       </div>
+      {(c.modalidad || '').toUpperCase() === 'VIRTUAL' && c.linkMeet && (
+        <p className="mt-1.5 text-sky-300 text-sm flex items-center gap-1.5"><Video className="w-3.5 h-3.5 shrink-0" /> Google Meet</p>
+      )}
       {c.direccion && (
         <p className="mt-1.5 text-stone-400 text-sm flex items-start gap-1.5 leading-snug">
           <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-stone-500" /> <span className="line-clamp-2">{c.direccion}</span>

@@ -51,7 +51,9 @@ const COLUMNAS_CITAS = [
   // oct-2026 (sala de entrega, parte B): datos de la mudanza (JSON) y los Doc de las dos cartas
   'DATOS ENTREGA', 'CARTAS ENTREGA',
   // oct-2026 (sala de entrega v2): aprobación de la mudanza y formato de la administración (JSON)
-  'MUDANZA'
+  'MUDANZA',
+  // nov-2026: presentación al propietario PRESENCIAL o VIRTUAL (Google Meet) y su link
+  'MODALIDAD', 'LINK MEET'
 ];
 
 // Estados posibles de una cita.
@@ -175,12 +177,13 @@ function agendarCita(datos) {
     }
 
     const idCita = "CIT-" + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    const virtual = String(datos.modalidad || '').toUpperCase() === 'VIRTUAL';
 
     // 2. Evento en Calendar. Empieza marcado como pendiente: el título cambia
     //    cuando el propietario confirma, reagenda o cancela.
-    const evento = calendario.createEvent(tituloEventoCita(ESTADOS_CITA.PENDIENTE, datos.tipoServicio, datos.nombreCliente), fechaInicio, fechaFin, {
+    const evento = calendario.createEvent(tituloEventoCita(ESTADOS_CITA.PENDIENTE, datos.tipoServicio, datos.nombreCliente, virtual), fechaInicio, fechaFin, {
       description:
-        `Cita agendada desde la página principal (ID ${idCita})\n` +
+        `Cita agendada desde la página principal (ID ${idCita})${virtual ? ' · PRESENTACIÓN VIRTUAL (Google Meet)' : ''}\n` +
         `Propietario: ${datos.nombreCliente}\n` +
         `Celular: ${datos.celular}\n` +
         `Correo: ${datos.correo}\n` +
@@ -191,6 +194,9 @@ function agendarCita(datos) {
       guests: datos.correo,
       sendInvites: false // la invitación nativa de Google se sustituye por nuestro correo
     });
+
+    // 2b. Virtual: la reunión de Google Meet se agrega al mismo evento
+    const linkMeet = virtual ? agregarMeetAEvento_(evento, idCita) : '';
 
     // 3. Fila en la hoja, escrita por NOMBRE de columna
     const { sheet, col } = hojaCitasConColumnas();
@@ -222,6 +228,8 @@ function agendarCita(datos) {
     poner('TOKEN AGENTE', tokenAgente);
     poner('ULTIMO CAMBIO', ahoraTxt + ' · agendada');
     poner('TIPO AGENDA', 'PROPIETARIO');
+    poner('MODALIDAD', virtual ? 'VIRTUAL' : 'PRESENCIAL');
+    poner('LINK MEET', linkMeet);
     sheet.appendRow(fila);
     const filaNueva = sheet.getLastRow();
     if (col['FECHA CITA']) sheet.getRange(filaNueva, col['FECHA CITA']).setNumberFormat('dd/MM/yyyy');
@@ -232,13 +240,13 @@ function agendarCita(datos) {
     try {
       enviarPasoCita('AGENDADA', datos.correo, {
         idCita: idCita, token: tokenPropietario, nombre: datos.nombreCliente,
-        servicio: datos.tipoServicio, direccion: datos.direccion, inicio: fechaInicio
+        servicio: datos.tipoServicio, direccion: datos.direccion, inicio: fechaInicio, linkMeet: linkMeet
       });
     } catch (errMail) {
       Logger.log("Error enviando correo de cita agendada: " + errMail.message);
     }
 
-    return { success: true, idCita: idCita, mensaje: "Cita agendada y registrada exitosamente" };
+    return { success: true, idCita: idCita, linkMeet: linkMeet, mensaje: "Cita agendada y registrada exitosamente" };
 
   } catch (error) {
     Logger.log("Error en agendarCita: " + error.message);
@@ -247,14 +255,31 @@ function agendarCita(datos) {
 }
 
 /** Título del evento en Calendar según el estado, para verlo de un vistazo. */
-function tituloEventoCita(estado, servicio, nombre) {
+/**
+ * Agrega una reunión de Google Meet al evento (servicio avanzado Calendar) y devuelve el link.
+ * Si falla, la cita queda igual y el link vacío: se avisa en el registro.
+ */
+function agregarMeetAEvento_(evento, idCita) {
+  try {
+    const id = evento.getId().replace(/@google\.com$/, '');
+    const r = Calendar.Events.patch({
+      conferenceData: { createRequest: { requestId: idCita + '-' + Date.now(), conferenceSolutionKey: { type: 'hangoutsMeet' } } }
+    }, 'primary', id, { conferenceDataVersion: 1 });
+    return r.hangoutLink || ((r.conferenceData && r.conferenceData.entryPoints || []).filter(e => e.entryPointType === 'video')[0] || {}).uri || '';
+  } catch (e) {
+    Logger.log('No se pudo crear el Meet de ' + idCita + ': ' + e.message);
+    return '';
+  }
+}
+
+function tituloEventoCita(estado, servicio, nombre, virtual) {
   const marcas = {
     'PENDIENTE': '⏳ POR CONFIRMAR',
     'CONFIRMADA': '✅ CONFIRMADA',
     'CONFIRMADA_NOTIFICADA': '✅ CONFIRMADA',
     'REAGENDADA': '🔄 REAGENDADA'
   };
-  return `📍 VISITA ${marcas[estado] || ''}: ${servicio} - ${nombre}`.replace(/\s+/g, ' ');
+  return `${virtual ? '💻 PRESENTACIÓN VIRTUAL' : '📍 VISITA'} ${marcas[estado] || ''}: ${servicio} - ${nombre}`.replace(/\s+/g, ' ');
 }
 
 /** URL de la página que aplica un cambio de estado (pide confirmar el clic). */
@@ -385,7 +410,9 @@ function obtenerCitasPanel(datos) {
         notasAgente: String(valorCita(f, col, 'NOTAS AGENTE') || ''),
         idInmueble: String(valorCita(f, col, 'ID INMUEBLE') || ''),
         // Vacío = citas viejas, todas de propietario
-        tipoAgenda: String(valorCita(f, col, 'TIPO AGENDA') || 'PROPIETARIO').trim().toUpperCase()
+        tipoAgenda: String(valorCita(f, col, 'TIPO AGENDA') || 'PROPIETARIO').trim().toUpperCase(),
+        modalidad: String(valorCita(f, col, 'MODALIDAD') || '').trim().toUpperCase(),
+        linkMeet: String(valorCita(f, col, 'LINK MEET') || '')
         // Los tokens NO se envían al navegador.
       });
     });

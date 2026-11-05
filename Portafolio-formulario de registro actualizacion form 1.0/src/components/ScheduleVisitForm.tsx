@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { direccionCortaColombia, componentesLugar } from '../lib/direccionColombia';
 import {
   ArrowLeft, CalendarCheck, MapPin, User, Mail, Send, Clock, Loader2, CheckCircle2,
-  ChevronLeft, ChevronRight, Check, Sun, Sunset, CalendarDays, Pencil,
+  ChevronLeft, ChevronRight, Check, Sun, Sunset, CalendarDays, Pencil, Video, Home,
 } from 'lucide-react';
 import PhoneCountrySelector, { ALL_COUNTRIES } from './PhoneCountrySelector';
 
@@ -82,6 +82,8 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
     address: '',
     serviceType: 'Venta',
     detalles: '',
+    // nov-2026: presentación en el inmueble o por Google Meet
+    modalidad: 'PRESENCIAL' as 'PRESENCIAL' | 'VIRTUAL',
   });
 
   const [paso, setPaso] = useState<Paso>(1);
@@ -227,6 +229,7 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
           tipoServicio: formData.serviceType,
           direccion: formData.address,
           detalles: formData.detalles,
+          modalidad: formData.modalidad,
           fechaTimestamp: selectedSlot.timestamp,
         }),
       });
@@ -261,12 +264,12 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
           <h2 className="text-3xl font-semibold text-stone-950 tracking-tight mb-2">¡Cita agendada!</h2>
           <p className="text-stone-500 mb-6">Te esperamos, {formData.name.split(' ')[0]}.</p>
           <div className="rounded-2xl border border-stone-200 bg-stone-50 px-5 py-4 mb-6 text-left">
-            <p className="text-sm text-stone-500">Tu visita</p>
+            <p className="text-sm text-stone-500">{formData.modalidad === 'VIRTUAL' ? 'Tu presentación virtual' : 'Tu visita'}</p>
             <p className="text-lg font-semibold text-stone-950">{capital(fechaLarga(fecha))}</p>
             <p className="text-stone-700">{selectedSlot.horaAmPm} · {formData.serviceType}</p>
           </div>
           <p className="text-sm text-stone-600 mb-8 leading-relaxed">
-            Te enviamos un correo a <strong className="text-stone-900">{formData.email}</strong>.
+            Te enviamos un correo a <strong className="text-stone-900">{formData.email}</strong>{formData.modalidad === 'VIRTUAL' ? ' con el link de Google Meet' : ''}.
             <strong className="text-stone-900"> Confirma tu asistencia desde ahí</strong>; también puedes cambiar la fecha o cancelar desde el mismo correo.
           </p>
           <button onClick={onBack}
@@ -472,6 +475,19 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
                         onChange={e => setFormData({ ...formData, email: e.target.value })}
                         className={`${entrada} pl-11`} />
                     </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={rotulo}>¿Cómo prefieres la presentación?</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([['PRESENCIAL', 'Presencial', 'En tu inmueble', Home], ['VIRTUAL', 'Virtual', 'Por Google Meet', Video]] as const).map(([v, t, sub, Ic]) => (
+                      <button key={v} type="button" onClick={() => setFormData({ ...formData, modalidad: v })}
+                        className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all duration-300 ${formData.modalidad === v ? 'border-stone-900 bg-stone-950 text-white shadow-lg' : 'border-stone-200 bg-white text-stone-800 hover:border-stone-400'}`}>
+                        <Ic className={`w-5 h-5 shrink-0 ${formData.modalidad === v ? 'text-brand-gold' : 'text-stone-400'}`} />
+                        <span><span className="block text-sm font-semibold">{t}</span><span className={`block text-xs ${formData.modalidad === v ? 'text-stone-300' : 'text-stone-500'}`}>{sub}</span></span>
+                      </button>
+                    ))}
                   </div>
                 </div>
 

@@ -60,6 +60,12 @@
     .listo h2 { margin: 0 0 6px; font-size: 19px; }
     .listo p { color: var(--suave); font-size: 14px; margin: 0 0 20px; }
     .oculto { display: none; }
+    .modo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .opc { border: 1px solid var(--linea); border-radius: 12px; background: #fff; padding: 9px 12px; text-align: left; cursor: pointer; font: inherit; transition: all .25s; }
+    .opc b { display: block; font-size: 14px; }
+    .opc span { font-size: 11.5px; color: var(--suave); }
+    .opc.activo { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+    .opc.activo span { color: #d6d3d1; }
     .cuenta { position: relative; width: 64px; height: 64px; margin: 0 auto 10px; }
     .cuenta svg { width: 64px; height: 64px; transform: rotate(-90deg); }
     .cuenta circle { fill: none; stroke-width: 4; }
@@ -99,6 +105,12 @@
           <option value="Admi-Venta">Admi-Venta</option>
         </select>
       </div>
+      <div class="grupo"><label>Modalidad</label>
+        <div class="modo">
+          <button type="button" class="opc activo" data-m="PRESENCIAL"><b>Presencial</b><span>En el inmueble</span></button>
+          <button type="button" class="opc" data-m="VIRTUAL"><b>Virtual</b><span>Por Google Meet</span></button>
+        </div>
+      </div>
       <div class="grupo"><label>Dirección del inmueble</label>
         <input id="direccion" autocomplete="off" placeholder="Escribe la dirección y elige una sugerencia">
         <div class="ayuda" id="ayudaDir">Del registro: <span id="dirRegistro"></span></div>
@@ -118,7 +130,7 @@
     <!-- Paso 3: confirmar -->
     <div class="vista" id="v3">
       <div class="resumen">
-        <div class="et">PRESENTACIÓN AL PROPIETARIO</div>
+        <div class="et" id="rEt">PRESENTACIÓN AL PROPIETARIO</div>
         <div class="cuando" id="rCuando"></div>
         <div class="linea" id="rQuien"></div>
         <div class="linea" id="rDonde"></div>
@@ -145,7 +157,8 @@
     const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
     const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
     const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    let slot = null, diaSel = null, consulta = 0, pasoMax = 1;
+    let slot = null, diaSel = null, consulta = 0, pasoMax = 1, modalidad = 'PRESENCIAL';
+    document.querySelectorAll('.opc').forEach(b => b.onclick = () => { document.querySelectorAll('.opc').forEach(x => x.classList.remove('activo')); b.classList.add('activo'); modalidad = b.dataset.m; });
 
     $('nombre').value = D.nombre; $('celular').value = D.celular; $('correo').value = D.correo;
     $('servicio').value = D.servicio; $('direccion').value = D.direccion; $('notas').value = D.notas;
@@ -171,7 +184,7 @@
       if (n === 3) {
         const t = DIAS_L[diaSel.getDay()] + ' ' + diaSel.getDate() + ' de ' + MESES[diaSel.getMonth()] + ' · ' + slot.horaAmPm;
         $('rCuando').textContent = t.charAt(0).toUpperCase() + t.slice(1);
-        $('rQuien').textContent = $('nombre').value.trim() + ' · ' + $('servicio').value;
+        $('rQuien').textContent = $('nombre').value.trim() + ' · ' + $('servicio').value + (modalidad === 'VIRTUAL' ? ' · Virtual (Google Meet)' : ' · Presencial');
         $('rDonde').textContent = $('direccion').value.trim();
       }
     }
@@ -227,7 +240,7 @@
       }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; })
         .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
           correo: $('correo').value.trim(), servicio: $('servicio').value, direccion: $('direccion').value.trim(), notas: $('notas').value.trim(),
-          timestamp: slot.timestamp, textoCita: txt });
+          timestamp: slot.timestamp, textoCita: txt, modalidad: modalidad });
     }
 
     // ---------- Buscador de direcciones (el mismo del formulario de registro) ----------

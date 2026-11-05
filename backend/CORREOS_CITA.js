@@ -107,6 +107,7 @@ function datosCorreoDeCita(fila, col) {
     nombre: String(valorCita(fila, col, 'NOMBRE') || ''),
     servicio: String(valorCita(fila, col, 'TIPO SERVICIO') || ''),
     direccion: String(valorCita(fila, col, 'DIRECCION') || ''),
+    linkMeet: String(valorCita(fila, col, 'LINK MEET') || ''),
     inicio: fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA'))
   };
 }
@@ -137,7 +138,8 @@ function botonesTarjetaCita_(c, fechaLarga, hora) {
   const botones = [];
   // Con ver=cita la página solo muestra el inmueble, sin el botón de agendar
   if (c.idInmueble) botones.push(boton('publicacion', 'Ver publicación', urlVisitaInmueble(c.idInmueble) + '&ver=cita'));
-  if (c.direccion) botones.push(boton('ruta', 'Cómo llegar', 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(c.direccion + ', Colombia')));
+  if (c.linkMeet) botones.push(boton('meet', 'Unirme por Meet', c.linkMeet));
+  else if (c.direccion) botones.push(boton('ruta', 'Cómo llegar', 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(c.direccion + ', Colombia')));
   const texto = `Hola, soy ${c.nombre || ''}. Te escribo por mi cita del ${fechaLarga} a las ${hora}` +
     (c.servicio ? ` (${c.servicio})` : '') + (c.direccion ? ` en ${c.direccion}` : '') + '.';
   botones.push(boton('whatsapp', 'WhatsApp', 'https://wa.me/' + CELULAR_ATENCION_CITAS + '?text=' + encodeURIComponent(texto.replace('soy .', 'soy.'))));
@@ -163,7 +165,7 @@ function correoPasoCita(paso, c) {
     '<tr><td style="padding:16px 18px;">' +
     `<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">${c.esEntrega ? 'TU ENTREGA' : 'TU CITA'}</div>` +
     `<div style="color:#ffffff;font-size:20px;font-weight:bold;margin-top:4px;">${fechaLarga}</div>` +
-    `<div style="color:#e7e5e4;font-size:16px;margin-top:2px;">${hora} · ${c.servicio || 'Visita'}</div>` +
+    `<div style="color:#e7e5e4;font-size:16px;margin-top:2px;">${hora} · ${c.linkMeet ? 'Presentación virtual' + (c.servicio ? ' · ' + c.servicio : '') : (c.servicio || 'Visita')}</div>` +
     (c.direccion ? `<div style="color:#a8a29e;font-size:14px;margin-top:6px;"><img src="${ICONOS_CORREO_CITA}ruta.png" width="14" height="14" alt="" style="vertical-align:-2px;margin-right:6px;border:0;">${c.direccion}</div>` : '') +
     (paso !== 'CANCELADA' ? botonesTarjetaCita_(c, fechaLarga, hora) : '') +
     '</td></tr></table>';

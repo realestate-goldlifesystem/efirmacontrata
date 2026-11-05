@@ -83,7 +83,7 @@ function agendarDesdeCaptacion(d) {
 
   const r = agendarCita({
     nombreCliente: d.nombre, celular: '+57 ' + String(d.celular || '').replace(/\D/g, '').replace(/^57(?=\d{10}$)/, ''),
-    correo: correo, tipoServicio: d.servicio, direccion: d.direccion, detalles: d.notas,
+    correo: correo, tipoServicio: d.servicio, direccion: d.direccion, detalles: d.notas, modalidad: d.modalidad,
     fechaTimestamp: Number(d.timestamp)
   });
   if (r.success) {

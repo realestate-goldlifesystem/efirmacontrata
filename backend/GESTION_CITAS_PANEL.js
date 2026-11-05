@@ -86,7 +86,7 @@ function gestionarCitaPanel(datos) {
         try {
           const ev = idEv ? CalendarApp.getDefaultCalendar().getEventById(idEv) : null;
           if (ev) {
-            ev.setTitle(tituloEventoCita(estado, nuevos['TIPO SERVICIO'], nuevos.NOMBRE));
+            ev.setTitle(tituloEventoCita(estado, nuevos['TIPO SERVICIO'], nuevos.NOMBRE, String(valorCita(fila, col, 'MODALIDAD')) === 'VIRTUAL'));
             ev.setLocation(nuevos.DIRECCION);
             ev.setDescription(`Cita ${datos.idCita}\nPropietario: ${nuevos.NOMBRE}\nCelular: ${nuevos.CELULAR}\n` +
               `Correo: ${nuevos.CORREO}\nServicio: ${nuevos['TIPO SERVICIO']}\nDirección: ${nuevos.DIRECCION || 'N/A'}`);
@@ -219,7 +219,8 @@ function moverCita(cita, timestamp, op) {
   // a tiempo se libera). Si reagenda el agente desde el panel, ya lo acordó con
   // él por teléfono: queda confirmada.
   const estadoNuevo = op.quien === 'agente' ? ESTADOS_CITA.CONFIRMADA : ESTADOS_CITA.PENDIENTE;
-  const titulo = tituloEventoCita(estadoNuevo, servicio, nombre);
+  const titulo = tituloEventoCita(estadoNuevo, servicio, nombre, String(valorCita(fila, col, 'MODALIDAD')) === 'VIRTUAL');
+  let linkNuevo = '';
   if (evento) {
     evento.setTime(inicio, fin);
     evento.setTitle(titulo);
@@ -235,6 +236,8 @@ function moverCita(cita, timestamp, op) {
       sendInvites: false
     });
     escribir('ID EVENTO CALENDAR', evento.getId());
+    // Virtual: el Meet se fue con el evento borrado, se crea uno nuevo (link nuevo)
+    if (String(valorCita(fila, col, 'MODALIDAD')) === 'VIRTUAL') { linkNuevo = agregarMeetAEvento_(evento, idCita); escribir('LINK MEET', linkNuevo); }
   }
 
   escribir('FECHA CITA', new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate()));
@@ -252,7 +255,7 @@ function moverCita(cita, timestamp, op) {
     // Solo informa, sin botones: la confirmación se pide 1 hora antes
     enviarPasoCita('REAGENDADA', correo, {
       idCita: idCita, idInmueble: tipo === 'INTERESADO' ? String(valorCita(fila, col, 'ID INMUEBLE') || '') : '', token: String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''), nombre: nombre,
-      servicio: servicio, direccion: direccion, inicio: inicio, confirmada: op.quien === 'agente', duracionMin: TIPOS_AGENDA[tipo].duracionMin
+      servicio: servicio, direccion: direccion, linkMeet: linkNuevo || String(valorCita(fila, col, 'LINK MEET') || ''), inicio: inicio, confirmada: op.quien === 'agente', duracionMin: TIPOS_AGENDA[tipo].duracionMin
     });
   } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
   return { ok: true, textoNueva: textoFecha(inicio), textoAntes: antes };
