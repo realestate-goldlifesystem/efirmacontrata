@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Handshake, UserSearch, ChevronRight, Loader2, Search, ArrowLeft, ExternalLink, MapPin } from 'lucide-react';
+import { X, Handshake, UserSearch, Video, ChevronRight, Loader2, Search, ArrowLeft, ExternalLink, MapPin } from 'lucide-react';
 import ScheduleVisitForm from './ScheduleVisitForm';
 import { API_URL } from './CitasAgendaPanel';
 
@@ -16,6 +16,7 @@ interface Inmueble { id: string; titulo: string; descripcion?: string; foto?: st
  */
 export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
   const [vista, setVista] = useState<'elegir' | 'propietario' | 'interesado'>('elegir');
+  const [modalidad, setModalidad] = useState<'PRESENCIAL' | 'VIRTUAL'>('PRESENCIAL');
   const [inmuebles, setInmuebles] = useState<Inmueble[] | null>(null);
   const [error, setError] = useState('');
   const [buscar, setBuscar] = useState('');
@@ -43,7 +44,7 @@ export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
   if (vista === 'propietario') {
     return (
       <div className="fixed inset-0 z-[80] overflow-y-auto bg-stone-950">
-        <ScheduleVisitForm onBack={onCerrar} />
+        <ScheduleVisitForm onBack={onCerrar} modalidadInicial={modalidad} />
       </div>
     );
   }
@@ -73,8 +74,10 @@ export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
 
         {vista === 'elegir' ? (
           <div className="space-y-3">
-            <Opcion Icono={Handshake} color="bg-brand-gold text-stone-950" titulo="Presentación al propietario"
-              texto="Captación: presentas el servicio y evalúas el inmueble." onClick={() => setVista('propietario')} />
+            <Opcion Icono={Handshake} color="bg-brand-gold text-stone-950" titulo="Captación presencial"
+              texto="Presentación al propietario en su inmueble." onClick={() => { setModalidad('PRESENCIAL'); setVista('propietario'); }} />
+            <Opcion Icono={Video} color="bg-sky-500 text-white" titulo="Presentación virtual"
+              texto="Presentación al propietario por Google Meet." onClick={() => { setModalidad('VIRTUAL'); setVista('propietario'); }} />
             <Opcion Icono={UserSearch} color="bg-indigo-500 text-white" titulo="Visita de interesado"
               texto="Un interesado visita uno de los inmuebles publicados." onClick={() => setVista('interesado')} />
             <p className="text-stone-500 text-xs pt-2">Se usan los mismos horarios, correos y recordatorios que cuando agenda la persona.</p>

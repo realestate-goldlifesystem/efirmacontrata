@@ -60,6 +60,14 @@
     .listo h2 { margin: 0 0 6px; font-size: 19px; }
     .listo p { color: var(--suave); font-size: 14px; margin: 0 0 20px; }
     .oculto { display: none; }
+    .titInicio { font-size: 18px; margin: 4px 0 14px; }
+    .inicio { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grande { text-align: left; border: 1px solid var(--linea); border-radius: 16px; background: #fff; padding: 18px 16px; cursor: pointer; font: inherit; transition: all .3s ease; }
+    .grande:hover { border-color: var(--oro); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(28,25,23,.08); }
+    .grande i { font-style: normal; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--oro-suave); font-size: 20px; margin-bottom: 12px; }
+    .grande b { display: block; font-size: 15px; }
+    .grande span { display: block; font-size: 12.5px; color: var(--suave); margin-top: 4px; line-height: 1.4; }
+    .etModo { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 3px 10px; border-radius: 999px; background: var(--oro-suave); color: var(--oro); margin-bottom: 12px; cursor: pointer; }
     .modo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .opc { border: 1px solid var(--linea); border-radius: 12px; background: #fff; padding: 9px 12px; text-align: left; cursor: pointer; font: inherit; transition: all .25s; }
     .opc b { display: block; font-size: 14px; }
@@ -83,14 +91,29 @@
     <div class="marca">GOLD LIFE REAL ESTATE</div>
     <div class="sub">Presentación de servicios al propietario · los datos vienen del registro</div>
 
-    <div class="pasos">
+    <!-- Pantalla inicial: tipo de presentación -->
+    <div id="v0" class="vista activa">
+      <h2 class="titInicio">¿Cómo será la presentación?</h2>
+      <div class="inicio">
+        <button type="button" class="grande" data-m="PRESENCIAL">
+          <i><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#b8962e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg></i><b>Captación presencial</b><span>Visitas y evalúas el inmueble en persona.</span>
+        </button>
+        <button type="button" class="grande" data-m="VIRTUAL">
+          <i><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#b8962e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg></i><b>Presentación virtual</b><span>Por Google Meet: el link llega en el correo.</span>
+        </button>
+      </div>
+      <div class="pie"><button class="btn sec" onclick="google.script.host.close()">Cerrar</button><span></span></div>
+    </div>
+
+    <div class="pasos oculto" id="pasos">
       <div class="paso activo" data-p="1"><i>1</i>Datos</div>
       <div class="paso" data-p="2"><i>2</i>Día y hora</div>
       <div class="paso" data-p="3"><i>3</i>Confirmar</div>
     </div>
 
     <!-- Paso 1: datos -->
-    <div class="vista activa" id="v1">
+    <div class="vista" id="v1">
+      <span class="etModo" id="etModo"></span>
       <div class="dos">
         <div class="grupo"><label>Nombre</label><input id="nombre"></div>
         <div class="grupo"><label>Celular</label><input id="celular" inputmode="numeric"></div>
@@ -104,12 +127,6 @@
           <option value="Vendi-Renta">Vendi-Renta</option>
           <option value="Admi-Venta">Admi-Venta</option>
         </select>
-      </div>
-      <div class="grupo"><label>Modalidad</label>
-        <div class="modo">
-          <button type="button" class="opc activo" data-m="PRESENCIAL"><b>Presencial</b><span>En el inmueble</span></button>
-          <button type="button" class="opc" data-m="VIRTUAL"><b>Virtual</b><span>Por Google Meet</span></button>
-        </div>
       </div>
       <div class="grupo"><label>Dirección del inmueble</label>
         <input id="direccion" autocomplete="off" placeholder="Escribe la dirección y elige una sugerencia">
@@ -158,7 +175,13 @@
     const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
     const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     let slot = null, diaSel = null, consulta = 0, pasoMax = 1, modalidad = 'PRESENCIAL';
-    document.querySelectorAll('.opc').forEach(b => b.onclick = () => { document.querySelectorAll('.opc').forEach(x => x.classList.remove('activo')); b.classList.add('activo'); modalidad = b.dataset.m; });
+    document.querySelectorAll('.grande').forEach(b => b.onclick = () => {
+      modalidad = b.dataset.m;
+      $('etModo').textContent = (modalidad === 'VIRTUAL' ? 'PRESENTACIÓN VIRTUAL · MEET' : 'CAPTACIÓN PRESENCIAL') + '  ·  cambiar';
+      $('rEt').textContent = modalidad === 'VIRTUAL' ? 'PRESENTACIÓN VIRTUAL · GOOGLE MEET' : 'CAPTACIÓN PRESENCIAL';
+      $('v0').classList.remove('activa'); $('pasos').classList.remove('oculto'); ir(1);
+    });
+    $('etModo').onclick = () => { [1, 2, 3].forEach(k => $('v' + k).classList.remove('activa')); $('pasos').classList.add('oculto'); $('v0').classList.add('activa'); };
 
     $('nombre').value = D.nombre; $('celular').value = D.celular; $('correo').value = D.correo;
     $('servicio').value = D.servicio; $('direccion').value = D.direccion; $('notas').value = D.notas;

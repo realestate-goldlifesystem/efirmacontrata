@@ -10,6 +10,8 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZD
 
 interface ScheduleVisitFormProps {
   onBack: () => void;
+  /** Ya elegida (botón "Crear cita" del panel): no se muestra la pantalla de elegir */
+  modalidadInicial?: 'PRESENCIAL' | 'VIRTUAL';
 }
 
 interface TimeSlot {
@@ -73,7 +75,9 @@ function Marco({ onBack, children }: { onBack: () => void; children: React.React
  * pueden tocar para volver. Estética de inmobiliaria premium: grafito, blanco y
  * el dorado de la marca solo en lo activo.
  */
-export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
+export default function ScheduleVisitForm({ onBack, modalidadInicial }: ScheduleVisitFormProps) {
+  // Primera pantalla: presentación presencial (captación) o virtual por Google Meet
+  const [eligioModalidad, setEligioModalidad] = useState(!!modalidadInicial);
   const [formData, setFormData] = useState({
     name: '',
     countryCode: 'CO',
@@ -83,7 +87,7 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
     serviceType: 'Venta',
     detalles: '',
     // nov-2026: presentación en el inmueble o por Google Meet
-    modalidad: 'PRESENCIAL' as 'PRESENCIAL' | 'VIRTUAL',
+    modalidad: (modalidadInicial || 'PRESENCIAL') as 'PRESENCIAL' | 'VIRTUAL',
   });
 
   const [paso, setPaso] = useState<Paso>(1);
@@ -251,6 +255,31 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
 
   const entrada = 'w-full bg-white border border-stone-200 rounded-xl px-4 py-3 text-sm text-stone-900 placeholder:text-stone-400 outline-none transition-all focus:border-stone-900 focus:ring-4 focus:ring-stone-900/5';
   const rotulo = 'text-[11px] font-semibold tracking-[0.14em] uppercase text-stone-500 block mb-2';
+
+  if (!eligioModalidad) {
+    const opcion = (v: 'PRESENCIAL' | 'VIRTUAL', titulo: string, texto: string, Ic: typeof Home) => (
+      <button type="button" onClick={() => { setFormData(f => ({ ...f, modalidad: v })); setEligioModalidad(true); }}
+        className="group text-left rounded-3xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-brand-gold/50 p-6 sm:p-7 transition-all duration-300 hover:-translate-y-0.5">
+        <span className="w-12 h-12 rounded-2xl grid place-items-center bg-brand-gold/15 text-brand-gold mb-5 group-hover:bg-brand-gold group-hover:text-stone-950 transition-colors duration-300"><Ic className="w-6 h-6" /></span>
+        <span className="block text-white text-xl font-semibold tracking-tight">{titulo}</span>
+        <span className="block text-stone-400 text-sm mt-1.5 leading-relaxed">{texto}</span>
+        <span className="inline-flex items-center gap-1 text-brand-gold text-sm font-semibold mt-5">Elegir <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" /></span>
+      </button>
+    );
+    return (
+      <Marco onBack={onBack}>
+        <div className="max-w-3xl mx-auto text-center animate-fade-in">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-brand-gold font-semibold">Gold Life Real Estate</p>
+          <h2 className="text-white text-3xl sm:text-4xl font-semibold tracking-tight mt-3">¿Cómo prefieres tu presentación?</h2>
+          <p className="text-stone-400 mt-3 mb-10">Te presentamos el servicio y la mejor estrategia para tu inmueble.</p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {opcion('PRESENCIAL', 'Presencial', 'Un asesor visita y evalúa tu inmueble en persona.', Home)}
+            {opcion('VIRTUAL', 'Virtual por Google Meet', 'Una videollamada desde donde estés; te enviamos el link al correo.', Video)}
+          </div>
+        </div>
+      </Marco>
+    );
+  }
 
   if (isSuccess && selectedSlot && fecha) {
     return (
