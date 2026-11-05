@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { direccionCortaColombia, componentesLugar } from '../lib/direccionColombia';
 import {
   ArrowLeft, CalendarCheck, MapPin, User, Mail, Send, Clock, Loader2, CheckCircle2,
   ChevronLeft, ChevronRight, Check, Sun, Sunset, CalendarDays, Pencil,
@@ -84,6 +85,43 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
   });
 
   const [paso, setPaso] = useState<Paso>(1);
+
+  // Buscador de direcciones de Google, el mismo del formulario de registro:
+  // al elegir una sugerencia queda "Cra 10A #134B-18, Lisboa, Bogotá"
+  const refDireccion = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (paso !== 3) return;
+    let cancelado = false;
+    const w = window as any;
+    const iniciar = () => {
+      if (cancelado || !refDireccion.current || !w.google?.maps?.places || refDireccion.current.dataset.auto) return;
+      refDireccion.current.dataset.auto = '1';
+      const ac = new w.google.maps.places.Autocomplete(refDireccion.current, {
+        componentRestrictions: { country: 'co' }, fields: ['address_components', 'formatted_address'],
+      });
+      ac.addListener('place_changed', () => {
+        const lugar = ac.getPlace();
+        if (!lugar || !lugar.address_components) return;
+        const c = componentesLugar(lugar.address_components);
+        const corta = direccionCortaColombia(c.calle, c.numero, lugar.formatted_address || '');
+        const texto = [corta, c.barrio || c.localidad, c.ciudad].filter((x, i, a) => x && a.indexOf(x) === i).join(', ');
+        setFormData(f => ({ ...f, address: texto }));
+      });
+    };
+    if (w.google?.maps?.places) iniciar();
+    else {
+      let s = document.getElementById('google-maps-script') as HTMLScriptElement | null;
+      if (!s) {
+        s = document.createElement('script');
+        s.id = 'google-maps-script';
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places`;
+        s.async = true; s.defer = true;
+        document.body.appendChild(s);
+      }
+      s.addEventListener('load', iniciar);
+    }
+    return () => { cancelado = true; };
+  }, [paso]);
   const [fecha, setFecha] = useState<Date | null>(null);
   const [mesVisible, setMesVisible] = useState(() => { const h = new Date(); return new Date(h.getFullYear(), h.getMonth(), 1); });
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
@@ -449,7 +487,7 @@ export default function ScheduleVisitForm({ onBack }: ScheduleVisitFormProps) {
                   <label className={rotulo}>Dirección o barrio <span className="normal-case tracking-normal font-normal text-stone-400">(opcional)</span></label>
                   <div className="relative">
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-                    <input type="text" value={formData.address} placeholder="Ej. Barrio Chicó, Carrera 11..."
+                    <input ref={refDireccion} type="text" value={formData.address} placeholder="Escribe la dirección y elige una sugerencia" autoComplete="off"
                       onChange={e => setFormData({ ...formData, address: e.target.value })}
                       className={`${entrada} pl-11`} />
                   </div>

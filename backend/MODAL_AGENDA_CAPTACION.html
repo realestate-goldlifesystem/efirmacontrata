@@ -9,26 +9,47 @@
     body { padding: 4px 18px 18px; }
     .marca { font-size: 11px; letter-spacing: 3px; font-weight: 700; color: var(--oro); }
     .sub { font-size: 12.5px; color: var(--suave); margin: 2px 0 14px; }
+
+    .pasos { display: flex; gap: 6px; margin-bottom: 18px; }
+    .paso { flex: 1; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--linea); font-size: 12.5px; color: var(--suave); background: #fff; transition: all .3s ease; cursor: default; }
+    .paso i { font-style: normal; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11.5px; font-weight: 700; background: #f5f5f4; color: var(--suave); transition: all .3s ease; flex: 0 0 22px; }
+    .paso.activo { border-color: var(--tinta); color: var(--tinta); font-weight: 600; }
+    .paso.activo i { background: var(--tinta); color: #fff; }
+    .paso.hecho { cursor: pointer; color: var(--tinta); }
+    .paso.hecho i { background: var(--oro); color: #fff; }
+
+    .vista { display: none; animation: entrar .35s ease; }
+    .vista.activa { display: block; }
+    @keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
     .grupo { margin-bottom: 12px; }
     label { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); font-weight: 600; margin-bottom: 5px; }
-    input, select, textarea { width: 100%; border: 1px solid var(--linea); border-radius: 10px; padding: 9px 11px; font: inherit; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; }
+    input, select, textarea { width: 100%; border: 1px solid var(--linea); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; background: #fff; }
     input:focus, select:focus, textarea:focus { border-color: var(--oro); box-shadow: 0 0 0 3px rgba(184,150,46,.15); }
-    textarea { resize: vertical; min-height: 54px; }
+    textarea { resize: vertical; min-height: 70px; }
     .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ayuda { font-size: 11.5px; color: var(--suave); margin-top: 4px; }
+
     .dias { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
-    .dia { flex: 0 0 58px; border: 1px solid var(--linea); border-radius: 12px; background: #fff; padding: 7px 0; text-align: center; cursor: pointer; transition: all .2s; }
+    .dia { flex: 0 0 58px; border: 1px solid var(--linea); border-radius: 12px; background: #fff; padding: 7px 0; text-align: center; cursor: pointer; transition: all .2s; font: inherit; }
     .dia b { display: block; font-size: 17px; }
     .dia span { font-size: 10.5px; color: var(--suave); text-transform: uppercase; letter-spacing: .05em; }
     .dia:hover { border-color: var(--oro); }
     .dia.activo { background: var(--tinta); border-color: var(--tinta); color: #fff; }
     .dia.activo span { color: #d6d3d1; }
     .horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; min-height: 40px; }
-    .hora { border: 1px solid var(--linea); border-radius: 10px; background: #fff; padding: 8px 0; font-size: 13px; cursor: pointer; transition: all .2s; }
+    .hora { border: 1px solid var(--linea); border-radius: 10px; background: #fff; padding: 9px 0; font: inherit; font-size: 13px; cursor: pointer; transition: all .2s; }
     .hora:hover { border-color: var(--oro); }
     .hora.activo { background: var(--oro); border-color: var(--oro); color: #fff; font-weight: 600; }
     .nota { font-size: 12.5px; color: var(--suave); grid-column: 1 / -1; padding: 8px 0; }
-    .pie { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
-    button.btn { border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .2s; }
+
+    .resumen { background: var(--tinta); color: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
+    .resumen .et { color: #d4af37; font-size: 11px; letter-spacing: 2px; font-weight: 700; }
+    .resumen .cuando { font-size: 19px; font-weight: 700; margin-top: 4px; }
+    .resumen .linea { font-size: 13.5px; color: #d6d3d1; margin-top: 4px; }
+
+    .pie { display: flex; gap: 10px; justify-content: space-between; margin-top: 18px; }
+    button.btn { border: 0; border-radius: 999px; padding: 10px 22px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .2s; }
     .btn.sec { background: #f5f5f4; color: var(--tinta); }
     .btn.pri { background: var(--tinta); color: #fff; }
     .btn.pri:disabled { opacity: .35; cursor: default; }
@@ -39,6 +60,7 @@
     .listo h2 { margin: 0 0 6px; font-size: 19px; }
     .listo p { color: var(--suave); font-size: 14px; margin: 0 0 20px; }
     .oculto { display: none; }
+    .pac-container { z-index: 99999; border-radius: 10px; font-family: inherit; }
   </style>
 </head>
 <body>
@@ -46,12 +68,19 @@
     <div class="marca">GOLD LIFE REAL ESTATE</div>
     <div class="sub">Presentación de servicios al propietario · los datos vienen del registro</div>
 
-    <div class="dos">
-      <div class="grupo"><label>Nombre</label><input id="nombre"></div>
-      <div class="grupo"><label>Celular</label><input id="celular" inputmode="numeric"></div>
+    <div class="pasos">
+      <div class="paso activo" data-p="1"><i>1</i>Datos</div>
+      <div class="paso" data-p="2"><i>2</i>Día y hora</div>
+      <div class="paso" data-p="3"><i>3</i>Confirmar</div>
     </div>
-    <div class="grupo"><label>Correo del propietario</label><input id="correo" type="email" placeholder="Pídelo en la llamada o por WhatsApp"></div>
-    <div class="dos">
+
+    <!-- Paso 1: datos -->
+    <div class="vista activa" id="v1">
+      <div class="dos">
+        <div class="grupo"><label>Nombre</label><input id="nombre"></div>
+        <div class="grupo"><label>Celular</label><input id="celular" inputmode="numeric"></div>
+      </div>
+      <div class="grupo"><label>Correo del propietario</label><input id="correo" type="email" placeholder="Pídelo en la llamada o por WhatsApp"></div>
       <div class="grupo"><label>Servicio</label>
         <select id="servicio">
           <option value="Venta">Venta (Corretaje)</option>
@@ -61,24 +90,41 @@
           <option value="Admi-Venta">Admi-Venta</option>
         </select>
       </div>
-      <div class="grupo"><label>Dirección o barrio</label><input id="direccion"></div>
+      <div class="grupo"><label>Dirección del inmueble</label>
+        <input id="direccion" autocomplete="off" placeholder="Escribe la dirección y elige una sugerencia">
+        <div class="ayuda" id="ayudaDir">Del registro: <span id="dirRegistro"></span></div>
+      </div>
+      <div class="pie"><button class="btn sec" onclick="google.script.host.close()">Cerrar</button>
+        <button class="btn pri" id="sig1" onclick="ir(2)">Siguiente</button></div>
     </div>
 
-    <div class="grupo"><label>Día</label><div class="dias" id="dias"></div></div>
-    <div class="grupo"><label>Hora</label><div class="horas" id="horas"><div class="nota">Elige un día.</div></div></div>
-    <div class="grupo"><label>Notas</label><textarea id="notas"></textarea></div>
+    <!-- Paso 2: día y hora -->
+    <div class="vista" id="v2">
+      <div class="grupo"><label>Día</label><div class="dias" id="dias"></div></div>
+      <div class="grupo"><label>Hora</label><div class="horas" id="horas"><div class="nota">Elige un día.</div></div></div>
+      <div class="pie"><button class="btn sec" onclick="ir(1)">Atrás</button>
+        <button class="btn pri" id="sig2" disabled onclick="ir(3)">Siguiente</button></div>
+    </div>
 
-    <div class="error" id="error"></div>
-    <div class="pie">
-      <button class="btn sec" onclick="google.script.host.close()">Cerrar</button>
-      <button class="btn pri" id="agendar" disabled onclick="agendar()">Agendar cita</button>
+    <!-- Paso 3: confirmar -->
+    <div class="vista" id="v3">
+      <div class="resumen">
+        <div class="et">PRESENTACIÓN AL PROPIETARIO</div>
+        <div class="cuando" id="rCuando"></div>
+        <div class="linea" id="rQuien"></div>
+        <div class="linea" id="rDonde"></div>
+      </div>
+      <div class="grupo"><label>Notas para la cita</label><textarea id="notas"></textarea></div>
+      <div class="error" id="error"></div>
+      <div class="pie"><button class="btn sec" onclick="ir(2)">Atrás</button>
+        <button class="btn pri" id="agendar" onclick="agendar()">Agendar cita</button></div>
     </div>
   </div>
 
   <div id="listo" class="listo oculto">
     <div class="ok">✓</div>
     <h2>Cita agendada</h2>
-    <p id="resumen"></p>
+    <p id="resumenFinal"></p>
     <button class="btn pri" onclick="google.script.host.close()">Listo</button>
   </div>
 
@@ -88,11 +134,39 @@
     const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
     const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
     const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    let slot = null, diaSel = null, consulta = 0;
+    let slot = null, diaSel = null, consulta = 0, pasoMax = 1;
 
     $('nombre').value = D.nombre; $('celular').value = D.celular; $('correo').value = D.correo;
     $('servicio').value = D.servicio; $('direccion').value = D.direccion; $('notas').value = D.notas;
+    $('dirRegistro').textContent = D.direccion || 'sin ubicación';
 
+    // ---------- Pasos ----------
+    const correoOk = () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('correo').value.trim());
+    const paso1Ok = () => $('nombre').value.trim() && $('celular').value.trim() && correoOk();
+    function revisar() { $('sig1').disabled = !paso1Ok(); $('sig2').disabled = !slot; }
+    ['nombre', 'celular', 'correo'].forEach(id => $(id).addEventListener('input', revisar));
+    revisar();
+
+    function ir(n) {
+      if (n >= 2 && !paso1Ok()) return;
+      if (n >= 3 && !slot) return;
+      pasoMax = Math.max(pasoMax, n);
+      [1, 2, 3].forEach(k => $('v' + k).classList.toggle('activa', k === n));
+      document.querySelectorAll('.paso').forEach(p => {
+        const k = Number(p.dataset.p);
+        p.classList.toggle('activo', k === n);
+        p.classList.toggle('hecho', k !== n && k <= pasoMax && (k === 1 ? paso1Ok() : k === 2 ? !!slot : false));
+      });
+      if (n === 3) {
+        const t = DIAS_L[diaSel.getDay()] + ' ' + diaSel.getDate() + ' de ' + MESES[diaSel.getMonth()] + ' · ' + slot.horaAmPm;
+        $('rCuando').textContent = t.charAt(0).toUpperCase() + t.slice(1);
+        $('rQuien').textContent = $('nombre').value.trim() + ' · ' + $('servicio').value;
+        $('rDonde').textContent = $('direccion').value.trim();
+      }
+    }
+    document.querySelectorAll('.paso').forEach(p => p.onclick = () => { if (p.classList.contains('hecho')) ir(Number(p.dataset.p)); });
+
+    // ---------- Días y horas ----------
     const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     const hoy = new Date();
     for (let i = 0; i < 21; i++) {
@@ -102,7 +176,6 @@
       b.onclick = () => elegirDia(d, b);
       $('dias').appendChild(b);
     }
-
     function elegirDia(d, b) {
       document.querySelectorAll('.dia').forEach(x => x.classList.remove('activo')); b.classList.add('activo');
       diaSel = d; slot = null; revisar();
@@ -122,22 +195,139 @@
         .disponibilidadCaptacion(iso(d) + 'T08:00:00');
     }
 
-    function revisar() { $('agendar').disabled = !(slot && $('nombre').value.trim() && $('celular').value.trim() && $('correo').value.trim()); }
-    ['nombre', 'celular', 'correo'].forEach(id => $(id).addEventListener('input', revisar));
-
+    // ---------- Agendar ----------
     function agendar() {
-      const txt = DIAS_L[diaSel.getDay()] + ' ' + diaSel.getDate() + ' de ' + MESES[diaSel.getMonth()] + ' · ' + slot.horaAmPm;
+      const txt = $('rCuando').textContent;
       $('agendar').disabled = true; $('agendar').textContent = 'Agendando…'; $('error').textContent = '';
       google.script.run.withSuccessHandler(r => {
         if (r && r.success) {
           $('form').classList.add('oculto'); $('listo').classList.remove('oculto');
-          $('resumen').textContent = txt.charAt(0).toUpperCase() + txt.slice(1) + '. Le llegó el correo a ' + $('correo').value.trim() + ' y quedó en tu calendario.';
-        } else { $('error').textContent = (r && (r.error || r.message)) || 'No se pudo agendar.'; $('agendar').textContent = 'Agendar cita'; revisar(); }
-      }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; revisar(); })
+          $('resumenFinal').textContent = txt + '. Le llegó el correo a ' + $('correo').value.trim() + ' y quedó en tu calendario.';
+        } else { $('error').textContent = (r && (r.error || r.message)) || 'No se pudo agendar.'; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; }
+      }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; })
         .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
           correo: $('correo').value.trim(), servicio: $('servicio').value, direccion: $('direccion').value.trim(), notas: $('notas').value.trim(),
           timestamp: slot.timestamp, textoCita: txt });
     }
+
+    // ---------- Buscador de direcciones (el mismo del formulario de registro) ----------
+    // Dirección corta normalizada a partir de lo que devuelve Google Places.
+// Extraído tal cual de PortfolioLocationStep.tsx (5-nov-2026) para usarlo también en la
+// agenda del propietario. Las reglas de abajo NO se cambian sin revisar la directiva.
+function direccionCortaColombia(googleStreet, googleNumber, formattedAddress) {
+  // Normalización básica de la dirección corta
+  let shortAddress = "";
+  if (googleStreet && googleNumber) {
+    shortAddress = `${googleStreet} #${googleNumber}`;
+  } else if (googleStreet) {
+    shortAddress = googleStreet;
+  } else {
+    shortAddress = formattedAddress.split(',')[0].trim();
+  }
+
+  // ============================================================================
+  // 🚨 DIRECTIVA CRÍTICA DE NORMALIZACIÓN LEGAL COLOMBIANA 🚨
+  // Toda modificación a este bloque debe respetar ESTRICTAMENTE las reglas de:
+  // 1. IGAC (Instituto Geográfico Agustín Codazzi) y Catastros Locales.
+  // 2. DANE (Departamento Administrativo Nacional de Estadística).
+  // 3. SNR (Superintendencia de Notariado y Registro).
+  // 4. Operadores postales oficiales (4-72) y DIAN.
+  //
+  // REGLAS ABSOLUTAS PARA CONTRATOS Y FOLIOS DE MATRÍCULA:
+  // - Las abreviaturas deben ser las estandarizadas (ej. Cra, Cl, Av, AK, AC).
+  // - Las letras asociadas a las vías/placas (A, B, C) DEBEN IR EN MAYÚSCULAS 
+  //   para evitar ambigüedades jurídicas y notariales.
+  // - Palabras clave como 'BIS', 'SUR', 'ESTE' DEBEN IR EN MAYÚSCULAS CERRADAS.
+  // - El símbolo universal a usar es el numeral (#) y no "No.", "Nro.", etc.
+  // - Las letras y sufijos van pegados a su respectivo número (Ej: 134B, no 134 B).
+  // - No deben existir espacios rodeando el guion separador (Ej: #134B-18).
+  // ============================================================================
+  
+  // Normalizar abreviaturas comunes (Estándar Catastral para Servicios Públicos)
+  shortAddress = shortAddress
+    .replace(/Avenida Carrera/gi, 'AK')
+    .replace(/Avenida Calle/gi, 'AC')
+    .replace(/Avenida/gi, 'Av')
+    .replace(/Carrera/gi, 'Cra')
+    .replace(/Calle/gi, 'Cl')
+    .replace(/Transversal/gi, 'Tv')
+    .replace(/Diagonal/gi, 'Dg')
+    .replace(/Autopista/gi, 'Aut');
+
+  // Limpieza estricta de numerales y espacios (Ej. "AK 9 ## 185-61" -> "AK 9 #185-61")
+  // ⚠️ EL ORDEN IMPORTA: primero se convierten "No", "Nro", "N°" en "#" y SOLO
+  // DESPUÉS se colapsan los numerales dobles. Al revés, "Cl 143 # No 9-55"
+  // quedaba "Cl 143 ##9-55" (pasó el 18-09-2026 y llegó así al contrato).
+  shortAddress = shortAddress
+    .replace(/\./g, '')              // Eliminar puntos (Cl. -> Cl)
+    .replace(/\bN[°º]\s*/gi, '#')    // N° / Nº -> #
+    .replace(/\bNro\b\s*/gi, '#')    // Nro -> #
+    .replace(/\bNo\b\s*/gi, '#')     // No -> # (palabra suelta: no toca "Norte")
+    .replace(/#(\s*#)+/g, '#')       // Colapsar numerales repetidos (##, # #)
+    .replace(/#\s+/g, '#')           // Sin espacio DESPUÉS del numeral
+    .replace(/\s*#/g, ' #')          // Un solo espacio ANTES del numeral
+    .replace(/\s{2,}/g, ' ')         // Espacios dobles
+    .trim();
+
+  // Obligar a MAYÚSCULAS las letras anexas a números y palabras clave
+  shortAddress = shortAddress
+    .replace(/\b([a-z])\b/g, (match) => match.toUpperCase()) // Letras sueltas a mayúscula (a -> A)
+    .replace(/(\d)\s+([a-zA-Z])\b/g, '$1$2') // Pegar letra al número (10 A -> 10A)
+    .replace(/\bbis\b/gi, 'BIS')
+    .replace(/\bsur\b/gi, 'SUR')
+    .replace(/\beste\b/gi, 'ESTE')
+    .replace(/(\d)([a-z])/g, (m, p1, p2) => `${p1}${p2.toUpperCase()}`); // (10a -> 10A)
+
+  // Heurística de Placa Colombiana (Distancia en metros):
+  // Si Google Maps arroja la placa todo junto (Ej. #1712), en Colombia los últimos 
+  // 2 dígitos suelen ser la distancia (17-12). Se inyecta el guion automáticamente.
+  if (shortAddress.includes('#')) {
+    const parts = shortAddress.split('#');
+    let placa = parts[1].trim();
+    // Solo actuar si NO tiene guion y tiene longitud para dividirse
+    if (!placa.includes('-') && placa.length >= 3) {
+      const lastTwo = placa.slice(-2);
+      const rest = placa.slice(0, -2).replace(/\s/g, ''); // Limpiar espacios internos
+      if (/^\d{2}$/.test(lastTwo)) {
+        shortAddress = `${parts[0].trim()} #${rest}-${lastTwo}`;
+      }
+    }
+  }
+
+  // Asegurar que no haya espacios alrededor del guion (Ej. "134B - 18" -> "134B-18")
+  shortAddress = shortAddress.replace(/\s*-\s*/g, '-');
+  return shortAddress;
+}
+
+/** Componentes que se usan de un lugar de Google Places. */
+function componentesLugar(components) {
+  let calle = '', numero = '', barrio = '', localidad = '', ciudad = '', departamento = '';
+  (components || []).forEach((comp) => {
+    const types = comp.types;
+    if (types.includes('route')) calle = comp.long_name;
+    if (types.includes('street_number')) numero = comp.long_name;
+    if (types.includes('neighborhood') || types.includes('sublocality_level_2')) barrio = comp.long_name;
+    if (types.includes('sublocality_level_1') || types.includes('sublocality')) localidad = comp.long_name;
+    if (types.includes('locality')) ciudad = comp.long_name;
+    if (types.includes('administrative_area_level_1')) departamento = comp.long_name;
+  });
+  return { calle, numero, barrio, localidad, ciudad, departamento };
+}
+    window.iniciarBuscador = function () {
+      try {
+        const ac = new google.maps.places.Autocomplete($('direccion'), { componentRestrictions: { country: 'co' }, fields: ['address_components', 'formatted_address'] });
+        ac.addListener('place_changed', () => {
+          const lugar = ac.getPlace();
+          if (!lugar || !lugar.address_components) return;
+          const c = componentesLugar(lugar.address_components);
+          const corta = direccionCortaColombia(c.calle, c.numero, lugar.formatted_address || '');
+          $('direccion').value = [corta, c.barrio || c.localidad, c.ciudad].filter((x, i, a) => x && a.indexOf(x) === i).join(', ');
+        });
+      } catch (e) { /* sin buscador: el campo sigue siendo de texto libre */ }
+    };
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDppOCGMciDpRHVAH4nuBIdKaDlu7zgy_E&libraries=places&callback=iniciarBuscador';
+    s.async = true; document.head.appendChild(s);
   </script>
 </body>
 </html>
