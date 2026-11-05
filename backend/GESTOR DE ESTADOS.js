@@ -562,6 +562,8 @@ function procesarEdicionCaptacion_(e, hoja) {
     if (toca(cols.detalles)) marcarSeguimientoPorDetalles_(e, hoja, cols);
   }
   if (toca(cols.contacto) && cols.estado) propagarFechaContactoCaptacion_(e, hoja, cols);
+  // PRE-R CAPTACION: ventana para agendar la presentación (AGENDA_CAPTACION.js)
+  if (toca(cols.estado)) abrirAgendaCaptacionSiToca_(e, hoja, cols.estado);
 }
 
 function normalizarEstadoCaptacion_(v) {

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    :root { --oro: #b8962e; --oro-suave: #f7f1de; --tinta: #1c1917; --suave: #78716c; --linea: #e7e5e4; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--tinta); background: #fff; }
+    body { padding: 4px 18px 18px; }
+    .marca { font-size: 11px; letter-spacing: 3px; font-weight: 700; color: var(--oro); }
+    .sub { font-size: 12.5px; color: var(--suave); margin: 2px 0 14px; }
+    .grupo { margin-bottom: 12px; }
+    label { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); font-weight: 600; margin-bottom: 5px; }
+    input, select, textarea { width: 100%; border: 1px solid var(--linea); border-radius: 10px; padding: 9px 11px; font: inherit; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; }
+    input:focus, select:focus, textarea:focus { border-color: var(--oro); box-shadow: 0 0 0 3px rgba(184,150,46,.15); }
+    textarea { resize: vertical; min-height: 54px; }
+    .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .dias { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+    .dia { flex: 0 0 58px; border: 1px solid var(--linea); border-radius: 12px; background: #fff; padding: 7px 0; text-align: center; cursor: pointer; transition: all .2s; }
+    .dia b { display: block; font-size: 17px; }
+    .dia span { font-size: 10.5px; color: var(--suave); text-transform: uppercase; letter-spacing: .05em; }
+    .dia:hover { border-color: var(--oro); }
+    .dia.activo { background: var(--tinta); border-color: var(--tinta); color: #fff; }
+    .dia.activo span { color: #d6d3d1; }
+    .horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; min-height: 40px; }
+    .hora { border: 1px solid var(--linea); border-radius: 10px; background: #fff; padding: 8px 0; font-size: 13px; cursor: pointer; transition: all .2s; }
+    .hora:hover { border-color: var(--oro); }
+    .hora.activo { background: var(--oro); border-color: var(--oro); color: #fff; font-weight: 600; }
+    .nota { font-size: 12.5px; color: var(--suave); grid-column: 1 / -1; padding: 8px 0; }
+    .pie { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+    button.btn { border: 0; border-radius: 999px; padding: 10px 20px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .2s; }
+    .btn.sec { background: #f5f5f4; color: var(--tinta); }
+    .btn.pri { background: var(--tinta); color: #fff; }
+    .btn.pri:disabled { opacity: .35; cursor: default; }
+    .btn.pri:not(:disabled):hover { transform: translateY(-1px); }
+    .error { color: #b91c1c; font-size: 13px; margin-top: 10px; min-height: 18px; }
+    .listo { text-align: center; padding: 40px 10px; }
+    .listo .ok { width: 54px; height: 54px; border-radius: 50%; background: var(--oro-suave); color: var(--oro); font-size: 26px; display: grid; place-items: center; margin: 0 auto 14px; }
+    .listo h2 { margin: 0 0 6px; font-size: 19px; }
+    .listo p { color: var(--suave); font-size: 14px; margin: 0 0 20px; }
+    .oculto { display: none; }
+  </style>
+</head>
+<body>
+  <div id="form">
+    <div class="marca">GOLD LIFE REAL ESTATE</div>
+    <div class="sub">Presentación de servicios al propietario · los datos vienen del registro</div>
+
+    <div class="dos">
+      <div class="grupo"><label>Nombre</label><input id="nombre"></div>
+      <div class="grupo"><label>Celular</label><input id="celular" inputmode="numeric"></div>
+    </div>
+    <div class="grupo"><label>Correo del propietario</label><input id="correo" type="email" placeholder="Pídelo en la llamada o por WhatsApp"></div>
+    <div class="dos">
+      <div class="grupo"><label>Servicio</label>
+        <select id="servicio">
+          <option value="Venta">Venta (Corretaje)</option>
+          <option value="Arriendo">Arriendo (Corretaje)</option>
+          <option value="Administración">Administración Integral</option>
+          <option value="Vendi-Renta">Vendi-Renta</option>
+          <option value="Admi-Venta">Admi-Venta</option>
+        </select>
+      </div>
+      <div class="grupo"><label>Dirección o barrio</label><input id="direccion"></div>
+    </div>
+
+    <div class="grupo"><label>Día</label><div class="dias" id="dias"></div></div>
+    <div class="grupo"><label>Hora</label><div class="horas" id="horas"><div class="nota">Elige un día.</div></div></div>
+    <div class="grupo"><label>Notas</label><textarea id="notas"></textarea></div>
+
+    <div class="error" id="error"></div>
+    <div class="pie">
+      <button class="btn sec" onclick="google.script.host.close()">Cerrar</button>
+      <button class="btn pri" id="agendar" disabled onclick="agendar()">Agendar cita</button>
+    </div>
+  </div>
+
+  <div id="listo" class="listo oculto">
+    <div class="ok">✓</div>
+    <h2>Cita agendada</h2>
+    <p id="resumen"></p>
+    <button class="btn pri" onclick="google.script.host.close()">Listo</button>
+  </div>
+
+  <script>
+    const D = <?!= DATOS ?>;
+    const $ = (id) => document.getElementById(id);
+    const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+    const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    let slot = null, diaSel = null, consulta = 0;
+
+    $('nombre').value = D.nombre; $('celular').value = D.celular; $('correo').value = D.correo;
+    $('servicio').value = D.servicio; $('direccion').value = D.direccion; $('notas').value = D.notas;
+
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const hoy = new Date();
+    for (let i = 0; i < 21; i++) {
+      const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i);
+      const b = document.createElement('button');
+      b.className = 'dia'; b.innerHTML = '<span>' + DIAS[d.getDay()] + '</span><b>' + d.getDate() + '</b><span>' + MESES[d.getMonth()].slice(0, 3) + '</span>';
+      b.onclick = () => elegirDia(d, b);
+      $('dias').appendChild(b);
+    }
+
+    function elegirDia(d, b) {
+      document.querySelectorAll('.dia').forEach(x => x.classList.remove('activo')); b.classList.add('activo');
+      diaSel = d; slot = null; revisar();
+      $('horas').innerHTML = '<div class="nota">Buscando horarios…</div>';
+      const n = ++consulta;
+      google.script.run.withSuccessHandler(r => {
+        if (n !== consulta) return;
+        if (!r || !r.success) { $('horas').innerHTML = '<div class="nota">No se pudo consultar la agenda.</div>'; return; }
+        if (!r.libre || !r.slots.length) { $('horas').innerHTML = '<div class="nota">' + (r.motivo || 'Sin horarios libres este día.') + '</div>'; return; }
+        $('horas').innerHTML = '';
+        r.slots.forEach(s => {
+          const h = document.createElement('button'); h.className = 'hora'; h.textContent = s.horaAmPm;
+          h.onclick = () => { document.querySelectorAll('.hora').forEach(x => x.classList.remove('activo')); h.classList.add('activo'); slot = s; revisar(); };
+          $('horas').appendChild(h);
+        });
+      }).withFailureHandler(() => { if (n === consulta) $('horas').innerHTML = '<div class="nota">No se pudo consultar la agenda.</div>'; })
+        .disponibilidadCaptacion(iso(d) + 'T08:00:00');
+    }
+
+    function revisar() { $('agendar').disabled = !(slot && $('nombre').value.trim() && $('celular').value.trim() && $('correo').value.trim()); }
+    ['nombre', 'celular', 'correo'].forEach(id => $(id).addEventListener('input', revisar));
+
+    function agendar() {
+      const txt = DIAS_L[diaSel.getDay()] + ' ' + diaSel.getDate() + ' de ' + MESES[diaSel.getMonth()] + ' · ' + slot.horaAmPm;
+      $('agendar').disabled = true; $('agendar').textContent = 'Agendando…'; $('error').textContent = '';
+      google.script.run.withSuccessHandler(r => {
+        if (r && r.success) {
+          $('form').classList.add('oculto'); $('listo').classList.remove('oculto');
+          $('resumen').textContent = txt.charAt(0).toUpperCase() + txt.slice(1) + '. Le llegó el correo a ' + $('correo').value.trim() + ' y quedó en tu calendario.';
+        } else { $('error').textContent = (r && (r.error || r.message)) || 'No se pudo agendar.'; $('agendar').textContent = 'Agendar cita'; revisar(); }
+      }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; revisar(); })
+        .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
+          correo: $('correo').value.trim(), servicio: $('servicio').value, direccion: $('direccion').value.trim(), notas: $('notas').value.trim(),
+          timestamp: slot.timestamp, textoCita: txt });
+    }
+  </script>
+</body>
+</html>
