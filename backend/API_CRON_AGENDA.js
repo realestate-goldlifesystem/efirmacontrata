@@ -209,6 +209,15 @@ function aplicarCambioEstadoCita(sheet, col, numFila, fila, nuevoEstado, motivo)
   const ahoraTxt = Utilities.formatDate(new Date(), tz, "dd/MM/yyyy HH:mm:ss");
   if (col['ESTADO']) sheet.getRange(numFila, col['ESTADO']).setValue(nuevoEstado);
   if (col['ULTIMO CAMBIO']) sheet.getRange(numFila, col['ULTIMO CAMBIO']).setValue(ahoraTxt + ' · ' + motivo);
+  // Presentación cancelada (por el propietario o por no confirmar): en el CRM, la fila
+  // que seguía en PRE-R CAPTACION pasa a CITA CANCELADA (CITA_EN_CURSO.js)
+  if (nuevoEstado === ESTADOS_CITA.CANCELADA && String(valorCita(fila, col, 'TIPO AGENDA') || 'PROPIETARIO').trim().toUpperCase() === 'PROPIETARIO') {
+    try {
+      marcarCaptacionEnCRM_(valorCita(fila, col, 'CELULAR'), 'CITA CANCELADA', String(valorCita(fila, col, 'ID CITA') || ''),
+        /automáticamente/.test(motivo) ? 'Cita cancelada: no la confirmó a tiempo' : 'Cita cancelada' + (/propietario/.test(motivo) ? ' por el propietario' : ''),
+        AGENDA_CAPTACION.ESTADO);
+    } catch (e) { Logger.log('No se pudo marcar la cita cancelada en el CRM: ' + e.message); }
+  }
 
   const idEvento = valorCita(fila, col, 'ID EVENTO CALENDAR');
   if (!idEvento) return;

@@ -83,7 +83,7 @@ function aplicarResultadoCaptacion_(cita, estado) {
  * Busca en las dos pestañas de captaciones la fila de ese propietario y le pone el estado.
  * Primero por la columna ID CITA (la cita que se agendó desde esa fila); si no, por el celular.
  */
-function marcarCaptacionEnCRM_(celular, estado, idCita, notaDetalle) {
+function marcarCaptacionEnCRM_(celular, estado, idCita, notaDetalle, soloSiEstado) {
   const cel10 = String(celular || '').replace(/\D/g, '').slice(-10);
   if (cel10.length < 10 && !idCita) return false;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -105,6 +105,9 @@ function marcarCaptacionEnCRM_(celular, estado, idCita, notaDetalle) {
     if (i === -1 && cel10.length === 10) for (let k = n - 1; k >= 0; k--) { if (String(cels[k][0]).replace(/\D/g, '').slice(-10) === cel10) { i = k; break; } }
     if (i !== -1) {
       const fila = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + i;
+      // Solo si la fila sigue en ese estado (p. ej. no pisar un CAPTADO con "cita cancelada")
+      if (soloSiEstado && normalizarEstadoCaptacion_(hoja.getRange(fila, cEst).getValue()) !== soloSiEstado) return false;
+      asegurarOpcionEstadoCaptacion_(hoja, cEst, estado);
       hoja.getRange(fila, cEst).setValue(estado);
       if (cDet) {
         const celda = hoja.getRange(fila, cDet), previo = String(celda.getValue() || '').trim();
@@ -117,6 +120,17 @@ function marcarCaptacionEnCRM_(celular, estado, idCita, notaDetalle) {
     }
   }
   return false;
+}
+
+/** Agrega la opción a la lista desplegable de ESTADO DE LLAMADA si todavía no está. */
+function asegurarOpcionEstadoCaptacion_(hoja, cEst, opcion) {
+  const filaRef = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS;
+  const regla = hoja.getRange(filaRef, cEst).getDataValidation();
+  if (!regla || regla.getCriteriaType() !== SpreadsheetApp.DataValidationCriteria.VALUE_IN_LIST) return;
+  const valores = regla.getCriteriaValues()[0] || [];
+  if (valores.indexOf(opcion) !== -1) return;
+  const nueva = regla.copy().requireValueInList(valores.concat([opcion]), regla.getCriteriaValues()[1] !== false).build();
+  hoja.getRange(filaRef, cEst, Math.max(hoja.getMaxRows() - filaRef + 1, 1), 1).setDataValidation(nueva);
 }
 
 /**
