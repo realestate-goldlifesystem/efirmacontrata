@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Loader2, AlertTriangle,
-  Clock,
+  Clock, MapPin, Handshake, UserSearch, KeyRound, ClipboardCheck,
 } from 'lucide-react';
 import DetalleCita from './DetalleCita';
 
@@ -440,24 +440,58 @@ export default function CitasAgendaPanel({ agentCredential }: Props) {
   );
 }
 
-/** Tarjeta de una cita en la lista de la derecha. */
+/** Negocio de la cita (Arriendo / Venta / …) leído del servicio. */
+function negocioDe(servicio: string): string {
+  const t = (servicio || '').toLowerCase();
+  if (/vendi-?renta/.test(t)) return 'Vendi-Renta';
+  if (/admi-?venta/.test(t)) return 'Admi-Venta';
+  if (/administraci/.test(t)) return 'Administración';
+  if (/venta/.test(t)) return 'Venta';
+  if (/arriendo|renta/.test(t)) return 'Arriendo';
+  return '';
+}
+
+/** Etiqueta del tipo de cita, para saber de un vistazo qué es (5-nov-2026). */
+export function etiquetaTipoCita(c: Cita): { texto: string; Icono: typeof Clock } {
+  const n = negocioDe(c.servicio);
+  switch (tipoDe(c)) {
+    case 'INTERESADO': return { texto: 'Interesado' + (n ? ' · ' + n : ''), Icono: UserSearch };
+    case 'ENTREGA': return { texto: 'Entrega del inmueble', Icono: KeyRound };
+    case 'DEVOLUCION': return { texto: 'Recibo del inmueble', Icono: ClipboardCheck };
+    default: return { texto: 'Captación' + (n ? ' · ' + n : ''), Icono: Handshake };
+  }
+}
+
+/** Tarjeta de una cita en la lista de la derecha: tipo y estado arriba, hora y nombre, dirección abajo. */
 function TarjetaCita({ c, onAbrir }: { c: Cita; onAbrir: () => void; key?: string }) {
   const g = GRUPOS[grupoCita(c)];
+  const t = TIPOS[tipoDe(c)];
+  const { texto, Icono } = etiquetaTipoCita(c);
+  const motivo = motivoCancelacion(c);
   return (
     <button
       onClick={onAbrir}
-      className={`w-full text-left p-3 rounded-2xl border border-stone-800 border-l-4 ${TIPOS[tipoDe(c)].borde} bg-stone-950/50 hover:border-brand-gold/60 transition-all`}
-      title={TIPOS[tipoDe(c)].etiqueta}
+      className={`w-full text-left p-3.5 rounded-2xl border border-stone-800 border-l-4 ${t.borde} bg-stone-950/50 hover:border-brand-gold/60 transition-all`}
+      title={t.etiqueta}
     >
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <span className="text-brand-gold font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> {c.hora}</span>
-        <span className="flex flex-col items-end gap-0.5">
+      <div className="flex items-start justify-between gap-2 mb-2.5">
+        <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${t.solido}`}>
+          <Icono className="w-3.5 h-3.5" /> {texto}
+        </span>
+        <span className="flex flex-col items-end gap-0.5 shrink-0">
           <span className={`text-[11px] px-2 py-0.5 rounded-full border ${g.chip}`}>{g.etiqueta}</span>
-          {motivoCancelacion(c) && <span className="text-[10px] text-stone-500">{motivoCancelacion(c)!.corto}</span>}
+          {motivo && <span className="text-[10px] text-stone-500">{motivo.corto}</span>}
         </span>
       </div>
-      <p className="text-white font-medium">{c.nombre}</p>
-      <p className="text-stone-400 text-sm truncate">{c.servicio}{c.direccion ? ` · ${c.direccion}` : ''}</p>
+      <div className="flex items-baseline gap-2.5">
+        <span className="text-brand-gold font-semibold flex items-center gap-1.5 shrink-0"><Clock className="w-4 h-4 self-center" /> {c.hora}</span>
+        <span className="text-white font-medium truncate">{c.nombre}</span>
+      </div>
+      {c.direccion && (
+        <p className="mt-1.5 text-stone-400 text-sm flex items-start gap-1.5 leading-snug">
+          <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-stone-500" /> <span className="line-clamp-2">{c.direccion}</span>
+        </p>
+      )}
     </button>
   );
 }
