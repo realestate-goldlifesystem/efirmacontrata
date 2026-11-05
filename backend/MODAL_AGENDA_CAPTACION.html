@@ -60,6 +60,15 @@
     .listo h2 { margin: 0 0 6px; font-size: 19px; }
     .listo p { color: var(--suave); font-size: 14px; margin: 0 0 20px; }
     .oculto { display: none; }
+    .cuenta { position: relative; width: 64px; height: 64px; margin: 0 auto 10px; }
+    .cuenta svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+    .cuenta circle { fill: none; stroke-width: 4; }
+    .cuenta .fondo { stroke: var(--linea); }
+    .cuenta .anillo { stroke: var(--oro); stroke-linecap: round; stroke-dasharray: 176; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
+    .cuenta b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; font-weight: 700; color: var(--tinta); }
+    .cuenta b.late { animation: latir .5s ease; }
+    @keyframes latir { 0% { transform: scale(1.25); opacity: .6; } 100% { transform: scale(1); opacity: 1; } }
+    .cierra { font-size: 12px; color: var(--suave); margin-bottom: 14px; }
     .pac-container { z-index: 99999; border-radius: 10px; font-family: inherit; }
   </style>
 </head>
@@ -125,7 +134,9 @@
     <div class="ok">✓</div>
     <h2>Cita agendada</h2>
     <p id="resumenFinal"></p>
-    <button class="btn pri" onclick="google.script.host.close()">Listo</button>
+    <div class="cuenta"><svg viewBox="0 0 64 64"><circle class="fondo" cx="32" cy="32" r="28"/><circle class="anillo" id="anillo" cx="32" cy="32" r="28"/></svg><b id="num">5</b></div>
+    <div class="cierra">Esta ventana se cierra sola</div>
+    <button class="btn pri" onclick="google.script.host.close()">Cerrar ahora</button>
   </div>
 
   <script>
@@ -195,6 +206,14 @@
         .disponibilidadCaptacion(iso(d) + 'T08:00:00');
     }
 
+    // Tras agendar: burbuja que cuenta de 5 a 0 y cierra la ventana
+    function cuentaRegresiva() {
+      let n = 5; const total = 176;
+      const pintar = () => { $('num').textContent = n; $('num').classList.remove('late'); void $('num').offsetWidth; $('num').classList.add('late'); $('anillo').style.strokeDashoffset = total * (1 - n / 5); };
+      pintar();
+      const t = setInterval(() => { n--; pintar(); if (n <= 0) { clearInterval(t); setTimeout(() => google.script.host.close(), 600); } }, 1000);
+    }
+
     // ---------- Agendar ----------
     function agendar() {
       const txt = $('rCuando').textContent;
@@ -203,6 +222,7 @@
         if (r && r.success) {
           $('form').classList.add('oculto'); $('listo').classList.remove('oculto');
           $('resumenFinal').textContent = txt + '. Le llegó el correo a ' + $('correo').value.trim() + ' y quedó en tu calendario.';
+          cuentaRegresiva();
         } else { $('error').textContent = (r && (r.error || r.message)) || 'No se pudo agendar.'; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; }
       }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; })
         .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
