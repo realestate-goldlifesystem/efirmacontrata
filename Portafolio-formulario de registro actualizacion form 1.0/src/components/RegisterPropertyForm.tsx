@@ -879,6 +879,9 @@ const getInitialFormData = (selectedServiceType: string | null | undefined, init
       const payload = {
         accion: 'registrarInmueble',
         idEnvio: idEnvio,
+        // Cita de presentación de la que viene (botón "Registrar inmueble" del correo): el CRM pasa a CAPTADO
+        // Se lee y se borra: un segundo registro en la misma pestaña ya no es de esa cita (si falla, queda el celular)
+        idCitaCaptacion: (() => { try { const v = sessionStorage.getItem('citaCaptacion') || ''; sessionStorage.removeItem('citaCaptacion'); return v; } catch { return ''; } })(),
         reutilizarMultimedia: reutilizarMultimedia,
         // 'normal' | 'renovacion' | 'cambio_negocio'
         flujoSolicitado: activeFlow,

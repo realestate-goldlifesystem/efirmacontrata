@@ -49,7 +49,7 @@ export default function App() {
     }
     if (q.get('panel') === 'registrar') {
       limpiar();
-      try { sessionStorage.setItem('despuesDeEntrar', 'registrar'); } catch {}
+      try { sessionStorage.setItem('despuesDeEntrar', 'registrar'); if (q.get('cita')) sessionStorage.setItem('citaCaptacion', q.get('cita') || ''); } catch {}
       if (localStorage.getItem('agentLoggedIn') === 'true' && sessionStorage.getItem('agentCredential')) {
         try { sessionStorage.removeItem('despuesDeEntrar'); } catch {}
         setShowRegisterPage(true);

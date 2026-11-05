@@ -10,7 +10,9 @@
 
 const AGENDA_CAPTACION = {
   ESTADO: 'PRE-R CAPTACION',
-  COL_CORREO: 'CORREO DEL PROPIETARIO'
+  COL_CORREO: 'CORREO DEL PROPIETARIO',
+  // La cita de presentación que se agendó desde esa fila: enlaza el CRM con la agenda y el registro
+  COL_ID_CITA: 'ID CITA'
 };
 
 /** Lo llama procesarEdicionCaptacion_ (GESTOR DE ESTADOS.js) al cambiar ESTADO DE LLAMADA. */
@@ -40,6 +42,14 @@ function columnaCorreoCaptacion_(hoja) {
     c = hoja.getLastColumn() + 1;
     hoja.getRange(1, c).setValue(AGENDA_CAPTACION.COL_CORREO).setFontWeight('bold');
   }
+  return c;
+}
+
+/** Columna (al final si no existe) de la pestaña de captaciones. */
+function columnaCaptacion_(hoja, nombre) {
+  const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+  let c = enc.indexOf(nombre) + 1;
+  if (!c) { c = hoja.getLastColumn() + 1; hoja.getRange(1, c).setValue(nombre).setFontWeight('bold'); }
   return c;
 }
 
@@ -87,6 +97,7 @@ function agendarDesdeCaptacion(d) {
     fechaTimestamp: Number(d.timestamp)
   });
   if (r.success) {
+    try { hoja.getRange(d.fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_ID_CITA)).setValue(r.idCita); } catch (e) {}
     try {
       const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
       const cDet = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_DETALLES) + 1;

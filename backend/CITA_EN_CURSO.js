@@ -45,7 +45,7 @@ function correoInicioPresentacion_(f, col, idCita, tokenAgente, nombre, servicio
     herramientas.push(botonHerramientaCita_('ruta', 'Agendar presencial', nuevaCita));
   } else {
     if (direccion) herramientas.push(botonHerramientaCita_('ruta', 'Cómo llegar', 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(direccion + ', Colombia')));
-    herramientas.push(botonHerramientaCita_('publicacion', 'Registrar inmueble', URL_PORTAFOLIO_CITAS + '?panel=registrar'));
+    herramientas.push(botonHerramientaCita_('publicacion', 'Registrar inmueble', URL_PORTAFOLIO_CITAS + '?panel=registrar&cita=' + encodeURIComponent(idCita)));
   }
 
   const resultado = virtual
@@ -79,10 +79,13 @@ function aplicarResultadoCaptacion_(cita, estado) {
   catch (e) { Logger.log('No se pudo actualizar el CRM: ' + e.message); }
 }
 
-/** Busca en las dos pestañas de captaciones la fila con ese celular y le pone el estado. */
-function marcarCaptacionEnCRM_(celular, estado, idCita) {
+/**
+ * Busca en las dos pestañas de captaciones la fila de ese propietario y le pone el estado.
+ * Primero por la columna ID CITA (la cita que se agendó desde esa fila); si no, por el celular.
+ */
+function marcarCaptacionEnCRM_(celular, estado, idCita, notaDetalle) {
   const cel10 = String(celular || '').replace(/\D/g, '').slice(-10);
-  if (cel10.length < 10) return false;
+  if (cel10.length < 10 && !idCita) return false;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   for (const nombreHoja of SEGUIMIENTO_CAPTACIONES.HOJAS) {
     const hoja = ss.getSheetByName(nombreHoja);
@@ -95,14 +98,17 @@ function marcarCaptacionEnCRM_(celular, estado, idCita) {
     const n = hoja.getLastRow() - SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + 1;
     if (n <= 0) continue;
     const cels = hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, cCel, n, 1).getValues();
-    // La más reciente con ese celular (abajo es lo último que entró)
-    for (let i = n - 1; i >= 0; i--) {
-      if (String(cels[i][0]).replace(/\D/g, '').slice(-10) !== cel10) continue;
+    const cId = enc.indexOf(AGENDA_CAPTACION.COL_ID_CITA) + 1;
+    const ids = cId ? hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, cId, n, 1).getValues() : [];
+    let i = idCita && cId ? ids.findIndex(x => String(x[0]).trim() === idCita) : -1;
+    // Si no, la más reciente con ese celular (abajo es lo último que entró)
+    if (i === -1 && cel10.length === 10) for (let k = n - 1; k >= 0; k--) { if (String(cels[k][0]).replace(/\D/g, '').slice(-10) === cel10) { i = k; break; } }
+    if (i !== -1) {
       const fila = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + i;
       hoja.getRange(fila, cEst).setValue(estado);
       if (cDet) {
         const celda = hoja.getRange(fila, cDet), previo = String(celda.getValue() || '').trim();
-        celda.setValue((previo ? previo + '\n' : '') + (estado === 'CAPTADO' ? 'Captado' : 'Solo presentación: falta volver a captar') + ' (' + idCita + ')');
+        celda.setValue((previo ? previo + '\n' : '') + (notaDetalle || (estado === 'CAPTADO' ? 'Captado' : 'Solo presentación: falta volver a captar')) + (idCita ? ' (' + idCita + ')' : ''));
       }
       const sello = selloSeguimiento_();
       if (cF) hoja.getRange(fila, cF).setValue(sello.fecha);
@@ -111,6 +117,27 @@ function marcarCaptacionEnCRM_(celular, estado, idCita) {
     }
   }
   return false;
+}
+
+/**
+ * Al terminar el registro de un inmueble (handleRegistrarInmueble), el propietario
+ * queda CAPTADO en el CRM. Llega idCitaCaptacion si se entró por "Registrar inmueble"
+ * del correo de la cita; si no, se busca por el celular del propietario.
+ * Solo registros nuevos: una renovación o un cambio de negocio no es una captación.
+ */
+function marcarCaptadoPorRegistro_(datos) {
+  try {
+    if (datos.flujoSolicitado && datos.flujoSolicitado !== 'normal') return;
+    let idCita = String(datos.idCitaCaptacion || '').trim();
+    let celular = String(datos['Celular'] || '');
+    if (idCita && !celular) {
+      const { sheet, col } = hojaCitasConColumnas();
+      const f = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), sheet.getLastColumn()).getValues()
+        .find(x => String(valorCita(x, col, 'ID CITA')).trim() === idCita);
+      if (f) celular = String(valorCita(f, col, 'CELULAR') || '');
+    }
+    marcarCaptacionEnCRM_(celular, 'CAPTADO', idCita, 'Captado: inmueble registrado');
+  } catch (e) { Logger.log('No se pudo marcar CAPTADO por el registro: ' + e.message); }
 }
 
 /**
