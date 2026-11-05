@@ -66,7 +66,7 @@ export default function Hero({ onScrollTo, onOpenRegisterForm, onAgendar }: Hero
               className="min-h-[56px] px-4 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer hover:-translate-y-0.5 active:scale-[0.98] bg-white/70 text-stone-800 border border-stone-300 hover:border-brand-gold hover:bg-white"
             >
               <Home className="w-5 h-5 shrink-0 text-brand-gold" />
-              <span className="leading-tight whitespace-nowrap">Ver portafolio de venta</span>
+              <span className="leading-tight whitespace-nowrap">Ver portafolio de inmuebles</span>
             </button>
           </div>
 
