@@ -268,14 +268,17 @@ function _citaDelPropietario(idCita, token) {
   const cita = _citaPorId(idCita);
   if (!cita) return { error: 'No encontramos esta cita.' };
   const t = String(token || '');
-  if (!t || t !== String(valorCita(cita.fila, cita.col, 'TOKEN PROPIETARIO') || '')) return { error: 'Este enlace no es válido para esta acción.' };
+  // El agente también puede reagendar con su enlace (correo de cita liberada, 6-nov-2026):
+  // como ya habló con la persona, la cita queda confirmada
+  const esAgente = !!t && t === String(valorCita(cita.fila, cita.col, 'TOKEN AGENTE') || '');
+  if (!t || (!esAgente && t !== String(valorCita(cita.fila, cita.col, 'TOKEN PROPIETARIO') || ''))) return { error: 'Este enlace no es válido para esta acción.' };
   const estado = String(valorCita(cita.fila, cita.col, 'ESTADO') || '').trim();
   // Una cita cancelada (p. ej. liberada por no confirmar) se puede revivir
   // reagendando: el correo de "cita liberada" trae ese botón.
   if (['ASISTIDA', 'INASISTIDA'].indexOf(estado) !== -1) {
     return { error: 'Esta cita ya está cerrada (' + estado.toLowerCase() + '). Si quieres una visita nueva, agéndala desde nuestra página.' };
   }
-  return { cita: cita };
+  return { cita: cita, esAgente: esAgente };
 }
 
 /** Datos para la pantalla de reagendar (no cambia nada). */
@@ -295,7 +298,7 @@ function infoReagendarPropietario(datos) {
     // Entrega: la fecha la aprueban inquilino y propietario; se reabre la sala, no se mueve sola
     esEntrega: String(valorCita(fila, col, 'TIPO AGENDA') || '') === 'ENTREGA',
     urlCoordinada: String(valorCita(fila, col, 'MODO VISITA') || '') === 'COORDINADO'
-      ? urlVisitaInmueble(valorCita(fila, col, 'ID INMUEBLE')) + '&c=' + encodeURIComponent(datos.idCita) + '&t=' + encodeURIComponent(datos.t)
+      ? urlVisitaInmueble(valorCita(fila, col, 'ID INMUEBLE')) + '&c=' + encodeURIComponent(datos.idCita) + '&t=' + encodeURIComponent(String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''))
       : ''
   };
 }
@@ -317,8 +320,14 @@ function reagendarPorPropietario(datos) {
     const r = _citaDelPropietario(datos.idCita, datos.t);
     if (r.error) return { ok: false, mensaje: r.error };
     const nombre = String(valorCita(r.cita.fila, r.cita.col, 'NOMBRE') || '');
-    const m = moverCita(r.cita, Number(datos.timestamp), { anticipacionMin: TIPOS_AGENDA[tipoDeCita(r.cita)].anticipacionMin, quien: 'propietario' });
+    const m = moverCita(r.cita, Number(datos.timestamp), { anticipacionMin: TIPOS_AGENDA[tipoDeCita(r.cita)].anticipacionMin, quien: r.esAgente ? 'agente' : 'propietario' });
     if (!m.ok) return { ok: false, mensaje: m.mensaje };
+    // Presentación que estaba cancelada: en el CRM vuelve de CITA CANCELADA a PRE-R CAPTACION
+    if (tipoDeCita(r.cita) === 'PROPIETARIO') {
+      try { marcarCaptacionEnCRM_(valorCita(r.cita.fila, r.cita.col, 'CELULAR'), AGENDA_CAPTACION.ESTADO, String(datos.idCita || ''), 'Cita reagendada: ' + m.textoNueva, 'CITA CANCELADA'); }
+      catch (e) { Logger.log('No se pudo actualizar el CRM al reagendar: ' + e.message); }
+    }
+    if (r.esAgente) return { ok: true, mensaje: 'La cita de ' + nombre + ' quedó confirmada para el ' + m.textoNueva + '. Ya le llegó el correo con la nueva fecha.' };
     try {
       enviarCorreoCita(
         correoAgenteCitas(),

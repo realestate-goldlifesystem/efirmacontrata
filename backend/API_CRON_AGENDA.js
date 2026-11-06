@@ -127,8 +127,9 @@ function ejecutarMotorAgenda() {
             enviarCorreoCita(correoAgenteCitas(), `❌ Se liberó la cita de ${nombre} de las ${horaStr}: no confirmó`, 'CITA LIBERADA', 'Agente',
               etiquetaTipoCitaHtml(tipoLib) +
               `<strong>${nombre}</strong> no confirmó su cita de hoy a las <strong>${horaStr}</strong>${direccion ? ' (' + direccion + ')' : ''}, así que se canceló y se borró de tu calendario.<br><br>` +
-              'Le llegó un correo para elegir un nuevo horario. Si quieres, escríbele o llámale.',
-              botonesContacto_([{ quien: { INTERESADO: 'interesado', ENTREGA: 'inquilino', DEVOLUCION: 'inquilino' }[tipoLib] || 'propietario', cel: valorCita(f, col, 'CELULAR') }]));
+              'Le llegó un correo para elegir un nuevo horario. Si hablas con la persona y quiere otra hora, usa <strong>Reagendar</strong>: se mueve esta misma cita y queda confirmada. Si prefirió cancelar, no tienes que hacer nada.',
+              botonesContacto_([{ quien: { INTERESADO: 'interesado', ENTREGA: 'inquilino', DEVOLUCION: 'inquilino' }[tipoLib] || 'propietario', cel: valorCita(f, col, 'CELULAR') }]) +
+              htmlBotonesCorreo([{ texto: '🔄 Reagendar esta cita', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenAgente) }]));
           } catch (e) { Logger.log('Error avisando al agente la liberación de ' + idCita + ': ' + e.message); }
           return;
         }
