@@ -121,6 +121,15 @@ function ejecutarMotorAgenda() {
               htmlBotonesCorreo([{ texto: '🔄 Elegir nuevo horario', color: '#b8860b', url: urlEstadoCita(idCita, ESTADOS_CITA.QUIERE_REAGENDAR, tokenProp) }])
             );
           } catch (e) { Logger.log('Error avisando la liberación de ' + idCita + ': ' + e.message); }
+          // A Leonardo también: antes la cita desaparecía de su calendario sin que se enterara (6-nov-2026)
+          try {
+            const tipoLib = String(valorCita(f, col, 'TIPO AGENDA') || 'PROPIETARIO').trim().toUpperCase() || 'PROPIETARIO';
+            enviarCorreoCita(correoAgenteCitas(), `❌ Se liberó la cita de ${nombre} de las ${horaStr}: no confirmó`, 'CITA LIBERADA', 'Agente',
+              etiquetaTipoCitaHtml(tipoLib) +
+              `<strong>${nombre}</strong> no confirmó su cita de hoy a las <strong>${horaStr}</strong>${direccion ? ' (' + direccion + ')' : ''}, así que se canceló y se borró de tu calendario.<br><br>` +
+              'Le llegó un correo para elegir un nuevo horario. Si quieres, escríbele o llámale.',
+              botonesContacto_([{ quien: { INTERESADO: 'interesado', ENTREGA: 'inquilino', DEVOLUCION: 'inquilino' }[tipoLib] || 'propietario', cel: valorCita(f, col, 'CELULAR') }]));
+          } catch (e) { Logger.log('Error avisando al agente la liberación de ' + idCita + ': ' + e.message); }
           return;
         }
 
