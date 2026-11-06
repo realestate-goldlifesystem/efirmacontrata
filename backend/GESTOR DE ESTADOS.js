@@ -599,7 +599,7 @@ function marcarSeguimientoCaptacion_(e, hoja, cols) {
     const nuevo = normalizarEstadoCaptacion_(e.value);
     if (normalizarEstadoCaptacion_(e.oldValue) !== cfg.ESTADO_INICIAL) return;
     if (!nuevo || nuevo === cfg.ESTADO_INICIAL) return;
-    hoja.getRange(filaInicial, cols.fecha).setValue(sello.fecha);
+    hoja.getRange(filaInicial, cols.fecha).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);
     hoja.getRange(filaInicial, cols.hora).setValue(sello.hora);
     return;
   }
@@ -615,7 +615,7 @@ function marcarSeguimientoCaptacion_(e, hoja, cols) {
     const estado = normalizarEstadoCaptacion_(estados[i][0]);
     if (!estado || estado === cfg.ESTADO_INICIAL) continue;
     if (fechas[i][0] !== '' || horas[i][0] !== '') continue;
-    hoja.getRange(filaInicial + i, cols.fecha).setValue(sello.fecha);
+    hoja.getRange(filaInicial + i, cols.fecha).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);
     hoja.getRange(filaInicial + i, cols.hora).setValue(sello.hora);
   }
 }
@@ -628,7 +628,7 @@ function marcarSeguimientoPorDetalles_(e, hoja, cols) {
   const n = rango.getLastRow() - filaInicial + 1;
   if (n <= 0) return;
   const sello = selloSeguimiento_();
-  hoja.getRange(filaInicial, cols.fecha, n, 1).setValue(sello.fecha);
+  hoja.getRange(filaInicial, cols.fecha, n, 1).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);
   hoja.getRange(filaInicial, cols.hora, n, 1).setValue(sello.hora);
 }
 
@@ -656,5 +656,5 @@ function propagarFechaContactoCaptacion_(e, hoja, cols) {
       celdas.push(hoja.getRange(fila + 1 + i, cols.contacto).getA1Notation());
     }
   }
-  if (celdas.length) hoja.getRangeList(celdas).setValue(fecha);
+  if (celdas.length) hoja.getRangeList(celdas).setValue(fecha).setNumberFormat(FORMATO_FECHA_CRM);
 }

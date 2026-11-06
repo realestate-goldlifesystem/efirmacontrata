@@ -114,7 +114,7 @@ function marcarCaptacionEnCRM_(celular, estado, idCita, notaDetalle, soloSiEstad
         celda.setValue((previo ? previo + '\n' : '') + (notaDetalle || (estado === 'CAPTADO' ? 'Captado' : 'Solo presentación: falta volver a captar')) + (idCita ? ' (' + idCita + ')' : ''));
       }
       const sello = selloSeguimiento_();
-      if (cF) hoja.getRange(fila, cF).setValue(sello.fecha);
+      if (cF) hoja.getRange(fila, cF).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);
       if (cH) hoja.getRange(fila, cH).setValue(sello.hora);
       return true;
     }

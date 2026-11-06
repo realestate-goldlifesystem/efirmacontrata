@@ -24,6 +24,20 @@ const LLAMADAS = {
   URL_PAGINA: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/llamada.html'
 };
 
+// ---------- Formato de fechas del CRM (6-nov-2026) ----------
+// Uno solo, el de siempre: "7 de octubre de 2026". Se aplica a la columna entera
+// en cada pasada del motor, así queda igual sin importar quién escribió la fecha.
+const FORMATO_FECHA_CRM = 'd "de" mmmm "de" yyyy';
+const FORMATO_FECHA_HORA_CRM = 'd "de" mmmm "de" yyyy h:mm am/pm';
+function formatoFechasCRM_(hoja, enc, filas) {
+  const ini = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS;
+  [[SEGUIMIENTO_CAPTACIONES.COL_FECHA, FORMATO_FECHA_CRM], [SEGUIMIENTO_CAPTACIONES.COL_CONTACTO, FORMATO_FECHA_CRM],
+   [LLAMADAS.COL_PROXIMA, FORMATO_FECHA_HORA_CRM]].forEach(function (p) {
+    const c = enc.indexOf(p[0]) + 1;
+    if (c) hoja.getRange(ini, c, filas, 1).setNumberFormat(p[1]);
+  });
+}
+
 // ---------- ID de lead ----------
 function nuevoIdLead_() { return 'LD-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0'); }
 
@@ -37,6 +51,7 @@ function asignarIdsLead_() {
     if (filas <= 0) return;
     const cId = columnaCaptacion_(hoja, LLAMADAS.COL_ID_LEAD);
     const enc = encabezadosCRM_(hoja);
+    formatoFechasCRM_(hoja, enc, filas);
     const cCel = enc.indexOf('CELULAR') + 1;
     if (!cCel) return;
     const rangoId = hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, cId, filas, 1);
@@ -168,7 +183,7 @@ function programarLlamada(d) {
     idEvento = ev.getId();
   } catch (e) { Logger.log('No se pudo crear el evento de la llamada: ' + e.message); }
 
-  hoja.getRange(fila, col[LLAMADAS.COL_PROXIMA]).setValue(inicio).setNumberFormat('d-mmm-yyyy h:mm am/pm');
+  hoja.getRange(fila, col[LLAMADAS.COL_PROXIMA]).setValue(inicio).setNumberFormat(FORMATO_FECHA_HORA_CRM);
   const poner = (k, v) => hoja.getRange(fila, col[k]).setValue(v);
   poner('LLAMADA ID', id); poner('LLAMADA ESTADO', 'PROGRAMADA');
   // Los avisos que ya "pasaron" no se mandan de golpe: se sigue desde el siguiente
@@ -188,7 +203,7 @@ function anotarEnCRM_(hoja, fila, texto, estadoNuevo) {
     celda.setValue((previo ? previo + '\n' : '') + texto);
   }
   const sello = selloSeguimiento_();
-  if (c(SEGUIMIENTO_CAPTACIONES.COL_FECHA)) hoja.getRange(fila, c(SEGUIMIENTO_CAPTACIONES.COL_FECHA)).setValue(sello.fecha);
+  if (c(SEGUIMIENTO_CAPTACIONES.COL_FECHA)) hoja.getRange(fila, c(SEGUIMIENTO_CAPTACIONES.COL_FECHA)).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);
   if (c(SEGUIMIENTO_CAPTACIONES.COL_HORA)) hoja.getRange(fila, c(SEGUIMIENTO_CAPTACIONES.COL_HORA)).setValue(sello.hora);
 }
 

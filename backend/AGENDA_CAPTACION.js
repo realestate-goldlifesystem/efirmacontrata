@@ -107,7 +107,7 @@ function agendarDesdeCaptacion(d) {
         celda.setValue((previo ? previo + '\n' : '') + 'Cita agendada: ' + d.textoCita + ' (' + r.idCita + ')');
         const sello = selloSeguimiento_();
         const cF = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_FECHA) + 1, cH = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_HORA) + 1;
-        if (cF) hoja.getRange(d.fila, cF).setValue(sello.fecha);
+        if (cF) hoja.getRange(d.fila, cF).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);
         if (cH) hoja.getRange(d.fila, cH).setValue(sello.hora);
       }
     } catch (e) { Logger.log('No se pudo anotar la cita en la captación: ' + e.message); }
