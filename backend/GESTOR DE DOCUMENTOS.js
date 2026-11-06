@@ -31,6 +31,8 @@ function onOpen(e) {
     .addItem('🚀 Iniciar Barrido de Venta Ahora', 'ejecutarAgenteCaptadorVenta')
     .addSeparator()
     .addItem('📊 Resumen de Captaciones', 'mostrarResumenCaptaciones')
+    .addItem('📅 Agendar presentación (fila seleccionada)', 'agendarCaptacionFilaActual')
+    .addItem('📞 Programar llamada de seguimiento (fila seleccionada)', 'programarSeguimientoFilaActual')
     .addSeparator()
     .addItem('🧪 Miguel Agente Captador M', 'ejecutarAgenteCaptadorMetrocuadrado')
     .addToUi();
@@ -639,6 +641,10 @@ function doPost(e) {
           ? obtenerCitasPanel(datos)
           : { success: false, message: 'API_AGENDA no cargada' };
         break;
+      case 'datosNuevaCita': result = datosNuevaCita(datos); break;
+      case 'infoLlamada': result = infoLlamada(datos); break;
+      case 'accionLlamada': result = accionLlamada(datos); break;
+      case 'datosDesdeLlamada': result = datosDesdeLlamada(datos); break;
       case 'infoInmuebleVisita':
         // Página pública de agendar visita (frontend/visita.html): solo lo publicable
         result = infoInmuebleVisita(datos);
@@ -785,6 +791,9 @@ function doPost(e) {
       case 'subirFotoRecibo': result = subirFotoRecibo(datos); break;
       case 'guardarInventarioRecibo': result = guardarInventarioRecibo(datos); break;
       case 'cerrarRecibo': result = cerrarRecibo(datos); break;
+      case 'infoPromocion': result = infoPromocion(datos); break;
+      case 'responderPromocion': result = responderPromocion(datos); break;
+      case 'TEMP_sala': result = TEMP_sala(datos); break;
       case 'infoAjusteAnual': result = infoAjusteAnual(datos); break;
       case 'guardarIpcAjuste': result = guardarIpcAjuste(datos); break;
       case 'enviarAjustePropietario': result = enviarAjustePropietario(datos); break;
@@ -1095,6 +1104,9 @@ function handleRegistrarInmueble(datos) {
     // Encender la red de seguridad. Solo vive mientras haya cola: cuando esta se
     // vacía, el propio watchdog deja de reprogramarse y desaparece.
     armarWatchdogCola();
+
+    // El propietario queda CAPTADO en el CRM de captaciones (CITA_EN_CURSO.js)
+    marcarCaptadoPorRegistro_(datos);
 
     return { 
       success: true, 

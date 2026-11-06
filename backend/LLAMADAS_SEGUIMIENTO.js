@@ -27,8 +27,8 @@ const LLAMADAS = {
 // ---------- Formato de fechas del CRM (6-nov-2026) ----------
 // Uno solo, el de siempre: "7 de octubre de 2026". Se aplica a la columna entera
 // en cada pasada del motor, así queda igual sin importar quién escribió la fecha.
-const FORMATO_FECHA_CRM = 'd "de" mmm "de" yyyy';
-const FORMATO_FECHA_HORA_CRM = 'd "de" mmm "de" yyyy h:mm am/pm';
+const FORMATO_FECHA_CRM = 'd-mmm-yyyy';
+const FORMATO_FECHA_HORA_CRM = 'd-mmm-yyyy h:mm am/pm';
 function formatoFechasCRM_(hoja, enc, filas) {
   const ini = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS;
   [[SEGUIMIENTO_CAPTACIONES.COL_FECHA, FORMATO_FECHA_CRM], [SEGUIMIENTO_CAPTACIONES.COL_CONTACTO, FORMATO_FECHA_CRM],
