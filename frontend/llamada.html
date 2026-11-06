@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Llamada de seguimiento · Gold Life Real Estate</title>
+  <!--
+    Botones de los correos de las llamadas de seguimiento del CRM (LLAMADAS_SEGUIMIENTO.js):
+    ?l=LL-…&t=TOKEN&a=CONFIRMAR | CONTESTO | NO_CONTESTO | REPROGRAMAR. Nov-2026.
+    Abrir el enlace no cambia nada: la acción se aplica con el segundo clic (los antivirus
+    de correo visitan los enlaces solos). El servidor valida el token.
+  -->
+  <style>
+    :root { --oro: #d4af37; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+      font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #0c0a09; color: #f5f5f4;
+      background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,55,.16), transparent 70%); }
+    .tarjeta { width: 100%; max-width: 440px; background: #1c1917; border: 1px solid rgba(212,175,55,.25); border-radius: 22px; padding: 28px 24px; box-shadow: 0 30px 60px rgba(0,0,0,.4); animation: entrar .4s ease; }
+    @keyframes entrar { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .marca { text-align: center; font-size: 12px; letter-spacing: 3px; font-weight: 700; color: var(--oro); }
+    .marca span { color: #d6d3d1; font-weight: 400; }
+    h1 { font-size: 21px; text-align: center; margin: 18px 0 6px; }
+    .sub { text-align: center; color: #a8a29e; font-size: 14px; margin: 0 0 18px; line-height: 1.5; }
+    .ficha { background: #0c0a09; border: 1px solid rgba(255,255,255,.06); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+    .ficha .et { color: var(--oro); font-size: 11px; letter-spacing: 2px; font-weight: 700; }
+    .ficha b { display: block; font-size: 17px; margin-top: 4px; }
+    .ficha span { display: block; color: #d6d3d1; font-size: 14px; margin-top: 2px; }
+    .ficha i { display: block; color: #a8a29e; font-size: 13px; margin-top: 6px; }
+    label { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #a8a29e; font-weight: 600; margin: 12px 0 6px; }
+    textarea, select { width: 100%; background: #0c0a09; color: #f5f5f4; border: 1px solid #44403c; border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14px; outline: none; }
+    textarea:focus, select:focus { border-color: var(--oro); }
+    textarea { resize: vertical; min-height: 64px; }
+    .rapidos { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .rapido { background: transparent; color: #e7e5e4; border: 1px solid #44403c; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 12.5px; cursor: pointer; transition: all .2s; }
+    .rapido:hover, .rapido.activo { border-color: var(--oro); color: var(--oro); }
+    .dias { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+    .dia { flex: 0 0 54px; background: transparent; color: #f5f5f4; border: 1px solid #44403c; border-radius: 12px; padding: 7px 0; text-align: center; cursor: pointer; font: inherit; transition: all .2s; }
+    .dia b { display: block; font-size: 16px; }
+    .dia span { font-size: 10px; color: #a8a29e; text-transform: uppercase; }
+    .dia.activo { background: var(--oro); border-color: var(--oro); color: #0c0a09; }
+    .dia.activo span { color: #3f3a2e; }
+    .btn { width: 100%; margin-top: 18px; border: 0; border-radius: 14px; padding: 15px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s; }
+    .btn:disabled { opacity: .35; cursor: default; }
+    .btn:not(:disabled):hover { transform: translateY(-1px); }
+    .verde { background: #1f7a4d; color: #fff; } .rojo { background: #a3322a; color: #fff; } .oro { background: var(--oro); color: #0c0a09; }
+    .msg { text-align: center; color: #d6d3d1; font-size: 15px; line-height: 1.5; }
+    .ok { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 6px auto 0; background: rgba(212,175,55,.15); color: var(--oro); font-size: 26px; }
+    .oculto { display: none; }
+  </style>
+</head>
+<body>
+  <div class="tarjeta">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <div id="cargando" class="msg" style="margin-top:24px">Cargando…</div>
+    <div id="contenido" class="oculto">
+      <h1 id="titulo"></h1>
+      <p class="sub" id="sub"></p>
+      <div class="ficha"><div class="et">LLAMADA DE SEGUIMIENTO</div><b id="nombre"></b><span id="cuando"></span><i id="nota"></i></div>
+      <div id="nuevaFecha" class="oculto">
+        <label>Nueva fecha</label>
+        <div class="rapidos">
+          <button type="button" class="rapido" data-d="0" data-h="3">En 3 horas</button>
+          <button type="button" class="rapido" data-d="1">Mañana</button>
+          <button type="button" class="rapido" data-d="3">En 3 días</button>
+          <button type="button" class="rapido" data-d="7">En una semana</button>
+        </div>
+        <div class="dias" id="dias"></div>
+        <label>Hora</label><select id="hora"></select>
+      </div>
+      <label id="lblNota">Nota (opcional)</label>
+      <textarea id="texto" placeholder="Qué te dijo o qué quedó pendiente"></textarea>
+      <button class="btn" id="accion"></button>
+    </div>
+    <div id="hecho" class="oculto"><div class="ok">✓</div><p class="msg" id="hechoTxt" style="margin-top:14px"></p></div>
+  </div>
+  <script>
+    const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+    const q = new URLSearchParams(location.search);
+    const L = q.get('l'), T = q.get('t'), A = q.get('a') || 'CONFIRMAR';
+    const $ = (id) => document.getElementById(id);
+    const llamar = (cuerpo) => fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(cuerpo) }).then(r => r.json());
+    const TEXTOS = {
+      CONFIRMAR: ['¿Vas a hacer esta llamada?', 'Confirma y te seguimos recordando hasta la hora.', 'Sí, la voy a hacer', 'verde', false],
+      CONTESTO: ['¿Contestó?', 'Anota lo que hablaron y queda en el CRM.', 'Sí, contestó', 'verde', false],
+      NO_CONTESTO: ['No contestó', 'Elige cuándo lo vuelves a llamar. Te recordamos igual que antes.', 'Programar nueva llamada', 'oro', true],
+      REPROGRAMAR: ['Reprogramar la llamada', 'Elige la nueva fecha y hora.', 'Reprogramar', 'oro', true]
+    };
+    const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'], MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    let dia = null, horaExtra = 0;
+    const fin = (t) => { $('contenido').classList.add('oculto'); $('cargando').classList.add('oculto'); $('hecho').classList.remove('oculto'); $('hechoTxt').textContent = t; };
+
+    if (!L || !T || !TEXTOS[A]) fin('Este enlace está incompleto.');
+    else llamar({ accion: 'infoLlamada', l: L, t: T }).then(r => {
+      if (!r.ok) return fin(r.mensaje || 'Enlace no válido.');
+      if (['CONTESTÓ', 'NO CONTESTÓ', 'REPROGRAMADA', 'CANCELADA'].indexOf(r.estado) !== -1) return fin('Esta llamada ya quedó cerrada (' + r.estado.toLowerCase() + ').');
+      const [ti, su, bo, co, fecha] = TEXTOS[A];
+      $('titulo').textContent = ti; $('sub').textContent = su; $('accion').textContent = bo; $('accion').className = 'btn ' + co;
+      $('nombre').textContent = r.nombre; $('cuando').textContent = r.cuando + (r.negocio ? ' · ' + r.negocio : ''); $('nota').textContent = r.nota ? '“' + r.nota + '”' : '';
+      if (A === 'CONFIRMAR') { $('lblNota').classList.add('oculto'); $('texto').classList.add('oculto'); }
+      if (fecha) { $('nuevaFecha').classList.remove('oculto'); armarFechas(); }
+      $('cargando').classList.add('oculto'); $('contenido').classList.remove('oculto');
+    }).catch(() => fin('No pudimos cargar la llamada. Intenta de nuevo.'));
+
+    function armarFechas() {
+      for (let h = 7; h <= 20; h++) for (let m = 0; m < 60; m += 15) {
+        if (h === 20 && m > 0) break;
+        const o = document.createElement('option'); o.value = h + ':' + m;
+        o.textContent = (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' a. m.' : ' p. m.');
+        if (h === 10 && m === 0) o.selected = true; $('hora').appendChild(o);
+      }
+      const hoy = new Date(), bs = [];
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i), b = document.createElement('button');
+        b.className = 'dia'; b.innerHTML = '<span>' + (i ? DIAS[d.getDay()] : 'hoy') + '</span><b>' + d.getDate() + '</b><span>' + MESES[d.getMonth()] + '</span>';
+        b.onclick = () => { horaExtra = 0; marcar(i); }; $('dias').appendChild(b); bs.push({ b, d });
+      }
+      window.marcar = (i) => { bs.forEach(x => x.b.classList.remove('activo')); bs[i].b.classList.add('activo'); dia = bs[i].d; revisar(); };
+      document.querySelectorAll('.rapido').forEach(b => b.onclick = () => {
+        document.querySelectorAll('.rapido').forEach(x => x.classList.remove('activo')); b.classList.add('activo');
+        horaExtra = Number(b.dataset.h || 0); marcar(Number(b.dataset.d));
+      });
+      $('hora').onchange = () => { horaExtra = 0; revisar(); };
+      revisar();
+    }
+    function momento() {
+      if (horaExtra) { const t = new Date(Date.now() + horaExtra * 3600000); t.setMinutes(Math.ceil(t.getMinutes() / 15) * 15, 0, 0); return t; }
+      if (!dia) return null;
+      const [h, m] = $('hora').value.split(':').map(Number);
+      return new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m);
+    }
+    function revisar() { const t = momento(); $('accion').disabled = !(t && t.getTime() > Date.now()); }
+
+    $('accion').onclick = () => {
+      const datos = { accion: 'accionLlamada', l: L, t: T, a: A, nota: $('texto').value };
+      if (TEXTOS[A][4]) datos.timestamp = momento().getTime();
+      $('accion').disabled = true; $('accion').textContent = 'Guardando…';
+      llamar(datos).then(r => fin(r.mensaje || (r.ok ? 'Listo.' : 'No se pudo guardar.'))).catch(() => fin('Error de red. Intenta de nuevo.'));
+    };
+  </script>
+</body>
+</html>

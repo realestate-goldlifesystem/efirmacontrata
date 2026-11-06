@@ -36,10 +36,21 @@ export default function App() {
   // Enlaces del correo del agente al empezar una cita (CITA_EN_CURSO.js):
   //  ?nuevaCita=CIT-…&t=… → agenda presencial ya llena con los datos de esa cita
   //  ?panel=registrar      → formulario de registro (pide iniciar sesión si hace falta)
+  const [modoCita, setModoCita] = useState<'PRESENCIAL' | 'VIRTUAL' | null>(null);
   const [prefillCita, setPrefillCita] = useState<{ nombre?: string; celular?: string; correo?: string; servicio?: string; direccion?: string } | null>(null);
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const limpiar = () => { try { window.history.replaceState(null, '', window.location.pathname); } catch {} };
+    // Desde el correo de una llamada de seguimiento: agenda virtual o presencial ya llena
+    const ll = q.get('desdeLlamada');
+    if (ll && q.get('t')) {
+      limpiar();
+      const modo = q.get('modo') === 'VIRTUAL' ? 'VIRTUAL' : 'PRESENCIAL';
+      fetch('https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec', {
+        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ accion: 'datosDesdeLlamada', l: ll, t: q.get('t') }),
+      }).then(r => r.json()).then(r => { if (r.ok) setPrefillCita(r); }).catch(() => {}).finally(() => { setModoCita(modo); setShowScheduleVisit(true); });
+      return;
+    }
     const id = q.get('nuevaCita'), t = q.get('t');
     if (id && t) {
       limpiar();
@@ -192,10 +203,11 @@ export default function App() {
         {showScheduleVisit ? (
           <div className="pt-24 animate-fade-in">
             <ScheduleVisitForm 
-              modalidadInicial={prefillCita ? 'PRESENCIAL' : undefined}
+              modalidadInicial={modoCita || (prefillCita ? 'PRESENCIAL' : undefined)}
               prefill={prefillCita || undefined}
               onBack={() => {
                 setPrefillCita(null);
+                setModoCita(null);
                 setShowScheduleVisit(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}

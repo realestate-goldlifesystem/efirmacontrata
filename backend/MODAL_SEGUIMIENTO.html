@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    :root { --oro: #b8962e; --oro-suave: #f7f1de; --tinta: #1c1917; --suave: #78716c; --linea: #e7e5e4; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: var(--tinta); background: #faf9f7; }
+    .cabeza { background: linear-gradient(135deg, #0c0a09 0%, #1c1917 60%, #2a2316 100%); padding: 16px 22px 14px; border-bottom: 2px solid #d4af37; }
+    .marca { font-size: 11px; letter-spacing: 3.5px; font-weight: 700; color: #d4af37; }
+    .marca span { color: #d6d3d1; font-weight: 400; }
+    .sub { font-size: 12.5px; color: #a8a29e; margin: 3px 0 0; }
+    .cuerpo { padding: 18px 22px 96px; }
+    .tarjeta { background: #fff; border: 1px solid rgba(212,175,55,.35); border-radius: 18px; padding: 16px 18px 8px; box-shadow: 0 10px 30px rgba(28,25,23,.06); animation: entrar .35s ease; }
+    @keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .quien { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+    .quien b { font-size: 16px; }
+    .quien span { font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 3px 10px; border-radius: 999px; background: var(--oro-suave); color: var(--oro); white-space: nowrap; }
+    .grupo { margin-bottom: 13px; }
+    label { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); font-weight: 600; margin-bottom: 6px; }
+    textarea, select { width: 100%; border: 1px solid var(--linea); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14px; outline: none; background: #fff; transition: border-color .2s, box-shadow .2s; }
+    textarea { resize: vertical; min-height: 74px; }
+    textarea:focus, select:focus { border-color: var(--oro); box-shadow: 0 0 0 3px rgba(184,150,46,.15); }
+    .rapidos { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+    .rapido { border: 1px solid var(--linea); border-radius: 999px; background: #fff; padding: 6px 12px; font: inherit; font-size: 12.5px; cursor: pointer; transition: all .2s; }
+    .rapido:hover { border-color: var(--oro); }
+    .dias { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+    .dia { flex: 0 0 56px; border: 1px solid var(--linea); border-radius: 12px; background: #fff; padding: 7px 0; text-align: center; cursor: pointer; transition: all .2s; font: inherit; }
+    .dia b { display: block; font-size: 16px; }
+    .dia span { font-size: 10.5px; color: var(--suave); text-transform: uppercase; letter-spacing: .05em; }
+    .dia:hover { border-color: var(--oro); }
+    .dia.activo { background: #0c0a09; border-color: #d4af37; color: #fff; }
+    .dia.activo span { color: #d6d3d1; }
+    .pie { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 22px; background: rgba(255,255,255,.96); border-top: 1px solid rgba(212,175,55,.45); box-shadow: 0 -8px 24px rgba(28,25,23,.06); }
+    .resumen { font-size: 12.5px; color: var(--suave); flex: 1; text-align: center; }
+    button.btn { border: 0; border-radius: 999px; padding: 10px 22px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+    .btn.sec { background: #fff; color: var(--tinta); border: 1px solid #d6d3d1; }
+    .btn.pri { background: #0c0a09; color: #f5e7b8; border: 1px solid #d4af37; box-shadow: 0 6px 16px rgba(12,10,9,.25); }
+    .btn.pri:disabled { opacity: .35; cursor: default; }
+    .error { color: #b91c1c; font-size: 13px; min-height: 18px; }
+    .listo { text-align: center; padding: 40px 22px; }
+    .listo .ok { width: 54px; height: 54px; border-radius: 50%; background: var(--oro-suave); color: var(--oro); font-size: 26px; display: grid; place-items: center; margin: 0 auto 14px; }
+    .listo h2 { margin: 0 0 6px; font-size: 19px; }
+    .listo p { color: var(--suave); font-size: 14px; margin: 0 0 20px; }
+    .oculto { display: none; }
+  </style>
+</head>
+<body>
+  <div class="cabeza">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <div class="sub">Llamada de seguimiento · te recordamos por correo antes de la hora</div>
+  </div>
+  <div class="cuerpo" id="form">
+    <div class="tarjeta">
+      <div class="quien"><b id="nombre"></b><span id="lead"></span></div>
+      <div class="grupo"><label>Detalle del seguimiento</label>
+        <textarea id="nota" placeholder="Ej. Está terminando de pintar; llamarlo para agendar la captación"></textarea></div>
+      <div class="grupo"><label>¿Cuándo lo llamas?</label>
+        <div class="rapidos">
+          <button type="button" class="rapido" data-d="1">Mañana</button>
+          <button type="button" class="rapido" data-d="3">En 3 días</button>
+          <button type="button" class="rapido" data-d="7">En una semana</button>
+          <button type="button" class="rapido" data-d="15">En 15 días</button>
+        </div>
+        <div class="dias" id="dias"></div>
+      </div>
+      <div class="grupo"><label>Hora</label><select id="hora"></select></div>
+      <div class="error" id="error"></div>
+    </div>
+  </div>
+  <div class="pie" id="pie">
+    <button class="btn sec" onclick="google.script.host.close()">Cerrar</button>
+    <div class="resumen" id="resumen">Elige el día</div>
+    <button class="btn pri" id="guardar" disabled onclick="guardar()">Programar llamada</button>
+  </div>
+  <div id="listo" class="listo oculto">
+    <div class="ok">✓</div>
+    <h2>Llamada programada</h2>
+    <p id="final"></p>
+    <button class="btn pri" onclick="google.script.host.close()">Listo</button>
+  </div>
+
+  <script>
+    const D = <?!= DATOS ?>;
+    const $ = (id) => document.getElementById(id);
+    const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+    const DIAS_L = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    $('nombre').textContent = D.nombre || 'Propietario';
+    $('lead').textContent = D.idLead + (D.servicio ? ' · ' + D.servicio : '');
+    let dia = null;
+
+    // Horas de 7:00 a. m. a 8:00 p. m., cada 15 minutos (por defecto 10:00 a. m.)
+    for (let h = 7; h <= 20; h++) for (let m = 0; m < 60; m += 15) {
+      if (h === 20 && m > 0) break;
+      const o = document.createElement('option');
+      o.value = h + ':' + m; o.textContent = (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' a. m.' : ' p. m.');
+      if (h === 10 && m === 0) o.selected = true;
+      $('hora').appendChild(o);
+    }
+    const hoy = new Date();
+    const botones = [];
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i);
+      const b = document.createElement('button');
+      b.className = 'dia'; b.innerHTML = '<span>' + (i === 0 ? 'hoy' : DIAS[d.getDay()]) + '</span><b>' + d.getDate() + '</b><span>' + MESES[d.getMonth()].slice(0, 3) + '</span>';
+      b.onclick = () => elegir(i);
+      $('dias').appendChild(b); botones.push({ b, d });
+    }
+    function elegir(i) {
+      botones.forEach(x => x.b.classList.remove('activo'));
+      botones[i].b.classList.add('activo'); dia = botones[i].d;
+      const cont = $('dias'); cont.scrollLeft = botones[i].b.offsetLeft - cont.offsetLeft - 40;
+      revisar();
+    }
+    document.querySelectorAll('.rapido').forEach(b => b.onclick = () => elegir(Number(b.dataset.d)));
+    $('hora').onchange = revisar;
+
+    function momento() {
+      if (!dia) return null;
+      const [h, m] = $('hora').value.split(':').map(Number);
+      return new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m);
+    }
+    function revisar() {
+      const t = momento();
+      const ok = t && t.getTime() > Date.now();
+      $('guardar').disabled = !ok;
+      $('resumen').textContent = !t ? 'Elige el día' : !ok ? 'Esa hora ya pasó' :
+        DIAS_L[t.getDay()].replace(/^./, c => c.toUpperCase()) + ' ' + t.getDate() + ' de ' + MESES[t.getMonth()] + ' · ' + $('hora').selectedOptions[0].textContent;
+    }
+
+    function guardar() {
+      const t = momento();
+      $('guardar').disabled = true; $('guardar').textContent = 'Programando…'; $('error').textContent = '';
+      google.script.run.withSuccessHandler(r => {
+        if (r && r.success) {
+          $('form').classList.add('oculto'); $('pie').classList.add('oculto'); $('listo').classList.remove('oculto');
+          $('final').textContent = r.texto + '. Quedó en tu calendario y en el CRM; te recordaremos por correo.';
+          setTimeout(() => google.script.host.close(), 5000);
+        } else { $('error').textContent = (r && r.error) || 'No se pudo programar.'; $('guardar').textContent = 'Programar llamada'; revisar(); }
+      }).withFailureHandler(e => { $('error').textContent = e.message; $('guardar').textContent = 'Programar llamada'; revisar(); })
+        .programarLlamada({ hoja: D.hoja, fila: D.fila, idLead: D.idLead, nombre: D.nombre, celular: D.celular, servicio: D.servicio,
+          direccion: D.direccion, nota: $('nota').value, timestamp: t.getTime() });
+    }
+  </script>
+</body>
+</html>
