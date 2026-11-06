@@ -61,6 +61,7 @@
       <div id="nuevaFecha" class="oculto">
         <label>Nueva fecha</label>
         <div class="rapidos">
+          <button type="button" class="rapido" data-d="0" data-h="0.5">En media hora</button>
           <button type="button" class="rapido" data-d="0" data-h="3">En 3 horas</button>
           <button type="button" class="rapido" data-d="1">Mañana</button>
           <button type="button" class="rapido" data-d="3">En 3 días</button>
@@ -125,7 +126,7 @@
       revisar();
     }
     function momento() {
-      if (horaExtra) { const t = new Date(Date.now() + horaExtra * 3600000); t.setMinutes(Math.ceil(t.getMinutes() / 15) * 15, 0, 0); return t; }
+      if (horaExtra) { const t = new Date(Date.now() + horaExtra * 3600000); if (horaExtra >= 1) t.setMinutes(Math.ceil(t.getMinutes() / 15) * 15, 0, 0); else t.setSeconds(0, 0); return t; }
       if (!dia) return null;
       const [h, m] = $('hora').value.split(':').map(Number);
       return new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m);

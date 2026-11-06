@@ -57,6 +57,7 @@
         <textarea id="nota" placeholder="Ej. Está terminando de pintar; llamarlo para agendar la captación"></textarea></div>
       <div class="grupo"><label>¿Cuándo lo llamas?</label>
         <div class="rapidos">
+          <button type="button" class="rapido" data-m="30">En media hora</button>
           <button type="button" class="rapido" data-d="1">Mañana</button>
           <button type="button" class="rapido" data-d="3">En 3 días</button>
           <button type="button" class="rapido" data-d="7">En una semana</button>
@@ -88,7 +89,7 @@
     const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     $('nombre').textContent = D.nombre || 'Propietario';
     $('lead').textContent = D.idLead + (D.servicio ? ' · ' + D.servicio : '');
-    let dia = null;
+    let dia = null, enMin = 0;
 
     // Horas de 7:00 a. m. a 8:00 p. m., cada 15 minutos (por defecto 10:00 a. m.)
     for (let h = 7; h <= 20; h++) for (let m = 0; m < 60; m += 15) {
@@ -113,10 +114,11 @@
       const cont = $('dias'); cont.scrollLeft = botones[i].b.offsetLeft - cont.offsetLeft - 40;
       revisar();
     }
-    document.querySelectorAll('.rapido').forEach(b => b.onclick = () => elegir(Number(b.dataset.d)));
-    $('hora').onchange = revisar;
+    document.querySelectorAll('.rapido').forEach(b => b.onclick = () => { enMin = Number(b.dataset.m || 0); elegir(enMin ? 0 : Number(b.dataset.d)); });
+    $('hora').onchange = () => { enMin = 0; revisar(); };
 
     function momento() {
+      if (enMin) { const t = new Date(Date.now() + enMin * 60000); t.setSeconds(0, 0); return t; }
       if (!dia) return null;
       const [h, m] = $('hora').value.split(':').map(Number);
       return new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m);
@@ -126,7 +128,7 @@
       const ok = t && t.getTime() > Date.now();
       $('guardar').disabled = !ok;
       $('resumen').textContent = !t ? 'Elige el día' : !ok ? 'Esa hora ya pasó' :
-        DIAS_L[t.getDay()].replace(/^./, c => c.toUpperCase()) + ' ' + t.getDate() + ' de ' + MESES[t.getMonth()] + ' · ' + $('hora').selectedOptions[0].textContent;
+        DIAS_L[t.getDay()].replace(/^./, c => c.toUpperCase()) + ' ' + t.getDate() + ' de ' + MESES[t.getMonth()] + ' · ' + (enMin ? ((t.getHours() % 12 || 12) + ':' + String(t.getMinutes()).padStart(2, '0') + (t.getHours() < 12 ? ' a. m.' : ' p. m.')) : $('hora').selectedOptions[0].textContent);
     }
 
     function guardar() {
