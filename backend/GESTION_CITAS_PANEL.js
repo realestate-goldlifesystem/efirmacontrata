@@ -269,7 +269,7 @@ function _citaDelPropietario(idCita, token) {
   if (!cita) return { error: 'No encontramos esta cita.' };
   const t = String(token || '');
   // El agente también puede reagendar con su enlace (correo de cita liberada, 6-nov-2026):
-  // como ya habló con la persona, la cita queda confirmada
+  // queda POR CONFIRMAR: el sistema le vuelve a pedir la confirmación a la persona (Leonardo, 6-nov-2026)
   const esAgente = !!t && t === String(valorCita(cita.fila, cita.col, 'TOKEN AGENTE') || '');
   if (!t || (!esAgente && t !== String(valorCita(cita.fila, cita.col, 'TOKEN PROPIETARIO') || ''))) return { error: 'Este enlace no es válido para esta acción.' };
   const estado = String(valorCita(cita.fila, cita.col, 'ESTADO') || '').trim();
@@ -320,14 +320,14 @@ function reagendarPorPropietario(datos) {
     const r = _citaDelPropietario(datos.idCita, datos.t);
     if (r.error) return { ok: false, mensaje: r.error };
     const nombre = String(valorCita(r.cita.fila, r.cita.col, 'NOMBRE') || '');
-    const m = moverCita(r.cita, Number(datos.timestamp), { anticipacionMin: TIPOS_AGENDA[tipoDeCita(r.cita)].anticipacionMin, quien: r.esAgente ? 'agente' : 'propietario' });
+    const m = moverCita(r.cita, Number(datos.timestamp), { anticipacionMin: TIPOS_AGENDA[tipoDeCita(r.cita)].anticipacionMin, quien: 'propietario' });
     if (!m.ok) return { ok: false, mensaje: m.mensaje };
     // Presentación que estaba cancelada: en el CRM vuelve de CITA CANCELADA a PRE-R CAPTACION
     if (tipoDeCita(r.cita) === 'PROPIETARIO') {
       try { marcarCaptacionEnCRM_(valorCita(r.cita.fila, r.cita.col, 'CELULAR'), AGENDA_CAPTACION.ESTADO, String(datos.idCita || ''), 'Cita reagendada: ' + m.textoNueva, 'CITA CANCELADA'); }
       catch (e) { Logger.log('No se pudo actualizar el CRM al reagendar: ' + e.message); }
     }
-    if (r.esAgente) return { ok: true, mensaje: 'La cita de ' + nombre + ' quedó confirmada para el ' + m.textoNueva + '. Ya le llegó el correo con la nueva fecha.' };
+    if (r.esAgente) return { ok: true, mensaje: 'La cita de ' + nombre + ' quedó para el ' + m.textoNueva + ', por confirmar. Ya le llegó el correo con la nueva fecha y antes de la cita le pediremos que la confirme.' };
     try {
       enviarCorreoCita(
         correoAgenteCitas(),
