@@ -198,6 +198,8 @@ function ejecutarMotorAgenda() {
   // Pagos del arriendo mes a mes (VIDA_CONTRATO_PAGOS.js): como mucho una vez por hora
   try { revisarPagosMensuales_(); } catch (e) { Logger.log('Error en revisarPagosMensuales_: ' + e.message); }
   try { sincroIPCDiario_(); } catch (e) { Logger.log('Error en sincroIPCDiario_: ' + e.message); }
+  // Resumen diario de propietarios por retomar en el CRM (SEGUIMIENTO_CRM.js)
+  try { revisarSeguimientoCRM_(); } catch (e) { Logger.log('Error en revisarSeguimientoCRM_: ' + e.message); }
 }
 
 /**
