@@ -195,7 +195,6 @@ function instalarTriggerRevisarBuzon() {
  */
 function revisarBuzonAndrea() {
   const PESTANAS_ANDREA = ['1 - CAPTACIONES V', '1 - CAPTACIONES A'];
-  const COL_ESTADO_LLAMADA = 8; // Columna H
 
   PESTANAS_ANDREA.forEach(nombrePestana => {
     try {
@@ -205,6 +204,10 @@ function revisarBuzonAndrea() {
       const ultimaFila = sheet.getLastRow();
       if (ultimaFila < 2) return;
 
+      // Columna por NOMBRE, no por letra (6-nov-2026): las columnas se pueden mover.
+      const COL_ESTADO_LLAMADA = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
+        .map(h => String(h).trim().toUpperCase()).indexOf('ESTADO DE LLAMADA') + 1;
+      if (!COL_ESTADO_LLAMADA) return;
       const rango = sheet.getRange(2, COL_ESTADO_LLAMADA, ultimaFila - 1, 1);
       const valores = rango.getValues();
       let cambios = 0;

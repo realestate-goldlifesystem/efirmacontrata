@@ -150,7 +150,7 @@ def obtener_leads_llamables(tab: str, limite: int) -> list[Lead]:
     LLAMAR se quedaba ahí para siempre, porque solo se miraba NUEVO.
     """
     service = get_sheets_service()
-    range_name = f"'{tab}'!A1:S3000"
+    range_name = f"'{tab}'!A1:AZ3000"
     result = con_reintentos(
         lambda: service.values().get(spreadsheetId=config.SPREADSHEET_ID, range=range_name).execute(),
         f"lectura de '{tab}'",
@@ -166,7 +166,7 @@ def obtener_leads_llamables(tab: str, limite: int) -> list[Lead]:
     for idx, row in enumerate(rows[1:], start=2):  # fila 2 en adelante (1 = encabezados)
         estado = _valor(row, col_map, "estado de llamada")
         fecha_seguimiento = _valor(row, col_map, "fecha de seguimiento")
-        hora_seguimiento = _valor(row, col_map, "hora de seguimiento")
+        hora_seguimiento = _valor(row, col_map, "hora seguimiento") or _valor(row, col_map, "hora de seguimiento")
 
         es_seguimiento_prometido = (
             estado == config.ESTADO_SEGUIMIENTO and fecha_seguimiento and hora_seguimiento
@@ -222,36 +222,30 @@ def escribir_resultado(
 
     service = get_sheets_service()
 
-    # H y N siempre. H=col 8 (letra H), N=col 14 (letra N) en la estructura
-    # de 19 columnas confirmada en vivo (agente_voz_guion.md sección 2).
-    con_reintentos(
-        lambda: service.values().update(
-            spreadsheetId=config.SPREADSHEET_ID,
-            range=f"'{tab}'!H{fila}:H{fila}",
-            valueInputOption="RAW",
-            body={"values": [[estado]]},
-        ).execute(),
-        f"escritura de estado en '{tab}'!H{fila}",
-    )
+    # Columnas por NOMBRE, nunca por letra (6-nov-2026): Leonardo puede mover
+    # columnas en el Sheet y antes esto escribía a ciegas en H, N y Q:R.
+    encabezados = con_reintentos(
+        lambda: service.values().get(spreadsheetId=config.SPREADSHEET_ID, range=f"'{tab}'!1:1").execute(),
+        f"encabezados de '{tab}'",
+    ).get("values", [[]])[0]
+    col_map = _mapear_columnas(encabezados)
 
+    def escribir(nombres, valor, que):
+        idx = next((col_map[normalize_header(n)] for n in nombres if normalize_header(n) in col_map), None)
+        if idx is None:
+            raise ValueError(f"No encontré la columna {nombres[0]!r} en '{tab}'")
+        celda = f"'{tab}'!{col_to_letter(idx)}{fila}"
+        con_reintentos(
+            lambda: service.values().update(
+                spreadsheetId=config.SPREADSHEET_ID, range=celda,
+                valueInputOption="RAW", body={"values": [[valor]]},
+            ).execute(),
+            f"escritura de {que} en {celda}",
+        )
+
+    escribir(("estado de llamada",), estado, "estado")
     if resumen:
-        con_reintentos(
-            lambda: service.values().update(
-                spreadsheetId=config.SPREADSHEET_ID,
-                range=f"'{tab}'!N{fila}:N{fila}",
-                valueInputOption="RAW",
-                body={"values": [[resumen]]},
-            ).execute(),
-            f"escritura de resumen en '{tab}'!N{fila}",
-        )
-
+        escribir(("detalles de seguimiento",), resumen, "resumen")
     if fecha_cita and hora_cita:
-        con_reintentos(
-            lambda: service.values().update(
-                spreadsheetId=config.SPREADSHEET_ID,
-                range=f"'{tab}'!Q{fila}:R{fila}",
-                valueInputOption="RAW",
-                body={"values": [[fecha_cita, hora_cita]]},
-            ).execute(),
-            f"escritura de cita en '{tab}'!Q{fila}:R{fila}",
-        )
+        escribir(("fecha de seguimiento",), fecha_cita, "fecha de la cita")
+        escribir(("hora seguimiento", "hora de seguimiento"), hora_cita, "hora de la cita")

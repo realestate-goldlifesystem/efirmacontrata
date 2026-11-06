@@ -137,7 +137,7 @@ class SheetsHandler:
         # Los scripts de Metrocuadrado reasignan sheet_title y luego llaman aquí:
         # el formato cacheado es de la pestaña anterior, así que se descarta.
         self._formato_ref = None
-        range_name = f"'{self.sheet_title}'!A1:Z3000"
+        range_name = f"'{self.sheet_title}'!A1:AZ3000"
         result = con_reintentos(
             lambda: self.service.values().get(
                 spreadsheetId=self.spreadsheet_id, range=range_name
@@ -447,7 +447,9 @@ class SheetsHandler:
 
         self.max_n += 1
         new_n = str(self.max_n)
-        date_str = get_spanish_date_str()
+        # Fecha real (ISO + USER_ENTERED), no texto: '15-sep-2026' quedaba como texto
+        # porque Sheets en español abrevia 'sept'. El formato lo pone la columna (6-nov-2026).
+        date_str = ahora_colombia().strftime('%Y-%m-%d')
 
         # Construcción dinámica basada en los nombres de columnas
         max_idx = max(self.col_map.values()) if self.col_map else 18

@@ -99,7 +99,8 @@ function obtenerResumenCaptaciones() {
     if (colFecha < 0 || colCelular < 0) return;
 
     var anchoLectura = Math.max(colFecha, colCelular, colCaptacion);
-    var celdas = hoja.getRange(3, 1, ultimaFila - 2, anchoLectura).getDisplayValues();
+    // getValues (no Display): la fecha puede ser fecha real o el texto '25-jul-2026' del robot (6-nov-2026)
+    var celdas = hoja.getRange(3, 1, ultimaFila - 2, anchoLectura).getValues();
 
     celdas.forEach(function (fila) {
       // Una captacion se cuenta por el CELULAR, no por la fecha. La pestana de
@@ -110,8 +111,9 @@ function obtenerResumenCaptaciones() {
 
       // El dia que cuenta es el de CAPTACION, que no se mueve. La de contacto
       // la corre el agente al retomar los NUEVO pendientes; solo es respaldo.
-      var etiqueta = colCaptacion > 0 ? String(fila[colCaptacion - 1] || '').trim() : '';
-      if (!etiqueta) etiqueta = String(fila[colFecha - 1] || '').trim();
+      var aEtiqueta = function (v) { return v instanceof Date ? _fechaEtiqueta(v) : String(v || '').trim(); };
+      var etiqueta = colCaptacion > 0 ? aEtiqueta(fila[colCaptacion - 1]) : '';
+      if (!etiqueta) etiqueta = aEtiqueta(fila[colFecha - 1]);
       if (!etiqueta) return;
 
       var dia = asegurarDia(etiqueta);
