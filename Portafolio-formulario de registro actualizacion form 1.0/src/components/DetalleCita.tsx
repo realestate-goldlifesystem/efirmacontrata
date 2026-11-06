@@ -302,7 +302,7 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
                 className={`${boton} w-full bg-brand-gold text-stone-950 hover:brightness-110`}>
                 {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarClock className="w-4 h-4" />} Confirmar nueva fecha
               </button>
-              <p className="text-xs text-stone-500">Mueve el evento en tu Calendar, deja la cita confirmada y le avisa a la persona por correo.</p>
+              <p className="text-xs text-stone-500">Mueve el evento en tu Calendar y le avisa a la persona por correo. La cita queda por confirmar: antes de la hora le pediremos que la reconfirme.</p>
             </div>
           )}
 

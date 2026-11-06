@@ -214,11 +214,11 @@ function moverCita(cita, timestamp, op) {
   const cal = CalendarApp.getDefaultCalendar();
   let evento = null;
   try { evento = idEvento ? cal.getEventById(idEvento) : null; } catch (e) { evento = null; }
-  // Agendar no es confirmar (Leonardo, 14-oct-2026): si el propietario reagenda,
-  // vuelve a POR CONFIRMAR y sigue el flujo normal (recordatorio, y si no confirma
-  // a tiempo se libera). Si reagenda el agente desde el panel, ya lo acordó con
-  // él por teléfono: queda confirmada.
-  const estadoNuevo = op.quien === 'agente' ? ESTADOS_CITA.CONFIRMADA : ESTADOS_CITA.PENDIENTE;
+  // Agendar no es confirmar (Leonardo, 14-oct-2026): al reagendar vuelve a POR CONFIRMAR y
+  // sigue el flujo normal (recordatorios, y si no confirma a tiempo se libera).
+  // Siempre por confirmar, la reagende quien la reagende (Leonardo, 6-nov-2026): aunque se haya
+  // acordado por teléfono, la persona puede tener un imprevisto y debe reconfirmar antes de la cita
+  const estadoNuevo = ESTADOS_CITA.PENDIENTE;
   const titulo = tituloEventoCita(estadoNuevo, servicio, nombre, String(valorCita(fila, col, 'MODALIDAD')) === 'VIRTUAL');
   let linkNuevo = '';
   if (evento) {
@@ -255,7 +255,7 @@ function moverCita(cita, timestamp, op) {
     // Solo informa, sin botones: la confirmación se pide 1 hora antes
     enviarPasoCita('REAGENDADA', correo, {
       idCita: idCita, idInmueble: tipo === 'INTERESADO' ? String(valorCita(fila, col, 'ID INMUEBLE') || '') : '', token: String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''), nombre: nombre,
-      servicio: servicio, direccion: direccion, linkMeet: linkNuevo || String(valorCita(fila, col, 'LINK MEET') || ''), inicio: inicio, confirmada: op.quien === 'agente', duracionMin: TIPOS_AGENDA[tipo].duracionMin
+      servicio: servicio, direccion: direccion, linkMeet: linkNuevo || String(valorCita(fila, col, 'LINK MEET') || ''), inicio: inicio, confirmada: false, duracionMin: TIPOS_AGENDA[tipo].duracionMin
     });
   } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
   return { ok: true, textoNueva: textoFecha(inicio), textoAntes: antes };
