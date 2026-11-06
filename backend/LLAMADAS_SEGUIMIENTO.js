@@ -3,19 +3,22 @@
 // ==========================================
 // Al poner ESTADO DE LLAMADA = SEGUIMIENTO en "1 - CAPTACIONES A/V" se abre una ventana
 // (MODAL_SEGUIMIENTO.html) para anotar el detalle y programar la llamada (fecha y hora).
-// La llamada queda en la hoja "2.3 - LLAMADAS DE SEGUIMIENTO" y en el calendario de
-// Leonardo, y el motor de citas (cada 5 min) le manda a ÉL los recordatorios:
+// La llamada vive EN LA MISMA FILA del CRM (Leonardo, 6-nov-2026):
+//   PRÓXIMA LLAMADA (visible) + columnas técnicas ocultas al final (LLAMADA …).
+// Una sola llamada pendiente por propietario; el historial queda en DETALLES DE SEGUIMIENTO.
+// El motor de citas (cada 5 min) le manda a Leonardo los recordatorios:
 //   24 h, 3 h, 2 h, ¿confirmas? (1 h 30), 1 h, 30, 15 y 5 min, y a la hora.
 // A la hora: Contestó / No contestó (→ reprogramar), WhatsApp, Llamar y agendar la
 // presentación virtual o la captación presencial con los datos ya llenos.
 // Cada propietario del CRM tiene un ID DE LEAD (LD-######) que amarra sus llamadas y citas.
 
 const LLAMADAS = {
-  HOJA: '2.3 - LLAMADAS DE SEGUIMIENTO',
-  COLUMNAS: ['ID LLAMADA', 'ID LEAD', 'PESTAÑA', 'NOMBRE', 'CELULAR', 'NEGOCIO', 'UBICACIÓN', 'FECHA HORA',
-    'NOTA', 'ESTADO', 'ULTIMO AVISO', 'TOKEN', 'ID EVENTO', 'CREADA', 'RESULTADO'],
+  COL_PROXIMA: 'PRÓXIMA LLAMADA',
+  // Técnicas: se crean al final y ocultas
+  TECNICAS: ['LLAMADA ID', 'LLAMADA ESTADO', 'LLAMADA AVISO', 'LLAMADA TOKEN', 'LLAMADA EVENTO', 'LLAMADA NOTA'],
   // [clave, minutos antes]; C90 = pedir confirmación
   AVISOS: [['H24', 1440], ['H3', 180], ['H2', 120], ['C90', 90], ['H1', 60], ['M30', 30], ['M15', 15], ['M5', 5], ['M0', 0]],
+  PENDIENTES: ['PROGRAMADA', 'CONFIRMADA'],
   COL_ID_LEAD: 'ID DE LEAD',
   ESTADO_ABRE: 'SEGUIMIENTO',
   URL_PAGINA: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/llamada.html'
@@ -33,7 +36,7 @@ function asignarIdsLead_() {
     const filas = hoja.getLastRow() - SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + 1;
     if (filas <= 0) return;
     const cId = columnaCaptacion_(hoja, LLAMADAS.COL_ID_LEAD);
-    const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+    const enc = encabezadosCRM_(hoja);
     const cCel = enc.indexOf('CELULAR') + 1;
     if (!cCel) return;
     const rangoId = hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, cId, filas, 1);
@@ -52,14 +55,30 @@ function idLeadDeFila_(hoja, fila) {
   return id;
 }
 
+function encabezadosCRM_(hoja) {
+  return hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+}
+
+/** Crea (si faltan) PRÓXIMA LLAMADA visible y las columnas técnicas ocultas al final. */
+function columnasLlamada_(hoja) {
+  const col = {};
+  col[LLAMADAS.COL_PROXIMA] = columnaCaptacion_(hoja, LLAMADAS.COL_PROXIMA);
+  LLAMADAS.TECNICAS.forEach(n => {
+    const antes = encabezadosCRM_(hoja).indexOf(n) + 1;
+    col[n] = antes || columnaCaptacion_(hoja, n);
+    if (!antes) { try { hoja.hideColumns(col[n]); } catch (e) {} }
+  });
+  return col;
+}
+
+// ---------- Ubicar la llamada (fila del CRM) ----------
 /** Fila del CRM por ID DE LEAD. */
 function filaPorIdLead_(idLead) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   for (const n of SEGUIMIENTO_CAPTACIONES.HOJAS) {
     const hoja = ss.getSheetByName(n);
     if (!hoja) continue;
-    const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
-    const c = enc.indexOf(LLAMADAS.COL_ID_LEAD) + 1;
+    const c = encabezadosCRM_(hoja).indexOf(LLAMADAS.COL_ID_LEAD) + 1;
     if (!c) continue;
     const filas = hoja.getLastRow() - SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + 1;
     if (filas <= 0) continue;
@@ -69,31 +88,26 @@ function filaPorIdLead_(idLead) {
   return null;
 }
 
-// ---------- Hoja de llamadas ----------
-function hojaLlamadas_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let h = ss.getSheetByName(LLAMADAS.HOJA);
-  if (!h) {
-    h = ss.insertSheet(LLAMADAS.HOJA);
-    h.getRange(1, 1, 1, LLAMADAS.COLUMNAS.length).setValues([LLAMADAS.COLUMNAS]).setFontWeight('bold').setBackground('#1c1917').setFontColor('#d4af37');
-    h.setFrozenRows(1);
-  }
-  const enc = h.getRange(1, 1, 1, h.getLastColumn()).getValues()[0].map(x => String(x).trim());
-  LLAMADAS.COLUMNAS.forEach(n => { if (enc.indexOf(n) === -1) { enc.push(n); h.getRange(1, enc.length).setValue(n).setFontWeight('bold'); } });
-  const col = {}; enc.forEach((n, i) => col[n] = i + 1);
-  return { hoja: h, col: col };
-}
-
+/** Llamada por su ID (LLAMADA ID). Devuelve lectura y escritura sobre la fila del CRM. */
 function leerLlamada_(idLlamada) {
-  const { hoja, col } = hojaLlamadas_();
-  const n = hoja.getLastRow() - 1;
-  if (n <= 0) return null;
-  const datos = hoja.getRange(2, 1, n, hoja.getLastColumn()).getValues();
-  const i = datos.findIndex(f => String(f[col['ID LLAMADA'] - 1]).trim() === idLlamada);
-  if (i === -1) return null;
-  const f = datos[i], v = (k) => f[col[k] - 1];
-  return { hoja: hoja, col: col, fila: i + 2, v: v,
-    poner: (k, valor) => hoja.getRange(i + 2, col[k]).setValue(valor) };
+  if (!idLlamada) return null;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  for (const n of SEGUIMIENTO_CAPTACIONES.HOJAS) {
+    const hoja = ss.getSheetByName(n);
+    if (!hoja) continue;
+    const enc = encabezadosCRM_(hoja);
+    const cId = enc.indexOf('LLAMADA ID') + 1;
+    if (!cId) continue;
+    const filas = hoja.getLastRow() - SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + 1;
+    if (filas <= 0) continue;
+    const i = hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, cId, filas, 1).getValues().findIndex(x => String(x[0]).trim() === idLlamada);
+    if (i === -1) continue;
+    const fila = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + i;
+    const f = hoja.getRange(fila, 1, 1, enc.length).getValues()[0];
+    return { hoja: hoja, fila: fila, v: (k) => { const j = enc.indexOf(k); return j === -1 ? '' : f[j]; },
+      poner: (k, valor) => { const j = enc.indexOf(k); if (j !== -1) hoja.getRange(fila, j + 1).setValue(valor); } };
+  }
+  return null;
 }
 
 // ---------- Ventana del CRM ----------
@@ -124,16 +138,27 @@ function programarSeguimientoFilaActual() {
   abrirModalSeguimiento_(hoja, hoja.getActiveRange().getRow());
 }
 
-/** Programa la llamada (desde la ventana del CRM o al reprogramar). d = { hoja, fila, idLead, nombre, celular, servicio, direccion, nota, timestamp } */
+/**
+ * Programa la llamada en la fila del CRM (desde la ventana o al reprogramar).
+ * d = { hoja, fila, idLead, nombre, celular, servicio, direccion, nota, timestamp, estadoNuevo }
+ * Si ya había una pendiente, la reemplaza (su evento se borra).
+ */
 function programarLlamada(d) {
   const inicio = new Date(Number(d.timestamp));
   if (isNaN(inicio.getTime())) return { success: false, error: 'Elige la fecha y la hora.' };
   if (inicio.getTime() < Date.now() - 60000) return { success: false, error: 'Esa hora ya pasó.' };
-  const { hoja, col } = hojaLlamadas_();
-  const id = 'LL-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-  const token = Utilities.getUuid();
-  const nota = String(d.nota || '').trim().slice(0, 500);
+  let ub = d.hoja && d.fila ? { hoja: SpreadsheetApp.getActive().getSheetByName(d.hoja), fila: Number(d.fila) } : null;
+  if (!ub || !ub.hoja) ub = filaPorIdLead_(d.idLead);
+  if (!ub) return { success: false, error: 'No encontramos al propietario en el CRM.' };
+  const { hoja, fila } = ub;
+  const col = columnasLlamada_(hoja);
+  const leer = (k) => hoja.getRange(fila, col[k]).getValue();
 
+  // Una sola pendiente: la anterior se reemplaza
+  if (LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1) borrarEventoLlamadaId_(String(leer('LLAMADA EVENTO') || ''));
+
+  const id = 'LL-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+  const nota = String(d.nota || '').trim().slice(0, 500);
   let idEvento = '';
   try {
     const ev = CalendarApp.getDefaultCalendar().createEvent('📞 SEGUIMIENTO: ' + d.nombre + (d.servicio ? ' (' + d.servicio + ')' : ''),
@@ -143,26 +168,19 @@ function programarLlamada(d) {
     idEvento = ev.getId();
   } catch (e) { Logger.log('No se pudo crear el evento de la llamada: ' + e.message); }
 
-  const fila = new Array(hoja.getLastColumn()).fill('');
-  const poner = (k, v) => { if (col[k]) fila[col[k] - 1] = v; };
-  poner('ID LLAMADA', id); poner('ID LEAD', d.idLead); poner('PESTAÑA', d.hoja); poner('NOMBRE', d.nombre);
-  poner('CELULAR', textoCelda_(d.celular)); poner('NEGOCIO', d.servicio || ''); poner('UBICACIÓN', d.direccion || '');
-  poner('FECHA HORA', inicio); poner('NOTA', nota); poner('ESTADO', 'PROGRAMADA');
+  hoja.getRange(fila, col[LLAMADAS.COL_PROXIMA]).setValue(inicio).setNumberFormat('d-mmm-yyyy h:mm am/pm');
+  const poner = (k, v) => hoja.getRange(fila, col[k]).setValue(v);
+  poner('LLAMADA ID', id); poner('LLAMADA ESTADO', 'PROGRAMADA');
   // Los avisos que ya "pasaron" no se mandan de golpe: se sigue desde el siguiente
-  poner('ULTIMO AVISO', avisoVigenteLlamada_((inicio.getTime() - Date.now()) / 60000));
-  poner('TOKEN', token); poner('ID EVENTO', idEvento); poner('CREADA', new Date());
-  hoja.appendRow(fila);
+  poner('LLAMADA AVISO', avisoVigenteLlamada_((inicio.getTime() - Date.now()) / 60000));
+  poner('LLAMADA TOKEN', Utilities.getUuid()); poner('LLAMADA EVENTO', idEvento); poner('LLAMADA NOTA', nota);
 
-  // En el CRM: la nota y la llamada programada en DETALLES, y el sello de seguimiento
-  try {
-    const ub = d.hoja && d.fila ? { hoja: SpreadsheetApp.getActive().getSheetByName(d.hoja), fila: Number(d.fila) } : filaPorIdLead_(d.idLead);
-    if (ub && ub.hoja) anotarEnCRM_(ub.hoja, ub.fila, (nota ? nota + '\n' : '') + 'Llamada programada: ' + textoFechaLlamada_(inicio) + ' (' + id + ')', d.estadoNuevo);
-  } catch (e) { Logger.log('No se pudo anotar la llamada en el CRM: ' + e.message); }
+  anotarEnCRM_(hoja, fila, (nota ? nota + '\n' : '') + 'Llamada programada: ' + textoFechaLlamada_(inicio) + ' (' + id + ')', d.estadoNuevo);
   return { success: true, idLlamada: id, texto: textoFechaLlamada_(inicio) };
 }
 
 function anotarEnCRM_(hoja, fila, texto, estadoNuevo) {
-  const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+  const enc = encabezadosCRM_(hoja);
   const c = (n) => enc.indexOf(n) + 1;
   if (estadoNuevo && c(SEGUIMIENTO_CAPTACIONES.COL_ESTADO)) hoja.getRange(fila, c(SEGUIMIENTO_CAPTACIONES.COL_ESTADO)).setValue(estadoNuevo);
   if (c(SEGUIMIENTO_CAPTACIONES.COL_DETALLES)) {
@@ -191,31 +209,39 @@ function avisoQueTocaLlamada_(minFaltan, ultimo, confirmada) {
   const orden = LLAMADAS.AVISOS.map(a => a[0]);
   const yaIdx = ultimo ? orden.indexOf(ultimo) : -1;
   let toca = null;
+  // Si se saltaron pasos (el motor no corrió), solo se manda el último que toca
   LLAMADAS.AVISOS.forEach(([k, m], i) => { if (minFaltan <= m && i > yaIdx) toca = k; });
   if (toca === 'C90' && confirmada) toca = null;
   return toca;
 }
 
 function revisarLlamadas_() {
-  const { hoja, col } = hojaLlamadas_();
-  const n = hoja.getLastRow() - 1;
-  if (n <= 0) return;
-  const datos = hoja.getRange(2, 1, n, hoja.getLastColumn()).getValues();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
   const ahora = Date.now();
-  datos.forEach((f, i) => {
-    const v = (k) => f[col[k] - 1];
-    const estado = String(v('ESTADO') || '');
-    if (estado !== 'PROGRAMADA' && estado !== 'CONFIRMADA') return;
-    const inicio = v('FECHA HORA');
-    if (!(inicio instanceof Date)) return;
-    const minFaltan = (inicio.getTime() - ahora) / 60000;
-    if (minFaltan < -180) { hoja.getRange(i + 2, col['ESTADO']).setValue('SIN RESULTADO'); return; }
-    let paso = avisoQueTocaLlamada_(minFaltan, String(v('ULTIMO AVISO') || ''), estado === 'CONFIRMADA');
-    // Si se saltaron pasos (p. ej. el motor no corrió), solo se manda el último que toca
-    if (!paso) return;
-    try { enviarAvisoLlamada_(paso, f, col, inicio, minFaltan); }
-    catch (e) { Logger.log('Error en el aviso ' + paso + ' de ' + v('ID LLAMADA') + ': ' + e.message); }
-    hoja.getRange(i + 2, col['ULTIMO AVISO']).setValue(paso);
+  SEGUIMIENTO_CAPTACIONES.HOJAS.forEach(n => {
+    const hoja = ss.getSheetByName(n);
+    if (!hoja) return;
+    const enc = encabezadosCRM_(hoja);
+    const iEst = enc.indexOf('LLAMADA ESTADO');
+    if (iEst === -1) return;
+    const filas = hoja.getLastRow() - SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + 1;
+    if (filas <= 0) return;
+    const datos = hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, 1, filas, enc.length).getValues();
+    datos.forEach((f, k) => {
+      const estado = String(f[iEst] || '');
+      if (LLAMADAS.PENDIENTES.indexOf(estado) === -1) return;
+      const v = (nom) => { const j = enc.indexOf(nom); return j === -1 ? '' : f[j]; };
+      const fila = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + k;
+      const inicio = v(LLAMADAS.COL_PROXIMA);
+      if (!(inicio instanceof Date)) return;
+      const minFaltan = (inicio.getTime() - ahora) / 60000;
+      if (minFaltan < -180) { hoja.getRange(fila, iEst + 1).setValue('SIN RESULTADO'); return; }
+      const paso = avisoQueTocaLlamada_(minFaltan, String(v('LLAMADA AVISO') || ''), estado === 'CONFIRMADA');
+      if (!paso) return;
+      try { enviarAvisoLlamada_(paso, v, n, inicio); }
+      catch (e) { Logger.log('Error en el aviso ' + paso + ' de ' + v('LLAMADA ID') + ': ' + e.message); }
+      hoja.getRange(fila, enc.indexOf('LLAMADA AVISO') + 1).setValue(paso);
+    });
   });
 }
 
@@ -223,17 +249,19 @@ function urlLlamada_(id, token, accion) {
   return LLAMADAS.URL_PAGINA + '?l=' + encodeURIComponent(id) + '&t=' + encodeURIComponent(token) + (accion ? '&a=' + accion : '');
 }
 
-function enviarAvisoLlamada_(paso, f, col, inicio, minFaltan) {
-  const v = (k) => f[col[k] - 1];
-  const id = String(v('ID LLAMADA')), token = String(v('TOKEN')), nombre = String(v('NOMBRE') || 'el propietario');
+function enviarAvisoLlamada_(paso, v, nombreHoja, inicio) {
+  const id = String(v('LLAMADA ID')), token = String(v('LLAMADA TOKEN'));
+  const nombre = String(v('NOMBRE DEL PROPIETARIO') || 'el propietario').trim();
   const cel = celularInternacional_(v('CELULAR'));
-  const negocio = String(v('NEGOCIO') || ''), nota = String(v('NOTA') || '');
+  const negocio = nombreHoja.slice(-1) === 'V' ? 'Venta' : 'Arriendo';
+  const nota = String(v('LLAMADA NOTA') || '');
+  const ubicacion = [v('UBICACIÓN'), v('LOCALIDAD')].filter(Boolean).join(', ');
   const cuando = { H24: 'mañana', H3: 'en 3 horas', H2: 'en 2 horas', C90: 'en 1 hora y 30 minutos', H1: 'en 1 hora', M30: 'en 30 minutos', M15: 'en 15 minutos', M5: 'en 5 minutos', M0: 'ahora' }[paso];
   const tarjeta = '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:14px 0;border-radius:12px;background:#1c1917;"><tr><td style="padding:16px 18px;font-family:Arial,sans-serif;">' +
     '<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">LLAMADA DE SEGUIMIENTO</div>' +
     `<div style="color:#fff;font-size:19px;font-weight:bold;margin-top:4px;">${nombre}</div>` +
-    `<div style="color:#e7e5e4;font-size:15px;margin-top:2px;">${textoFechaLlamada_(inicio)}${negocio ? ' · ' + negocio : ''}</div>` +
-    (v('UBICACIÓN') ? `<div style="color:#a8a29e;font-size:13px;margin-top:4px;">${v('UBICACIÓN')}</div>` : '') +
+    `<div style="color:#e7e5e4;font-size:15px;margin-top:2px;">${textoFechaLlamada_(inicio)} · ${negocio}</div>` +
+    (ubicacion ? `<div style="color:#a8a29e;font-size:13px;margin-top:4px;">${ubicacion}${v('VALOR DE PROMOCIÓN') ? ' · ' + v('VALOR DE PROMOCIÓN') : ''}</div>` : '') +
     (nota ? `<div style="color:#d6d3d1;font-size:13px;margin-top:8px;font-style:italic;">“${nota}”</div>` : '') +
     '</td></tr></table>';
   const herramientas = [];
@@ -246,8 +274,9 @@ function enviarAvisoLlamada_(paso, f, col, inicio, minFaltan) {
   if (paso === 'M0') {
     asunto = `📞 Es hora de llamar a ${nombre}`;
     titulo = 'HORA DE LA LLAMADA';
-    herramientas.push(botonHerramientaCita_('meet', 'Presentación virtual', URL_PORTAFOLIO_CITAS + '?desdeLlamada=' + encodeURIComponent(id) + '&t=' + encodeURIComponent(token) + '&modo=VIRTUAL'));
-    herramientas.push(botonHerramientaCita_('ruta', 'Captación presencial', URL_PORTAFOLIO_CITAS + '?desdeLlamada=' + encodeURIComponent(id) + '&t=' + encodeURIComponent(token) + '&modo=PRESENCIAL'));
+    const agenda = (modo) => URL_PORTAFOLIO_CITAS + '?desdeLlamada=' + encodeURIComponent(id) + '&t=' + encodeURIComponent(token) + '&modo=' + modo;
+    herramientas.push(botonHerramientaCita_('meet', 'Presentación virtual', agenda('VIRTUAL')));
+    herramientas.push(botonHerramientaCita_('ruta', 'Captación presencial', agenda('PRESENCIAL')));
     mensaje = 'Es la hora de tu llamada de seguimiento.' + tarjeta +
       '<div style="margin:6px 0 4px;color:#78716c;font-size:12px;letter-spacing:.5px;text-align:center;">TUS HERRAMIENTAS</div>' + tablaHerramientasCita_(herramientas) +
       '<div style="margin:16px 0 4px;font-weight:bold;">¿Cómo te fue?</div>';
@@ -273,30 +302,36 @@ function enviarAvisoLlamada_(paso, f, col, inicio, minFaltan) {
 }
 
 // ---------- Página de la llamada (frontend/llamada.html) ----------
-function infoLlamada(datos) {
+function llamadaValida_(datos) {
   const l = leerLlamada_(String(datos.l || ''));
-  if (!l || String(l.v('TOKEN')) !== String(datos.t || '')) return { ok: false, mensaje: 'Enlace no válido.' };
-  const inicio = l.v('FECHA HORA');
-  return { ok: true, nombre: String(l.v('NOMBRE') || ''), estado: String(l.v('ESTADO') || ''), negocio: String(l.v('NEGOCIO') || ''),
-    cuando: inicio instanceof Date ? textoFechaLlamada_(inicio) : '', nota: String(l.v('NOTA') || '') };
+  return l && String(l.v('LLAMADA TOKEN')) === String(datos.t || '') ? l : null;
+}
+
+function infoLlamada(datos) {
+  const l = llamadaValida_(datos);
+  if (!l) return { ok: false, mensaje: 'Este enlace ya no es válido: puede que la llamada se haya reprogramado.' };
+  const inicio = l.v(LLAMADAS.COL_PROXIMA);
+  return { ok: true, nombre: String(l.v('NOMBRE DEL PROPIETARIO') || ''), estado: String(l.v('LLAMADA ESTADO') || ''),
+    negocio: l.hoja.getName().slice(-1) === 'V' ? 'Venta' : 'Arriendo',
+    cuando: inicio instanceof Date ? textoFechaLlamada_(inicio) : '', nota: String(l.v('LLAMADA NOTA') || '') };
 }
 
 /** a: CONFIRMAR | CONTESTO | NO_CONTESTO | REPROGRAMAR. Con NO_CONTESTO/REPROGRAMAR llega timestamp nuevo. */
 function accionLlamada(datos) {
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    const l = leerLlamada_(String(datos.l || ''));
-    if (!l || String(l.v('TOKEN')) !== String(datos.t || '')) return { ok: false, mensaje: 'Enlace no válido.' };
-    const estado = String(l.v('ESTADO') || '');
-    if (['CONTESTÓ', 'NO CONTESTÓ', 'REPROGRAMADA', 'CANCELADA'].indexOf(estado) !== -1) return { ok: false, mensaje: 'Esta llamada ya quedó cerrada (' + estado.toLowerCase() + ').' };
+    const l = llamadaValida_(datos);
+    if (!l) return { ok: false, mensaje: 'Este enlace ya no es válido: puede que la llamada se haya reprogramado.' };
+    const estado = String(l.v('LLAMADA ESTADO') || '');
+    if (LLAMADAS.PENDIENTES.indexOf(estado) === -1) return { ok: false, mensaje: 'Esta llamada ya quedó cerrada (' + estado.toLowerCase() + ').' };
     const a = String(datos.a || '');
     const nota = String(datos.nota || '').trim().slice(0, 500);
-    const ub = filaPorIdLead_(String(l.v('ID LEAD')));
-    if (a === 'CONFIRMAR') { l.poner('ESTADO', 'CONFIRMADA'); return { ok: true, mensaje: 'Listo, la llamada quedó confirmada. Te seguimos recordando.' }; }
+    const idLl = String(l.v('LLAMADA ID'));
+    if (a === 'CONFIRMAR') { l.poner('LLAMADA ESTADO', 'CONFIRMADA'); return { ok: true, mensaje: 'Listo, la llamada quedó confirmada. Te seguimos recordando.' }; }
     if (a === 'CONTESTO') {
-      l.poner('ESTADO', 'CONTESTÓ'); l.poner('RESULTADO', nota);
-      borrarEventoLlamada_(l, false);
-      if (ub) anotarEnCRM_(ub.hoja, ub.fila, 'Contestó' + (nota ? ': ' + nota : '') + ' (' + l.v('ID LLAMADA') + ')');
+      l.poner('LLAMADA ESTADO', 'CONTESTÓ'); l.poner(LLAMADAS.COL_PROXIMA, '');
+      marcarEventoHecho_(String(l.v('LLAMADA EVENTO') || ''));
+      anotarEnCRM_(l.hoja, l.fila, 'Contestó' + (nota ? ': ' + nota : '') + ' (' + idLl + ')');
       return { ok: true, mensaje: 'Anotado en el CRM. Si quedó lista la presentación, agéndala desde el correo.' };
     }
     if (a === 'NO_CONTESTO' || a === 'REPROGRAMAR') {
@@ -304,37 +339,42 @@ function accionLlamada(datos) {
       const noContesto = a === 'NO_CONTESTO';
       // Primer "no contestó": VOLVER A LLAMAR; si ya iba en ese, VOLVER A LLAMAR 2
       let estadoCRM = '';
-      if (noContesto && ub) {
-        const enc = ub.hoja.getRange(1, 1, 1, ub.hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
-        const actual = normalizarEstadoCaptacion_(ub.hoja.getRange(ub.fila, enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_ESTADO) + 1).getValue());
+      if (noContesto) {
+        const actual = normalizarEstadoCaptacion_(l.v(SEGUIMIENTO_CAPTACIONES.COL_ESTADO));
         estadoCRM = actual === 'VOLVER A LLAMAR' || actual === 'VOLVER A LLAMAR 2' ? 'VOLVER A LLAMAR 2' : 'VOLVER A LLAMAR';
       }
-      const r = programarLlamada({ idLead: String(l.v('ID LEAD')), hoja: ub ? ub.hoja.getName() : '', fila: ub ? ub.fila : '',
-        nombre: String(l.v('NOMBRE')), celular: String(l.v('CELULAR')), servicio: String(l.v('NEGOCIO')), direccion: String(l.v('UBICACIÓN')),
+      const d = datosFilaCaptacion_(l.hoja, l.fila);
+      const r = programarLlamada({ hoja: l.hoja.getName(), fila: l.fila, idLead: String(l.v(LLAMADAS.COL_ID_LEAD)),
+        nombre: d.nombre, celular: d.celular, servicio: d.servicio, direccion: d.direccion,
         nota: (noContesto ? 'No contestó' : 'Reprogramada') + (nota ? ': ' + nota : ''), timestamp: datos.timestamp, estadoNuevo: estadoCRM });
       if (!r.success) return { ok: false, mensaje: r.error };
-      l.poner('ESTADO', noContesto ? 'NO CONTESTÓ' : 'REPROGRAMADA'); l.poner('RESULTADO', 'Nueva llamada: ' + r.idLlamada);
-      borrarEventoLlamada_(l, true);
       return { ok: true, mensaje: 'Nueva llamada programada para el ' + r.texto + '.' };
     }
     return { ok: false, mensaje: 'Acción no válida.' };
   } finally { lock.releaseLock(); }
 }
 
-function borrarEventoLlamada_(l, borrar) {
-  const id = String(l.v('ID EVENTO') || '');
+function borrarEventoLlamadaId_(id) {
   if (!id) return;
-  try { const ev = CalendarApp.getDefaultCalendar().getEventById(id); if (ev && borrar) ev.deleteEvent(); else if (ev) ev.setTitle('✅ ' + ev.getTitle()); } catch (e) {}
+  try { const ev = CalendarApp.getDefaultCalendar().getEventById(id); if (ev) ev.deleteEvent(); } catch (e) {}
+}
+function marcarEventoHecho_(id) {
+  if (!id) return;
+  try { const ev = CalendarApp.getDefaultCalendar().getEventById(id); if (ev) ev.setTitle('✅ ' + ev.getTitle()); } catch (e) {}
 }
 
 /** Datos para agendar la presentación desde el correo de la llamada (portafolio/?desdeLlamada=…). */
 function datosDesdeLlamada(datos) {
-  const l = leerLlamada_(String(datos.l || ''));
-  if (!l || String(l.v('TOKEN')) !== String(datos.t || '')) return { ok: false };
-  let correo = '';
-  const ub = filaPorIdLead_(String(l.v('ID LEAD')));
-  if (ub) correo = datosFilaCaptacion_(ub.hoja, ub.fila).correo;
-  const cel = String(l.v('CELULAR') || '').replace(/\D/g, '');
-  return { ok: true, nombre: String(l.v('NOMBRE') || ''), celular: cel.length > 10 ? cel.slice(-10) : cel, correo: correo,
-    servicio: String(l.v('NEGOCIO') || ''), direccion: String(l.v('UBICACIÓN') || '') };
+  const l = llamadaValida_(datos);
+  if (!l) return { ok: false };
+  const d = datosFilaCaptacion_(l.hoja, l.fila);
+  return { ok: true, nombre: d.nombre, celular: d.celular.length > 10 ? d.celular.slice(-10) : d.celular, correo: d.correo,
+    servicio: d.servicio, direccion: d.direccion };
+}
+
+/** Quita la pestaña vieja "2.3 - LLAMADAS DE SEGUIMIENTO" si quedó vacía (las llamadas ahora viven en el CRM). */
+function quitarHojaLlamadasVieja_() {
+  const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('2.3 - LLAMADAS DE SEGUIMIENTO');
+  if (h && h.getLastRow() <= 1) { SpreadsheetApp.getActiveSpreadsheet().deleteSheet(h); return true; }
+  return false;
 }
