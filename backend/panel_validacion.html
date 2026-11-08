@@ -1558,6 +1558,22 @@
                                 
                                 <!-- Sección: Datos Servicios (Recibos Públicos) -->
                                 <div id="seccionDatosServicios" data-section="servicios" style="display:none;">
+                                    <!-- Recibo de ADMINISTRACIÓN: no se lee con OCR; aquí se revisa y corrige el valor del CRM -->
+                                    <div id="bloqueValorAdministracion" style="display:none;">
+                                        <div style="background: #f0fdf4; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid #bbf7d0;">
+                                            <h4 style="margin: 0 0 0.5rem 0; color: #166534; text-align: center;">Valor de la administración</h4>
+                                            <p style="font-size: 0.85rem; color: #15803d; margin: 0 0 1rem 0; text-align: center;">Es el valor del CRM que usa el contrato. Compáralo con este recibo y corrígelo si no coincide.</p>
+                                            <label for="valorAdministracionInput" style="display:block; font-size: 0.85rem; font-weight: 600; color: #166534; margin-bottom: 0.35rem;">Administración mensual (COP)</label>
+                                            <input type="text" id="valorAdministracionInput" inputmode="numeric" placeholder="Ej: 495.000" oninput="formatearValorAdministracion(this)"
+                                                style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; border: 1px solid #86efac; border-radius: 8px; font-size: 1.05rem; font-weight: 600; color: #14532d; background: #ffffff;">
+                                            <div id="valorAdministracionResumen" style="font-size: 0.85rem; color: #166534; margin: 0.75rem 0; line-height: 1.5;"></div>
+                                            <button id="btnGuardarAdministracion" class="btn" style="width: 100%; justify-content: center; background-color: #22c55e; color: white;" onclick="guardarValorAdministracion()">
+                                                Guardar valor de la administración
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div id="bloqueReciboServicio">
                                     <div style="background: #f0fdf4; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid #bbf7d0; text-align: center;">
                                          <h4 style="margin: 0 0 0.5rem 0; color: #166534;">Análisis de Recibos Públicos</h4>
                                          <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 1rem;">Extrae el número de referencia del recibo con OCR, o escríbelo manualmente y guarda.</p>
@@ -1575,6 +1591,7 @@
                                         <input type="text" id="cerebro_refServicio" value="" placeholder="Número de cuenta o referencia">
                                     </div>
                                     <div id="serviciosGuardadosContainer" style="margin-top:1rem;"></div>
+                                    </div>
                                 </div>
                             </div>
                             <div id="cerebroActions" class="cerebro-actions" style="display:none;">
@@ -3454,6 +3471,7 @@
                 document.getElementById('cerebro_tipoServicio').value = '';
                 document.getElementById('cerebro_refServicio').value = '';
                 datosCerebroAnteriores = {};
+                mostrarModoAdministracion(false); // hasta que se abra el recibo de administración
                 return;
             }
 
@@ -3784,6 +3802,15 @@
             // muestra sus propios datos (pre-carga lo guardado o inferido del nombre)
             if (personaActivaKey === 'servicios') {
                 const nombreUpper = (nombre || '').toUpperCase();
+
+                // Recibo de administración: se edita el valor del CRM, no se lee con OCR.
+                const esAdministracion = nombreUpper.includes('ADMINISTRACION');
+                mostrarModoAdministracion(esAdministracion);
+                if (esAdministracion) {
+                    cargarValorAdministracion();
+                    return;
+                }
+
                 let tipoInferido = '';
                 if (nombreUpper.includes('AGUA') || nombreUpper.includes('ACUEDUCTO')) tipoInferido = 'ACUEDUCTO';
                 else if (nombreUpper.includes('LUZ') || nombreUpper.includes('ENERGIA') || nombreUpper.includes('ENEL') || nombreUpper.includes('CODENSA')) tipoInferido = 'ENERGÍA';
@@ -3806,6 +3833,110 @@
                     document.getElementById('cerebro_refServicio').value = '';
                 }
             }
+        }
+
+        // ==========================================
+        // VALOR DE LA ADMINISTRACIÓN (recibo de administración)
+        // ==========================================
+        // En el recibo de administración no se lee ninguna referencia: se revisa y corrige
+        // el valor del CRM ("PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)"), que es el que
+        // usa el contrato. El canon del contrato sale de restarlo al precio de promoción
+        // (canonSinAdministracion en GESTOR_CONTRATOS.js), por eso se muestra cómo queda.
+        var valorAdminContexto = null; // { administracion, precioPromocion } del registro abierto
+
+        function mostrarModoAdministracion(esAdministracion) {
+            const bloqueAdmin = document.getElementById('bloqueValorAdministracion');
+            const bloqueRecibo = document.getElementById('bloqueReciboServicio');
+            if (bloqueAdmin) bloqueAdmin.style.display = esAdministracion ? 'block' : 'none';
+            if (bloqueRecibo) bloqueRecibo.style.display = esAdministracion ? 'none' : 'block';
+        }
+
+        function pesosDeTexto(texto) {
+            const n = parseInt(String(texto || '').replace(/[^\d]/g, ''), 10);
+            return isNaN(n) ? 0 : n;
+        }
+
+        function formatoPesos(n) {
+            return '$' + Number(n || 0).toLocaleString('es-CO');
+        }
+
+        function cargarValorAdministracion() {
+            const input = document.getElementById('valorAdministracionInput');
+            const resumen = document.getElementById('valorAdministracionResumen');
+            const btn = document.getElementById('btnGuardarAdministracion');
+            valorAdminContexto = null;
+            input.value = '';
+            input.disabled = true;
+            btn.disabled = true;
+            resumen.textContent = 'Leyendo el valor del CRM...';
+
+            google.script.run
+                .withSuccessHandler(function (r) {
+                    input.disabled = false;
+                    if (!r || !r.success) {
+                        resumen.textContent = 'No se pudo leer el valor: ' + ((r && r.message) || 'error desconocido');
+                        return;
+                    }
+                    btn.disabled = false;
+                    valorAdminContexto = r;
+                    input.value = r.administracion ? Number(r.administracion).toLocaleString('es-CO') : '';
+                    pintarResumenAdministracion();
+                })
+                .withFailureHandler(function (err) {
+                    input.disabled = false;
+                    resumen.textContent = 'No se pudo leer el valor: ' + err.message;
+                })
+                .obtenerValorAdministracion(registroActual);
+        }
+
+        function formatearValorAdministracion(input) {
+            const n = pesosDeTexto(input.value);
+            input.value = n ? n.toLocaleString('es-CO') : '';
+            pintarResumenAdministracion();
+        }
+
+        function pintarResumenAdministracion() {
+            if (!valorAdminContexto) return;
+            const admin = pesosDeTexto(document.getElementById('valorAdministracionInput').value);
+            const promo = Number(valorAdminContexto.precioPromocion) || 0;
+            // Mismo cálculo que canonSinAdministracion (GESTOR_CONTRATOS.js)
+            const canon = !promo ? 0 : (!admin || admin >= promo ? promo : promo - admin);
+            document.getElementById('valorAdministracionResumen').innerHTML =
+                'Valor actual en el CRM: <b>' + formatoPesos(valorAdminContexto.administracion) + '</b><br>' +
+                'Precio de promoción (canon + administración): <b>' + formatoPesos(promo) + '</b><br>' +
+                'Canon que quedará en el contrato: <b>' + formatoPesos(canon) + '</b>';
+        }
+
+        function guardarValorAdministracion() {
+            if (!valorAdminContexto) return;
+            const valor = pesosDeTexto(document.getElementById('valorAdministracionInput').value);
+            if (valor === Number(valorAdminContexto.administracion)) {
+                mostrarToast('El valor no cambió.', 'info');
+                return;
+            }
+            const btn = document.getElementById('btnGuardarAdministracion');
+            const textoOriginal = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            google.script.run
+                .withSuccessHandler(function (r) {
+                    btn.disabled = false;
+                    btn.textContent = textoOriginal;
+                    if (!r || !r.success) {
+                        mostrarToast('No se guardó: ' + ((r && r.message) || 'error desconocido'), 'error');
+                        return;
+                    }
+                    valorAdminContexto.administracion = r.administracion;
+                    pintarResumenAdministracion();
+                    mostrarToast('Administración actualizada a ' + formatoPesos(r.administracion) + '. Si el borrador del contrato ya estaba generado, vuelve a generarlo para que tome el valor nuevo.', 'success');
+                })
+                .withFailureHandler(function (err) {
+                    btn.disabled = false;
+                    btn.textContent = textoOriginal;
+                    mostrarToast('No se guardó: ' + err.message, 'error');
+                })
+                .actualizarValorAdministracion(registroActual, valor);
         }
 
         // ==========================================
