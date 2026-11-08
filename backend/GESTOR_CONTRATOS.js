@@ -514,7 +514,9 @@ function recopilarDatosContrato(cdr) {
     const contrato = {
       // El "precio de promoción general" es lo que se anuncia: canon + administración.
       // En el contrato el canon va SOLO (la administración tiene su propia cláusula).
-      canon: canonSinAdministracion(obtenerValor('PRECIO DE PROMOCION GENERAL'), obtenerValor('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)')),
+      // Si el canon ya se confirmó en el panel ("Valor del arriendo"), manda CANON FINAL DEL CONTRATO.
+      canon: canonSinAdministracion(obtenerValor('CANON FINAL DEL CONTRATO'), 0) ||
+             canonSinAdministracion(obtenerValor('PRECIO DE PROMOCION GENERAL'), obtenerValor('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)')),
       precioConAdministracion: obtenerValor('PRECIO DE PROMOCION GENERAL'),
       fechaInicio: obtenerValor('FECHA INICIO DEL CONTRATO') || extraerCampoCerebro(inquilinoText, 'FECHA INICIO CONTRATO::'),
       fechaFinal: obtenerValor('FECHA FINAL DEL CONTRATO'),
@@ -1881,7 +1883,15 @@ function obtenerContratosPendientes() {
     const idxDoc = headers.findIndex(h => h === 'ESTADO DOCUMENTAL' || h.includes('ESTADO DOCUMENTAL'));
     const idxDetalles = headers.findIndex(h => h === 'DETALLES DEL ESTADO DEL INMUEBLE' || h === 'DETALLES ESTADO DOCUMENTAL' || h.includes('DETALLES DEL ESTADO') || h.includes('DETALLES ESTADO'));
     const idxTipo = headers.findIndex(h => h === 'TIPO DE INMUEBLE' || h.includes('TIPO DE INMUEBLE'));
-    const idxCanon = headers.findIndex(h => h === 'CANON MENSUAL' || h.includes('CANON'));
+    // Canon del contrato: CANON FINAL DEL CONTRATO; si está vacío, promoción − administración.
+    const idxCanonFinal = headers.indexOf('CANON FINAL DEL CONTRATO');
+    const idxPromo = headers.indexOf('PRECIO DE PROMOCION GENERAL');
+    const idxAdmin = headers.indexOf('PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)');
+    const canonDeFila = (row) => {
+      const n = canonSinAdministracion(idxCanonFinal > -1 ? row[idxCanonFinal] : 0, 0) ||
+                canonSinAdministracion(idxPromo > -1 ? row[idxPromo] : 0, idxAdmin > -1 ? row[idxAdmin] : 0);
+      return n ? '$' + n.toLocaleString('es-CO') : '0';
+    };
     const idxInquilino = headers.findIndex(h => h === 'NOMBRES - INQUILINO' || h.includes('INQUILINO'));
     
     for (let i = 1; i < data.length; i++) {
@@ -1915,7 +1925,7 @@ function obtenerContratosPendientes() {
             contratos.push({
                 cdr: safeCdr,
                 tipoNegocio: idxTipo > -1 ? String(row[idxTipo] || 'N/A') : 'N/A',
-                canon: idxCanon > -1 ? String(row[idxCanon] || '0') : '0',
+                canon: canonDeFila(row),
                 inquilino: idxInquilino > -1 ? String(row[idxInquilino] || 'Pendiente') : 'Pendiente',
                 estadoBadge: String(estado || detalles || estadoDoc || ''),
                 detallesExtra: detalles

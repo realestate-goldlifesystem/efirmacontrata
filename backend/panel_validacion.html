@@ -1561,14 +1561,17 @@
                                     <!-- Recibo de ADMINISTRACIÓN: no se lee con OCR; aquí se revisa y corrige el valor del CRM -->
                                     <div id="bloqueValorAdministracion" style="display:none;">
                                         <div style="background: #f0fdf4; padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid #bbf7d0;">
-                                            <h4 style="margin: 0 0 0.5rem 0; color: #166534; text-align: center;">Valor de la administración</h4>
-                                            <p style="font-size: 0.85rem; color: #15803d; margin: 0 0 1rem 0; text-align: center;">Es el valor del CRM que usa el contrato. Compáralo con este recibo y corrígelo si no coincide.</p>
+                                            <h4 style="margin: 0 0 0.5rem 0; color: #166534; text-align: center;">Valor del arriendo</h4>
+                                            <p style="font-size: 0.85rem; color: #15803d; margin: 0 0 1rem 0; text-align: center;">Son los valores que usa el contrato. Si el inmueble paga administración, compárala con su recibo; si no, déjala en 0.</p>
+                                            <label for="valorCanonInput" style="display:block; font-size: 0.85rem; font-weight: 600; color: #166534; margin-bottom: 0.35rem;">Canon mensual (COP)</label>
+                                            <input type="text" id="valorCanonInput" inputmode="numeric" placeholder="Ej: 3.005.000" oninput="formatearValorAdministracion(this)"
+                                                style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; border: 1px solid #86efac; border-radius: 8px; font-size: 1.05rem; font-weight: 600; color: #14532d; background: #ffffff; margin-bottom: 0.75rem;">
                                             <label for="valorAdministracionInput" style="display:block; font-size: 0.85rem; font-weight: 600; color: #166534; margin-bottom: 0.35rem;">Administración mensual (COP)</label>
-                                            <input type="text" id="valorAdministracionInput" inputmode="numeric" placeholder="Ej: 495.000" oninput="formatearValorAdministracion(this)"
+                                            <input type="text" id="valorAdministracionInput" inputmode="numeric" placeholder="0 si no paga administración" oninput="formatearValorAdministracion(this)"
                                                 style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; border: 1px solid #86efac; border-radius: 8px; font-size: 1.05rem; font-weight: 600; color: #14532d; background: #ffffff;">
                                             <div id="valorAdministracionResumen" style="font-size: 0.85rem; color: #166534; margin: 0.75rem 0; line-height: 1.5;"></div>
                                             <button id="btnGuardarAdministracion" class="btn" style="width: 100%; justify-content: center; background-color: #22c55e; color: white;" onclick="guardarValorAdministracion()">
-                                                Confirmar canon y administración
+                                                Confirmar valor del arriendo
                                             </button>
                                         </div>
                                     </div>
@@ -3360,6 +3363,7 @@
                 html += `<button class="person-tab" id="ptab_bancaria" onclick="cambiarPersona('bancaria')"> Inf. Bancaria</button>`;
                 html += `<button class="person-tab" id="ptab_inmueble" onclick="cambiarPersona('inmueble')"> Inf. Inmueble</button>`;
                 html += `<button class="person-tab" id="ptab_servicios" onclick="cambiarPersona('servicios')"> Servs. Inmueble</button>`;
+                html += `<button class="person-tab" id="ptab_arriendo" onclick="cambiarPersona('arriendo')"> Valor del arriendo</button>`;
             }
 
             document.getElementById('personTabs').innerHTML = html;
@@ -3398,6 +3402,15 @@
                 cargarDatosCerebroPorPersona(personKey);
                 // Renderizar docs de esta pestaña
                 renderDocumentTabs(personKey);
+            } else if (personKey === 'arriendo') {
+                // Canon y administración (con o sin administración). Al lado se ve el
+                // recibo de administración si el propietario lo cargó.
+                if (seccionServicios) seccionServicios.style.display = 'block';
+                document.getElementById('cerebroContent').classList.add('readonly');
+                document.getElementById('cerebroActions').style.display = 'none';
+                mostrarModoAdministracion(true);
+                cargarValorAdministracion();
+                renderDocumentTabs('servicios', doc => (doc.nombre || '').toUpperCase().includes('ADMINISTRACION'));
             } else if (personKey === 'servicios') {
                 // Mostrar sección servicios
                 if (seccionServicios) seccionServicios.style.display = 'block';
@@ -3842,7 +3855,7 @@
         // el valor del CRM ("PRECIO DE ADMINISTRACION PLENA (SIN DESCUENTO)"), que es el que
         // usa el contrato. El canon del contrato sale de restarlo al precio de promoción
         // (canonSinAdministracion en GESTOR_CONTRATOS.js), por eso se muestra cómo queda.
-        var valorAdminContexto = null; // { administracion, precioPromocion } del registro abierto
+        var valorAdminContexto = null; // { administracion, canon, precioPromocion } del registro abierto
 
         function mostrarModoAdministracion(esAdministracion) {
             const bloqueAdmin = document.getElementById('bloqueValorAdministracion');
@@ -3862,17 +3875,21 @@
 
         function cargarValorAdministracion() {
             const input = document.getElementById('valorAdministracionInput');
+            const inputCanon = document.getElementById('valorCanonInput');
             const resumen = document.getElementById('valorAdministracionResumen');
             const btn = document.getElementById('btnGuardarAdministracion');
             valorAdminContexto = null;
             input.value = '';
+            inputCanon.value = '';
             input.disabled = true;
+            inputCanon.disabled = true;
             btn.disabled = true;
             resumen.textContent = 'Leyendo el valor del CRM...';
 
             google.script.run
                 .withSuccessHandler(function (r) {
                     input.disabled = false;
+                    inputCanon.disabled = false;
                     if (!r || !r.success) {
                         resumen.textContent = 'No se pudo leer el valor: ' + ((r && r.message) || 'error desconocido');
                         return;
@@ -3880,10 +3897,13 @@
                     btn.disabled = false;
                     valorAdminContexto = r;
                     input.value = r.administracion ? Number(r.administracion).toLocaleString('es-CO') : '';
+                    const canonCRM = canonDeContexto();
+                    inputCanon.value = canonCRM ? canonCRM.toLocaleString('es-CO') : '';
                     pintarResumenAdministracion();
                 })
                 .withFailureHandler(function (err) {
                     input.disabled = false;
+                    inputCanon.disabled = false;
                     resumen.textContent = 'No se pudo leer el valor: ' + err.message;
                 })
                 .obtenerValorAdministracion(registroActual);
@@ -3895,16 +3915,27 @@
             pintarResumenAdministracion();
         }
 
-        // Canon, administración y arriendo completo con el valor escrito en el campo.
-        // El arriendo completo es el precio de promoción (lo que se anuncia y paga el
-        // inquilino); el canon sale de restarle la administración, igual que en
-        // canonSinAdministracion (GESTOR_CONTRATOS.js).
+        // Canon que tiene hoy el CRM: CANON FINAL DEL CONTRATO, o promoción − administración
+        // si aún no se ha confirmado (lo resuelve obtenerValorAdministracion).
+        function canonDeContexto() {
+            return Number(valorAdminContexto && valorAdminContexto.canon) || 0;
+        }
+
+        // Canon y administración salen de los campos; el arriendo completo es su suma
+        // (lo que paga el inquilino cada mes).
         function desgloseArriendo() {
             const admin = pesosDeTexto(document.getElementById('valorAdministracionInput').value);
-            const completo = Number(valorAdminContexto && valorAdminContexto.precioPromocion) || 0;
-            const canon = !completo ? 0 : (!admin || admin >= completo ? completo : completo - admin);
+            const canon = pesosDeTexto(document.getElementById('valorCanonInput').value);
             const adminAnterior = Number(valorAdminContexto && valorAdminContexto.administracion) || 0;
-            return { admin: admin, canon: canon, completo: completo, adminAnterior: adminAnterior, cambio: admin !== adminAnterior };
+            const canonAnterior = canonDeContexto();
+            const completoAnterior = canonAnterior + adminAnterior;
+            const completo = canon + admin;
+            return {
+                admin: admin, canon: canon, completo: completo,
+                adminAnterior: adminAnterior, canonAnterior: canonAnterior, completoAnterior: completoAnterior,
+                cambioAdmin: admin !== adminAnterior, cambioCanon: canon !== canonAnterior,
+                cambio: admin !== adminAnterior || canon !== canonAnterior
+            };
         }
 
         // El desglose como un recibo: canon + administración = arriendo completo.
@@ -3917,34 +3948,43 @@
                         (nota ? '<br><span style="font-size:0.75rem; color:#4b7a5c;">' + nota + '</span>' : '') + '</span>' +
                     '<span style="text-align:right; white-space:nowrap;"><b>' + valor + '</b>' + (extra || '') + '</span>' +
                 '</div>';
-            const antes = d.cambio ? '<br><span style="font-size:0.75rem; color:#9ca3af; text-decoration:line-through;">' + formatoPesos(d.adminAnterior) + '</span>' : '';
-            return '<div style="background:#ffffff; border:1px solid #bbf7d0; border-radius:8px; padding:0.5rem 0.75rem; text-align:left; color:#14532d;">' +
-                fila('', 'Canon', 'lo recibe el propietario', formatoPesos(d.canon)) +
-                fila('+', 'Administración', d.cambio ? 'valor corregido' : 'valor del CRM', formatoPesos(d.admin), antes) +
+            const tachado = (cambio, anterior) => cambio ? '<br><span style="font-size:0.75rem; color:#9ca3af; text-decoration:line-through;">' + formatoPesos(anterior) + '</span>' : '';
+            const caja = '<div style="background:#ffffff; border:1px solid #bbf7d0; border-radius:8px; padding:0.5rem 0.75rem; text-align:left; color:#14532d;">';
+            if (!d.admin && !d.adminAnterior) {
+                return caja +
+                    fila('', 'Arriendo mensual (canon)', (d.cambioCanon ? 'valor corregido · ' : '') + 'sin administración · lo paga el inquilino y lo recibe el propietario', formatoPesos(d.canon), tachado(d.cambioCanon, d.canonAnterior), true) +
+                '</div>';
+            }
+            return caja +
+                fila('', 'Canon', d.cambioCanon ? 'valor corregido · lo recibe el propietario' : 'lo recibe el propietario', formatoPesos(d.canon), tachado(d.cambioCanon, d.canonAnterior)) +
+                fila('+', 'Administración', d.cambioAdmin ? 'valor corregido' : 'valor del CRM', formatoPesos(d.admin), tachado(d.cambioAdmin, d.adminAnterior)) +
                 '<div style="border-top:2px solid #86efac; margin:0.25rem 0;"></div>' +
-                fila('=', 'Arriendo completo', 'lo paga el inquilino', formatoPesos(d.completo), '', true) +
+                fila('=', 'Arriendo completo', 'lo paga el inquilino', formatoPesos(d.completo), tachado(d.completo !== d.completoAnterior, d.completoAnterior), true) +
             '</div>';
         }
 
         function pintarResumenAdministracion() {
             if (!valorAdminContexto) return;
             const d = desgloseArriendo();
-            document.getElementById('valorAdministracionResumen').innerHTML = d.completo
+            document.getElementById('valorAdministracionResumen').innerHTML = d.canon
                 ? htmlDesgloseArriendo(d)
-                : '<span style="color:#b45309;">Este inmueble no tiene precio de promoción en el CRM: no se puede calcular el canon.</span>';
+                : '<span style="color:#b45309;">Escribe el canon para ver el arriendo completo.</span>';
         }
 
         function guardarValorAdministracion() {
             if (!valorAdminContexto) return;
             const d = desgloseArriendo();
-            const valor = d.admin;
+            if (!d.canon) {
+                mostrarToast('Falta el canon.', 'error');
+                return;
+            }
 
             // Antes de guardar se confirman los tres valores juntos, tal como irán al contrato.
             Swal.fire({
                 title: '¿Confirmas estos valores para el contrato?',
                 html: htmlDesgloseArriendo(d) +
                       '<p style="font-size:0.85rem; color:#6b7280; margin:0.75rem 0 0 0;">' +
-                      (d.cambio ? 'Se guardará la administración nueva en el CRM.' : 'La administración no cambia; solo se confirman los valores.') +
+                      (d.cambio ? 'Se guardarán en el CRM y el contrato saldrá con estos valores.' : 'Nada cambia; solo se confirman los valores.') +
                       '</p>',
                 icon: 'question',
                 showCancelButton: true,
@@ -3955,14 +3995,14 @@
             }).then(function (resultado) {
                 if (!resultado.isConfirmed) return;
                 if (!d.cambio) {
-                    mostrarToast('Canon y administración confirmados.', 'success');
+                    mostrarToast('Valor del arriendo confirmado.', 'success');
                     return;
                 }
-                guardarValorAdministracionConfirmado(valor);
+                guardarValorAdministracionConfirmado(d);
             });
         }
 
-        function guardarValorAdministracionConfirmado(valor) {
+        function guardarValorAdministracionConfirmado(d) {
             const btn = document.getElementById('btnGuardarAdministracion');
             const textoOriginal = btn.textContent;
             btn.disabled = true;
@@ -3977,15 +4017,16 @@
                         return;
                     }
                     valorAdminContexto.administracion = r.administracion;
+                    valorAdminContexto.canon = r.canon;
                     pintarResumenAdministracion();
-                    mostrarToast('Administración actualizada a ' + formatoPesos(r.administracion) + '. Si el borrador del contrato ya estaba generado, vuelve a generarlo para que tome el valor nuevo.', 'success');
+                    mostrarToast('Guardado: canon ' + formatoPesos(r.canon) + (r.administracion ? ' + administración ' + formatoPesos(r.administracion) + ' = ' + formatoPesos(r.canon + r.administracion) : ', sin administración') + '. Si el borrador del contrato ya estaba generado, vuelve a generarlo para que tome el valor nuevo.', 'success');
                 })
                 .withFailureHandler(function (err) {
                     btn.disabled = false;
                     btn.textContent = textoOriginal;
                     mostrarToast('No se guardó: ' + err.message, 'error');
                 })
-                .actualizarValorAdministracion(registroActual, valor);
+                .actualizarValorAdministracion(registroActual, d.admin, d.canon);
         }
 
         // ==========================================
