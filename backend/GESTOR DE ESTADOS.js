@@ -230,6 +230,24 @@ function procesarCambioEstado(sheet, row, estadoNuevo, estadoColIndex, detallesC
 
     case ESTADOS_SISTEMA.ACTUALIZAR:
     case ESTADOS_SISTEMA.ACTIVAR:
+      // Volver a promocionar tras un contrato terminado (PROMOCION_NUEVA.js deja el
+      // detalle "🔁 ... pidió volver a promocionarlo"): se borra el canon del contrato
+      // anterior para que el nuevo no lo herede. Solo en ese caso; una primera
+      // publicación o un inmueble con contrato vivo no se tocan.
+      if (estadoNuevo === ESTADOS_SISTEMA.ACTIVAR) {
+        try {
+          const detallePrevio = String(sheet.getRange(row, detallesColIndex).getValue() || '');
+          if (detallePrevio.indexOf('pidió volver a promocionarlo') !== -1) {
+            const colCanonFinal = getColumnIndex(sheet, 'CANON FINAL DEL CONTRATO');
+            if (colCanonFinal > 0) {
+              sheet.getRange(row, colCanonFinal).clearContent();
+              Logger.log('🧹 Fila ' + row + ': CANON FINAL DEL CONTRATO limpio para la nueva promoción.');
+            }
+          }
+        } catch (eCanon) {
+          logError('ACTIVAR_CANON_FINAL', eCanon.message);
+        }
+      }
       // Mostrar mensaje inicial
       sheet.getRange(row, detallesColIndex).setValue(
         estadoNuevo === ESTADOS_SISTEMA.ACTUALIZAR ?
