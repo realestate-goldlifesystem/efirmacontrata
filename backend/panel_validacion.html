@@ -1568,7 +1568,7 @@
                                                 style="width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; border: 1px solid #86efac; border-radius: 8px; font-size: 1.05rem; font-weight: 600; color: #14532d; background: #ffffff;">
                                             <div id="valorAdministracionResumen" style="font-size: 0.85rem; color: #166534; margin: 0.75rem 0; line-height: 1.5;"></div>
                                             <button id="btnGuardarAdministracion" class="btn" style="width: 100%; justify-content: center; background-color: #22c55e; color: white;" onclick="guardarValorAdministracion()">
-                                                Guardar valor de la administración
+                                                Confirmar canon y administración
                                             </button>
                                         </div>
                                     </div>
@@ -3895,25 +3895,74 @@
             pintarResumenAdministracion();
         }
 
+        // Canon, administración y arriendo completo con el valor escrito en el campo.
+        // El arriendo completo es el precio de promoción (lo que se anuncia y paga el
+        // inquilino); el canon sale de restarle la administración, igual que en
+        // canonSinAdministracion (GESTOR_CONTRATOS.js).
+        function desgloseArriendo() {
+            const admin = pesosDeTexto(document.getElementById('valorAdministracionInput').value);
+            const completo = Number(valorAdminContexto && valorAdminContexto.precioPromocion) || 0;
+            const canon = !completo ? 0 : (!admin || admin >= completo ? completo : completo - admin);
+            const adminAnterior = Number(valorAdminContexto && valorAdminContexto.administracion) || 0;
+            return { admin: admin, canon: canon, completo: completo, adminAnterior: adminAnterior, cambio: admin !== adminAnterior };
+        }
+
+        // El desglose como un recibo: canon + administración = arriendo completo.
+        function htmlDesgloseArriendo(d) {
+            // Tres columnas: el signo (+ / =) en la suya, para que no se parta con la etiqueta.
+            const fila = (signo, etiqueta, nota, valor, extra, total) =>
+                '<div style="display:grid; grid-template-columns:1rem 1fr auto; column-gap:0.5rem; align-items:baseline; padding:0.35rem 0;' + (total ? ' font-size:1.05rem;' : '') + '">' +
+                    '<span style="font-weight:700; color:#16a34a;">' + signo + '</span>' +
+                    '<span>' + (total ? '<b>' + etiqueta + '</b>' : etiqueta) +
+                        (nota ? '<br><span style="font-size:0.75rem; color:#4b7a5c;">' + nota + '</span>' : '') + '</span>' +
+                    '<span style="text-align:right; white-space:nowrap;"><b>' + valor + '</b>' + (extra || '') + '</span>' +
+                '</div>';
+            const antes = d.cambio ? '<br><span style="font-size:0.75rem; color:#9ca3af; text-decoration:line-through;">' + formatoPesos(d.adminAnterior) + '</span>' : '';
+            return '<div style="background:#ffffff; border:1px solid #bbf7d0; border-radius:8px; padding:0.5rem 0.75rem; text-align:left; color:#14532d;">' +
+                fila('', 'Canon', 'lo recibe el propietario', formatoPesos(d.canon)) +
+                fila('+', 'Administración', d.cambio ? 'valor corregido' : 'valor del CRM', formatoPesos(d.admin), antes) +
+                '<div style="border-top:2px solid #86efac; margin:0.25rem 0;"></div>' +
+                fila('=', 'Arriendo completo', 'lo paga el inquilino', formatoPesos(d.completo), '', true) +
+            '</div>';
+        }
+
         function pintarResumenAdministracion() {
             if (!valorAdminContexto) return;
-            const admin = pesosDeTexto(document.getElementById('valorAdministracionInput').value);
-            const promo = Number(valorAdminContexto.precioPromocion) || 0;
-            // Mismo cálculo que canonSinAdministracion (GESTOR_CONTRATOS.js)
-            const canon = !promo ? 0 : (!admin || admin >= promo ? promo : promo - admin);
-            document.getElementById('valorAdministracionResumen').innerHTML =
-                'Valor actual en el CRM: <b>' + formatoPesos(valorAdminContexto.administracion) + '</b><br>' +
-                'Precio de promoción (canon + administración): <b>' + formatoPesos(promo) + '</b><br>' +
-                'Canon que quedará en el contrato: <b>' + formatoPesos(canon) + '</b>';
+            const d = desgloseArriendo();
+            document.getElementById('valorAdministracionResumen').innerHTML = d.completo
+                ? htmlDesgloseArriendo(d)
+                : '<span style="color:#b45309;">Este inmueble no tiene precio de promoción en el CRM: no se puede calcular el canon.</span>';
         }
 
         function guardarValorAdministracion() {
             if (!valorAdminContexto) return;
-            const valor = pesosDeTexto(document.getElementById('valorAdministracionInput').value);
-            if (valor === Number(valorAdminContexto.administracion)) {
-                mostrarToast('El valor no cambió.', 'info');
-                return;
-            }
+            const d = desgloseArriendo();
+            const valor = d.admin;
+
+            // Antes de guardar se confirman los tres valores juntos, tal como irán al contrato.
+            Swal.fire({
+                title: '¿Confirmas estos valores para el contrato?',
+                html: htmlDesgloseArriendo(d) +
+                      '<p style="font-size:0.85rem; color:#6b7280; margin:0.75rem 0 0 0;">' +
+                      (d.cambio ? 'Se guardará la administración nueva en el CRM.' : 'La administración no cambia; solo se confirman los valores.') +
+                      '</p>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, confirmar',
+                cancelButtonText: 'Revisar',
+                confirmButtonColor: '#22c55e',
+                cancelButtonColor: '#6b7280'
+            }).then(function (resultado) {
+                if (!resultado.isConfirmed) return;
+                if (!d.cambio) {
+                    mostrarToast('Canon y administración confirmados.', 'success');
+                    return;
+                }
+                guardarValorAdministracionConfirmado(valor);
+            });
+        }
+
+        function guardarValorAdministracionConfirmado(valor) {
             const btn = document.getElementById('btnGuardarAdministracion');
             const textoOriginal = btn.textContent;
             btn.disabled = true;
