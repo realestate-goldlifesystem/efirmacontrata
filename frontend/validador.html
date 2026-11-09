@@ -346,6 +346,7 @@
             // Mostrar estado (Ya completado, etc)
             let icon = 'ℹ️';
             if (response.status === 'diligenciado' || response.status === 'aprobado') icon = '✅';
+            if (response.status === 'pausa') icon = '⏸️';
 
             showInfo(icon, 'Estado del Proceso', response.mensaje);
           }

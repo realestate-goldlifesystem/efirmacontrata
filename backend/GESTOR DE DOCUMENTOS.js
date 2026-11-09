@@ -2236,6 +2236,24 @@ function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
       };
     }
 
+    // Trámite en pausa por reembolso (TRAMITE_REEMBOLSADO.js): el inquilino entra al
+    // formulario, que le pide el pago y luego le dice que su trámite continúa; el
+    // propietario no puede mover nada hasta entonces.
+    if (typeof trEstaEnPausa === 'function' && trEstaEnPausa(cdr)) {
+      if (tipo === 'inquilino') {
+        const dirPausa = sheet.getRange(fila, headers.indexOf('Ingrese la Dirección del inmueble') + 1).getValue().toString();
+        return {
+          success: true, activo: true, status: 'pendiente', tipo: 'inquilino',
+          mensaje: 'Realiza el pago para continuar tu trámite',
+          redirectUrl: `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}&dir=${encodeURIComponent(dirPausa)}`
+        };
+      }
+      return {
+        success: true, activo: false, status: 'pausa', tipo: tipo,
+        mensaje: 'El proceso está en pausa mientras el inquilino confirma su pago. Te avisaremos por correo cuando continúe.'
+      };
+    }
+
     if (tipo === 'inquilino') {
       const dirInq = sheet.getRange(fila, headers.indexOf('Ingrese la Dirección del inmueble') + 1).getValue().toString();
       redirectUrl = `${baseUrl}/formulario-inquilino.html?cdr=${encodeURIComponent(cdr).replace(/\(/g, '%28').replace(/\)/g, '%29')}&dir=${encodeURIComponent(dirInq)}`;

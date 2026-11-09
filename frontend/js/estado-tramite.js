@@ -124,7 +124,7 @@
         destapar();
         return;
       }
-      poner(r.status === 'diligenciado' ? '🕓' : '✅', 'Estado de tu trámite', r.mensaje || 'Tu formulario ya fue procesado.', null);
+      poner(r.status === 'diligenciado' ? '🕓' : (r.status === 'pausa' ? '⏸️' : '✅'), 'Estado de tu trámite', r.mensaje || 'Tu formulario ya fue procesado.', null);
       cerrarEn(SEGUNDOS_PARA_CERRAR);
     });
 
