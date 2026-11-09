@@ -312,52 +312,51 @@ function enviarCorreoCorreccion(cdr, tipo, opts) {
     
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
     const linkCorreccion = `${baseUrl}/validador.html?action=formulario-${tipo}&cdr=${encodeURIComponent(idRegistro)}&modo=correccion`;
-    const observaciones = opts.observaciones || '';
-    
-    const listaDocumentos = (opts.documentos || []).map(doc => `• ${doc}`).join('\n');
-    const asunto = `Acción Requerida: Corrección de Documentos - ${idRegistro}`;
-    
-    const cuerpoHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #fff3cd; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h2 style="color: #856404; margin: 0;">⚠️ Corrección Requerida</h2>
-        </div>
-        
-        <div style="padding: 30px; background: #1a1a1a; border: 1px solid #333; color: #ffffff;">
-          <h3>Estimado/a,</h3>
-          
-          <p>Necesitamos que corrija los siguientes documentos:</p>
-          
-          <div style="background: #2a2a2a; padding: 15px; color: #cccccc; border-radius: 8px; margin: 20px 0;">
-            <pre style="font-family: Arial; margin: 0;">${listaDocumentos}</pre>
-          </div>
-          
-          ${observaciones ? `
-          <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <strong>Observaciones:</strong><br>
-            ${observaciones}
-          </div>
-          ` : ''}
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${linkCorreccion}" style="background: #ffc107; color: #333; padding: 15px 40px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-              📝 CORREGIR DOCUMENTOS
-            </a>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    GmailApp.sendEmail(email, asunto, '', {
+    const observaciones = String(opts.observaciones || '').trim();
+    const nombre = safeGetValueDocumental(sheet, row, tipo === 'inquilino' ? 'NOMBRE COMPLETO INQUILINO' : 'NOMBRES Y APELLIDOS DEL PROPIETARIO');
+
+    // Mismo diseño dorado que los demás correos (plzHtml, GESTOR_PLAZOS.js) y nombres de
+    // documento legibles: "🧾 [Propietario] FACTURA_AGUA_[REG_…].jpg" → "Factura de agua".
+    // Sin emojis de 4 bytes: el correo los mostraba como "������" (9-nov-2026).
+    const lista = (opts.documentos || []).map(nombreDocumentoLegible).filter(String);
+    const listaHtml = lista.length
+      ? '<ul style="margin:0 0 20px 0; padding-left:22px;">' + lista.map(d => '<li style="margin:0 0 6px 0;"><strong>' + plzEsc(d) + '</strong></li>').join('') + '</ul>'
+      : '';
+    const cuerpoHtml = plzHtml({
+      titulo: 'Necesitamos que corrija unos documentos',
+      nombre: nombre,
+      codigo: idRegistro,
+      cuerpo:
+        plzP('Revisamos la documentación que nos envió y necesitamos que vuelva a cargar ' + (lista.length === 1 ? 'este documento:' : 'estos documentos:')) +
+        listaHtml +
+        (observaciones ? plzCaja('<strong>Observaciones:</strong><br>' + plzEsc(observaciones)) : '') +
+        plzP('Solo tiene que cargar lo que aparece en la lista; lo demás ya quedó recibido.'),
+      boton: { url: linkCorreccion, texto: 'Corregir documentos' }
+    });
+
+    enviarCorreo_({
+      to: email,
+      subject: `Acción requerida: corrección de documentos - ${idRegistro}`,
       htmlBody: cuerpoHtml,
       name: 'Real Estate Gold Life System'
     });
-    
+
     logAccionDocumental(cdr, `Correo de corrección enviado a ${tipo}`);
     
   } catch (err) {
     logErrorDocumental('enviarCorreoCorreccion', err.message);
   }
+}
+
+/** "🧾 [Propietario] FACTURA_AGUA_[REG_…].jpg" → "Factura de agua" */
+function nombreDocumentoLegible(nombreArchivo) {
+  let t = String(nombreArchivo || '')
+    .replace(/\[[^\]]*\]/g, ' ')            // [Propietario], [REG_…]
+    .replace(/\.[a-z0-9]{2,4}\s*$/i, '')       // extensión
+    .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]+/g, ' ')
+    .trim().toLowerCase();
+  t = t.replace(/^factura (agua|luz|gas|energia|internet)\b/, 'factura de $1');
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
 }
 
 function enviarNotificacionContratoListo(cdr, row) {
