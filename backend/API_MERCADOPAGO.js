@@ -209,6 +209,8 @@ function handleMercadoPagoWebhook(datos) {
         if (externalReference) {
           // GUARDAR EN SCRIPT PROPERTIES POR SEGURIDAD MAXIMA
           PropertiesService.getScriptProperties().setProperty('PAGO_APROBADO_' + externalReference, 'true');
+          // Si el trámite estaba en pausa por un reembolso, con este pago continúa donde iba.
+          if (typeof trRetomarSiPausado === 'function') trRetomarSiPausado(externalReference);
 
           const ss = SpreadsheetApp.getActiveSpreadsheet();
           const sheet = ss.getSheetByName('PAGOS_RECIBIDOS');
@@ -424,6 +426,11 @@ function auditorDeContratosVencidos() {
               // Avisarles al inquilino y al propietario: antes el reembolso era silencioso.
               if (filaInmueble > 0 && typeof plzAvisarReembolso === 'function') {
                 plzAvisarReembolso(sheetInmuebles, filaInmueble, headersInmuebles);
+              }
+              // Sin pago no avanza: el trámite queda en pausa hasta que el inquilino
+              // pague de nuevo, y entonces sigue donde iba (TRAMITE_REEMBOLSADO.js).
+              if (filaInmueble > 0 && typeof trPausarPorReembolso === 'function') {
+                trPausarPorReembolso(sheetInmuebles, filaInmueble, headersInmuebles);
               }
             } else {
               const errorText = response.getContentText();

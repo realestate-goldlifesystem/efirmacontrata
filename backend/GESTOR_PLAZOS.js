@@ -324,7 +324,7 @@ function plzCorreoReembolsoInquilino(d) {
       cuerpo:
         plzP('El proceso de arrendamiento' + (d.direccion ? ' del inmueble en <strong>' + plzEsc(d.direccion) + '</strong>' : '') + ' no alcanzó a completarse dentro del plazo garantizado por el sistema.') +
         plzCaja('Tal como nos comprometimos, <strong>ya le devolvimos el valor que pagó</strong>. El reembolso se hace al mismo medio de pago que usó; según su banco, puede tardar unos días en verse reflejado.') +
-        plzP('Si sigue interesado en el inmueble, con gusto retomamos el proceso cuando usted quiera: solo escríbale a su asesor. Gracias por su confianza y por su paciencia.')
+        plzP('Si sigue interesado en el inmueble, <strong>su trámite queda guardado</strong>: al pagar de nuevo desde el mismo enlace del formulario, continúa donde iba, sin volver a cargar documentos. Si tiene dudas, escríbale a su asesor. Gracias por su confianza y por su paciencia.')
     })
   };
 }
@@ -339,7 +339,7 @@ function plzCorreoReembolsoPropietario(d) {
       cuerpo:
         plzP('Le informamos que se cumplió el plazo que el sistema había reservado para el contrato' + (d.direccion ? ' del inmueble en <strong>' + plzEsc(d.direccion) + '</strong>' : '') + ' sin que el proceso quedara completo.') +
         plzP('Para cumplirle al inquilino con los tiempos garantizados, <strong>le devolvimos su pago y el proceso quedó liberado</strong>.') +
-        plzCaja('<strong>Podemos retomarlo.</strong> Si desea continuar con este arrendamiento, escríbale a su asesor y lo iniciamos de nuevo. Tener sus documentos a la mano hará que esta vez sea mucho más rápido.')
+        plzCaja('<strong>El proceso queda en pausa, no se pierde.</strong> Si el inquilino paga de nuevo, continúa donde iba y le avisaremos qué falta. Tener sus documentos a la mano hará que esta vez sea mucho más rápido.')
     })
   };
 }

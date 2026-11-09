@@ -491,7 +491,11 @@ function doGet(e) {
         }
         result = { success: true, direccion: dir, pago_completado: pago_completado,
                    // El formulario del propietario pide el recibo de administración solo si la hay
-                   tieneAdministracion: inmuebleTieneAdministracion(e.parameter.cdr) };
+                   tieneAdministracion: inmuebleTieneAdministracion(e.parameter.cdr),
+                   // El inquilino ya envió su formulario (p. ej. pagó de nuevo tras un reembolso):
+                   // al pagar no se le vuelve a mostrar, el trámite sigue donde iba.
+                   formularioYaEnviado: formularioInquilinoYaEnviado(e.parameter.cdr),
+                   tramiteEnPausa: typeof trEstaEnPausa === 'function' && trEstaEnPausa(e.parameter.cdr) };
         break;
 
 
@@ -2045,6 +2049,10 @@ function handleObtenerContrato(e) {
  */
 function procesarFormularioPropietario(codigoRegistro, datosFormulario, archivosBase64) {
   try {
+    // Trámite en pausa por reembolso: nada avanza hasta que el inquilino pague de nuevo.
+    if (typeof trEstaEnPausa === 'function' && trEstaEnPausa(codigoRegistro)) {
+      return { success: false, message: TR_MENSAJE_PAUSA };
+    }
     Logger.log('Procesando formulario propietario para CDR: ' + codigoRegistro);
 
     // Buscar la fila correspondiente
@@ -2466,6 +2474,10 @@ function obtenerRegistrosPropietarios() {
  */
 function procesarFormularioInquilino(codigoRegistro, datosFormulario, archivosBase64) {
   try {
+    // Trámite en pausa por reembolso: nada avanza hasta que el inquilino pague de nuevo.
+    if (typeof trEstaEnPausa === 'function' && trEstaEnPausa(codigoRegistro)) {
+      return { success: false, message: TR_MENSAJE_PAUSA };
+    }
     // 1. Validar CDR
     if (!codigoRegistro) throw new Error('Código de registro no proporcionado');
 
@@ -4249,6 +4261,10 @@ function determinarTipoDocumento(nombreArchivo) {
 function procesarValidacionInquilino(datos) {
   try {
     const { cdr, estado, observaciones, campos } = datos;
+    // Trámite en pausa por reembolso: nada avanza hasta que el inquilino pague de nuevo.
+    if (typeof trEstaEnPausa === 'function' && trEstaEnPausa(cdr)) {
+      return { success: false, message: TR_MENSAJE_PAUSA };
+    }
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
 
     // Buscar la fila del registro
@@ -4332,6 +4348,10 @@ function procesarValidacionInquilino(datos) {
 function procesarValidacionPropietario(datos) {
   try {
     const { cdr, estado, observaciones, campos } = datos;
+    // Trámite en pausa por reembolso: nada avanza hasta que el inquilino pague de nuevo.
+    if (typeof trEstaEnPausa === 'function' && trEstaEnPausa(cdr)) {
+      return { success: false, message: TR_MENSAJE_PAUSA };
+    }
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
 
     // Buscar la fila del registro
