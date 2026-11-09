@@ -123,7 +123,10 @@ function trRetomarSiPausado(cdrOId) {
     var correccion = /^(PROP|INQ)_CORRECTION/.exec(estadoDoc);
     if (correccion && typeof enviarCorreoCorreccion === 'function') {
       var docs = (estadoDoc.split('|')[1] || '').split(',').map(function (d) { return d.trim(); }).filter(String);
-      enviarCorreoCorreccion(id, correccion[1] === 'PROP' ? 'propietario' : 'inquilino', {
+      // enviarCorreoCorreccion busca la fila por el CODIGO DE REGISTRO largo, no por el ID.
+      var cCdr = headers.indexOf('CODIGO DE REGISTRO') + 1;
+      var cdrLargo = cCdr ? String(sheet.getRange(fila, cCdr).getValue() || '').trim() : id;
+      enviarCorreoCorreccion(cdrLargo, correccion[1] === 'PROP' ? 'propietario' : 'inquilino', {
         documentos: docs,
         observaciones: 'El inquilino retomó el trámite. Estos son los documentos que siguen pendientes por corregir.'
       });
