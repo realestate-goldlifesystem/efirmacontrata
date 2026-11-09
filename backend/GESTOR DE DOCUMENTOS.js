@@ -2250,7 +2250,7 @@ function verificarEstadoLink(cdr, tipo, docsParaCorreccion = null) {
       }
       return {
         success: true, activo: false, status: 'pausa', tipo: tipo,
-        mensaje: 'El proceso está en pausa mientras el inquilino confirma su pago. Te avisaremos por correo cuando continúe.'
+        mensaje: 'Este trámite está pendiente de un nuevo pago del inquilino, porque el anterior se le devolvió. Por ahora no puedes cargar documentos. Cuando el inquilino pague, el trámite se retoma donde iba y te llegará un correo con el enlace para continuar.'
       };
     }
 

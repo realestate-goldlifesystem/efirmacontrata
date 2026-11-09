@@ -45,6 +45,10 @@ function trPausarPorReembolso(sheet, fila, headers) {
     if (!cEstado || !cDetalle) return;
     var id = _trIdDeFila(sheet, fila, headers);
     if (!id) return;
+    // Si el inquilino nunca envió su formulario no hay nada que retomar: el reembolso
+    // es el de siempre y el inmueble sigue publicado para otros interesados.
+    var cDoc = headers.indexOf('ESTADO DOCUMENTAL') + 1;
+    if (!cDoc || !String(sheet.getRange(fila, cDoc).getValue() || '').trim()) return;
 
     var props = PropertiesService.getScriptProperties();
     if (props.getProperty(TRAMITE_PAUSA.PREFIJO + id)) return; // ya estaba en pausa
@@ -80,7 +84,7 @@ function trEstaEnPausa(cdrOId) {
   }
 }
 
-var TR_MENSAJE_PAUSA = 'Este trámite está en pausa: el pago del inquilino se devolvió. Continuará cuando el inquilino pague de nuevo.';
+var TR_MENSAJE_PAUSA = 'Este trámite está pendiente de un nuevo pago del inquilino, porque el anterior se le devolvió. Por ahora no se pueden cargar ni revisar documentos. Cuando el inquilino pague, el trámite se retoma donde iba y te avisaremos por correo para que continúes.';
 
 /**
  * Retoma el trámite si estaba en pausa. Lo llama el webhook al anotar un pago aprobado.
