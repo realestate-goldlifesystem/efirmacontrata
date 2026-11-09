@@ -311,7 +311,11 @@ function enviarCorreoCorreccion(cdr, tipo, opts) {
     if (!email) return;
     
     const baseUrl = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend';
-    const linkCorreccion = `${baseUrl}/validador.html?action=formulario-${tipo}&cdr=${encodeURIComponent(idRegistro)}&modo=correccion`;
+    // Sin "&docs=" el formulario abre en corrección pidiendo TODO desde cero (JK839596, 9-nov-2026):
+    // se le dice cuáles documentos corregir, igual que en los correos del panel.
+    const docsIds = typeof mapearNombresAFrontendIds === 'function' ? mapearNombresAFrontendIds(opts.documentos || []) : [];
+    const docsParam = docsIds.length ? '&docs=' + encodeURIComponent(JSON.stringify(docsIds)) : '';
+    const linkCorreccion = `${baseUrl}/validador.html?action=formulario-${tipo}&cdr=${encodeURIComponent(idRegistro).replace(/\(/g, '%28').replace(/\)/g, '%29')}&modo=correccion${docsParam}`;
     const observaciones = String(opts.observaciones || '').trim();
     const nombre = safeGetValueDocumental(sheet, row, tipo === 'inquilino' ? 'NOMBRE COMPLETO INQUILINO' : 'NOMBRES Y APELLIDOS DEL PROPIETARIO');
 
