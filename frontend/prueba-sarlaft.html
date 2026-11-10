@@ -176,7 +176,7 @@ const P = [
   { sec:'gen', t:'Información general', q:'¿Cuál es tu documento de identidad?',
     in:[{ tipo:'op', k:'tipoDoc', ops:['C.C.','C.E.','T.I.','P.P.','Otro'], def:0 }, { tipo:'tx', k:'doc', l:'Número de documento', num:true, req:true }] },
   { sec:'gen', t:'Información general', q:'¿Cuándo expidieron tu documento y cuándo naciste?',
-    in:[{ tipo:'fe', k:'ex', l:'Fecha de expedición', req:true }, { tipo:'fe', k:'na', l:'Fecha de nacimiento', req:true }, { tipo:'tx', k:'lugarNac', l:'Lugar de nacimiento', req:true }] },
+    in:[{ dos:[{ tipo:'fe', k:'ex', l:'Fecha de expedición', req:true }, { tipo:'tx', k:'idDe', l:'Ciudad de expedición', req:true }] }, { tipo:'fe', k:'na', l:'Fecha de nacimiento', req:true }, { tipo:'tx', k:'lugarNac', l:'Lugar de nacimiento', req:true }] },
   { sec:'gen', t:'Información general', q:'Escribe tu nombre tal como aparece en el documento',
     in:[{ dos:[{ tipo:'tx', k:'n1', l:'Primer nombre', req:true }, { tipo:'tx', k:'n2', l:'Segundo nombre' }] }, { dos:[{ tipo:'tx', k:'a1', l:'Primer apellido', req:true }, { tipo:'tx', k:'a2', l:'Segundo apellido' }] }] },
   { sec:'gen', t:'Información general', q:'¿Dónde vives y cómo te contactamos?',
@@ -207,8 +207,6 @@ const P = [
   { sec:'fin', t:'Información financiera', q:'¿Recibes otros ingresos además de tu actividad principal?', tipK:'otrosDet',
     tip:'Por ejemplo: arriendos de otros inmuebles, comisiones, rentas, apoyos familiares.',
     in:[{ tipo:'op', k:'otros', ops:['Sí','No'], def:1 }, { tipo:'tx', k:'otrosDet', l:'¿Cuáles? (solo si respondiste Sí)', si:()=>R.otros===0 }] },
-  { sec:'decl', t:'Declaraciones', q:'¿En qué ciudad expidieron tu documento?', a:'Con esto completamos tu declaración: “Yo, ..., identificado(a) con ... No. ... de ...”.',
-    in:[{ tipo:'tx', k:'idDe', l:'Ciudad de expedición', req:true }] },
   { sec:'aut', t:'Autorizaciones', q:'¿Autorizas el uso de tus datos para fines comerciales y de mercadeo de la aseguradora?', a:'Numerales 4.3 a 4.7. Es opcional: no afecta tu póliza.',
     in:[{ tipo:'op', k:'aut4', ops:['Sí','No'], def:1 }] },
   { sec:'aut', t:'Autorizaciones', q:'¿Autorizas compartir tus datos con empresas del Grupo Bolívar y sus aliados?', a:'Numerales 5 y 6. También es opcional.',
@@ -455,7 +453,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110174041';
+const VER = 'v-20261110174543';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
