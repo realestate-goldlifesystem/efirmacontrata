@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>SARLAFT Persona Natural</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=Caveat:wght@600&display=swap">
+<style>
+/* SARLAFT (nov-2026): lo abre el formulario del propietario en un recuadro. SARLAFT Persona Natural (Forma B-114) diligenciado con preguntas.
+   Arriba la hoja real; abajo una pregunta a la vez; cada respuesta se "estampa" en su casilla. No envía nada. */
+:root{--bg:#f4f2ec;--card:#fff;--fg:#1d1c19;--mut:#6b6658;--line:#e3dfd3;--gold:#b48a2c;--gold2:#e9d39a;--ink:#1b2a6b;
+--fd:'Space Grotesk',system-ui,sans-serif;--fb:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;height:100%}[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 var(--fb);display:flex;flex-direction:column;overflow:hidden}
+/* hoja */
+#hoja{flex:0 0 52%;overflow-y:auto;overflow-x:hidden;background:#d9d5ca;position:relative;padding:10px max(10px,env(safe-area-inset-right)) 10px max(10px,env(safe-area-inset-left))}
+#paginas{position:relative;max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.pag{position:relative;box-shadow:0 2px 10px rgba(0,0,0,.18);background:#fff}
+.pag img.fondo{display:block;width:100%}
+.campo{position:absolute;display:flex;align-items:center;overflow:hidden;white-space:nowrap;color:var(--ink);font-weight:600;
+  font-size:calc(var(--pw) * .0125);padding:0 .3em;pointer-events:none}
+.campo.lleno{animation:estampa .5s ease-out}
+.campo.centro{justify-content:center}
+.marca{position:absolute;display:flex;align-items:center;justify-content:center;color:var(--ink);font-weight:800;font-size:calc(var(--pw)*.016);pointer-events:none;animation:estampa .4s ease-out}
+.campo img,.slot img{max-width:100%;max-height:100%}
+.slot{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:none}
+@keyframes estampa{0%{transform:scale(1.6);opacity:0;filter:blur(2px)}60%{transform:scale(.95);opacity:1}100%{transform:scale(1)}}
+#marco{position:absolute;border:2.5px solid var(--gold);border-radius:8px;box-shadow:0 0 0 4000px rgba(30,25,10,.22),0 0 18px rgba(180,138,44,.6);
+  transition:all .7s cubic-bezier(.2,.8,.2,1);pointer-events:none;z-index:3}
+#marco::after{content:attr(data-t);position:absolute;left:-2px;top:-24px;background:var(--gold);color:#fff;font:600 11px var(--fb);padding:3px 8px;border-radius:6px 6px 6px 0;white-space:nowrap;letter-spacing:.03em}
+#tip{position:absolute;z-index:4;max-width:min(300px,80%);background:#1f1c14;color:#f5ecd6;border-radius:12px;padding:10px 12px;font-size:.82rem;line-height:1.4;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);transition:opacity .4s,transform .4s;opacity:0;transform:translateY(8px);pointer-events:none}
+#tip.ver{opacity:1;transform:none}#tip b{color:var(--gold2)}
+/* panel */
+#panel{flex:1;display:flex;flex-direction:column;background:var(--card);border-top:1px solid var(--line);min-height:0}
+#prog{height:4px;background:var(--line)}#prog i{display:block;height:100%;width:0;background:var(--gold);transition:width .5s}
+#preg{flex:1;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right)) 8px max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:12px}
+#preg .anim{animation:sube .45s ease-out}
+@keyframes sube{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.sec{font:600 .72rem var(--fb);letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
+.ayuda{color:var(--mut);font-size:.86rem;margin:0}
+.ins{display:flex;flex-direction:column;gap:10px}
+.ins label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--mut)}
+.ins input,.ins select{font:500 1rem var(--fb);padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);width:100%}
+.ins input:focus{outline:2px solid var(--gold2);border-color:var(--gold)}
+.dos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+/* iPhone: el input de fecha trae un ancho mínimo propio que desbordaba y dejaba mover la página de lado */
+.ins label,.dos>*{min-width:0}
+.ins input{min-width:0;max-width:100%;min-height:46px}
+.ins input[type=date]{-webkit-appearance:none;appearance:none;display:block;text-align:left}
+.ins input[type=date]::-webkit-date-and-time-value{text-align:left}
+#preg,#panel,#hoja{overflow-x:hidden}html,body{overflow-x:hidden;overscroll-behavior-x:none}
+.ops{display:flex;flex-wrap:wrap;gap:8px}
+.ops button{font:500 .92rem var(--fb);padding:10px 14px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--fg);cursor:pointer;transition:all .2s}
+.ops button.si{background:var(--gold);border-color:var(--gold);color:#fff}
+.money{font:600 1.5rem var(--fd)!important;letter-spacing:.01em}
+#pat{font:600 1rem var(--fd);color:var(--ink);background:#f6f1e2;border-radius:10px;padding:10px 12px}
+.fwrap{position:relative}.fborrar{position:absolute;top:8px;right:8px;font:600 .82rem var(--fb);padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--fg);cursor:pointer}
+#firma{display:block;width:100%;height:clamp(150px,24vh,260px);border:1.5px dashed var(--gold);border-radius:12px;background:#fffdf7;touch-action:none}
+.nav{display:flex;gap:10px;padding:10px max(16px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));border-top:1px solid var(--line)}
+.nav button{flex:1;font:600 1rem var(--fb);padding:13px;border-radius:12px;border:0;background:var(--gold);color:#fff;cursor:pointer}
+.nav button.sec2{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--fg)}
+.nav button:disabled{opacity:.45}
+.err{color:#b4332c;font-size:.82rem;min-height:1em}
+.tel{display:flex;gap:8px}.tel input{flex:1;min-width:0;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.tel-p{flex:0 0 auto;font:600 1rem var(--fb);padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer}
+.tel-lista{border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;animation:sube .25s ease-out}
+.tel-lista input{font:500 .95rem var(--fb);padding:9px 10px;border:1px solid var(--line);border-radius:8px}
+#telOps{max-height:180px;overflow-y:auto;display:flex;flex-direction:column}
+#telOps button{text-align:left;font:400 .92rem var(--fb);padding:9px 8px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--fg);cursor:pointer}
+#telOps button span{color:var(--mut);float:right}
+.combo{max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;animation:sube .2s ease-out;margin-top:-4px}
+.combo button{text-align:left;font:400 .95rem var(--fb);padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:#fff;color:var(--fg);cursor:pointer}
+.combo button span{float:right;color:var(--gold);font:600 .8rem var(--fd)}
+.combo button:active{background:#f6f1e2}.combo .ayuda{padding:10px 12px}
+#ciiuQ[readonly]{background:#f6f1e2;color:var(--ink);font-weight:600}
+.hvista{display:flex;flex-direction:column;gap:10px;animation:sube .35s ease-out}
+.hcomp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hcomp figure{margin:0;display:flex;flex-direction:column;gap:4px;align-items:center;min-width:0}
+.hcomp canvas,.hbox{width:100%;aspect-ratio:3/4;border-radius:10px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hbox img{max-width:92%;max-height:92%}.fbox{aspect-ratio:3/4}
+.hvista label{display:flex;flex-direction:column;font-size:.8rem;color:var(--mut)}.hvista input[type=range]{accent-color:var(--gold)}
+.ciiu-res{display:flex;flex-direction:column;gap:6px}
+.ciiu-res button{text-align:left;font:400 .86rem/1.35 var(--fb);padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer;animation:sube .3s ease-out}
+.ciiu-res button b{color:var(--gold);font-family:var(--fd);margin-right:4px}
+</style>
+</head>
+<body>
+<div id="hoja">
+  <div id="paginas">
+    <div class="pag" id="p0"><img class="fondo" src="assets/sarlaft/b114-1.jpg" alt="SARLAFT página 1"></div>
+    <div class="pag" id="p1"><img class="fondo" src="assets/sarlaft/b114-2.jpg" alt="SARLAFT página 2"></div>
+    <div id="marco" data-t=""></div>
+    <div id="tip"></div>
+  </div>
+</div>
+<div id="panel">
+  <div id="prog"><i></i></div>
+  <div id="preg"></div>
+  <div class="nav"><button class="sec2" id="atras" type="button">Atrás</button><button id="sig" type="button">Siguiente</button></div>
+</div>
+
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="js/huella-captura.js"></script>
+<script>
+// Hoja carta en puntos PDF (Forma B-114, Red./Sep.23). Rect = [x1, y1, x2, y2] con y desde abajo.
+const PW = 609.449, PH = 793.701;
+const F = { // texto
+  localidad:[0,528,715,590,730], fdD:[0,419,685,474,701], fdM:[0,475,685,530,701], fdA:[0,531,685,590,701],
+  docOtro:[0,171,647,195,656], doc:[0,197,644,275,658], exD:[0,275,644,311,658], exM:[0,311,644,346,658], exA:[0,346,644,405,658],
+  naD:[0,405,644,441,658], naM:[0,441,644,475,658], naA:[0,475,644,505,658], lugarNac:[0,506,644,590,658],
+  n1:[0,20,619,162,632], n2:[0,163,619,305,632], a1:[0,306,619,448,632], a2:[0,448,619,590,632],
+  nacionalidad:[0,19,593,117,607], direccion:[0,117,593,249,607], ciudad:[0,249,593,376,607], celular:[0,376,593,462,607], correo:[0,462,593,590,607],
+  profesion:[0,19,548,361,562], independiente:[0,19,524,359,537], ciiu:[0,359,524,590,537],
+  famNombre:[0,20,430,285,445], famId:[0,285,430,383,445], famPar:[0,383,430,481,445], famCargo:[0,481,430,590,445],
+  activos:[0,20,379,211,393], pasivos:[0,210,379,400,392], patrimonio:[0,400,379,589,392], ingresos:[0,20,354,305,367], egresos:[0,305,354,590,367],
+  otrosDet:[0,20,315,590,329], yo:[0,30,283,194,292], idCon:[0,247,283,291,295], idNo:[0,302,283,367,295], idDe:[0,375,283,455,294],
+  dDia:[1,364,288,469,298], dMes:[1,477,288,581,298], dAno:[1,38,279,91,287],
+  firma:[1,215,203,383,232], fNombre:[1,203,188,383,196], fDoc:[1,228,171,295,181], fDe:[1,306,171,382,182], huella:[1,397,171,449,224]
+};
+const G = { // casillas: cada opción su rect
+  tipoV:[[0,245,700,255,709],[0,340,699,349,709]],
+  calidad:[[0,291,671,300,680],[0,342,671,351,680],[0,402,671,411,680],[0,462,671,472,680],[0,519,671,527,681],[0,573,671,583,680]],
+  tipoDoc:[[0,36,646,46,655],[0,68,646,78,655],[0,97,645,107,655],[0,127,645,136,655],[0,159,645,169,655]],
+  ocupacion:[[0,403,551,414,561],[0,454,551,464,561],[0,510,551,520,561],[0,570,551,580,561]],
+  pep:[[0,495,486,504,496],[0,532,486,542,496]], vinculoPep:[[0,271,463,281,473],[0,311,464,320,473]],
+  otros:[[0,44,332,53,341],[0,81,332,90,341]],
+  aut4:[[1,225,618,234,627],[1,243,617,250,627]], aut56:[[1,209,365,228,374],[1,239,365,259,374]]
+};
+const SEC = { // zonas para el marco
+  enc:[0,415,660,592,735,'Encabezado'], gen:[0,15,585,592,690,'Información general'], act:[0,15,520,592,575,'Actividad económica'],
+  pep:[0,15,425,592,505,'Personas expuestas políticamente'], fin:[0,15,310,592,400,'Información financiera'],
+  decl:[0,15,275,592,300,'Declaraciones'], aut:[1,200,355,400,635,'Autorizaciones'], firma:[1,160,160,470,258,'Firma y huella']
+};
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+// Fijos para la póliza de arrendamiento: siempre Vinculación y Tomador (no se le preguntan al propietario)
+const R = { tipoV: 0, calidad: 1 }; // respuestas
+
+// ---------- pintar en la hoja ----------
+const pct = r => ({ left: r[1] / PW * 100 + '%', top: (PH - r[4]) / PH * 100 + '%', width: (r[3] - r[1]) / PW * 100 + '%', height: (r[4] - r[2]) / PH * 100 + '%' });
+const TXT = {}, MK = {};   // lo estampado en pantalla: con esto mismo se llena el PDF real
+function poner(k, txt, cls) {
+  TXT[k] = txt || '';
+  const r = F[k], id = 'c_' + k; let el = document.getElementById(id);
+  if (!txt) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = id; el.className = 'campo' + (cls ? ' ' + cls : ''); Object.assign(el.style, pct(r)); document.getElementById('p' + r[0]).appendChild(el); }
+  if (el.textContent !== txt) { el.textContent = txt; el.classList.remove('lleno'); void el.offsetWidth; el.classList.add('lleno'); }
+}
+function marcar(g, i) {
+  MK[g] = (i == null || i < 0) ? null : i;
+  G[g].forEach((r, j) => { const id = 'm_' + g + j; const el = document.getElementById(id); if (el) el.remove(); });
+  if (i == null || i < 0) return;
+  const r = G[g][i], el = document.createElement('div'); el.id = 'm_' + g + i; el.className = 'marca'; el.textContent = 'X';
+  Object.assign(el.style, pct(r)); document.getElementById('p' + r[0]).appendChild(el);
+}
+function imagen(k, src) {
+  const r = F[k], id = 's_' + k; let el = document.getElementById(id);
+  if (!el) { el = document.createElement('div'); el.id = id; el.className = 'slot'; Object.assign(el.style, pct(r)); document.getElementById('p' + r[0]).appendChild(el); }
+  el.innerHTML = src ? '<img alt="" src="' + src + '">' : ''; if (src) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = 'estampa .6s ease-out'; }
+}
+function ajustarFuente() { document.querySelectorAll('.pag').forEach(p => p.style.setProperty('--pw', p.clientWidth + 'px')); }
+addEventListener('resize', () => { ajustarFuente(); enmarcar(pasoActual().sec); });
+
+// ---------- marco animado y scroll suave del contenedor (sin scrollIntoView) ----------
+function rectEn(r) { const p = document.getElementById('p' + r[0]), w = p.clientWidth, h = p.clientHeight;
+  return { x: p.offsetLeft + r[1] / PW * w, y: p.offsetTop + (PH - r[4]) / PH * h, w: (r[3] - r[1]) / PW * w, h: (r[4] - r[2]) / PH * h }; }
+let anim;
+function scrollA(y) { const h = document.getElementById('hoja'), y0 = h.scrollTop, dy = y - y0, t0 = performance.now(); cancelAnimationFrame(anim);
+  const f = t => { const k = Math.min(1, (t - t0) / 700), e = 1 - Math.pow(1 - k, 3); h.scrollTop = y0 + dy * e; if (k < 1) anim = requestAnimationFrame(f); }; anim = requestAnimationFrame(f); }
+function enmarcar(s) {
+  const z = SEC[s], m = document.getElementById('marco'), r = rectEn(z), pad = 6;
+  Object.assign(m.style, { left: r.x - pad + 'px', top: r.y - pad + 'px', width: r.w + 2 * pad + 'px', height: r.h + 2 * pad + 'px' }); m.dataset.t = z[5];
+  const h = document.getElementById('hoja'); scrollA(Math.max(0, r.y + 10 - (h.clientHeight - r.h) / 2));
+}
+function tip(html, campoKey) {
+  const t = document.getElementById('tip'); if (!html) { t.classList.remove('ver'); return; }
+  t.innerHTML = html; const r = rectEn(F[campoKey]);
+  t.style.left = Math.min(r.x, document.getElementById('paginas').clientWidth - t.offsetWidth - 8) + 'px';
+  t.style.top = r.y + r.h + 8 + 'px'; t.classList.add('ver');
+}
+
+// ---------- utilidades ----------
+const fmt = n => n ? '$ ' + Number(n).toLocaleString('es-CO') : '';
+const soloNum = s => String(s || '').replace(/\D/g, '');
+function partesFecha(v) { if (!v) return ['', '', '']; const [a, m, d] = v.split('-'); return [d, m, a]; }
+
+// ---------- pasos ----------
+const P = [
+  { sec:'enc', t:'Empecemos', q:'¿En qué ciudad diligencias este formulario?', a:'Ya dejamos marcado <b>Vinculación</b> y <b>Tomador</b>: como propietario tomas la póliza de arrendamiento.',
+    in:[{ tipo:'tx', k:'localidad', l:'Localidad', def:'Usaquén' }] },
+  { sec:'gen', t:'Información general', q:'¿Cuál es tu documento de identidad?',
+    in:[{ tipo:'op', k:'tipoDoc', ops:['C.C.','C.E.','T.I.','P.P.','Otro'], def:0 }, { tipo:'tx', k:'doc', l:'Número de documento', num:true, req:true }] },
+  { sec:'gen', t:'Información general', q:'¿Cuándo expidieron tu documento y cuándo naciste?',
+    in:[{ dos:[{ tipo:'fe', k:'ex', l:'Fecha de expedición', req:true }, { tipo:'tx', k:'idDe', l:'Ciudad de expedición', req:true }] }, { tipo:'fe', k:'na', l:'Fecha de nacimiento', req:true }, { tipo:'tx', k:'lugarNac', l:'Lugar de nacimiento', req:true }] },
+  { sec:'gen', t:'Información general', q:'Escribe tu nombre tal como aparece en el documento',
+    in:[{ dos:[{ tipo:'tx', k:'n1', l:'Primer nombre', req:true }, { tipo:'tx', k:'n2', l:'Segundo nombre' }] }, { dos:[{ tipo:'tx', k:'a1', l:'Primer apellido', req:true }, { tipo:'tx', k:'a2', l:'Segundo apellido' }] }] },
+  { sec:'gen', t:'Información general', q:'¿Dónde vives y cómo te contactamos?',
+    in:[{ tipo:'tx', k:'nacionalidad', l:'Nacionalidad', def:'Colombiana', req:true }, { tipo:'tx', k:'direccion', l:'Dirección de residencia', req:true },
+        { tipo:'tx', k:'ciudad', l:'Ciudad de residencia', req:true }, { tipo:'tel' }, { tipo:'tx', k:'correo', l:'Correo electrónico', req:true, email:true }] },
+  { sec:'act', t:'Actividad económica', q:'¿A qué te dedicas?', a:'Si trabajas por tu cuenta, deja la ocupación sin marcar y describe tu actividad.',
+    in:[{ tipo:'tx', k:'profesion', l:'Profesión u oficio (escribe y elige, o escríbela tal cual)', req:true, lista:'prof' }, { tipo:'op', k:'ocupacion', ops:['Asalariado','Estudiante','Pensionado','Ama de casa','Independiente'], def:0 }] },
+  { sec:'act', t:'Actividad económica', q:'Cuéntanos tu actividad como independiente', solo:()=>R.ocupacion===4,
+    in:[{ tipo:'tx', k:'independiente', l:'Descripción de la actividad principal', req:true }, { tipo:'ciiu' }] },
+  { sec:'pep', t:'Personas expuestas políticamente', q:'¿Eres o has sido una Persona Expuesta Políticamente (PEP)?', a:'Lo son quienes ocupan o han ocupado cargos públicos de alto nivel: ministros, congresistas, alcaldes, altos mandos militares, directivos de entidades del Estado, etc. La gran mayoría responde No.',
+    in:[{ tipo:'op', k:'pep', ops:['Sí','No'], def:1 }] },
+  { sec:'pep', t:'Personas expuestas políticamente', q:'¿Tienes un familiar que sea Persona Expuesta Políticamente?',
+    in:[{ tipo:'op', k:'vinculoPep', ops:['Sí','No'], def:1 }] },
+  { sec:'pep', t:'Personas expuestas políticamente', q:'Datos de tu familiar PEP', solo:()=>R.vinculoPep===0,
+    in:[{ tipo:'tx', k:'famNombre', l:'Nombres y apellidos', req:true }, { dos:[{ tipo:'tx', k:'famId', l:'No. de identificación', num:true }, { tipo:'tx', k:'famPar', l:'Parentesco', req:true }] }, { tipo:'tx', k:'famCargo', l:'Cargo o actividad', req:true }] },
+  { sec:'fin', t:'Información financiera', q:'¿Cuánto suman tus activos?', tipK:'activos',
+    tip:'<b>Activos:</b> todo lo que tienes a tu nombre: propiedades, vehículos, ahorros, inversiones, incluso tu celular. Escribe el valor total aproximado.',
+    in:[{ tipo:'mo', k:'activos', req:true }] },
+  { sec:'fin', t:'Información financiera', q:'¿Cuánto suman tus pasivos (deudas)?', tipK:'pasivos',
+    tip:'<b>Pasivos:</b> todas tus deudas: créditos, tarjetas, hipotecas. Si no debes nada, escribe 0.',
+    in:[{ tipo:'mo', k:'pasivos', req:true, cero:true }, { tipo:'pat' }] },
+  { sec:'fin', t:'Información financiera', q:'¿Cuánto recibes al mes?', tipK:'ingresos',
+    tip:'<b>Ingresos mensuales:</b> lo que recibes cada mes: salario, pensión, arriendos u otros ingresos fijos. Ojo: no se suman al patrimonio.',
+    in:[{ tipo:'mo', k:'ingresos', req:true }] },
+  { sec:'fin', t:'Información financiera', q:'¿Cuánto gastas al mes?', tipK:'egresos',
+    tip:'<b>Egresos mensuales:</b> tus gastos del mes: arriendo, servicios, cuotas de deudas, mercado, etc.',
+    in:[{ tipo:'mo', k:'egresos', req:true }] },
+  { sec:'fin', t:'Información financiera', q:'¿Recibes otros ingresos además de tu actividad principal?', tipK:'otrosDet',
+    tip:'Por ejemplo: arriendos de otros inmuebles, comisiones, rentas, apoyos familiares.',
+    in:[{ tipo:'op', k:'otros', ops:['Sí','No'], def:1 }, { tipo:'tx', k:'otrosDet', l:'¿Cuáles? (solo si respondiste Sí)', si:()=>R.otros===0 }] },
+  { sec:'aut', t:'Autorizaciones', q:'¿Autorizas el uso de tus datos para fines comerciales y de mercadeo de la aseguradora?', a:'Numerales 4.3 a 4.7. Es opcional: no afecta tu póliza.',
+    in:[{ tipo:'op', k:'aut4', ops:['Sí','No'], def:1 }] },
+  { sec:'aut', t:'Autorizaciones', q:'¿Autorizas compartir tus datos con empresas del Grupo Bolívar y sus aliados?', a:'Numerales 5 y 6. También es opcional.',
+    in:[{ tipo:'op', k:'aut56', ops:['Sí','No'], def:1 }] },
+  { sec:'firma', t:'Firma', q:'Firma con tu dedo', a:'Así quedará tu firma en el formulario.', in:[{ tipo:'fi' }] },
+  { sec:'firma', t:'Huella', q:'Ahora estampa tu huella', a:'Se abre la cámara con una guía. Pon la yema del índice derecho dentro del óvalo; la foto se toma sola.', in:[{ tipo:'hu' }] },
+  { sec:'firma', t:'¡Listo!', q:'Tu SARLAFT quedó diligenciado', a:'Revisa la hoja de arriba. Al tocar <b>Guardar y adjuntar</b> se arma el PDF con tu firma y tu huella y queda cargado en tu formulario.', in:[], fin:true }
+];
+let paso = 0;
+// Datos que ya trae el formulario del propietario: no se vuelven a preguntar (solo se estampan)
+const PRE = new Set();
+const hojas = arr => arr.flatMap(i => i.dos ? hojas(i.dos) : [i]);
+const yaLleno = i => (i.k && PRE.has(i.k)) || (i.tipo === 'tel' && PRE.has('celular'));
+const todoPre = p => { const h = hojas(p.in); return h.length > 0 && h.every(yaLleno); };
+const visibles = () => P.filter(p => (!p.solo || p.solo()) && !todoPre(p));
+const pasoActual = () => visibles()[paso];
+
+// ---------- dibujar todo lo derivado ----------
+function sincronizar() {
+  const hoy = new Date(), dd = String(hoy.getDate()).padStart(2, '0'), mm = String(hoy.getMonth() + 1).padStart(2, '0');
+  poner('localidad', R.localidad); poner('fdD', dd, 'centro'); poner('fdM', mm, 'centro'); poner('fdA', String(hoy.getFullYear()), 'centro');
+  marcar('tipoV', R.tipoV); marcar('calidad', R.calidad); marcar('tipoDoc', R.tipoDoc);
+  poner('doc', R.doc ? Number(R.doc).toLocaleString('es-CO') : '');
+  const [eD, eM, eA] = partesFecha(R.ex), [nD, nM, nA] = partesFecha(R.na);
+  poner('exD', eD, 'centro'); poner('exM', eM, 'centro'); poner('exA', eA, 'centro'); poner('naD', nD, 'centro'); poner('naM', nM, 'centro'); poner('naA', nA, 'centro');
+  ['lugarNac','n1','n2','a1','a2','nacionalidad','direccion','ciudad','celular','correo','profesion','independiente','ciiu','famNombre','famId','famPar','famCargo','otrosDet','idDe']
+    .forEach(k => poner(k, k === 'correo' ? R[k] : (R[k] || '').toUpperCase()));
+  marcar('ocupacion', R.ocupacion === 4 ? null : R.ocupacion);
+  // Casillas que no aplican: se tachan con guiones para que no queden en blanco
+  const NA = '- - - - - - - - - -', na = (cond, ks) => { if (cond) ks.forEach(k => poner(k, NA, 'centro')); };
+  na(R.ocupacion !== undefined && R.ocupacion !== 4, ['independiente', 'ciiu']);
+  na(R.vinculoPep === 1, ['famNombre', 'famId', 'famPar', 'famCargo']);
+  na(R.otros === 1, ['otrosDet']);
+  na(R.n1 && !R.n2, ['n2']); na(R.a1 && !R.a2, ['a2']);
+  marcar('pep', R.pep); marcar('vinculoPep', R.vinculoPep); marcar('otros', R.otros);
+  ['activos','pasivos','ingresos','egresos'].forEach(k => poner(k, R[k] !== undefined && R[k] !== '' ? fmt(R[k]) || '$ 0' : ''));
+  const pat = (R.activos !== undefined && R.pasivos !== undefined && R.pasivos !== '') ? (+R.activos || 0) - (+R.pasivos || 0) : null;
+  poner('patrimonio', pat === null ? '' : (pat < 0 ? '- ' : '') + '$ ' + Math.abs(pat).toLocaleString('es-CO'));
+  const nombre = [R.n1, R.n2, R.a1, R.a2].filter(Boolean).join(' ').toUpperCase();
+  const tdoc = ['C.C.','C.E.','T.I.','P.P.','Otro'][R.tipoDoc ?? 0];
+  poner('yo', nombre); poner('idCon', R.doc ? tdoc : ''); poner('idNo', R.doc || '');
+  poner('fNombre', nombre); poner('fDoc', R.doc || ''); poner('fDe', (R.idDe || '').toUpperCase());
+  marcar('aut4', R.aut4); marcar('aut56', R.aut56);
+  if (R.aut4 !== undefined) { poner('dDia', String(hoy.getDate()), 'centro'); poner('dMes', MESES[hoy.getMonth()], 'centro'); poner('dAno', String(hoy.getFullYear()).slice(2)); }
+  imagen('firma', R.firma); imagen('huella', R.huella);
+}
+
+// ---------- panel de preguntas ----------
+function render() {
+  const p = pasoActual(), V = visibles(), box = document.getElementById('preg');
+  document.querySelector('#prog i').style.width = (paso / (V.length - 1) * 100) + '%';
+  // valores por defecto
+  const defs = arr => arr.forEach(i => { if (i.dos) return defs(i.dos); if (i.def !== undefined && R[i.k] === undefined) R[i.k] = i.def; });
+  defs(p.in); sincronizar();   // lo que viene marcado por defecto se ve estampado de una vez
+  let h = '<div class="anim" style="display:flex;flex-direction:column;gap:12px"><div class="sec">' + p.t + '</div><h2>' + p.q + '</h2>' + (p.a ? '<p class="ayuda">' + p.a + '</p>' : '') + '<div class="ins">';
+  const campo = i => {
+    if (i.dos) { const v = i.dos.filter(x => !yaLleno(x)); return v.length === 2 ? '<div class="dos">' + v.map(campo).join('') + '</div>' : v.map(campo).join(''); }
+    if (yaLleno(i)) return '';
+    if (i.tipo === 'tx') return (i.si && !i.si()) ? '' : '<label>' + i.l + '<input data-k="' + i.k + '" ' + (i.num ? 'inputmode="numeric"' : '') + (i.email ? ' type="email" inputmode="email"' : '') + ' value="' + (R[i.k] || '').replace(/"/g, '&quot;') + '" autocomplete="off"></label>' + (i.lista ? '<div class="combo" data-para="' + i.k + '" hidden></div>' : '');
+    if (i.tipo === 'fe') return '<label>' + i.l + '<input type="date" data-k="' + i.k + '" value="' + (R[i.k] || '') + '"></label>';
+    if (i.tipo === 'op') return '<div class="ops" data-g="' + i.k + '">' + i.ops.map((o, j) => '<button type="button" data-j="' + j + '" class="' + (R[i.k] === j ? 'si' : '') + '">' + o + '</button>').join('') + '</div>';
+    if (i.tipo === 'mo') return '<input class="money" data-k="' + i.k + '" data-mo="1" inputmode="numeric" placeholder="$ 0" value="' + (R[i.k] !== undefined ? fmt(R[i.k]) || '$ 0' : '') + '">';
+    if (i.tipo === 'pat') return '<div id="pat"></div>';
+    if (i.tipo === 'tel') { const p = pais(); return '<label>Celular<div class="tel"><button type="button" id="telPais" class="tel-p">' + bandera(p.iso) + ' +' + p.cod + ' ▾</button>' +
+      '<input id="telNum" inputmode="numeric" autocomplete="tel-national" maxlength="' + p.max + '" placeholder="' + '0'.repeat(p.max).replace(/0/g, '#') + '" value="' + (R.celNum || '') + '"></div></label>' +
+      '<div id="telLista" class="tel-lista" hidden><input id="telBus" placeholder="Buscar país…" autocomplete="off"><div id="telOps"></div></div><p class="ayuda" id="telAyuda"></p>'; }
+    if (i.tipo === 'ciiu') return '<label>Código CIIU: escribe el código de tu RUT o busca tu actividad con palabras<input id="ciiuQ" autocomplete="off" placeholder="Ej: 6810, taxi, peluquería, venta de ropa" value="' + (R.ciiu ? R.ciiu + ' · ' + (R.ciiuT || '') : '').replace(/"/g, '&quot;') + '"' + (R.ciiu ? ' readonly' : '') + '></label><div class="ops"><button type="button" id="ciiuCambiar"' + (R.ciiu ? '' : ' hidden') + '>Cambiar código</button></div><div id="ciiuRes" class="ciiu-res"></div>';
+    if (i.tipo === 'fi') return '<div class="fwrap"><canvas id="firma"></canvas><button type="button" id="borrarF" class="fborrar">Borrar</button></div>';
+    if (i.tipo === 'hu') return '<div class="ops"><button type="button" id="tomarH" class="si">' + (R.huella ? 'Tomar de nuevo' : 'Abrir cámara') + '</button></div><p class="ayuda" id="hMsg"></p>' +
+      '<div id="hVista" class="hvista"' + (R.huella ? '' : ' hidden') + '>' +
+        '<div class="hcomp"><figure><canvas id="hFoto"></canvas><figcaption>Foto</figcaption></figure><figure><div class="hbox"><img id="hImg" alt="Huella"></div><figcaption>Huella</figcaption></figure>' +
+        '<figure><div class="hbox fbox"><img id="hFirma" alt="Firma"></div><figcaption>Tu firma</figcaption></figure></div>' +
+        '<div id="hAjustes"' + (huellaFoto ? '' : ' hidden') + '><label>Grosor de las líneas<input id="hG" type="range" min="2" max="14" value="' + (R.hG || 6) + '"></label>' +
+        '<label>Contraste<input id="hC" type="range" min="-30" max="30" value="' + (R.hC || 0) + '"></label>' +
+        '<div class="ops"><button type="button" id="hInv">Invertir</button></div></div></div>';
+    return '';
+  };
+  h += p.in.map(campo).join('') + '</div><div class="err" id="err"></div></div>';
+  box.innerHTML = h; box.scrollTop = 0;
+  document.getElementById('atras').disabled = paso === 0;
+  document.getElementById('sig').textContent = p.fin ? 'Guardar y adjuntar' : 'Siguiente';
+  // eventos
+  box.querySelectorAll('input[data-k]').forEach(el => el.oninput = () => {
+    const k = el.dataset.k;
+    if (el.dataset.mo) { const n = soloNum(el.value); R[k] = n === '' ? '' : n; el.value = n === '' ? '' : '$ ' + Number(n).toLocaleString('es-CO'); }
+    else R[k] = el.value;
+    sincronizar(); patTxt();
+  });
+  box.querySelectorAll('.ops[data-g]').forEach(g => g.onclick = e => {
+    const b = e.target.closest('button'); if (!b) return; R[g.dataset.g] = +b.dataset.j;
+    g.querySelectorAll('button').forEach(x => x.classList.toggle('si', x === b)); sincronizar();
+    if (p.in.some(i => i.si)) render();
+  });
+  box.querySelectorAll('.combo').forEach(combo);
+  const cq = document.getElementById('ciiuQ'); if (cq) { buscadorCiiu(cq); if (!R.ciiu && !cq.value && R.profesion) { cq.value = R.profesion; cq.oninput(); } }
+  if (document.getElementById('telNum')) celular();
+  const fi = document.getElementById('firma'); if (fi) firmaPad(fi);
+  if (document.getElementById('hVista')) {
+    vistaHuella(false);
+    const rep = () => { R.hG = +document.getElementById('hG').value; R.hC = +document.getElementById('hC').value; vistaHuella(true); };
+    document.getElementById('hG').oninput = rep; document.getElementById('hC').oninput = rep;
+    document.getElementById('hInv').onclick = () => { R.hI = !R.hI; vistaHuella(true); };
+  }
+  const th = document.getElementById('tomarH'); if (th) th.onclick = async () => {
+    const r = await HuellaCaptura.abrir();
+    if (r) { huellaFoto = r.foto; R.huella = r.png; th.textContent = 'Tomar de nuevo'; document.getElementById('hMsg').textContent = '¡Huella estampada! Si no se ven bien las líneas, ajústala o tómala de nuevo.';
+      document.getElementById('hAjustes').hidden = false; vistaHuella(true); }
+    else document.getElementById('hMsg').textContent = 'No se tomó la huella. Revisa el permiso de la cámara e inténtalo de nuevo.';
+  };
+  enmarcar(p.sec); patTxt();
+  setTimeout(() => tip(p.tip, p.tipK), p.tip ? 650 : 0); if (!p.tip) tip(null);
+  const primero = box.querySelector('input'); if (primero && !matchMedia('(pointer:coarse)').matches) primero.focus();
+}
+function patTxt() { const el = document.getElementById('pat'); if (!el) return;
+  const a = +R.activos || 0, b = +R.pasivos || 0; el.textContent = 'Patrimonio = Activos − Pasivos = ' + (a - b < 0 ? '- ' : '') + '$ ' + Math.abs(a - b).toLocaleString('es-CO'); }
+
+// ---------- Vista previa de la huella (como en la prueba de huella): foto, huella, firma y ajustes ----------
+let huellaFoto = null;   // foto original en memoria (no se guarda): permite reprocesar con los ajustes
+function vistaHuella(reprocesar) {
+  const v = document.getElementById('hVista'); if (!v) return;
+  if (reprocesar && huellaFoto) { R.huella = HuellaCaptura.procesar(huellaFoto, R.hG || 6, R.hC || 0, !!R.hI); sincronizar(); }
+  v.hidden = !R.huella;
+  const c = document.getElementById('hFoto');
+  if (huellaFoto) { c.width = 180; c.height = 240; c.getContext('2d').drawImage(huellaFoto, 0, 0, 180, 240); c.parentElement.hidden = false; }
+  else c.parentElement.hidden = true;
+  document.getElementById('hImg').src = R.huella || '';
+  const f = document.getElementById('hFirma'); f.src = R.firma || ''; f.parentElement.parentElement.hidden = !R.firma;
+}
+
+// ---------- Lista que se filtra mientras escribe (profesión u oficio) ----------
+const PROFESIONES = ['Abogado(a)','Administrador(a) de empresas','Administrador(a) público','Agente inmobiliario','Agricultor(a)','Albañil','Analista de datos','Arquitecto(a)',
+ 'Artesano(a)','Artista','Asesor(a) comercial','Asesor(a) de seguros','Auxiliar administrativo','Auxiliar contable','Auxiliar de enfermería','Bacteriólogo(a)','Barbero(a)',
+ 'Bombero','Carpintero(a)','Cajero(a)','Chef / Cocinero(a)','Comerciante','Comunicador(a) social','Conductor(a)','Constructor(a)','Contador(a) público','Costurero(a) / Modista',
+ 'Diseñador(a) gráfico','Diseñador(a) de modas','Docente / Profesor(a)','Economista','Electricista','Enfermero(a)','Entrenador(a) deportivo','Esteticista','Estilista',
+ 'Farmaceuta','Fisioterapeuta','Fonoaudiólogo(a)','Fotógrafo(a)','Ganadero(a)','Gerente','Ingeniero(a) ambiental','Ingeniero(a) civil','Ingeniero(a) de sistemas',
+ 'Ingeniero(a) eléctrico','Ingeniero(a) electrónico','Ingeniero(a) industrial','Ingeniero(a) mecánico','Ingeniero(a) químico','Instrumentador(a) quirúrgico','Joyero(a)',
+ 'Licenciado(a)','Locutor(a)','Maestro(a) de obra','Manicurista','Mecánico(a)','Médico(a)','Médico(a) especialista','Mensajero(a)','Mesero(a)','Militar','Músico','Nutricionista',
+ 'Odontólogo(a)','Operario(a)','Optómetra','Panadero(a)','Periodista','Piloto','Pintor(a)','Plomero(a)','Policía','Politólogo(a)','Programador(a) / Desarrollador(a)',
+ 'Psicólogo(a)','Publicista','Químico(a)','Recepcionista','Rentista de capital','Secretario(a)','Soldador(a)','Técnico(a) en sistemas','Tecnólogo(a)','Terapeuta ocupacional',
+ 'Topógrafo(a)','Trabajador(a) social','Traductor(a)','Transportador(a)','Vendedor(a)','Veterinario(a)','Vigilante / Guarda de seguridad','Zootecnista'];
+// Código CIIU sugerido por profesión (ejerciéndola como independiente). Verificados contra la lista DANE.
+const PROF_CIIU = {'Abogado(a)':'6910','Administrador(a) de empresas':'7020','Agente inmobiliario':'6820','Agricultor(a)':'0119','Albañil':'4111','Arquitecto(a)':'7111',
+ 'Asesor(a) de seguros':'6621','Auxiliar contable':'6920','Bacteriólogo(a)':'8691','Barbero(a)':'9602','Carpintero(a)':'3110','Chef / Cocinero(a)':'5611','Conductor(a)':'4921',
+ 'Constructor(a)':'4111','Contador(a) público':'6920','Costurero(a) / Modista':'1410','Diseñador(a) gráfico':'7410','Diseñador(a) de modas':'7410','Docente / Profesor(a)':'8559',
+ 'Economista':'7020','Electricista':'4321','Enfermero(a)':'8699','Esteticista':'9602','Estilista':'9602','Fisioterapeuta':'8692','Fonoaudiólogo(a)':'8692','Fotógrafo(a)':'7420',
+ 'Ganadero(a)':'0141','Ingeniero(a) ambiental':'7112','Ingeniero(a) civil':'7112','Ingeniero(a) de sistemas':'6201','Ingeniero(a) eléctrico':'7112','Ingeniero(a) electrónico':'7112',
+ 'Ingeniero(a) industrial':'7112','Ingeniero(a) mecánico':'7112','Ingeniero(a) químico':'7112','Maestro(a) de obra':'4111','Manicurista':'9602','Mecánico(a)':'4520','Médico(a)':'8621',
+ 'Médico(a) especialista':'8621','Mensajero(a)':'5320','Músico':'9002','Nutricionista':'8699','Odontólogo(a)':'8622','Panadero(a)':'1081','Pintor(a)':'4330','Plomero(a)':'4322',
+ 'Programador(a) / Desarrollador(a)':'6201','Psicólogo(a)':'8699','Publicista':'7310','Rentista de capital':'0090','Soldador(a)':'2592','Terapeuta ocupacional':'8692',
+ 'Topógrafo(a)':'7112','Traductor(a)':'7490','Transportador(a)':'4923','Veterinario(a)':'7500','Vigilante / Guarda de seguridad':'8010','Administrador(a) público':'8412','Analista de datos':'6311','Artesano(a)':'3290','Artista':'9008','Asesor(a) comercial':'7020','Auxiliar administrativo':'8211','Auxiliar de enfermería':'8699','Bombero':'0010','Cajero(a)':'0010','Comerciante':'4799','Comunicador(a) social':'7310','Entrenador(a) deportivo':'9319','Farmaceuta':'4773','Gerente':'0010','Instrumentador(a) quirúrgico':'8699','Joyero(a)':'3211','Licenciado(a)':'8559','Locutor(a)':'6010','Mesero(a)':'0010','Militar':'0010','Operario(a)':'0010','Optómetra':'8699','Periodista':'6391','Piloto':'5111','Policía':'0010','Politólogo(a)':'7220','Químico(a)':'7120','Recepcionista':'0010','Secretario(a)':'0010','Técnico(a) en sistemas':'9511','Tecnólogo(a)':'7490','Trabajador(a) social':'8899','Vendedor(a)':'4799','Zootecnista':'0162'};
+function combo(div) {
+  const inp = document.querySelector('input[data-k=' + div.dataset.para + ']'), L = PROFESIONES;
+  const pinta = () => { const q = norm(inp.value).trim();
+    const hits = L.filter(x => !q || norm(x).split(/[\s/()]+/).some(w => w.startsWith(q)) || norm(x).includes(q));
+    div.innerHTML = hits.map(x => '<button type="button" data-v="' + x + '">' + x + (PROF_CIIU[x] ? ' <span>CIIU ' + PROF_CIIU[x] + '</span>' : '') + '</button>').join('') || '<p class="ayuda">No está en la lista: déjala escrita así y sigue.</p>';
+    div.hidden = false; };
+  inp.addEventListener('focus', pinta); inp.addEventListener('input', pinta);
+  inp.addEventListener('blur', () => setTimeout(() => div.hidden = true, 180));
+  div.addEventListener('pointerdown', e => e.preventDefault());   // que el toque no cierre la lista antes de elegir
+  div.onclick = async e => { const b = e.target.closest('button[data-v]'); if (!b) return; const v = b.dataset.v;
+    inp.value = v; inp.dispatchEvent(new Event('input')); R[div.dataset.para] = v; div.hidden = true; inp.blur();
+    const c = PROF_CIIU[v];   // deja el CIIU listo; solo se estampa si es independiente
+    if (c) { const x = (await cargarCiiu()).find(y => y.c === c); if (x) { R.ciiu = x.c; R.ciiuT = x.t; if (!R.independiente) R.independiente = v; } }
+    sincronizar(); };
+}
+
+// ---------- Celular con país: el número debe tener exactamente los dígitos de ese país ----------
+// [iso, nombre, indicativo, mín, máx, primer dígito móvil (opcional)]
+const PAISES = [
+  ['CO','Colombia',57,10,10,'3'],['VE','Venezuela',58,10,10,'4'],['EC','Ecuador',593,9,9,'9'],['PE','Perú',51,9,9,'9'],['MX','México',52,10,10],
+  ['US','Estados Unidos',1,10,10],['CA','Canadá',1,10,10],['ES','España',34,9,9],['PA','Panamá',507,8,8,'6'],['CR','Costa Rica',506,8,8],
+  ['CL','Chile',56,9,9,'9'],['AR','Argentina',54,10,11],['BR','Brasil',55,11,11],['UY','Uruguay',598,8,8,'9'],['PY','Paraguay',595,9,9,'9'],
+  ['BO','Bolivia',591,8,8],['DO','República Dominicana',1,10,10],['PR','Puerto Rico',1,10,10],['GT','Guatemala',502,8,8],['SV','El Salvador',503,8,8],
+  ['HN','Honduras',504,8,8],['NI','Nicaragua',505,8,8],['CU','Cuba',53,8,8,'5'],['AW','Aruba',297,7,7],['CW','Curazao',599,7,8],
+  ['IT','Italia',39,9,10,'3'],['FR','Francia',33,9,9],['DE','Alemania',49,10,11,'1'],['GB','Reino Unido',44,10,10,'7'],['PT','Portugal',351,9,9,'9'],
+  ['CH','Suiza',41,9,9,'7'],['NL','Países Bajos',31,9,9,'6'],['BE','Bélgica',32,9,9,'4'],['IE','Irlanda',353,9,9,'8'],['AU','Australia',61,9,9,'4'],
+  ['CN','China',86,11,11,'1'],['JP','Japón',81,10,10],['IL','Israel',972,9,9,'5'],['AE','Emiratos Árabes',971,9,9,'5'],['RU','Rusia',7,10,10,'9']
+];
+const bandera = iso => iso.replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
+const pais = () => { const p = PAISES.find(x => x[0] === (R.celPais || 'CO')); return { iso: p[0], nom: p[1], cod: p[2], min: p[3], max: p[4], ini: p[5] }; };
+function celular() {
+  const num = document.getElementById('telNum'), btn = document.getElementById('telPais'), lista = document.getElementById('telLista'),
+        bus = document.getElementById('telBus'), ops = document.getElementById('telOps'), ay = document.getElementById('telAyuda');
+  const guardar = () => {
+    const p = pais(), n = num.value; R.celNum = n;
+    const ok = n.length >= p.min && n.length <= p.max && (!p.ini || n.startsWith(p.ini));
+    R.celular = ok ? '+' + p.cod + ' ' + n : '';
+    ay.textContent = !n ? 'Debe tener ' + (p.min === p.max ? p.max : p.min + ' a ' + p.max) + ' dígitos' + (p.ini ? ' y empezar por ' + p.ini : '') + '.' :
+      ok ? '✓ Quedará así: +' + p.cod + ' ' + n : (p.ini && !n.startsWith(p.ini) ? 'En ' + p.nom + ' el celular empieza por ' + p.ini + '.' : 'Faltan ' + (p.min - n.length) + ' dígitos.');
+    sincronizar();
+  };
+  num.oninput = () => { num.value = num.value.replace(/\D/g, '').slice(0, pais().max); guardar(); };
+  const pintar = () => { const q = norm(bus.value);
+    ops.innerHTML = PAISES.filter(x => !q || norm(x[1]).split(' ').some(w => w.startsWith(q)) || String(x[2]).startsWith(q.replace('+', '')))
+      .map(x => '<button type="button" data-iso="' + x[0] + '">' + bandera(x[0]) + ' ' + x[1] + ' <span>+' + x[2] + '</span></button>').join('') || '<p class="ayuda">Sin resultados</p>'; };
+  btn.onclick = () => { lista.hidden = !lista.hidden; if (!lista.hidden) { bus.value = ''; pintar(); bus.focus(); } };
+  bus.oninput = pintar;
+  ops.onclick = e => { const b = e.target.closest('button[data-iso]'); if (!b) return; R.celPais = b.dataset.iso; const p = pais();
+    btn.textContent = bandera(p.iso) + ' +' + p.cod + ' ▾'; num.maxLength = p.max; num.value = num.value.slice(0, p.max); lista.hidden = true; guardar(); num.focus(); };
+  guardar();
+}
+
+// ---------- CIIU: lista oficial DANE CIIU Rev. 4 A.C. (2022) + códigos DIAN de persona natural ----------
+let CIIU = null;
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+async function cargarCiiu() {
+  if (!CIIU) { const r = await fetch('assets/sarlaft/ciiu.json'); CIIU = (await r.json()).map(x => ({ ...x, n: norm(x.t + ' ' + (x.s || '')) })); }
+  return CIIU;
+}
+function buscadorCiiu(inp) {
+  const res = document.getElementById('ciiuRes');
+  const pinta = async (texto) => {
+    const q = norm(texto ?? inp.value).trim(); if (q.length < 2) { res.innerHTML = ''; return; }
+    const L = await cargarCiiu(), num = q.replace(/\D/g, '');
+    let hits;
+    if (/^\d+$/.test(q)) hits = L.filter(x => x.c.startsWith(num));
+    else {
+      const pal = q.split(/\s+/).filter(w => w.length > 2 && !['del', 'las', 'los', 'por', 'con', 'para'].includes(w));
+      hits = L.map(x => {
+        let p = 0; pal.forEach(w => { if ((' ' + x.n).includes(' ' + w)) p += 2; else if (x.n.includes(w.slice(0, -1))) p += 1; });
+        if (x.s && pal.some(w => norm(x.s).split(' ').some(s => s.startsWith(w)))) p += 3;   // palabras del día a día
+        return { x, p };
+      }).filter(o => o.p > 0).sort((a, b) => b.p - a.p).map(o => o.x);
+    }
+    res.innerHTML = hits.slice(0, 6).map(x => '<button type="button" data-c="' + x.c + '"><b>' + x.c + '</b> ' + x.t + '</button>').join('') ||
+      '<p class="ayuda">No encontramos esa actividad. Prueba con otra palabra (ej: "venta", "servicio", "construcción").</p>';
+  };
+  inp.oninput = () => { R.ciiu = ''; sincronizar(); pinta(); };
+  // Ya elegido: queda fijo; para corregirlo se usa "Cambiar código"
+  document.getElementById('ciiuCambiar').onclick = e => { R.ciiu = ''; R.ciiuT = ''; inp.readOnly = false; inp.value = ''; e.target.hidden = true; sincronizar(); inp.focus(); };
+  // Lo que escriba en "Descripción de la actividad" también sugiere el código, mientras no haya elegido uno
+  const desc = document.querySelector('input[data-k=independiente]');
+  if (desc) { const previo = desc.oninput; desc.oninput = () => { previo && previo(); if (!R.ciiu) pinta(desc.value); }; }
+  res.onclick = e => {
+    const b = e.target.closest('button[data-c]'); if (!b) return; const x = CIIU.find(y => y.c === b.dataset.c);
+    R.ciiu = x.c; R.ciiuT = x.t; inp.value = x.c + ' · ' + x.t; res.innerHTML = ''; inp.readOnly = true; document.getElementById('ciiuCambiar').hidden = false;
+    if (!R.independiente) { R.independiente = x.t.replace(/ \(DIAN\)$/, ''); const d = document.querySelector('input[data-k=independiente]'); if (d) d.value = R.independiente; }
+    sincronizar();
+  };
+}
+
+function firmaPad(f) {
+  const c = f.getContext('2d'), r = f.getBoundingClientRect(); f.width = r.width * 2; f.height = r.height * 2;
+  c.setTransform(2, 0, 0, 2, 0, 0); c.lineWidth = 2.4; c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = '#1b2a6b';
+  if (R.firma) { const im = new Image(); im.onload = () => c.drawImage(im, 0, 0, r.width, r.height); im.src = R.firma; }
+  let on = false; const pt = e => { const b = f.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+  f.onpointerdown = e => { on = true; f.setPointerCapture(e.pointerId); const [x, y] = pt(e); c.beginPath(); c.moveTo(x, y); };
+  f.onpointermove = e => { if (!on) return; const [x, y] = pt(e); c.lineTo(x, y); c.stroke(); };
+  f.onpointerup = () => { on = false; R.firma = recortarFirma(f); sincronizar(); };
+  document.getElementById('borrarF').onclick = () => { c.clearRect(0, 0, f.width, f.height); R.firma = null; sincronizar(); };
+}
+function recortarFirma(f) { // quita el espacio vacío para que la firma llene su línea
+  const c = f.getContext('2d'), d = c.getImageData(0, 0, f.width, f.height).data; let x0 = f.width, y0 = f.height, x1 = 0, y1 = 0;
+  for (let y = 0; y < f.height; y++) for (let x = 0; x < f.width; x++) if (d[(y * f.width + x) * 4 + 3] > 0) { if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y; }
+  if (x1 <= x0) return null; const o = document.createElement('canvas'); o.width = x1 - x0 + 8; o.height = y1 - y0 + 8;
+  o.getContext('2d').drawImage(f, x0 - 4, y0 - 4, o.width, o.height, 0, 0, o.width, o.height); return o.toDataURL('image/png');
+}
+
+function valido() {
+  const p = pasoActual(), err = document.getElementById('err'); let falta = null;
+  const rev = arr => arr.forEach(i => { if (i.dos) return rev(i.dos); if (!i.req || falta) return; if (i.si && !i.si()) return;
+    const v = R[i.k]; if (v === undefined || v === null || v === '' ) { if (!(i.cero && v === 0)) falta = i.l || 'el valor'; }
+    else if (i.email && !/^\S+@\S+\.\S+$/.test(v)) falta = 'un correo válido'; });
+  rev(p.in);
+  if (!falta && p.in.some(i => i.tipo === 'tel') && !R.celular) falta = 'un celular completo';
+  if (p.in.some(i => i.tipo === 'fi') && !R.firma) falta = 'tu firma';
+  if (p.in.some(i => i.tipo === 'hu') && !R.huella) falta = 'tu huella';
+  err.textContent = falta ? 'Falta ' + falta.toLowerCase() + '.' : ''; return !falta;
+}
+document.getElementById('sig').onclick = async () => {
+  const p = pasoActual();
+  if (p.fin) { await guardarYAdjuntar(); return; }
+  if (!valido()) return; paso = Math.min(paso + 1, visibles().length - 1); render();
+};
+document.getElementById('atras').onclick = () => { paso = Math.max(0, paso - 1); render(); };
+
+// ---------- PDF real: se llena el formulario rellenable de la aseguradora (Forma B-114) con lo estampado ----------
+const FN = { localidad:'Text123', fdD:'Text125', fdM:'Text126', fdA:'Text127', docOtro:'Text128', doc:'Text129', exD:'Text130', exM:'Text131', exA:'Text132',
+  naD:'Text133', naM:'Text134', naA:'Text135', lugarNac:'Text136', n1:'Text137', n2:'Text138', a1:'Text139', a2:'Text140', nacionalidad:'Text141', direccion:'Text142',
+  ciudad:'Text143', celular:'Text144', correo:'Text145', profesion:'Text146', independiente:'Text147', ciiu:'Text148', famNombre:'Text149', famId:'Text150', famPar:'Text151',
+  famCargo:'Text152', activos:'Text153', pasivos:'Text154', patrimonio:'Text155', ingresos:'Text156', egresos:'Text157', otrosDet:'Text158', yo:'Text159', idCon:'Text160',
+  idNo:'Text161', idDe:'Text162', dDia:'Text168', dMes:'Text169', dAno:'Text170', fNombre:'Text172', fDoc:'Text173', fDe:'Text174' };
+const RG = { tipoV:'Group124', calidad:'Group125', tipoDoc:'Group126', ocupacion:'Group127', pep:'Group128', vinculoPep:'Group129', otros:'Group130' };
+const CK = { aut4:['Check Box164','Check Box165'], aut56:['Check Box166','Check Box167'] };
+async function generarPdf() {
+  const { PDFDocument, StandardFonts } = PDFLib;
+  const doc = await PDFDocument.load(await (await fetch('assets/sarlaft/b114.pdf')).arrayBuffer());
+  const form = doc.getForm(), font = await doc.embedFont(StandardFonts.Helvetica);
+  for (const k in FN) {
+    const v = (TXT[k] || '').replace(/[^\x20-\xFF]/g, ''); if (!v) continue;
+    try { const f = form.getTextField(FN[k]); const ml = f.getMaxLength(); f.setText(ml ? v.slice(0, ml) : v); f.setFontSize(7); } catch (e) { console.warn('campo', k, e.message); }
+  }
+  for (const g in RG) {
+    const i = MK[g]; if (i == null) continue;
+    try { const rg = form.getRadioGroup(RG[g]), ops = rg.getOptions(); const op = ops.find(o => o.endsWith(String(i + 1))) || ops[i]; rg.select(op); } catch (e) { console.warn('opción', g, e.message); }
+  }
+  for (const g in CK) { const i = MK[g]; if (i == null) continue; try { form.getCheckBox(CK[g][i]).check(); } catch (e) { console.warn('casilla', g, e.message); } }
+  form.updateFieldAppearances(font);
+  const pg = doc.getPages()[1];
+  const poner = async (src, r) => { if (!src) return; const im = await doc.embedPng(src); const w = r[3] - r[1], h = r[4] - r[2], e = Math.min(w / im.width, h / im.height);
+    pg.drawImage(im, { x: r[1] + (w - im.width * e) / 2, y: r[2] + (h - im.height * e) / 2, width: im.width * e, height: im.height * e }); };
+  await poner(R.firma, F.firma); await poner(R.huella, F.huella);
+  form.flatten();
+  return doc.saveAsBase64({ dataUri: true });
+}
+async function guardarYAdjuntar() {
+  const b = document.getElementById('sig'); b.disabled = true; b.textContent = 'Armando tu PDF…';
+  try {
+    const pdf = await generarPdf();
+    const datos = { ...R }; delete datos.firma; delete datos.huella;
+    const msg = { tipo: 'sarlaft-listo', nombre: 'SARLAFT_' + (R.doc || 'propietario') + '.pdf', contenido: pdf, datos };
+    if (window.parent !== window) window.parent.postMessage(msg, location.origin);
+    b.textContent = '¡Adjuntado!';
+  } catch (e) {
+    console.error(e); document.getElementById('err').textContent = 'No se pudo armar el PDF. Inténtalo de nuevo.'; b.disabled = false; b.textContent = 'Guardar y adjuntar';
+  }
+}
+
+// ---------- Datos que manda el formulario del propietario ----------
+function aplicarPrevios(d) {
+  if (!d) return;
+  const map = { CC: 0, CE: 1, PA: 3 };
+  if (d.tipoDocumento in map && d.numeroDocumento) { R.tipoDoc = map[d.tipoDocumento]; R.doc = soloNum(d.numeroDocumento) || d.numeroDocumento; PRE.add('tipoDoc'); PRE.add('doc'); }
+  const pal = s => String(s || '').trim().split(/\s+/).filter(Boolean);
+  const n = pal(d.nombres), a = pal(d.apellidos);
+  if (n.length && a.length) { R.n1 = n[0]; R.n2 = n.slice(1).join(' '); R.a1 = a[0]; R.a2 = a.slice(1).join(' '); ['n1','n2','a1','a2'].forEach(k => PRE.add(k)); }
+  if (d.email) { R.correo = d.email.trim(); PRE.add('correo'); }
+  const cel = soloNum(d.celular);
+  if (cel.length === 10 && cel[0] === '3') { R.celPais = 'CO'; R.celNum = cel; R.celular = '+57 ' + cel; PRE.add('celular'); }
+}
+
+// Inicio: espera las hojas y, si lo abre el formulario, sus datos (máx. 1,5 s)
+let cargadas = 0, previos = window.parent === window, arrancado = false;
+const arrancar = () => { if (arrancado || cargadas < 2 || !previos) return; arrancado = true; ajustarFuente(); sincronizar(); render(); };
+addEventListener('message', e => { if (e.origin !== location.origin || !e.data || e.data.tipo !== 'sarlaft-previos') return; aplicarPrevios(e.data.datos); previos = true; arrancar(); });
+if (window.parent !== window) { window.parent.postMessage({ tipo: 'sarlaft-pide-previos' }, location.origin); setTimeout(() => { previos = true; arrancar(); }, 1500); }
+document.querySelectorAll('img.fondo').forEach(im => { const ok = () => { cargadas++; arrancar(); }; im.complete ? ok() : im.onload = ok; });
+</script>
+</body>
+</html>
