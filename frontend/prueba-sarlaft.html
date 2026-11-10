@@ -66,6 +66,7 @@ h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
 #telOps button span{color:var(--mut);float:right}
 .combo{max-height:190px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;animation:sube .2s ease-out;margin-top:-4px}
 .combo button{text-align:left;font:400 .95rem var(--fb);padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:#fff;color:var(--fg);cursor:pointer}
+.combo button span{float:right;color:var(--gold);font:600 .8rem var(--fd)}
 .combo button:active{background:#f6f1e2}.combo .ayuda{padding:10px 12px}
 .ciiu-res{display:flex;flex-direction:column;gap:6px}
 .ciiu-res button{text-align:left;font:400 .86rem/1.35 var(--fb);padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer;animation:sube .3s ease-out}
@@ -315,16 +316,30 @@ const PROFESIONES = ['Abogado(a)','Administrador(a) de empresas','Administrador(
  'Odontólogo(a)','Operario(a)','Optómetra','Panadero(a)','Periodista','Piloto','Pintor(a)','Plomero(a)','Policía','Politólogo(a)','Programador(a) / Desarrollador(a)',
  'Psicólogo(a)','Publicista','Químico(a)','Recepcionista','Rentista de capital','Secretario(a)','Soldador(a)','Técnico(a) en sistemas','Tecnólogo(a)','Terapeuta ocupacional',
  'Topógrafo(a)','Trabajador(a) social','Traductor(a)','Transportador(a)','Vendedor(a)','Veterinario(a)','Vigilante / Guarda de seguridad','Zootecnista'];
+// Código CIIU sugerido por profesión (ejerciéndola como independiente). Verificados contra la lista DANE.
+const PROF_CIIU = {'Abogado(a)':'6910','Administrador(a) de empresas':'7020','Agente inmobiliario':'6820','Agricultor(a)':'0119','Albañil':'4111','Arquitecto(a)':'7111',
+ 'Asesor(a) de seguros':'6621','Auxiliar contable':'6920','Bacteriólogo(a)':'8691','Barbero(a)':'9602','Carpintero(a)':'3110','Chef / Cocinero(a)':'5611','Conductor(a)':'4921',
+ 'Constructor(a)':'4111','Contador(a) público':'6920','Costurero(a) / Modista':'1410','Diseñador(a) gráfico':'7410','Diseñador(a) de modas':'7410','Docente / Profesor(a)':'8559',
+ 'Economista':'7020','Electricista':'4321','Enfermero(a)':'8699','Esteticista':'9602','Estilista':'9602','Fisioterapeuta':'8692','Fonoaudiólogo(a)':'8692','Fotógrafo(a)':'7420',
+ 'Ganadero(a)':'0141','Ingeniero(a) ambiental':'7112','Ingeniero(a) civil':'7112','Ingeniero(a) de sistemas':'6201','Ingeniero(a) eléctrico':'7112','Ingeniero(a) electrónico':'7112',
+ 'Ingeniero(a) industrial':'7112','Ingeniero(a) mecánico':'7112','Ingeniero(a) químico':'7112','Maestro(a) de obra':'4111','Manicurista':'9602','Mecánico(a)':'4520','Médico(a)':'8621',
+ 'Médico(a) especialista':'8621','Mensajero(a)':'5320','Músico':'9002','Nutricionista':'8699','Odontólogo(a)':'8622','Panadero(a)':'1081','Pintor(a)':'4330','Plomero(a)':'4322',
+ 'Programador(a) / Desarrollador(a)':'6201','Psicólogo(a)':'8699','Publicista':'7310','Rentista de capital':'0090','Soldador(a)':'2592','Terapeuta ocupacional':'8692',
+ 'Topógrafo(a)':'7112','Traductor(a)':'7490','Transportador(a)':'4923','Veterinario(a)':'7500','Vigilante / Guarda de seguridad':'8010'};
 function combo(div) {
   const inp = document.querySelector('input[data-k=' + div.dataset.para + ']'), L = PROFESIONES;
   const pinta = () => { const q = norm(inp.value).trim();
     const hits = L.filter(x => !q || norm(x).split(/[\s/()]+/).some(w => w.startsWith(q)) || norm(x).includes(q));
-    div.innerHTML = hits.map(x => '<button type="button">' + x + '</button>').join('') || '<p class="ayuda">No está en la lista: déjala escrita así y sigue.</p>';
+    div.innerHTML = hits.map(x => '<button type="button" data-v="' + x + '">' + x + (PROF_CIIU[x] ? ' <span>CIIU ' + PROF_CIIU[x] + '</span>' : '') + '</button>').join('') || '<p class="ayuda">No está en la lista: déjala escrita así y sigue.</p>';
     div.hidden = false; };
   inp.addEventListener('focus', pinta); inp.addEventListener('input', pinta);
   inp.addEventListener('blur', () => setTimeout(() => div.hidden = true, 180));
   div.addEventListener('pointerdown', e => e.preventDefault());   // que el toque no cierre la lista antes de elegir
-  div.onclick = e => { const b = e.target.closest('button'); if (!b) return; inp.value = b.textContent; inp.dispatchEvent(new Event('input')); R[div.dataset.para] = inp.value; sincronizar(); div.hidden = true; inp.blur(); };
+  div.onclick = async e => { const b = e.target.closest('button[data-v]'); if (!b) return; const v = b.dataset.v;
+    inp.value = v; inp.dispatchEvent(new Event('input')); R[div.dataset.para] = v; div.hidden = true; inp.blur();
+    const c = PROF_CIIU[v];   // deja el CIIU listo; solo se estampa si es independiente
+    if (c) { const x = (await cargarCiiu()).find(y => y.c === c); if (x) { R.ciiu = x.c; R.ciiuT = x.t; if (!R.independiente) R.independiente = v; } }
+    sincronizar(); };
 }
 
 // ---------- Celular con país: el número debe tener exactamente los dígitos de ese país ----------
@@ -437,7 +452,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110173735';
+const VER = 'v-20261110173833';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
