@@ -117,7 +117,7 @@ label{font-size:.85rem;color:var(--mut)}input[type=range]{width:100%;accent-colo
 
 <script>
 const $ = id => document.getElementById(id);
-let stream = null, track = null, camaras = [], camIdx = 0, luz = false, loop = null;
+let stream = null, track = null, camaras = [], camIdx = 0, luz = true, loop = null;
 let maxNit = 0, buenos = 0, t0 = 0, capturado = null, inv = false;
 
 // ---------- cámara ----------
@@ -149,7 +149,8 @@ async function ajustar() {
   const adv = {};
   if (caps.focusMode && caps.focusMode.includes('continuous')) adv.focusMode = 'continuous';
   // Algunos Android exponen el 0.5x como zoom < 1 en la cámara principal
-  if (caps.zoom && caps.zoom.min < 1) adv.zoom = caps.zoom.min;
+  // Arranque probado en Moto G (nov-2026): zoom a la mitad del rango y linterna encendida
+  if (caps.zoom) adv.zoom = Math.round(((caps.zoom.min + Math.min(caps.zoom.max, 4)) / 2) * 10) / 10;
   if (caps.torch) adv.torch = luz;
   try { if (Object.keys(adv).length) await track.applyConstraints({ advanced: [adv] }); } catch (e) {}
   const s = track.getSettings ? track.getSettings() : {};
