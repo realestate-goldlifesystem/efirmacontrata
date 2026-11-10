@@ -1889,6 +1889,9 @@
       function setupSarlaftNatural() {
         const modal = document.getElementById('sarlaftModal'), frame = document.getElementById('sarlaftFrame');
         if (!modal || !frame) return;
+        // El paso del wizard tiene animación (transform): dentro de él, position:fixed queda encerrado en la tarjeta
+        // y se veían dos botones "Siguiente". Colgado del <body> ocupa toda la pantalla, como un paso propio.
+        document.body.appendChild(modal);
         const cerrar = () => { modal.hidden = true; frame.src = 'about:blank'; document.body.style.overflow = ''; };
         document.getElementById('btnSarlaftDiligenciar').addEventListener('click', () => {
           frame.src = 'sarlaft.html?_=' + Date.now(); modal.hidden = false; document.body.style.overflow = 'hidden';
