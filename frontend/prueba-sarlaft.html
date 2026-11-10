@@ -116,7 +116,8 @@ const SEC = { // zonas para el marco
   decl:[0,15,275,592,300,'Declaraciones'], aut:[1,200,355,400,635,'Autorizaciones'], firma:[1,195,165,460,300,'Firma y huella']
 };
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const R = {}; // respuestas
+// Fijos para la póliza de arrendamiento: siempre Vinculación y Tomador (no se le preguntan al propietario)
+const R = { tipoV: 0, calidad: 1 }; // respuestas
 
 // ---------- pintar en la hoja ----------
 const pct = r => ({ left: r[1] / PW * 100 + '%', top: (PH - r[4]) / PH * 100 + '%', width: (r[3] - r[1]) / PW * 100 + '%', height: (r[4] - r[2]) / PH * 100 + '%' });
@@ -165,10 +166,8 @@ function partesFecha(v) { if (!v) return ['', '', '']; const [a, m, d] = v.split
 
 // ---------- pasos ----------
 const P = [
-  { sec:'enc', t:'Empecemos', q:'¿Este SARLAFT es tu primera vez con la aseguradora o una actualización?', a:'Si nunca has llenado uno con El Libertador / Seguros Bolívar, elige Vinculación.',
-    in:[{ tipo:'op', k:'tipoV', ops:['Vinculación','Actualización de datos'], def:0 }, { tipo:'tx', k:'localidad', l:'Localidad (ciudad donde lo diligencias)', def:'Bogotá' }] },
-  { sec:'gen', t:'Información general', q:'¿En qué calidad firmas este formulario?', a:'Como propietario eres quien toma la póliza de arrendamiento, por eso vas como Tomador.',
-    in:[{ tipo:'op', k:'calidad', ops:['Beneficiario','Tomador','Asegurado','Apoderado','Suscriptor','Afianzado'], def:1 }] },
+  { sec:'enc', t:'Empecemos', q:'¿En qué ciudad diligencias este formulario?', a:'Ya dejamos marcado <b>Vinculación</b> y <b>Tomador</b>: como propietario tomas la póliza de arrendamiento.',
+    in:[{ tipo:'tx', k:'localidad', l:'Localidad', def:'Bogotá' }] },
   { sec:'gen', t:'Información general', q:'¿Cuál es tu documento de identidad?',
     in:[{ tipo:'op', k:'tipoDoc', ops:['C.C.','C.E.','T.I.','P.P.','Otro'], def:0 }, { tipo:'tx', k:'doc', l:'Número de documento', num:true, req:true }] },
   { sec:'gen', t:'Información general', q:'¿Cuándo expidieron tu documento y cuándo naciste?',
@@ -253,7 +252,7 @@ function render() {
   document.querySelector('#prog i').style.width = (paso / (V.length - 1) * 100) + '%';
   // valores por defecto
   const defs = arr => arr.forEach(i => { if (i.dos) return defs(i.dos); if (i.def !== undefined && R[i.k] === undefined) R[i.k] = i.def; });
-  defs(p.in);
+  defs(p.in); sincronizar();   // lo que viene marcado por defecto se ve estampado de una vez
   let h = '<div class="anim" style="display:flex;flex-direction:column;gap:12px"><div class="sec">' + p.t + '</div><h2>' + p.q + '</h2>' + (p.a ? '<p class="ayuda">' + p.a + '</p>' : '') + '<div class="ins">';
   const campo = i => {
     if (i.dos) return '<div class="dos">' + i.dos.map(campo).join('') + '</div>';
