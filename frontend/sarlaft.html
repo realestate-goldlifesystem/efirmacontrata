@@ -90,8 +90,8 @@ h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
 <body>
 <div id="hoja">
   <div id="paginas">
-    <div class="pag" id="p0"><img class="fondo" src="assets/sarlaft/b114-1.jpg" alt="SARLAFT página 1"></div>
-    <div class="pag" id="p1"><img class="fondo" src="assets/sarlaft/b114-2.jpg" alt="SARLAFT página 2"></div>
+    <div class="pag" id="p0"><img class="fondo" src="assets/sarlaft/b114v2-1.jpg" alt="SARLAFT página 1"></div>
+    <div class="pag" id="p1"><img class="fondo" src="assets/sarlaft/b114v2-2.jpg" alt="SARLAFT página 2"></div>
     <div id="marco" data-t=""></div>
     <div id="tip"></div>
   </div>
@@ -105,34 +105,35 @@ h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="js/huella-captura.js"></script>
 <script>
-// Hoja carta en puntos PDF (Forma B-114, Red./Sep.23). Rect = [x1, y1, x2, y2] con y desde abajo.
-const PW = 609.449, PH = 793.701;
+// Hoja carta en puntos PDF (Forma B-114 Unificado, Red. Mar/26: "Conocimiento del Cliente Ordinario-Intensificado").
+// Rect = [página, x1, y1, x2, y2] con y desde abajo, sacados de los campos rellenables del PDF.
+const PW = 612, PH = 792;
 const F = { // texto
-  localidad:[0,528,715,590,730], fdD:[0,419,685,474,701], fdM:[0,475,685,530,701], fdA:[0,531,685,590,701],
-  docOtro:[0,171,647,195,656], doc:[0,197,644,275,658], exD:[0,275,644,311,658], exM:[0,311,644,346,658], exA:[0,346,644,405,658],
-  naD:[0,405,644,441,658], naM:[0,441,644,475,658], naA:[0,475,644,505,658], lugarNac:[0,506,644,590,658],
-  n1:[0,20,619,162,632], n2:[0,163,619,305,632], a1:[0,306,619,448,632], a2:[0,448,619,590,632],
-  nacionalidad:[0,19,593,117,607], direccion:[0,117,593,249,607], ciudad:[0,249,593,376,607], celular:[0,376,593,462,607], correo:[0,462,593,590,607],
-  profesion:[0,19,548,361,562], independiente:[0,19,524,359,537], ciiu:[0,359,524,590,537],
-  famNombre:[0,20,430,285,445], famId:[0,285,430,383,445], famPar:[0,383,430,481,445], famCargo:[0,481,430,590,445],
-  activos:[0,20,379,211,393], pasivos:[0,210,379,400,392], patrimonio:[0,400,379,589,392], ingresos:[0,20,354,305,367], egresos:[0,305,354,590,367],
-  otrosDet:[0,20,315,590,329], yo:[0,30,283,194,292], idCon:[0,247,283,291,295], idNo:[0,302,283,367,295], idDe:[0,375,283,455,294],
-  dDia:[1,364,288,469,298], dMes:[1,477,288,581,298], dAno:[1,38,279,91,287],
-  firma:[1,215,203,383,232], fNombre:[1,203,188,383,196], fDoc:[1,228,171,295,181], fDe:[1,306,171,382,182], huella:[1,397,171,449,224]
+  localidad:[0,530,712,591,726], fdD:[0,431,681,474,697], fdM:[0,488,682,531,697], fdA:[0,543,682,592,697],
+  docOtro:[0,171,644,198,655], doc:[0,200,640,276,653], exD:[0,277,641,312,653], exM:[0,313,640,347,652], exA:[0,348,640,406,652],
+  naD:[0,408,640,442,653], naM:[0,443,640,477,653], naA:[0,478,640,507,652], lugarNac:[0,507,640,591,653],
+  n1:[0,21,616,163,628], n2:[0,164,616,306,627], a1:[0,307,615,448,628], a2:[0,449,615,592,628],
+  nacionalidad:[0,22,589,118,603], direccion:[0,118,590,270,603], ciudad:[0,270,589,375,603], celular:[0,375,589,459,602], correo:[0,459,589,590,601],
+  profesion:[0,22,540,363,553], independiente:[0,22,515,363,527], ciiu:[0,364,516,591,527],
+  famNombre:[0,22,423,285,437], famId:[0,287,423,385,436], famPar:[0,385,423,483,437], famCargo:[0,484,423,591,437],
+  activos:[0,22,374,211,388], pasivos:[0,211,374,402,388], patrimonio:[0,403,375,590,388], ingresos:[0,21,350,305,364], egresos:[0,305,350,590,364],
+  otrosDet:[0,21,310,590,325], yo:[0,31,273,134,284], idCon:[0,188,273,247,283], idNo:[0,260,271,310,284], idDe:[0,320,273,383,285],
+  dDia:[1,392,402,476,410], dMes:[1,488,402,569,410], dAno:[1,30,396,73,405],
+  firma:[1,359,250,511,283], fNombre:[1,346,235,511,248], fDoc:[1,375,220,435,233], fDe:[1,447,220,510,233], huella:[1,527,208,578,267]
 };
 const G = { // casillas: cada opción su rect
-  tipoV:[[0,245,700,255,709],[0,340,699,349,709]],
-  calidad:[[0,291,671,300,680],[0,342,671,351,680],[0,402,671,411,680],[0,462,671,472,680],[0,519,671,527,681],[0,573,671,583,680]],
-  tipoDoc:[[0,36,646,46,655],[0,68,646,78,655],[0,97,645,107,655],[0,127,645,136,655],[0,159,645,169,655]],
-  ocupacion:[[0,403,551,414,561],[0,454,551,464,561],[0,510,551,520,561],[0,570,551,580,561]],
-  pep:[[0,495,486,504,496],[0,532,486,542,496]], vinculoPep:[[0,271,463,281,473],[0,311,464,320,473]],
-  otros:[[0,44,332,53,341],[0,81,332,90,341]],
-  aut4:[[1,225,618,234,627],[1,243,617,250,627]], aut56:[[1,209,365,228,374],[1,239,365,259,374]]
+  tipoV:[[0,291,692,299,700],[0,386,692,394,700]],
+  calidad:[[0,293,668,301,676],[0,343,668,351,677],[0,404,668,412,677],[0,463,669,473,676],[0,520,668,529,677],[0,575,668,584,676]],
+  tipoDoc:[[0,38,642,46,651],[0,71,643,79,651],[0,98,643,108,651],[0,129,643,138,651],[0,161,642,170,651]],
+  ocupacion:[[0,407,542,416,550],[0,459,542,468,550],[0,514,542,523,550],[0,574,542,583,550]],
+  pep:[[0,496,477,506,486],[0,534,477,543,486]], vinculoPep:[[0,272,456,281,466],[0,312,457,321,465]],
+  otros:[[0,46,328,54,336],[0,82,328,91,336]],
+  aut4:[[1,223,653,230,662],[1,240,653,249,662]], aut56:[[1,214,463,226,473],[1,240,463,252,473]]
 };
 const SEC = { // zonas para el marco
-  enc:[0,415,660,592,735,'Encabezado'], gen:[0,15,585,592,690,'Información general'], act:[0,15,520,592,575,'Actividad económica'],
-  pep:[0,15,425,592,505,'Personas expuestas políticamente'], fin:[0,15,310,592,400,'Información financiera'],
-  decl:[0,15,275,592,300,'Declaraciones'], aut:[1,200,355,400,635,'Autorizaciones'], firma:[1,160,160,470,258,'Firma y huella']
+  enc:[0,280,662,595,730,'Encabezado'], gen:[0,15,582,595,662,'Información general'], act:[0,15,510,595,565,'Actividad económica'],
+  pep:[0,15,418,595,500,'Personas expuestas políticamente'], fin:[0,15,305,595,395,'Información financiera'],
+  aut:[1,18,645,320,670,'Autorizaciones 4.3 a 4.7'], aut5:[1,18,456,320,481,'Autorizaciones 5 y 6'], firma:[1,330,200,592,292,'Firma y huella']
 };
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 // Fijos para la póliza de arrendamiento: siempre Vinculación y Tomador (no se le preguntan al propietario)
@@ -226,7 +227,7 @@ const P = [
     in:[{ tipo:'op', k:'otros', ops:['Sí','No'], def:1 }, { tipo:'tx', k:'otrosDet', l:'¿Cuáles? (solo si respondiste Sí)', si:()=>R.otros===0 }] },
   { sec:'aut', t:'Autorizaciones', q:'¿Autorizas el uso de tus datos para fines comerciales y de mercadeo de la aseguradora?', a:'Numerales 4.3 a 4.7. Es opcional: no afecta tu póliza.',
     in:[{ tipo:'op', k:'aut4', ops:['Sí','No'], def:1 }] },
-  { sec:'aut', t:'Autorizaciones', q:'¿Autorizas compartir tus datos con empresas del Grupo Bolívar y sus aliados?', a:'Numerales 5 y 6. También es opcional.',
+  { sec:'aut5', t:'Autorizaciones', q:'¿Autorizas compartir tus datos con empresas del Grupo Bolívar y sus aliados?', a:'Numerales 5 y 6. También es opcional.',
     in:[{ tipo:'op', k:'aut56', ops:['Sí','No'], def:1 }] },
   { sec:'firma', t:'Firma', q:'Firma con tu dedo', a:'Así quedará tu firma en el formulario.', in:[{ tipo:'fi' }] },
   { sec:'firma', t:'Huella', q:'Ahora estampa tu huella', a:'Se abre la cámara con una guía. Pon la yema del índice derecho dentro del óvalo; la foto se toma sola.', in:[{ tipo:'hu' }] },
@@ -501,27 +502,22 @@ document.getElementById('sig').onclick = async () => {
 document.getElementById('atras').onclick = () => { paso = Math.max(0, paso - 1); render(); };
 
 // ---------- PDF real: se llena el formulario rellenable de la aseguradora (Forma B-114) con lo estampado ----------
-const FN = { localidad:'Text123', fdD:'Text125', fdM:'Text126', fdA:'Text127', docOtro:'Text128', doc:'Text129', exD:'Text130', exM:'Text131', exA:'Text132',
-  naD:'Text133', naM:'Text134', naA:'Text135', lugarNac:'Text136', n1:'Text137', n2:'Text138', a1:'Text139', a2:'Text140', nacionalidad:'Text141', direccion:'Text142',
-  ciudad:'Text143', celular:'Text144', correo:'Text145', profesion:'Text146', independiente:'Text147', ciiu:'Text148', famNombre:'Text149', famId:'Text150', famPar:'Text151',
-  famCargo:'Text152', activos:'Text153', pasivos:'Text154', patrimonio:'Text155', ingresos:'Text156', egresos:'Text157', otrosDet:'Text158', yo:'Text159', idCon:'Text160',
-  idNo:'Text161', idDe:'Text162', dDia:'Text168', dMes:'Text169', dAno:'Text170', fNombre:'Text172', fDoc:'Text173', fDe:'Text174' };
-const RG = { tipoV:'Group124', calidad:'Group125', tipoDoc:'Group126', ocupacion:'Group127', pep:'Group128', vinculoPep:'Group129', otros:'Group130' };
-const CK = { aut4:['Check Box164','Check Box165'], aut56:['Check Box166','Check Box167'] };
+const FN = { localidad:'Texto116', fdD:'Texto117', fdM:'Texto118', fdA:'Texto119', docOtro:'Texto171', doc:'Texto120', exD:'Texto121', exM:'Texto122', exA:'Texto123',
+  naD:'Texto124', naM:'Texto125', naA:'Texto126', lugarNac:'Texto127', n1:'Texto128', n2:'Texto129', a1:'Texto130', a2:'Texto131', nacionalidad:'Texto132', direccion:'Texto134',
+  ciudad:'Texto135', celular:'Texto136', correo:'Texto137', profesion:'Texto138', independiente:'Texto139', ciiu:'Texto140', famNombre:'Texto141', famId:'Texto142', famPar:'Texto143',
+  famCargo:'Texto144', activos:'Texto145', pasivos:'Texto146', patrimonio:'Texto147', ingresos:'Texto148', egresos:'Texto149', otrosDet:'Texto150', yo:'Texto151', idCon:'Texto153',
+  idNo:'Texto154', idDe:'Texto155', dDia:'Texto157', dMes:'Texto158', dAno:'Texto159', fNombre:'Texto164', fDoc:'Texto165', fDe:'Texto166' };
+// Texto160-162 (concepto de vinculación) los diligencia el asesor de seguros: se dejan en blanco.
 async function generarPdf() {
   const { PDFDocument, StandardFonts } = PDFLib;
-  const doc = await PDFDocument.load(await (await fetch('assets/sarlaft/b114.pdf')).arrayBuffer());
+  const doc = await PDFDocument.load(await (await fetch('assets/sarlaft/b114v2.pdf')).arrayBuffer());
   const form = doc.getForm(), font = await doc.embedFont(StandardFonts.Helvetica);
   for (const k in FN) {
     const v = (TXT[k] || '').replace(/[^\x20-\xFF]/g, ''); if (!v) continue;
     // Los campos de este formato no traen tipo de letra (/DA): se le pone Helvetica 7 antes de escribir
     try { const f = form.getTextField(FN[k]); f.acroField.setDefaultAppearance('/Helv 7 Tf 0.1 0.16 0.42 rg'); const ml = f.getMaxLength(); f.setText(ml ? v.slice(0, ml) : v); } catch (e) { console.warn('campo', k, e.message); }
   }
-  for (const g in RG) {
-    const i = MK[g]; if (i == null) continue;
-    try { const rg = form.getRadioGroup(RG[g]), ops = rg.getOptions(); const op = ops.find(o => o.endsWith(String(i + 1))) || ops[i]; rg.select(op); } catch (e) { console.warn('opción', g, e.message); }
-  }
-  // Las casillas Sí/No de la página 2 no se pintan bien con check(): se dibuja la X a mano (más abajo)
+  // Las opciones (círculos) se marcan dibujando la X a mano después de aplanar: los nombres de opción del PDF no siguen el orden visual
   form.updateFieldAppearances(font);
   const pg = doc.getPages()[1];
   const poner = async (src, r) => { if (!src) return; const im = await doc.embedPng(src); const w = r[3] - r[1], h = r[4] - r[2], e = Math.min(w / im.width, h / im.height);
@@ -529,7 +525,7 @@ async function generarPdf() {
   form.flatten();
   // Después de aplanar (si no, el recuadro de la huella queda tapado por el campo de imagen)
   await poner(R.firma, F.firma); await poner(R.huella, F.huella);
-  for (const g in CK) { const i = MK[g]; if (i == null) continue; const r = G[g][i], pgx = doc.getPages()[r[0]], s = 8;
+  for (const g in G) { const i = MK[g]; if (i == null) continue; const r = G[g][i], pgx = doc.getPages()[r[0]], s = 8;
     pgx.drawText("X", { x: (r[1] + r[3]) / 2 - s * 0.33, y: (r[2] + r[4]) / 2 - s * 0.35, size: s, font, color: PDFLib.rgb(0.1, 0.16, 0.42) }); }
   return doc.saveAsBase64({ dataUri: true });
 }
