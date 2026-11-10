@@ -410,7 +410,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110173019';
+const VER = 'v-20261110173141';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
