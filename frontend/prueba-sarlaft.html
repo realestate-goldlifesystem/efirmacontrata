@@ -410,12 +410,12 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110172945';
+const VER = 'v-20261110173019';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
     const t = await (await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })).text();
-    const m = t.match(/const VER = 'v-20261110172945']+)'/); if (!m || m[1] === VER) return;
+    const m = t.match(/const VER = '(v-[0-9]+)'/); if (!m || m[1] === VER) return;
     try { sessionStorage.setItem('sarlaftPrueba', JSON.stringify({ R, paso })); } catch (e) {}
     location.replace(location.pathname + '?v=' + m[1]);
   } catch (e) {}
