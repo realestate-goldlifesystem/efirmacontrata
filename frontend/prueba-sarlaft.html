@@ -167,7 +167,7 @@ function partesFecha(v) { if (!v) return ['', '', '']; const [a, m, d] = v.split
 // ---------- pasos ----------
 const P = [
   { sec:'enc', t:'Empecemos', q:'¿En qué ciudad diligencias este formulario?', a:'Ya dejamos marcado <b>Vinculación</b> y <b>Tomador</b>: como propietario tomas la póliza de arrendamiento.',
-    in:[{ tipo:'tx', k:'localidad', l:'Localidad', def:'Bogotá' }] },
+    in:[{ tipo:'tx', k:'localidad', l:'Localidad', def:'Usaquén' }] },
   { sec:'gen', t:'Información general', q:'¿Cuál es tu documento de identidad?',
     in:[{ tipo:'op', k:'tipoDoc', ops:['C.C.','C.E.','T.I.','P.P.','Otro'], def:0 }, { tipo:'tx', k:'doc', l:'Número de documento', num:true, req:true }] },
   { sec:'gen', t:'Información general', q:'¿Cuándo expidieron tu documento y cuándo naciste?',
@@ -410,7 +410,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110173141';
+const VER = 'v-20261110173527';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
