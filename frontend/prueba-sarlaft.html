@@ -51,7 +51,7 @@ h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
 .ops button.si{background:var(--gold);border-color:var(--gold);color:#fff}
 .money{font:600 1.5rem var(--fd)!important;letter-spacing:.01em}
 #pat{font:600 1rem var(--fd);color:var(--ink);background:#f6f1e2;border-radius:10px;padding:10px 12px}
-#firma{width:100%;height:140px;border:1.5px dashed var(--gold);border-radius:12px;background:#fffdf7;touch-action:none}
+#firma{width:100%;height:clamp(170px,30vh,300px);border:1.5px dashed var(--gold);border-radius:12px;background:#fffdf7;touch-action:none}
 .nav{display:flex;gap:10px;padding:10px max(16px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));border-top:1px solid var(--line)}
 .nav button{flex:1;font:600 1rem var(--fb);padding:13px;border-radius:12px;border:0;background:var(--gold);color:#fff;cursor:pointer}
 .nav button.sec2{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--fg)}
@@ -124,7 +124,7 @@ const G = { // casillas: cada opción su rect
 const SEC = { // zonas para el marco
   enc:[0,415,660,592,735,'Encabezado'], gen:[0,15,585,592,690,'Información general'], act:[0,15,520,592,575,'Actividad económica'],
   pep:[0,15,425,592,505,'Personas expuestas políticamente'], fin:[0,15,310,592,400,'Información financiera'],
-  decl:[0,15,275,592,300,'Declaraciones'], aut:[1,200,355,400,635,'Autorizaciones'], firma:[1,190,160,465,258,'Firma y huella']
+  decl:[0,15,275,592,300,'Declaraciones'], aut:[1,200,355,400,635,'Autorizaciones'], firma:[1,160,160,470,258,'Firma y huella']
 };
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 // Fijos para la póliza de arrendamiento: siempre Vinculación y Tomador (no se le preguntan al propietario)
@@ -485,7 +485,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110174917';
+const VER = 'v-20261110175304';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
