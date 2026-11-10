@@ -68,6 +68,7 @@ h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
 .combo button{text-align:left;font:400 .95rem var(--fb);padding:10px 12px;border:0;border-bottom:1px solid var(--line);background:#fff;color:var(--fg);cursor:pointer}
 .combo button span{float:right;color:var(--gold);font:600 .8rem var(--fd)}
 .combo button:active{background:#f6f1e2}.combo .ayuda{padding:10px 12px}
+#ciiuQ[readonly]{background:#f6f1e2;color:var(--ink);font-weight:600}
 .ciiu-res{display:flex;flex-direction:column;gap:6px}
 .ciiu-res button{text-align:left;font:400 .86rem/1.35 var(--fb);padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer;animation:sube .3s ease-out}
 .ciiu-res button b{color:var(--gold);font-family:var(--fd);margin-right:4px}
@@ -268,7 +269,7 @@ function render() {
     if (i.tipo === 'tel') { const p = pais(); return '<label>Celular<div class="tel"><button type="button" id="telPais" class="tel-p">' + bandera(p.iso) + ' +' + p.cod + ' ▾</button>' +
       '<input id="telNum" inputmode="numeric" autocomplete="tel-national" maxlength="' + p.max + '" placeholder="' + '0'.repeat(p.max).replace(/0/g, '#') + '" value="' + (R.celNum || '') + '"></div></label>' +
       '<div id="telLista" class="tel-lista" hidden><input id="telBus" placeholder="Buscar país…" autocomplete="off"><div id="telOps"></div></div><p class="ayuda" id="telAyuda"></p>'; }
-    if (i.tipo === 'ciiu') return '<label>Código CIIU: escribe el código de tu RUT o busca tu actividad con palabras<input id="ciiuQ" autocomplete="off" placeholder="Ej: 6810, taxi, peluquería, venta de ropa" value="' + (R.ciiu ? R.ciiu + ' · ' + (R.ciiuT || '') : '').replace(/"/g, '&quot;') + '"></label><div id="ciiuRes" class="ciiu-res"></div>';
+    if (i.tipo === 'ciiu') return '<label>Código CIIU: escribe el código de tu RUT o busca tu actividad con palabras<input id="ciiuQ" autocomplete="off" placeholder="Ej: 6810, taxi, peluquería, venta de ropa" value="' + (R.ciiu ? R.ciiu + ' · ' + (R.ciiuT || '') : '').replace(/"/g, '&quot;') + '"' + (R.ciiu ? ' readonly' : '') + '></label><div class="ops"><button type="button" id="ciiuCambiar"' + (R.ciiu ? '' : ' hidden') + '>Cambiar código</button></div><div id="ciiuRes" class="ciiu-res"></div>';
     if (i.tipo === 'fi') return '<canvas id="firma"></canvas><div class="ops"><button type="button" id="borrarF">Borrar firma</button></div>';
     if (i.tipo === 'hu') return '<div class="ops"><button type="button" id="tomarH" class="si">' + (R.huella ? 'Tomar de nuevo' : 'Abrir cámara') + '</button></div><p class="ayuda" id="hMsg"></p>';
     return '';
@@ -404,12 +405,14 @@ function buscadorCiiu(inp) {
       '<p class="ayuda">No encontramos esa actividad. Prueba con otra palabra (ej: "venta", "servicio", "construcción").</p>';
   };
   inp.oninput = () => { R.ciiu = ''; sincronizar(); pinta(); };
+  // Ya elegido: queda fijo; para corregirlo se usa "Cambiar código"
+  document.getElementById('ciiuCambiar').onclick = e => { R.ciiu = ''; R.ciiuT = ''; inp.readOnly = false; inp.value = ''; e.target.hidden = true; sincronizar(); inp.focus(); };
   // Lo que escriba en "Descripción de la actividad" también sugiere el código, mientras no haya elegido uno
   const desc = document.querySelector('input[data-k=independiente]');
   if (desc) { const previo = desc.oninput; desc.oninput = () => { previo && previo(); if (!R.ciiu) pinta(desc.value); }; }
   res.onclick = e => {
     const b = e.target.closest('button[data-c]'); if (!b) return; const x = CIIU.find(y => y.c === b.dataset.c);
-    R.ciiu = x.c; R.ciiuT = x.t; inp.value = x.c + ' · ' + x.t; res.innerHTML = '';
+    R.ciiu = x.c; R.ciiuT = x.t; inp.value = x.c + ' · ' + x.t; res.innerHTML = ''; inp.readOnly = true; document.getElementById('ciiuCambiar').hidden = false;
     if (!R.independiente) { R.independiente = x.t.replace(/ \(DIAN\)$/, ''); const d = document.querySelector('input[data-k=independiente]'); if (d) d.value = R.independiente; }
     sincronizar();
   };
@@ -452,7 +455,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110173944';
+const VER = 'v-20261110174041';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
