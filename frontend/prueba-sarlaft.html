@@ -218,6 +218,12 @@ function sincronizar() {
   ['lugarNac','n1','n2','a1','a2','nacionalidad','direccion','ciudad','celular','correo','profesion','independiente','ciiu','famNombre','famId','famPar','famCargo','otrosDet','idDe']
     .forEach(k => poner(k, k === 'correo' ? R[k] : (R[k] || '').toUpperCase()));
   marcar('ocupacion', R.ocupacion === 4 ? null : R.ocupacion);
+  // Casillas que no aplican: se tachan con guiones para que no queden en blanco
+  const NA = '- - - - - - - - - -', na = (cond, ks) => { if (cond) ks.forEach(k => poner(k, NA, 'centro')); };
+  na(R.ocupacion !== undefined && R.ocupacion !== 4, ['independiente', 'ciiu']);
+  na(R.vinculoPep === 1, ['famNombre', 'famId', 'famPar', 'famCargo']);
+  na(R.otros === 1, ['otrosDet']);
+  na(R.n1 && !R.n2, ['n2']); na(R.a1 && !R.a2, ['a2']);
   marcar('pep', R.pep); marcar('vinculoPep', R.vinculoPep); marcar('otros', R.otros);
   ['activos','pasivos','ingresos','egresos'].forEach(k => poner(k, R[k] !== undefined && R[k] !== '' ? fmt(R[k]) || '$ 0' : ''));
   const pat = (R.activos !== undefined && R.pasivos !== undefined && R.pasivos !== '') ? (+R.activos || 0) - (+R.pasivos || 0) : null;
