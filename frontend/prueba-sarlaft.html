@@ -57,6 +57,9 @@ h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
 .nav button.sec2{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--fg)}
 .nav button:disabled{opacity:.45}
 .err{color:#b4332c;font-size:.82rem;min-height:1em}
+.ciiu-res{display:flex;flex-direction:column;gap:6px}
+.ciiu-res button{text-align:left;font:400 .86rem/1.35 var(--fb);padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer;animation:sube .3s ease-out}
+.ciiu-res button b{color:var(--gold);font-family:var(--fd);margin-right:4px}
 </style>
 </head>
 <body>
@@ -171,7 +174,7 @@ const P = [
   { sec:'act', t:'Actividad económica', q:'¿A qué te dedicas?', a:'Si trabajas por tu cuenta, deja la ocupación sin marcar y describe tu actividad.',
     in:[{ tipo:'tx', k:'profesion', l:'Profesión u oficio', req:true }, { tipo:'op', k:'ocupacion', ops:['Asalariado','Estudiante','Pensionado','Ama de casa','Independiente'], def:0 }] },
   { sec:'act', t:'Actividad económica', q:'Cuéntanos tu actividad como independiente', solo:()=>R.ocupacion===4,
-    in:[{ tipo:'tx', k:'independiente', l:'Descripción de la actividad principal', req:true }, { tipo:'tx', k:'ciiu', l:'Código CIIU (si lo sabes, está en tu RUT)', num:true }] },
+    in:[{ tipo:'tx', k:'independiente', l:'Descripción de la actividad principal', req:true }, { tipo:'ciiu' }] },
   { sec:'pep', t:'Personas expuestas políticamente', q:'¿Eres o has sido una Persona Expuesta Políticamente (PEP)?', a:'Lo son quienes ocupan o han ocupado cargos públicos de alto nivel: ministros, congresistas, alcaldes, altos mandos militares, directivos de entidades del Estado, etc. La gran mayoría responde No.',
     in:[{ tipo:'op', k:'pep', ops:['Sí','No'], def:1 }] },
   { sec:'pep', t:'Personas expuestas políticamente', q:'¿Tienes un familiar que sea Persona Expuesta Políticamente?',
@@ -252,6 +255,7 @@ function render() {
     if (i.tipo === 'op') return '<div class="ops" data-g="' + i.k + '">' + i.ops.map((o, j) => '<button type="button" data-j="' + j + '" class="' + (R[i.k] === j ? 'si' : '') + '">' + o + '</button>').join('') + '</div>';
     if (i.tipo === 'mo') return '<input class="money" data-k="' + i.k + '" data-mo="1" inputmode="numeric" placeholder="$ 0" value="' + (R[i.k] !== undefined ? fmt(R[i.k]) || '$ 0' : '') + '">';
     if (i.tipo === 'pat') return '<div id="pat"></div>';
+    if (i.tipo === 'ciiu') return '<label>Código CIIU: escribe el código de tu RUT o busca tu actividad con palabras<input id="ciiuQ" autocomplete="off" placeholder="Ej: 6810, taxi, peluquería, venta de ropa" value="' + (R.ciiu ? R.ciiu + ' · ' + (R.ciiuT || '') : '').replace(/"/g, '&quot;') + '"></label><div id="ciiuRes" class="ciiu-res"></div>';
     if (i.tipo === 'fi') return '<canvas id="firma"></canvas><div class="ops"><button type="button" id="borrarF">Borrar firma</button></div>';
     if (i.tipo === 'hu') return '<div class="ops"><button type="button" id="tomarH" class="si">' + (R.huella ? 'Tomar de nuevo' : 'Abrir cámara') + '</button></div><p class="ayuda" id="hMsg"></p>';
     return '';
@@ -272,6 +276,7 @@ function render() {
     g.querySelectorAll('button').forEach(x => x.classList.toggle('si', x === b)); sincronizar();
     if (p.in.some(i => i.si)) render();
   });
+  const cq = document.getElementById('ciiuQ'); if (cq) buscadorCiiu(cq);
   const fi = document.getElementById('firma'); if (fi) firmaPad(fi);
   const th = document.getElementById('tomarH'); if (th) th.onclick = async () => {
     const r = await HuellaCaptura.abrir();
@@ -284,6 +289,40 @@ function render() {
 }
 function patTxt() { const el = document.getElementById('pat'); if (!el) return;
   const a = +R.activos || 0, b = +R.pasivos || 0; el.textContent = 'Patrimonio = Activos − Pasivos = ' + (a - b < 0 ? '- ' : '') + '$ ' + Math.abs(a - b).toLocaleString('es-CO'); }
+
+// ---------- CIIU: lista oficial DANE CIIU Rev. 4 A.C. (2022) + códigos DIAN de persona natural ----------
+let CIIU = null;
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+async function cargarCiiu() {
+  if (!CIIU) { const r = await fetch('assets/sarlaft/ciiu.json'); CIIU = (await r.json()).map(x => ({ ...x, n: norm(x.t + ' ' + (x.s || '')) })); }
+  return CIIU;
+}
+function buscadorCiiu(inp) {
+  const res = document.getElementById('ciiuRes');
+  const pinta = async () => {
+    const q = norm(inp.value).trim(); if (q.length < 2) { res.innerHTML = ''; return; }
+    const L = await cargarCiiu(), num = q.replace(/\D/g, '');
+    let hits;
+    if (/^\d+$/.test(q)) hits = L.filter(x => x.c.startsWith(num));
+    else {
+      const pal = q.split(/\s+/).filter(w => w.length > 2 && !['del', 'las', 'los', 'por', 'con', 'para'].includes(w));
+      hits = L.map(x => {
+        let p = 0; pal.forEach(w => { if ((' ' + x.n).includes(' ' + w)) p += 2; else if (x.n.includes(w.slice(0, -1))) p += 1; });
+        if (x.s && pal.some(w => norm(x.s).split(' ').some(s => s.startsWith(w)))) p += 3;   // palabras del día a día
+        return { x, p };
+      }).filter(o => o.p > 0).sort((a, b) => b.p - a.p).map(o => o.x);
+    }
+    res.innerHTML = hits.slice(0, 6).map(x => '<button type="button" data-c="' + x.c + '"><b>' + x.c + '</b> ' + x.t + '</button>').join('') ||
+      '<p class="ayuda">No encontramos esa actividad. Prueba con otra palabra (ej: "venta", "servicio", "construcción").</p>';
+  };
+  inp.oninput = () => { R.ciiu = ''; sincronizar(); pinta(); };
+  res.onclick = e => {
+    const b = e.target.closest('button[data-c]'); if (!b) return; const x = CIIU.find(y => y.c === b.dataset.c);
+    R.ciiu = x.c; R.ciiuT = x.t; inp.value = x.c + ' · ' + x.t; res.innerHTML = '';
+    if (!R.independiente) { R.independiente = x.t.replace(/ \(DIAN\)$/, ''); const d = document.querySelector('input[data-k=independiente]'); if (d) d.value = R.independiente; }
+    sincronizar();
+  };
+}
 
 function firmaPad(f) {
   const c = f.getContext('2d'), r = f.getBoundingClientRect(); f.width = r.width * 2; f.height = r.height * 2;
