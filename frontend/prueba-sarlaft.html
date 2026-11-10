@@ -408,6 +408,20 @@ document.getElementById('sig').onclick = () => {
 };
 document.getElementById('atras').onclick = () => { document.getElementById('marco').style.opacity = 1; document.getElementById('hoja').style.flexBasis = '52%'; paso = Math.max(0, paso - 1); render(); };
 
+// ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
+// sin perder lo respondido. VER se reescribe en cada publicación.
+const VER = 'v-20261110172945';
+try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
+async function revisarVersion() {
+  try {
+    const t = await (await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })).text();
+    const m = t.match(/const VER = 'v-20261110172945']+)'/); if (!m || m[1] === VER) return;
+    try { sessionStorage.setItem('sarlaftPrueba', JSON.stringify({ R, paso })); } catch (e) {}
+    location.replace(location.pathname + '?v=' + m[1]);
+  } catch (e) {}
+}
+revisarVersion(); setInterval(revisarVersion, 15000);
+
 // Inicio cuando cargan las hojas (el marco necesita su tamaño)
 let cargadas = 0; document.querySelectorAll('img.fondo').forEach(im => { const ok = () => { if (++cargadas === 2) { ajustarFuente(); sincronizar(); render(); } }; im.complete ? ok() : im.onload = ok; });
 </script>
