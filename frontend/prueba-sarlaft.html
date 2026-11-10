@@ -346,8 +346,8 @@ async function cargarCiiu() {
 }
 function buscadorCiiu(inp) {
   const res = document.getElementById('ciiuRes');
-  const pinta = async () => {
-    const q = norm(inp.value).trim(); if (q.length < 2) { res.innerHTML = ''; return; }
+  const pinta = async (texto) => {
+    const q = norm(texto ?? inp.value).trim(); if (q.length < 2) { res.innerHTML = ''; return; }
     const L = await cargarCiiu(), num = q.replace(/\D/g, '');
     let hits;
     if (/^\d+$/.test(q)) hits = L.filter(x => x.c.startsWith(num));
@@ -363,6 +363,9 @@ function buscadorCiiu(inp) {
       '<p class="ayuda">No encontramos esa actividad. Prueba con otra palabra (ej: "venta", "servicio", "construcción").</p>';
   };
   inp.oninput = () => { R.ciiu = ''; sincronizar(); pinta(); };
+  // Lo que escriba en "Descripción de la actividad" también sugiere el código, mientras no haya elegido uno
+  const desc = document.querySelector('input[data-k=independiente]');
+  if (desc) { const previo = desc.oninput; desc.oninput = () => { previo && previo(); if (!R.ciiu) pinta(desc.value); }; }
   res.onclick = e => {
     const b = e.target.closest('button[data-c]'); if (!b) return; const x = CIIU.find(y => y.c === b.dataset.c);
     R.ciiu = x.c; R.ciiuT = x.t; inp.value = x.c + ' · ' + x.t; res.innerHTML = '';
