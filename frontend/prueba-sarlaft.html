@@ -328,7 +328,7 @@ function celular() {
   };
   num.oninput = () => { num.value = num.value.replace(/\D/g, '').slice(0, pais().max); guardar(); };
   const pintar = () => { const q = norm(bus.value);
-    ops.innerHTML = PAISES.filter(x => !q || norm(x[1]).includes(q) || String(x[2]).startsWith(q.replace('+', '')))
+    ops.innerHTML = PAISES.filter(x => !q || norm(x[1]).split(' ').some(w => w.startsWith(q)) || String(x[2]).startsWith(q.replace('+', '')))
       .map(x => '<button type="button" data-iso="' + x[0] + '">' + bandera(x[0]) + ' ' + x[1] + ' <span>+' + x[2] + '</span></button>').join('') || '<p class="ayuda">Sin resultados</p>'; };
   btn.onclick = () => { lista.hidden = !lista.hidden; if (!lista.hidden) { bus.value = ''; pintar(); bus.focus(); } };
   bus.oninput = pintar;
