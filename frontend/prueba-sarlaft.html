@@ -69,6 +69,12 @@ h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
 .combo button span{float:right;color:var(--gold);font:600 .8rem var(--fd)}
 .combo button:active{background:#f6f1e2}.combo .ayuda{padding:10px 12px}
 #ciiuQ[readonly]{background:#f6f1e2;color:var(--ink);font-weight:600}
+.hvista{display:flex;flex-direction:column;gap:10px;animation:sube .35s ease-out}
+.hcomp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.hcomp figure{margin:0;display:flex;flex-direction:column;gap:4px;align-items:center;min-width:0}
+.hcomp canvas,.hbox{width:100%;aspect-ratio:3/4;border-radius:10px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hbox img{max-width:92%;max-height:92%}.fbox{aspect-ratio:3/4}
+.hvista label{display:flex;flex-direction:column;font-size:.8rem;color:var(--mut)}.hvista input[type=range]{accent-color:var(--gold)}
 .ciiu-res{display:flex;flex-direction:column;gap:6px}
 .ciiu-res button{text-align:left;font:400 .86rem/1.35 var(--fb);padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer;animation:sube .3s ease-out}
 .ciiu-res button b{color:var(--gold);font-family:var(--fd);margin-right:4px}
@@ -269,7 +275,13 @@ function render() {
       '<div id="telLista" class="tel-lista" hidden><input id="telBus" placeholder="Buscar país…" autocomplete="off"><div id="telOps"></div></div><p class="ayuda" id="telAyuda"></p>'; }
     if (i.tipo === 'ciiu') return '<label>Código CIIU: escribe el código de tu RUT o busca tu actividad con palabras<input id="ciiuQ" autocomplete="off" placeholder="Ej: 6810, taxi, peluquería, venta de ropa" value="' + (R.ciiu ? R.ciiu + ' · ' + (R.ciiuT || '') : '').replace(/"/g, '&quot;') + '"' + (R.ciiu ? ' readonly' : '') + '></label><div class="ops"><button type="button" id="ciiuCambiar"' + (R.ciiu ? '' : ' hidden') + '>Cambiar código</button></div><div id="ciiuRes" class="ciiu-res"></div>';
     if (i.tipo === 'fi') return '<canvas id="firma"></canvas><div class="ops"><button type="button" id="borrarF">Borrar firma</button></div>';
-    if (i.tipo === 'hu') return '<div class="ops"><button type="button" id="tomarH" class="si">' + (R.huella ? 'Tomar de nuevo' : 'Abrir cámara') + '</button></div><p class="ayuda" id="hMsg"></p>';
+    if (i.tipo === 'hu') return '<div class="ops"><button type="button" id="tomarH" class="si">' + (R.huella ? 'Tomar de nuevo' : 'Abrir cámara') + '</button></div><p class="ayuda" id="hMsg"></p>' +
+      '<div id="hVista" class="hvista"' + (R.huella ? '' : ' hidden') + '>' +
+        '<div class="hcomp"><figure><canvas id="hFoto"></canvas><figcaption>Foto</figcaption></figure><figure><div class="hbox"><img id="hImg" alt="Huella"></div><figcaption>Huella</figcaption></figure>' +
+        '<figure><div class="hbox fbox"><img id="hFirma" alt="Firma"></div><figcaption>Tu firma</figcaption></figure></div>' +
+        '<div id="hAjustes"' + (huellaFoto ? '' : ' hidden') + '><label>Grosor de las líneas<input id="hG" type="range" min="2" max="14" value="' + (R.hG || 6) + '"></label>' +
+        '<label>Contraste<input id="hC" type="range" min="-30" max="30" value="' + (R.hC || 0) + '"></label>' +
+        '<div class="ops"><button type="button" id="hInv">Invertir</button></div></div></div>';
     return '';
   };
   h += p.in.map(campo).join('') + '</div><div class="err" id="err"></div></div>';
@@ -292,9 +304,16 @@ function render() {
   const cq = document.getElementById('ciiuQ'); if (cq) { buscadorCiiu(cq); if (!R.ciiu && !cq.value && R.profesion) { cq.value = R.profesion; cq.oninput(); } }
   if (document.getElementById('telNum')) celular();
   const fi = document.getElementById('firma'); if (fi) firmaPad(fi);
+  if (document.getElementById('hVista')) {
+    vistaHuella(false);
+    const rep = () => { R.hG = +document.getElementById('hG').value; R.hC = +document.getElementById('hC').value; vistaHuella(true); };
+    document.getElementById('hG').oninput = rep; document.getElementById('hC').oninput = rep;
+    document.getElementById('hInv').onclick = () => { R.hI = !R.hI; vistaHuella(true); };
+  }
   const th = document.getElementById('tomarH'); if (th) th.onclick = async () => {
     const r = await HuellaCaptura.abrir();
-    if (r) { R.huella = r.png; sincronizar(); th.textContent = 'Tomar de nuevo'; document.getElementById('hMsg').textContent = '¡Huella estampada!'; }
+    if (r) { huellaFoto = r.foto; R.huella = r.png; th.textContent = 'Tomar de nuevo'; document.getElementById('hMsg').textContent = '¡Huella estampada! Si no se ven bien las líneas, ajústala o tómala de nuevo.';
+      document.getElementById('hAjustes').hidden = false; vistaHuella(true); }
     else document.getElementById('hMsg').textContent = 'No se tomó la huella. Revisa el permiso de la cámara e inténtalo de nuevo.';
   };
   enmarcar(p.sec); patTxt();
@@ -303,6 +322,19 @@ function render() {
 }
 function patTxt() { const el = document.getElementById('pat'); if (!el) return;
   const a = +R.activos || 0, b = +R.pasivos || 0; el.textContent = 'Patrimonio = Activos − Pasivos = ' + (a - b < 0 ? '- ' : '') + '$ ' + Math.abs(a - b).toLocaleString('es-CO'); }
+
+// ---------- Vista previa de la huella (como en la prueba de huella): foto, huella, firma y ajustes ----------
+let huellaFoto = null;   // foto original en memoria (no se guarda): permite reprocesar con los ajustes
+function vistaHuella(reprocesar) {
+  const v = document.getElementById('hVista'); if (!v) return;
+  if (reprocesar && huellaFoto) { R.huella = HuellaCaptura.procesar(huellaFoto, R.hG || 6, R.hC || 0, !!R.hI); sincronizar(); }
+  v.hidden = !R.huella;
+  const c = document.getElementById('hFoto');
+  if (huellaFoto) { c.width = 180; c.height = 240; c.getContext('2d').drawImage(huellaFoto, 0, 0, 180, 240); c.parentElement.hidden = false; }
+  else c.parentElement.hidden = true;
+  document.getElementById('hImg').src = R.huella || '';
+  const f = document.getElementById('hFirma'); f.src = R.firma || ''; f.parentElement.parentElement.hidden = !R.firma;
+}
 
 // ---------- Lista que se filtra mientras escribe (profesión u oficio) ----------
 const PROFESIONES = ['Abogado(a)','Administrador(a) de empresas','Administrador(a) público','Agente inmobiliario','Agricultor(a)','Albañil','Analista de datos','Arquitecto(a)',
@@ -453,7 +485,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110174700';
+const VER = 'v-20261110174917';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
