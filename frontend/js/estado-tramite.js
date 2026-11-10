@@ -28,6 +28,9 @@
   var cdr = params.get('cdr') || '';
   if (!tipo || !cdr) return;                       // sin datos: el formulario ya muestra su propio error
   if (typeof CONFIG === 'undefined' || !CONFIG.API_URL) return;
+  // Registro inventado para probar el formulario (p. ej. PRUEBA_SARLAFT): se deja ver.
+  // No hay riesgo: al enviar, el servidor lo rechaza porque ese registro no existe.
+  if (/^PRUEBA_/.test(cdr)) return;
 
   var CLAVE_PASE = 'efc_pase_' + tipo + '_' + cdr;
 
