@@ -71,15 +71,16 @@ function _armarPlantillaPazYSalvo_(copia, maestra) {
  * Genera el paz y salvo de un contrato. firmante: 'AGENTE' (Leonardo) o 'PROPIETARIO'.
  * Devuelve { url, pdf } o lanza error si falta algo (p. ej. la firma del propietario).
  */
-function generarPazYSalvo_(idInm, c, partes, firmante, carpeta) {
+function generarPazYSalvo_(idInm, c, partes, firmante, carpeta, sinFirma) {
   const plantilla = _plantillaPazYSalvoId_();
   if (!plantilla) throw new Error('Falta la plantilla del paz y salvo (crearPlantillaPazYSalvo_).');
   const propio = firmante === 'PROPIETARIO';
   let firma = null;
   if (propio) {
     const idFirma = String(c.v('FIRMA PROPIETARIO') || '').trim();
-    if (!idFirma) throw new Error('El propietario no tiene firma guardada del acta de promoción.');
-    firma = DriveApp.getFileById(idFirma).getBlob();
+    // sinFirma: sale con la raya vacía para que el propietario firme a mano (10-nov-2026)
+    if (!idFirma && !sinFirma) throw new Error('El propietario no tiene firma guardada del acta de promoción.');
+    if (idFirma) firma = DriveApp.getFileById(idFirma).getBlob();
   }
   const agente = JSON.parse(PropertiesService.getScriptProperties().getProperty('AGENTE_PAZ_Y_SALVO') || '{}');
   const quien = propio ? { nombre: partes.PROPIETARIO.nombre, cedula: partes.PROPIETARIO.documento || String(c.v('Número de documento') || '').trim() } : agente;
@@ -104,7 +105,8 @@ function generarPazYSalvo_(idInm, c, partes, firmante, carpeta) {
   const copia = DriveApp.getFileById(plantilla).makeCopy(nombre, carpeta || DriveApp.getFileById(plantilla).getParents().next());
   const doc = DocumentApp.openById(copia.getId()), body = doc.getBody();
   Object.keys(valores).forEach(k => body.replaceText(k.replace(/[\[\]()]/g, '\\$&'), valores[k]));
-  if (propio) {
+  if (propio && !firma) body.getParagraphs().forEach(p => p.getPositionedImages().forEach(im => p.removePositionedImage(im.getId())));
+  if (propio && firma) {
     // Fuera la firma de Leonardo; la del propietario va encima de la raya
     body.getParagraphs().forEach(p => p.getPositionedImages().forEach(im => p.removePositionedImage(im.getId())));
     // "Atentamente," + renglones vacíos (el hueco de la firma flotante) + raya, en un solo párrafo:
