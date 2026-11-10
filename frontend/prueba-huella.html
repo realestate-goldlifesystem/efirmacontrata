@@ -126,7 +126,12 @@ async function listarCamaras() {
   const traseras = ds.filter(d => /back|rear|trasera|environment|wide|ultra|0/i.test(d.label));
   camaras = traseras.length ? traseras : ds;
   // Preferir gran angular / ultra wide (enfoca más cerca: hace de macro)
-  const ui = camaras.findIndex(d => /ultra|wide|0\.5|gran/i.test(d.label));
+  // En iPhone las cámaras "dual"/"triple" son virtuales y saltan solas entre lentes al acercar
+  // el dedo (la imagen "se mueve"). Se prefiere un lente fijo: ultra gran angular, luego el normal.
+  const fija = d => !/dual|triple/i.test(d.label);
+  let ui = camaras.findIndex(d => fija(d) && /ultra/i.test(d.label));
+  if (ui < 0) ui = camaras.findIndex(d => fija(d) && /back|trasera|rear/i.test(d.label) && !/tele/i.test(d.label));
+  if (ui < 0) ui = camaras.findIndex(d => /ultra|wide|0\.5|gran/i.test(d.label));
   if (ui > -1) camIdx = ui;
 }
 
