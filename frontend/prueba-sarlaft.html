@@ -118,7 +118,7 @@ const G = { // casillas: cada opción su rect
 const SEC = { // zonas para el marco
   enc:[0,415,660,592,735,'Encabezado'], gen:[0,15,585,592,690,'Información general'], act:[0,15,520,592,575,'Actividad económica'],
   pep:[0,15,425,592,505,'Personas expuestas políticamente'], fin:[0,15,310,592,400,'Información financiera'],
-  decl:[0,15,275,592,300,'Declaraciones'], aut:[1,200,355,400,635,'Autorizaciones'], firma:[1,195,165,460,300,'Firma y huella']
+  decl:[0,15,275,592,300,'Declaraciones'], aut:[1,200,355,400,635,'Autorizaciones'], firma:[1,190,160,465,258,'Firma y huella']
 };
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 // Fijos para la póliza de arrendamiento: siempre Vinculación y Tomador (no se le preguntan al propietario)
@@ -453,7 +453,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110174543';
+const VER = 'v-20261110174700';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
