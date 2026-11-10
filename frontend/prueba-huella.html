@@ -108,6 +108,8 @@ label{font-size:.85rem;color:var(--mut)}input[type=range]{width:100%;accent-colo
       <button class="btn sec" id="luz" type="button">Linterna</button>
       <button class="btn sec" id="cerrar" type="button">Cerrar</button>
     </div>
+    <div id="zoomWrap" hidden><label for="zoom" style="color:#ccc">Zoom</label><input id="zoom" type="range"></div>
+    <div id="enfWrap" hidden><label for="enf" style="color:#ccc">Enfoque manual</label><input id="enf" type="range"></div>
     <button id="disparo" type="button" aria-label="Tomar foto"></button>
     <div class="info" id="info"></div>
   </div>
@@ -130,7 +132,8 @@ async function listarCamaras() {
 
 async function abrir(deviceId) {
   cerrarStream();
-  const v = { width: { ideal: 1920 }, height: { ideal: 1440 } };
+  // Máxima resolución: si el lente no enfoca de cerca, se aleja el dedo y se recorta en digital
+  const v = { width: { ideal: 4096 }, height: { ideal: 3072 } };
   if (deviceId) v.deviceId = { exact: deviceId }; else v.facingMode = { ideal: 'environment' };
   stream = await navigator.mediaDevices.getUserMedia({ video: v, audio: false });
   track = stream.getVideoTracks()[0];
@@ -152,8 +155,18 @@ async function ajustar() {
   const s = track.getSettings ? track.getSettings() : {};
   $('luz').disabled = !caps.torch;
   $('lente').disabled = camaras.length < 2;
+  // Enfoque manual si el celular lo permite
+  const fd = caps.focusDistance;
+  $('enfWrap').hidden = !(fd && caps.focusMode && caps.focusMode.includes('manual'));
+  if (!$('enfWrap').hidden) { const e = $('enf'); e.min = fd.min; e.max = fd.max; e.step = fd.step || 0.01; e.value = s.focusDistance || fd.min; }
+  // Zoom (para acercar en digital si toca alejar el dedo)
+  $('zoomWrap').hidden = !caps.zoom;
+  if (caps.zoom) { const z = $('zoom'); z.min = caps.zoom.min; z.max = Math.min(caps.zoom.max, 4); z.step = caps.zoom.step || 0.1; z.value = s.zoom || caps.zoom.min; }
   $('info').textContent = (track.label || 'Cámara') + ' · ' + (s.width || '?') + '×' + (s.height || '?') +
-    (s.zoom ? ' · zoom ' + s.zoom : '') + (caps.focusMode ? ' · enfoque ' + (s.focusMode || '') : '');
+    ' · cámaras: ' + camaras.length +
+    (caps.zoom ? ' · zoom ' + caps.zoom.min + '–' + caps.zoom.max : ' · sin zoom') +
+    (caps.focusMode ? ' · enfoque: ' + caps.focusMode.join('/') : ' · sin control de enfoque') +
+    (fd ? ' · distancia ' + fd.min + '–' + fd.max : '');
 }
 
 function cerrarStream() {
@@ -181,6 +194,8 @@ $('lente').onclick = async () => { camIdx = (camIdx + 1) % camaras.length; try {
 $('luz').onclick = async () => { luz = !luz; try { await track.applyConstraints({ advanced: [{ torch: luz }] }); } catch (e) {} };
 $('cerrar').onclick = () => { cerrarStream(); $('visor').hidden = true; };
 $('disparo').onclick = () => capturar();
+$('zoom').oninput = async e => { try { await track.applyConstraints({ advanced: [{ zoom: +e.target.value }] }); } catch (er) {} maxNit = 0; t0 = performance.now(); };
+$('enf').oninput = async e => { try { await track.applyConstraints({ advanced: [{ focusMode: 'manual', focusDistance: +e.target.value }] }); } catch (er) {} maxNit = 0; t0 = performance.now(); };
 
 // ---------- guía ----------
 function ovalo() { // en coordenadas de pantalla
@@ -235,7 +250,7 @@ function medir() {
   const listo = performance.now() - t0 > 1800 && r.nit > 25 && rel > 0.85;
   if (r.brillo < 50) $('msg').textContent = 'Falta luz: acércate a una ventana o enciende la linterna';
   else if (r.brillo > 230) $('msg').textContent = 'Demasiada luz: apaga la linterna o aléjate del sol';
-  else if (!listo) $('msg').textContent = r.nit < 25 ? 'Acerca o aleja el dedo hasta que se vean las líneas' : 'Quieto… enfocando';
+  else if (!listo) $('msg').textContent = r.nit < 25 ? 'Aleja el dedo (10–15 cm) hasta que enfoque; si queda pequeño, sube el zoom' : 'Quieto… enfocando';
   else $('msg').textContent = '¡Perfecto, no te muevas!';
   buenos = listo ? buenos + 1 : 0;
   dibujarMascara(listo ? '#2f9e5b' : '#fff');
