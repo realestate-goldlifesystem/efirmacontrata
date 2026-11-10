@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Prueba de huella</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* PÁGINA DE PRUEBA SUELTA (nov-2026): cámara en vivo con guía para capturar la huella.
+   No guarda ni envía nada. Si funciona, se integra al formulario del propietario (SARLAFT). */
+:root{--bg:#f6f5f1;--card:#fff;--fg:#1d1c19;--mut:#6b6658;--line:#e3dfd3;--gold:#b48a2c;--ok:#2f9e5b;
+--fd:'Space Grotesk',system-ui,sans-serif;--fb:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--fb)}
+.w{max-width:560px;margin:0 auto;padding:20px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left));display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--fd);font-size:1.45rem;margin:0}
+h2{font-family:var(--fd);font-size:1.05rem;margin:0}
+p{margin:0}.mut{color:var(--mut);font-size:.88rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.btn{font:600 .95rem var(--fb);border:0;border-radius:10px;padding:12px 16px;background:var(--gold);color:#fff;cursor:pointer}
+.btn.sec{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1 1 120px}
+/* visor de cámara */
+#visor{position:fixed;inset:0;background:#000;z-index:50;display:flex;flex-direction:column}
+#visor[hidden]{display:none}
+.vwrap{position:relative;flex:1;overflow:hidden}
+#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#mask{position:absolute;inset:0;width:100%;height:100%}
+.msg{position:absolute;left:0;right:0;top:calc(14px + env(safe-area-inset-top));text-align:center;color:#fff;font:600 1rem var(--fb);text-shadow:0 1px 4px #000;padding:0 16px}
+.meter{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:60%;height:8px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--gold);transition:width .2s}
+.ctrl{background:#000;padding:12px max(16px,env(safe-area-inset-left)) calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+.ctrl .row .btn.sec{color:#fff;border-color:#444}
+#disparo{width:68px;height:68px;border-radius:50%;border:4px solid #fff;background:var(--gold);align-self:center;cursor:pointer}
+.info{color:#aaa;font-size:.75rem;text-align:center}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp figure{margin:0;display:flex;flex-direction:column;gap:4px;align-items:center}
+.cmp canvas{width:100%;aspect-ratio:3/4;border-radius:10px;border:1px solid var(--line);background:#fff}
+figcaption{font-size:.72rem;color:var(--mut);letter-spacing:.05em;text-transform:uppercase}
+label{font-size:.85rem;color:var(--mut)}input[type=range]{width:100%;accent-color:var(--gold)}
+.hoja{background:#fff;color:#1a1a1a;border:1px solid var(--line);border-radius:6px;padding:16px;font-size:.8rem;display:flex;flex-direction:column;gap:10px}
+.hoja h3{font-family:var(--fd);font-size:.85rem;margin:0;text-align:center}
+.pie{display:grid;grid-template-columns:1fr 110px;gap:12px;align-items:end}
+.caja{border:1px solid #999;height:140px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.caja img{max-height:100%}
+#firma{width:100%;height:150px;border:1px dashed var(--line);border-radius:10px;background:#fff;touch-action:none}
+.fir{height:70px;display:flex;align-items:flex-end}.fir img{max-height:70px}
+.lin{border-top:1px solid #333;padding-top:3px;font-size:.72rem}
+.sm{font-size:.68rem;color:#666;text-align:center}
+</style>
+</head>
+<body>
+<div class="w">
+  <div><p class="mut">Prueba · Gold Life System</p><h1>Huella y firma para el SARLAFT</h1></div>
+
+  <section class="card">
+    <h2>1. Captura tu huella</h2>
+    <p class="mut">Se abre la cámara con una guía. Pon la yema del índice derecho dentro del óvalo, a unos 5–8 cm, con buena luz. La foto se toma sola cuando está enfocada.</p>
+    <button class="btn" id="abrir" type="button">Abrir cámara con guía</button>
+    <p class="mut" id="estadoCam"></p>
+  </section>
+
+  <section class="card" id="res" hidden>
+    <h2>2. Así queda</h2>
+    <div class="cmp">
+      <figure><canvas id="orig"></canvas><figcaption>Foto</figcaption></figure>
+      <figure><canvas id="out"></canvas><figcaption>Huella</figcaption></figure>
+    </div>
+    <div><label for="det">Grosor de las líneas</label><input id="det" type="range" min="2" max="14" value="6"></div>
+    <div><label for="con">Contraste</label><input id="con" type="range" min="-30" max="30" value="0"></div>
+    <div class="row"><button class="btn sec" id="inv" type="button">Invertir</button><button class="btn sec" id="otra" type="button">Tomar otra</button></div>
+    <p class="mut" id="datos"></p>
+  </section>
+
+  <section class="card">
+    <h2>3. Firma con el dedo</h2>
+    <canvas id="firma"></canvas>
+    <button class="btn sec" id="borrar" type="button">Borrar firma</button>
+  </section>
+
+  <section class="card">
+    <h2>4. Vista en el SARLAFT</h2>
+    <div class="hoja">
+      <h3>FORMULARIO SARLAFT · DECLARACIÓN DE ORIGEN DE FONDOS</h3>
+      <p>Texto de muestra para la prueba. Aquí irá la declaración real del formulario.</p>
+      <div class="pie">
+        <div><div class="fir" id="firSlot"></div><div class="lin">Firma del propietario<br>Nombre y C.C.</div></div>
+        <div><div class="caja" id="hueSlot"><span class="sm">Huella<br>índice derecho</span></div><div class="sm" id="sello"></div></div>
+      </div>
+    </div>
+  </section>
+  <p class="mut">Página de prueba: todo se procesa en tu celular y no se envía a ningún lado.</p>
+</div>
+
+<div id="visor" hidden>
+  <div class="vwrap">
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="mask"></canvas>
+    <div class="msg" id="msg">Pon la yema dentro del óvalo</div>
+    <div class="meter"><i id="nivel"></i></div>
+  </div>
+  <div class="ctrl">
+    <div class="row">
+      <button class="btn sec" id="lente" type="button">Cambiar lente</button>
+      <button class="btn sec" id="luz" type="button">Linterna</button>
+      <button class="btn sec" id="cerrar" type="button">Cerrar</button>
+    </div>
+    <button id="disparo" type="button" aria-label="Tomar foto"></button>
+    <div class="info" id="info"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let stream = null, track = null, camaras = [], camIdx = 0, luz = false, loop = null;
+let maxNit = 0, buenos = 0, t0 = 0, capturado = null, inv = false;
+
+// ---------- cámara ----------
+async function listarCamaras() {
+  const ds = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+  const traseras = ds.filter(d => /back|rear|trasera|environment|wide|ultra|0/i.test(d.label));
+  camaras = traseras.length ? traseras : ds;
+  // Preferir gran angular / ultra wide (enfoca más cerca: hace de macro)
+  const ui = camaras.findIndex(d => /ultra|wide|0\.5|gran/i.test(d.label));
+  if (ui > -1) camIdx = ui;
+}
+
+async function abrir(deviceId) {
+  cerrarStream();
+  const v = { width: { ideal: 1920 }, height: { ideal: 1440 } };
+  if (deviceId) v.deviceId = { exact: deviceId }; else v.facingMode = { ideal: 'environment' };
+  stream = await navigator.mediaDevices.getUserMedia({ video: v, audio: false });
+  track = stream.getVideoTracks()[0];
+  $('video').srcObject = stream;
+  await $('video').play();
+  await ajustar();
+  maxNit = 0; buenos = 0; t0 = performance.now();
+  loop = setInterval(medir, 250);
+}
+
+async function ajustar() {
+  const caps = track.getCapabilities ? track.getCapabilities() : {};
+  const adv = {};
+  if (caps.focusMode && caps.focusMode.includes('continuous')) adv.focusMode = 'continuous';
+  // Algunos Android exponen el 0.5x como zoom < 1 en la cámara principal
+  if (caps.zoom && caps.zoom.min < 1) adv.zoom = caps.zoom.min;
+  if (caps.torch) adv.torch = luz;
+  try { if (Object.keys(adv).length) await track.applyConstraints({ advanced: [adv] }); } catch (e) {}
+  const s = track.getSettings ? track.getSettings() : {};
+  $('luz').disabled = !caps.torch;
+  $('lente').disabled = camaras.length < 2;
+  $('info').textContent = (track.label || 'Cámara') + ' · ' + (s.width || '?') + '×' + (s.height || '?') +
+    (s.zoom ? ' · zoom ' + s.zoom : '') + (caps.focusMode ? ' · enfoque ' + (s.focusMode || '') : '');
+}
+
+function cerrarStream() {
+  clearInterval(loop); loop = null;
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null; track = null;
+}
+
+$('abrir').onclick = async () => {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    $('estadoCam').textContent = 'Este navegador no permite la cámara en vivo.'; return;
+  }
+  $('visor').hidden = false; dibujarMascara();
+  try {
+    await abrir();                 // primer permiso
+    await listarCamaras();         // ya hay etiquetas
+    const actual = track.getSettings().deviceId;
+    if (camaras[camIdx] && camaras[camIdx].deviceId !== actual) await abrir(camaras[camIdx].deviceId);
+  } catch (e) {
+    $('visor').hidden = true;
+    $('estadoCam').textContent = 'No se pudo abrir la cámara: ' + (e.name === 'NotAllowedError' ? 'diste "no permitir". Actívala en los permisos del navegador.' : e.message);
+  }
+};
+$('lente').onclick = async () => { camIdx = (camIdx + 1) % camaras.length; try { await abrir(camaras[camIdx].deviceId); } catch (e) {} };
+$('luz').onclick = async () => { luz = !luz; try { await track.applyConstraints({ advanced: [{ torch: luz }] }); } catch (e) {} };
+$('cerrar').onclick = () => { cerrarStream(); $('visor').hidden = true; };
+$('disparo').onclick = () => capturar();
+
+// ---------- guía ----------
+function ovalo() { // en coordenadas de pantalla
+  const m = $('mask'), W = m.clientWidth, H = m.clientHeight;
+  const rx = Math.min(W * 0.32, 150), ry = rx * 1.35;
+  return { W, H, cx: W / 2, cy: H * 0.46, rx, ry };
+}
+function dibujarMascara(color) {
+  const m = $('mask'), o = ovalo();
+  m.width = o.W * devicePixelRatio; m.height = o.H * devicePixelRatio;
+  const c = m.getContext('2d'); c.scale(devicePixelRatio, devicePixelRatio);
+  c.fillStyle = 'rgba(0,0,0,.65)'; c.fillRect(0, 0, o.W, o.H);
+  c.globalCompositeOperation = 'destination-out';
+  c.beginPath(); c.ellipse(o.cx, o.cy, o.rx, o.ry, 0, 0, Math.PI * 2); c.fill();
+  c.globalCompositeOperation = 'source-over';
+  c.lineWidth = 3; c.strokeStyle = color || '#fff';
+  c.beginPath(); c.ellipse(o.cx, o.cy, o.rx, o.ry, 0, 0, Math.PI * 2); c.stroke();
+}
+addEventListener('resize', () => { if (!$('visor').hidden) dibujarMascara(); });
+
+// Rectángulo del óvalo en píxeles del video (object-fit: cover)
+function recorteVideo() {
+  const v = $('video'), o = ovalo();
+  const vw = v.videoWidth, vh = v.videoHeight;
+  const esc = Math.max(o.W / vw, o.H / vh);
+  const offX = (o.W - vw * esc) / 2, offY = (o.H - vh * esc) / 2;
+  return { x: (o.cx - o.rx - offX) / esc, y: (o.cy - o.ry - offY) / esc, w: 2 * o.rx / esc, h: 2 * o.ry / esc };
+}
+
+// ---------- nitidez (varianza del laplaciano dentro del óvalo) ----------
+const mini = document.createElement('canvas'); mini.width = 120; mini.height = 160;
+function nitidez() {
+  const v = $('video'); if (!v.videoWidth) return 0;
+  const r = recorteVideo(), c = mini.getContext('2d', { willReadFrequently: true });
+  c.drawImage(v, r.x, r.y, r.w, r.h, 0, 0, 120, 160);
+  const d = c.getImageData(0, 0, 120, 160).data, g = new Float32Array(120 * 160);
+  let suma = 0;
+  for (let i = 0; i < g.length; i++) { g[i] = 0.3 * d[i * 4] + 0.59 * d[i * 4 + 1] + 0.11 * d[i * 4 + 2]; suma += g[i]; }
+  const brillo = suma / g.length;
+  let s = 0, s2 = 0, n = 0;
+  for (let y = 1; y < 159; y++) for (let x = 1; x < 119; x++) {
+    const i = y * 120 + x, l = 4 * g[i] - g[i - 1] - g[i + 1] - g[i - 120] - g[i + 120];
+    s += l; s2 += l * l; n++;
+  }
+  return { nit: s2 / n - (s / n) ** 2, brillo };
+}
+function medir() {
+  const r = nitidez(); if (!r) return;
+  maxNit = Math.max(maxNit, r.nit);
+  const rel = maxNit ? r.nit / maxNit : 0;
+  $('nivel').style.width = Math.min(100, rel * 100) + '%';
+  const listo = performance.now() - t0 > 1800 && r.nit > 25 && rel > 0.85;
+  if (r.brillo < 50) $('msg').textContent = 'Falta luz: acércate a una ventana o enciende la linterna';
+  else if (r.brillo > 230) $('msg').textContent = 'Demasiada luz: apaga la linterna o aléjate del sol';
+  else if (!listo) $('msg').textContent = r.nit < 25 ? 'Acerca o aleja el dedo hasta que se vean las líneas' : 'Quieto… enfocando';
+  else $('msg').textContent = '¡Perfecto, no te muevas!';
+  buenos = listo ? buenos + 1 : 0;
+  dibujarMascara(listo ? '#2f9e5b' : '#fff');
+  if (buenos >= 4) capturar();
+}
+
+// ---------- captura y procesamiento ----------
+function capturar() {
+  const v = $('video'); if (!v.videoWidth) return;
+  const r = recorteVideo(), c = document.createElement('canvas');
+  c.width = Math.round(r.w); c.height = Math.round(r.h);
+  c.getContext('2d').drawImage(v, r.x, r.y, r.w, r.h, 0, 0, c.width, c.height);
+  capturado = c;
+  const s = track.getSettings();
+  $('datos').textContent = 'Lente: ' + (track.label || '?') + ' · recorte ' + c.width + '×' + c.height + ' px' + (s.zoom ? ' · zoom ' + s.zoom : '');
+  cerrarStream(); $('visor').hidden = true; $('res').hidden = false;
+  procesar(); $('res').scrollIntoView({ behavior: 'smooth' });
+}
+$('otra').onclick = () => $('abrir').click();
+
+function blur(src, w, h, r) {
+  const out = new Float32Array(w * h), tmp = new Float32Array(w * h), k = 2 * r + 1;
+  for (let y = 0; y < h; y++) { let s = 0; for (let x = -r; x <= r; x++) s += src[y * w + Math.min(w - 1, Math.max(0, x))];
+    for (let x = 0; x < w; x++) { tmp[y * w + x] = s / k; s += src[y * w + Math.min(w - 1, x + r + 1)] - src[y * w + Math.max(0, x - r)]; } }
+  for (let x = 0; x < w; x++) { let s = 0; for (let y = -r; y <= r; y++) s += tmp[Math.min(h - 1, Math.max(0, y)) * w + x];
+    for (let y = 0; y < h; y++) { out[y * w + x] = s / k; s += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x]; } }
+  return out;
+}
+function procesar() {
+  if (!capturado) return;
+  const W = 360, H = 480;
+  const o = $('orig'); o.width = W; o.height = H;
+  const oc = o.getContext('2d'); oc.drawImage(capturado, 0, 0, W, H);
+  const d = oc.getImageData(0, 0, W, H).data, g = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) g[i] = 0.3 * d[i * 4] + 0.59 * d[i * 4 + 1] + 0.11 * d[i * 4 + 2];
+  const r = +$('det').value, c = +$('con').value / 30;
+  const lo = blur(g, W, H, 1), bg = blur(g, W, H, r * 2);
+  const hp = new Float32Array(W * H), sq = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) { hp[i] = lo[i] - bg[i]; sq[i] = hp[i] * hp[i]; }
+  const sd = blur(sq, W, H, r * 2);
+  const out = $('out'); out.width = W; out.height = H;
+  const ctx = out.getContext('2d'), od = ctx.createImageData(W, H);
+  const cx = W / 2, cy = H / 2, rx = W * 0.47, ry = H * 0.48;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    let v = hp[i] / (Math.sqrt(sd[i]) + 3); if (inv) v = -v;
+    let negro = v < c;                       // crestas (más oscuras) en negro
+    const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+    if (e > 1 || (e > 0.8 && Math.random() < (e - 0.8) / 0.2)) negro = false;  // borde ovalado y desvanecido
+    const p = i * 4; od.data[p] = od.data[p + 1] = od.data[p + 2] = 20; od.data[p + 3] = negro ? 255 : 0;
+  }
+  const t = document.createElement('canvas'); t.width = W; t.height = H; t.getContext('2d').putImageData(od, 0, 0);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.drawImage(t, 0, 0);
+  $('hueSlot').innerHTML = '<img alt="Huella" src="' + t.toDataURL('image/png') + '">';
+  const n = new Date();
+  $('sello').textContent = n.toLocaleDateString('es-CO') + ' ' + n.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+}
+['det', 'con'].forEach(id => $(id).oninput = procesar);
+$('inv').onclick = () => { inv = !inv; procesar(); };
+
+// ---------- firma ----------
+const f = $('firma'), fc = f.getContext('2d'); let dib = false;
+function fit() { const r = f.getBoundingClientRect(); f.width = r.width * 2; f.height = r.height * 2; fc.setTransform(2, 0, 0, 2, 0, 0); fc.lineWidth = 2.2; fc.lineCap = 'round'; fc.strokeStyle = '#1a1a1a'; }
+fit();
+const pt = e => { const r = f.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+f.onpointerdown = e => { dib = true; f.setPointerCapture(e.pointerId); const [x, y] = pt(e); fc.beginPath(); fc.moveTo(x, y); };
+f.onpointermove = e => { if (!dib) return; const [x, y] = pt(e); fc.lineTo(x, y); fc.stroke(); };
+f.onpointerup = () => { dib = false; $('firSlot').innerHTML = '<img alt="Firma" src="' + f.toDataURL() + '">'; };
+$('borrar').onclick = () => { fc.clearRect(0, 0, f.width, f.height); $('firSlot').innerHTML = ''; };
+</script>
+</body>
+</html>
