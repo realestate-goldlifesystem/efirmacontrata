@@ -57,6 +57,13 @@ h2{font:600 1.15rem/1.3 var(--fd);margin:0;text-wrap:balance}
 .nav button.sec2{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--fg)}
 .nav button:disabled{opacity:.45}
 .err{color:#b4332c;font-size:.82rem;min-height:1em}
+.tel{display:flex;gap:8px}.tel input{flex:1;min-width:0;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.tel-p{flex:0 0 auto;font:600 1rem var(--fb);padding:0 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer}
+.tel-lista{border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;animation:sube .25s ease-out}
+.tel-lista input{font:500 .95rem var(--fb);padding:9px 10px;border:1px solid var(--line);border-radius:8px}
+#telOps{max-height:180px;overflow-y:auto;display:flex;flex-direction:column}
+#telOps button{text-align:left;font:400 .92rem var(--fb);padding:9px 8px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--fg);cursor:pointer}
+#telOps button span{color:var(--mut);float:right}
 .ciiu-res{display:flex;flex-direction:column;gap:6px}
 .ciiu-res button{text-align:left;font:400 .86rem/1.35 var(--fb);padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--fg);cursor:pointer;animation:sube .3s ease-out}
 .ciiu-res button b{color:var(--gold);font-family:var(--fd);margin-right:4px}
@@ -170,7 +177,7 @@ const P = [
     in:[{ dos:[{ tipo:'tx', k:'n1', l:'Primer nombre', req:true }, { tipo:'tx', k:'n2', l:'Segundo nombre' }] }, { dos:[{ tipo:'tx', k:'a1', l:'Primer apellido', req:true }, { tipo:'tx', k:'a2', l:'Segundo apellido' }] }] },
   { sec:'gen', t:'Información general', q:'¿Dónde vives y cómo te contactamos?',
     in:[{ tipo:'tx', k:'nacionalidad', l:'Nacionalidad', def:'Colombiana', req:true }, { tipo:'tx', k:'direccion', l:'Dirección de residencia', req:true },
-        { tipo:'tx', k:'ciudad', l:'Ciudad de residencia', req:true }, { dos:[{ tipo:'tx', k:'celular', l:'Celular', num:true, req:true }, { tipo:'tx', k:'correo', l:'Correo', req:true, email:true }] }] },
+        { tipo:'tx', k:'ciudad', l:'Ciudad de residencia', req:true }, { tipo:'tel' }, { tipo:'tx', k:'correo', l:'Correo electrónico', req:true, email:true }] },
   { sec:'act', t:'Actividad económica', q:'¿A qué te dedicas?', a:'Si trabajas por tu cuenta, deja la ocupación sin marcar y describe tu actividad.',
     in:[{ tipo:'tx', k:'profesion', l:'Profesión u oficio', req:true }, { tipo:'op', k:'ocupacion', ops:['Asalariado','Estudiante','Pensionado','Ama de casa','Independiente'], def:0 }] },
   { sec:'act', t:'Actividad económica', q:'Cuéntanos tu actividad como independiente', solo:()=>R.ocupacion===4,
@@ -255,6 +262,9 @@ function render() {
     if (i.tipo === 'op') return '<div class="ops" data-g="' + i.k + '">' + i.ops.map((o, j) => '<button type="button" data-j="' + j + '" class="' + (R[i.k] === j ? 'si' : '') + '">' + o + '</button>').join('') + '</div>';
     if (i.tipo === 'mo') return '<input class="money" data-k="' + i.k + '" data-mo="1" inputmode="numeric" placeholder="$ 0" value="' + (R[i.k] !== undefined ? fmt(R[i.k]) || '$ 0' : '') + '">';
     if (i.tipo === 'pat') return '<div id="pat"></div>';
+    if (i.tipo === 'tel') { const p = pais(); return '<label>Celular<div class="tel"><button type="button" id="telPais" class="tel-p">' + bandera(p.iso) + ' +' + p.cod + ' ▾</button>' +
+      '<input id="telNum" inputmode="numeric" autocomplete="tel-national" maxlength="' + p.max + '" placeholder="' + '0'.repeat(p.max).replace(/0/g, '#') + '" value="' + (R.celNum || '') + '"></div></label>' +
+      '<div id="telLista" class="tel-lista" hidden><input id="telBus" placeholder="Buscar país…" autocomplete="off"><div id="telOps"></div></div><p class="ayuda" id="telAyuda"></p>'; }
     if (i.tipo === 'ciiu') return '<label>Código CIIU: escribe el código de tu RUT o busca tu actividad con palabras<input id="ciiuQ" autocomplete="off" placeholder="Ej: 6810, taxi, peluquería, venta de ropa" value="' + (R.ciiu ? R.ciiu + ' · ' + (R.ciiuT || '') : '').replace(/"/g, '&quot;') + '"></label><div id="ciiuRes" class="ciiu-res"></div>';
     if (i.tipo === 'fi') return '<canvas id="firma"></canvas><div class="ops"><button type="button" id="borrarF">Borrar firma</button></div>';
     if (i.tipo === 'hu') return '<div class="ops"><button type="button" id="tomarH" class="si">' + (R.huella ? 'Tomar de nuevo' : 'Abrir cámara') + '</button></div><p class="ayuda" id="hMsg"></p>';
@@ -277,6 +287,7 @@ function render() {
     if (p.in.some(i => i.si)) render();
   });
   const cq = document.getElementById('ciiuQ'); if (cq) buscadorCiiu(cq);
+  if (document.getElementById('telNum')) celular();
   const fi = document.getElementById('firma'); if (fi) firmaPad(fi);
   const th = document.getElementById('tomarH'); if (th) th.onclick = async () => {
     const r = await HuellaCaptura.abrir();
@@ -289,6 +300,42 @@ function render() {
 }
 function patTxt() { const el = document.getElementById('pat'); if (!el) return;
   const a = +R.activos || 0, b = +R.pasivos || 0; el.textContent = 'Patrimonio = Activos − Pasivos = ' + (a - b < 0 ? '- ' : '') + '$ ' + Math.abs(a - b).toLocaleString('es-CO'); }
+
+// ---------- Celular con país: el número debe tener exactamente los dígitos de ese país ----------
+// [iso, nombre, indicativo, mín, máx, primer dígito móvil (opcional)]
+const PAISES = [
+  ['CO','Colombia',57,10,10,'3'],['VE','Venezuela',58,10,10,'4'],['EC','Ecuador',593,9,9,'9'],['PE','Perú',51,9,9,'9'],['MX','México',52,10,10],
+  ['US','Estados Unidos',1,10,10],['CA','Canadá',1,10,10],['ES','España',34,9,9],['PA','Panamá',507,8,8,'6'],['CR','Costa Rica',506,8,8],
+  ['CL','Chile',56,9,9,'9'],['AR','Argentina',54,10,11],['BR','Brasil',55,11,11],['UY','Uruguay',598,8,8,'9'],['PY','Paraguay',595,9,9,'9'],
+  ['BO','Bolivia',591,8,8],['DO','República Dominicana',1,10,10],['PR','Puerto Rico',1,10,10],['GT','Guatemala',502,8,8],['SV','El Salvador',503,8,8],
+  ['HN','Honduras',504,8,8],['NI','Nicaragua',505,8,8],['CU','Cuba',53,8,8,'5'],['AW','Aruba',297,7,7],['CW','Curazao',599,7,8],
+  ['IT','Italia',39,9,10,'3'],['FR','Francia',33,9,9],['DE','Alemania',49,10,11,'1'],['GB','Reino Unido',44,10,10,'7'],['PT','Portugal',351,9,9,'9'],
+  ['CH','Suiza',41,9,9,'7'],['NL','Países Bajos',31,9,9,'6'],['BE','Bélgica',32,9,9,'4'],['IE','Irlanda',353,9,9,'8'],['AU','Australia',61,9,9,'4'],
+  ['CN','China',86,11,11,'1'],['JP','Japón',81,10,10],['IL','Israel',972,9,9,'5'],['AE','Emiratos Árabes',971,9,9,'5'],['RU','Rusia',7,10,10,'9']
+];
+const bandera = iso => iso.replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
+const pais = () => { const p = PAISES.find(x => x[0] === (R.celPais || 'CO')); return { iso: p[0], nom: p[1], cod: p[2], min: p[3], max: p[4], ini: p[5] }; };
+function celular() {
+  const num = document.getElementById('telNum'), btn = document.getElementById('telPais'), lista = document.getElementById('telLista'),
+        bus = document.getElementById('telBus'), ops = document.getElementById('telOps'), ay = document.getElementById('telAyuda');
+  const guardar = () => {
+    const p = pais(), n = num.value; R.celNum = n;
+    const ok = n.length >= p.min && n.length <= p.max && (!p.ini || n.startsWith(p.ini));
+    R.celular = ok ? '+' + p.cod + ' ' + n : '';
+    ay.textContent = !n ? 'Debe tener ' + (p.min === p.max ? p.max : p.min + ' a ' + p.max) + ' dígitos' + (p.ini ? ' y empezar por ' + p.ini : '') + '.' :
+      ok ? '✓ Quedará así: +' + p.cod + ' ' + n : (p.ini && !n.startsWith(p.ini) ? 'En ' + p.nom + ' el celular empieza por ' + p.ini + '.' : 'Faltan ' + (p.min - n.length) + ' dígitos.');
+    sincronizar();
+  };
+  num.oninput = () => { num.value = num.value.replace(/\D/g, '').slice(0, pais().max); guardar(); };
+  const pintar = () => { const q = norm(bus.value);
+    ops.innerHTML = PAISES.filter(x => !q || norm(x[1]).includes(q) || String(x[2]).startsWith(q.replace('+', '')))
+      .map(x => '<button type="button" data-iso="' + x[0] + '">' + bandera(x[0]) + ' ' + x[1] + ' <span>+' + x[2] + '</span></button>').join('') || '<p class="ayuda">Sin resultados</p>'; };
+  btn.onclick = () => { lista.hidden = !lista.hidden; if (!lista.hidden) { bus.value = ''; pintar(); bus.focus(); } };
+  bus.oninput = pintar;
+  ops.onclick = e => { const b = e.target.closest('button[data-iso]'); if (!b) return; R.celPais = b.dataset.iso; const p = pais();
+    btn.textContent = bandera(p.iso) + ' +' + p.cod + ' ▾'; num.maxLength = p.max; num.value = num.value.slice(0, p.max); lista.hidden = true; guardar(); num.focus(); };
+  guardar();
+}
 
 // ---------- CIIU: lista oficial DANE CIIU Rev. 4 A.C. (2022) + códigos DIAN de persona natural ----------
 let CIIU = null;
@@ -347,6 +394,7 @@ function valido() {
     const v = R[i.k]; if (v === undefined || v === null || v === '' ) { if (!(i.cero && v === 0)) falta = i.l || 'el valor'; }
     else if (i.email && !/^\S+@\S+\.\S+$/.test(v)) falta = 'un correo válido'; });
   rev(p.in);
+  if (!falta && p.in.some(i => i.tipo === 'tel') && !R.celular) falta = 'un celular completo';
   if (p.in.some(i => i.tipo === 'fi') && !R.firma) falta = 'tu firma';
   if (p.in.some(i => i.tipo === 'hu') && !R.huella) falta = 'tu huella';
   err.textContent = falta ? 'Falta ' + falta.toLowerCase() + '.' : ''; return !falta;
