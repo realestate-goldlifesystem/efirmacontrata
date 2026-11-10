@@ -356,7 +356,7 @@ const PROF_CIIU = {'Abogado(a)':'6910','Administrador(a) de empresas':'7020','Ag
  'Ingeniero(a) industrial':'7112','Ingeniero(a) mecánico':'7112','Ingeniero(a) químico':'7112','Maestro(a) de obra':'4111','Manicurista':'9602','Mecánico(a)':'4520','Médico(a)':'8621',
  'Médico(a) especialista':'8621','Mensajero(a)':'5320','Músico':'9002','Nutricionista':'8699','Odontólogo(a)':'8622','Panadero(a)':'1081','Pintor(a)':'4330','Plomero(a)':'4322',
  'Programador(a) / Desarrollador(a)':'6201','Psicólogo(a)':'8699','Publicista':'7310','Rentista de capital':'0090','Soldador(a)':'2592','Terapeuta ocupacional':'8692',
- 'Topógrafo(a)':'7112','Traductor(a)':'7490','Transportador(a)':'4923','Veterinario(a)':'7500','Vigilante / Guarda de seguridad':'8010'};
+ 'Topógrafo(a)':'7112','Traductor(a)':'7490','Transportador(a)':'4923','Veterinario(a)':'7500','Vigilante / Guarda de seguridad':'8010','Administrador(a) público':'8412','Analista de datos':'6311','Artesano(a)':'3290','Artista':'9008','Asesor(a) comercial':'7020','Auxiliar administrativo':'8211','Auxiliar de enfermería':'8699','Bombero':'0010','Cajero(a)':'0010','Comerciante':'4799','Comunicador(a) social':'7310','Entrenador(a) deportivo':'9319','Farmaceuta':'4773','Gerente':'0010','Instrumentador(a) quirúrgico':'8699','Joyero(a)':'3211','Licenciado(a)':'8559','Locutor(a)':'6010','Mesero(a)':'0010','Militar':'0010','Operario(a)':'0010','Optómetra':'8699','Periodista':'6391','Piloto':'5111','Policía':'0010','Politólogo(a)':'7220','Químico(a)':'7120','Recepcionista':'0010','Secretario(a)':'0010','Técnico(a) en sistemas':'9511','Tecnólogo(a)':'7490','Trabajador(a) social':'8899','Vendedor(a)':'4799','Zootecnista':'0162'};
 function combo(div) {
   const inp = document.querySelector('input[data-k=' + div.dataset.para + ']'), L = PROFESIONES;
   const pinta = () => { const q = norm(inp.value).trim();
@@ -485,7 +485,7 @@ document.getElementById('atras').onclick = () => { document.getElementById('marc
 
 // ---------- Auto-actualización (solo pruebas): si se publica una versión nueva, la página se recarga sola
 // sin perder lo respondido. VER se reescribe en cada publicación.
-const VER = 'v-20261110175304';
+const VER = 'v-20261110175624';
 try { const g = JSON.parse(sessionStorage.getItem('sarlaftPrueba') || 'null'); if (g) { Object.assign(R, g.R); paso = g.paso || 0; sessionStorage.removeItem('sarlaftPrueba'); } } catch (e) {}
 async function revisarVersion() {
   try {
