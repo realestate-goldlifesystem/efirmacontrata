@@ -2020,7 +2020,14 @@
 
                     let estadoMayus = (c.estadoBadge || '').toUpperCase();
                     
-                    if (estadoMayus.includes('APROBADO POR TODAS LAS PARTES') || estadoMayus.includes('CONTRATO APROBADO')) {
+                    if (c.porCargarAutenticado) {
+                        // Original generado: la tarjeta queda como buzón del contrato autenticado
+                        badgeClass = 'badge-warning';
+                        badgeText = 'POR CARGAR AUTENTICADO';
+                        btnText = ' 📤 Cargar contrato autenticado';
+                        btnAction = 'abrirCargaAutenticado(\'' + (c.cdr) + '\')';
+                    }
+                    else if (estadoMayus.includes('APROBADO POR TODAS LAS PARTES') || estadoMayus.includes('CONTRATO APROBADO')) {
                         badgeClass = 'badge-warning'; // Podría ser un verde brillante también
                         badgeText = 'APROBADO FINAL';
                         btnText = ' 🏆 Abrir para Finalizar';
@@ -2065,6 +2072,78 @@
             } catch (err) {
                 lista.innerHTML = '<div class="error-state" style="background:red; color:white; padding:20px;"> ERROR DE RENDER: ' + (err.message) + ' <br> ' + (err.stack) + '</div>';
             }
+        }
+
+        // ==========================================
+        // BUZÓN DEL CONTRATO AUTENTICADO (tarjeta de contrato)
+        // ==========================================
+        // Lo mismo que la página del correo (carga_contrato_autenticado.html), desde el panel:
+        // guardarContratoAutenticado guarda en la carpeta del contrato, deja los permisos sin
+        // notificar y les escribe a las partes. Al terminar, la tarjeta sale de la lista.
+        function abrirCargaAutenticado(cdr) {
+            Swal.fire({
+                title: 'Cargar contrato autenticado',
+                html: '<p style="font-size:0.9rem; color:#6b7280; margin:0 0 1rem;">Sube el PDF del contrato ya autenticado y firmado por las partes.</p>' +
+                      '<input type="file" id="archivoAutenticado" accept="application/pdf" style="width:100%; font-size:0.9rem;">' +
+                      '<p style="font-size:0.8rem; color:#9ca3af; margin:0.75rem 0 0;">Registro: ' + escapeHTMLAttr(cdr) + '</p>',
+                showCancelButton: true,
+                confirmButtonText: 'Cargar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#22c55e',
+                preConfirm: function () {
+                    const input = document.getElementById('archivoAutenticado');
+                    const archivo = input && input.files && input.files[0];
+                    if (!archivo) { Swal.showValidationMessage('Elige el PDF del contrato.'); return false; }
+                    if (!/\.pdf$/i.test(archivo.name) && archivo.type !== 'application/pdf') { Swal.showValidationMessage('El archivo debe ser PDF.'); return false; }
+                    if (archivo.size > 40 * 1024 * 1024) { Swal.showValidationMessage('El PDF pesa más de 40 MB.'); return false; }
+                    return archivo;
+                }
+            }).then(function (r) {
+                if (!r.isConfirmed || !r.value) return;
+                subirContratoAutenticado(cdr, r.value);
+            });
+        }
+
+        function subirContratoAutenticado(cdr, archivo) {
+            Swal.fire({
+                title: 'Cargando contrato autenticado',
+                html: '<div style="background:#e5e7eb; border-radius:999px; overflow:hidden; height:12px; margin:0.5rem 0 0.75rem;"><div id="barraAutenticado" style="height:100%; width:0%; background:#22c55e; transition:width 0.4s;"></div></div>' +
+                      '<p id="textoAutenticado" style="font-size:0.9rem; color:#6b7280; margin:0;">Leyendo el archivo...</p>',
+                allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false
+            });
+            let pct = 0;
+            const avanzar = function (texto) {
+                const barra = document.getElementById('barraAutenticado');
+                const t = document.getElementById('textoAutenticado');
+                if (barra) barra.style.width = pct + '%';
+                if (t && texto) t.textContent = texto;
+            };
+            const lector = new FileReader();
+            lector.onload = function () {
+                const base64 = String(lector.result).split(',')[1];
+                const reloj = setInterval(function () {
+                    pct = Math.min(90, pct + Math.random() * 6 + 2);
+                    avanzar(pct < 40 ? 'Subiendo archivo...' : pct < 80 ? 'Guardando en Drive...' : 'Configurando permisos y avisando a las partes...');
+                }, 500);
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        clearInterval(reloj);
+                        if (!res || !res.success) {
+                            Swal.fire({ icon: 'error', title: 'No se cargó', text: (res && res.message) || 'Error desconocido' });
+                            return;
+                        }
+                        pct = 100; avanzar('Listo');
+                        Swal.fire({ icon: 'success', title: 'Contrato autenticado cargado', text: res.message || 'Quedó guardado en Drive y se avisó a las partes.', confirmButtonColor: '#22c55e' });
+                        cargarContratos(true);
+                    })
+                    .withFailureHandler(function (err) {
+                        clearInterval(reloj);
+                        Swal.fire({ icon: 'error', title: 'No se cargó', text: err.message });
+                    })
+                    .guardarContratoAutenticado(cdr, base64, archivo.name, '');
+            };
+            lector.onerror = function () { Swal.fire({ icon: 'error', title: 'No se pudo leer el archivo' }); };
+            lector.readAsDataURL(archivo);
         }
 
         // Variable global para mantener el contexto del contrato actual

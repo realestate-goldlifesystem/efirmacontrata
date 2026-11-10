@@ -1893,6 +1893,7 @@ function obtenerContratosPendientes() {
       return n ? '$' + n.toLocaleString('es-CO') : '0';
     };
     const idxInquilino = headers.findIndex(h => h === 'NOMBRES - INQUILINO' || h.includes('INQUILINO'));
+    const idxCarga = headers.indexOf('CARGA DEL CONTRATO') > -1 ? headers.indexOf('CARGA DEL CONTRATO') : headers.indexOf('CARGAR CONTENIDO');
     
     for (let i = 1; i < data.length; i++) {
         const row = data[i];
@@ -1901,7 +1902,22 @@ function obtenerContratosPendientes() {
         const estadoDoc = idxDoc > -1 ? String(row[idxDoc]).trim().toUpperCase() : '';
         const detalles = idxDetalles > -1 ? String(row[idxDetalles]).trim().toUpperCase() : '';
 
+        // Original ya generado: la tarjeta sigue en el panel como buzón para cargar el
+        // contrato autenticado, hasta que CARGA DEL CONTRATO quede en ✅ (el correo con el
+        // enlace de carga se puede perder entre muchos correos).
         if (estado.includes('CONTRATO ORIGINAL GENERADO')) {
+            const carga = idxCarga > -1 ? String(row[idxCarga] || '') : '';
+            if (carga.indexOf('✅') === -1 && cdrValue) {
+                contratos.push({
+                    cdr: String(cdrValue),
+                    tipoNegocio: idxTipo > -1 ? String(row[idxTipo] || 'N/A') : 'N/A',
+                    canon: canonDeFila(row),
+                    inquilino: idxInquilino > -1 ? String(row[idxInquilino] || 'Pendiente') : 'Pendiente',
+                    estadoBadge: 'POR CARGAR AUTENTICADO',
+                    detallesExtra: detalles,
+                    porCargarAutenticado: true
+                });
+            }
             continue;
         }
 
