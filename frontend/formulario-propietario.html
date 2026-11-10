@@ -266,6 +266,19 @@
       transition: all 0.3s ease;
     }
 
+    .sarlaft-card { background: rgba(30, 30, 35, 0.8); color: var(--white); border: 1px solid rgba(212, 175, 55, 0.25); border-left: 4px solid var(--primary); margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+    .sarlaft-card[hidden], #sarlaftJuridica[hidden], .sarlaft-ok[hidden] { display: none !important; }
+    .sarlaft-tit { color: var(--primary); font-weight: 600; margin: 0; }
+    .sarlaft-txt { margin: 0; font-size: 0.9rem; color: #d4d4d8; }
+    .sarlaft-ok { margin: 0; font-size: 0.9rem; color: #86efac; font-weight: 600; }
+    #btnSarlaftDiligenciar { align-self: flex-start; }
+    .sarlaft-modal { position: fixed; inset: 0; z-index: 10000; background: #000; display: flex; flex-direction: column; animation: sarlaftEntra .35s ease-out; }
+    .sarlaft-modal[hidden] { display: none; }
+    .sarlaft-modal-bar { display: flex; align-items: center; justify-content: space-between; padding: calc(8px + env(safe-area-inset-top)) 14px 8px; background: #15140f; color: var(--primary); font-weight: 600; }
+    .sarlaft-modal-bar button { background: none; border: 1px solid rgba(212,175,55,.4); color: #fff; border-radius: 99px; width: 34px; height: 34px; font-size: 1rem; cursor: pointer; }
+    .sarlaft-modal iframe { flex: 1; width: 100%; border: 0; background: #f4f2ec; }
+    @keyframes sarlaftEntra { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
     .btn-titila-sarlaft {
       animation: pulse-relieve 1.5s infinite;
       box-shadow: 0 4px 6px rgba(212,175,55,0.4), 0 1px 3px rgba(0,0,0,0.5);
@@ -704,8 +717,17 @@
           </div>
 
           <div class="progressive-hidden" id="prog-prop-1-4">
+            <!-- SARLAFT persona natural: se diligencia aquí mismo (sarlaft.html en un recuadro), con firma y huella -->
+            <div class="alert sarlaft-card" id="sarlaftNatural">
+              <p class="sarlaft-tit">📋 Formato SARLAFT para tu póliza de arrendamiento</p>
+              <p class="sarlaft-txt">Llénalo aquí mismo: te hacemos unas preguntas cortas, firmas con el dedo y estampas tu huella con la cámara. No tienes que descargar ni imprimir nada.</p>
+              <button type="button" id="btnSarlaftDiligenciar" class="btn btn-titila-sarlaft">✍️ Diligenciar mi SARLAFT</button>
+              <p class="sarlaft-ok" id="sarlaftEstado" hidden></p>
+            </div>
+
+            <div id="sarlaftJuridica" hidden>
             <div class="alert" style="background: rgba(30, 30, 35, 0.8); border-left-color: var(--primary); color: var(--white); border: 1px solid rgba(212, 175, 55, 0.2); margin-bottom: 15px;">
-              <p style="color: var(--primary); font-weight: 600; margin-bottom: 10px;">📥 Descargar y diligenciar el formato SARLAFT:</p>
+              <p style="color: var(--primary); font-weight: 600; margin-bottom: 10px;">📥 Persona jurídica: descarga y diligencia el formato SARLAFT:</p>
               <div style="margin-top:8px" id="sarlaft-download-buttons">
                 <a href="https://drive.google.com/file/d/1VBHXEvSXAb4lioczxZQ3DSxrNe8FjaZX/view" target="_blank" class="btn btn-sm btn-outline btn-titila-sarlaft" data-tipo="natural">Persona Natural</a>
                 <a href="https://drive.google.com/file/d/1VVwFdmhyIWxURU78z4Spw-lSoGCvsS51/view" target="_blank" class="btn btn-sm btn-outline btn-titila-sarlaft" data-tipo="juridica">Persona Jurídica</a>
@@ -719,6 +741,12 @@
                 <span id="sarlaftName" class="file-name"></span>
               </label>
             </div>
+            </div>
+          </div>
+
+          <div id="sarlaftModal" class="sarlaft-modal" hidden>
+            <div class="sarlaft-modal-bar"><span>Formato SARLAFT</span><button type="button" id="btnSarlaftCerrar" aria-label="Cerrar">✕</button></div>
+            <iframe id="sarlaftFrame" title="Formato SARLAFT" allow="camera"></iframe>
           </div>
         </div>
 
@@ -1316,6 +1344,7 @@
         bindServicios();
         bindProgressValidators();
         setupSarlaftLogic();
+        setupSarlaftNatural();
 
         // Cargar progreso DESPUÉS de que todo esté bindado
         if (!state.modoCorreccion) {
@@ -1840,7 +1869,51 @@
         });
       }
 
+      // ---------- SARLAFT persona natural, diligenciado dentro del formulario ----------
+      // Persona natural (CC, CE, PA): se llena en sarlaft.html (recuadro) y vuelve como PDF listo en state.archivos.sarlaft.
+      // Persona jurídica (NIT): se mantiene el formato para descargar y cargar.
+      function esJuridica() { return el.tipoDocumento && el.tipoDocumento.value === 'NIT'; }
+      function updateSarlaftModo() {
+        const nat = document.getElementById('sarlaftNatural'), jur = document.getElementById('sarlaftJuridica');
+        if (!nat || !jur) return;
+        const j = esJuridica();
+        nat.hidden = j; jur.hidden = !j;
+        const ok = document.getElementById('sarlaftEstado'), btn = document.getElementById('btnSarlaftDiligenciar');
+        if (!j && state.archivos['sarlaft'] && state.sarlaftTipo === 'natural') {
+          ok.hidden = false; ok.textContent = '✅ SARLAFT diligenciado y adjuntado (' + state.archivos['sarlaft'].nombre + ')';
+          btn.textContent = '✏️ Revisar o volver a diligenciar'; btn.classList.remove('btn-titila-sarlaft');
+        } else { ok.hidden = true; btn.textContent = '✍️ Diligenciar mi SARLAFT'; btn.classList.add('btn-titila-sarlaft'); }
+      }
+      function setupSarlaftNatural() {
+        const modal = document.getElementById('sarlaftModal'), frame = document.getElementById('sarlaftFrame');
+        if (!modal || !frame) return;
+        const cerrar = () => { modal.hidden = true; frame.src = 'about:blank'; document.body.style.overflow = ''; };
+        document.getElementById('btnSarlaftDiligenciar').addEventListener('click', () => {
+          frame.src = 'sarlaft.html?_=' + Date.now(); modal.hidden = false; document.body.style.overflow = 'hidden';
+        });
+        document.getElementById('btnSarlaftCerrar').addEventListener('click', cerrar);
+        window.addEventListener('message', (e) => {
+          if (e.origin !== location.origin || !e.data) return;
+          if (e.data.tipo === 'sarlaft-pide-previos') {
+            frame.contentWindow.postMessage({ tipo: 'sarlaft-previos', datos: {
+              tipoDocumento: el.tipoDocumento.value, numeroDocumento: el.numeroDocumento.value,
+              nombres: el.nombres.value, apellidos: el.apellidos.value, email: el.email.value, celular: el.celular.value
+            } }, location.origin);
+          }
+          if (e.data.tipo === 'sarlaft-listo') {
+            state.archivos['sarlaft'] = { nombre: e.data.nombre, tipo: 'application/pdf', contenido: e.data.contenido };
+            state.sarlaftTipo = 'natural';
+            if (el.sarlaftName) el.sarlaftName.textContent = e.data.nombre;
+            const w = document.getElementById('sarlaftUploadContainer'); if (w) w.classList.add('has-file');
+            updateSarlaftModo(); evaluateProgress(); guardarArchivosEnDB(); guardarProgresoUsuario();
+            setTimeout(cerrar, 900);
+          }
+        });
+        if (el.tipoDocumento) el.tipoDocumento.addEventListener('change', updateSarlaftModo);
+      }
+
       function updateSarlaftUI() {
+        updateSarlaftModo();
         const container = document.getElementById('sarlaftUploadContainer');
         const input = document.getElementById('sarlaft');
         const btns = document.querySelectorAll('#sarlaft-download-buttons .btn');
