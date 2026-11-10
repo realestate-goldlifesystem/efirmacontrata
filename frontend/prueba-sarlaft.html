@@ -157,8 +157,8 @@ function partesFecha(v) { if (!v) return ['', '', '']; const [a, m, d] = v.split
 const P = [
   { sec:'enc', t:'Empecemos', q:'¿Este SARLAFT es tu primera vez con la aseguradora o una actualización?', a:'Si nunca has llenado uno con El Libertador / Seguros Bolívar, elige Vinculación.',
     in:[{ tipo:'op', k:'tipoV', ops:['Vinculación','Actualización de datos'], def:0 }, { tipo:'tx', k:'localidad', l:'Localidad (ciudad donde lo diligencias)', def:'Bogotá' }] },
-  { sec:'gen', t:'Información general', q:'¿En qué calidad firmas este formulario?', a:'Como propietario del inmueble que se asegura, normalmente eres el Beneficiario de la póliza.',
-    in:[{ tipo:'op', k:'calidad', ops:['Beneficiario','Tomador','Asegurado','Apoderado','Suscriptor','Afianzado'], def:0 }] },
+  { sec:'gen', t:'Información general', q:'¿En qué calidad firmas este formulario?', a:'Como propietario eres quien toma la póliza de arrendamiento, por eso vas como Tomador.',
+    in:[{ tipo:'op', k:'calidad', ops:['Beneficiario','Tomador','Asegurado','Apoderado','Suscriptor','Afianzado'], def:1 }] },
   { sec:'gen', t:'Información general', q:'¿Cuál es tu documento de identidad?',
     in:[{ tipo:'op', k:'tipoDoc', ops:['C.C.','C.E.','T.I.','P.P.','Otro'], def:0 }, { tipo:'tx', k:'doc', l:'Número de documento', num:true, req:true }] },
   { sec:'gen', t:'Información general', q:'¿Cuándo expidieron tu documento y cuándo naciste?',
