@@ -66,7 +66,9 @@ function folioLimpiarNombre(s) {
 
 /** Parte el texto en anotaciones. */
 function folioSepararAnotaciones(texto) {
-  let t = String(texto || '');
+  // Sin retornos de carro: con saltos de linea Windows (CR+LF) el renglon "A: NOMBRE" no se reconocia
+  // (el punto de la expresion no cruza el CR) y los titulares salian vacios
+  let t = String(texto || '').replace(/\r/g, '');
   const corte = t.search(/NRO TOTAL DE ANOTACIONES|SALVEDADES\s*:/i);
   if (corte > 0) t = t.slice(0, corte);
 
@@ -97,12 +99,23 @@ function folioSepararAnotaciones(texto) {
       (p[1].toUpperCase() === 'DE' ? de : a).push(nombre);
     });
 
-    const cedulas = [];
+    // Cédulas: cada una se le asigna al último renglón "DE:" o "A:" visto antes que ella.
+    // Así la cédula de quien vende o dona no se cuenta como de los dueños actuales.
+    const todas = [], cedA = [];
     const rc = /\bC\.?\s?C\.?\s*[#:.]?\s*([\d.]{5,15})/g;
-    while ((m = rc.exec(plano)) !== null) {
-      const n = m[1].replace(/\D/g, '');
-      if (n.length >= 5 && n.length <= 11 && cedulas.indexOf(n) === -1) cedulas.push(n);
-    }
+    let rol = '';
+    plano.split('\n').forEach(linea => {
+      const r = linea.match(/^\s*(DE|A)\s*:/); if (r) rol = r[1];
+      let mc; rc.lastIndex = 0;
+      while ((mc = rc.exec(linea)) !== null) {
+        const n = mc[1].replace(/\D/g, '');
+        if (n.length < 5 || n.length > 11) continue;
+        if (todas.indexOf(n) === -1) todas.push(n);
+        if (rol === 'A' && cedA.indexOf(n) === -1) cedA.push(n);
+      }
+    });
+    const cedulas = todas;                                   // todas las del acto (para decir en qué anotación aparece alguien)
+    const cedulasA = cedA.length ? cedA : todas;             // las de quienes reciben (dueños)
 
     const f = plano.match(/FECHA\s*:\s*(\d{2})-(\d{2})-(\d{4})/);
     return {
@@ -110,7 +123,7 @@ function folioSepararAnotaciones(texto) {
       fecha: f ? f[3] + '-' + f[2] + '-' + f[1] : '',
       grupo: grupo, codigo: codigo, acto: acto,
       tipo: folioTipoDeActo(grupo, acto),
-      cancela: cancela, de: de, a: a, cedulas: cedulas
+      cancela: cancela, de: de, a: a, cedulas: cedulas, cedulasA: cedulasA
     };
   });
 }
@@ -143,7 +156,7 @@ function folioAnalizar(texto) {
     canceladas: canceladas,
     titulares: {
       nombres: ultima ? ultima.a.slice() : [],
-      cedulas: ultima ? ultima.cedulas.slice() : [],
+      cedulas: ultima ? (ultima.cedulasA || ultima.cedulas).slice() : [],
       anotacion: ultima ? ultima.nro : null,
       // "COMPRAVENTA DERECHOS DE CUOTA": solo se vendió una parte; puede haber más dueños atrás
       parcial: ultima ? /CUOTA|DERECHOS|NUDA PROPIEDAD|\d\s*%/.test(folioNorm(ultima.acto)) : false

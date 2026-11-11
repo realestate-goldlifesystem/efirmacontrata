@@ -177,5 +177,19 @@ igual('fecha a futuro (reloj corrido) → 0, nunca negativo', ctx.folioDiasDesde
 igual('sin fecha → null', ctx.folioDiasDesde(null, medianoche), null);
 igual('fecha del pie si falta "Impreso el"', ctx.folioFechaImpresion('EXPEDIDO EN: BOGOTA\nFECHA: 06-10-2026'), '2026-10-06');
 
+// --- nov-2026: texto con saltos de línea Windows (CR+LF) y cédula del que dona ---
+const DONACION = `ANOTACION: Nro 001 Fecha: 30-08-2007
+ESPECIFICACION: MODO DE ADQUISICION: 0138 DONACION
+DE: RAMIREZ TOVAR PEDRO PABLO
+CC# 11111111
+A: RAMIREZ LUNA SOFIA ANDREA
+A: RAMIREZ DE PEÑA ELENA
+X C.C.#22.222.222
+CC# 33333333
+NRO TOTAL DE ANOTACIONES`;
+e = ctx.folioAnalizar(DONACION.replace(/\n/g, '\r\n'));
+igual('con CR+LF igual lee a las dueñas', e.titulares.nombres, ['RAMIREZ LUNA SOFIA ANDREA', 'RAMIREZ DE PEÑA ELENA']);
+igual('la cédula del que dona no cuenta como dueña', e.titulares.cedulas, ['22222222', '33333333']);
+
 console.log(`\n${ok} bien, ${mal} mal`);
 process.exit(mal ? 1 : 0);
