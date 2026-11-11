@@ -173,7 +173,7 @@
         var cm = document.createElement('span'); cm.className = 'prem-cambiar'; cm.textContent = 'Toca para cambiarlo'; lab.appendChild(cm); }
       if (/^image\//.test(file.type)) { mi.innerHTML = '<img alt="">'; mi.firstChild.src = URL.createObjectURL(file); return; }
       if (file.type === 'application/pdf') {
-        mi.textContent = '📄';
+        mi.innerHTML = '<span style="display:grid;place-items:center;height:100%;font-size:.62rem;color:#8a7d6a;padding:4px;text-align:center">Generando vista previa…</span>';
         cargarPdfJs().then(function (lib) { return file.arrayBuffer().then(function (buf) { return lib.getDocument({ data: buf }).promise; }); })
           .then(function (pdf) { return pdf.getPage(1); })
           .then(function (pg) { var vp = pg.getViewport({ scale: .4 }), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
@@ -182,6 +182,8 @@
       }
     }
     document.addEventListener('change', function (e) { var t = e.target; if (t && t.type === 'file' && t.closest('.form-container')) miniatura(t); }, true);
+    // El lector de PDF se precarga en segundo plano para que la miniatura salga al instante
+    setTimeout(function () { cargarPdfJs().catch(function () {}); }, 2500);
 
     // 5. "Paso X de N · nombre"
     var prog = document.querySelector('#mainWizard .progress');
