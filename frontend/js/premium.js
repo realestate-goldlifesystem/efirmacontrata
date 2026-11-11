@@ -78,7 +78,66 @@
       if (!chk) { chk = document.createElement('i'); chk.className = 'prem-chk'; chk.setAttribute('data-para', inp.id); chk.setAttribute('aria-hidden', 'true'); caja.appendChild(chk); }
       chk.style.top = (inp.offsetTop + inp.offsetHeight / 2) + 'px';
       chk.classList.toggle('si', ok); inp.classList.toggle('prem-ok', ok);
+      // (1) Bloque completo: si todos los campos con ✓ del grupo están bien, el grupo late y queda en verde
+      var grupo = inp.closest('.grid-2col') || inp.closest('.form-group');
+      if (grupo) {
+        var chks = grupo.querySelectorAll('.prem-chk'), todo = chks.length > 0;
+        chks.forEach(function (c) { if (!c.classList.contains('si')) todo = false; });
+        var antes = grupo.classList.contains('prem-listo');
+        grupo.classList.toggle('prem-listo', todo);
+        if (todo && !antes) { grupo.classList.remove('prem-pulso'); void grupo.offsetWidth; grupo.classList.add('prem-pulso'); }
+      }
+      revisarSiguiente();
     }
+
+    // (7) Vibración corta (Android; en iPhone el navegador la ignora)
+    function vibrar(ms) { try { if (navigator.vibrate) navigator.vibrate(ms || 25); } catch (e) {} }
+    function aviso(txt) {
+      var t = document.createElement('div'); t.className = 'prem-toast'; t.textContent = txt; document.body.appendChild(t);
+      setTimeout(function () { t.classList.add('fuera'); }, 1800); setTimeout(function () { t.remove(); }, 2400);
+    }
+
+    // (4) Botón Siguiente: apagado mientras falta algo del paso, se enciende y late cuando todo está bien.
+    //     Es solo visual: el botón sigue funcionando y la validación real es la del formulario.
+    var btnSig = document.getElementById('btnNext');
+    function revisarSiguiente() {
+      if (!btnSig) return;
+      var pane = document.querySelector('#mainWizard .step-pane.show'); if (!pane) return;
+      var visibles = function (el) { return el.offsetParent !== null; };
+      var faltan = Array.prototype.some.call(pane.querySelectorAll('input[required], select[required]'), function (el) { return visibles(el) && el.type !== 'file' && !String(el.value || '').trim(); });
+      var malos = Array.prototype.some.call(pane.querySelectorAll('.prem-chk'), function (c) { var i = document.getElementById(c.getAttribute('data-para')); return i && visibles(i) && !c.classList.contains('si'); });
+      var listo = !faltan && !malos;
+      var antes = btnSig.classList.contains('prem-encendido');
+      btnSig.classList.toggle('prem-encendido', listo); btnSig.classList.toggle('prem-dormido', !listo);
+      if (listo && !antes) { btnSig.classList.remove('prem-latido'); void btnSig.offsetWidth; btnSig.classList.add('prem-latido'); }
+    }
+    document.addEventListener('input', function (e) { if (e.target.closest && e.target.closest('#mainWizard')) setTimeout(revisarSiguiente, 0); }, true);
+    document.addEventListener('change', function (e) { if (e.target.closest && e.target.closest('#mainWizard')) setTimeout(revisarSiguiente, 0); }, true);
+
+    // (2) Barra "Completado de la sección": brilla al subir y celebra al llegar al 100 %
+    var xp = document.getElementById('xpBar'), xpCaja = xp && xp.closest('.xp-bar-container'), xpPrev = 0;
+    if (xp) new MutationObserver(function () {
+      var w = parseFloat(xp.style.width) || 0;
+      if (w > xpPrev) { xpCaja.classList.remove('prem-sube'); void xpCaja.offsetWidth; xpCaja.classList.add('prem-sube'); }
+      if (w >= 100 && xpPrev < 100) { xpCaja.classList.add('prem-full'); aviso('✨ ¡Sección completa!'); vibrar(40); }
+      if (w < 100) xpCaja.classList.remove('prem-full');
+      xpPrev = w;
+    }).observe(xp, { attributes: true, attributeFilter: ['style'] });
+
+    // (3) Círculo del paso que celebra al completarse  ·  (5) buzón que celebra al recibir el archivo
+    new MutationObserver(function (ms) {
+      ms.forEach(function (m) {
+        var el = m.target; if (!el.classList) return;
+        var era = String(m.oldValue || '');
+        if (el.matches('.progress .step') && el.classList.contains('completed') && era.indexOf('completed') === -1) {
+          el.classList.remove('prem-celebra'); void el.offsetWidth; el.classList.add('prem-celebra'); vibrar(30);
+        }
+        if (el.matches('.file-upload') && el.classList.contains('has-file') && era.indexOf('has-file') === -1) {
+          el.classList.remove('prem-recibe'); void el.offsetWidth; el.classList.add('prem-recibe'); vibrar(20);
+        }
+        if (el.matches('#mainWizard .step-pane') && el.classList.contains('show')) setTimeout(revisarSiguiente, 50);
+      });
+    }).observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'], attributeOldValue: true });
     var ids = Object.keys(REGLAS).concat(Object.keys(PAREJAS));
     ids.forEach(function (id) {
       var inp = document.getElementById(id); if (!inp) return;
@@ -133,9 +192,16 @@
       new MutationObserver(pinta).observe(document.getElementById('mainWizard'), { attributes: true, subtree: true, attributeFilter: ['class'] });
     }
 
-    // 6. Chispas al enviar
+    // 6. Chispas + lluvia de confeti al enviar
     var env = document.getElementById('btnEnviar');
     if (env) env.addEventListener('click', function () {
+      vibrar(60);
+      var colsC = ['#dcb53c', '#e3cc6c', '#b26001', '#c2a448', '#fff6d0', '#6c4a94'];
+      for (var k = 0; k < 70; k++) {
+        var cf = document.createElement('i'); cf.className = 'prem-confeti';
+        cf.style.cssText = 'left:' + (Math.random() * 100) + 'vw;background:' + colsC[k % colsC.length] + ';animation-delay:' + (Math.random() * .6) + 's;animation-duration:' + (1.8 + Math.random() * 1.4) + 's;--gx:' + ((Math.random() - .5) * 160) + 'px;--gr:' + (Math.random() * 720 - 360) + 'deg';
+        document.body.appendChild(cf); setTimeout(function (n) { n.remove(); }.bind(null, cf), 3800);
+      }
       var b = env.getBoundingClientRect(), cols = ['#dcb53c', '#e3cc6c', '#b26001', '#c2a448', '#fff'];
       for (var i = 0; i < 36; i++) {
         var s = document.createElement('i'), a = Math.random() * Math.PI * 2, r = 80 + Math.random() * 160;
