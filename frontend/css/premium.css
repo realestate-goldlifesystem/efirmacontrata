@@ -118,3 +118,8 @@ html.premium .footer{background:transparent!important;color:#a99bb8!important;bo
 @keyframes premChispa{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
 
 @media (prefers-reduced-motion:reduce){html.premium *,html.premium *::before,html.premium *::after{animation:none!important;transition:none!important}}
+
+/* El nombre del paso ya sale como título dentro del paso: arriba solo "Paso X de N" */
+html.premium .prem-paso{justify-content:center;margin:-6px 0 12px}
+html.premium .prem-paso b{display:none}
+html.premium .prem-paso span{white-space:nowrap}
