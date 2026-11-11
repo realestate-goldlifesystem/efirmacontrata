@@ -798,6 +798,7 @@ function doPost(e) {
       case 'infoPromocion': result = infoPromocion(datos); break;
       case 'responderPromocion': result = responderPromocion(datos); break;
       case 'TEMP_sala': result = TEMP_sala(datos); break;
+      case 'TEMP_pazSalvo': result = TEMP_pazSalvo(datos); break;
       case 'infoAjusteAnual': result = infoAjusteAnual(datos); break;
       case 'guardarIpcAjuste': result = guardarIpcAjuste(datos); break;
       case 'enviarAjustePropietario': result = enviarAjustePropietario(datos); break;
@@ -2734,6 +2735,14 @@ function guardarDocumentosInquilino(codigoRegistro, archivosBase64, datosFormula
       'coIngresos': { carpeta: cedulaCodeudoresFolder, nombre: `SOPORTES_INGRESO_COD_1_[${codigoRegistro}]` },
       'comprobantePago': { carpeta: pagoDerechosFolder, nombre: `COMPROBANTE_PAGO_INQU_[${codigoRegistro}]` },
     };
+    // Aprobado del estudio: [año] > DOCUMENTOS DE LA ASEGURADORA > 4- VARIOS, APROBADO, SARLAFT > ESTUDIO APROBADO
+    // (la carpeta se crea solo si llega el archivo)
+    if (archivosBase64 && archivosBase64.aprobadoEstudio && archivosBase64.aprobadoEstudio.contenido) {
+      const docsAseg = getFolderByNameHelper(anioFolder, 'DOCUMENTOS DE LA ASEGURADORA') || anioFolder.createFolder('DOCUMENTOS DE LA ASEGURADORA');
+      const variosAseg = getFolderByNameHelper(docsAseg, '4- VARIOS, APROBADO, SARLAFT') || docsAseg.createFolder('4- VARIOS, APROBADO, SARLAFT');
+      const estudioFolder = getFolderByNameHelper(variosAseg, 'ESTUDIO APROBADO') || variosAseg.createFolder('ESTUDIO APROBADO');
+      RUTAS_ARCHIVOS.aprobadoEstudio = { carpeta: estudioFolder, nombre: `ESTUDIO_APROBADO_INQU_[${codigoRegistro}]` };
+    }
 
     for (const [clave, contenidoBase64] of Object.entries(archivosBase64)) {
       if (!contenidoBase64 || !contenidoBase64.contenido) continue;
@@ -3817,6 +3826,17 @@ function obtenerDocumentosDelCDR(cdr) {
                   }
                 }
               }
+              // Aprobado del estudio que sube el inquilino
+              let estudio = getFolderByNameHelper(variosAsg, 'ESTUDIO APROBADO');
+              if (estudio) {
+                const ef = estudio.getFiles();
+                while (ef.hasNext()) {
+                  const f = ef.next();
+                  if (f.getName().includes('ESTUDIO_APROBADO')) {
+                    documentos.inquilino.push({ nombre: '✅ [Inquilino] ' + f.getName(), url: f.getUrl(), fileId: f.getId(), tipo: f.getMimeType(), tamaño: f.getSize() });
+                  }
+                }
+              }
             }
           }
         }
@@ -4651,6 +4671,7 @@ function mapearNombresAFrontendIds(documentosNombres) {
     'CEDULA_COD_1_REVERSO': 'coDocBack',
     'SOPORTES_INGRESO_COD_1': 'coIngresos',
     'COMPROBANTE_PAGO_INQU': 'comprobantePago',
+    'ESTUDIO_APROBADO_INQU': 'aprobadoEstudio',
     'CEDULA_PROP_FRONTAL': 'docFront',
     'CEDULA_PROP_REVERSO': 'docBack',
     'CERT_TRADICION': 'certTradicion',

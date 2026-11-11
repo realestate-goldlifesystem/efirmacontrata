@@ -583,6 +583,18 @@
             </label>
           </div>
 
+          <!-- Aprobado del estudio de la aseguradora (obligatorio) -->
+          <div class="file-upload progressive-hidden" id="prog-inq-1-3">
+            <input type="file" id="aprobadoEstudio" class="file-input" accept="application/pdf,image/jpeg,image/png">
+            <label for="aprobadoEstudio" class="file-label">
+              <span>✅ Aprobado del estudio *</span>
+              <span id="aprobadoEstudioName" class="file-name"></span>
+            </label>
+            <div style="text-align: center; margin-top: 5px; font-size: 0.85rem; color: #a1a1aa;">
+              Es el documento donde la aseguradora aprueba tu estudio de arrendamiento.
+            </div>
+          </div>
+
         </div>
 
         <!-- Step 3: Codeudor -->
@@ -778,6 +790,8 @@
         docFrontName: $("docFrontName"),
         docBack: $("docBack"),
         docBackName: $("docBackName"),
+        aprobadoEstudio: $("aprobadoEstudio"),
+        aprobadoEstudioName: $("aprobadoEstudioName"),
         coTipo: $("coTipo"),
         coNumero: $("coNumero"),
         coConfirmarDocumento: $("coConfirmarDocumento"),
@@ -872,6 +886,7 @@
         // Files
         bindFile(el.docFront, 'docFront', el.docFrontName);
         bindFile(el.docBack, 'docBack', el.docBackName);
+        bindFile(el.aprobadoEstudio, 'aprobadoEstudio', el.aprobadoEstudioName);
         bindFile(el.coDocFront, 'coDocFront', el.coDocFrontName);
         bindFile(el.coDocBack, 'coDocBack', el.coDocBackName);
         bindFile(el.comprobantePago, 'comprobantePago', el.comprobantePagoName);
@@ -1183,6 +1198,7 @@
         const friendlyNames = {
           'docFront': 'Cédula Frontal',
           'docBack': 'Cédula Reverso',
+          'aprobadoEstudio': 'Aprobado del estudio',
           'ingresos': 'Soportes de Ingreso',
           'coDocFront': 'Cédula Codeudor Frontal',
           'coDocBack': 'Cédula Codeudor Reverso',
@@ -1195,7 +1211,7 @@
         }).join('');
 
         // Marcar archivos no requeridos como ocultos
-        const allFileKeys = ['docFront', 'docBack', 'ingresos', 'coDocFront', 'coDocBack', 'coIngresos', 'comprobantePago'];
+        const allFileKeys = ['docFront', 'docBack', 'aprobadoEstudio', 'ingresos', 'coDocFront', 'coDocBack', 'coIngresos', 'comprobantePago'];
         allFileKeys.forEach(key => {
           if (!state.docsCorreccion.includes(key)) {
             const input = document.getElementById(key);
@@ -1238,7 +1254,7 @@
       // En modo corrección, mapea qué pasos contienen archivos por corregir
       // Step 0 = texto inq, Step 1 = docs inq, Step 2 = texto codeudor, Step 3 = docs codeudor, Step 4 = pago, Step 5 = resumen
       function getStepFileKeys(step) {
-        if (step === 1) return ['docFront', 'docBack', 'ingresos'];
+        if (step === 1) return ['docFront', 'docBack', 'aprobadoEstudio', 'ingresos'];
         if (step === 3) return ['coDocFront', 'coDocBack', 'coIngresos'];
         if (step === 4) return ['comprobantePago'];
         return [];
@@ -1491,6 +1507,14 @@
               prog2.classList.add('progressive-hidden'); prog2.classList.remove('progressive-visible');
             }
           }
+          const prog3 = document.getElementById('prog-inq-1-3');
+          if (prog3) {
+            if (state.archivos['docBack'] || (state.modoCorreccion && state.docsCorreccion.includes('aprobadoEstudio'))) {
+              prog3.classList.remove('progressive-hidden'); prog3.classList.add('progressive-visible');
+            } else {
+              prog3.classList.add('progressive-hidden'); prog3.classList.remove('progressive-visible');
+            }
+          }
         } else if (state.step === 2) {
           // --- CODEUDOR: Revelación progresiva ---
           const coTipo = el.coTipo.value.trim();
@@ -1580,7 +1604,7 @@
 
       function getRequiredForStep(step) {
         if (state.modoCorreccion) {
-          if (step === 1) return [{ id: 'docFront', isType: 'file' }, { id: 'docBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
+          if (step === 1) return [{ id: 'docFront', isType: 'file' }, { id: 'docBack', isType: 'file' }, { id: 'aprobadoEstudio', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
           if (step === 3) return [{ id: 'coDocFront', isType: 'file' }, { id: 'coDocBack', isType: 'file' }].filter(f => state.docsCorreccion.includes(f.id));
           if (step === 4) return [];
           return [];
@@ -1599,7 +1623,8 @@
         ];
         if (step === 1) return [
           { id: 'docFront', isType: 'file' },
-          { id: 'docBack', isType: 'file' }
+          { id: 'docBack', isType: 'file' },
+          { id: 'aprobadoEstudio', isType: 'file' }
         ];
         if (step === 3) {
           if (!el.coTipo.value.trim()) return [];
@@ -1637,7 +1662,7 @@
             return true;
           }
           case 1: {
-            if (state.modoCorreccion) return ['docFront', 'docBack'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
+            if (state.modoCorreccion) return ['docFront', 'docBack', 'aprobadoEstudio'].filter(k => state.docsCorreccion.includes(k)).every(f => state.archivos[f]);
             return getRequiredForStep(1).every(f => state.archivos[f.id]);
           }
           case 2: {
@@ -1710,7 +1735,7 @@
           }
           case 1: {
             if (state.modoCorreccion) {
-              const need = ['docFront', 'docBack'].filter(k => state.docsCorreccion.includes(k));
+              const need = ['docFront', 'docBack', 'aprobadoEstudio'].filter(k => state.docsCorreccion.includes(k));
               for (const k of need) {
                 if (!state.archivos[k]) {
                   showAlert('warning', 'Falta el documento requerido de corrección.');
@@ -1720,10 +1745,10 @@
               return true;
             }
 
-            const need = ['docFront', 'docBack'];
+            const need = ['docFront', 'docBack', 'aprobadoEstudio'];
             for (const k of need) {
               if (!state.archivos[k]) {
-                showAlert('warning', 'Faltan documentos requeridos (frontal y reverso).');
+                showAlert('warning', k === 'aprobadoEstudio' ? 'Falta cargar el aprobado del estudio.' : 'Faltan documentos requeridos (frontal y reverso).');
                 return false;
               }
             }
@@ -1802,7 +1827,7 @@
       function buildSummary() {
         const files = Object.entries(state.archivos).map(([k, v]) => {
           const nice = {
-            docFront: 'Doc. Identidad (frontal)', docBack: 'Doc. Identidad (reverso)',
+            docFront: 'Doc. Identidad (frontal)', docBack: 'Doc. Identidad (reverso)', aprobadoEstudio: 'Aprobado del estudio',
             coDocFront: 'Codeudor: Doc. (frontal)', coDocBack: 'Codeudor: Doc. (reverso)',
             comprobantePago: 'Comprobante de Pago'
           }[k] || k;
