@@ -68,6 +68,10 @@
     };
     var PAREJAS = { confirmarDocumento: 'numeroDocumento', confirmarEmail: 'email', confirmarCelular: 'celular',
       coConfirmarDocumento: 'coNumero', coConfirmarEmail: 'coEmail', coConfirmarCelular: 'coCelular' };
+    // El ✓ va centrado en el campo. Si el campo estaba oculto al medirlo (paso aún no visible), se mide de nuevo
+    function ubicarChk(chk, inp) { if (inp.offsetHeight) chk.style.top = (inp.offsetTop + inp.offsetHeight / 2) + 'px'; }
+    function reubicarTodos() { document.querySelectorAll('.prem-chk').forEach(function (c) { var i = document.getElementById(c.getAttribute('data-para')); if (i) ubicarChk(c, i); }); }
+    window.addEventListener('resize', reubicarTodos);
     function marcarOk(inp) {
       var v = inp.value || '', ok;
       if (PAREJAS[inp.id]) { var o = document.getElementById(PAREJAS[inp.id]); ok = !!v && !!o && v.trim().toLowerCase() === o.value.trim().toLowerCase() && (!REGLAS[o.id] || REGLAS[o.id](o.value)); }
@@ -76,7 +80,7 @@
       var caja = inp.parentElement; if (getComputedStyle(caja).position === 'static') caja.style.position = 'relative';
       var chk = caja.querySelector(':scope > .prem-chk[data-para="' + inp.id + '"]');
       if (!chk) { chk = document.createElement('i'); chk.className = 'prem-chk'; chk.setAttribute('data-para', inp.id); chk.setAttribute('aria-hidden', 'true'); caja.appendChild(chk); }
-      chk.style.top = (inp.offsetTop + inp.offsetHeight / 2) + 'px';
+      ubicarChk(chk, inp);
       chk.classList.toggle('si', ok); inp.classList.toggle('prem-ok', ok);
       // (1) Bloque completo: si todos los campos con ✓ del grupo están bien, el grupo late y queda en verde
       var grupo = inp.closest('.grid-2col') || inp.closest('.form-group');
@@ -103,6 +107,7 @@
     function revisarSiguiente() {
       if (!btnSig) return;
       var pane = document.querySelector('#mainWizard .step-pane.show'); if (!pane) return;
+      reubicarTodos();
       var visibles = function (el) { return el.offsetParent !== null; };
       var faltan = Array.prototype.some.call(pane.querySelectorAll('input[required], select[required]'), function (el) { return visibles(el) && el.type !== 'file' && !String(el.value || '').trim(); });
       var malos = Array.prototype.some.call(pane.querySelectorAll('.prem-chk'), function (c) { var i = document.getElementById(c.getAttribute('data-para')); return i && visibles(i) && !c.classList.contains('si'); });

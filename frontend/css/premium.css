@@ -132,9 +132,9 @@ html.premium .form-container .input.prem-ok{background-image:none!important;padd
 
 /* ---------- Animaciones mientras se llena (nov-2026) ---------- */
 /* 1. Grupo completo: late una vez y queda con borde verde tenue */
-html.premium .form-container .prem-listo{border-radius:16px;box-shadow:0 0 0 2px rgba(31,157,107,.28),0 10px 24px -16px rgba(31,157,107,.55);transition:box-shadow .4s}
-html.premium .form-container .prem-pulso{animation:premPulso .7s ease-out}
-@keyframes premPulso{0%{box-shadow:0 0 0 0 rgba(31,157,107,.55)}100%{box-shadow:0 0 0 14px rgba(31,157,107,0),0 0 0 2px rgba(31,157,107,.28)}}
+/* Sin borde permanente (se veía recargado): solo un destello suave en los campos del grupo, una vez */
+html.premium .form-container .prem-pulso .input.prem-ok{animation:premPulso .9s ease-out}
+@keyframes premPulso{0%{box-shadow:0 0 0 0 rgba(31,157,107,.45)}100%{box-shadow:0 0 0 10px rgba(31,157,107,0)}}
 /* 2. Barra de la sección */
 html.premium .xp-bar-container.prem-sube #xpBar{filter:brightness(1.25)}
 html.premium .xp-bar-container{transition:box-shadow .5s}
@@ -165,3 +165,7 @@ html.premium .form-container .file-upload.prem-recibe::before{content:"";positio
 /* 6. Confeti */
 .prem-confeti{position:fixed;top:-14px;width:8px;height:13px;border-radius:2px;z-index:99999;pointer-events:none;animation:premCae 2.4s cubic-bezier(.3,.6,.5,1) forwards}
 @keyframes premCae{to{transform:translate(var(--gx),105vh) rotate(var(--gr));opacity:.9}}
+
+/* Autocompletar del navegador: sin el fondo gris */
+html.premium .form-container input:-webkit-autofill,html.premium .form-container input:-webkit-autofill:hover,html.premium .form-container input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 1000px #fff inset!important;-webkit-text-fill-color:var(--tinta)!important;caret-color:var(--tinta);transition:background-color 9999s}
