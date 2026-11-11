@@ -21,7 +21,7 @@
    Respeta prefers-reduced-motion. */
 @property --ang { syntax:'<angle>'; inherits:false; initial-value:0deg; }
 :root{
-  --noche:#171018; --uva:#18072b; --violeta:#5612a2; --lila:#c471ed; --lila2:#e3aee7;
+  --noche:#171018; --uva:#18072b; --violeta:#5612a2; --lila:#6c4a94; --lila2:#b9a7d6;
   --oro:#dcb53c; --oro2:#e3cc6c; --oro3:#c2a448; --oroOsc:#8a6d1d; --bronce:#b26001;
   --marfil:#fbf8f1; --marfil2:#f3ede0; --tinta:#1d1526; --tinta2:#5d5368; --linea:#e6dccb;
   --ok:#1f9d6b; --mal:#c2413b;
@@ -30,7 +30,7 @@
   --card:var(--marfil); --cardTx:var(--tinta); --cardMut:var(--tinta2); --cardLn:var(--linea); --inBg:#fff;
   color-scheme:light;
 }
-html[data-modo="oscuro"]{ --card:rgba(28,18,40,.62); --cardTx:#f4eefb; --cardMut:#b9aac9; --cardLn:rgba(227,174,231,.18); --inBg:rgba(255,255,255,.04); color-scheme:dark; }
+html[data-modo="oscuro"]{ --card:rgba(28,18,40,.62); --cardTx:#f4eefb; --cardMut:#b9aac9; --cardLn:rgba(220,181,60,.18); --inBg:rgba(255,255,255,.04); color-scheme:dark; }
 *{box-sizing:border-box}[hidden]{display:none!important}
 html,body{margin:0;min-height:100%}
 body{font:15px/1.55 var(--fb);color:#efe7f7;background:var(--noche);overflow-x:hidden;-webkit-font-smoothing:antialiased}
@@ -39,7 +39,7 @@ body{font:15px/1.55 var(--fb);color:#efe7f7;background:var(--noche);overflow-x:h
 .fondo{position:fixed;inset:0;z-index:-1;overflow:hidden;background:radial-gradient(120% 80% at 50% 0%,#24103a 0%,var(--uva) 40%,var(--noche) 100%)}
 .aurora{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;mix-blend-mode:screen;animation:flota 22s ease-in-out infinite alternate}
 .a1{width:60vmax;height:60vmax;left:-20vmax;top:-25vmax;background:radial-gradient(circle,rgba(220,181,60,.55),transparent 65%)}
-.a2{width:55vmax;height:55vmax;right:-22vmax;top:10vh;background:radial-gradient(circle,rgba(196,113,237,.45),transparent 65%);animation-duration:28s}
+.a2{width:55vmax;height:55vmax;right:-22vmax;top:10vh;background:radial-gradient(circle,rgba(178,96,1,.42),transparent 65%);animation-duration:28s}
 .a3{width:50vmax;height:50vmax;left:10vw;bottom:-30vmax;background:radial-gradient(circle,rgba(86,18,162,.6),transparent 65%);animation-duration:34s}
 @keyframes flota{to{transform:translate(6vmax,4vmax) scale(1.12)}}
 .grano{position:absolute;inset:-50%;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
@@ -50,7 +50,7 @@ body{font:15px/1.55 var(--fb);color:#efe7f7;background:var(--noche);overflow-x:h
 .logo{font:600 1.35rem/1 var(--fd);letter-spacing:.14em;text-transform:uppercase;background:linear-gradient(100deg,var(--oro3),#fff3c4 45%,var(--oro) 60%,var(--oro3));-webkit-background-clip:text;background-clip:text;color:transparent;background-size:220% 100%;animation:brilloTexto 7s linear infinite}
 .logo small{display:block;font:500 .6rem var(--fb);letter-spacing:.42em;color:#cbbbd9;-webkit-text-fill-color:#cbbbd9;margin-top:6px}
 @keyframes brilloTexto{to{background-position:-220% 0}}
-.modo{font:600 .72rem var(--fb);letter-spacing:.06em;color:#e9dcf5;background:rgba(255,255,255,.06);border:1px solid rgba(227,174,231,.25);border-radius:99px;padding:8px 12px;cursor:pointer;backdrop-filter:blur(8px)}
+.modo{font:600 .72rem var(--fb);letter-spacing:.06em;color:#e9dcf5;background:rgba(255,255,255,.06);border:1px solid rgba(220,181,60,.25);border-radius:99px;padding:8px 12px;cursor:pointer;backdrop-filter:blur(8px)}
 
 /* ---------- 5. Progreso ---------- */
 .prog{margin:4px 0 18px}
@@ -58,7 +58,7 @@ body{font:15px/1.55 var(--fb);color:#efe7f7;background:var(--noche);overflow-x:h
 .prog-top b{font:600 1.05rem var(--fd);letter-spacing:.02em;color:#fff}
 .prog-top span{font-size:.75rem;color:#bfaecf;letter-spacing:.08em;text-transform:uppercase}
 .riel{position:relative;height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
-.riel i{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--oro3),var(--oro2),var(--lila));transition:width .8s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 14px rgba(220,181,60,.6)}
+.riel i{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:linear-gradient(90deg,var(--bronce),var(--oro3),var(--oro2));transition:width .8s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 14px rgba(220,181,60,.6)}
 .riel i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);transform:translateX(-100%);animation:barre 2.4s ease-in-out infinite}
 @keyframes barre{to{transform:translateX(100%)}}
 .puntos{display:flex;gap:6px;margin-top:10px}
@@ -68,9 +68,9 @@ body{font:15px/1.55 var(--fb);color:#efe7f7;background:var(--noche);overflow-x:h
 /* ---------- 2. Tarjeta ---------- */
 .tarjeta{position:relative;border-radius:26px;padding:26px 22px;background:var(--card);color:var(--cardTx);
   box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 30px 60px -20px rgba(0,0,0,.65),0 0 0 1px rgba(220,181,60,.25);isolation:isolate}
-html[data-modo="oscuro"] .tarjeta{backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 30px 60px -20px rgba(0,0,0,.7),0 0 0 1px rgba(227,174,231,.16)}
+html[data-modo="oscuro"] .tarjeta{backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);box-shadow:0 1px 0 rgba(255,255,255,.08) inset,0 30px 60px -20px rgba(0,0,0,.7),0 0 0 1px rgba(220,181,60,.16)}
 .tarjeta::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;z-index:-1;
-  background:conic-gradient(from var(--ang),transparent 0 70%,rgba(220,181,60,.9) 80%,rgba(196,113,237,.8) 88%,transparent 95%);
+  background:conic-gradient(from var(--ang),transparent 0 70%,rgba(220,181,60,.9) 80%,rgba(108,74,148,.8) 88%,transparent 95%);
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:gira 9s linear infinite}
 @keyframes gira{to{--ang:360deg}}
 .eyebrow{font:700 .68rem var(--fb);letter-spacing:.22em;text-transform:uppercase;color:var(--oroOsc)}
@@ -93,7 +93,7 @@ h1{font:600 clamp(1.7rem,6vw,2.2rem)/1.12 var(--fd);margin:8px 0 10px;letter-spa
 .f label{position:absolute;left:15px;top:15px;font:500 .95rem var(--fb);color:var(--cardMut);pointer-events:none;transition:all .2s cubic-bezier(.2,.8,.2,1)}
 .f input:focus+label,.f input:not(:placeholder-shown)+label,.f select+label{top:6px;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--oroOsc);font-weight:700}
 html[data-modo="oscuro"] .f input:focus+label,html[data-modo="oscuro"] .f input:not(:placeholder-shown)+label,html[data-modo="oscuro"] .f select+label{color:var(--oro2)}
-.f input:focus,.f select:focus{border-color:var(--lila);box-shadow:0 0 0 4px rgba(196,113,237,.18),0 8px 20px -10px rgba(196,113,237,.6)}
+.f input:focus,.f select:focus{border-color:var(--oro);box-shadow:0 0 0 4px rgba(220,181,60,.22),0 8px 20px -10px rgba(220,181,60,.6)}
 .f.ok input{border-color:rgba(31,157,107,.55)}
 .f.mal input{border-color:rgba(194,65,59,.6);animation:tiembla .35s}
 @keyframes tiembla{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
@@ -101,13 +101,13 @@ html[data-modo="oscuro"] .f input:focus+label,html[data-modo="oscuro"] .f input:
 .chk::after{content:"";position:absolute;left:7px;top:4px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
 .f.ok .chk{transform:scale(1)}
 .msg{font-size:.76rem;margin:5px 2px 0;color:var(--mal);min-height:0}
-.nota{display:flex;gap:10px;align-items:flex-start;font-size:.82rem;color:var(--cardMut);background:linear-gradient(135deg,rgba(220,181,60,.12),rgba(196,113,237,.08));border:1px solid rgba(220,181,60,.28);border-radius:14px;padding:11px 13px}
+.nota{display:flex;gap:10px;align-items:flex-start;font-size:.82rem;color:var(--cardMut);background:linear-gradient(135deg,rgba(220,181,60,.12),rgba(108,74,148,.08));border:1px solid rgba(220,181,60,.28);border-radius:14px;padding:11px 13px}
 .nota b{color:var(--cardTx)}
 .tel{display:flex;gap:8px}.tel .pais{flex:0 0 auto;font:700 .95rem var(--fb);border:1.5px solid var(--cardLn);background:var(--inBg);color:var(--cardTx);border-radius:14px;padding:0 12px}
 
 /* ---------- 7. Buzones ---------- */
 .buzones{display:grid;gap:14px}
-.buzon{position:relative;display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;border:1.5px dashed rgba(194,164,72,.55);background:linear-gradient(135deg,rgba(220,181,60,.07),rgba(196,113,237,.05));cursor:pointer;transition:transform .25s,box-shadow .25s,border-color .25s;overflow:hidden}
+.buzon{position:relative;display:flex;gap:14px;align-items:center;padding:14px;border-radius:18px;border:1.5px dashed rgba(194,164,72,.55);background:linear-gradient(135deg,rgba(220,181,60,.07),rgba(108,74,148,.05));cursor:pointer;transition:transform .25s,box-shadow .25s,border-color .25s;overflow:hidden}
 .buzon:hover{transform:translateY(-2px);box-shadow:0 14px 30px -16px rgba(86,18,162,.55)}
 .buzon input{position:absolute;opacity:0;pointer-events:none}
 .miniatura{flex:0 0 64px;height:80px;border-radius:12px;background:#fff;display:grid;place-items:center;font-size:1.6rem;overflow:hidden;box-shadow:0 6px 16px -8px rgba(0,0,0,.35);border:1px solid var(--cardLn)}
@@ -123,7 +123,7 @@ html[data-modo="oscuro"] .f input:focus+label,html[data-modo="oscuro"] .f input:
 
 /* ---------- Resumen ---------- */
 .ficha{border-radius:18px;border:1px solid var(--cardLn);overflow:hidden}
-.ficha h3{display:flex;justify-content:space-between;align-items:center;margin:0;padding:12px 14px;font:600 1.05rem var(--fd);background:linear-gradient(90deg,rgba(220,181,60,.16),rgba(196,113,237,.1))}
+.ficha h3{display:flex;justify-content:space-between;align-items:center;margin:0;padding:12px 14px;font:600 1.05rem var(--fd);background:linear-gradient(90deg,rgba(220,181,60,.16),rgba(108,74,148,.1))}
 .ficha h3 button{font:700 .72rem var(--fb);border:0;background:none;color:var(--violeta);cursor:pointer;letter-spacing:.04em}
 html[data-modo="oscuro"] .ficha h3 button{color:var(--lila2)}
 .ficha dl{margin:0;padding:6px 14px 12px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.88rem}
@@ -137,15 +137,15 @@ html[data-modo="oscuro"] .ficha h3 button{color:var(--lila2)}
 .btn{--r:16px;position:relative;flex:1;border:0;cursor:pointer;border-radius:var(--r);padding:16px 18px;font:800 1rem var(--fb);letter-spacing:.03em;color:#1c1306;isolation:isolate;
   background:linear-gradient(180deg,#f3dc8a 0%,var(--oro) 45%,var(--oro3) 100%);
   box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -2px 0 rgba(0,0,0,.18) inset,0 10px 24px -8px rgba(220,181,60,.75),0 2px 0 var(--oroOsc);transition:transform .15s,box-shadow .25s,filter .25s}
-.btn::before{content:"";position:absolute;inset:-2px;border-radius:calc(var(--r) + 2px);z-index:-2;background:conic-gradient(from var(--ang),var(--oro),#fff6d0,var(--lila),var(--violeta),var(--oro2),var(--oro));animation:gira 3.5s linear infinite}
+.btn::before{content:"";position:absolute;inset:-2px;border-radius:calc(var(--r) + 2px);z-index:-2;background:conic-gradient(from var(--ang),var(--oro),#fff6d0,var(--bronce),#2a1747,var(--oro2),var(--oro));animation:gira 3.5s linear infinite}
 .btn::after{content:"";position:absolute;inset:2px;border-radius:calc(var(--r) - 2px);z-index:-1;background:inherit}
 .btn span{position:relative;z-index:1}
 .btn .destello{position:absolute;inset:2px;z-index:0;border-radius:calc(var(--r) - 2px);overflow:hidden;pointer-events:none}
 .btn .destello::before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.75) 50%,transparent 65%);transform:translateX(-120%);animation:destello 3.2s ease-in-out infinite}
 @keyframes destello{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
-.btn:hover{filter:brightness(1.06);box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -2px 0 rgba(0,0,0,.18) inset,0 16px 34px -8px rgba(220,181,60,.9),0 0 30px -4px rgba(196,113,237,.6),0 2px 0 var(--oroOsc)}
+.btn:hover{filter:brightness(1.06);box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -2px 0 rgba(0,0,0,.18) inset,0 16px 34px -8px rgba(220,181,60,.9),0 0 30px -4px rgba(108,74,148,.6),0 2px 0 var(--oroOsc)}
 .btn:active{transform:translateY(2px) scale(.99)}
-.btn.sec{flex:0 0 auto;color:#efe3fb;background:rgba(255,255,255,.06);box-shadow:0 0 0 1px rgba(227,174,231,.3) inset;backdrop-filter:blur(10px)}
+.btn.sec{flex:0 0 auto;color:#efe3fb;background:rgba(255,255,255,.06);box-shadow:0 0 0 1px rgba(220,181,60,.3) inset;backdrop-filter:blur(10px)}
 .btn.sec::before,.btn.sec::after,.btn.sec .destello{display:none}
 .btn:disabled{opacity:.45;pointer-events:none}
 .btn:focus-visible{outline:3px solid var(--lila);outline-offset:3px}
@@ -210,7 +210,7 @@ const PASOS = [
   { n:'Tus documentos', t:'Tus documentos', eb:'Carga con vista previa',
     i:'Sube una foto clara o el PDF de cada documento. Verás una vista previa; si algo quedó mal, tócalo y cámbialo cuando quieras, hasta el final.',
     h:() => `<div class="buzones">${buzon('ced1','🪪','Cédula · frente','Foto o PDF')}${buzon('ced2','🪪','Cédula · reverso','Foto o PDF')}${buzon('cert','🏡','Certificado de tradición y libertad','No mayor a 30 días · PDF')}
-      <label class="buzon" style="border-color:rgba(196,113,237,.6)"><div class="miniatura">📋</div><div><div class="t">Formato SARLAFT</div><div class="s">Lo diligencias aquí mismo, con firma y huella</div><div class="acc"><button type="button">✍️ Diligenciar</button></div></div></label></div>` },
+      <label class="buzon" style="border-color:rgba(108,74,148,.6)"><div class="miniatura">📋</div><div><div class="t">Formato SARLAFT</div><div class="s">Lo diligencias aquí mismo, con firma y huella</div><div class="acc"><button type="button">✍️ Diligenciar</button></div></div></label></div>` },
   { n:'Resumen', t:'Revisa antes de enviar', eb:'Todo en un solo lugar',
     i:'Así quedó tu información. Si algo no está bien, toca “Editar” en esa sección.',
     h:() => `<div class="fichas">
@@ -296,7 +296,7 @@ $('sig').onclick = () => {
 };
 $('atras').onclick = () => { if (paso) { paso--; pinta(true); } };
 function chispas() {
-  const b = $('sig').getBoundingClientRect(), cols = ['#dcb53c', '#e3cc6c', '#c471ed', '#e3aee7', '#fff'];
+  const b = $('sig').getBoundingClientRect(), cols = ['#dcb53c', '#e3cc6c', '#b26001', '#c2a448', '#fff'];
   for (let i = 0; i < 36; i++) { const s = document.createElement('i'); s.className = 'chispa'; const a = Math.random() * Math.PI * 2, r = 80 + Math.random() * 160;
     s.style.cssText = `left:${b.left + b.width / 2}px;top:${b.top}px;background:${cols[i % 5]};--dx:${Math.cos(a) * r}px;--dy:${Math.sin(a) * r - 80}px;box-shadow:0 0 10px ${cols[i % 5]}`;
     document.body.appendChild(s); setTimeout(() => s.remove(), 1300); }
@@ -304,7 +304,7 @@ function chispas() {
 pinta(false);
 
 // ---------- Auto-actualización (solo pruebas) ----------
-const VER = 'v-20261110192619';
+const VER = 'v-20261110203038';
 setInterval(async () => { try { const t = await (await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const VER = '(v-[0-9]+)'/); if (m && m[1] !== VER) location.replace(location.pathname + '?v=' + m[1]); } catch (e) {} }, 15000);
 </script>
 </body>
