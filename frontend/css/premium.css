@@ -169,3 +169,11 @@ html.premium .form-container .file-upload.prem-recibe::before{content:"";positio
 /* Autocompletar del navegador: sin el fondo gris */
 html.premium .form-container input:-webkit-autofill,html.premium .form-container input:-webkit-autofill:hover,html.premium .form-container input:-webkit-autofill:focus{
   -webkit-box-shadow:0 0 0 1000px #fff inset!important;-webkit-text-fill-color:var(--tinta)!important;caret-color:var(--tinta);transition:background-color 9999s}
+
+/* Buzones: una sola caja (sin el recuadro punteado de adentro) y contenido en columna para que quepa la miniatura */
+html.premium .form-container .file-upload .file-label{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center;gap:6px;
+  border:0!important;background:transparent!important;padding:6px 4px!important;text-align:center;min-width:0}
+html.premium .form-container .file-upload .file-label > span{max-width:100%;overflow-wrap:anywhere}
+html.premium .form-container .file-upload .file-name{font-size:.82rem}
+html.premium .form-container .file-upload .prem-mini{margin:4px auto 0}
+html.premium .form-container .file-upload .prem-cambiar{white-space:nowrap}
