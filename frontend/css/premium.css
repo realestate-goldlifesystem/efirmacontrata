@@ -123,3 +123,9 @@ html.premium .footer{background:transparent!important;color:#a99bb8!important;bo
 html.premium .prem-paso{justify-content:center;margin:-6px 0 12px}
 html.premium .prem-paso b{display:none}
 html.premium .prem-paso span{white-space:nowrap}
+
+/* ✓ verde animado dentro del campo cuando el dato está bien o la confirmación coincide */
+html.premium .form-container .input.prem-ok{background-image:none!important;padding-right:44px!important}
+.prem-chk{position:absolute;right:14px;width:22px;height:22px;margin-top:-11px;border-radius:50%;background:var(--ok);transform:scale(0);transition:transform .35s cubic-bezier(.3,1.6,.5,1);pointer-events:none;box-shadow:0 4px 10px -3px rgba(31,157,107,.7)}
+.prem-chk::after{content:"";position:absolute;left:8px;top:4px;width:5px;height:10px;border:solid #fff;border-width:0 2.4px 2.4px 0;transform:rotate(45deg)}
+.prem-chk.si{transform:scale(1)}

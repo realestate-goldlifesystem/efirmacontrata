@@ -56,6 +56,37 @@
       inp.setAttribute('autocomplete', 'off');
     });
 
+    // 3b. ✓ verde animado cuando el dato está bien (y en la confirmación, cuando coincide)
+    var REGLAS = {
+      numeroDocumento: function (v) { return /^[0-9A-Za-z]{5,12}$/.test(v); },
+      coNumero: function (v) { return /^[0-9A-Za-z]{5,12}$/.test(v); },
+      nombres: function (v) { return v.trim().length > 1; }, apellidos: function (v) { return v.trim().length > 1; },
+      coNombres: function (v) { return v.trim().length > 1; }, coApellidos: function (v) { return v.trim().length > 1; },
+      email: function (v) { return /^\S+@\S+\.\S+$/.test(v); }, coEmail: function (v) { return /^\S+@\S+\.\S+$/.test(v); },
+      celular: function (v) { return /^3\d{9}$/.test(v.replace(/\D/g, '')); }, coCelular: function (v) { return /^3\d{9}$/.test(v.replace(/\D/g, '')); },
+      numeroCuenta: function (v) { return v.replace(/\D/g, '').length >= 5; }
+    };
+    var PAREJAS = { confirmarDocumento: 'numeroDocumento', confirmarEmail: 'email', confirmarCelular: 'celular',
+      coConfirmarDocumento: 'coNumero', coConfirmarEmail: 'coEmail', coConfirmarCelular: 'coCelular' };
+    function marcarOk(inp) {
+      var v = inp.value || '', ok;
+      if (PAREJAS[inp.id]) { var o = document.getElementById(PAREJAS[inp.id]); ok = !!v && !!o && v.trim().toLowerCase() === o.value.trim().toLowerCase() && (!REGLAS[o.id] || REGLAS[o.id](o.value)); }
+      else if (REGLAS[inp.id]) ok = !!v && REGLAS[inp.id](v);
+      else return;
+      var caja = inp.parentElement; if (getComputedStyle(caja).position === 'static') caja.style.position = 'relative';
+      var chk = caja.querySelector(':scope > .prem-chk[data-para="' + inp.id + '"]');
+      if (!chk) { chk = document.createElement('i'); chk.className = 'prem-chk'; chk.setAttribute('data-para', inp.id); chk.setAttribute('aria-hidden', 'true'); caja.appendChild(chk); }
+      chk.style.top = (inp.offsetTop + inp.offsetHeight / 2) + 'px';
+      chk.classList.toggle('si', ok); inp.classList.toggle('prem-ok', ok);
+    }
+    var ids = Object.keys(REGLAS).concat(Object.keys(PAREJAS));
+    ids.forEach(function (id) {
+      var inp = document.getElementById(id); if (!inp) return;
+      inp.addEventListener('input', function () { marcarOk(inp); var c = Object.keys(PAREJAS).filter(function (k) { return PAREJAS[k] === id; })[0]; if (c && document.getElementById(c)) marcarOk(document.getElementById(c)); });
+      inp.addEventListener('change', function () { marcarOk(inp); });
+      setTimeout(function () { if (inp.value) marcarOk(inp); }, 1500);   // lo que se restaura del progreso guardado
+    });
+
     // 4. Buzones con miniatura
     var pdfjs = null;
     function cargarPdfJs() {
