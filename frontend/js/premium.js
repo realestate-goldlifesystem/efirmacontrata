@@ -111,6 +111,8 @@
       btnSig.classList.toggle('prem-encendido', listo); btnSig.classList.toggle('prem-dormido', !listo);
       if (listo && !antes) { btnSig.classList.remove('prem-latido'); void btnSig.offsetWidth; btnSig.classList.add('prem-latido'); }
     }
+    // También al entrar al formulario desde la bienvenida y al cambiar de paso con los botones
+    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#btnGoToPayment, #btnNext, #btnPrev')) { setTimeout(revisarSiguiente, 120); setTimeout(revisarSiguiente, 700); } }, true);
     document.addEventListener('input', function (e) { if (e.target.closest && e.target.closest('#mainWizard')) setTimeout(revisarSiguiente, 0); }, true);
     document.addEventListener('change', function (e) { if (e.target.closest && e.target.closest('#mainWizard')) setTimeout(revisarSiguiente, 0); }, true);
 
