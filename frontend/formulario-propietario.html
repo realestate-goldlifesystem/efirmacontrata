@@ -1001,14 +1001,13 @@
       <div id="ocrEstadoError" style="display:none;">
         <div class="ocr-icon">⚠️</div>
         <h3>No se pudo verificar</h3>
-        <p id="ocrErrorMsg">No se pudo leer el documento. Puedes continuar, pero verifica manualmente la vigencia.</p>
+        <p id="ocrErrorMsg">No pudimos leer la fecha de expedición del certificado.</p>
         <p style="font-size:0.90rem; color:#a1a1aa; margin-bottom:1rem;">Asegúrate de haber cargado el PDF original del Certificado de Libertad y Tradición. Si no lo tienes o está vencido:</p>
         <a href="https://certificados.supernotariado.gov.co/certificado" target="_blank" rel="noopener" class="btn-snr">
           🌐 Comprar Certificado en SNR
         </a>
         <br>
         <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
-          <button class="btn-cerrar-modal" style="background: rgba(16, 185, 129, 0.2); border-color: var(--success); color: #34d399;" onclick="cerrarModalOCR(true)">Continuar de todas formas</button>
           <button class="btn-cerrar-modal" onclick="cerrarModalOCR()">Subir otro archivo</button>
         </div>
       </div>
@@ -1696,11 +1695,18 @@
             estadoAnalizando.style.display = 'none';
 
             if (!result || !result.success) {
-              // Error de OCR: dejar continuar pero advertir
-              document.getElementById('ocrErrorMsg').textContent = result?.mensaje || 'No se pudo leer el documento.';
+              // Error de OCR: no se deja pasar (el certificado debe tener máximo 30 días y hay que poder comprobarlo)
+              document.getElementById('ocrErrorMsg').textContent = 'No pudimos leer la fecha de expedición del certificado.';
               estadoError.style.display = 'block';
-              // Guardar archivo de todas formas (el admin validará en el panel)
-              window._ocrPendingFile = { base64: base64, fileName: fileName, nameEl: nameEl };
+              const inputCertE = document.getElementById('certTradicion'); if (inputCertE) inputCertE.value = '';
+              return;
+            }
+
+            // Sin fecha detectada no se puede garantizar que tenga máximo 30 días: no pasa
+            if (result.vigente && !(result.diasAntiguedad >= 0)) {
+              document.getElementById('ocrErrorMsg').textContent = 'No pudimos leer la fecha de expedición del certificado.';
+              estadoError.style.display = 'block';
+              const inputCert0 = document.getElementById('certTradicion'); if (inputCert0) inputCert0.value = '';
               return;
             }
 
@@ -1746,9 +1752,9 @@
           })
           .catch(error => {
             estadoAnalizando.style.display = 'none';
-            document.getElementById('ocrErrorMsg').textContent = 'Error de red: ' + (error.message || error);
+            document.getElementById('ocrErrorMsg').textContent = 'No hubo conexión para revisar el certificado. Revisa tu internet y vuelve a cargarlo.';
             estadoError.style.display = 'block';
-            window._ocrPendingFile = { base64: base64, fileName: fileName, nameEl: nameEl };
+            const inputCertR = document.getElementById('certTradicion'); if (inputCertR) inputCertR.value = '';
           });
       }
 
