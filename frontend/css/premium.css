@@ -1,0 +1,120 @@
+/* ==========================================================================
+   CAPA PREMIUM (nov-2026) para formulario-propietario y formulario-inquilino.
+   Solo cambia el aspecto: la lógica de los formularios no se toca.
+   Modo mixto: fondo "terciopelo" oscuro (negro-violeta + auroras dorada y bronce)
+   y tarjetas marfil donde se escribe. Botones con borde de luz que gira y destello.
+   Se carga DESPUÉS de los estilos propios del formulario (gana por orden + html.premium).
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@property --ang { syntax:'<angle>'; inherits:false; initial-value:0deg; }
+
+html.premium{
+  --noche:#171018; --uva:#18072b; --violeta:#6c4a94; --oro:#dcb53c; --oro2:#e3cc6c; --oro3:#c2a448; --oroOsc:#7d6115; --bronce:#b26001;
+  --marfil:#fbf8f1; --tinta:#1d1526; --tinta2:#5d5368; --linea:#e6dccb; --ok:#1f9d6b; --mal:#c2413b;
+  --fd:'Cormorant Garamond',Georgia,serif; --fb:'Manrope',system-ui,sans-serif;
+  /* las variables del sistema viejo, llevadas a la paleta nueva */
+  --primary:#c2a448; --primary-glow:rgba(220,181,60,.35);
+}
+html.premium body{font-family:var(--fb);background:var(--noche)!important;color:#efe7f7;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+/* ---------- Fondo terciopelo ---------- */
+.prem-fondo{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:radial-gradient(120% 80% at 50% 0%,#24103a 0%,var(--uva) 40%,var(--noche) 100%)}
+.prem-fondo i{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;mix-blend-mode:screen;animation:premFlota 24s ease-in-out infinite alternate}
+.prem-fondo i:nth-child(1){width:60vmax;height:60vmax;left:-20vmax;top:-25vmax;background:radial-gradient(circle,rgba(220,181,60,.5),transparent 65%)}
+.prem-fondo i:nth-child(2){width:55vmax;height:55vmax;right:-22vmax;top:10vh;background:radial-gradient(circle,rgba(178,96,1,.4),transparent 65%);animation-duration:30s}
+.prem-fondo i:nth-child(3){width:50vmax;height:50vmax;left:10vw;bottom:-30vmax;background:radial-gradient(circle,rgba(86,18,162,.55),transparent 65%);animation-duration:36s}
+.prem-fondo b{position:absolute;inset:-50%;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes premFlota{to{transform:translate(6vmax,4vmax) scale(1.12)}}
+
+/* ---------- Encabezado ---------- */
+html.premium .header-main{background:rgba(18,10,28,.72)!important;border-bottom:1px solid rgba(220,181,60,.18)!important}
+html.premium .header-main .logo{font-family:var(--fd)!important;letter-spacing:.14em!important;text-shadow:none!important;
+  background:linear-gradient(100deg,var(--oro3),#fff3c4 45%,var(--oro) 60%,var(--oro3));background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:premBrillo 7s linear infinite}
+html.premium .header-main .logo span{-webkit-text-fill-color:#cbbbd9;color:#cbbbd9!important}
+@keyframes premBrillo{to{background-position:-220% 0}}
+
+/* ---------- Tarjetas marfil ---------- */
+html.premium .form-container{position:relative;isolation:isolate;background:var(--marfil)!important;color:var(--tinta)!important;border:0!important;border-radius:26px!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 30px 60px -20px rgba(0,0,0,.65),0 0 0 1px rgba(220,181,60,.28)!important;backdrop-filter:none!important}
+html.premium .form-container::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;z-index:-1;pointer-events:none;
+  background:conic-gradient(from var(--ang),transparent 0 70%,rgba(220,181,60,.95) 80%,rgba(178,96,1,.8) 88%,transparent 95%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:premGira 9s linear infinite}
+@keyframes premGira{to{--ang:360deg}}
+html.premium .form-title,html.premium .form-container h2{font-family:var(--fd)!important;font-weight:600!important;color:var(--tinta)!important;letter-spacing:-.005em}
+html.premium .form-subtitle{color:var(--tinta2)!important}
+html.premium .step-pane h3,html.premium .step-pane h4{font-family:var(--fd)!important;font-weight:600!important;color:var(--tinta)!important;font-size:1.45rem}
+html.premium .step-pane h4{font-size:1.15rem}
+html.premium .form-container p,html.premium .form-container .muted{color:var(--tinta2)}
+html.premium .step-pane.show{animation:premEntra .6s cubic-bezier(.2,.8,.2,1)}
+@keyframes premEntra{from{opacity:0;transform:translateX(26px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+
+/* ---------- Campos ---------- */
+html.premium .form-container .form-group label{color:var(--tinta2)!important;font:700 .74rem var(--fb)!important;letter-spacing:.06em;text-transform:uppercase}
+html.premium .form-container .input,html.premium .form-container select.input,html.premium .form-container textarea.input{
+  background:#fff!important;color:var(--tinta)!important;border:1.5px solid var(--linea)!important;border-radius:14px!important;box-shadow:none!important;font:600 1rem var(--fb)!important;min-width:0;max-width:100%}
+html.premium .form-container .input:focus{border-color:var(--oro)!important;box-shadow:0 0 0 4px rgba(220,181,60,.22),0 8px 20px -10px rgba(220,181,60,.6)!important}
+html.premium .form-container .input.invalid{border-color:rgba(194,65,59,.65)!important;animation:premTiembla .35s}
+html.premium .form-container .input.prem-ok{border-color:rgba(31,157,107,.6)!important;background-image:radial-gradient(circle at calc(100% - 22px) 50%,var(--ok) 9px,transparent 10px)!important}
+@keyframes premTiembla{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+html.premium select.input option{background:#fff;color:var(--tinta)}
+html.premium input[type="date"]::-webkit-calendar-picker-indicator{filter:none}
+html.premium .error-msg{color:var(--mal)!important}
+
+/* ---------- Progreso ---------- */
+html.premium .xp-bar-container{background:#fff!important;border:1px solid var(--linea)!important;box-shadow:none!important}
+html.premium .xp-bar-container span{color:var(--oroOsc)!important}
+html.premium #xpBar{background:linear-gradient(90deg,var(--bronce),var(--oro3),var(--oro2))!important}
+html.premium .prem-paso{display:flex;justify-content:space-between;align-items:baseline;margin:-8px 0 14px}
+html.premium .prem-paso b{font:600 1.25rem var(--fd);color:var(--tinta)}
+html.premium .prem-paso span{font:700 .7rem var(--fb);letter-spacing:.12em;text-transform:uppercase;color:var(--tinta2)}
+html.premium .progress .step{background:#fff!important;color:var(--tinta2)!important;border:1.5px solid var(--linea)!important;box-shadow:none!important;font-family:var(--fb)!important}
+html.premium .progress .step.active{background:linear-gradient(180deg,#f3dc8a,var(--oro))!important;color:#1c1306!important;border-color:var(--oro3)!important;box-shadow:0 0 0 4px rgba(220,181,60,.25)!important}
+html.premium .progress .step.completed{background:var(--ok)!important;color:#fff!important;border-color:var(--ok)!important}
+html.premium .progress::before,html.premium .progress-line{background:var(--linea)}
+html.premium .progress-line{background:linear-gradient(90deg,var(--bronce),var(--oro))!important}
+
+/* ---------- Buzones con vista previa ---------- */
+html.premium .form-container .file-upload,html.premium .form-container .file-label{background:linear-gradient(135deg,rgba(220,181,60,.08),rgba(108,74,148,.05))!important;border-color:rgba(194,164,72,.55)!important;color:var(--tinta)!important}
+html.premium .form-container .file-upload{border-radius:18px!important;transition:transform .25s,box-shadow .25s}
+html.premium .form-container .file-upload:hover{transform:translateY(-2px);box-shadow:0 14px 30px -16px rgba(86,18,162,.45)}
+html.premium .form-container .file-upload.has-file{border-style:solid!important;border-color:rgba(31,157,107,.5)!important;background:linear-gradient(135deg,rgba(31,157,107,.08),rgba(220,181,60,.06))!important}
+html.premium .form-container .file-label span{color:var(--tinta)!important}
+html.premium .form-container .file-name{color:var(--ok)!important;font-weight:700}
+.prem-mini{display:block;width:72px;height:92px;margin:10px auto 0;border-radius:10px;overflow:hidden;background:#fff;border:1px solid var(--linea);box-shadow:0 8px 18px -10px rgba(0,0,0,.4);animation:premPop .45s cubic-bezier(.3,1.6,.5,1)}
+.prem-mini img,.prem-mini canvas{width:100%;height:100%;object-fit:cover;display:block}
+.prem-cambiar{display:block;margin-top:6px;font:700 .72rem var(--fb);color:var(--oroOsc);letter-spacing:.04em}
+@keyframes premPop{from{transform:scale(.4);opacity:0}}
+
+/* ---------- Avisos dentro de la tarjeta ---------- */
+html.premium .form-container .alert{border-radius:14px!important}
+
+/* ---------- Botones ---------- */
+html.premium .btn-primary,html.premium .btn-success{position:relative;isolation:isolate;border:0!important;color:#1c1306!important;font-family:var(--fb)!important;font-weight:800!important;letter-spacing:.03em;
+  background:linear-gradient(180deg,#f3dc8a 0%,var(--oro) 45%,var(--oro3) 100%)!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 -2px 0 rgba(0,0,0,.18) inset,0 10px 24px -8px rgba(220,181,60,.75),0 2px 0 var(--oroOsc)!important}
+html.premium .btn-primary::before,html.premium .btn-success::before{content:"";position:absolute;inset:-2px;border-radius:inherit;z-index:-2;
+  background:conic-gradient(from var(--ang),var(--oro),#fff6d0,var(--bronce),#2a1747,var(--oro2),var(--oro));animation:premGira 3.5s linear infinite}
+html.premium .btn-primary::after,html.premium .btn-success::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:-1;
+  background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%),linear-gradient(180deg,#f3dc8a 0%,var(--oro) 45%,var(--oro3) 100%);
+  background-size:250% 100%,100% 100%;background-position:150% 0,0 0;animation:premDestello 3.2s ease-in-out infinite}
+@keyframes premDestello{0%,55%{background-position:150% 0,0 0}100%{background-position:-60% 0,0 0}}
+html.premium .btn-success{background:linear-gradient(180deg,#f3dc8a 0%,var(--oro) 45%,var(--oro3) 100%)!important}
+html.premium .btn-primary:hover:not(:disabled),html.premium .btn-success:hover:not(:disabled){filter:brightness(1.06);transform:translateY(-1px)}
+html.premium .btn-primary:active,html.premium .btn-success:active{transform:translateY(2px) scale(.99)}
+html.premium .btn-secondary{background:#fff!important;color:var(--tinta)!important;border:1.5px solid var(--linea)!important;font-family:var(--fb)!important;font-weight:700!important}
+html.premium .btn-outline{border-color:var(--oro3)!important;color:var(--oroOsc)!important;background:#fff!important}
+html.premium .btn:focus-visible{outline:3px solid var(--oro);outline-offset:3px}
+
+/* ---------- Resumen ---------- */
+html.premium .summary-section{background:#fff!important;border:1px solid var(--linea)!important;border-radius:18px!important}
+html.premium .summary-section h4,html.premium .summary-title{font-family:var(--fd)!important;color:var(--tinta)!important}
+html.premium .summary-label{color:var(--tinta2)!important}html.premium .summary-value,html.premium .summary-file{color:var(--tinta)!important}
+
+/* ---------- Pie ---------- */
+html.premium .footer{background:transparent!important;color:#a99bb8!important;border:0!important}
+
+/* chispas al enviar */
+.prem-chispa{position:fixed;width:7px;height:7px;border-radius:50%;pointer-events:none;z-index:99999;animation:premChispa 1.2s ease-out forwards}
+@keyframes premChispa{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+
+@media (prefers-reduced-motion:reduce){html.premium *,html.premium *::before,html.premium *::after{animation:none!important;transition:none!important}}
