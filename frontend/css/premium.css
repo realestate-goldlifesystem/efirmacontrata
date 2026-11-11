@@ -177,3 +177,10 @@ html.premium .form-container .file-upload .file-label > span{max-width:100%;over
 html.premium .form-container .file-upload .file-name{font-size:.82rem}
 html.premium .form-container .file-upload .prem-mini{margin:4px auto 0}
 html.premium .form-container .file-upload .prem-cambiar{white-space:nowrap}
+
+/* Servicios públicos del propietario: tarjetas claras (antes quedaban grises por el fondo negro translúcido) */
+html.premium .form-container .servicio-item{background:#fff!important;border:1.5px solid var(--linea)!important;color:var(--tinta)!important;border-radius:16px!important}
+html.premium .form-container .servicio-item.selected{background:linear-gradient(135deg,rgba(220,181,60,.1),#fff)!important;border-color:var(--oro3)!important;box-shadow:0 0 0 4px rgba(220,181,60,.15)!important}
+html.premium .form-container .servicio-item.completed{background:linear-gradient(135deg,rgba(31,157,107,.08),#fff)!important;border-color:rgba(31,157,107,.55)!important;box-shadow:0 0 0 4px rgba(31,157,107,.12)!important}
+html.premium .form-container .servicio-item input[type=checkbox]{accent-color:var(--oro3);width:18px;height:18px}
+html.premium .form-container .servicio-upload{background:transparent!important}
