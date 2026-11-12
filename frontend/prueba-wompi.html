@@ -26,12 +26,13 @@ async function revisar() {
   const ref = localStorage.getItem('wompiRef');
   if (!ref) return;
   est.textContent = 'Referencia ' + ref + '\nEsperando el aviso automático (webhook) de Wompi…';
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 60; i++) {
     const r = await llamar({ accion: 'wompiPruebaEstado', referencia: ref });
     if (r.llego) {
       est.textContent = 'Referencia ' + ref + '\n✅ Aviso recibido por el sistema\nEstado: ' + r.estado + '\nMonto: $' + Number(r.monto).toLocaleString('es-CO') +
-        '\nMedio: ' + r.medio + '\nFirma del evento: ' + (r.firmaValida ? 'válida ✅' : 'NO válida ❌');
-      return;
+        '\nMedio: ' + r.medio + '\nFirma del evento: ' + (r.firmaValida ? 'válida ✅' : 'NO válida ❌') +
+        '\n\n— Dispersión al propietario (92 %) —\n' + ((r.dispersion || []).map(d => '$' + Number(d.monto).toLocaleString('es-CO') + ' · ' + d.estado + (d.firma ? ' · firma ' + d.firma : '')).join('\n') || 'Esperando…');
+      if ((r.dispersion || []).some(d => /APPROVED|TOTAL_PAYMENT|FAILED|ERROR/.test(d.estado))) return;
     }
     await new Promise(s => setTimeout(s, 3000));
   }
