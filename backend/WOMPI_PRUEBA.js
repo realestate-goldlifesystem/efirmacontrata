@@ -27,6 +27,8 @@ function wompiPruebaIniciar_(datos) {
   const monto = Math.max(1500, Math.round(Number(datos.monto) || 85000));
   const centavos = monto * 100;
   const ref = 'PRUEBA-' + Date.now();
+  const admin = Math.max(0, Math.min(monto, Math.round(Number(datos.admin) || 0)));
+  PropertiesService.getScriptProperties().setProperty('WOMPI_PRUEBA_' + ref, JSON.stringify({ admin: admin, pct: 8 }));
   const firma = _sha256Hex_(ref + centavos + 'COP' + WOMPI_LLAVES.integridad);
   const url = 'https://checkout.wompi.co/p/?public-key=' + encodeURIComponent(WOMPI_LLAVES.publica) +
     '&currency=COP&amount-in-cents=' + centavos + '&reference=' + encodeURIComponent(ref) +
@@ -99,7 +101,11 @@ function _ptFetch_(metodo, ruta, cuerpo, idem) {
 /** Prueba: tras un recaudo aprobado, gira el 92 % (comisión 8 %) a un propietario ficticio. */
 function wompiDispersarPrueba_(tx) {
   const total = Math.round((tx.amount_in_cents || 0) / 100);
-  const alPropietario = Math.round(total * 0.92);
+  // Reparto: total = canon + administración. Comisión = 8 % del canon. Al propietario: canon − comisión.
+  let cfg = { admin: 0, pct: 8 };
+  try { cfg = JSON.parse(PropertiesService.getScriptProperties().getProperty('WOMPI_PRUEBA_' + tx.reference)) || cfg; } catch (e) {}
+  const canon = total - (cfg.admin || 0);
+  const alPropietario = Math.round(canon * (100 - cfg.pct) / 100);
   const refDisp = 'DISP-' + String(tx.reference || tx.id).replace(/[^A-Za-z0-9-]/g, '');
   const cuerpo = {
     reference: refDisp, accountId: 'WOMPI_ACCOUNT', paymentType: 'OTHER', transactionStatus: 'APPROVED',

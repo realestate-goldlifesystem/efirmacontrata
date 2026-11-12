@@ -7,17 +7,33 @@ input{width:100%;padding:10px;font-size:16px;margin:8px 0 16px;box-sizing:border
 #estado{margin-top:20px;padding:14px;border-radius:10px;background:#f5f5f4;white-space:pre-line}</style></head>
 <body>
 <h2>Prueba de pago con Wompi (modo pruebas)</h2>
-<label>Monto (COP)</label><input id="monto" type="number" value="85000">
+<label>Arriendo completo que paga el inquilino (COP)</label><input id="monto" type="number" value="85000">
+<label>De eso, administración del conjunto (COP)</label><input id="admin" type="number" value="0">
+<div id="reparto" style="background:#fafaf9;border:1px solid #e7e5e4;border-radius:10px;padding:12px;margin-bottom:16px;font-size:14px;line-height:1.6"></div>
 <button id="pagar">Pagar con Wompi</button>
 <div id="estado">Sin pago en curso.</div>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
 const est = document.getElementById('estado');
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => '$' + Math.round(n).toLocaleString('es-CO');
+const q = new URLSearchParams(location.search);
+if (q.get('monto')) $('monto').value = q.get('monto');
+if (q.get('admin')) $('admin').value = q.get('admin');
+function pintarReparto() {
+  const t = +$('monto').value || 0, a = +$('admin').value || 0, canon = t - a, com = canon * 0.08, prop = canon - com;
+  const recaudo = (t * 0.0265 + 700) * 1.19, disp = (1849 + prop * 0.004) * 1.19;
+  $('reparto').innerHTML = 'Canon: <b>' + fmt(canon) + '</b> · Administración: ' + fmt(a) +
+    '<br>Tu comisión 8 % del canon: <b>' + fmt(com) + '</b><br>Se dispersa al propietario: <b>' + fmt(prop) + '</b>' +
+    '<br><br>Costo Wompi cobro (2,65 % + 700 + IVA): ' + fmt(recaudo) + '<br>Costo Wompi dispersión (1.849 + 0,4 % + IVA): ' + fmt(disp) +
+    '<br>Te queda de la comisión: <b>' + fmt(com - recaudo - disp) + '</b>' + (a ? '<br><small>La administración (' + fmt(a) + ') queda en tu cuenta Wompi para girarla al conjunto.</small>' : '');
+}
+$('monto').oninput = $('admin').oninput = pintarReparto; pintarReparto();
 const llamar = (d) => fetch(API, { method: 'POST', body: JSON.stringify(d) }).then(r => r.json());
 document.getElementById('pagar').onclick = async () => {
   est.textContent = 'Preparando pago…';
   const volver = location.origin + location.pathname;
-  const r = await llamar({ accion: 'wompiPruebaIniciar', monto: document.getElementById('monto').value, volver });
+  const r = await llamar({ accion: 'wompiPruebaIniciar', monto: $('monto').value, admin: $('admin').value, volver });
   if (!r.success) { est.textContent = 'Error: ' + (r.error || ''); return; }
   localStorage.setItem('wompiRef', r.referencia);
   location.href = r.url;
@@ -31,13 +47,13 @@ async function revisar() {
     if (r.llego) {
       est.textContent = 'Referencia ' + ref + '\n✅ Aviso recibido por el sistema\nEstado: ' + r.estado + '\nMonto: $' + Number(r.monto).toLocaleString('es-CO') +
         '\nMedio: ' + r.medio + '\nFirma del evento: ' + (r.firmaValida ? 'válida ✅' : 'NO válida ❌') +
-        '\n\n— Dispersión al propietario (92 %) —\n' + ((r.dispersion || []).map(d => '$' + Number(d.monto).toLocaleString('es-CO') + ' · ' + d.estado + (d.firma ? ' · firma ' + d.firma : '')).join('\n') || 'Esperando…');
+        '\n\n— Dispersión al propietario —\n' + ((r.dispersion || []).map(d => '$' + Number(d.monto).toLocaleString('es-CO') + ' · ' + d.estado + (d.firma ? ' · firma ' + d.firma : '')).join('\n') || 'Esperando…');
       if ((r.dispersion || []).some(d => /APPROVED|TOTAL_PAYMENT|FAILED|ERROR/.test(d.estado))) return;
     }
     await new Promise(s => setTimeout(s, 3000));
   }
   est.textContent += '\n(No llegó en 2 minutos. Revisa la URL de eventos en Wompi.)';
 }
-if (new URLSearchParams(location.search).get('id')) revisar();
+if (q.get('id')) revisar();
 </script>
 </body></html>
