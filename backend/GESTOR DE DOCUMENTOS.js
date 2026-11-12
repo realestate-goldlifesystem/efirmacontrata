@@ -618,6 +618,7 @@ function doPost(e) {
     const datosJson = e.postData.contents;
     const datos = JSON.parse(datosJson);
     const accion = datos.accion || datos.type || datos.action;
+    if (datos.event && datos.signature && typeof wompiEventoWebhook_ === 'function') return ContentService.createTextOutput(JSON.stringify(wompiEventoWebhook_(datos))).setMimeType(ContentService.MimeType.JSON);
     activarSinCorreoPeticion_(datos);
     let result;
 
@@ -752,6 +753,8 @@ function doPost(e) {
           result = { success: false, error: 'Webhook no implementado' };
         }
         break;
+      case 'wompiPruebaIniciar': result = wompiPruebaIniciar_(datos); break;
+      case 'wompiPruebaEstado': result = wompiPruebaEstado_(datos); break;
       case 'crearPreferenciaPago':
         if (typeof crearPreferenciaPago === 'function') {
           result = crearPreferenciaPago(datos);

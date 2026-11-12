@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prueba Wompi</title>
+<style>body{font-family:system-ui,sans-serif;max-width:480px;margin:40px auto;padding:0 16px;color:#1c1917;background:#fff}
+button{background:#b8860b;color:#fff;border:0;padding:14px 20px;border-radius:10px;font-size:16px;font-weight:bold;width:100%;cursor:pointer}
+input{width:100%;padding:10px;font-size:16px;margin:8px 0 16px;box-sizing:border-box}
+#estado{margin-top:20px;padding:14px;border-radius:10px;background:#f5f5f4;white-space:pre-line}</style></head>
+<body>
+<h2>Prueba de pago con Wompi (modo pruebas)</h2>
+<label>Monto (COP)</label><input id="monto" type="number" value="85000">
+<button id="pagar">Pagar con Wompi</button>
+<div id="estado">Sin pago en curso.</div>
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+const est = document.getElementById('estado');
+const llamar = (d) => fetch(API, { method: 'POST', body: JSON.stringify(d) }).then(r => r.json());
+document.getElementById('pagar').onclick = async () => {
+  est.textContent = 'Preparando pago…';
+  const volver = location.origin + location.pathname;
+  const r = await llamar({ accion: 'wompiPruebaIniciar', monto: document.getElementById('monto').value, volver });
+  if (!r.success) { est.textContent = 'Error: ' + (r.error || ''); return; }
+  localStorage.setItem('wompiRef', r.referencia);
+  location.href = r.url;
+};
+async function revisar() {
+  const ref = localStorage.getItem('wompiRef');
+  if (!ref) return;
+  est.textContent = 'Referencia ' + ref + '\nEsperando el aviso automático (webhook) de Wompi…';
+  for (let i = 0; i < 40; i++) {
+    const r = await llamar({ accion: 'wompiPruebaEstado', referencia: ref });
+    if (r.llego) {
+      est.textContent = 'Referencia ' + ref + '\n✅ Aviso recibido por el sistema\nEstado: ' + r.estado + '\nMonto: $' + Number(r.monto).toLocaleString('es-CO') +
+        '\nMedio: ' + r.medio + '\nFirma del evento: ' + (r.firmaValida ? 'válida ✅' : 'NO válida ❌');
+      return;
+    }
+    await new Promise(s => setTimeout(s, 3000));
+  }
+  est.textContent += '\n(No llegó en 2 minutos. Revisa la URL de eventos en Wompi.)';
+}
+if (new URLSearchParams(location.search).get('id')) revisar();
+</script>
+</body></html>
