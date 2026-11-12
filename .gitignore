@@ -69,3 +69,6 @@ _herramientas_locales/_debug_*.js
 _herramientas_locales/*.png
 _herramientas_locales/preview_*.html
 _herramientas_locales/prueba_*.json
+
+# Llaves de Wompi (solo van a Apps Script)
+backend/WOMPI_LLAVES.js
