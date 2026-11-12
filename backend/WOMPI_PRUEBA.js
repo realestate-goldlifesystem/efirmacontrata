@@ -115,8 +115,40 @@ function wompiDispersarPrueba_(tx) {
   };
   const r = _ptFetch_('post', '/payouts', cuerpo, refDisp);
   const d = r.json.data || {};
-  _hojaDispersionesWompi_().appendRow([new Date(), tx.reference || '', refDisp, d.id || '', '', alPropietario,
-    r.code < 300 ? (d.status || 'ENVIADO') : 'ERROR ' + r.code, '', JSON.stringify(r.json).slice(0, 5000)]);
+  _hojaDispersionesWompi_().appendRow([new Date(), tx.reference || '', refDisp, d.payoutId || d.id || '', '', alPropietario,
+    r.code < 300 ? 'ENVIADO' : 'ERROR ' + r.code, '', JSON.stringify(r.json).slice(0, 5000)]);
+  _asegurarTriggerGirosWompi_();
+  Utilities.sleep(4000);
+  wompiConfirmarGiros();
+}
+
+/**
+ * Constancia de cada giro: le pregunta a Wompi el estado de los giros sin confirmar y guarda
+ * ID de transacción, estado final, fecha de confirmación y la respuesta completa de Wompi.
+ * No depende del aviso automático (en sandbox no llega). Corre también cada 10 minutos.
+ */
+function wompiConfirmarGiros() {
+  const hoja = _hojaDispersionesWompi_();
+  const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0];
+  if (enc.indexOf('Confirmado por Wompi') < 0) { hoja.getRange(1, enc.length + 1, 1, 2).setValues([['Confirmado por Wompi', 'Constancia Wompi']]); }
+  const filas = hoja.getDataRange().getValues();
+  for (let i = 1; i < filas.length; i++) {
+    const lote = String(filas[i][3] || ''), estado = String(filas[i][6] || '');
+    if (!lote || !/^(ENVIADO|PENDING|PROCESSING)/.test(estado)) continue;
+    const r = _ptFetch_('get', '/payouts/' + lote + '/transactions');
+    const t = ((r.json.data || {}).records || [])[0];
+    if (!t) continue;
+    hoja.getRange(i + 1, 5).setValue(t.id);
+    hoja.getRange(i + 1, 7).setValue(t.status);
+    if (/APPROVED|FAILED|CANCELLED|REJECTED/.test(t.status)) {
+      hoja.getRange(i + 1, 10, 1, 2).setValues([[new Date(), JSON.stringify(t).slice(0, 5000)]]);
+    }
+  }
+}
+
+function _asegurarTriggerGirosWompi_() {
+  const ya = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'wompiConfirmarGiros'; });
+  if (!ya) ScriptApp.newTrigger('wompiConfirmarGiros').timeBased().everyMinutes(10).create();
 }
 
 /** Evento de Pagos a Terceros (payout.updated / transaction.updated con amountInCents). */
