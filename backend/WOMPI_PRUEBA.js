@@ -45,8 +45,16 @@ function wompiEventoWebhook_(ev) {
     }).join('') + ev.timestamp + WOMPI_LLAVES.eventos;
     valida = _sha256Hex_(cadena) === String(ev.signature.checksum).toLowerCase();
   } catch (e) { valida = false; }
-  _hojaEventosWompi_().appendRow([new Date(), tx.reference || '', tx.id || '', tx.status || '',
+  // Apps Script responde con redirección (no 200), así que Wompi reintenta el mismo aviso.
+  // Se anota una sola vez por transacción + estado.
+  const hoja = _hojaEventosWompi_();
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const ya = hoja.getDataRange().getValues().some(function (f) { return String(f[2]) === String(tx.id) && String(f[3]) === String(tx.status); });
+    if (ya) return { success: true, repetido: true };
+    hoja.appendRow([new Date(), tx.reference || '', tx.id || '', tx.status || '',
     (tx.amount_in_cents || 0) / 100, tx.payment_method_type || '', valida ? 'SÍ' : 'NO', ev.environment || '', JSON.stringify(ev)]);
+  } finally { lock.releaseLock(); }
   return { success: true };
 }
 
