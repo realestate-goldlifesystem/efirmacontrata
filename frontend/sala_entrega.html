@@ -432,6 +432,8 @@
           agendando = false; cerrar();
           if (!r.ok) { alert(r.mensaje || 'No pudimos agendar ese horario.'); return cargar(); }
           info.estado = 'AGENDADA';
+          // La mudanza cuenta desde la entrega acordada, no desde los horarios propuestos
+          if (info.proceso && info.proceso.reglas) info.proceso.reglas.entregas = [ts];
           pintarExito('¡La entrega quedó agendada!', textoSlot(ts), r.mensaje || '');
         }).catch(() => { pr.fin(false); agendando = false; qq('.no').disabled = false; qq('.no').classList.remove('bloqueado'); qq('.si').disabled = false; qq('.si').textContent = 'Sí, agendar la entrega'; alert('Error de red. Intenta de nuevo.'); });
       };
@@ -963,6 +965,8 @@
     function botonSiguienteProp() {
       if (info.rol !== 'PROPIETARIO' || $('navProp') || info.estado !== 'AGENDADA') return;
       const div = document.createElement('div'); div.className = 'entra'; div.id = 'navProp';
+      // Recién aceptada la entrega y sin mudanza propuesta: la espera se explica ahí mismo (11-nov-2026)
+      if (!P().propuesta) { div.innerHTML = '<div class="bloque" style="margin-top:14px;">' + esperaMudanzaProp(P()) + '</div>'; $('vista').appendChild(div); return; }
       div.innerHTML = '<button class="principal" id="aMudanzaP">Siguiente: la mudanza del inquilino ›</button>';
       $('vista').appendChild(div);
       $('aMudanzaP').onclick = () => { pasoP = 1; recargar(); };
@@ -1101,6 +1105,23 @@
         '<p class="nota centro" style="margin-top:16px;">Este paso ya se realizó. Antes de la entrega te recordaremos la cita.</p></div>';
     }
 
+    // Espera clara del propietario (11-nov-2026): le toca al inquilino elegir la mudanza, desde cuándo puede y qué sigue
+    function esperaMudanzaProp(p) {
+      const r = p.reglas || {}, quien = esc(primerNombre(info.otro) || 'el inquilino');
+      const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'], DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+      let desde = r.minFecha ? new Date(r.minFecha + 'T08:00:00-05:00') : null;
+      if (r.entregas && r.entregas.length) { const e = new Date(Math.max.apply(null, r.entregas) + 3600000); if (!desde || e > desde) desde = e; }
+      const hhmm = (d) => { let h = d.getHours(), m = d.getMinutes(); const ap = h < 12 ? 'a. m.' : 'p. m.'; return (h % 12 || 12) + (m ? ':' + String(m).padStart(2, '0') : '') + ' ' + ap; };
+      const desdeTxt = desde ? DIA[desde.getDay()] + ' ' + desde.getDate() + ' de ' + MES[desde.getMonth()] + (desde.getHours() > 8 ? ' a partir de las ' + hhmm(desde) : '') : '';
+      return '<div class="aviso" style="text-align:center;padding:16px 14px;">' +
+        '<div style="font-size:26px;">⏳</div>' +
+        `<div style="font-size:16px;font-weight:700;margin-top:4px;">Ahora le toca a ${quien}</div>` +
+        `<div style="margin-top:6px;">Está eligiendo el día de su mudanza. No tienes que hacer nada por ahora.</div></div>` +
+        '<div class="resumenFila"><span>📅</span><div>' + (desdeTxt ? `<b>Puede mudarse desde el ${esc(desdeTxt)}</b><br>` : '') +
+        `<span class="nota">${r.esCasa ? 'De lunes a sábado.' : 'Lunes a viernes de 8 a. m. a 5 p. m. y sábados de 8 a. m. a 12 m. Nunca en festivos.'}</span></div></div>` +
+        `<div class="resumenFila"><span>📬</span><div>Cuando ${quien} la proponga, <b>te llega un correo</b> para aprobarla aquí mismo.<br><span class="nota">Puedes cerrar esta página.</span></div></div>`;
+    }
+
     // ================= Propietario: aprobar la mudanza, formato y envío a la administración =================
     function pintarPropietario(solo) {
       const p = P();
@@ -1110,7 +1131,7 @@
       let h = solo === 'documento' ? '' : '<div class="bloque entra"><h2>🚚 La mudanza del inquilino</h2>' +
         '<p class="nota">Es el día en que el inquilino trae sus cosas (no es la entrega de las llaves).</p>';
       if (solo === 'documento') {}
-      else if (!p.propuesta) h += '<p class="nota">El inquilino todavía no propone el día de su mudanza. Te avisamos por correo cuando lo haga.</p>';
+      else if (!p.propuesta) h += esperaMudanzaProp(p);
       else {
         h += `<div class="resumenFila"><span>🚚</span><div><b>${esc(p.propuesta.texto.charAt(0).toUpperCase() + p.propuesta.texto.slice(1))}</b><br>` +
           '<span class="nota">Día y hora de la mudanza</span></div></div>' +
