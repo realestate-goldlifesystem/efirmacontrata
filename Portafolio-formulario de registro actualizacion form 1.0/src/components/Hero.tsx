@@ -43,11 +43,11 @@ export default function Hero({ onScrollTo, onOpenRegisterForm, onAgendar }: Hero
 
           {/* Core Interactive Actions */}
           {/* Tres acciones del mismo tamaño y forma; cambia solo el peso visual (5-nov-2026) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-3 pt-2 max-w-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 max-w-2xl">
             <button
               id="hero-cta-agendar"
               onClick={onAgendar}
-              className="sm:col-span-2 2xl:col-span-1 min-h-[56px] px-4 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer hover:-translate-y-0.5 active:scale-[0.98] bg-stone-900 text-brand-gold ring-1 ring-brand-gold/40 shadow-lg shadow-stone-900/20 hover:bg-stone-800"
+              className="sm:col-span-2 min-h-[56px] px-4 rounded-xl font-semibold text-[15px] flex items-center justify-center gap-2 transition-all duration-300 cursor-pointer hover:-translate-y-0.5 active:scale-[0.98] bg-stone-900 text-brand-gold ring-1 ring-brand-gold/40 shadow-lg shadow-stone-900/20 hover:bg-stone-800"
             >
               <CalendarCheck className="w-5 h-5 shrink-0" />
               <span className="leading-tight whitespace-nowrap">Deseo promocionar mi inmueble</span>
