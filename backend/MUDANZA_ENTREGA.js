@@ -453,6 +453,8 @@ function enviarAvisosPropietario(datos) {
     _guardarProcesoMudanza_(Object.assign({}, s.cita, { fila: fila }), p, 'se le envió al inquilino el resumen del propietario (' + avisos.length + ')');
     _prog_(datos, 85, 'Enviando el correo al inquilino');
     const sInq = Object.assign({}, s, { rol: 'INQUILINO', cita: Object.assign({}, s.cita, { fila: fila }) });
+    // Todo listo (11-nov-2026, CORREOS_ENTREGA.js): cierre con entrega y mudanza en una tarjeta
+    if (listo) { correoTodoListoEntrega_(sInq, fila); _prog_(datos, 96, 'Terminando'); return { ok: true, mensaje: 'Listo: le enviamos todo a ' + s.d.inquilino.split(' ')[0] + ' en un solo correo.' }; }
     _correoSala_(sInq, 'INQUILINO', listo ? '✅ Todo quedó listo para tu entrega - Gold Life' : '📬 El propietario respondió sobre tu entrega - Gold Life',
       listo ? 'TODO LISTO' : 'RESPUESTA DEL PROPIETARIO', cuerpo, listo ? '🔑 Ver mi sala de entrega' : '🔑 Abrir mi sala de entrega');
     _prog_(datos, 96, 'Terminando');

@@ -294,10 +294,9 @@ function aceptarSalaEntrega(datos) {
     try {
       const tokInq = String(valorCita(fila, col, 'TOKEN PROPIETARIO') || '');
       const c = { idCita: idCita, token: tokInq, nombre: s.d.inquilino, servicio: 'Entrega del inmueble', esEntrega: true, direccion: s.d.direccion, inicio: inicio, duracionMin: TIPOS_AGENDA.ENTREGA.duracionMin };
-      const m = correoPasoCita('AGENDADA', c);
-      enviarCorreoCita(s.d.correoInquilino, m.asunto, m.titulo, m.nombre,
-        m.mensaje + '<br><br>🚚 <strong>Ahora sigue tu mudanza:</strong> entra a tu sala de entrega y elige el día y la hora (siempre después de la entrega).',
-        htmlBotonesCorreo([{ texto: '🚚 Elegir mi mudanza', color: '#b8860b', url: urlSalaEntrega(idCita, 'i', tokInq) }]) + (m.secundario || ''),
+      // "Paso 1 listo" (11-nov-2026, CORREOS_ENTREGA.js): la entrega como avance y la mudanza como lo que sigue
+      const m = mensajePaso1Entrega_(c, _datosMudanzaDe(fila, col), urlSalaEntrega(idCita, 'i', tokInq));
+      enviarCorreoCita(s.d.correoInquilino, m.asunto, m.titulo, String(s.d.inquilino || '').split(' ')[0], m.mensaje, '',
         [archivoCalendarioCita(c)]);
     } catch (e) { Logger.log('No se pudo avisar al inquilino: ' + e.message); }
     _prog_(datos, 68, 'Enviando la confirmación al propietario');
