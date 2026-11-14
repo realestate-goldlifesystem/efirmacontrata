@@ -19,6 +19,7 @@ const LLAMADAS = {
   // [clave, minutos antes]; C90 = pedir confirmación
   AVISOS: [['H24', 1440], ['H3', 180], ['H2', 120], ['C90', 90], ['H1', 60], ['M30', 30], ['M15', 15], ['M5', 5], ['M0', 0]],
   PENDIENTES: ['PROGRAMADA', 'CONFIRMADA'],
+  DURACION_MIN: 30,   // bloque que ocupa cada llamada en el calendario
   COL_ID_LEAD: 'ID DE LEAD',
   ESTADO_ABRE: 'SEGUIMIENTO',
   URL_PAGINA: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/llamada.html'
@@ -169,15 +170,28 @@ function programarLlamada(d) {
   const col = columnasLlamada_(hoja);
   const leer = (k) => hoja.getRange(fila, col[k]).getValue();
 
+  // Cada llamada ocupa 30 min del calendario: no se cruza con otra llamada ni con citas,
+  // entregas, etc. (todas viven en el mismo calendario; las agendas ya lo respetan).
+  const finLlamada = new Date(inicio.getTime() + LLAMADAS.DURACION_MIN * 60000);
+  const eventoPropio = LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1 ? String(leer('LLAMADA EVENTO') || '') : '';
+  try {
+    const choque = CalendarApp.getDefaultCalendar().getEvents(inicio, finLlamada)
+      .find(e => !e.isAllDayEvent() && e.getId() !== eventoPropio);
+    if (choque) {
+      const tz = 'America/Bogota', f = (x) => Utilities.formatDate(x, tz, 'h:mm a').toLowerCase();
+      return { success: false, error: 'Ese horario ya está ocupado: "' + choque.getTitle() + '" de ' + f(choque.getStartTime()) + ' a ' + f(choque.getEndTime()) + '. Elige otra hora.' };
+    }
+  } catch (e) { Logger.log('No se pudo revisar el calendario: ' + e.message); }
+
   // Una sola pendiente: la anterior se reemplaza
-  if (LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1) borrarEventoLlamadaId_(String(leer('LLAMADA EVENTO') || ''));
+  if (eventoPropio) borrarEventoLlamadaId_(eventoPropio);
 
   const id = 'LL-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
   const nota = String(d.nota || '').trim().slice(0, 500);
   let idEvento = '';
   try {
     const ev = CalendarApp.getDefaultCalendar().createEvent('📞 SEGUIMIENTO: ' + d.nombre + (d.servicio ? ' (' + d.servicio + ')' : ''),
-      inicio, new Date(inicio.getTime() + 15 * 60000),
+      inicio, finLlamada,
       { description: 'Llamada de seguimiento (' + id + ' · ' + d.idLead + ')\nCelular: ' + d.celular + (nota ? '\nNota: ' + nota : '') });
     ev.removeAllReminders();
     idEvento = ev.getId();
