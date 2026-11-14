@@ -218,7 +218,9 @@ function programarLlamada(d) {
   const poner = (k, v) => hoja.getRange(fila, col[k]).setValue(v);
   poner('LLAMADA ID', id); poner('LLAMADA ESTADO', 'PROGRAMADA');
   // Los avisos que ya "pasaron" no se mandan de golpe: se sigue desde el siguiente
-  poner('LLAMADA AVISO', avisoVigenteLlamada_((inicio.getTime() - Date.now()) / 60000));
+  // El aviso que toca AHORA sí se envía (en la siguiente pasada del motor, máx. 5 min);
+  // los anteriores no, para no mandar varios de golpe.
+  poner('LLAMADA AVISO', avisoAnteriorLlamada_(avisoVigenteLlamada_((inicio.getTime() - Date.now()) / 60000)));
   poner('LLAMADA TOKEN', Utilities.getUuid()); poner('LLAMADA EVENTO', idEvento); poner('LLAMADA NOTA', nota);
 
   anotarEnCRM_(hoja, fila, (nota ? nota + '\n' : '') + 'Llamada programada: ' + textoFechaLlamada_(inicio) + ' (' + id + ')', d.estadoNuevo);
@@ -246,6 +248,22 @@ function textoFechaLlamada_(d) {
 }
 
 // ---------- Motor de avisos (lo llama el motor de citas cada 5 min) ----------
+/** El paso anterior a `paso` ('' si es el primero): así `paso` queda por enviar. */
+function avisoAnteriorLlamada_(paso) {
+  const orden = LLAMADAS.AVISOS.map(x => x[0]);
+  const i = orden.indexOf(paso);
+  return i > 0 ? orden[i - 1] : '';
+}
+/** "en 2 horas y 50 minutos", "en 25 minutos", "mañana", "ahora": el tiempo real que falta. */
+function textoFaltaLlamada_(inicio) {
+  const min = Math.round((inicio.getTime() - Date.now()) / 60000 / 5) * 5;
+  if (min <= 2) return 'ahora';
+  const tz = 'America/Bogota', dia = (d) => Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+  if (min > 180 && dia(inicio) !== dia(new Date())) return 'mañana';
+  const h = Math.floor(min / 60), m = min % 60;
+  const ph = h ? h + (h === 1 ? ' hora' : ' horas') : '', pm = m ? m + ' minutos' : '';
+  return 'en ' + [ph, pm].filter(Boolean).join(' y ');
+}
 function avisoVigenteLlamada_(minFaltan) {
   let vigente = '';
   LLAMADAS.AVISOS.forEach(([k, m]) => { if (minFaltan <= m) vigente = k; });
@@ -302,7 +320,7 @@ function enviarAvisoLlamada_(paso, v, nombreHoja, inicio) {
   const negocio = nombreHoja.slice(-1) === 'V' ? 'Venta' : 'Arriendo';
   const nota = String(v('LLAMADA NOTA') || '');
   const ubicacion = [v('UBICACIÓN'), v('LOCALIDAD')].filter(Boolean).join(', ');
-  const cuando = { H24: 'mañana', H3: 'en 3 horas', H2: 'en 2 horas', C90: 'en 1 hora y 30 minutos', H1: 'en 1 hora', M30: 'en 30 minutos', M15: 'en 15 minutos', M5: 'en 5 minutos', M0: 'ahora' }[paso];
+  const cuando = paso === 'M0' ? 'ahora' : textoFaltaLlamada_(inicio);   // tiempo real que falta
   const tarjeta = '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:14px 0;border-radius:12px;background:#1c1917;"><tr><td style="padding:16px 18px;font-family:Arial,sans-serif;">' +
     '<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">LLAMADA DE SEGUIMIENTO</div>' +
     `<div style="color:#fff;font-size:19px;font-weight:bold;margin-top:4px;">${nombre}</div>` +
