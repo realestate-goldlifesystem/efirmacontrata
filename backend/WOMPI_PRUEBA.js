@@ -203,7 +203,8 @@ function wompiCrearTransaccion_(d) {
     user_legal_id: String(d.documento || ''), financial_institution_code: String(d.banco || ''), payment_description: desc });
   if (d.metodo === 'NEQUI') pm.phone_number = String(d.celular || '');
   if (d.metodo === 'BANCOLOMBIA_TRANSFER') Object.assign(pm, { user_type: 'PERSON', payment_description: desc });
-  if (d.metodo === 'BANCOLOMBIA_COLLECT') { /* sin datos extra: Wompi devuelve convenio y referencia */ }
+  // Efectivo: Wompi devuelve convenio y referencia. En sandbox exige simular el resultado del pago.
+  if (d.metodo === 'BANCOLOMBIA_COLLECT' && WOMPI_API_PRUEBAS_.indexOf('sandbox') >= 0) pm.sandbox_status = d.simular || 'APPROVED';
   const cuerpo = {
     acceptance_token: (m.presigned_acceptance || {}).acceptance_token,
     accept_personal_auth: (m.presigned_personal_data_auth || {}).acceptance_token,
