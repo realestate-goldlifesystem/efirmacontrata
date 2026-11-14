@@ -43,9 +43,33 @@
     .listo h2 { margin: 0 0 6px; font-size: 19px; }
     .listo p { color: var(--suave); font-size: 14px; margin: 0 0 20px; }
     .oculto { display: none; }
+  
+    /* Cargando: cubre la ventana mientras se lee la agenda (no se puede tocar nada) */
+    #cargando { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      background: rgba(255,253,247,.72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+    #cargando.on { opacity: 1; pointer-events: all; cursor: progress; }
+    #cargando .anillo { width: 54px; height: 54px; border-radius: 50%; position: relative;
+      background: conic-gradient(from 0deg, transparent 0 25%, #dcb53c 60%, #b26001 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+      animation: girar 0.9s linear infinite; }
+    #cargando .cal { position: absolute; margin-top: -68px; font-size: 20px; animation: latir 1.2s ease-in-out infinite; }
+    #cargando p { margin: 0; font-weight: 600; font-size: 14px; color: #3a2a12; letter-spacing: .2px; }
+    #cargando small { color: #8a7650; font-size: 12px; min-height: 15px; transition: opacity .3s; }
+    #cargando .puntos::after { content: ''; animation: puntos 1.2s steps(4) infinite; }
+    @keyframes girar { to { transform: rotate(360deg); } }
+    @keyframes latir { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+    @keyframes puntos { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+    #hora:disabled { opacity: .45; cursor: not-allowed; background: #f4f1ea; }
   </style>
 </head>
 <body>
+  <div id="cargando" aria-live="polite" aria-busy="true">
+    <div class="anillo"></div><div class="cal">📅</div>
+    <p id="cargTxt">Revisando tu agenda<span class="puntos"></span></p>
+    <small id="cargSub"></small>
+  </div>
   <div class="cabeza">
     <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
     <div class="sub">Llamada de seguimiento · te recordamos por correo antes de la hora</div>
@@ -108,7 +132,10 @@
       b.onclick = () => elegir(i);
       $('dias').appendChild(b); botones.push({ b, d });
     }
+    // La hora no se puede elegir hasta escoger el día
+    $('hora').disabled = true; $('hora').title = 'Primero elige el día';
     function elegir(i) {
+      $('hora').disabled = false; $('hora').title = '';
       botones.forEach(x => x.b.classList.remove('activo'));
       botones[i].b.classList.add('activo'); dia = botones[i].d;
       const cont = $('dias'); cont.scrollLeft = botones[i].b.offsetLeft - cont.offsetLeft - 40;
@@ -116,15 +143,26 @@
     }
     // Lo ocupado del día (otras llamadas del CRM y el calendario): esas horas no se pueden elegir
     let ocupado = [];
+    let relojCarga = null;
+    function cargando(on, txt) {
+      $('cargTxt').firstChild.textContent = txt || 'Revisando tu agenda';
+      $('cargando').classList.toggle('on', !!on);
+      clearInterval(relojCarga); $('cargSub').textContent = '';
+      if (on) {
+        const frases = ['Leyendo tu calendario', 'Buscando otras llamadas del CRM', 'Marcando las horas ocupadas'];
+        let i = 0; $('cargSub').textContent = frases[0];
+        relojCarga = setInterval(() => { i = (i + 1) % frases.length; $('cargSub').textContent = frases[i]; }, 1100);
+      }
+    }
     const DUR = 30 * 60000;
     // Solo se bloquea desde la hora de lo ocupado hacia adelante (no antes)
     function choca(t) { return ocupado.find(o => t >= o.inicio && t < o.fin); }
     function cargarOcupado() {
       if (!dia) return;
       const d0 = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate()).getTime();
-      $('resumen').textContent = 'Revisando tu agenda…'; $('guardar').disabled = true;
-      google.script.run.withSuccessHandler(r => { ocupado = r || []; marcarHoras(); revisar(); })
-        .withFailureHandler(() => { ocupado = []; marcarHoras(); revisar(); })
+      $('resumen').textContent = 'Revisando tu agenda…'; $('guardar').disabled = true; cargando(true);
+      google.script.run.withSuccessHandler(r => { ocupado = r || []; marcarHoras(); revisar(); cargando(false); })
+        .withFailureHandler(() => { ocupado = []; marcarHoras(); revisar(); cargando(false); })
         .ocupadoParaLlamada({ hoja: D.hoja, fila: D.fila, desde: d0, hasta: d0 + 86400000 });
     }
     function marcarHoras() {
@@ -158,13 +196,15 @@
     function guardar() {
       const t = momento();
       $('guardar').disabled = true; $('guardar').textContent = 'Programando…'; $('error').textContent = '';
+      cargando(true, 'Programando la llamada');
       google.script.run.withSuccessHandler(r => {
+        cargando(false);
         if (r && r.success) {
           $('form').classList.add('oculto'); $('pie').classList.add('oculto'); $('listo').classList.remove('oculto');
           $('final').textContent = r.texto + '. Quedó en tu calendario y en el CRM; te recordaremos por correo.';
           setTimeout(() => google.script.host.close(), 5000);
         } else { $('error').textContent = (r && r.error) || 'No se pudo programar.'; $('guardar').textContent = 'Programar llamada'; revisar(); }
-      }).withFailureHandler(e => { $('error').textContent = e.message; $('guardar').textContent = 'Programar llamada'; revisar(); })
+      }).withFailureHandler(e => { cargando(false); $('error').textContent = e.message; $('guardar').textContent = 'Programar llamada'; revisar(); })
         .programarLlamada({ hoja: D.hoja, fila: D.fila, idLead: D.idLead, nombre: D.nombre, celular: D.celular, servicio: D.servicio,
           direccion: D.direccion, nota: $('nota').value, timestamp: t.getTime() });
     }
