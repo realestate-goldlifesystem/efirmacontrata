@@ -62,6 +62,11 @@
     @keyframes latir { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
     @keyframes puntos { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
     #hora:disabled { opacity: .45; cursor: not-allowed; background: #f4f1ea; }
+    .rapido small { display: block; font-size: 10.5px; color: var(--suave); margin-top: 1px; }
+    .rapido.activo { background: #0c0a09; border-color: #d4af37; color: #fff; }
+    .rapido.activo small { color: #e3cc6c; }
+    .rapido:disabled { opacity: .4; cursor: not-allowed; border-style: dashed; }
+    .rapido:disabled:hover { border-color: var(--linea); }
   </style>
 </head>
 <body>
@@ -81,11 +86,17 @@
         <textarea id="nota" placeholder="Ej. Está terminando de pintar; llamarlo para agendar la captación"></textarea></div>
       <div class="grupo"><label>¿Cuándo lo llamas?</label>
         <div class="rapidos">
-          <button type="button" class="rapido" data-m="30">En media hora</button>
-          <button type="button" class="rapido" data-d="1">Mañana</button>
-          <button type="button" class="rapido" data-d="3">En 3 días</button>
-          <button type="button" class="rapido" data-d="7">En una semana</button>
-          <button type="button" class="rapido" data-d="15">En 15 días</button>
+          <button type="button" class="rapido" data-min="30">En media hora<small></small></button>
+          <button type="button" class="rapido" data-min="60">En 1 hora<small></small></button>
+          <button type="button" class="rapido" data-min="120">En 2 horas<small></small></button>
+          <button type="button" class="rapido" data-min="180">En 3 horas<small></small></button>
+        </div>
+        <div class="rapidos">
+          <button type="button" class="rapido" data-d="1">Mañana<small></small></button>
+          <button type="button" class="rapido" data-d="2">En 2 días<small></small></button>
+          <button type="button" class="rapido" data-d="3">En 3 días<small></small></button>
+          <button type="button" class="rapido" data-d="7">En 1 semana<small></small></button>
+          <button type="button" class="rapido" data-d="15">En 15 días<small></small></button>
         </div>
         <div class="dias" id="dias"></div>
       </div>
@@ -113,7 +124,10 @@
     const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     $('nombre').textContent = D.nombre || 'Propietario';
     $('lead').textContent = D.idLead + (D.servicio ? ' · ' + D.servicio : '');
-    let dia = null, enMin = 0;
+    let dia = null, rapido = null;
+    const SLOT = 30 * 60000, DUR = 30 * 60000;
+    const H_INI = 7 * 60, H_FIN = 20 * 60;   // 7:00 a. m. a 8:00 p. m.
+    const hhmm = (t) => (t.getHours() % 12 || 12) + ':' + String(t.getMinutes()).padStart(2, '0') + (t.getHours() < 12 ? ' a. m.' : ' p. m.');
 
     // Horas de 7:00 a. m. a 8:00 p. m., cada 30 minutos, como dura cada llamada (por defecto 10:00 a. m.)
     for (let h = 7; h <= 20; h++) for (let m = 0; m < 60; m += 30) {
@@ -134,14 +148,19 @@
     }
     // La hora no se puede elegir hasta escoger el día
     $('hora').disabled = true; $('hora').title = 'Primero elige el día';
+
+    // O acceso rápido, o día + hora: nunca las dos cosas
+    function quitarRapido() { rapido = null; document.querySelectorAll('.rapido').forEach(x => x.classList.remove('activo')); }
     function elegir(i) {
+      quitarRapido();
       $('hora').disabled = false; $('hora').title = '';
       botones.forEach(x => x.b.classList.remove('activo'));
       botones[i].b.classList.add('activo'); dia = botones[i].d;
       const cont = $('dias'); cont.scrollLeft = botones[i].b.offsetLeft - cont.offsetLeft - 40;
-      revisar(); cargarOcupado();
+      marcarHoras(); revisar();
     }
-    // Lo ocupado del día (otras llamadas del CRM y el calendario): esas horas no se pueden elegir
+
+    // Lo ocupado (otras llamadas del CRM y el calendario) de los próximos días, leído una vez al abrir
     let ocupado = [];
     let relojCarga = null;
     function cargando(on, txt) {
@@ -154,34 +173,67 @@
         relojCarga = setInterval(() => { i = (i + 1) % frases.length; $('cargSub').textContent = frases[i]; }, 1100);
       }
     }
-    const DUR = 30 * 60000;
     // Solo se bloquea desde la hora de lo ocupado hacia adelante (no antes)
     function choca(t) { return ocupado.find(o => !o.propia && t >= o.inicio && t < o.fin); }
     function propia(t) { return ocupado.find(o => o.propia && t === o.inicio); }
     function cargarOcupado() {
-      if (!dia) return;
-      const d0 = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate()).getTime();
+      const d0 = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
       $('resumen').textContent = 'Revisando tu agenda…'; $('guardar').disabled = true; cargando(true);
-      google.script.run.withSuccessHandler(r => { ocupado = r || []; marcarHoras(); revisar(); cargando(false); })
-        .withFailureHandler(() => { ocupado = []; marcarHoras(); revisar(); cargando(false); })
-        .ocupadoParaLlamada({ hoja: D.hoja, fila: D.fila, desde: d0, hasta: d0 + 86400000 });
+      const fin = () => { evaluarRapidos(); if (dia) marcarHoras(); revisar(); cargando(false); };
+      google.script.run.withSuccessHandler(r => { ocupado = r || []; fin(); })
+        .withFailureHandler(() => { ocupado = []; fin(); })
+        .ocupadoParaLlamada({ hoja: D.hoja, fila: D.fila, desde: d0, hasta: d0 + 32 * 86400000 });
     }
     function marcarHoras() {
+      if (!dia) return;
       [...$('hora').options].forEach(o => {
         if (!o.dataset.txt) o.dataset.txt = o.textContent;
         const [h, m] = o.value.split(':').map(Number);
-        const c = choca(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m).getTime());
-        const pr = !c && propia(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m).getTime());
+        const t = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m).getTime();
+        const c = choca(t), pr = !c && propia(t);
         o.disabled = !!c; o.textContent = o.dataset.txt + (c ? ' — ocupado (' + c.que + ')' : pr ? ' — 📞 su llamada actual' : '');
       });
       const sel = $('hora').selectedOptions[0];
       if (sel && sel.disabled) { const libre = [...$('hora').options].find(o => !o.disabled && o.index > sel.index) || [...$('hora').options].find(o => !o.disabled); if (libre) libre.selected = true; }
     }
-    document.querySelectorAll('.rapido').forEach(b => b.onclick = () => { enMin = Number(b.dataset.m || 0); elegir(enMin ? 0 : Number(b.dataset.d)); });
-    $('hora').onchange = () => { enMin = 0; revisar(); };
+
+    // ---- Accesos rápidos: la media hora más próxima del reloj (hora Colombia) ----
+    const alSlot = (ms) => Math.ceil(ms / SLOT) * SLOT;   // 11:48 → 12:00; 12:18 → 12:30
+    function destinoRapido(b) {
+      if (b.dataset.min) return new Date(alSlot(Date.now() + Number(b.dataset.min) * 60000));
+      // Días: a la misma hora del reloj (redondeada a la media hora), N días después
+      const base = new Date(alSlot(Date.now()));
+      return new Date(base.getFullYear(), base.getMonth(), base.getDate() + Number(b.dataset.d), base.getHours(), base.getMinutes());
+    }
+    function motivoNo(t) {
+      const min = t.getHours() * 60 + t.getMinutes();
+      if (t.getDay() === 0) return 'Cae domingo';
+      if (min < H_INI || min > H_FIN) return 'Fuera del horario (7:00 a. m. a 8:00 p. m.)';
+      const c = choca(t.getTime());
+      return c ? 'Ocupado: ' + c.que : '';
+    }
+    function evaluarRapidos() {
+      document.querySelectorAll('.rapido').forEach(b => {
+        const t = destinoRapido(b), no = motivoNo(t);
+        b.querySelector('small').textContent = (b.dataset.d ? DIAS[t.getDay()] + ' ' + t.getDate() + ' · ' : '') + hhmm(t);
+        b.disabled = !!no; b.title = no || '';
+        if (no && b.classList.contains('activo')) quitarRapido();
+        if (b.classList.contains('activo')) rapido = t.getTime();
+      });
+    }
+    document.querySelectorAll('.rapido').forEach(b => b.onclick = () => {
+      if (b.disabled) return;
+      quitarRapido(); b.classList.add('activo'); rapido = destinoRapido(b).getTime();
+      botones.forEach(x => x.b.classList.remove('activo')); dia = null;
+      $('hora').disabled = true; $('hora').title = 'Usando acceso rápido: elige un día para escoger otra hora';
+      revisar();
+    });
+    // El reloj avanza: se recalculan los accesos rápidos cada 30 s
+    setInterval(() => { evaluarRapidos(); revisar(); }, 30000);
+    $('hora').onchange = () => revisar();
 
     function momento() {
-      if (enMin) { const t = new Date(Date.now() + enMin * 60000); t.setSeconds(0, 0); return t; }
+      if (rapido) return new Date(rapido);
       if (!dia) return null;
       const [h, m] = $('hora').value.split(':').map(Number);
       return new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m);
@@ -191,9 +243,10 @@
       const c = t && choca(t.getTime());
       const ok = t && t.getTime() > Date.now() && !c;
       $('guardar').disabled = !ok;
-      $('resumen').textContent = !t ? 'Elige el día' : c ? 'Ocupado: ' + c.que : !ok ? 'Esa hora ya pasó' :
-        DIAS_L[t.getDay()].replace(/^./, c => c.toUpperCase()) + ' ' + t.getDate() + ' de ' + MESES[t.getMonth()] + ' · ' + (enMin ? ((t.getHours() % 12 || 12) + ':' + String(t.getMinutes()).padStart(2, '0') + (t.getHours() < 12 ? ' a. m.' : ' p. m.')) : $('hora').selectedOptions[0].textContent);
+      $('resumen').textContent = !t ? 'Elige un acceso rápido o el día' : c ? 'Ocupado: ' + c.que : !ok ? 'Esa hora ya pasó' :
+        DIAS_L[t.getDay()].replace(/^./, c => c.toUpperCase()) + ' ' + t.getDate() + ' de ' + MESES[t.getMonth()] + ' · ' + hhmm(t);
     }
+    cargarOcupado();
 
     function guardar() {
       const t = momento();
