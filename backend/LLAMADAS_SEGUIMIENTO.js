@@ -189,19 +189,30 @@ function programarLlamada(d) {
     }
   } catch (e) { Logger.log('No se pudo revisar el calendario: ' + e.message); }
 
-  // Una sola pendiente: la anterior se reemplaza
-  if (eventoPropio) borrarEventoLlamadaId_(eventoPropio);
+  // Una sola pendiente por propietario:
+  //  · si aún no llega su hora → se MUEVE el mismo evento (no se crea otro)
+  //  · si su hora ya pasó (ya se llamó) → ese evento queda como hecho (✅) y se crea uno nuevo
+  const previa = leer(LLAMADAS.COL_PROXIMA);
+  const previaVigente = !!eventoPropio && previa instanceof Date && previa.getTime() > Date.now();
+  if (eventoPropio && !previaVigente) marcarEventoHecho_(eventoPropio);
 
   const id = 'LL-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
   const nota = String(d.nota || '').trim().slice(0, 500);
+  const titulo = '📞 SEGUIMIENTO: ' + d.nombre + (d.servicio ? ' (' + d.servicio + ')' : '');
+  const descripcion = 'Llamada de seguimiento (' + id + ' · ' + d.idLead + ')\nCelular: ' + d.celular + (nota ? '\nNota: ' + nota : '');
   let idEvento = '';
   try {
-    const ev = CalendarApp.getDefaultCalendar().createEvent('📞 SEGUIMIENTO: ' + d.nombre + (d.servicio ? ' (' + d.servicio + ')' : ''),
-      inicio, finLlamada,
-      { description: 'Llamada de seguimiento (' + id + ' · ' + d.idLead + ')\nCelular: ' + d.celular + (nota ? '\nNota: ' + nota : '') });
-    ev.removeAllReminders();
-    idEvento = ev.getId();
-  } catch (e) { Logger.log('No se pudo crear el evento de la llamada: ' + e.message); }
+    const cal = CalendarApp.getDefaultCalendar();
+    const ev = previaVigente ? cal.getEventById(eventoPropio) : null;
+    if (ev) {
+      ev.setTime(inicio, finLlamada); ev.setTitle(titulo); ev.setDescription(descripcion);
+      idEvento = ev.getId();
+    } else {
+      const nuevo = cal.createEvent(titulo, inicio, finLlamada, { description: descripcion });
+      nuevo.removeAllReminders();
+      idEvento = nuevo.getId();
+    }
+  } catch (e) { Logger.log('No se pudo crear/mover el evento de la llamada: ' + e.message); }
 
   hoja.getRange(fila, col[LLAMADAS.COL_PROXIMA]).setValue(inicio).setNumberFormat(FORMATO_FECHA_HORA_CRM);
   const poner = (k, v) => hoja.getRange(fila, col[k]).setValue(v);
