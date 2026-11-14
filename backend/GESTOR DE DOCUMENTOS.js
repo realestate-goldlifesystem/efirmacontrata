@@ -755,6 +755,9 @@ function doPost(e) {
         break;
       case 'wompiPruebaIniciar': result = wompiPruebaIniciar_(datos); break;
       case 'wompiPruebaEstado': result = wompiPruebaEstado_(datos); break;
+      case 'wompiInfoPago': result = wompiInfoPago_(); break;
+      case 'wompiCrearTransaccion': result = wompiCrearTransaccion_(datos); break;
+      case 'wompiConsultarTransaccion': result = wompiConsultarTransaccion_(datos); break;
       case 'crearPreferenciaPago':
         if (typeof crearPreferenciaPago === 'function') {
           result = crearPreferenciaPago(datos);

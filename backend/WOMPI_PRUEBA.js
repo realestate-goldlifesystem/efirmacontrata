@@ -171,3 +171,59 @@ function wompiEventoDispersion_(ev) {
   } finally { lock.releaseLock(); }
   return { success: true };
 }
+
+/* ───────── Pantalla de pago propia (sin tarjeta): PSE, Nequi, Botón Bancolombia, efectivo ───────── */
+const WOMPI_API_PRUEBAS_ = 'https://sandbox.wompi.co/v1';
+const WOMPI_METODOS_ARRIENDO_ = ['PSE', 'NEQUI', 'BANCOLOMBIA_TRANSFER', 'BANCOLOMBIA_COLLECT'];
+
+function _wompiGet_(ruta, llave) {
+  const r = UrlFetchApp.fetch(WOMPI_API_PRUEBAS_ + ruta, { headers: { Authorization: 'Bearer ' + llave }, muteHttpExceptions: true });
+  return JSON.parse(r.getContentText() || '{}');
+}
+
+/** Lo que la pantalla necesita antes de pagar: términos de Wompi (aceptación) y bancos de PSE. */
+function wompiInfoPago_() {
+  const m = (_wompiGet_('/merchants/' + WOMPI_LLAVES.publica, WOMPI_LLAVES.publica).data) || {};
+  const b = (_wompiGet_('/pse/financial_institutions', WOMPI_LLAVES.publica).data) || [];
+  return { success: true, comercio: m.name || '',
+    terminos: (m.presigned_acceptance || {}).permalink, datos: (m.presigned_personal_data_auth || {}).permalink,
+    bancos: b.map(function (x) { return { codigo: x.financial_institution_code, nombre: x.financial_institution_name }; }) };
+}
+
+/** Crea el cobro con un medio fijo. La tarjeta no se ofrece (riesgo de contracargo). */
+function wompiCrearTransaccion_(d) {
+  if (WOMPI_METODOS_ARRIENDO_.indexOf(d.metodo) < 0) return { success: false, error: 'Medio de pago no permitido' };
+  if (!d.aceptaTerminos) return { success: false, error: 'Debes aceptar los términos' };
+  const ini = wompiPruebaIniciar_({ monto: d.monto, admin: d.admin });
+  const ref = ini.referencia, centavos = Math.max(1500, Math.round(Number(d.monto) || 0)) * 100;
+  const m = (_wompiGet_('/merchants/' + WOMPI_LLAVES.publica, WOMPI_LLAVES.publica).data) || {};
+  const desc = 'Arriendo ' + String(d.periodo || '').slice(0, 20);
+  const pm = { type: d.metodo };
+  if (d.metodo === 'PSE') Object.assign(pm, { user_type: Number(d.tipoPersona) || 0, user_legal_id_type: d.tipoDoc || 'CC',
+    user_legal_id: String(d.documento || ''), financial_institution_code: String(d.banco || ''), payment_description: desc });
+  if (d.metodo === 'NEQUI') pm.phone_number = String(d.celular || '');
+  if (d.metodo === 'BANCOLOMBIA_TRANSFER') Object.assign(pm, { user_type: 'PERSON', payment_description: desc });
+  if (d.metodo === 'BANCOLOMBIA_COLLECT') { /* sin datos extra: Wompi devuelve convenio y referencia */ }
+  const cuerpo = {
+    acceptance_token: (m.presigned_acceptance || {}).acceptance_token,
+    accept_personal_auth: (m.presigned_personal_data_auth || {}).acceptance_token,
+    amount_in_cents: centavos, currency: 'COP', reference: ref,
+    signature: _sha256Hex_(ref + centavos + 'COP' + WOMPI_LLAVES.integridad),
+    customer_email: String(d.correo || ''),
+    customer_data: { full_name: String(d.nombre || ''), phone_number: String(d.celular || d.telefono || '') },
+    payment_method: pm, redirect_url: d.volver || undefined
+  };
+  const r = UrlFetchApp.fetch(WOMPI_API_PRUEBAS_ + '/transactions', { method: 'post', contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + WOMPI_LLAVES.privada }, payload: JSON.stringify(cuerpo), muteHttpExceptions: true });
+  const j = JSON.parse(r.getContentText() || '{}');
+  if (!j.data) return { success: false, error: JSON.stringify(j.error || j).slice(0, 400) };
+  return { success: true, id: j.data.id, referencia: ref, estado: j.data.status };
+}
+
+/** Estado de la transacción + lo que el pagador necesita (URL del banco o datos para pagar en efectivo). */
+function wompiConsultarTransaccion_(d) {
+  const t = (_wompiGet_('/transactions/' + encodeURIComponent(String(d.id || '')), WOMPI_LLAVES.privada).data) || {};
+  const ex = (t.payment_method && t.payment_method.extra) || {};
+  return { success: true, estado: t.status, mensaje: t.status_message || '', referencia: t.reference,
+    urlBanco: ex.async_payment_url || '', convenio: ex.business_agreement_code || '', refPago: ex.payment_intention_identifier || '' };
+}

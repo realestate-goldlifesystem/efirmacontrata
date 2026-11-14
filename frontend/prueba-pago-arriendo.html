@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pago de arriendo</title>
+<style>
+:root{--oro:#b8860b;--oro2:#d4af37;--tinta:#1c1917;--gris:#78716c;--borde:#e7e5e4;--fondo:#fafaf9}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;color:var(--tinta);background:var(--fondo)}
+.envoltura{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+.prueba{background:#fff7ed;border:1px dashed #fdba74;color:#9a3412;font-size:12px;border-radius:10px;padding:8px 12px;margin-bottom:14px;line-height:1.5}
+.marca{display:flex;align-items:center;gap:10px;margin:4px 0 18px}
+.marca img{height:44px}
+.marca span{font-size:12px;color:var(--gris);letter-spacing:2px}
+.resumen{background:var(--tinta);color:#fff;border-radius:16px;padding:18px 20px}
+.resumen .et{color:var(--oro2);font-size:11px;letter-spacing:2px;font-weight:700}
+.resumen .total{font-size:30px;font-weight:800;margin:4px 0 2px}
+.resumen .sub{color:#d6d3d1;font-size:13px}
+.resumen .lineas{margin-top:12px;border-top:1px solid #3a3633;padding-top:10px;font-size:13px;color:#e7e5e4}
+.resumen .lineas div{display:flex;justify-content:space-between;margin:3px 0}
+h2{font-size:15px;margin:24px 0 10px}
+.metodos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metodo{background:#fff;border:1.5px solid var(--borde);border-radius:14px;padding:14px 12px;cursor:pointer;transition:border-color .25s,box-shadow .25s,transform .25s;text-align:left}
+.metodo:hover{border-color:#d6d3d1;transform:translateY(-1px)}
+.metodo.activo{border-color:var(--oro);box-shadow:0 0 0 3px rgba(184,134,11,.12)}
+.metodo .ic{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:#f5f5f4}
+.metodo .ic img{max-width:28px;max-height:28px}
+.metodo b{display:block;font-size:14px;margin-top:6px}
+.metodo small{color:var(--gris);font-size:11.5px}
+.panel{background:#fff;border:1px solid var(--borde);border-radius:14px;padding:16px;margin-top:12px;display:none;animation:aparece .35s ease}
+.panel.visible{display:block}
+@keyframes aparece{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+label{display:block;font-size:12px;color:var(--gris);margin:10px 0 4px}
+input,select{width:100%;padding:11px 12px;border:1px solid var(--borde);border-radius:10px;font-size:15px;background:#fff;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--oro)}
+.fila{display:flex;gap:10px}.fila>div{flex:1}
+.terminos{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--gris);margin:16px 0 4px;line-height:1.5}
+.terminos input{width:auto;margin-top:3px}
+.terminos a{color:var(--oro)}
+button.pagar{width:100%;margin-top:14px;background:var(--oro);color:#fff;border:0;border-radius:12px;padding:15px;font-size:16px;font-weight:700;cursor:pointer;transition:opacity .25s}
+button.pagar:disabled{opacity:.45;cursor:default}
+.estado{margin-top:16px;border-radius:14px;padding:16px;background:#fff;border:1px solid var(--borde);display:none;line-height:1.55;font-size:14px;animation:aparece .35s ease}
+.estado.visible{display:block}
+.estado .grande{font-size:18px;font-weight:700;margin-bottom:4px}
+.dato{background:var(--fondo);border-radius:10px;padding:10px 12px;margin-top:8px;font-family:Consolas,monospace;font-size:15px}
+.seguro{text-align:center;font-size:11.5px;color:#a8a29e;margin-top:18px}
+</style></head>
+<body><div class="envoltura">
+<div class="prueba">MODO PRUEBAS · No se mueve dinero real. PSE: elige "Banco que aprueba". Nequi: 3991111111 aprueba, 3992222222 rechaza.</div>
+<div class="marca"><img src="portafolio/assets/logo-BMnzKzIZ.png" alt="Gold Life"><span>PAGO DE ARRIENDO</span></div>
+
+<div class="resumen">
+  <div class="et">ARRIENDO DE NOVIEMBRE 2026</div>
+  <div class="total" id="total">$2.000.000</div>
+  <div class="sub">Inmueble ZZ000000 · Calle 00 # 00-00, Torre 1, Apto 101</div>
+  <div class="lineas"><div><span>Canon</span><span id="lCanon">$1.800.000</span></div><div><span>Administración del conjunto</span><span id="lAdmin">$200.000</span></div></div>
+</div>
+
+<h2>¿Cómo quieres pagar?</h2>
+<div class="metodos">
+  <button class="metodo" data-m="PSE"><span class="ic"><img src="assets/pagos/pse.png" alt=""></span><b>PSE</b><small>Desde la cuenta de cualquier banco</small></button>
+  <button class="metodo" data-m="NEQUI"><span class="ic"><img src="assets/pagos/nequi.svg" alt=""></span><b>Nequi</b><small>Te llega la notificación al celular</small></button>
+  <button class="metodo" data-m="BANCOLOMBIA_TRANSFER"><span class="ic"><img src="assets/pagos/bancolombia.svg" alt=""></span><b>Botón Bancolombia</b><small>Con tu usuario de Bancolombia</small></button>
+  <button class="metodo" data-m="BANCOLOMBIA_COLLECT"><span class="ic"><img src="assets/pagos/efectivo.svg" alt=""></span><b>Efectivo</b><small>En un Corresponsal Bancolombia</small></button>
+</div>
+
+<div class="panel" id="panel">
+  <div class="fila"><div><label>Nombre completo</label><input id="nombre" value="Inquilino Prueba"></div></div>
+  <div class="fila"><div><label>Correo</label><input id="correo" type="email" value="inquilino.prueba@example.com"></div><div><label>Celular</label><input id="celular" inputmode="numeric" value="3991111111"></div></div>
+  <div id="camposPSE" style="display:none">
+    <label>Banco</label><select id="banco"><option value="">Cargando bancos…</option></select>
+    <div class="fila"><div><label>Tipo de persona</label><select id="tipoPersona"><option value="0">Natural</option><option value="1">Jurídica</option></select></div>
+    <div><label>Documento</label><div class="fila"><select id="tipoDoc" style="max-width:80px"><option>CC</option><option>CE</option><option>NIT</option></select><input id="documento" inputmode="numeric" value="1000000000"></div></div></div>
+  </div>
+  <div class="terminos"><input type="checkbox" id="acepto"><span>Acepto los <a id="lnkTerminos" target="_blank" rel="noopener">términos y condiciones</a> y la <a id="lnkDatos" target="_blank" rel="noopener">autorización de tratamiento de datos</a> de Wompi.</span></div>
+  <button class="pagar" id="pagar" disabled>Pagar $2.000.000</button>
+</div>
+
+<div class="estado" id="estado"></div>
+<div class="seguro">🔒 Pago procesado por Wompi · Grupo Cibest – Bancolombia</div>
+</div>
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxpJ8w_XR5dUhIv1VTuV3ZDjHm-vtz13B5RlyfiLqI9ypZnIuzuUL39_GDHpBisL2oW/exec';
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => '$' + Math.round(n).toLocaleString('es-CO');
+const llamar = (d) => fetch(API, { method: 'POST', body: JSON.stringify(d) }).then(r => r.json());
+const q = new URLSearchParams(location.search);
+const MONTO = +(q.get('monto') || 2000000), ADMIN = +(q.get('admin') || 200000);
+$('total').textContent = fmt(MONTO); $('lCanon').textContent = fmt(MONTO - ADMIN); $('lAdmin').textContent = fmt(ADMIN);
+$('pagar').textContent = 'Pagar ' + fmt(MONTO);
+let metodo = null;
+
+llamar({ accion: 'wompiInfoPago' }).then(r => {
+  $('lnkTerminos').href = r.terminos; $('lnkDatos').href = r.datos;
+  $('banco').innerHTML = '<option value="">Elige tu banco</option>' + (r.bancos || []).map(b => `<option value="${b.codigo}">${b.nombre}</option>`).join('');
+});
+
+document.querySelectorAll('.metodo').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.metodo').forEach(x => x.classList.remove('activo'));
+  b.classList.add('activo'); metodo = b.dataset.m;
+  $('panel').classList.add('visible');
+  $('camposPSE').style.display = metodo === 'PSE' ? 'block' : 'none';
+});
+$('acepto').onchange = () => $('pagar').disabled = !$('acepto').checked;
+
+function mostrar(html) { const e = $('estado'); e.innerHTML = html; e.classList.add('visible'); e.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+const espera = (ms) => new Promise(s => setTimeout(s, ms));
+
+$('pagar').onclick = async () => {
+  if (!metodo) return;
+  if (metodo === 'PSE' && !$('banco').value) { mostrar('Elige tu banco.'); return; }
+  $('pagar').disabled = true;
+  mostrar('<div class="grande">Preparando tu pago…</div>');
+  const r = await llamar({ accion: 'wompiCrearTransaccion', metodo, monto: MONTO, admin: ADMIN, periodo: 'nov-2026', aceptaTerminos: true,
+    nombre: $('nombre').value, correo: $('correo').value, celular: $('celular').value,
+    banco: $('banco').value, tipoPersona: $('tipoPersona').value, tipoDoc: $('tipoDoc').value, documento: $('documento').value,
+    volver: location.origin + location.pathname + '?monto=' + MONTO + '&admin=' + ADMIN });
+  if (!r.success) { mostrar('<div class="grande">No se pudo crear el pago</div>' + (r.error || '')); $('pagar').disabled = false; return; }
+  localStorage.setItem('arriendoTx', JSON.stringify({ id: r.id, ref: r.referencia }));
+  seguir(r.id, r.referencia, true);
+};
+
+async function seguir(id, ref, recienCreado) {
+  for (let i = 0; i < 80; i++) {
+    const t = await llamar({ accion: 'wompiConsultarTransaccion', id });
+    if (t.estado === 'APPROVED') return final(ref, true);
+    if (['DECLINED', 'ERROR', 'VOIDED'].includes(t.estado)) return final(ref, false, t.mensaje);
+    if (recienCreado && t.urlBanco) { mostrar('<div class="grande">Te llevamos a tu banco…</div>'); location.href = t.urlBanco; return; }
+    if (t.convenio) return mostrar('<div class="grande">💵 Paga en cualquier Corresponsal Bancolombia</div>Dile al cajero que vas a pagar un convenio y dale estos datos:' +
+      '<div class="dato">Convenio: ' + t.convenio + '</div><div class="dato">Referencia: ' + t.refPago + '</div><div class="dato">Valor: ' + fmt(MONTO) + '</div>' +
+      '<p style="font-size:13px;color:#78716c">Cuando pagues, el sistema lo confirma solo y te llega el comprobante.</p>');
+    if (!recienCreado && i === 0) mostrar('<div class="grande">Confirmando tu pago…</div>Esta página se actualiza sola.');
+    else if (metodo === 'NEQUI' && i === 0) mostrar('<div class="grande">📱 Revisa tu celular</div>Acepta la notificación de Nequi para completar el pago. Esta página se actualiza sola.');
+    await espera(3000);
+  }
+  mostrar('<div class="grande">Tu pago sigue en proceso</div>Te avisaremos por correo cuando se confirme.');
+}
+
+async function final(ref, ok, msg) {
+  if (!ok) return mostrar('<div class="grande">❌ El pago no fue aprobado</div>' + (msg || '') + '<p>Puedes intentarlo de nuevo con otro medio.</p>'), $('pagar').disabled = false;
+  mostrar('<div class="grande">✅ ¡Pago recibido!</div>Gracias. Estamos confirmando y registrando tu pago…');
+  for (let i = 0; i < 40; i++) {
+    const e = await llamar({ accion: 'wompiPruebaEstado', referencia: ref });
+    const d = (e.dispersion || [])[0];
+    if (e.llego) {
+      mostrar('<div class="grande">✅ ¡Pago recibido!</div>Tu arriendo de noviembre quedó pago. Te llega el comprobante a tu correo.' +
+        '<div style="margin-top:12px;font-size:12px;color:#78716c;border-top:1px dashed #e7e5e4;padding-top:10px">VISTA INTERNA (solo prueba)<br>Aviso de Wompi: ' + e.estado + ' · firma ' + (e.firmaValida ? 'válida' : 'NO válida') +
+        '<br>Giro al propietario: ' + (d ? fmt(d.monto) + ' · ' + d.estado : 'en proceso…') + '</div>');
+      if (d && /APPROVED|FAILED|ERROR/.test(d.estado)) return;
+    }
+    await espera(3000);
+  }
+}
+
+if (q.get('id')) { const g = JSON.parse(localStorage.getItem('arriendoTx') || '{}'); if (g.id) seguir(g.id, g.ref, false); }
+</script>
+</body></html>
