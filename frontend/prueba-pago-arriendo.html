@@ -119,14 +119,20 @@ $('pagar').onclick = async () => {
 };
 
 async function seguir(id, ref, recienCreado) {
+  let convenioVisto = false;
   for (let i = 0; i < 80; i++) {
     const t = await llamar({ accion: 'wompiConsultarTransaccion', id });
+    if (t.convenio && !convenioVisto) {
+      convenioVisto = true;
+      mostrar('<div class="grande">💵 Paga en cualquier Corresponsal Bancolombia</div>Dile al cajero que vas a pagar un convenio y dale estos datos:' +
+        '<div class="dato">Convenio: ' + t.convenio + '</div><div class="dato">Referencia: ' + t.refPago + '</div><div class="dato">Valor: ' + fmt(MONTO) + '</div>' +
+        '<p style="font-size:13px;color:#78716c">Cuando pagues, el sistema lo confirma solo y te llega el comprobante. Puedes cerrar esta página.</p>');
+      await espera(8000); continue;
+    }
     if (t.estado === 'APPROVED') return final(ref, true);
     if (['DECLINED', 'ERROR', 'VOIDED'].includes(t.estado)) return final(ref, false, t.mensaje);
     if (recienCreado && t.urlBanco) { mostrar('<div class="grande">Te llevamos a tu banco…</div>'); location.href = t.urlBanco; return; }
-    if (t.convenio) return mostrar('<div class="grande">💵 Paga en cualquier Corresponsal Bancolombia</div>Dile al cajero que vas a pagar un convenio y dale estos datos:' +
-      '<div class="dato">Convenio: ' + t.convenio + '</div><div class="dato">Referencia: ' + t.refPago + '</div><div class="dato">Valor: ' + fmt(MONTO) + '</div>' +
-      '<p style="font-size:13px;color:#78716c">Cuando pagues, el sistema lo confirma solo y te llega el comprobante.</p>');
+    if (t.convenio) { await espera(4000); continue; }
     if (!recienCreado && i === 0) mostrar('<div class="grande">Confirmando tu pago…</div>Esta página se actualiza sola.');
     else if (metodo === 'NEQUI' && i === 0) mostrar('<div class="grande">📱 Revisa tu celular</div>Acepta la notificación de Nequi para completar el pago. Esta página se actualiza sola.');
     await espera(3000);
@@ -152,7 +158,7 @@ async function final(ref, ok, msg) {
 
 if (q.get('id')) { const g = JSON.parse(localStorage.getItem('arriendoTx') || '{}'); if (g.id) seguir(g.id, g.ref, false); }
 // Auto-actualización (solo pruebas): si se publica una versión nueva, se recarga sola (si no hay un pago en curso).
-const VER = 'v-20261114001055';
+const VER = 'v-20261114002225';
 async function revisarVersion() {
   try {
     if ($('estado').classList.contains('visible')) return;
