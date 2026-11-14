@@ -143,6 +143,11 @@ function obtenerDisponibilidadAgenda(fechaIso, tipo, opciones) {
     const ocupados = CalendarApp.getDefaultCalendar().getEventsForDay(referencia)
       .filter(e => !opciones.excluirEventoId || e.getId() !== opciones.excluirEventoId)
       .map(e => ({ inicio: e.getStartTime().getTime(), fin: e.getEndTime().getTime() }));
+    // Llamadas de seguimiento pendientes del CRM (30 min), aunque su evento no esté en el calendario
+    try {
+      if (typeof llamadasPendientesCRM_ === 'function')
+        llamadasPendientesCRM_(agMs(dia, 0, 0), agMs(dia, 23, 59)).forEach(l => ocupados.push({ inicio: l.inicio, fin: l.fin }));
+    } catch (e) { Logger.log('⚠️ No se pudieron leer las llamadas del CRM: ' + e.message); }
 
     // Horarios que un interesado pidió y el propietario aún no responde (bloque 2):
     // nadie más los puede tomar mientras se decide. Los de la propia solicitud no cuentan.

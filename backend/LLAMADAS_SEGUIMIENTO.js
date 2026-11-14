@@ -174,6 +174,11 @@ function programarLlamada(d) {
   // entregas, etc. (todas viven en el mismo calendario; las agendas ya lo respetan).
   const finLlamada = new Date(inicio.getTime() + LLAMADAS.DURACION_MIN * 60000);
   const eventoPropio = LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1 ? String(leer('LLAMADA EVENTO') || '') : '';
+  // 1) Las llamadas pendientes del propio CRM (aunque su evento no esté en el calendario)
+  const tzC = 'America/Bogota', fC = (x) => Utilities.formatDate(x, tzC, 'h:mm a').toLowerCase();
+  const otra = llamadasPendientesCRM_(inicio.getTime(), finLlamada.getTime(), { hoja: hoja.getName(), fila: fila })[0];
+  if (otra) return { success: false, error: 'Ese horario ya está ocupado: llamada con ' + (otra.nombre || 'otro propietario') + ' de ' + fC(new Date(otra.inicio)) + ' a ' + fC(new Date(otra.fin)) + '. Elige otra hora.' };
+  // 2) Cualquier evento del calendario (citas, entregas, etc.)
   try {
     const choque = CalendarApp.getDefaultCalendar().getEvents(inicio, finLlamada)
       .find(e => !e.isAllDayEvent() && e.getId() !== eventoPropio);
@@ -406,4 +411,32 @@ function quitarHojaLlamadasVieja_() {
   const h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('2.3 - LLAMADAS DE SEGUIMIENTO');
   if (h && h.getLastRow() <= 1) { SpreadsheetApp.getActiveSpreadsheet().deleteSheet(h); return true; }
   return false;
+}
+
+/**
+ * Llamadas pendientes (PROGRAMADA/CONFIRMADA) del CRM que se cruzan con [desdeMs, hastaMs).
+ * Cada una ocupa LLAMADAS.DURACION_MIN. excluir = { hoja, fila } (la propia, al reprogramar).
+ * La usan programarLlamada y las agendas de citas, para no depender solo del calendario.
+ */
+function llamadasPendientesCRM_(desdeMs, hastaMs, excluir) {
+  const res = [];
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  const p0 = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS;
+  SEGUIMIENTO_CAPTACIONES.HOJAS.forEach(nombre => {
+    const hoja = libro.getSheetByName(nombre);
+    if (!hoja || hoja.getLastRow() < p0) return;
+    const enc = encabezadosCRM_(hoja);
+    const cP = enc.indexOf(LLAMADAS.COL_PROXIMA), cE = enc.indexOf('LLAMADA ESTADO');
+    if (cP === -1 || cE === -1) return;
+    const cN = enc.indexOf('NOMBRE DEL PROPIETARIO');
+    const vals = hoja.getRange(p0, 1, hoja.getLastRow() - p0 + 1, enc.length).getValues();
+    vals.forEach((r, i) => {
+      const fila = i + p0;
+      if (excluir && excluir.hoja === nombre && Number(excluir.fila) === fila) return;
+      if (LLAMADAS.PENDIENTES.indexOf(String(r[cE])) === -1 || !(r[cP] instanceof Date)) return;
+      const ini = r[cP].getTime(), fin = ini + LLAMADAS.DURACION_MIN * 60000;
+      if (ini < hastaMs && fin > desdeMs) res.push({ inicio: ini, fin: fin, nombre: cN !== -1 ? String(r[cN] || '') : '' });
+    });
+  });
+  return res;
 }
