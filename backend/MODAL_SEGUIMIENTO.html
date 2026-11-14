@@ -201,7 +201,9 @@
     // ---- Accesos rápidos: la media hora más próxima del reloj (hora Colombia) ----
     const alSlot = (ms) => Math.ceil(ms / SLOT) * SLOT;   // 11:48 → 12:00; 12:18 → 12:30
     function destinoRapido(b) {
-      if (b.dataset.min) return new Date(alSlot(Date.now() + Number(b.dataset.min) * 60000));
+      // Horas: desde la media hora más próxima (12:06 → 12:30). "En media hora" es esa misma;
+      // "En 1 hora" = 12:30 + 1 h = 1:30; "En 2 horas" = 2:30…
+      if (b.dataset.min) { const m = Number(b.dataset.min); return new Date(alSlot(Date.now() + 60000) + (m === 30 ? 0 : m) * 60000); }
       // Días: a la misma hora del reloj (redondeada a la media hora), N días después
       const base = new Date(alSlot(Date.now()));
       return new Date(base.getFullYear(), base.getMonth(), base.getDate() + Number(b.dataset.d), base.getHours(), base.getMinutes());
