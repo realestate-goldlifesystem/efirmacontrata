@@ -115,8 +115,8 @@
     $('lead').textContent = D.idLead + (D.servicio ? ' · ' + D.servicio : '');
     let dia = null, enMin = 0;
 
-    // Horas de 7:00 a. m. a 8:00 p. m., cada 15 minutos (por defecto 10:00 a. m.)
-    for (let h = 7; h <= 20; h++) for (let m = 0; m < 60; m += 15) {
+    // Horas de 7:00 a. m. a 8:00 p. m., cada 30 minutos, como dura cada llamada (por defecto 10:00 a. m.)
+    for (let h = 7; h <= 20; h++) for (let m = 0; m < 60; m += 30) {
       if (h === 20 && m > 0) break;
       const o = document.createElement('option');
       o.value = h + ':' + m; o.textContent = (h % 12 || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? ' a. m.' : ' p. m.');
