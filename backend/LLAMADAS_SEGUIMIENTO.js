@@ -141,7 +141,7 @@ function abrirModalSeguimiento_(hoja, fila) {
   d.idLead = idLeadDeFila_(hoja, fila);
   const t = HtmlService.createTemplateFromFile('backend/MODAL_SEGUIMIENTO');
   t.DATOS = JSON.stringify(d);
-  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(520).setHeight(600), 'Programar llamada de seguimiento');
+  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(520).setHeight(740), 'Programar llamada de seguimiento');
 }
 
 /** Menú: programar la llamada para la fila seleccionada. */
