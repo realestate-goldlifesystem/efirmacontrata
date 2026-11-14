@@ -151,5 +151,16 @@ async function final(ref, ok, msg) {
 }
 
 if (q.get('id')) { const g = JSON.parse(localStorage.getItem('arriendoTx') || '{}'); if (g.id) seguir(g.id, g.ref, false); }
+// Auto-actualización (solo pruebas): si se publica una versión nueva, se recarga sola (si no hay un pago en curso).
+const VER = 'v-20261114001055';
+async function revisarVersion() {
+  try {
+    if ($('estado').classList.contains('visible')) return;
+    const t = await (await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })).text();
+    const m = t.match(/const VER = '(v-[0-9]+)'/); if (!m || m[1] === VER) return;
+    location.replace(location.pathname + '?v=' + m[1]);
+  } catch (e) {}
+}
+revisarVersion(); setInterval(revisarVersion, 15000);
 </script>
 </body></html>
