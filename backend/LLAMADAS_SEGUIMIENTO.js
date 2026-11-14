@@ -455,7 +455,13 @@ function ocupadoParaLlamada(d) {
     const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(d.hoja);
     if (hoja && d.fila) {
       const col = columnasLlamada_(hoja), leer = (k) => hoja.getRange(Number(d.fila), col[k]).getValue();
-      if (LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1) propio = String(leer('LLAMADA EVENTO') || '');
+      if (LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1) {
+        propio = String(leer('LLAMADA EVENTO') || '');
+        // Su propia llamada se muestra (se puede reprogramar, no se bloquea)
+        const t = leer(LLAMADAS.COL_PROXIMA);
+        if (t instanceof Date && t.getTime() < hasta && t.getTime() >= desde)
+          ocup.push({ inicio: t.getTime(), fin: t.getTime() + LLAMADAS.DURACION_MIN * 60000, que: 'su llamada actual', propia: true });
+      }
     }
   } catch (e) {}
   try {

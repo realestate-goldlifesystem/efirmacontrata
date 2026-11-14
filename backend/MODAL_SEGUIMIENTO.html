@@ -156,7 +156,8 @@
     }
     const DUR = 30 * 60000;
     // Solo se bloquea desde la hora de lo ocupado hacia adelante (no antes)
-    function choca(t) { return ocupado.find(o => t >= o.inicio && t < o.fin); }
+    function choca(t) { return ocupado.find(o => !o.propia && t >= o.inicio && t < o.fin); }
+    function propia(t) { return ocupado.find(o => o.propia && t === o.inicio); }
     function cargarOcupado() {
       if (!dia) return;
       const d0 = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate()).getTime();
@@ -170,7 +171,8 @@
         if (!o.dataset.txt) o.dataset.txt = o.textContent;
         const [h, m] = o.value.split(':').map(Number);
         const c = choca(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m).getTime());
-        o.disabled = !!c; o.textContent = o.dataset.txt + (c ? ' — ocupado (' + c.que + ')' : '');
+        const pr = !c && propia(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m).getTime());
+        o.disabled = !!c; o.textContent = o.dataset.txt + (c ? ' — ocupado (' + c.que + ')' : pr ? ' — 📞 su llamada actual' : '');
       });
       const sel = $('hora').selectedOptions[0];
       if (sel && sel.disabled) { const libre = [...$('hora').options].find(o => !o.disabled && o.index > sel.index) || [...$('hora').options].find(o => !o.disabled); if (libre) libre.selected = true; }
