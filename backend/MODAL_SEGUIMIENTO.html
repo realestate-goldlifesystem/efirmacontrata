@@ -112,7 +112,29 @@
       botones.forEach(x => x.b.classList.remove('activo'));
       botones[i].b.classList.add('activo'); dia = botones[i].d;
       const cont = $('dias'); cont.scrollLeft = botones[i].b.offsetLeft - cont.offsetLeft - 40;
-      revisar();
+      revisar(); cargarOcupado();
+    }
+    // Lo ocupado del día (otras llamadas del CRM y el calendario): esas horas no se pueden elegir
+    let ocupado = [];
+    const DUR = 30 * 60000;
+    function choca(t) { return ocupado.find(o => t < o.fin && t + DUR > o.inicio); }
+    function cargarOcupado() {
+      if (!dia) return;
+      const d0 = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate()).getTime();
+      $('resumen').textContent = 'Revisando tu agenda…'; $('guardar').disabled = true;
+      google.script.run.withSuccessHandler(r => { ocupado = r || []; marcarHoras(); revisar(); })
+        .withFailureHandler(() => { ocupado = []; marcarHoras(); revisar(); })
+        .ocupadoParaLlamada({ hoja: D.hoja, fila: D.fila, desde: d0, hasta: d0 + 86400000 });
+    }
+    function marcarHoras() {
+      [...$('hora').options].forEach(o => {
+        if (!o.dataset.txt) o.dataset.txt = o.textContent;
+        const [h, m] = o.value.split(':').map(Number);
+        const c = choca(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m).getTime());
+        o.disabled = !!c; o.textContent = o.dataset.txt + (c ? ' — ocupado (' + c.que + ')' : '');
+      });
+      const sel = $('hora').selectedOptions[0];
+      if (sel && sel.disabled) { const libre = [...$('hora').options].find(o => !o.disabled && o.index > sel.index) || [...$('hora').options].find(o => !o.disabled); if (libre) libre.selected = true; }
     }
     document.querySelectorAll('.rapido').forEach(b => b.onclick = () => { enMin = Number(b.dataset.m || 0); elegir(enMin ? 0 : Number(b.dataset.d)); });
     $('hora').onchange = () => { enMin = 0; revisar(); };
@@ -125,9 +147,10 @@
     }
     function revisar() {
       const t = momento();
-      const ok = t && t.getTime() > Date.now();
+      const c = t && choca(t.getTime());
+      const ok = t && t.getTime() > Date.now() && !c;
       $('guardar').disabled = !ok;
-      $('resumen').textContent = !t ? 'Elige el día' : !ok ? 'Esa hora ya pasó' :
+      $('resumen').textContent = !t ? 'Elige el día' : c ? 'Ocupado: ' + c.que : !ok ? 'Esa hora ya pasó' :
         DIAS_L[t.getDay()].replace(/^./, c => c.toUpperCase()) + ' ' + t.getDate() + ' de ' + MESES[t.getMonth()] + ' · ' + (enMin ? ((t.getHours() % 12 || 12) + ':' + String(t.getMinutes()).padStart(2, '0') + (t.getHours() < 12 ? ' a. m.' : ' p. m.')) : $('hora').selectedOptions[0].textContent);
     }
 

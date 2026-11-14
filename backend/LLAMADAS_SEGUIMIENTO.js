@@ -440,3 +440,27 @@ function llamadasPendientesCRM_(desdeMs, hastaMs, excluir) {
   });
   return res;
 }
+
+/**
+ * Para la ventana de programar: lo ocupado en un rango (llamadas del CRM + calendario).
+ * d = { hoja, fila, desde, hasta } (ms). Devuelve [{ inicio, fin, que }].
+ */
+function ocupadoParaLlamada(d) {
+  const desde = Number(d.desde), hasta = Number(d.hasta);
+  const ocup = llamadasPendientesCRM_(desde, hasta, { hoja: d.hoja, fila: d.fila })
+    .map(l => ({ inicio: l.inicio, fin: l.fin, que: 'Llamada: ' + (l.nombre || 'otro propietario') }));
+  let propio = '';
+  try {
+    const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(d.hoja);
+    if (hoja && d.fila) {
+      const col = columnasLlamada_(hoja), leer = (k) => hoja.getRange(Number(d.fila), col[k]).getValue();
+      if (LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1) propio = String(leer('LLAMADA EVENTO') || '');
+    }
+  } catch (e) {}
+  try {
+    CalendarApp.getDefaultCalendar().getEvents(new Date(desde), new Date(hasta))
+      .filter(e => !e.isAllDayEvent() && e.getId() !== propio)
+      .forEach(e => ocup.push({ inicio: e.getStartTime().getTime(), fin: e.getEndTime().getTime(), que: e.getTitle() }));
+  } catch (e) { Logger.log('No se pudo leer el calendario: ' + e.message); }
+  return ocup;
+}
