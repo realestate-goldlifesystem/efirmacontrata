@@ -191,7 +191,8 @@
         const [h, m] = o.value.split(':').map(Number);
         const t = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m).getTime();
         const c = choca(t), pr = !c && propia(t);
-        o.disabled = !!c; o.textContent = o.dataset.txt + (c ? ' — ocupado (' + c.que + ')' : pr ? ' — 📞 su llamada actual' : '');
+        const pasada = t <= Date.now();
+        o.disabled = !!c || pasada; o.textContent = o.dataset.txt + (pasada ? ' — ya pasó' : c ? ' — ocupado (' + c.que + ')' : pr ? ' — 📞 su llamada actual' : '');
       });
       const sel = $('hora').selectedOptions[0];
       if (sel && sel.disabled) { const libre = [...$('hora').options].find(o => !o.disabled && o.index > sel.index) || [...$('hora').options].find(o => !o.disabled); if (libre) libre.selected = true; }
@@ -229,7 +230,7 @@
       revisar();
     });
     // El reloj avanza: se recalculan los accesos rápidos cada 30 s
-    setInterval(() => { evaluarRapidos(); revisar(); }, 30000);
+    setInterval(() => { evaluarRapidos(); marcarHoras(); revisar(); }, 30000);
     $('hora').onchange = () => revisar();
 
     function momento() {
