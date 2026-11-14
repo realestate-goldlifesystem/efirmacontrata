@@ -356,8 +356,11 @@ function cargarComprobanteMensual(datos) {
     const mes = Number(p.v('MES'));
     const carpetas = _carpetasEntrega(String(c.v('CODIGO DE REGISTRO')));
     const nombreMes = 'MES #' + (((mes - 1) % 12) + 1);
-    const sub = carpetas.folderPagos.getFoldersByName(nombreMes);
-    const carpetaMes = sub.hasNext() ? sub.next() : carpetas.folderPagos.createFolder(nombreMes);
+    // Las carpetas MES #1…#12 viven en "COMPROBANTES DE ARRIENDO" (plantilla), no sueltas
+    const subArr = carpetas.folderPagos.getFoldersByName('COMPROBANTES DE ARRIENDO');
+    const folderArriendo = subArr.hasNext() ? subArr.next() : carpetas.folderPagos.createFolder('COMPROBANTES DE ARRIENDO');
+    const sub = folderArriendo.getFoldersByName(nombreMes);
+    const carpetaMes = sub.hasNext() ? sub.next() : folderArriendo.createFolder(nombreMes);
     // Si había uno anterior (rechazado), va a la papelera
     const previo = String(p.v('ARCHIVO') || '').match(/[-\w]{25,}/);
     if (previo) { try { DriveApp.getFileById(previo[0]).setTrashed(true); } catch (e) {} }
