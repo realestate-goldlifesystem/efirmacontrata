@@ -117,7 +117,8 @@
     // Lo ocupado del día (otras llamadas del CRM y el calendario): esas horas no se pueden elegir
     let ocupado = [];
     const DUR = 30 * 60000;
-    function choca(t) { return ocupado.find(o => t < o.fin && t + DUR > o.inicio); }
+    // Solo se bloquea desde la hora de lo ocupado hacia adelante (no antes)
+    function choca(t) { return ocupado.find(o => t >= o.inicio && t < o.fin); }
     function cargarOcupado() {
       if (!dia) return;
       const d0 = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate()).getTime();

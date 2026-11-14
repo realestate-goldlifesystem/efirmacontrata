@@ -176,12 +176,13 @@ function programarLlamada(d) {
   const eventoPropio = LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1 ? String(leer('LLAMADA EVENTO') || '') : '';
   // 1) Las llamadas pendientes del propio CRM (aunque su evento no esté en el calendario)
   const tzC = 'America/Bogota', fC = (x) => Utilities.formatDate(x, tzC, 'h:mm a').toLowerCase();
-  const otra = llamadasPendientesCRM_(inicio.getTime(), finLlamada.getTime(), { hoja: hoja.getName(), fila: fila })[0];
+  const otra = llamadasPendientesCRM_(inicio.getTime(), inicio.getTime() + 1, { hoja: hoja.getName(), fila: fila })[0];
   if (otra) return { success: false, error: 'Ese horario ya está ocupado: llamada con ' + (otra.nombre || 'otro propietario') + ' de ' + fC(new Date(otra.inicio)) + ' a ' + fC(new Date(otra.fin)) + '. Elige otra hora.' };
   // 2) Cualquier evento del calendario (citas, entregas, etc.)
   try {
-    const choque = CalendarApp.getDefaultCalendar().getEvents(inicio, finLlamada)
-      .find(e => !e.isAllDayEvent() && e.getId() !== eventoPropio);
+    // Solo choca si la hora elegida cae DENTRO de algo ya agendado (desde su inicio hacia adelante)
+    const choque = CalendarApp.getDefaultCalendar().getEvents(inicio, new Date(inicio.getTime() + 60000))
+      .find(e => !e.isAllDayEvent() && e.getId() !== eventoPropio && e.getStartTime().getTime() <= inicio.getTime());
     if (choque) {
       const tz = 'America/Bogota', f = (x) => Utilities.formatDate(x, tz, 'h:mm a').toLowerCase();
       return { success: false, error: 'Ese horario ya está ocupado: "' + choque.getTitle() + '" de ' + f(choque.getStartTime()) + ' a ' + f(choque.getEndTime()) + '. Elige otra hora.' };
