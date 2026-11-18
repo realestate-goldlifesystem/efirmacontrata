@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot, Route, CheckCircle2, CalendarDays } from 'lucide-react';
+import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot, Route, CheckCircle2, CalendarDays, Users } from 'lucide-react';
 import VIPPropertiesPanel from './VIPPropertiesPanel';
 import MiguelCaptadorModal from './MiguelCaptadorModal';
 import CitasAgendaPanel from './CitasAgendaPanel';
+import CaptacionesPanel from './CaptacionesPanel';
 
 interface AgentDashboardProps {
   onOpenForm: () => void;
@@ -17,7 +18,22 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
   const [showSasModal, setShowSasModal] = useState(false);
   const [showMiguelModal, setShowMiguelModal] = useState(false);
   const [showGuiaCierreModal, setShowGuiaCierreModal] = useState(false);
-  const [activeView, setActiveView] = useState<'menu' | 'portafolio' | 'citas'>('menu');
+  const [activeView, setActiveView] = useState<'menu' | 'portafolio' | 'citas' | 'captaciones'>('menu');
+
+  if (activeView === 'captaciones') {
+    return (
+      <div className="min-h-screen bg-brand-dark animate-fade-in pb-20 relative">
+        <button
+          onClick={() => setActiveView('menu')}
+          className="fixed top-[22px] md:top-24 left-4 md:left-8 z-[60] flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all shadow-md"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium hidden md:inline">Volver al Panel</span>
+        </button>
+        <CaptacionesPanel agentCredential={agentCredential} />
+      </div>
+    );
+  }
 
   if (activeView === 'citas') {
     return (
@@ -348,15 +364,19 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
       </div>
 
       {/* Menú del agente, en dos grupos que llenan siempre sus filas:
-          4 herramientas de operación y 3 para trabajar con el cliente.
-          En PC son 4 y 3 columnas; en el celular, cuadros de 2 columnas con su
-          descripción, y el séptimo ocupa la fila completa para no dejar un hueco. */}
+          5 herramientas de operación y 3 para trabajar con el cliente.
+          En PC son 5 y 3 columnas; en el celular y la tablet, cuadros de 2 columnas
+          con su descripción, y la última de cada grupo ocupa la fila completa para
+          no dejar un hueco. */}
       <div className="w-full max-w-6xl flex flex-col gap-6 md:gap-10">
         <section className="flex flex-col gap-3 md:gap-4" aria-labelledby="menu-operacion">
           <h2 id="menu-operacion" className="text-xs md:text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
             Operación del día a día
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-5">
+            <TarjetaMenu destacada icono={Users} titulo="Captaciones"
+              descripcion="Propietarios por llamar, seguimiento, llamadas y presentaciones."
+              onClick={() => setActiveView('captaciones')} />
             <TarjetaMenu destacada icono={CalendarDays} titulo="Agenda de Citas"
               descripcion="Citas de propietarios: confirmadas, canceladas y por reagendar."
               onClick={() => setActiveView('citas')} />
@@ -366,7 +386,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
             <TarjetaMenu icono={Bot} titulo="Miguel · Agente Captador"
               descripcion="Barrido de propietarios directos en Fincaraiz y Metrocuadrado."
               onClick={() => setShowMiguelModal(true)} />
-            <TarjetaMenu icono={ClipboardList} titulo="Registro de Inmuebles"
+            <TarjetaMenu anchaHastaPc icono={ClipboardList} titulo="Registro de Inmuebles"
               descripcion="Captación de propiedades, contratos y checklist de exclusividad."
               onClick={onOpenForm} />
           </div>
@@ -401,19 +421,21 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
 }
 
 /** Tarjeta del menú del agente: cuadro compacto en el celular, más amplio desde tablet. */
-function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = false, ancha = false }: {
+function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = false, ancha = false, anchaHastaPc = false }: {
   icono: React.ComponentType<{ className?: string }>;
   titulo: string;
   descripcion: string;
   onClick: () => void;
   destacada?: boolean;
   ancha?: boolean;
+  /** Fila completa en celular y tablet (grupo de 2 columnas hasta lg). */
+  anchaHastaPc?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1" : ""} flex flex-col items-center justify-start gap-2 sm:gap-4 p-3 sm:p-6 text-center rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
+      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1" : ""} ${anchaHastaPc ? "col-span-2 lg:col-span-1" : ""} flex flex-col items-center justify-start gap-2 sm:gap-4 p-3 sm:p-6 text-center rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       <div className={`relative w-10 h-10 sm:w-16 sm:h-16 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors duration-300 ${destacada ? "border border-brand-gold/30" : ""}`}>

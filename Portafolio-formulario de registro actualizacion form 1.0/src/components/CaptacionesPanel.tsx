@@ -1,0 +1,583 @@
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  Users, RefreshCw, Search, X, Loader2, AlertTriangle, Phone, MessageCircle, ExternalLink,
+  Bot, CalendarClock, PhoneCall, Flame, Inbox, ChevronDown, Send, MapPin, BedDouble, Clock,
+} from 'lucide-react';
+import { API_URL } from './CitasAgendaPanel';
+import MiguelCaptadorModal from './MiguelCaptadorModal';
+import { ProgramarLlamadaModal, AgendarPresentacionModal } from './CaptacionesModales';
+
+// ==========================================
+// CRM DE CAPTACIONES (18-nov-2026)
+// ==========================================
+// Ventana sobre las pestañas "1 - CAPTACIONES A / V" del Sheet: todo lo que se
+// lee y se escribe vive allá (API_CRM_CAPTACIONES.js). Las columnas se buscan
+// por su nombre en el backend, nunca por su posición.
+
+export interface Lead {
+  idLead: string;
+  fila: number;
+  n: string;
+  nombre: string;
+  celular: string;
+  link: string;
+  estado: string;
+  tipo: string;
+  habitaciones: string;
+  valor: string;
+  ubicacion: string;
+  localidad: string;
+  detalles: string;
+  fechaSeguimiento: string;
+  horaSeguimiento: string;
+  seguimientoMs: number | null;
+  fechaContacto: string;
+  fechaCaptacion: string;
+  captacionMs: number | null;
+  proximaLlamadaMs: number | null;
+  llamadaEstado: string;
+  correo: string;
+  idCita: string;
+}
+
+export interface EstadoInfo { nombre: string; fondo: string; texto: string; }
+
+type Operacion = 'A' | 'V';
+type Vista = 'hoy' | 'todos';
+
+const LOCALIDADES: Record<string, string> = { U: 'Usaquén', S: 'Suba', C: 'Chapinero' };
+const DIA = 86400000;
+// Mismos días que el correo diario de "propietarios por retomar" (SEGUIMIENTO_CRM.js)
+const DIAS_RETOMAR: Record<string, number> = { 'CITA CANCELADA': 2, 'SEGUIMIENTO': 3 };
+const LLAMADA_PENDIENTE = ['PROGRAMADA', 'CONFIRMADA'];
+
+/** Llamada al backend del CRM con la sesión de Google del agente. */
+export async function llamarCRM(credential: string | null, op: string, extra: Record<string, unknown> = {}) {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ accion: 'crmCaptaciones', op, credential, ...extra }),
+  });
+  return r.json();
+}
+
+/** Colores del estado tal cual el Sheet; si la regla no trae color de letra, se elige por contraste. */
+export function estiloEstado(estados: EstadoInfo[], nombre: string): React.CSSProperties {
+  const e = estados.find(x => x.nombre.toUpperCase() === (nombre || '').toUpperCase());
+  const fondo = e?.fondo || '#e7e5e4';
+  let texto = e?.texto || '';
+  if (!texto || texto.toLowerCase() === fondo.toLowerCase()) {
+    const h = fondo.replace('#', '');
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) || 0);
+    texto = (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#1c1917' : '#ffffff';
+  }
+  return { background: fondo, color: texto };
+}
+
+export const celularInternacional = (c: string) => (c.length === 10 ? '57' + c : c);
+
+const inicioHoy = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+const textoHora = (ms: number) => {
+  const d = new Date(ms);
+  return (d.getHours() % 12 || 12) + ':' + String(d.getMinutes()).padStart(2, '0') + (d.getHours() < 12 ? ' a. m.' : ' p. m.');
+};
+const textoFechaCorta = (ms: number) => {
+  const d = new Date(ms);
+  const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  return d.getDate() + ' ' + MES[d.getMonth()] + ' · ' + textoHora(ms);
+};
+const haceDias = (ms: number | null) => (ms == null ? null : Math.floor((inicioHoy() - new Date(ms).setHours(0, 0, 0, 0)) / DIA));
+
+interface Props { agentCredential: string | null; }
+
+export default function CaptacionesPanel({ agentCredential }: Props) {
+  const [operacion, setOperacion] = useState<Operacion>('A');
+  const [vista, setVista] = useState<Vista>('hoy');
+  const [datos, setDatos] = useState<Record<Operacion, { leads: Lead[]; estados: EstadoInfo[] } | null>>({ A: null, V: null });
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState('');
+  const [filtroEstado, setFiltroEstado] = useState<string | null>(null);
+  const [filtroLocalidad, setFiltroLocalidad] = useState<string | null>(null);
+  const [filtroHab, setFiltroHab] = useState<string | null>(null);
+  const [limite, setLimite] = useState(40);
+  const [selId, setSelId] = useState<string | null>(null);
+  const [miguel, setMiguel] = useState(false);
+
+  const actual = datos[operacion];
+  const leads = actual?.leads || [];
+  const estados = actual?.estados || [];
+
+  const cargar = async (op: Operacion = operacion) => {
+    if (!agentCredential) {
+      setError('Tu sesión de Google ya no está disponible. Cierra sesión y vuelve a entrar.');
+      return;
+    }
+    setCargando(true);
+    setError(null);
+    try {
+      const r = await llamarCRM(agentCredential, 'listar', { operacion: op });
+      if (r.success) setDatos(d => ({ ...d, [op]: { leads: r.leads || [], estados: r.estados || [] } }));
+      else setError(r.message || 'No se pudieron cargar las captaciones.');
+    } catch {
+      setError('Error de red al conectar con el servidor.');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  useEffect(() => { if (!datos[operacion]) cargar(operacion); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [operacion]);
+  useEffect(() => { setLimite(40); }, [operacion, vista, busqueda, filtroEstado, filtroLocalidad, filtroHab]);
+
+  /** Reemplaza un propietario con lo que devolvió el servidor tras un cambio. */
+  const actualizarLead = (lead: Lead | null | undefined) => {
+    if (!lead) return;
+    setDatos(d => {
+      const act = d[operacion];
+      if (!act) return d;
+      return { ...d, [operacion]: { ...act, leads: act.leads.map(l => (l.idLead === lead.idLead ? lead : l)) } };
+    });
+  };
+
+  // ---------- Grupos de la vista "Hoy" ----------
+  const hoy = useMemo(() => {
+    const h0 = inicioHoy(), h1 = h0 + DIA;
+    const llamadas = leads
+      .filter(l => l.proximaLlamadaMs != null && LLAMADA_PENDIENTE.includes(l.llamadaEstado.toUpperCase()) && l.proximaLlamadaMs < h1)
+      .sort((a, b) => (a.proximaLlamadaMs! - b.proximaLlamadaMs!));
+    const retomar = leads
+      .filter(l => DIAS_RETOMAR[l.estado] != null && (haceDias(l.seguimientoMs) ?? 0) >= DIAS_RETOMAR[l.estado])
+      .sort((a, b) => (a.seguimientoMs ?? 0) - (b.seguimientoMs ?? 0));
+    const nuevos = leads.filter(l => l.estado === 'NUEVO').sort((a, b) => a.fila - b.fila);
+    return { llamadas, retomar, nuevos };
+  }, [leads]);
+
+  const conteoEstados = useMemo(() => {
+    const m: Record<string, number> = {};
+    leads.forEach(l => { m[l.estado] = (m[l.estado] || 0) + 1; });
+    return m;
+  }, [leads]);
+
+  // ---------- Vista "Todos" con filtros ----------
+  const filtrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    const qDig = q.replace(/\D/g, '');
+    return leads
+      .filter(l => !filtroEstado || l.estado === filtroEstado)
+      .filter(l => !filtroLocalidad || l.localidad.toUpperCase() === filtroLocalidad)
+      .filter(l => !filtroHab || l.habitaciones === filtroHab)
+      .filter(l => !q || l.nombre.toLowerCase().includes(q) || l.ubicacion.toLowerCase().includes(q)
+        || (qDig.length >= 3 && l.celular.includes(qDig)) || l.idLead.toLowerCase().includes(q))
+      .sort((a, b) => b.fila - a.fila);
+  }, [leads, busqueda, filtroEstado, filtroLocalidad, filtroHab]);
+
+  const habitacionesDisponibles = useMemo(
+    () => Array.from(new Set(leads.map(l => l.habitaciones).filter(Boolean))).sort((a, b) => Number(a) - Number(b)),
+    [leads]);
+
+  const seleccionado = leads.find(l => l.idLead === selId) || null;
+  const totalHoy = hoy.llamadas.length;
+
+  return (
+    <div className="w-full max-w-[1760px] mx-auto px-[clamp(1rem,2.5vw,3rem)] pt-2 md:pt-20 xl:pt-0 xl:pl-[15rem]">
+      {/* Cabecera */}
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-light text-brand-gold flex items-center gap-3">
+            <Users className="w-8 h-8" /> Captaciones
+          </h1>
+          <p className="hidden sm:block text-stone-600 mt-1 text-sm md:text-base">
+            Los propietarios que captó Miguel, con su seguimiento. Todo queda en el CRM del Sheet.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setMiguel(true)}
+            className="flex items-center gap-2 px-5 py-2 bg-brand-gold text-stone-950 font-semibold rounded-full shadow-[0_6px_18px_rgba(212,175,55,.3)] hover:brightness-105 hover:-translate-y-px transition-all">
+            <Bot className="w-4 h-4" /> Miguel
+          </button>
+          <button onClick={() => cargar()} disabled={cargando}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-300 rounded-full text-stone-700 hover:text-brand-gold-dark hover:border-brand-gold transition-all disabled:opacity-50">
+            <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} /> <span className="hidden sm:inline">Actualizar</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Arriendo / Venta y vista */}
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <div className="grid grid-cols-2 p-1 rounded-full bg-stone-900 border border-stone-800 w-full sm:w-auto">
+          {(['A', 'V'] as Operacion[]).map(op => (
+            <button key={op} onClick={() => { setOperacion(op); setSelId(null); setFiltroEstado(null); }}
+              aria-pressed={operacion === op}
+              className={`min-h-[40px] px-6 rounded-full text-sm font-semibold transition-all ${operacion === op ? 'bg-brand-gold text-stone-950 shadow' : 'text-stone-400 hover:text-white'}`}>
+              {op === 'A' ? 'Arriendo' : 'Venta'}
+              {datos[op] && <span className="ml-1.5 opacity-70 font-normal">{datos[op]!.leads.length}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 p-1 rounded-full bg-white border border-stone-300 w-full sm:w-auto">
+          {(['hoy', 'todos'] as Vista[]).map(v => (
+            <button key={v} onClick={() => setVista(v)} aria-pressed={vista === v}
+              className={`min-h-[40px] px-5 rounded-full text-sm font-medium transition-all ${vista === v ? 'bg-stone-900 text-white' : 'text-stone-600 hover:text-stone-900'}`}>
+              {v === 'hoy' ? 'Mi día' : 'Todos'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-5 flex items-start gap-3 p-4 rounded-2xl border border-red-300 bg-red-50 text-red-800">
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" /><span>{error}</span>
+        </div>
+      )}
+
+      {/* Indicadores */}
+      <div className="flex md:grid md:grid-cols-5 gap-2 md:gap-3 mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-1 [scrollbar-width:none]">
+        <Indicador titulo="Nuevos por llamar" valor={conteoEstados['NUEVO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('NUEVO'); }} />
+        <Indicador titulo="Llamadas de hoy" valor={totalHoy} dorado onClick={() => setVista('hoy')} />
+        <Indicador titulo="En seguimiento" valor={conteoEstados['SEGUIMIENTO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('SEGUIMIENTO'); }} />
+        <Indicador titulo="Pre-registro" valor={conteoEstados['PRE-R CAPTACION'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('PRE-R CAPTACION'); }} />
+        <Indicador titulo="Captados" valor={conteoEstados['CAPTADO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('CAPTADO'); }} />
+      </div>
+
+      {cargando && !actual && (
+        <div className="flex items-center justify-center gap-3 py-20 text-stone-500">
+          <Loader2 className="w-6 h-6 animate-spin text-brand-gold" /> Leyendo el CRM…
+        </div>
+      )}
+
+      {actual && (
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)] gap-[clamp(1rem,1.6vw,2rem)] items-start">
+          <div className="min-w-0">
+            {vista === 'hoy' ? (
+              <div className="flex flex-col gap-6">
+                <Seccion icono={PhoneCall} titulo="Llamadas de hoy" vacio="No tienes llamadas programadas para hoy." n={hoy.llamadas.length}>
+                  {hoy.llamadas.map(l => (
+                    <TarjetaLead key={l.idLead} lead={l} estados={estados} activo={selId === l.idLead} onClick={() => setSelId(l.idLead)}
+                      aviso={l.proximaLlamadaMs! < Date.now() ? `Era a las ${textoHora(l.proximaLlamadaMs!)}` : `Llamar a las ${textoHora(l.proximaLlamadaMs!)}`}
+                      tonoAviso={l.proximaLlamadaMs! < Date.now() ? 'tarde' : 'oro'} />
+                  ))}
+                </Seccion>
+                <Seccion icono={Flame} titulo="Se están enfriando" vacio="Nadie lleva días sin gestión." n={hoy.retomar.length}>
+                  {hoy.retomar.map(l => (
+                    <TarjetaLead key={l.idLead} lead={l} estados={estados} activo={selId === l.idLead} onClick={() => setSelId(l.idLead)}
+                      aviso={`Sin gestión hace ${haceDias(l.seguimientoMs)} días`} tonoAviso="tarde" />
+                  ))}
+                </Seccion>
+                <Seccion icono={Inbox} titulo="Nuevos por llamar" vacio="No hay propietarios en NUEVO." n={hoy.nuevos.length}>
+                  {hoy.nuevos.slice(0, limite).map(l => (
+                    <TarjetaLead key={l.idLead} lead={l} estados={estados} activo={selId === l.idLead} onClick={() => setSelId(l.idLead)}
+                      aviso={l.fechaCaptacion ? `Captado ${l.fechaCaptacion}` : ''} />
+                  ))}
+                  {hoy.nuevos.length > limite && <MasBoton onClick={() => setLimite(x => x + 40)} faltan={hoy.nuevos.length - limite} />}
+                </Seccion>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <label htmlFor="buscar-captacion" className="sr-only">Buscar propietario</label>
+                  <input id="buscar-captacion" value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                    placeholder="Buscar por nombre, celular, barrio o ID"
+                    className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white border border-stone-300 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20" />
+                  {busqueda && <button onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda" className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700"><X className="w-4 h-4" /></button>}
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
+                  <Chip activo={filtroEstado === null} onClick={() => setFiltroEstado(null)}>Todos <b className="font-semibold">{leads.length}</b></Chip>
+                  {estados.filter(e => conteoEstados[e.nombre.toUpperCase()]).map(e => (
+                    <Chip key={e.nombre} activo={filtroEstado === e.nombre.toUpperCase()} onClick={() => setFiltroEstado(filtroEstado === e.nombre.toUpperCase() ? null : e.nombre.toUpperCase())}>
+                      <span className="w-2.5 h-2.5 rounded-full border border-black/10" style={{ background: estiloEstado(estados, e.nombre).background }} />
+                      {e.nombre} <b className="font-semibold">{conteoEstados[e.nombre.toUpperCase()]}</b>
+                    </Chip>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(LOCALIDADES).map(([k, v]) => (
+                    <Chip key={k} activo={filtroLocalidad === k} onClick={() => setFiltroLocalidad(filtroLocalidad === k ? null : k)}><MapPin className="w-3.5 h-3.5" />{v}</Chip>
+                  ))}
+                  {habitacionesDisponibles.map(h => (
+                    <Chip key={h} activo={filtroHab === h} onClick={() => setFiltroHab(filtroHab === h ? null : h)}><BedDouble className="w-3.5 h-3.5" />{h} hab</Chip>
+                  ))}
+                </div>
+                <div className="text-xs text-stone-500">{filtrados.length} propietarios · los más recientes primero</div>
+                <div className="grid gap-2.5">
+                  {filtrados.slice(0, limite).map(l => (
+                    <TarjetaLead key={l.idLead} lead={l} estados={estados} activo={selId === l.idLead} onClick={() => setSelId(l.idLead)}
+                      aviso={l.fechaSeguimiento ? `Última gestión ${l.fechaSeguimiento}` : (l.fechaCaptacion ? `Captado ${l.fechaCaptacion}` : '')} />
+                  ))}
+                  {filtrados.length > limite && <MasBoton onClick={() => setLimite(x => x + 40)} faltan={filtrados.length - limite} />}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Ficha: columna fija en PC, pantalla completa en el celular */}
+          <div className="hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-3xl overscroll-contain">
+            {seleccionado
+              ? <FichaLead lead={seleccionado} estados={estados} operacion={operacion} credential={agentCredential} onCambio={actualizarLead} onCerrar={() => setSelId(null)} />
+              : <div className="rounded-3xl border border-dashed border-stone-300 p-10 text-center text-stone-500 text-sm">Elige un propietario para ver su ficha, cambiar su estado o programarle la llamada.</div>}
+          </div>
+        </div>
+      )}
+
+      {seleccionado && createPortal(
+        <div className="lg:hidden fixed inset-0 z-[150] bg-stone-950/60 backdrop-blur-sm flex items-end" onClick={() => setSelId(null)}>
+          <div className="w-full max-h-[94vh] overflow-y-auto rounded-t-3xl animate-fade-in" onClick={e => e.stopPropagation()}>
+            <FichaLead lead={seleccionado} estados={estados} operacion={operacion} credential={agentCredential} onCambio={actualizarLead} onCerrar={() => setSelId(null)} movil />
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {miguel && <MiguelCaptadorModal agentCredential={agentCredential} onClose={() => { setMiguel(false); }} />}
+    </div>
+  );
+}
+
+// ---------- Piezas ----------
+
+function Indicador({ titulo, valor, onClick, dorado = false }: { titulo: string; valor: number; onClick: () => void; dorado?: boolean }) {
+  return (
+    <button onClick={onClick}
+      className={`shrink-0 min-w-[118px] md:min-w-0 text-left rounded-2xl bg-stone-900 border ${dorado ? 'border-brand-gold/50' : 'border-stone-800'} px-3.5 py-2.5 md:px-4 md:py-3 hover:border-brand-gold transition-colors`}>
+      <div className="text-[10px] md:text-[11px] uppercase tracking-[0.12em] text-stone-400 whitespace-nowrap">{titulo}</div>
+      <div className={`text-2xl md:text-3xl font-semibold tabular-nums ${dorado ? 'text-brand-gold-light' : 'text-white'}`}>{valor}</div>
+    </button>
+  );
+}
+
+function Seccion({ icono: Icono, titulo, n, vacio, children }: { icono: React.ComponentType<{ className?: string }>; titulo: string; n: number; vacio: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-2.5">
+        <h2 className="flex items-center gap-2 text-stone-800 font-semibold"><Icono className="w-4 h-4 text-brand-gold" /> {titulo}</h2>
+        <span className="text-xs text-stone-500 tabular-nums">{n}</span>
+      </div>
+      {n === 0 ? <div className="rounded-2xl border border-dashed border-stone-300 px-4 py-5 text-sm text-stone-500">{vacio}</div> : <div className="grid gap-2.5">{children}</div>}
+    </section>
+  );
+}
+
+function Chip({ activo, onClick, children }: { key?: string; activo: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} aria-pressed={activo}
+      className={`shrink-0 min-h-[36px] px-3.5 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${activo ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-300 hover:border-stone-400'}`}>
+      {children}
+    </button>
+  );
+}
+
+function MasBoton({ onClick, faltan }: { onClick: () => void; faltan: number }) {
+  return (
+    <button onClick={onClick} className="min-h-[44px] rounded-2xl border border-stone-300 bg-white text-stone-700 text-sm hover:border-brand-gold">
+      Mostrar más ({faltan})
+    </button>
+  );
+}
+
+function TarjetaLead({ lead, estados, onClick, activo, aviso, tonoAviso }: {
+  key?: string; lead: Lead; estados: EstadoInfo[]; onClick: () => void; activo: boolean; aviso?: string; tonoAviso?: 'oro' | 'tarde';
+}) {
+  const colorAviso = tonoAviso === 'oro' ? 'text-brand-gold-light' : tonoAviso === 'tarde' ? 'text-orange-300' : 'text-stone-400';
+  return (
+    <div className={`group rounded-2xl bg-stone-900 border ${activo ? 'border-brand-gold' : 'border-stone-800 hover:border-stone-600'} transition-colors`}>
+      <button onClick={onClick} className="w-full text-left px-4 pt-3.5 pb-2 focus-visible:outline-none">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-white font-semibold truncate">{lead.nombre || 'Sin nombre'}</div>
+            <div className="text-stone-400 text-[13px] truncate">
+              {[lead.ubicacion, lead.habitaciones && lead.habitaciones + ' hab', lead.valor].filter(Boolean).join(' · ')}
+            </div>
+          </div>
+          <span className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full" style={estiloEstado(estados, lead.estado)}>{lead.estado || 'SIN ESTADO'}</span>
+        </div>
+      </button>
+      <div className="flex items-center justify-between gap-2 px-4 pb-3">
+        <span className={`text-xs ${colorAviso} truncate`}>{aviso}</span>
+        <div className="flex gap-1.5 shrink-0">
+          <a href={`https://wa.me/${celularInternacional(lead.celular)}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp a ${lead.nombre}`}
+            className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/25"><MessageCircle className="w-4 h-4" /></a>
+          <a href={`tel:+${celularInternacional(lead.celular)}`} aria-label={`Llamar a ${lead.nombre}`}
+            className="w-9 h-9 rounded-xl bg-brand-gold/15 text-brand-gold-light flex items-center justify-center hover:bg-brand-gold/25"><Phone className="w-4 h-4" /></a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Ficha del propietario ----------
+
+function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, movil = false }: {
+  lead: Lead; estados: EstadoInfo[]; operacion: Operacion; credential: string | null;
+  onCambio: (l: Lead) => void; onCerrar: () => void; movil?: boolean;
+}) {
+  const [eligiendo, setEligiendo] = useState(false);
+  const [guardando, setGuardando] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [nota, setNota] = useState('');
+  const [modal, setModal] = useState<'llamada' | 'agenda' | null>(null);
+
+  useEffect(() => { setEligiendo(false); setError(null); setNota(''); setModal(null); }, [lead.idLead]);
+
+  const guardar = async (cambios: { estado?: string; nota?: string }, que: string) => {
+    setGuardando(que); setError(null);
+    try {
+      const r = await llamarCRM(credential, 'actualizar', { idLead: lead.idLead, ...cambios });
+      if (!r.success) { setError(r.message || 'No se pudo guardar.'); return false; }
+      onCambio(r.lead);
+      return true;
+    } catch {
+      setError('Error de red al guardar.');
+      return false;
+    } finally {
+      setGuardando(null);
+    }
+  };
+
+  const cambiarEstado = async (nombre: string) => {
+    setEligiendo(false);
+    if (nombre.toUpperCase() === lead.estado) return;
+    const ok = await guardar({ estado: nombre }, 'estado');
+    // Igual que en el Sheet: SEGUIMIENTO abre la llamada y PRE-R CAPTACION la agenda
+    if (ok && nombre.toUpperCase() === 'SEGUIMIENTO') setModal('llamada');
+    if (ok && nombre.toUpperCase() === 'PRE-R CAPTACION') setModal('agenda');
+  };
+
+  const enviarNota = async () => {
+    if (!nota.trim()) return;
+    if (await guardar({ nota: nota.trim() }, 'nota')) setNota('');
+  };
+
+  const lineas = (lead.detalles || '').split('\n').map(s => s.trim()).filter(Boolean).reverse();
+  const llamadaPendiente = lead.proximaLlamadaMs != null && LLAMADA_PENDIENTE.includes(lead.llamadaEstado.toUpperCase());
+
+  return (
+    <div className={`bg-stone-900 border border-stone-800 ${movil ? 'rounded-t-3xl' : 'rounded-3xl'} p-5 text-stone-200 relative`}>
+      {movil && <div className="w-10 h-1 rounded-full bg-stone-700 mx-auto -mt-1 mb-4" />}
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <div className="text-xs text-stone-500">{operacion === 'A' ? 'Arriendo' : 'Venta'} · {lead.idLead}{lead.localidad && ' · ' + (LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad)}</div>
+          <h3 className="text-xl font-semibold text-white leading-tight">{lead.nombre || 'Sin nombre'}</h3>
+        </div>
+        <button onClick={onCerrar} aria-label="Cerrar ficha" className="p-2 rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-4 h-4" /></button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <a href={`https://wa.me/${celularInternacional(lead.celular)}`} target="_blank" rel="noopener noreferrer"
+          className="min-h-[46px] rounded-xl bg-emerald-500/15 text-emerald-300 font-semibold text-sm flex items-center justify-center gap-1.5 hover:bg-emerald-500/25"><MessageCircle className="w-4 h-4" />WhatsApp</a>
+        <a href={`tel:+${celularInternacional(lead.celular)}`}
+          className="min-h-[46px] rounded-xl bg-brand-gold/15 text-brand-gold-light font-semibold text-sm flex items-center justify-center gap-1.5 hover:bg-brand-gold/25"><Phone className="w-4 h-4" />Llamar</a>
+        {/^https?:\/\//i.test(lead.link)
+          ? <a href={lead.link} target="_blank" rel="noopener noreferrer"
+              className="min-h-[46px] rounded-xl border border-stone-700 text-stone-200 text-sm flex items-center justify-center gap-1.5 hover:border-stone-500"><ExternalLink className="w-4 h-4" />Anuncio</a>
+          : <span className="min-h-[46px] rounded-xl border border-stone-800 text-stone-600 text-sm flex items-center justify-center">Sin anuncio</span>}
+      </div>
+
+      {/* Estado */}
+      <div className="rounded-2xl bg-stone-950/50 border border-stone-800 p-3.5 mb-3">
+        <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 mb-2">Estado de llamada</div>
+        <button onClick={() => setEligiendo(v => !v)} disabled={!!guardando}
+          className="w-full min-h-[48px] rounded-xl px-4 flex items-center justify-between font-bold text-[15px] disabled:opacity-70" style={estiloEstado(estados, lead.estado)}>
+          <span>{lead.estado || 'SIN ESTADO'}</span>
+          {guardando === 'estado' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className={`w-4 h-4 transition-transform ${eligiendo ? 'rotate-180' : ''}`} />}
+        </button>
+        {eligiendo && (
+          <div className="grid grid-cols-2 gap-1.5 mt-2.5">
+            {estados.map(e => (
+              <button key={e.nombre} onClick={() => cambiarEstado(e.nombre)}
+                className={`min-h-[40px] rounded-lg px-2 text-xs font-semibold ${e.nombre.toUpperCase() === lead.estado ? 'ring-2 ring-brand-gold' : ''}`}
+                style={estiloEstado(estados, e.nombre)}>{e.nombre}</button>
+            ))}
+          </div>
+        )}
+        <div className="text-xs text-stone-500 mt-2">
+          {lead.fechaSeguimiento ? <>Última gestión: {lead.fechaSeguimiento}{lead.horaSeguimiento && ' · ' + lead.horaSeguimiento}</> : 'Sin gestión todavía'}
+        </div>
+      </div>
+
+      {/* Próxima llamada y cita */}
+      <div className="rounded-2xl bg-stone-950/50 border border-stone-800 divide-y divide-stone-800 mb-3">
+        <div className="flex items-center justify-between gap-3 p-3.5">
+          <div className="min-w-0">
+            <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Próxima llamada</div>
+            <div className="text-sm font-semibold text-white">{llamadaPendiente ? textoFechaCorta(lead.proximaLlamadaMs!) : 'Sin llamada programada'}</div>
+          </div>
+          {llamadaPendiente && <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">{lead.llamadaEstado}</span>}
+        </div>
+        <div className="flex items-center justify-between gap-3 p-3.5">
+          <div className="min-w-0">
+            <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Presentación</div>
+            <div className="text-sm font-semibold text-white">{lead.idCita ? 'Cita ' + lead.idCita : 'Sin cita agendada'}</div>
+          </div>
+          {lead.idCita && <span className="text-[11px] text-stone-400">en Agenda de Citas</span>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <button onClick={() => setModal('llamada')}
+          className="min-h-[60px] rounded-2xl border border-brand-gold/60 bg-stone-950/40 text-left px-3.5 py-2.5 hover:bg-brand-gold/10">
+          <div className="flex items-center gap-1.5 font-semibold text-sm text-white"><CalendarClock className="w-4 h-4 text-brand-gold-light" />Programar llamada</div>
+          <div className="text-[11px] text-stone-400">Fecha y hora de recontacto</div>
+        </button>
+        <button onClick={() => setModal('agenda')}
+          className="min-h-[60px] rounded-2xl border border-stone-700 bg-stone-950/40 text-left px-3.5 py-2.5 hover:border-stone-500">
+          <div className="flex items-center gap-1.5 font-semibold text-sm text-white"><Clock className="w-4 h-4 text-brand-gold-light" />Agendar presentación</div>
+          <div className="text-[11px] text-stone-400">Virtual o presencial</div>
+        </button>
+      </div>
+
+      {/* Datos */}
+      <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm rounded-2xl bg-stone-950/50 border border-stone-800 p-3.5 mb-3">
+        <Dato t="Barrio" v={lead.ubicacion} />
+        <Dato t="Habitaciones" v={lead.habitaciones} />
+        <Dato t="Valor publicado" v={lead.valor} />
+        <Dato t="Tipo" v={lead.tipo} />
+        <Dato t="Fecha de captación" v={lead.fechaCaptacion} />
+        <Dato t="Fecha de contacto" v={lead.fechaContacto} />
+        <Dato t="Celular" v={lead.celular} />
+        <Dato t="Correo" v={lead.correo} />
+      </dl>
+
+      {/* Detalles de seguimiento */}
+      <div className="rounded-2xl bg-stone-950/50 border border-stone-800 p-3.5">
+        <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 mb-2.5">Detalles de seguimiento</div>
+        <div className="flex gap-2 mb-3">
+          <label htmlFor={`nota-${lead.idLead}`} className="sr-only">Nueva nota</label>
+          <input id={`nota-${lead.idLead}`} value={nota} onChange={e => setNota(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarNota(); }}
+            placeholder="Escribe una nota…" maxLength={1000}
+            className="flex-1 min-w-0 h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold" />
+          <button onClick={enviarNota} disabled={!nota.trim() || !!guardando} aria-label="Guardar nota"
+            className="h-11 w-11 rounded-xl bg-brand-gold text-stone-950 flex items-center justify-center disabled:opacity-40">
+            {guardando === 'nota' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </button>
+        </div>
+        {lineas.length === 0
+          ? <div className="text-sm text-stone-500">Aún no hay notas.</div>
+          : <ol className="flex flex-col gap-2">{lineas.map((t, i) => (
+              <li key={i} className="text-sm text-stone-200 leading-snug pl-3 border-l-2 border-stone-700">{t}</li>
+            ))}</ol>}
+      </div>
+
+      {error && <div className="mt-3 text-sm text-red-300 flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
+
+      {modal === 'llamada' && (
+        <ProgramarLlamadaModal lead={lead} credential={credential}
+          onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
+      )}
+      {modal === 'agenda' && (
+        <AgendarPresentacionModal lead={lead} operacion={operacion} credential={credential}
+          onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
+      )}
+    </div>
+  );
+}
+
+function Dato({ t, v }: { t: string; v: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11px] text-stone-500">{t}</dt>
+      <dd className="text-stone-200 truncate">{v || '—'}</dd>
+    </div>
+  );
+}

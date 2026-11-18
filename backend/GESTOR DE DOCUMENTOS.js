@@ -862,6 +862,13 @@ function doPost(e) {
           result = { success: false, message: 'API_AGENTE_CAPTADOR no cargada' };
         }
         break;
+      case 'crmCaptaciones':
+        // Herramienta "Captaciones" del panel del agente (API_CRM_CAPTACIONES.js).
+        // Exige la sesión de Google del agente; datos.op dice qué hacer.
+        result = (typeof crmCaptacionesDesdeWeb === 'function')
+          ? crmCaptacionesDesdeWeb(datos)
+          : { success: false, message: 'API_CRM_CAPTACIONES no cargada' };
+        break;
       case 'validarCertificadoOCR':
         // Llama a la función del OCR-HANDLER.js
         result = validarCertificadoDesdeFormulario(datos.base64);
