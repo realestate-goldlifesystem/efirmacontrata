@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Users, RefreshCw, Search, X, Loader2, AlertTriangle, Phone, MessageCircle, ExternalLink,
-  Bot, CalendarClock, PhoneCall, Flame, Inbox, ChevronDown, Send, MapPin, BedDouble, Clock,
+  Bot, CalendarClock, PhoneCall, Flame, Inbox, ChevronDown, Send, Clock,
 } from 'lucide-react';
 import { API_URL } from './CitasAgendaPanel';
 import MiguelCaptadorModal from './MiguelCaptadorModal';
@@ -161,21 +161,33 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
   }, [leads]);
 
   // ---------- Vista "Todos" con filtros ----------
-  const filtrados = useMemo(() => {
+  // Cada filtro cuenta con los demás aplicados, para que los números de los
+  // botones digan cuántos quedarían al tocarlos.
+  const coincide = (l: Lead, sin: 'localidad' | 'hab' | 'estado' | null = null) => {
     const q = busqueda.trim().toLowerCase();
     const qDig = q.replace(/\D/g, '');
-    return leads
-      .filter(l => !filtroEstado || l.estado === filtroEstado)
-      .filter(l => !filtroLocalidad || l.localidad.toUpperCase() === filtroLocalidad)
-      .filter(l => !filtroHab || l.habitaciones === filtroHab)
-      .filter(l => !q || l.nombre.toLowerCase().includes(q) || l.ubicacion.toLowerCase().includes(q)
-        || (qDig.length >= 3 && l.celular.includes(qDig)) || l.idLead.toLowerCase().includes(q))
-      .sort((a, b) => b.fila - a.fila);
-  }, [leads, busqueda, filtroEstado, filtroLocalidad, filtroHab]);
+    if (sin !== 'estado' && filtroEstado && l.estado !== filtroEstado) return false;
+    if (sin !== 'localidad' && filtroLocalidad && l.localidad.toUpperCase() !== filtroLocalidad) return false;
+    if (sin !== 'hab' && filtroHab && l.habitaciones !== filtroHab) return false;
+    if (q && !(l.nombre.toLowerCase().includes(q) || l.ubicacion.toLowerCase().includes(q)
+      || (qDig.length >= 3 && l.celular.includes(qDig)) || l.idLead.toLowerCase().includes(q))) return false;
+    return true;
+  };
+
+  // Primero los NUEVO (los que se van a llamar) y, dentro de cada grupo, el
+  // mismo orden de filas del Sheet.
+  const filtrados = useMemo(() => leads
+    .filter(l => coincide(l))
+    .sort((a, b) => (Number(b.estado === 'NUEVO') - Number(a.estado === 'NUEVO')) || (a.fila - b.fila)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [leads, busqueda, filtroEstado, filtroLocalidad, filtroHab]);
+  const nuevosFiltrados = filtrados.filter(l => l.estado === 'NUEVO').length;
 
   const habitacionesDisponibles = useMemo(
     () => Array.from(new Set(leads.map(l => l.habitaciones).filter(Boolean))).sort((a, b) => Number(a) - Number(b)),
     [leads]);
+  const cuenta = (sin: 'localidad' | 'hab', valor: string | null) =>
+    leads.filter(l => coincide(l, sin) && (valor === null || (sin === 'localidad' ? l.localidad.toUpperCase() === valor : l.habitaciones === valor))).length;
 
   const seleccionado = leads.find(l => l.idLead === selId) || null;
   const totalHoy = hoy.llamadas.length;
@@ -283,28 +295,48 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
                     className="w-full h-12 pl-11 pr-10 rounded-2xl bg-white border border-stone-300 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20" />
                   {busqueda && <button onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda" className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700"><X className="w-4 h-4" /></button>}
                 </div>
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
-                  <Chip activo={filtroEstado === null} onClick={() => setFiltroEstado(null)}>Todos <b className="font-semibold">{leads.length}</b></Chip>
-                  {estados.filter(e => conteoEstados[e.nombre.toUpperCase()]).map(e => (
-                    <Chip key={e.nombre} activo={filtroEstado === e.nombre.toUpperCase()} onClick={() => setFiltroEstado(filtroEstado === e.nombre.toUpperCase() ? null : e.nombre.toUpperCase())}>
-                      <span className="w-2.5 h-2.5 rounded-full border border-black/10" style={{ background: estiloEstado(estados, e.nombre).background }} />
-                      {e.nombre} <b className="font-semibold">{conteoEstados[e.nombre.toUpperCase()]}</b>
-                    </Chip>
-                  ))}
+                {/* 1. Ubicación y 2. Habitaciones: los dos filtros para empezar a llamar */}
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-stone-500 mb-1.5">1 · Ubicación</div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    <Opcion activo={filtroLocalidad === null} onClick={() => setFiltroLocalidad(null)} titulo="Todas" n={cuenta('localidad', null)} />
+                    {Object.entries(LOCALIDADES).map(([k, v]) => (
+                      <Opcion key={k} activo={filtroLocalidad === k} onClick={() => setFiltroLocalidad(filtroLocalidad === k ? null : k)} titulo={v} n={cuenta('localidad', k)} />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(LOCALIDADES).map(([k, v]) => (
-                    <Chip key={k} activo={filtroLocalidad === k} onClick={() => setFiltroLocalidad(filtroLocalidad === k ? null : k)}><MapPin className="w-3.5 h-3.5" />{v}</Chip>
-                  ))}
-                  {habitacionesDisponibles.map(h => (
-                    <Chip key={h} activo={filtroHab === h} onClick={() => setFiltroHab(filtroHab === h ? null : h)}><BedDouble className="w-3.5 h-3.5" />{h} hab</Chip>
-                  ))}
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-stone-500 mb-1.5">2 · Habitaciones</div>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    <Opcion activo={filtroHab === null} onClick={() => setFiltroHab(null)} titulo="Todas" n={cuenta('hab', null)} />
+                    {habitacionesDisponibles.map(h => (
+                      <Opcion key={h} activo={filtroHab === h} onClick={() => setFiltroHab(filtroHab === h ? null : h)} titulo={h} n={cuenta('hab', h)} />
+                    ))}
+                  </div>
                 </div>
-                <div className="text-xs text-stone-500">{filtrados.length} propietarios · los más recientes primero</div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-stone-500 mb-1.5">Estado</div>
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
+                    <Chip activo={filtroEstado === null} onClick={() => setFiltroEstado(null)}>Todos <b className="font-semibold">{leads.length}</b></Chip>
+                    {estados.filter(e => conteoEstados[e.nombre.toUpperCase()]).map(e => (
+                      <Chip key={e.nombre} activo={filtroEstado === e.nombre.toUpperCase()} onClick={() => setFiltroEstado(filtroEstado === e.nombre.toUpperCase() ? null : e.nombre.toUpperCase())}>
+                        <span className="w-2.5 h-2.5 rounded-full border border-black/10" style={{ background: estiloEstado(estados, e.nombre).background }} />
+                        {e.nombre} <b className="font-semibold">{conteoEstados[e.nombre.toUpperCase()]}</b>
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <div className="text-xs text-stone-500">{filtrados.length} propietarios · primero los NUEVO, en el orden del Sheet</div>
                 <div className="grid gap-2.5">
-                  {filtrados.slice(0, limite).map(l => (
-                    <TarjetaLead key={l.idLead} lead={l} estados={estados} activo={selId === l.idLead} onClick={() => setSelId(l.idLead)}
-                      aviso={l.fechaSeguimiento ? `Última gestión ${l.fechaSeguimiento}` : (l.fechaCaptacion ? `Captado ${l.fechaCaptacion}` : '')} />
+                  {filtrados.slice(0, limite).map((l, i) => (
+                    <div key={l.idLead} className="contents">
+                      {i === 0 && nuevosFiltrados > 0 && <Separador titulo="Nuevos por llamar" n={nuevosFiltrados} />}
+                      {i === nuevosFiltrados && filtrados.length > nuevosFiltrados && <Separador titulo="Ya gestionados" n={filtrados.length - nuevosFiltrados} />}
+                      <TarjetaLead lead={l} estados={estados} activo={selId === l.idLead} onClick={() => setSelId(l.idLead)}
+                        aviso={l.estado === 'NUEVO'
+                          ? (l.fechaCaptacion ? `Captado ${l.fechaCaptacion}` : '')
+                          : (l.fechaSeguimiento ? `Última gestión ${l.fechaSeguimiento}` : '')} />
+                    </div>
                   ))}
                   {filtrados.length > limite && <MasBoton onClick={() => setLimite(x => x + 40)} faltan={filtrados.length - limite} />}
                 </div>
@@ -365,6 +397,26 @@ function Chip({ activo, onClick, children }: { key?: string; activo: boolean; on
       className={`shrink-0 min-h-[36px] px-3.5 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${activo ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-300 hover:border-stone-400'}`}>
       {children}
     </button>
+  );
+}
+
+function Opcion({ activo, onClick, titulo, n }: { key?: string; activo: boolean; onClick: () => void; titulo: string; n: number }) {
+  return (
+    <button onClick={onClick} aria-pressed={activo}
+      className={`min-h-[52px] rounded-xl border px-1 flex flex-col items-center justify-center leading-tight transition-all active:scale-[0.97] ${activo ? 'bg-stone-900 border-stone-900 text-white' : 'bg-white border-stone-300 text-stone-800 hover:border-stone-400'}`}>
+      <span className="text-[13px] font-semibold truncate max-w-full">{titulo}</span>
+      <span className={`text-[11px] tabular-nums ${activo ? 'text-brand-gold-light' : 'text-stone-500'}`}>{n}</span>
+    </button>
+  );
+}
+
+function Separador({ titulo, n }: { titulo: string; n: number }) {
+  return (
+    <div className="flex items-center gap-3 pt-2 first:pt-0">
+      <span className="text-sm font-semibold text-stone-800">{titulo}</span>
+      <span className="text-xs text-stone-500 tabular-nums">{n}</span>
+      <span className="flex-1 h-px bg-stone-300" />
+    </div>
   );
 }
 
