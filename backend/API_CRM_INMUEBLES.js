@@ -176,17 +176,44 @@ function crmInmueblesListar_() {
 
 // ---------- Estados y cambios ----------
 
-/** Los estados del desplegable de ESTADO DEL INMUEBLE, en su orden. */
+// Los estados del desplegable, en el orden del Sheet (captura de Leonardo,
+// 19-nov-2026). Se usan si la columna no tiene validación legible: el desplegable
+// puede no estar en todas las filas (p. ej. no en las viejas).
+const CRM_INM_ESTADOS_RESPALDO = [
+  'ACTUALIZAR', 'ACTIVAR', 'ESTUDIO APROBADO', 'BORRADOR ENVIADO', 'BORRADOR APROBADO',
+  'CONTRATO ENVIADO', 'CONTRATO FIRMADO', 'ENTREGA/TRASTEO COORDINADO', 'CUENTA DE COBRO ENVIADA',
+  'LINKS CARPETAS ENVIADOS', 'ENTREGA DEL INM COMPLETA', 'RECIBO ENVIADO', 'POLIZA SOLICITADA',
+  'PÓLIZA PAGADA', 'PÓLIZA CANCELADA', 'INACTIVO', 'VENDIDO', 'ADMINISTRANDO', 'PENDIENTE',
+  'PUBLICADO ARRIENDO', 'PUBLICADO VENTA', 'PUBLICADO VENTA/RENTA', 'REGISTRANDO'
+];
+
+/**
+ * Los estados del desplegable de ESTADO DEL INMUEBLE, en su orden. Busca la
+ * validación en TODA la columna (no solo la fila 2), entiende la lista escrita y
+ * la "lista desde un rango", y si no hay ninguna usa CRM_INM_ESTADOS_RESPALDO.
+ */
 function crmInmEstados_(hoja) {
   try {
     const c = getColumnIndex(hoja, ESTADOS_CONFIG.COLUMNAS.ESTADO);
-    if (c < 1) return [];
-    const dv = hoja.getRange(2, c).getDataValidation();
-    return dv ? (dv.getCriteriaValues()[0] || []).map(x => String(x).trim()).filter(Boolean) : [];
+    const n = hoja.getLastRow() - 1;
+    if (c > 0 && n > 0) {
+      const dvs = hoja.getRange(2, c, n, 1).getDataValidations();
+      for (let k = dvs.length - 1; k >= 0; k--) {   // de abajo hacia arriba: las filas nuevas mandan
+        const dv = dvs[k][0];
+        if (!dv) continue;
+        const tipo = String(dv.getCriteriaType());
+        const crit = dv.getCriteriaValues();
+        let lista = [];
+        if (tipo === 'VALUE_IN_LIST') lista = crit[0] || [];
+        else if (tipo === 'VALUE_IN_RANGE' && crit[0]) lista = crit[0].getValues().map(f => f[0]);
+        lista = lista.map(x => String(x).trim()).filter(Boolean);
+        if (lista.length) return lista;
+      }
+    }
   } catch (e) {
     Logger.log('No se pudo leer el desplegable de estados de inmuebles: ' + e.message);
-    return [];
   }
+  return CRM_INM_ESTADOS_RESPALDO.slice();
 }
 
 /** Fila del inmueble por su CODIGO DE REGISTRO (nunca por el número de fila del navegador). */
