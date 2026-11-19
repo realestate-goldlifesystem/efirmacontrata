@@ -604,6 +604,20 @@ function selloSeguimiento_() {
   };
 }
 
+/**
+ * Agrega líneas a DETALLES DE SEGUIMIENTO, cada una con la fecha y hora en que
+ * se escribió: "19/11/2026 3:47 PM · texto" (19-nov-2026). El panel lee esa
+ * marca para mostrar cada nota como una tarjeta con su fecha. Las notas viejas,
+ * sin marca, se quedan como estaban.
+ */
+function anexarDetalleCaptacion_(celda, texto) {
+  const lineas = String(texto || '').split('\n').map(t => t.trim()).filter(Boolean);
+  if (!lineas.length) return;
+  const marca = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy') + ' ' + selloSeguimiento_().hora;
+  const previo = String(celda.getValue() || '').trim();
+  celda.setValue((previo ? previo + '\n' : '') + lineas.map(t => marca + ' · ' + t).join('\n'));
+}
+
 function marcarSeguimientoCaptacion_(e, hoja, cols) {
   const cfg = SEGUIMIENTO_CAPTACIONES;
   const rango = e.range;

@@ -103,9 +103,7 @@ function agendarDesdeCaptacion(d) {
       const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
       const cDet = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_DETALLES) + 1;
       if (cDet) {
-        const celda = hoja.getRange(d.fila, cDet);
-        const previo = String(celda.getValue() || '').trim();
-        celda.setValue((previo ? previo + '\n' : '') + 'Cita agendada: ' + d.textoCita + ' (' + r.idCita + ')');
+        anexarDetalleCaptacion_(hoja.getRange(d.fila, cDet), 'Cita agendada: ' + d.textoCita + ' (' + r.idCita + ')');
         const sello = selloSeguimiento_();
         const cF = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_FECHA) + 1, cH = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_HORA) + 1;
         if (cF) hoja.getRange(d.fila, cF).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);

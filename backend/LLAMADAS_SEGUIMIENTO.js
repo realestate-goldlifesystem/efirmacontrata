@@ -232,8 +232,7 @@ function anotarEnCRM_(hoja, fila, texto, estadoNuevo) {
   const c = (n) => enc.indexOf(n) + 1;
   if (estadoNuevo && c(SEGUIMIENTO_CAPTACIONES.COL_ESTADO)) hoja.getRange(fila, c(SEGUIMIENTO_CAPTACIONES.COL_ESTADO)).setValue(estadoNuevo);
   if (c(SEGUIMIENTO_CAPTACIONES.COL_DETALLES)) {
-    const celda = hoja.getRange(fila, c(SEGUIMIENTO_CAPTACIONES.COL_DETALLES)), previo = String(celda.getValue() || '').trim();
-    celda.setValue((previo ? previo + '\n' : '') + texto);
+    anexarDetalleCaptacion_(hoja.getRange(fila, c(SEGUIMIENTO_CAPTACIONES.COL_DETALLES)), texto);
   }
   const sello = selloSeguimiento_();
   if (c(SEGUIMIENTO_CAPTACIONES.COL_FECHA)) hoja.getRange(fila, c(SEGUIMIENTO_CAPTACIONES.COL_FECHA)).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);

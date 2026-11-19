@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Users, RefreshCw, Search, X, Loader2, AlertTriangle, Phone, MessageCircle, ExternalLink,
@@ -192,6 +192,22 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
   const seleccionado = leads.find(l => l.idLead === selId) || null;
   const totalHoy = hoy.llamadas.length;
 
+  // Ficha de PC: su alto es siempre lo que queda visible de la pantalla, para que
+  // no haya que bajar la página para ver el resto de la ficha (un solo scroll).
+  const fichaPcRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = fichaPcRef.current;
+    if (!el) return;
+    const ajustar = () => {
+      const arriba = Math.max(el.getBoundingClientRect().top, 96);
+      el.style.height = Math.max(360, window.innerHeight - arriba - 16) + 'px';
+    };
+    ajustar();
+    window.addEventListener('scroll', ajustar, { passive: true });
+    window.addEventListener('resize', ajustar);
+    return () => { window.removeEventListener('scroll', ajustar); window.removeEventListener('resize', ajustar); };
+  }, [actual, vista, selId]);
+
   return (
     <div className="w-full max-w-[1760px] mx-auto px-[clamp(1rem,2.5vw,3rem)] pt-2 md:pt-20 xl:pt-0 xl:pl-[15rem]">
       {/* Cabecera */}
@@ -345,7 +361,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
           </div>
 
           {/* Ficha: columna fija en PC, pantalla completa en el celular */}
-          <div className="hidden lg:block sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-3xl overscroll-contain">
+          <div ref={fichaPcRef} className="hidden lg:flex flex-col sticky top-24 h-[calc(100vh-7rem)]">
             {seleccionado
               ? <FichaLead lead={seleccionado} estados={estados} operacion={operacion} credential={agentCredential} onCambio={actualizarLead} onCerrar={() => setSelId(null)} />
               : <div className="rounded-3xl border border-dashed border-stone-300 p-10 text-center text-stone-500 text-sm">Elige un propietario para ver su ficha, cambiar su estado o programarle la llamada.</div>}
@@ -355,7 +371,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
 
       {seleccionado && createPortal(
         <div className="lg:hidden fixed inset-0 z-[150] bg-stone-950/60 backdrop-blur-sm flex items-end" onClick={() => setSelId(null)}>
-          <div className="w-full max-h-[94vh] overflow-y-auto rounded-t-3xl animate-fade-in" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-h-[92dvh] flex flex-col rounded-t-3xl animate-fade-in" onClick={e => e.stopPropagation()}>
             <FichaLead lead={seleccionado} estados={estados} operacion={operacion} credential={agentCredential} onCambio={actualizarLead} onCerrar={() => setSelId(null)} movil />
           </div>
         </div>,
@@ -469,6 +485,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   const [error, setError] = useState<string | null>(null);
   const [nota, setNota] = useState('');
   const [modal, setModal] = useState<'llamada' | 'agenda' | null>(null);
+  const [verInfo, setVerInfo] = useState(false);
 
   useEffect(() => { setEligiendo(false); setError(null); setNota(''); setModal(null); }, [lead.idLead]);
 
@@ -501,117 +518,145 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
     if (await guardar({ nota: nota.trim() }, 'nota')) setNota('');
   };
 
-  const lineas = (lead.detalles || '').split('\n').map(s => s.trim()).filter(Boolean).reverse();
+  const notas = notasDeDetalles(lead.detalles);
   const llamadaPendiente = lead.proximaLlamadaMs != null && LLAMADA_PENDIENTE.includes(lead.llamadaEstado.toUpperCase());
 
   return (
-    <div className={`bg-stone-900 border border-stone-800 ${movil ? 'rounded-t-3xl' : 'rounded-3xl'} p-5 text-stone-200 relative`}>
-      {movil && <div className="w-10 h-1 rounded-full bg-stone-700 mx-auto -mt-1 mb-4" />}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="min-w-0">
-          <div className="text-xs text-stone-500">{operacion === 'A' ? 'Arriendo' : 'Venta'} · {lead.idLead}{lead.localidad && ' · ' + (LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad)}</div>
-          <h3 className="text-xl font-semibold text-white leading-tight">{lead.nombre || 'Sin nombre'}</h3>
+    <div className={`flex-1 min-h-0 flex flex-col bg-stone-900 border border-stone-800 ${movil ? 'rounded-t-3xl' : 'rounded-3xl'} text-stone-200 relative overflow-hidden`}>
+      {/* Fijo arriba: nombre, contacto y estado. Lo demás se desplaza debajo. */}
+      <div className="shrink-0 px-4 pt-3 pb-3 border-b border-stone-800 bg-stone-900">
+        {movil && <div className="w-10 h-1 rounded-full bg-stone-700 mx-auto mb-2.5" />}
+        <div className="flex items-start justify-between gap-3 mb-2.5">
+          <div className="min-w-0">
+            <div className="text-[11px] text-stone-500 truncate">{operacion === 'A' ? 'Arriendo' : 'Venta'} · {lead.idLead}{lead.localidad && ' · ' + (LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad)}</div>
+            <h3 className="text-lg font-semibold text-white leading-tight truncate">{lead.nombre || 'Sin nombre'}</h3>
+          </div>
+          <button onClick={onCerrar} aria-label="Cerrar ficha" className="w-11 h-11 -mt-1 -mr-1.5 flex items-center justify-center rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
         </div>
-        <button onClick={onCerrar} aria-label="Cerrar ficha" className="w-11 h-11 flex items-center justify-center -mr-1.5 rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
-      </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <a href={`https://wa.me/${celularInternacional(lead.celular)}`} target="_blank" rel="noopener noreferrer"
-          className="min-h-[46px] rounded-xl bg-emerald-500/15 text-emerald-300 font-semibold text-sm flex items-center justify-center gap-1.5 hover:bg-emerald-500/25"><MessageCircle className="w-4 h-4" />WhatsApp</a>
-        <a href={`tel:+${celularInternacional(lead.celular)}`}
-          className="min-h-[46px] rounded-xl bg-brand-gold/15 text-brand-gold-light font-semibold text-sm flex items-center justify-center gap-1.5 hover:bg-brand-gold/25"><Phone className="w-4 h-4" />Llamar</a>
-        {/^https?:\/\//i.test(lead.link)
-          ? <a href={lead.link} target="_blank" rel="noopener noreferrer"
-              className="min-h-[46px] rounded-xl border border-stone-700 text-stone-200 text-sm flex items-center justify-center gap-1.5 hover:border-stone-500"><ExternalLink className="w-4 h-4" />Anuncio</a>
-          : <span className="min-h-[46px] rounded-xl border border-stone-800 text-stone-600 text-sm flex items-center justify-center">Sin anuncio</span>}
-      </div>
+        <div className="grid grid-cols-3 gap-1.5 mb-2">
+          <a href={`https://wa.me/${celularInternacional(lead.celular)}`} target="_blank" rel="noopener noreferrer"
+            className="h-11 rounded-xl bg-emerald-500/15 text-emerald-300 font-semibold text-[13px] flex items-center justify-center gap-1.5 hover:bg-emerald-500/25"><MessageCircle className="w-4 h-4" />WhatsApp</a>
+          <a href={`tel:+${celularInternacional(lead.celular)}`}
+            className="h-11 rounded-xl bg-brand-gold/15 text-brand-gold-light font-semibold text-[13px] flex items-center justify-center gap-1.5 hover:bg-brand-gold/25"><Phone className="w-4 h-4" />Llamar</a>
+          {/^https?:\/\//i.test(lead.link)
+            ? <a href={lead.link} target="_blank" rel="noopener noreferrer"
+                className="h-11 rounded-xl border border-stone-700 text-stone-200 text-[13px] flex items-center justify-center gap-1.5 hover:border-stone-500"><ExternalLink className="w-4 h-4" />Anuncio</a>
+            : <span className="h-11 rounded-xl border border-stone-800 text-stone-600 text-[13px] flex items-center justify-center">Sin anuncio</span>}
+        </div>
 
-      {/* Estado */}
-      <div className="rounded-2xl bg-stone-950/50 border border-stone-800 p-3.5 mb-3">
-        <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 mb-2">Estado de llamada</div>
-        <button onClick={() => setEligiendo(v => !v)} disabled={!!guardando}
-          className="w-full min-h-[48px] rounded-xl px-4 flex items-center justify-between font-bold text-[15px] disabled:opacity-70" style={estiloEstado(estados, lead.estado)}>
-          <span>{lead.estado || 'SIN ESTADO'}</span>
-          {guardando === 'estado' ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className={`w-4 h-4 transition-transform ${eligiendo ? 'rotate-180' : ''}`} />}
+        <button onClick={() => setEligiendo(v => !v)} disabled={!!guardando} aria-expanded={eligiendo}
+          className="w-full h-11 rounded-xl px-3.5 flex items-center justify-between gap-2 font-bold text-sm disabled:opacity-70" style={estiloEstado(estados, lead.estado)}>
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-70 shrink-0">Estado</span>
+            <span className="truncate">{lead.estado || 'SIN ESTADO'}</span>
+          </span>
+          {guardando === 'estado' ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${eligiendo ? 'rotate-180' : ''}`} />}
         </button>
         {eligiendo && (
-          <div className="grid grid-cols-2 gap-1.5 mt-2.5">
+          <div className="grid grid-cols-2 gap-1.5 mt-2">
             {estados.map(e => (
               <button key={e.nombre} onClick={() => cambiarEstado(e.nombre)}
-                className={`min-h-[40px] rounded-lg px-2 text-xs font-semibold ${e.nombre.toUpperCase() === lead.estado ? 'ring-2 ring-brand-gold' : ''}`}
+                className={`min-h-[44px] rounded-lg px-2 text-xs font-semibold ${e.nombre.toUpperCase() === lead.estado ? 'ring-2 ring-brand-gold' : ''}`}
                 style={estiloEstado(estados, e.nombre)}>{e.nombre}</button>
             ))}
           </div>
         )}
-        <div className="text-xs text-stone-500 mt-2">
+        <div className="text-[11px] text-stone-500 mt-1.5">
           {lead.fechaSeguimiento ? <>Última gestión: {lead.fechaSeguimiento}{lead.horaSeguimiento && ' · ' + lead.horaSeguimiento}</> : 'Sin gestión todavía'}
         </div>
       </div>
 
-      {/* Próxima llamada y cita */}
-      <div className="rounded-2xl bg-stone-950/50 border border-stone-800 divide-y divide-stone-800 mb-3">
-        <div className="flex items-center justify-between gap-3 p-3.5">
-          <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Próxima llamada</div>
-            <div className="text-sm font-semibold text-white">{llamadaPendiente ? textoFechaCorta(lead.proximaLlamadaMs!) : 'Sin llamada programada'}</div>
+      {/* Lo que se desplaza: un solo scroll, el de la ficha */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-3 pb-5">
+        <div className="rounded-2xl bg-stone-950/50 border border-stone-800 divide-y divide-stone-800 mb-3">
+          <div className="flex items-center justify-between gap-3 p-3.5">
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Próxima llamada</div>
+              <div className="text-sm font-semibold text-white">{llamadaPendiente ? textoFechaCorta(lead.proximaLlamadaMs!) : 'Sin llamada programada'}</div>
+            </div>
+            {llamadaPendiente && <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">{lead.llamadaEstado}</span>}
           </div>
-          {llamadaPendiente && <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">{lead.llamadaEstado}</span>}
-        </div>
-        <div className="flex items-center justify-between gap-3 p-3.5">
-          <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Presentación</div>
-            <div className="text-sm font-semibold text-white">{lead.idCita ? 'Cita ' + lead.idCita : 'Sin cita agendada'}</div>
+          <div className="flex items-center justify-between gap-3 p-3.5">
+            <div className="min-w-0">
+              <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Presentación</div>
+              <div className="text-sm font-semibold text-white">{lead.idCita ? 'Cita ' + lead.idCita : 'Sin cita agendada'}</div>
+            </div>
+            {lead.idCita && <span className="text-[11px] text-stone-400">en Agenda de Citas</span>}
           </div>
-          {lead.idCita && <span className="text-[11px] text-stone-400">en Agenda de Citas</span>}
         </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <button onClick={() => setModal('llamada')}
-          className="min-h-[60px] rounded-2xl border border-brand-gold/60 bg-stone-950/40 text-left px-3.5 py-2.5 hover:bg-brand-gold/10">
-          <div className="flex items-center gap-1.5 font-semibold text-sm text-white"><CalendarClock className="w-4 h-4 text-brand-gold-light" />Programar llamada</div>
-          <div className="text-[11px] text-stone-400">Fecha y hora de recontacto</div>
-        </button>
-        <button onClick={() => setModal('agenda')}
-          className="min-h-[60px] rounded-2xl border border-stone-700 bg-stone-950/40 text-left px-3.5 py-2.5 hover:border-stone-500">
-          <div className="flex items-center gap-1.5 font-semibold text-sm text-white"><Clock className="w-4 h-4 text-brand-gold-light" />Agendar presentación</div>
-          <div className="text-[11px] text-stone-400">Virtual o presencial</div>
-        </button>
-      </div>
-
-      {/* Datos */}
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm rounded-2xl bg-stone-950/50 border border-stone-800 p-3.5 mb-3">
-        <Dato t="Barrio" v={lead.ubicacion} />
-        <Dato t="Habitaciones" v={lead.habitaciones} />
-        <Dato t="Valor publicado" v={lead.valor} />
-        <Dato t="Tipo" v={lead.tipo} />
-        <Dato t="Fecha de captación" v={lead.fechaCaptacion} />
-        <Dato t="Fecha de contacto" v={lead.fechaContacto} />
-        <Dato t="Celular" v={lead.celular} />
-        <Dato t="Correo" v={lead.correo} />
-      </dl>
-
-      {/* Detalles de seguimiento */}
-      <div className="rounded-2xl bg-stone-950/50 border border-stone-800 p-3.5">
-        <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 mb-2.5">Detalles de seguimiento</div>
-        <div className="flex gap-2 mb-3">
-          <label htmlFor={`nota-${lead.idLead}`} className="sr-only">Nueva nota</label>
-          <input id={`nota-${lead.idLead}`} value={nota} onChange={e => setNota(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarNota(); }}
-            placeholder="Escribe una nota…" maxLength={1000}
-            className="flex-1 min-w-0 h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold" />
-          <button onClick={enviarNota} disabled={!nota.trim() || !!guardando} aria-label="Guardar nota"
-            className="h-11 w-11 rounded-xl bg-brand-gold text-stone-950 flex items-center justify-center disabled:opacity-40">
-            {guardando === 'nota' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <button onClick={() => setModal('llamada')}
+            className="min-h-[60px] rounded-2xl border border-brand-gold/60 bg-stone-950/40 text-left px-3.5 py-2.5 hover:bg-brand-gold/10">
+            <div className="flex items-center gap-1.5 font-semibold text-sm text-white"><CalendarClock className="w-4 h-4 text-brand-gold-light" />Programar llamada</div>
+            <div className="text-[11px] text-stone-400">Fecha y hora de recontacto</div>
+          </button>
+          <button onClick={() => setModal('agenda')}
+            className="min-h-[60px] rounded-2xl border border-stone-700 bg-stone-950/40 text-left px-3.5 py-2.5 hover:border-stone-500">
+            <div className="flex items-center gap-1.5 font-semibold text-sm text-white"><Clock className="w-4 h-4 text-brand-gold-light" />Agendar presentación</div>
+            <div className="text-[11px] text-stone-400">Virtual o presencial</div>
           </button>
         </div>
-        {lineas.length === 0
-          ? <div className="text-sm text-stone-500">Aún no hay notas.</div>
-          : <ol className="flex flex-col gap-2">{lineas.map((t, i) => (
-              <li key={i} className="text-sm text-stone-200 leading-snug pl-3 border-l-2 border-stone-700">{t}</li>
-            ))}</ol>}
-      </div>
 
-      {error && <div className="mt-3 text-sm text-red-300 flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
+        {/* Información del inmueble, plegable */}
+        <div className="rounded-2xl bg-stone-950/50 border border-stone-800 mb-3">
+          <button onClick={() => setVerInfo(v => !v)} aria-expanded={verInfo}
+            className="w-full min-h-[48px] px-3.5 flex items-center justify-between gap-3 text-left">
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-white">Ver información del inmueble</span>
+              {!verInfo && <span className="block text-[12px] text-stone-400 truncate">
+                {[lead.ubicacion, lead.habitaciones && lead.habitaciones + ' hab', lead.valor].filter(Boolean).join(' · ') || 'Sin datos'}
+              </span>}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-stone-400 shrink-0 transition-transform duration-300 ${verInfo ? 'rotate-180' : ''}`} />
+          </button>
+          <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${verInfo ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+            <div className="overflow-hidden">
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm px-3.5 pb-3.5 pt-1">
+                <Dato t="Barrio" v={lead.ubicacion} />
+                <Dato t="Localidad" v={LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad} />
+                <Dato t="Habitaciones" v={lead.habitaciones} />
+                <Dato t="Valor publicado" v={lead.valor} />
+                <Dato t="Tipo" v={lead.tipo} />
+                <Dato t="Fecha de captación" v={lead.fechaCaptacion} />
+                <Dato t="Fecha de contacto" v={lead.fechaContacto} />
+                <Dato t="Celular" v={lead.celular} />
+                <div className="col-span-2 min-w-0"><Dato t="Correo" v={lead.correo} /></div>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        {/* Notas: cada una con la fecha y hora en que se escribió */}
+        <div className="rounded-2xl bg-stone-950/50 border border-stone-800 p-3.5">
+          <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 mb-2.5">Detalles de seguimiento</div>
+          <div className="flex gap-2 mb-3">
+            <label htmlFor={`nota-${lead.idLead}`} className="sr-only">Nueva nota</label>
+            <input id={`nota-${lead.idLead}`} value={nota} onChange={e => setNota(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarNota(); }}
+              placeholder="Escribe una nota…" maxLength={1000}
+              className="flex-1 min-w-0 h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold" />
+            <button onClick={enviarNota} disabled={!nota.trim() || !!guardando} aria-label="Guardar nota"
+              className="h-11 w-11 rounded-xl bg-brand-gold text-stone-950 flex items-center justify-center disabled:opacity-40">
+              {guardando === 'nota' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </button>
+          </div>
+          {error && <div className="mb-3 text-sm text-red-300 flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
+          {notas.length === 0
+            ? <div className="text-sm text-stone-500">Aún no hay notas.</div>
+            : <ol className="flex flex-col gap-2">{notas.map((n, i) => (
+                <li key={i} className="rounded-xl bg-stone-900 border border-stone-800 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="text-[11px] text-stone-400 tabular-nums">{n.fecha ? `${n.fecha} · ${n.hora}` : 'Sin fecha'}</span>
+                    {n.ids.length > 0 && <span className="flex gap-1">{n.ids.map(id => (
+                      <span key={id} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${id.startsWith('LL') ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>{id}</span>
+                    ))}</span>}
+                  </div>
+                  {n.textos.map((t, j) => <p key={j} className="text-sm text-stone-200 leading-snug">{t}</p>)}
+                </li>
+              ))}</ol>}
+        </div>
+      </div>
 
       {modal === 'llamada' && (
         <ProgramarLlamadaModal lead={lead} credential={credential}
@@ -623,6 +668,32 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
       )}
     </div>
   );
+}
+
+/**
+ * Convierte DETALLES DE SEGUIMIENTO en notas. Desde 19-nov-2026 cada línea se
+ * guarda como "19/11/2026 3:47 PM · texto"; las líneas seguidas con la misma
+ * marca son una sola nota (p. ej. la nota y su "Llamada programada … (LL-…)").
+ * Las líneas viejas sin marca se muestran como "Sin fecha". La más nueva va primero.
+ */
+type Nota = { fecha: string; hora: string; textos: string[]; ids: string[] };
+function notasDeDetalles(detalles: string): Nota[] {
+  const notas: Nota[] = [];
+  (detalles || '').split('\n').map(s => s.trim()).filter(Boolean).forEach(linea => {
+    const m = linea.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}\s*[AP]M)\s*·\s*(.*)$/i);
+    const fecha = m ? m[1] : '', hora = m ? m[2] : '';
+    let texto = m ? m[3] : linea;
+    const ids: string[] = [];
+    texto = texto.replace(/\s*\(((?:LL|CIT)-\d{4,})\)\s*$/i, (_, id) => { ids.push(id.toUpperCase()); return ''; });
+    const ultima = notas[notas.length - 1];
+    if (fecha && ultima && ultima.fecha === fecha && ultima.hora === hora) {
+      if (texto) ultima.textos.push(texto);
+      ultima.ids.push(...ids);
+    } else {
+      notas.push({ fecha, hora, textos: texto ? [texto] : [], ids });
+    }
+  });
+  return notas.reverse();
 }
 
 function Dato({ t, v }: { t: string; v: string }) {

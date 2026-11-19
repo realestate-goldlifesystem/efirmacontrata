@@ -200,9 +200,7 @@ function crmActualizar_(datos) {
 
     const nota = String(datos.nota || '').trim().slice(0, CRM_PANEL.MAX_NOTA);
     if (nota && col(cfg.COL_DETALLES)) {
-      const celda = hoja.getRange(fila, col(cfg.COL_DETALLES));
-      const previo = String(celda.getValue() || '').trim();
-      celda.setValue((previo ? previo + '\n' : '') + nota);
+      anexarDetalleCaptacion_(hoja.getRange(fila, col(cfg.COL_DETALLES)), nota);
       sellar = true;
     }
 
