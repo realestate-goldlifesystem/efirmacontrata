@@ -94,7 +94,8 @@ function agendarDesdeCaptacion(d) {
   const r = agendarCita({
     nombreCliente: d.nombre, celular: '+57 ' + String(d.celular || '').replace(/\D/g, '').replace(/^57(?=\d{10}$)/, ''),
     correo: correo, tipoServicio: d.servicio, direccion: d.direccion, detalles: d.notas, modalidad: d.modalidad,
-    fechaTimestamp: Number(d.timestamp)
+    fechaTimestamp: Number(d.timestamp),
+    agendaAgente: true // la agenda el agente: no hace falta avisarle a él mismo
   });
   if (r.success) {
     try { hoja.getRange(d.fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_ID_CITA)).setValue(r.idCita); } catch (e) {}

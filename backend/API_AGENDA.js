@@ -246,6 +246,29 @@ function agendarCita(datos) {
       Logger.log("Error enviando correo de cita agendada: " + errMail.message);
     }
 
+    // 5. Aviso al agente cuando la agenda el propietario desde el portafolio
+    //    (19-nov-2026). Si la agenda el agente desde el CRM, no se le avisa.
+    if (!datos.agendaAgente) {
+      try {
+        const fechaTxt = Utilities.formatDate(fechaInicio, tz, "dd/MM/yyyy") + ' · ' + horaCitaStr;
+        enviarCorreoCita(correoAgenteCitas(),
+          `📅 ${datos.nombreCliente} agendó ${virtual ? 'presentación virtual' : 'visita'} · ${fechaTxt}`,
+          'NUEVA CITA DESDE EL PORTAFOLIO', 'Agente',
+          etiquetaTipoCitaHtml('PROPIETARIO') +
+          `<strong>${datos.nombreCliente}</strong> agendó desde el portafolio para el <strong>${fechaTxt}</strong> (${idCita}).<br><br>` +
+          `${virtual ? '💻' : '📍'} <strong>Modalidad:</strong> ${virtual ? 'Virtual (Google Meet)' : 'Presencial'}<br>` +
+          `🏠 <strong>Servicio:</strong> ${datos.tipoServicio || 'N/A'}<br>` +
+          `📍 <strong>Inmueble:</strong> ${datos.direccion || 'N/A'}<br>` +
+          `✉️ <strong>Correo:</strong> ${datos.correo || 'N/A'}<br>` +
+          `📝 <strong>Notas:</strong> ${datos.detalles || 'N/A'}` +
+          (linkMeet ? `<br>🔗 <a href="${linkMeet}">Link de Meet</a>` : '') +
+          `<br><br>Queda por confirmar: el propietario confirma 1 hora antes.`,
+          botonesContacto_([{ quien: 'propietario', cel: datos.celular }]));
+      } catch (errAg) {
+        Logger.log("No se pudo avisar la cita nueva al agente: " + errAg.message);
+      }
+    }
+
     return { success: true, idCita: idCita, linkMeet: linkMeet, mensaje: "Cita agendada y registrada exitosamente" };
 
   } catch (error) {
