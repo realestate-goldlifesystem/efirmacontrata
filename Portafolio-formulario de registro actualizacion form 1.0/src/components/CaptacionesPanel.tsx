@@ -3,11 +3,11 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Users, RefreshCw, Search, X, Loader2, AlertTriangle, Phone, MessageCircle, ExternalLink,
-  Bot, CalendarClock, PhoneCall, Flame, Inbox, ChevronDown, Send, Clock, MessageSquareText,
+  Bot, CalendarClock, PhoneCall, Flame, Inbox, ChevronDown, Send, Clock, MessageSquareText, Pencil,
 } from 'lucide-react';
 import { API_URL } from './CitasAgendaPanel';
 import MiguelCaptadorModal from './MiguelCaptadorModal';
-import { ProgramarLlamadaModal, AgendarPresentacionModal } from './CaptacionesModales';
+import { ProgramarLlamadaModal, AgendarPresentacionModal, ElegirSeguimientoModal, EditarDatosModal } from './CaptacionesModales';
 
 // ==========================================
 // CRM DE CAPTACIONES (18-nov-2026)
@@ -486,7 +486,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   const [guardando, setGuardando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nota, setNota] = useState('');
-  const [modal, setModal] = useState<'llamada' | 'mensaje' | 'agenda' | null>(null);
+  const [modal, setModal] = useState<'elegir' | 'editar' | 'llamada' | 'mensaje' | 'agenda' | null>(null);
   const [verInfo, setVerInfo] = useState(false);
 
   useEffect(() => { setEligiendo(false); setError(null); setNota(''); setModal(null); }, [lead.idLead]);
@@ -511,7 +511,8 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
     if (nombre.toUpperCase() === lead.estado) return;
     const ok = await guardar({ estado: nombre }, 'estado');
     // Igual que en el Sheet: SEGUIMIENTO abre la llamada y PRE-R CAPTACION la agenda
-    if (ok && nombre.toUpperCase() === 'SEGUIMIENTO') setModal('llamada');
+    // SEGUIMIENTO: primero se elige si es llamada, mensaje o presentación
+    if (ok && nombre.toUpperCase() === 'SEGUIMIENTO') setModal('elegir');
     if (ok && nombre.toUpperCase() === 'PRE-R CAPTACION') setModal('agenda');
   };
 
@@ -558,7 +559,11 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[11px] text-stone-500 truncate">{operacion === 'A' ? 'Arriendo' : 'Venta'} · {lead.idLead}{lead.localidad && ' · ' + (LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad)}</div>
-            <h3 className="text-lg font-semibold text-white leading-tight truncate">{lead.nombre || 'Sin nombre'}</h3>
+            <div className="flex items-center gap-1 min-w-0">
+              <h3 className="text-lg font-semibold text-white leading-tight truncate">{lead.nombre || 'Sin nombre'}</h3>
+              <button onClick={() => setModal('editar')} aria-label="Editar datos del propietario y del inmueble" title="Editar datos"
+                className="w-11 h-11 -my-2.5 -ml-1 shrink-0 flex items-center justify-center rounded-full text-stone-400 hover:text-brand-gold-light hover:bg-stone-800 transition-colors"><Pencil className="w-4 h-4" /></button>
+            </div>
           </div>
           <button onClick={onCerrar} aria-label="Cerrar ficha" className="w-11 h-11 -mt-1 -mr-1.5 flex items-center justify-center rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
         </div>
@@ -670,6 +675,12 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         </div>
       </div>
 
+      {modal === 'editar' && (
+        <EditarDatosModal lead={lead} credential={credential} onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
+      )}
+      {modal === 'elegir' && (
+        <ElegirSeguimientoModal lead={lead} onElegir={que => setModal(que)} onCerrar={() => setModal(null)} />
+      )}
       {(modal === 'llamada' || modal === 'mensaje') && (
         <ProgramarLlamadaModal lead={lead} credential={credential} tipo={modal === 'mensaje' ? 'MENSAJE' : 'LLAMADA'}
           onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />

@@ -35,6 +35,7 @@ function crmCaptacionesDesdeWeb(datos) {
       case 'ocupado': return crmOcupado_(datos);
       case 'programar': return crmProgramar_(datos);
       case 'agendar': return crmAgendar_(datos);
+      case 'editar': return crmEditar_(datos);
       default: return { success: false, message: 'Operación desconocida: ' + datos.op };
     }
   } catch (e) {
@@ -210,6 +211,63 @@ function crmActualizar_(datos) {
       if (col(cfg.COL_FECHA)) hoja.getRange(fila, col(cfg.COL_FECHA)).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);
       if (col(cfg.COL_HORA)) hoja.getRange(fila, col(cfg.COL_HORA)).setValue(sello.hora);
     }
+    SpreadsheetApp.flush();
+    return { success: true, lead: crmReleer_(datos.idLead) };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Edita los datos del propietario y del inmueble desde el lápiz de la ficha
+ * (19-nov-2026). Solo se escriben los campos que llegan, por NOMBRE de columna.
+ * datos = { idLead, cambios: { nombre?, celular?, correo?, ubicacion?, localidad?, habitaciones?, valor?, tipo? } }
+ * No sella FECHA/HORA DE SEGUIMIENTO: corregir un dato no es una gestión.
+ */
+function crmCamposEditables_() {
+  return {
+    nombre: 'NOMBRE DEL PROPIETARIO', celular: 'CELULAR', correo: AGENDA_CAPTACION.COL_CORREO,
+    ubicacion: 'UBICACIÓN', localidad: 'LOCALIDAD', habitaciones: 'HABITACIONES',
+    valor: 'VALOR DE PROMOCIÓN', tipo: 'TIPO DE INMUEBLE'
+  };
+}
+function crmEditar_(datos) {
+  const CRM_CAMPOS_EDITABLES = crmCamposEditables_();
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return { success: false, message: 'El CRM está ocupado, intenta de nuevo en unos segundos.' };
+  try {
+    const ub = crmUbicar_(datos.idLead);
+    if (!ub) return { success: false, message: 'No encontramos a este propietario en el CRM. Recarga la lista.' };
+    const hoja = ub.hoja, fila = ub.fila, enc = ub.enc;
+    const cambios = datos.cambios || {};
+    const escribir = [];
+    for (const campo in cambios) {
+      if (!CRM_CAMPOS_EDITABLES[campo]) continue;
+      const c = enc.indexOf(CRM_CAMPOS_EDITABLES[campo]) + 1;
+      if (!c) return { success: false, message: 'No existe la columna "' + CRM_CAMPOS_EDITABLES[campo] + '" en el Sheet.' };
+      let v = String(cambios[campo] == null ? '' : cambios[campo]).trim().slice(0, 300);
+      if (campo === 'celular') {
+        v = v.replace(/\D/g, '').replace(/^57(?=\d{10}$)/, '');
+        if (!/^\d{10}$/.test(v)) return { success: false, message: 'El celular debe tener 10 dígitos.' };
+        // Igual que Miguel: un celular no se repite en la misma pestaña
+        const p0 = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, n = hoja.getLastRow() - p0 + 1;
+        const cels = n > 0 ? hoja.getRange(p0, c, n, 1).getDisplayValues() : [];
+        const otra = cels.findIndex((x, k) => p0 + k !== fila && String(x[0]).replace(/\D/g, '').replace(/^57(?=\d{10}$)/, '') === v);
+        if (otra !== -1) return { success: false, message: 'Ese celular ya está en la fila ' + (p0 + otra) + ' de esta pestaña.' };
+      }
+      if (campo === 'correo' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return { success: false, message: 'Escribe un correo válido.' };
+      if (campo === 'localidad') {
+        v = v.toUpperCase();
+        if (v && ['U', 'S', 'C'].indexOf(v) === -1) return { success: false, message: 'La localidad debe ser U, S o C.' };
+      }
+      if (campo === 'nombre' && !v) return { success: false, message: 'El nombre no puede quedar vacío.' };
+      escribir.push([c, v, campo]);
+    }
+    escribir.forEach(([c, v, campo]) => {
+      const celda = hoja.getRange(fila, c);
+      if (campo === 'celular') celda.setNumberFormat('@');
+      celda.setValue(v);
+    });
     SpreadsheetApp.flush();
     return { success: true, lead: crmReleer_(datos.idLead) };
   } finally {

@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Loader2, CheckCircle2, Video, MapPin, ChevronLeft } from 'lucide-react';
+import { X, Loader2, CheckCircle2, Video, MapPin, ChevronLeft, Phone, MessageCircle, ChevronRight } from 'lucide-react';
 import { API_URL } from './CitasAgendaPanel';
 import { llamarCRM, type Lead } from './CaptacionesPanel';
 
@@ -41,6 +41,110 @@ function Marco({ titulo, sub, onCerrar, children, pie }: { titulo: string; sub: 
       </div>
     </div>,
     document.body
+  );
+}
+
+/**
+ * Lápiz de la ficha (19-nov-2026): editar los datos del propietario y del
+ * inmueble. Solo se mandan los campos que cambiaron; el backend los escribe en
+ * su columna por nombre (crmEditar_).
+ */
+type CampoEditable = 'nombre' | 'celular' | 'correo' | 'ubicacion' | 'localidad' | 'habitaciones' | 'valor' | 'tipo';
+export function EditarDatosModal({ lead, credential, onCerrar, onListo }: {
+  lead: Lead; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void;
+}) {
+  const inicial: Record<CampoEditable, string> = {
+    nombre: lead.nombre, celular: lead.celular, correo: lead.correo, ubicacion: lead.ubicacion,
+    localidad: (lead.localidad || '').toUpperCase(), habitaciones: lead.habitaciones, valor: lead.valor, tipo: lead.tipo,
+  };
+  const [f, setF] = useState(inicial);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+  const cambiados = (Object.keys(f) as CampoEditable[]).filter(k => f[k].trim() !== (inicial[k] || '').trim());
+  const poner = (k: CampoEditable) => (e: { target: { value: string } }) => setF(x => ({ ...x, [k]: e.target.value }));
+
+  const guardar = async () => {
+    if (!cambiados.length) { onCerrar(); return; }
+    setGuardando(true); setError('');
+    try {
+      const cambios = Object.fromEntries(cambiados.map(k => [k, f[k].trim()]));
+      const r = await llamarCRM(credential, 'editar', { idLead: lead.idLead, cambios });
+      if (r.success && r.lead) { onListo(r.lead); onCerrar(); }
+      else setError(r.message || 'No se pudo guardar.');
+    } catch { setError('Error de red al guardar.'); }
+    finally { setGuardando(false); }
+  };
+
+  const campo = 'mt-1 w-full h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold';
+  const Etq = ({ id, t }: { id: string; t: string }) => <label htmlFor={id} className="text-xs text-stone-400">{t}</label>;
+  return (
+    <Marco titulo="Editar datos" sub={`${lead.idLead} · se guarda en el Sheet`} onCerrar={onCerrar}
+      pie={
+        <div className="flex flex-col gap-2">
+          {error && <div className="text-sm text-red-300">{error}</div>}
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={onCerrar} className="min-h-[48px] rounded-xl border border-stone-700 text-stone-200 hover:border-stone-500">Cancelar</button>
+            <button onClick={guardar} disabled={guardando || !cambiados.length}
+              className="min-h-[48px] rounded-xl bg-brand-gold text-stone-950 font-bold disabled:opacity-40 flex items-center justify-center gap-2">
+              {guardando && <Loader2 className="w-4 h-4 animate-spin" />}{guardando ? 'Guardando…' : cambiados.length ? `Guardar (${cambiados.length})` : 'Sin cambios'}
+            </button>
+          </div>
+        </div>
+      }>
+      <div className="flex flex-col gap-4 pt-1">
+        <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 -mb-1">Propietario</div>
+        <div><Etq id="ed-nombre" t="Nombre" /><input id="ed-nombre" className={campo} value={f.nombre} onChange={poner('nombre')} /></div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><Etq id="ed-cel" t="Celular" /><input id="ed-cel" inputMode="tel" className={campo} value={f.celular} onChange={poner('celular')} placeholder="3001234567" /></div>
+          <div><Etq id="ed-correo" t="Correo" /><input id="ed-correo" type="email" className={campo} value={f.correo} onChange={poner('correo')} placeholder="Agregar correo" /></div>
+        </div>
+        <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 -mb-1 mt-1">Inmueble</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><Etq id="ed-barrio" t="Barrio" /><input id="ed-barrio" className={campo} value={f.ubicacion} onChange={poner('ubicacion')} /></div>
+          <div><Etq id="ed-loc" t="Localidad" />
+            <select id="ed-loc" className={campo} value={f.localidad} onChange={poner('localidad')}>
+              <option value="">—</option><option value="U">Usaquén</option><option value="S">Suba</option><option value="C">Chapinero</option>
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div><Etq id="ed-hab" t="Habitaciones" /><input id="ed-hab" inputMode="numeric" className={campo} value={f.habitaciones} onChange={poner('habitaciones')} /></div>
+          <div className="col-span-2"><Etq id="ed-valor" t="Valor publicado" /><input id="ed-valor" className={campo} value={f.valor} onChange={poner('valor')} /></div>
+        </div>
+        <div><Etq id="ed-tipo" t="Tipo de inmueble" /><input id="ed-tipo" className={campo} value={f.tipo} onChange={poner('tipo')} placeholder="Apartamento, casa…" /></div>
+      </div>
+    </Marco>
+  );
+}
+
+/**
+ * Al pasar a SEGUIMIENTO (19-nov-2026): primero se elige cómo se hace el
+ * seguimiento (llamada, mensaje o presentación) y de ahí se abre su ventana.
+ */
+export function ElegirSeguimientoModal({ lead, onElegir, onCerrar }: {
+  lead: Lead; onElegir: (que: 'llamada' | 'mensaje' | 'agenda') => void; onCerrar: () => void;
+}) {
+  const opciones: { que: 'llamada' | 'mensaje' | 'agenda'; icono: React.ComponentType<{ className?: string }>; titulo: string; sub: string; tono: string }[] = [
+    { que: 'llamada', icono: Phone, titulo: 'Llamada', sub: 'Programar cuándo lo vuelves a llamar', tono: 'bg-brand-gold/15 text-brand-gold-light' },
+    { que: 'mensaje', icono: MessageCircle, titulo: 'Mensaje', sub: 'Programar cuándo le escribes por WhatsApp', tono: 'bg-sky-500/15 text-sky-300' },
+    { que: 'agenda', icono: Video, titulo: 'Presentación', sub: 'Agendar la presentación virtual o la captación presencial', tono: 'bg-emerald-500/15 text-emerald-300' },
+  ];
+  return (
+    <Marco titulo="¿Cómo vas a hacer el seguimiento?" sub={`${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar}>
+      <div className="flex flex-col gap-2 pt-1">
+        {opciones.map(o => (
+          <button key={o.que} onClick={() => onElegir(o.que)}
+            className="w-full min-h-[68px] rounded-2xl border border-stone-700 bg-stone-950/40 px-4 py-3 flex items-center gap-3.5 text-left hover:border-brand-gold/60 hover:bg-stone-950/70 active:scale-[0.99] transition-all">
+            <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${o.tono}`}><o.icono className="w-5 h-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold text-white">{o.titulo}</span>
+              <span className="block text-[13px] text-stone-400 leading-snug">{o.sub}</span>
+            </span>
+            <ChevronRight className="w-5 h-5 text-stone-500 shrink-0" />
+          </button>
+        ))}
+      </div>
+    </Marco>
   );
 }
 
