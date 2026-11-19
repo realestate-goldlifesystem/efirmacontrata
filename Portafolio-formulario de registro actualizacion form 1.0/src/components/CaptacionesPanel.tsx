@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Users, RefreshCw, Search, X, Loader2, AlertTriangle, Phone, MessageCircle, ExternalLink,
@@ -528,11 +528,20 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   const resumen = [lead.ubicacion, lead.habitaciones && lead.habitaciones + ' hab', lead.valor].filter(Boolean).join(' · ');
 
   // Las notas van como un chat: la más nueva abajo, junto al campo de escribir
+  // y el scroll pegado abajo: al abrir, al llegar una nota nueva y si la ficha
+  // cambia de alto. Si el agente sube a leer lo viejo, no se le mueve.
   const notasRef = useRef<HTMLDivElement>(null);
+  const pegadoAbajo = useRef(true);
+  const bajarNotas = () => { const el = notasRef.current; if (el) el.scrollTop = el.scrollHeight; };
+  useLayoutEffect(() => { pegadoAbajo.current = true; bajarNotas(); }, [lead.idLead, lead.detalles]);
   useEffect(() => {
     const el = notasRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [lead.idLead, lead.detalles]);
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => { if (pegadoAbajo.current) bajarNotas(); });
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <div className={`flex-1 min-h-0 flex flex-col bg-stone-900 border border-stone-800 ${movil ? 'rounded-t-3xl' : 'rounded-3xl'} text-stone-200 relative overflow-hidden`}>
@@ -607,16 +616,22 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         </div>
       </div>
 
+      {/* Fijo: título de las notas y última gestión */}
+      <div className="shrink-0 flex items-center justify-between gap-2 px-4 pt-2.5 pb-2 border-b border-stone-800/60">
+        <span className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Detalles de seguimiento</span>
+        <span className="text-[11px] text-stone-500 truncate">
+          {lead.fechaSeguimiento ? <>Última gestión {lead.fechaSeguimiento}{lead.horaSeguimiento && ' · ' + lead.horaSeguimiento}</> : 'Sin gestión todavía'}
+        </span>
+      </div>
+
       {/* Lo único que se desplaza: las notas, como un chat */}
-      <div ref={notasRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-3">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Detalles de seguimiento</span>
-          <span className="text-[11px] text-stone-500">
-            {lead.fechaSeguimiento ? <>Última gestión {lead.fechaSeguimiento}{lead.horaSeguimiento && ' · ' + lead.horaSeguimiento}</> : 'Sin gestión todavía'}
-          </span>
-        </div>
+      <div ref={notasRef}
+        onScroll={e => { const el = e.currentTarget; pegadoAbajo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24; }}
+        className="flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-contain px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* mt-auto: con pocas notas, quedan abajo junto al campo, como en un chat */}
+        <div className="mt-auto">
         {notas.length === 0
-          ? <div className="h-full min-h-[80px] flex items-center justify-center text-sm text-stone-500 text-center px-4">Aún no hay notas. Escribe la primera abajo.</div>
+          ? <div className="py-4 text-sm text-stone-500 text-center px-4">Aún no hay notas. Escribe la primera abajo.</div>
           : <ol className="flex flex-col gap-2">{notas.map((n, i) => (
               <li key={i} className="rounded-xl bg-stone-950/60 border border-stone-800 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2 mb-1">
@@ -628,6 +643,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
                 {n.textos.map((t, j) => <p key={j} className="text-sm text-stone-200 leading-snug">{t}</p>)}
               </li>
             ))}</ol>}
+        </div>
       </div>
 
       {/* Fijo abajo: escribir la nota */}
