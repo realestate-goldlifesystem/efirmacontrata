@@ -406,7 +406,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
       )}
 
       {seleccionado && createPortal(
-        <div className="lg:hidden fixed inset-x-0 top-0 h-[100dvh] z-[150] bg-stone-950/60 backdrop-blur-sm flex items-end" onClick={() => setSelId(null)}
+        <div className="lg:hidden fixed inset-x-0 top-0 h-[100dvh] z-[150] overflow-hidden overscroll-none bg-stone-950/60 backdrop-blur-sm flex items-end" onClick={() => setSelId(null)}
           style={vista_ ? { top: vista_.top, height: vista_.alto } : undefined}>
           <div className="w-full max-h-[92dvh] flex flex-col rounded-t-3xl animate-fade-in" onClick={e => e.stopPropagation()}
             style={vista_ ? { maxHeight: vista_.teclado ? vista_.alto - 8 : Math.round(vista_.alto * 0.92) } : undefined}>
@@ -683,7 +683,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
       {/* Lo único que se desplaza: las notas, como un chat */}
       <div ref={notasRef}
         onScroll={e => { const el = e.currentTarget; pegadoAbajo.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24; }}
-        className="flex-1 min-h-0 flex flex-col overflow-y-auto overscroll-contain px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* mt-auto: con pocas notas, quedan abajo junto al campo, como en un chat */}
         <div className="mt-auto">
         {notas.length === 0

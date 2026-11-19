@@ -172,3 +172,18 @@
 .teclado-abierto .ajusta-teclado > * {
   max-height: calc(var(--vv-alto, 100dvh) - 0.5rem) !important;
 }
+
+/* Celular sin movimiento lateral (19-nov-2026).
+   1) Safari del iPhone hace zoom al tocar un campo con letra menor a 16px y
+      deja la página corrida hacia los lados: en el celular los campos van a 16px.
+   2) La página no se desliza de lado. "clip" y no "hidden": hidden rompe
+      position: sticky (la franja fija de Captaciones).
+   3) Sin el rebote lateral de iOS. */
+@media (max-width: 767px) {
+  input, textarea, select { font-size: 16px !important; }
+}
+html, body {
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
+.ajusta-teclado { overflow-x: hidden; overscroll-behavior-x: none; }
