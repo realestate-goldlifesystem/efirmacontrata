@@ -206,11 +206,11 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => setMiguel(true)}
-            className="flex items-center gap-2 px-5 py-2 bg-brand-gold text-stone-950 font-semibold rounded-full shadow-[0_6px_18px_rgba(212,175,55,.3)] hover:brightness-105 hover:-translate-y-px transition-all">
+            className="flex items-center gap-2 min-h-[44px] px-5 py-2 bg-brand-gold text-stone-950 font-semibold rounded-full shadow-[0_6px_18px_rgba(212,175,55,.3)] hover:brightness-105 hover:-translate-y-px transition-all">
             <Bot className="w-4 h-4" /> Miguel
           </button>
           <button onClick={() => cargar()} disabled={cargando}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-stone-300 rounded-full text-stone-700 hover:text-brand-gold-dark hover:border-brand-gold transition-all disabled:opacity-50">
+            className="flex items-center gap-2 min-h-[44px] min-w-[44px] justify-center px-4 py-2 bg-white border border-stone-300 rounded-full text-stone-700 hover:text-brand-gold-dark hover:border-brand-gold transition-all disabled:opacity-50">
             <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} /> <span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
@@ -222,7 +222,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
           {(['A', 'V'] as Operacion[]).map(op => (
             <button key={op} onClick={() => { setOperacion(op); setSelId(null); setFiltroEstado(null); }}
               aria-pressed={operacion === op}
-              className={`min-h-[40px] px-6 rounded-full text-sm font-semibold transition-all ${operacion === op ? 'bg-brand-gold text-stone-950 shadow' : 'text-stone-400 hover:text-white'}`}>
+              className={`min-h-[44px] px-6 rounded-full text-sm font-semibold transition-all ${operacion === op ? 'bg-brand-gold text-stone-950 shadow' : 'text-stone-400 hover:text-white'}`}>
               {op === 'A' ? 'Arriendo' : 'Venta'}
               {datos[op] && <span className="ml-1.5 opacity-70 font-normal">{datos[op]!.leads.length}</span>}
             </button>
@@ -231,7 +231,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
         <div className="grid grid-cols-2 p-1 rounded-full bg-white border border-stone-300 w-full sm:w-auto">
           {(['hoy', 'todos'] as Vista[]).map(v => (
             <button key={v} onClick={() => setVista(v)} aria-pressed={vista === v}
-              className={`min-h-[40px] px-5 rounded-full text-sm font-medium transition-all ${vista === v ? 'bg-stone-900 text-white' : 'text-stone-600 hover:text-stone-900'}`}>
+              className={`min-h-[44px] px-5 rounded-full text-sm font-medium transition-all ${vista === v ? 'bg-stone-900 text-white' : 'text-stone-600 hover:text-stone-900'}`}>
               {v === 'hoy' ? 'Mi día' : 'Todos'}
             </button>
           ))}
@@ -260,7 +260,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
       )}
 
       {actual && (
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)] gap-[clamp(1rem,1.6vw,2rem)] items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)] gap-[clamp(1rem,1.6vw,2rem)] items-start">
           <div className="min-w-0">
             {vista === 'hoy' ? (
               <div className="flex flex-col gap-6">
@@ -316,7 +316,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
                 </div>
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.14em] text-stone-500 mb-1.5">Estado</div>
-                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
+                  <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 min-w-0 [scrollbar-width:thin]">
                     <Chip activo={filtroEstado === null} onClick={() => setFiltroEstado(null)}>Todos <b className="font-semibold">{leads.length}</b></Chip>
                     {estados.filter(e => conteoEstados[e.nombre.toUpperCase()]).map(e => (
                       <Chip key={e.nombre} activo={filtroEstado === e.nombre.toUpperCase()} onClick={() => setFiltroEstado(filtroEstado === e.nombre.toUpperCase() ? null : e.nombre.toUpperCase())}>
@@ -327,7 +327,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
                   </div>
                 </div>
                 <div className="text-xs text-stone-500">{filtrados.length} propietarios · primero los NUEVO, en el orden del Sheet</div>
-                <div className="grid gap-2.5">
+                <div className="grid grid-cols-1 gap-2.5">
                   {filtrados.slice(0, limite).map((l, i) => (
                     <div key={l.idLead} className="contents">
                       {i === 0 && nuevosFiltrados > 0 && <Separador titulo="Nuevos por llamar" n={nuevosFiltrados} />}
@@ -386,7 +386,7 @@ function Seccion({ icono: Icono, titulo, n, vacio, children }: { icono: React.Co
         <h2 className="flex items-center gap-2 text-stone-800 font-semibold"><Icono className="w-4 h-4 text-brand-gold" /> {titulo}</h2>
         <span className="text-xs text-stone-500 tabular-nums">{n}</span>
       </div>
-      {n === 0 ? <div className="rounded-2xl border border-dashed border-stone-300 px-4 py-5 text-sm text-stone-500">{vacio}</div> : <div className="grid gap-2.5">{children}</div>}
+      {n === 0 ? <div className="rounded-2xl border border-dashed border-stone-300 px-4 py-5 text-sm text-stone-500">{vacio}</div> : <div className="grid grid-cols-1 gap-2.5">{children}</div>}
     </section>
   );
 }
@@ -394,7 +394,7 @@ function Seccion({ icono: Icono, titulo, n, vacio, children }: { icono: React.Co
 function Chip({ activo, onClick, children }: { key?: string; activo: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button onClick={onClick} aria-pressed={activo}
-      className={`shrink-0 min-h-[36px] px-3.5 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${activo ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-300 hover:border-stone-400'}`}>
+      className={`shrink-0 min-h-[44px] px-4 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${activo ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-300 hover:border-stone-400'}`}>
       {children}
     </button>
   );
@@ -403,8 +403,8 @@ function Chip({ activo, onClick, children }: { key?: string; activo: boolean; on
 function Opcion({ activo, onClick, titulo, n }: { key?: string; activo: boolean; onClick: () => void; titulo: string; n: number }) {
   return (
     <button onClick={onClick} aria-pressed={activo}
-      className={`min-h-[52px] rounded-xl border px-1 flex flex-col items-center justify-center leading-tight transition-all active:scale-[0.97] ${activo ? 'bg-stone-900 border-stone-900 text-white' : 'bg-white border-stone-300 text-stone-800 hover:border-stone-400'}`}>
-      <span className="text-[13px] font-semibold truncate max-w-full">{titulo}</span>
+      className={`min-h-[52px] min-w-0 rounded-xl border px-0.5 flex flex-col items-center justify-center leading-tight transition-all active:scale-[0.97] ${activo ? 'bg-stone-900 border-stone-900 text-white' : 'bg-white border-stone-300 text-stone-800 hover:border-stone-400'}`}>
+      <span className="text-[12px] tracking-tight min-[360px]:text-[13px] min-[360px]:tracking-normal font-semibold truncate max-w-full">{titulo}</span>
       <span className={`text-[11px] tabular-nums ${activo ? 'text-brand-gold-light' : 'text-stone-500'}`}>{n}</span>
     </button>
   );
@@ -433,7 +433,7 @@ function TarjetaLead({ lead, estados, onClick, activo, aviso, tonoAviso }: {
 }) {
   const colorAviso = tonoAviso === 'oro' ? 'text-brand-gold-light' : tonoAviso === 'tarde' ? 'text-orange-300' : 'text-stone-400';
   return (
-    <div className={`group rounded-2xl bg-stone-900 border ${activo ? 'border-brand-gold' : 'border-stone-800 hover:border-stone-600'} transition-colors`}>
+    <div className={`group min-w-0 rounded-2xl bg-stone-900 border ${activo ? 'border-brand-gold' : 'border-stone-800 hover:border-stone-600'} transition-colors`}>
       <button onClick={onClick} className="w-full text-left px-4 pt-3.5 pb-2 focus-visible:outline-none">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -449,9 +449,9 @@ function TarjetaLead({ lead, estados, onClick, activo, aviso, tonoAviso }: {
         <span className={`text-xs ${colorAviso} truncate`}>{aviso}</span>
         <div className="flex gap-1.5 shrink-0">
           <a href={`https://wa.me/${celularInternacional(lead.celular)}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp a ${lead.nombre}`}
-            className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/25"><MessageCircle className="w-4 h-4" /></a>
+            className="w-11 h-11 rounded-xl bg-emerald-500/15 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/25"><MessageCircle className="w-5 h-5" /></a>
           <a href={`tel:+${celularInternacional(lead.celular)}`} aria-label={`Llamar a ${lead.nombre}`}
-            className="w-9 h-9 rounded-xl bg-brand-gold/15 text-brand-gold-light flex items-center justify-center hover:bg-brand-gold/25"><Phone className="w-4 h-4" /></a>
+            className="w-11 h-11 rounded-xl bg-brand-gold/15 text-brand-gold-light flex items-center justify-center hover:bg-brand-gold/25"><Phone className="w-5 h-5" /></a>
         </div>
       </div>
     </div>
@@ -512,7 +512,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
           <div className="text-xs text-stone-500">{operacion === 'A' ? 'Arriendo' : 'Venta'} · {lead.idLead}{lead.localidad && ' · ' + (LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad)}</div>
           <h3 className="text-xl font-semibold text-white leading-tight">{lead.nombre || 'Sin nombre'}</h3>
         </div>
-        <button onClick={onCerrar} aria-label="Cerrar ficha" className="p-2 rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-4 h-4" /></button>
+        <button onClick={onCerrar} aria-label="Cerrar ficha" className="w-11 h-11 flex items-center justify-center -mr-1.5 rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
       </div>
 
       <div className="grid grid-cols-3 gap-2 mb-4">

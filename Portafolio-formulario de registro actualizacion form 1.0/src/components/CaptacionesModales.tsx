@@ -34,7 +34,7 @@ function Marco({ titulo, sub, onCerrar, children, pie }: { titulo: string; sub: 
             <h3 className="text-lg font-semibold text-white">{titulo}</h3>
             <p className="text-xs text-stone-400 truncate">{sub}</p>
           </div>
-          <button onClick={onCerrar} aria-label="Cerrar" className="p-2 rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-4 h-4" /></button>
+          <button onClick={onCerrar} aria-label="Cerrar" className="w-11 h-11 flex items-center justify-center -mr-1.5 rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
         </div>
         <div className="px-5 pb-4 overflow-y-auto flex-1">{children}</div>
         {pie && <div className="px-5 py-4 border-t border-stone-800">{pie}</div>}
