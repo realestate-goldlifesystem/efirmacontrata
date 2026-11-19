@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Users, RefreshCw, Search, X, Loader2, AlertTriangle, Phone, MessageCircle, ExternalLink,
-  Bot, CalendarClock, PhoneCall, Flame, Inbox, ChevronDown, Send, Clock,
+  Bot, CalendarClock, PhoneCall, Flame, Inbox, ChevronDown, Send, Clock, MessageSquareText,
 } from 'lucide-react';
 import { API_URL } from './CitasAgendaPanel';
 import MiguelCaptadorModal from './MiguelCaptadorModal';
@@ -38,6 +38,8 @@ export interface Lead {
   captacionMs: number | null;
   proximaLlamadaMs: number | null;
   llamadaEstado: string;
+  /** LLAMADA | MENSAJE: qué seguimiento está programado (uno reemplaza al otro) */
+  llamadaTipo?: string;
   correo: string;
   idCita: string;
 }
@@ -283,7 +285,7 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
                 <Seccion icono={PhoneCall} titulo="Llamadas de hoy" vacio="No tienes llamadas programadas para hoy." n={hoy.llamadas.length}>
                   {hoy.llamadas.map(l => (
                     <TarjetaLead key={l.idLead} lead={l} estados={estados} activo={selId === l.idLead} onClick={() => setSelId(l.idLead)}
-                      aviso={l.proximaLlamadaMs! < Date.now() ? `Era a las ${textoHora(l.proximaLlamadaMs!)}` : `Llamar a las ${textoHora(l.proximaLlamadaMs!)}`}
+                      aviso={l.proximaLlamadaMs! < Date.now() ? `Era a las ${textoHora(l.proximaLlamadaMs!)}` : `${l.llamadaTipo === 'MENSAJE' ? 'Escribir' : 'Llamar'} a las ${textoHora(l.proximaLlamadaMs!)}`}
                       tonoAviso={l.proximaLlamadaMs! < Date.now() ? 'tarde' : 'oro'} />
                   ))}
                 </Seccion>
@@ -484,7 +486,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   const [guardando, setGuardando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nota, setNota] = useState('');
-  const [modal, setModal] = useState<'llamada' | 'agenda' | null>(null);
+  const [modal, setModal] = useState<'llamada' | 'mensaje' | 'agenda' | null>(null);
   const [verInfo, setVerInfo] = useState(false);
 
   useEffect(() => { setEligiendo(false); setError(null); setNota(''); setModal(null); }, [lead.idLead]);
@@ -519,7 +521,12 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   };
 
   const notas = notasDeDetalles(lead.detalles);
-  const llamadaPendiente = lead.proximaLlamadaMs != null && LLAMADA_PENDIENTE.includes(lead.llamadaEstado.toUpperCase());
+  const seguimientoPendiente = lead.proximaLlamadaMs != null && LLAMADA_PENDIENTE.includes(lead.llamadaEstado.toUpperCase());
+  // Llamada y mensaje comparten el motor: hay uno solo pendiente a la vez
+  const mensajePendiente = seguimientoPendiente && lead.llamadaTipo === 'MENSAJE';
+  const llamadaPendiente = seguimientoPendiente && !mensajePendiente;
+  // La tarjeta de mensaje solo aparece en SEGUIMIENTO (o si ya hay uno programado)
+  const verMensaje = lead.estado === 'SEGUIMIENTO' || mensajePendiente;
   // La fecha de la presentación sale de su nota "Cita agendada: … (CIT-…)"
   const textoCita = lead.idCita
     ? (notas.flatMap(n => n.ids.includes(lead.idCita.toUpperCase()) ? n.textos : [])
@@ -608,10 +615,12 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         )}
 
         {/* Lo programado: cada tarjeta muestra el dato y es el botón para programarlo */}
-        <div className="grid grid-cols-2 gap-1.5 mt-2">
-          <Programado icono={CalendarClock} titulo="Llamada" onClick={() => setModal('llamada')}
+        <div className={`grid ${verMensaje ? 'grid-cols-3' : 'grid-cols-2'} gap-1.5 mt-2`}>
+          <Programado icono={CalendarClock} titulo="Llamada" onClick={() => setModal('llamada')} compacto={verMensaje}
             valor={llamadaPendiente ? textoFechaCorta(lead.proximaLlamadaMs!) : ''} vacio="Programar" />
-          <Programado icono={Clock} titulo="Presentación" onClick={() => setModal('agenda')}
+          {verMensaje && <Programado icono={MessageSquareText} titulo="Mensaje" onClick={() => setModal('mensaje')} compacto
+            valor={mensajePendiente ? textoFechaCorta(lead.proximaLlamadaMs!) : ''} vacio="Programar" />}
+          <Programado icono={Clock} titulo="Presentación" onClick={() => setModal('agenda')} compacto={verMensaje}
             valor={textoCita} vacio="Agendar" />
         </div>
       </div>
@@ -637,7 +646,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-[11px] text-stone-400 tabular-nums">{n.fecha ? `${n.fecha} · ${n.hora}` : 'Sin fecha'}</span>
                   {n.ids.length > 0 && <span className="flex gap-1">{n.ids.map(id => (
-                    <span key={id} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${id.startsWith('LL') ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>{id}</span>
+                    <span key={id} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${id.startsWith('LL') ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : id.startsWith('MS') ? 'bg-sky-500/10 text-sky-300 border-sky-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>{id}</span>
                   ))}</span>}
                 </div>
                 {n.textos.map((t, j) => <p key={j} className="text-sm text-stone-200 leading-snug">{t}</p>)}
@@ -661,8 +670,8 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         </div>
       </div>
 
-      {modal === 'llamada' && (
-        <ProgramarLlamadaModal lead={lead} credential={credential}
+      {(modal === 'llamada' || modal === 'mensaje') && (
+        <ProgramarLlamadaModal lead={lead} credential={credential} tipo={modal === 'mensaje' ? 'MENSAJE' : 'LLAMADA'}
           onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
       )}
       {modal === 'agenda' && (
@@ -674,14 +683,17 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
 }
 
 /** Tarjeta de lo programado: con dato muestra la fecha; sin dato invita a programarlo. */
-function Programado({ icono: Icono, titulo, valor, vacio, onClick }: {
-  icono: React.ComponentType<{ className?: string }>; titulo: string; valor: string; vacio: string; onClick: () => void;
+// compacto: con tres tarjetas, la fecha y la hora van en dos líneas para que quepan
+function Programado({ icono: Icono, titulo, valor, vacio, onClick, compacto = false }: {
+  icono: React.ComponentType<{ className?: string }>; titulo: string; valor: string; vacio: string; onClick: () => void; compacto?: boolean;
 }) {
+  const [linea1, linea2] = compacto && valor.includes(' · ') ? valor.split(' · ') : [valor, ''];
   return (
     <button onClick={onClick}
-      className={`min-h-[52px] rounded-xl border px-3 py-2 text-left transition-colors ${valor ? 'border-brand-gold/50 bg-brand-gold/10 hover:bg-brand-gold/15' : 'border-dashed border-stone-700 hover:border-brand-gold/60'}`}>
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-stone-400"><Icono className="w-3.5 h-3.5 text-brand-gold-light" />{titulo}</div>
-      <div className={`text-[13px] font-semibold truncate ${valor ? 'text-white' : 'text-brand-gold-light'}`}>{valor || '+ ' + vacio}</div>
+      className={`min-w-0 min-h-[52px] rounded-xl border ${compacto ? 'px-2.5' : 'px-3'} py-2 text-left transition-colors ${valor ? 'border-brand-gold/50 bg-brand-gold/10 hover:bg-brand-gold/15' : 'border-dashed border-stone-700 hover:border-brand-gold/60'}`}>
+      <div className={`flex items-center gap-1 text-[10px] uppercase ${compacto ? 'tracking-[0.04em]' : 'tracking-[0.12em] gap-1.5'} text-stone-400 min-w-0`}>{!compacto && <Icono className="w-3.5 h-3.5 shrink-0 text-brand-gold-light" />}<span className="truncate">{titulo}</span></div>
+      <div className={`${compacto ? 'text-[12px]' : 'text-[13px]'} font-semibold truncate ${valor ? 'text-white' : 'text-brand-gold-light'}`}>{linea1 || '+ ' + vacio}</div>
+      {linea2 && <div className="text-[11px] text-stone-300 truncate tabular-nums">{linea2}</div>}
     </button>
   );
 }
@@ -700,7 +712,7 @@ function notasDeDetalles(detalles: string): Nota[] {
     const fecha = m ? m[1] : '', hora = m ? m[2] : '';
     let texto = m ? m[3] : linea;
     const ids: string[] = [];
-    texto = texto.replace(/\s*\(((?:LL|CIT)-\d{4,})\)\s*$/i, (_, id) => { ids.push(id.toUpperCase()); return ''; });
+    texto = texto.replace(/\s*\(((?:LL|MS|CIT)-\d{4,})\)\s*$/i, (_, id) => { ids.push(id.toUpperCase()); return ''; });
     const ultima = notas[notas.length - 1];
     if (fecha && ultima && ultima.fecha === fecha && ultima.hora === hora) {
       if (texto) ultima.textos.push(texto);

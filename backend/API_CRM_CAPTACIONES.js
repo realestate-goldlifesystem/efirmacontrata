@@ -101,6 +101,7 @@ function crmLeadDeValores_(enc, v, t, fila) {
     captacionMs: ms('FECHA DE CAPTACIÓN') || ms(SEGUIMIENTO_CAPTACIONES.COL_CONTACTO),
     proximaLlamadaMs: ms(LLAMADAS.COL_PROXIMA),
     llamadaEstado: txt('LLAMADA ESTADO'),
+    llamadaTipo: tipoSeguimiento_(txt('LLAMADA TIPO')),
     correo: txt(AGENDA_CAPTACION.COL_CORREO),
     idCita: txt(AGENDA_CAPTACION.COL_ID_CITA)
   };
@@ -226,14 +227,15 @@ function crmOcupado_(datos) {
   };
 }
 
-/** Programa la llamada de seguimiento. datos = { idLead, nota, timestamp } */
+/** Programa la llamada o el mensaje de seguimiento. datos = { idLead, nota, timestamp, tipo? } (tipo: LLAMADA | MENSAJE) */
 function crmProgramar_(datos) {
   const ub = crmUbicar_(datos.idLead);
   if (!ub) return { success: false, message: 'No encontramos a este propietario en el CRM.' };
   const d = datosFilaCaptacion_(ub.hoja, ub.fila);
   const r = programarLlamada({
     hoja: ub.hoja.getName(), fila: ub.fila, idLead: ub.lead.idLead, nombre: d.nombre, celular: d.celular,
-    servicio: d.servicio, direccion: d.direccion, nota: datos.nota, timestamp: Number(datos.timestamp)
+    servicio: d.servicio, direccion: d.direccion, nota: datos.nota, timestamp: Number(datos.timestamp),
+    tipo: tipoSeguimiento_(datos.tipo)
   });
   if (r && r.success) r.lead = crmReleer_(datos.idLead);
   else if (r && r.error) r.message = r.error;

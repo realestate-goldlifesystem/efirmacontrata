@@ -83,9 +83,14 @@ function destinoRapido(r: { min?: number; d?: number }) {
 const HORAS: string[] = [];
 for (let h = 7; h <= 20; h++) for (let m = 0; m < 60; m += 30) { if (h === 20 && m > 0) break; HORAS.push(h + ':' + m); }
 
-export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo }: {
-  lead: Lead; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void;
+// tipo MENSAJE (19-nov-2026): el mismo modal para el mensaje de seguimiento.
+// Usa el mismo motor que la llamada: uno reemplaza al otro y bloquea el calendario.
+export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo, tipo = 'LLAMADA' }: {
+  lead: Lead; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void; tipo?: 'LLAMADA' | 'MENSAJE';
 }) {
+  const esMensaje = tipo === 'MENSAJE';
+  const pendienteOtro = lead.proximaLlamadaMs != null && ['PROGRAMADA', 'CONFIRMADA'].includes((lead.llamadaEstado || '').toUpperCase())
+    && (lead.llamadaTipo === 'MENSAJE') !== esMensaje;
   const hoy = useMemo(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }, []);
   const dias = useMemo(() => Array.from({ length: 30 }, (_, i) => new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i)), [hoy]);
   const [nota, setNota] = useState('');
@@ -125,7 +130,7 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo }: {
     const c = choca(t);
     if (t <= Date.now()) return { off: true, etiqueta: 'ya pasó' };
     if (c) return { off: true, etiqueta: 'ocupado (' + c.que + ')' };
-    if (ocupado.find(o => o.propia && o.inicio === t)) return { off: false, etiqueta: 'su llamada actual' };
+    if (ocupado.find(o => o.propia && o.inicio === t)) return { off: false, etiqueta: esMensaje ? 'su seguimiento actual' : 'su llamada actual' };
     return { off: false, etiqueta: '' };
   };
 
@@ -145,7 +150,7 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo }: {
     if (!momento || !valido) return;
     setEnviando(true); setError('');
     try {
-      const r = await llamarCRM(credential, 'programar', { idLead: lead.idLead, nota, timestamp: momento.getTime() });
+      const r = await llamarCRM(credential, 'programar', { idLead: lead.idLead, nota, timestamp: momento.getTime(), tipo });
       if (r.success) {
         if (r.lead) onListo(r.lead);
         setListo((r.texto || textoLargo(momento)) + '. Quedó en tu calendario y en el CRM; te recordaremos por correo.');
@@ -155,7 +160,7 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo }: {
   };
 
   return (
-    <Marco titulo="Programar llamada" sub={`${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar}
+    <Marco titulo={esMensaje ? 'Programar mensaje' : 'Programar llamada'} sub={`${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar}
       pie={listo ? undefined : (
         <div className="flex flex-col gap-2">
           <div className={`text-sm ${valido ? 'text-brand-gold-light' : 'text-stone-400'}`}>{cargando ? 'Revisando tu agenda…' : resumen}</div>
@@ -164,21 +169,26 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo }: {
             <button onClick={onCerrar} className="min-h-[48px] rounded-xl border border-stone-700 text-stone-200 hover:border-stone-500">Cerrar</button>
             <button onClick={programar} disabled={!valido || cargando || enviando}
               className="min-h-[48px] rounded-xl bg-brand-gold text-stone-950 font-bold disabled:opacity-40 flex items-center justify-center gap-2">
-              {enviando && <Loader2 className="w-4 h-4 animate-spin" />}{enviando ? 'Programando…' : 'Programar llamada'}
+              {enviando && <Loader2 className="w-4 h-4 animate-spin" />}{enviando ? 'Programando…' : esMensaje ? 'Programar mensaje' : 'Programar llamada'}
             </button>
           </div>
         </div>
       )}>
       {listo ? <Listo texto={listo} onCerrar={onCerrar} /> : (
         <div className="flex flex-col gap-4">
+          {pendienteOtro && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[13px] text-amber-200">
+              {esMensaje ? 'Tiene una llamada programada: este mensaje la reemplaza.' : 'Tiene un mensaje programado: esta llamada lo reemplaza.'}
+            </div>
+          )}
           <div>
             <label htmlFor="nota-llamada" className="text-xs text-stone-400">Detalle del seguimiento</label>
             <textarea id="nota-llamada" value={nota} onChange={e => setNota(e.target.value)} maxLength={500} rows={3}
-              placeholder="¿Qué quedó hablado?"
+              placeholder={esMensaje ? '¿Qué le vas a escribir?' : '¿Qué quedó hablado?'}
               className="mt-1.5 w-full rounded-xl bg-stone-950 border border-stone-700 p-3 text-sm text-white placeholder:text-stone-500 resize-none focus:outline-none focus:border-brand-gold" />
           </div>
           <div>
-            <div className="text-xs text-stone-400 mb-2">¿Cuándo lo llamas?</div>
+            <div className="text-xs text-stone-400 mb-2">{esMensaje ? '¿Cuándo le escribes?' : '¿Cuándo lo llamas?'}</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               {RAPIDOS.map(r => {
                 const t = destinoRapido(r), no = cargando ? 'Revisando…' : motivoNo(t);

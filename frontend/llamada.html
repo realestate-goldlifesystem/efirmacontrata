@@ -57,7 +57,7 @@
     <div id="contenido" class="oculto">
       <h1 id="titulo"></h1>
       <p class="sub" id="sub"></p>
-      <div class="ficha"><div class="et">LLAMADA DE SEGUIMIENTO</div><b id="nombre"></b><span id="cuando"></span><i id="nota"></i></div>
+      <div class="ficha"><div class="et" id="etiqueta">LLAMADA DE SEGUIMIENTO</div><b id="nombre"></b><span id="cuando"></span><i id="nota"></i></div>
       <div id="nuevaFecha" class="oculto">
         <label>Nueva fecha</label>
         <div class="rapidos">
@@ -88,6 +88,12 @@
       NO_CONTESTO: ['No contestó', 'Elige cuándo lo vuelves a llamar. Te recordamos igual que antes.', 'Programar nueva llamada', 'oro', true],
       REPROGRAMAR: ['Reprogramar la llamada', 'Elige la nueva fecha y hora.', 'Reprogramar', 'oro', true]
     };
+    // Mensaje de seguimiento (19-nov-2026): mismo motor, otros textos; "CONTESTO" es "Lo envié"
+    const TEXTOS_MENSAJE = {
+      CONFIRMAR: ['¿Vas a enviar este mensaje?', 'Confirma y te seguimos recordando hasta la hora.', 'Sí, lo voy a enviar', 'verde', false],
+      CONTESTO: ['¿Ya lo enviaste?', 'Anota qué le escribiste o qué respondió y queda en el CRM.', 'Sí, lo envié', 'verde', false],
+      REPROGRAMAR: ['Reprogramar el mensaje', 'Elige la nueva fecha y hora.', 'Reprogramar', 'oro', true]
+    };
     const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'], MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
     let dia = null, horaExtra = 0;
     const fin = (t) => { $('contenido').classList.add('oculto'); $('cargando').classList.add('oculto'); $('hecho').classList.remove('oculto'); $('hechoTxt').textContent = t; };
@@ -95,7 +101,9 @@
     if (!L || !T || !TEXTOS[A]) fin('Este enlace está incompleto.');
     else llamar({ accion: 'infoLlamada', l: L, t: T }).then(r => {
       if (!r.ok) return fin(r.mensaje || 'Enlace no válido.');
-      if (['CONTESTÓ', 'NO CONTESTÓ', 'REPROGRAMADA', 'CANCELADA'].indexOf(r.estado) !== -1) return fin('Esta llamada ya quedó cerrada (' + r.estado.toLowerCase() + ').');
+      const esMensaje = r.tipo === 'MENSAJE';
+      if (['CONTESTÓ', 'NO CONTESTÓ', 'REPROGRAMADA', 'CANCELADA', 'ENVIADO'].indexOf(r.estado) !== -1) return fin((esMensaje ? 'Este mensaje ya quedó cerrado (' : 'Esta llamada ya quedó cerrada (') + r.estado.toLowerCase() + ').');
+      if (esMensaje) { if (!TEXTOS_MENSAJE[A]) return fin('Acción no válida para un mensaje.'); Object.assign(TEXTOS, TEXTOS_MENSAJE); $('etiqueta').textContent = 'MENSAJE DE SEGUIMIENTO'; document.title = 'Mensaje de seguimiento · Gold Life Real Estate'; }
       const [ti, su, bo, co, fecha] = TEXTOS[A];
       $('titulo').textContent = ti; $('sub').textContent = su; $('accion').textContent = bo; $('accion').className = 'btn ' + co;
       $('nombre').textContent = r.nombre; $('cuando').textContent = r.cuando + (r.negocio ? ' · ' + r.negocio : ''); $('nota').textContent = r.nota ? '“' + r.nota + '”' : '';

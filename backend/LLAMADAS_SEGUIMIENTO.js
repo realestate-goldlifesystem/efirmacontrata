@@ -15,7 +15,11 @@
 const LLAMADAS = {
   COL_PROXIMA: 'PRÓXIMA LLAMADA',
   // Técnicas: se crean al final y ocultas
-  TECNICAS: ['LLAMADA ID', 'LLAMADA ESTADO', 'LLAMADA AVISO', 'LLAMADA TOKEN', 'LLAMADA EVENTO', 'LLAMADA NOTA'],
+  // LLAMADA TIPO (19-nov-2026): LLAMADA (vacío = llamada, lo de antes) o MENSAJE.
+  // El mensaje de seguimiento usa todo este mismo motor: un solo seguimiento
+  // pendiente por propietario (uno reemplaza al otro), bloquea el calendario y
+  // recibe los mismos avisos; cambia el código (MS-) y los textos.
+  TECNICAS: ['LLAMADA ID', 'LLAMADA ESTADO', 'LLAMADA AVISO', 'LLAMADA TOKEN', 'LLAMADA EVENTO', 'LLAMADA NOTA', 'LLAMADA TIPO'],
   // [clave, minutos antes]; C90 = pedir confirmación
   AVISOS: [['H24', 1440], ['H3', 180], ['H2', 120], ['C90', 90], ['H1', 60], ['M30', 30], ['M15', 15], ['M5', 5], ['M0', 0]],
   PENDIENTES: ['PROGRAMADA', 'CONFIRMADA'],
@@ -24,6 +28,15 @@ const LLAMADAS = {
   ESTADO_ABRE: 'SEGUIMIENTO',
   URL_PAGINA: 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/llamada.html'
 };
+
+/** 'MENSAJE' o 'LLAMADA' (lo vacío o desconocido es llamada, como antes). */
+function tipoSeguimiento_(t) { return String(t || '').trim().toUpperCase() === 'MENSAJE' ? 'MENSAJE' : 'LLAMADA'; }
+/** Palabras para los textos según el tipo. */
+function palabrasSeguimiento_(tipo) {
+  return tipoSeguimiento_(tipo) === 'MENSAJE'
+    ? { cosa: 'mensaje', Cosa: 'Mensaje', etiqueta: 'MENSAJE DE SEGUIMIENTO', emoji: '💬', prefijo: 'MS-', hacer: 'enviar el mensaje', laHare: 'Sí, lo enviaré', programado: 'Mensaje programado' }
+    : { cosa: 'llamada', Cosa: 'Llamada', etiqueta: 'LLAMADA DE SEGUIMIENTO', emoji: '📞', prefijo: 'LL-', hacer: 'hacer la llamada', laHare: 'Sí, la haré', programado: 'Llamada programada' };
+}
 
 // ---------- Formato de fechas del CRM (6-nov-2026) ----------
 // Uno solo, el de siempre: "7 de octubre de 2026". Se aplica a la columna entera
@@ -196,10 +209,15 @@ function programarLlamada(d) {
   const previaVigente = !!eventoPropio && previa instanceof Date && previa.getTime() > Date.now();
   if (eventoPropio && !previaVigente) marcarEventoHecho_(eventoPropio);
 
-  const id = 'LL-' + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+  const tipo = tipoSeguimiento_(d.tipo), w = palabrasSeguimiento_(tipo);
+  // Si había uno pendiente del otro tipo (llamada ↔ mensaje), este lo reemplaza
+  const tipoPrevio = previaVigente ? tipoSeguimiento_(leer('LLAMADA TIPO')) : '';
+  const reemplazo = tipoPrevio && tipoPrevio !== tipo
+    ? 'Reemplaza ' + (tipoPrevio === 'MENSAJE' ? 'el mensaje ' : 'la llamada ') + String(leer('LLAMADA ID') || '') : '';
+  const id = w.prefijo + Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
   const nota = String(d.nota || '').trim().slice(0, 500);
-  const titulo = '📞 SEGUIMIENTO: ' + d.nombre + (d.servicio ? ' (' + d.servicio + ')' : '');
-  const descripcion = 'Llamada de seguimiento (' + id + ' · ' + d.idLead + ')\nCelular: ' + d.celular + (nota ? '\nNota: ' + nota : '');
+  const titulo = w.emoji + ' ' + (tipo === 'MENSAJE' ? 'MENSAJE' : 'SEGUIMIENTO') + ': ' + d.nombre + (d.servicio ? ' (' + d.servicio + ')' : '');
+  const descripcion = w.Cosa + ' de seguimiento (' + id + ' · ' + d.idLead + ')\nCelular: ' + d.celular + (nota ? '\nNota: ' + nota : '');
   let idEvento = '';
   try {
     const cal = CalendarApp.getDefaultCalendar();
@@ -222,9 +240,11 @@ function programarLlamada(d) {
   // los anteriores no, para no mandar varios de golpe.
   poner('LLAMADA AVISO', avisoAnteriorLlamada_(avisoVigenteLlamada_((inicio.getTime() - Date.now()) / 60000)));
   poner('LLAMADA TOKEN', Utilities.getUuid()); poner('LLAMADA EVENTO', idEvento); poner('LLAMADA NOTA', nota);
+  poner('LLAMADA TIPO', tipo);
 
-  anotarEnCRM_(hoja, fila, (nota ? nota + '\n' : '') + 'Llamada programada: ' + textoFechaLlamada_(inicio) + ' (' + id + ')', d.estadoNuevo);
-  return { success: true, idLlamada: id, texto: textoFechaLlamada_(inicio) };
+  anotarEnCRM_(hoja, fila, (nota ? nota + '\n' : '') + w.programado + ': ' + textoFechaLlamada_(inicio) +
+    (reemplazo ? ' · ' + reemplazo : '') + ' (' + id + ')', d.estadoNuevo);
+  return { success: true, idLlamada: id, tipo: tipo, texto: textoFechaLlamada_(inicio) };
 }
 
 function anotarEnCRM_(hoja, fila, texto, estadoNuevo) {
@@ -314,6 +334,7 @@ function urlLlamada_(id, token, accion) {
 
 function enviarAvisoLlamada_(paso, v, nombreHoja, inicio) {
   const id = String(v('LLAMADA ID')), token = String(v('LLAMADA TOKEN'));
+  const esMensaje = tipoSeguimiento_(v('LLAMADA TIPO')) === 'MENSAJE', w = palabrasSeguimiento_(v('LLAMADA TIPO'));
   const nombre = String(v('NOMBRE DEL PROPIETARIO') || 'el propietario').trim();
   const cel = celularInternacional_(v('CELULAR'));
   const negocio = nombreHoja.slice(-1) === 'V' ? 'Venta' : 'Arriendo';
@@ -321,7 +342,7 @@ function enviarAvisoLlamada_(paso, v, nombreHoja, inicio) {
   const ubicacion = [v('UBICACIÓN'), v('LOCALIDAD')].filter(Boolean).join(', ');
   const cuando = paso === 'M0' ? 'ahora' : textoFaltaLlamada_(inicio);   // tiempo real que falta
   const tarjeta = '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:14px 0;border-radius:12px;background:#1c1917;"><tr><td style="padding:16px 18px;font-family:Arial,sans-serif;">' +
-    '<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">LLAMADA DE SEGUIMIENTO</div>' +
+    `<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">${w.etiqueta}</div>` +
     `<div style="color:#fff;font-size:19px;font-weight:bold;margin-top:4px;">${nombre}</div>` +
     `<div style="color:#e7e5e4;font-size:15px;margin-top:2px;">${textoFechaLlamada_(inicio)} · ${negocio}</div>` +
     (ubicacion ? `<div style="color:#a8a29e;font-size:13px;margin-top:4px;">${ubicacion}${v('VALOR DE PROMOCIÓN') ? ' · ' + v('VALOR DE PROMOCIÓN') : ''}</div>` : '') +
@@ -329,12 +350,27 @@ function enviarAvisoLlamada_(paso, v, nombreHoja, inicio) {
     '</td></tr></table>';
   const herramientas = [];
   if (cel) {
-    herramientas.push(botonHerramientaCita_('llamar', 'Llamar', 'tel:+' + cel));
-    herramientas.push(botonHerramientaCita_('whatsapp', 'WhatsApp', 'https://wa.me/' + cel + '?text=' +
-      encodeURIComponent('Hola ' + nombre.split(' ')[0] + ', soy Leonardo de Gold Life Real Estate. Te escribo para retomar lo de tu inmueble.')));
+    const wa = botonHerramientaCita_('whatsapp', 'WhatsApp', 'https://wa.me/' + cel + '?text=' +
+      encodeURIComponent('Hola ' + nombre.split(' ')[0] + ', soy Leonardo de Gold Life Real Estate. Te escribo para retomar lo de tu inmueble.'));
+    const tel = botonHerramientaCita_('llamar', 'Llamar', 'tel:+' + cel);
+    // En el mensaje, WhatsApp va primero: es la herramienta principal
+    if (esMensaje) herramientas.push(wa, tel); else herramientas.push(tel, wa);
   }
   let asunto, titulo, mensaje, secundario = '';
-  if (paso === 'M0') {
+  if (paso === 'M0' && esMensaje) {
+    asunto = `💬 Es hora de escribirle a ${nombre}`;
+    titulo = 'HORA DEL MENSAJE';
+    const agenda = (modo) => URL_PORTAFOLIO_CITAS + '?desdeLlamada=' + encodeURIComponent(id) + '&t=' + encodeURIComponent(token) + '&modo=' + modo;
+    herramientas.push(botonHerramientaCita_('meet', 'Presentación virtual', agenda('VIRTUAL')));
+    herramientas.push(botonHerramientaCita_('ruta', 'Captación presencial', agenda('PRESENCIAL')));
+    mensaje = 'Es la hora de tu mensaje de seguimiento.' + tarjeta +
+      '<div style="margin:6px 0 4px;color:#78716c;font-size:12px;letter-spacing:.5px;text-align:center;">TUS HERRAMIENTAS</div>' + tablaHerramientasCita_(herramientas) +
+      '<div style="margin:16px 0 4px;font-weight:bold;">¿Ya lo enviaste?</div>';
+    secundario = htmlBotonesCorreo([
+      { texto: '🔄 Reprogramar', color: '#b8860b', url: urlLlamada_(id, token, 'REPROGRAMAR') },
+      { texto: '✅ Lo envié', color: '#1f7a4d', url: urlLlamada_(id, token, 'CONTESTO') }
+    ]) + '<div style="color:#78716c;font-size:12.5px;text-align:center;">Al marcar "Lo envié" queda anotado en el CRM.</div>';
+  } else if (paso === 'M0') {
     asunto = `📞 Es hora de llamar a ${nombre}`;
     titulo = 'HORA DE LA LLAMADA';
     const agenda = (modo) => URL_PORTAFOLIO_CITAS + '?desdeLlamada=' + encodeURIComponent(id) + '&t=' + encodeURIComponent(token) + '&modo=' + modo;
@@ -348,18 +384,18 @@ function enviarAvisoLlamada_(paso, v, nombreHoja, inicio) {
       { texto: '📵 No contestó', color: '#a3322a', url: urlLlamada_(id, token, 'NO_CONTESTO') }
     ]) + '<div style="color:#78716c;font-size:12.5px;text-align:center;">Si no contestó, eliges ahí mismo la nueva fecha y hora.</div>';
   } else if (paso === 'C90') {
-    asunto = `⏰ ¿Vas a hacer la llamada a ${nombre}?`;
-    titulo = 'CONFIRMA TU LLAMADA';
-    mensaje = `Tu llamada de seguimiento es <strong>${cuando}</strong>. ¿La vas a hacer?` + tarjeta;
+    asunto = `⏰ ¿Vas a ${w.hacer} a ${nombre}?`;
+    titulo = esMensaje ? 'CONFIRMA TU MENSAJE' : 'CONFIRMA TU LLAMADA';
+    mensaje = `Tu ${w.cosa} de seguimiento es <strong>${cuando}</strong>. ¿${esMensaje ? 'Lo vas a enviar' : 'La vas a hacer'}?` + tarjeta;
     secundario = htmlBotonesCorreo([
       { texto: '🔄 Reprogramar', color: '#b8860b', url: urlLlamada_(id, token, 'REPROGRAMAR') },
-      { texto: '✅ Sí, la haré', color: '#1f7a4d', url: urlLlamada_(id, token, 'CONFIRMAR') }
+      { texto: '✅ ' + w.laHare, color: '#1f7a4d', url: urlLlamada_(id, token, 'CONFIRMAR') }
     ]);
   } else {
-    asunto = `📞 Llamada de seguimiento ${cuando}: ${nombre}`;
-    titulo = 'RECORDATORIO DE LLAMADA';
-    mensaje = `Tu llamada de seguimiento es <strong>${cuando}</strong>.` + tarjeta + (herramientas.length ? tablaHerramientasCita_(herramientas) : '');
-    secundario = `<p style="margin:14px 0 0;font-size:13px;color:#78716c;text-align:center;"><a href="${urlLlamada_(id, token, 'REPROGRAMAR')}" style="color:#a16207;">Reprogramar la llamada</a></p>`;
+    asunto = `${w.emoji} ${w.Cosa} de seguimiento ${cuando}: ${nombre}`;
+    titulo = esMensaje ? 'RECORDATORIO DE MENSAJE' : 'RECORDATORIO DE LLAMADA';
+    mensaje = `Tu ${w.cosa} de seguimiento es <strong>${cuando}</strong>.` + tarjeta + (herramientas.length ? tablaHerramientasCita_(herramientas) : '');
+    secundario = `<p style="margin:14px 0 0;font-size:13px;color:#78716c;text-align:center;"><a href="${urlLlamada_(id, token, 'REPROGRAMAR')}" style="color:#a16207;">Reprogramar ${esMensaje ? 'el mensaje' : 'la llamada'}</a></p>`;
   }
   enviarCorreoCita(correoAgenteCitas(), asunto, titulo, 'Leonardo', mensaje, secundario);
 }
@@ -375,6 +411,7 @@ function infoLlamada(datos) {
   if (!l) return { ok: false, mensaje: 'Este enlace ya no es válido: puede que la llamada se haya reprogramado.' };
   const inicio = l.v(LLAMADAS.COL_PROXIMA);
   return { ok: true, nombre: String(l.v('NOMBRE DEL PROPIETARIO') || ''), estado: String(l.v('LLAMADA ESTADO') || ''),
+    tipo: tipoSeguimiento_(l.v('LLAMADA TIPO')),
     negocio: l.hoja.getName().slice(-1) === 'V' ? 'Venta' : 'Arriendo',
     cuando: inicio instanceof Date ? textoFechaLlamada_(inicio) : '', nota: String(l.v('LLAMADA NOTA') || '') };
 }
@@ -386,17 +423,20 @@ function accionLlamada(datos) {
     const l = llamadaValida_(datos);
     if (!l) return { ok: false, mensaje: 'Este enlace ya no es válido: puede que la llamada se haya reprogramado.' };
     const estado = String(l.v('LLAMADA ESTADO') || '');
-    if (LLAMADAS.PENDIENTES.indexOf(estado) === -1) return { ok: false, mensaje: 'Esta llamada ya quedó cerrada (' + estado.toLowerCase() + ').' };
+    const tipo = tipoSeguimiento_(l.v('LLAMADA TIPO')), esMensaje = tipo === 'MENSAJE';
+    if (LLAMADAS.PENDIENTES.indexOf(estado) === -1) return { ok: false, mensaje: (esMensaje ? 'Este mensaje' : 'Esta llamada') + ' ya quedó cerrad' + (esMensaje ? 'o' : 'a') + ' (' + estado.toLowerCase() + ').' };
     const a = String(datos.a || '');
     const nota = String(datos.nota || '').trim().slice(0, 500);
     const idLl = String(l.v('LLAMADA ID'));
-    if (a === 'CONFIRMAR') { l.poner('LLAMADA ESTADO', 'CONFIRMADA'); return { ok: true, mensaje: 'Listo, la llamada quedó confirmada. Te seguimos recordando.' }; }
+    if (a === 'CONFIRMAR') { l.poner('LLAMADA ESTADO', 'CONFIRMADA'); return { ok: true, mensaje: 'Listo, ' + (esMensaje ? 'el mensaje quedó confirmado' : 'la llamada quedó confirmada') + '. Te seguimos recordando.' }; }
     if (a === 'CONTESTO') {
-      l.poner('LLAMADA ESTADO', 'CONTESTÓ'); l.poner(LLAMADAS.COL_PROXIMA, '');
+      // En el mensaje, "CONTESTO" es "Lo envié"
+      l.poner('LLAMADA ESTADO', esMensaje ? 'ENVIADO' : 'CONTESTÓ'); l.poner(LLAMADAS.COL_PROXIMA, '');
       marcarEventoHecho_(String(l.v('LLAMADA EVENTO') || ''));
-      anotarEnCRM_(l.hoja, l.fila, 'Contestó' + (nota ? ': ' + nota : '') + ' (' + idLl + ')');
+      anotarEnCRM_(l.hoja, l.fila, (esMensaje ? 'Mensaje enviado' : 'Contestó') + (nota ? ': ' + nota : '') + ' (' + idLl + ')');
       return { ok: true, mensaje: 'Anotado en el CRM. Si quedó lista la presentación, agéndala desde el correo.' };
     }
+    if (a === 'NO_CONTESTO' && esMensaje) return { ok: false, mensaje: 'Acción no válida para un mensaje.' };
     if (a === 'NO_CONTESTO' || a === 'REPROGRAMAR') {
       if (!datos.timestamp) return { ok: false, mensaje: 'Elige la nueva fecha y hora.' };
       const noContesto = a === 'NO_CONTESTO';
@@ -409,9 +449,9 @@ function accionLlamada(datos) {
       const d = datosFilaCaptacion_(l.hoja, l.fila);
       const r = programarLlamada({ hoja: l.hoja.getName(), fila: l.fila, idLead: String(l.v(LLAMADAS.COL_ID_LEAD)),
         nombre: d.nombre, celular: d.celular, servicio: d.servicio, direccion: d.direccion,
-        nota: (noContesto ? 'No contestó' : 'Reprogramada') + (nota ? ': ' + nota : ''), timestamp: datos.timestamp, estadoNuevo: estadoCRM });
+        nota: (noContesto ? 'No contestó' : (esMensaje ? 'Reprogramado' : 'Reprogramada')) + (nota ? ': ' + nota : ''), timestamp: datos.timestamp, estadoNuevo: estadoCRM, tipo: tipo });
       if (!r.success) return { ok: false, mensaje: r.error };
-      return { ok: true, mensaje: 'Nueva llamada programada para el ' + r.texto + '.' };
+      return { ok: true, mensaje: (esMensaje ? 'Nuevo mensaje programado' : 'Nueva llamada programada') + ' para el ' + r.texto + '.' };
     }
     return { ok: false, mensaje: 'Acción no válida.' };
   } finally { lock.releaseLock(); }
@@ -457,14 +497,15 @@ function llamadasPendientesCRM_(desdeMs, hastaMs, excluir) {
     const enc = encabezadosCRM_(hoja);
     const cP = enc.indexOf(LLAMADAS.COL_PROXIMA), cE = enc.indexOf('LLAMADA ESTADO');
     if (cP === -1 || cE === -1) return;
-    const cN = enc.indexOf('NOMBRE DEL PROPIETARIO');
+    const cN = enc.indexOf('NOMBRE DEL PROPIETARIO'), cT = enc.indexOf('LLAMADA TIPO');
     const vals = hoja.getRange(p0, 1, hoja.getLastRow() - p0 + 1, enc.length).getValues();
     vals.forEach((r, i) => {
       const fila = i + p0;
       if (excluir && excluir.hoja === nombre && Number(excluir.fila) === fila) return;
       if (LLAMADAS.PENDIENTES.indexOf(String(r[cE])) === -1 || !(r[cP] instanceof Date)) return;
       const ini = r[cP].getTime(), fin = ini + LLAMADAS.DURACION_MIN * 60000;
-      if (ini < hastaMs && fin > desdeMs) res.push({ inicio: ini, fin: fin, nombre: cN !== -1 ? String(r[cN] || '') : '' });
+      if (ini < hastaMs && fin > desdeMs) res.push({ inicio: ini, fin: fin, nombre: cN !== -1 ? String(r[cN] || '') : '',
+        tipo: tipoSeguimiento_(cT !== -1 ? r[cT] : '') });
     });
   });
   return res;
@@ -477,7 +518,7 @@ function llamadasPendientesCRM_(desdeMs, hastaMs, excluir) {
 function ocupadoParaLlamada(d) {
   const desde = Number(d.desde), hasta = Number(d.hasta);
   const ocup = llamadasPendientesCRM_(desde, hasta, { hoja: d.hoja, fila: d.fila })
-    .map(l => ({ inicio: l.inicio, fin: l.fin, que: 'Llamada: ' + (l.nombre || 'otro propietario') }));
+    .map(l => ({ inicio: l.inicio, fin: l.fin, que: (l.tipo === 'MENSAJE' ? 'Mensaje: ' : 'Llamada: ') + (l.nombre || 'otro propietario') }));
   let propio = '';
   try {
     const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(d.hoja);
@@ -488,7 +529,8 @@ function ocupadoParaLlamada(d) {
         // Su propia llamada se muestra (se puede reprogramar, no se bloquea)
         const t = leer(LLAMADAS.COL_PROXIMA);
         if (t instanceof Date && t.getTime() < hasta && t.getTime() >= desde)
-          ocup.push({ inicio: t.getTime(), fin: t.getTime() + LLAMADAS.DURACION_MIN * 60000, que: 'su llamada actual', propia: true });
+          ocup.push({ inicio: t.getTime(), fin: t.getTime() + LLAMADAS.DURACION_MIN * 60000,
+            que: tipoSeguimiento_(leer('LLAMADA TIPO')) === 'MENSAJE' ? 'su mensaje actual' : 'su llamada actual', propia: true });
       }
     }
   } catch (e) {}
