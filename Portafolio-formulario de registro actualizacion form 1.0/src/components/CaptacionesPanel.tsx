@@ -81,7 +81,7 @@ export const celularInternacional = (c: string) => (c.length === 10 ? '57' + c :
 const inicioHoy = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
 const textoHora = (ms: number) => {
   const d = new Date(ms);
-  return (d.getHours() % 12 || 12) + ':' + String(d.getMinutes()).padStart(2, '0') + (d.getHours() < 12 ? ' a. m.' : ' p. m.');
+  return (d.getHours() % 12 || 12) + ':' + String(d.getMinutes()).padStart(2, '0') + (d.getHours() < 12 ? ' AM' : ' PM');
 };
 const textoFechaCorta = (ms: number) => {
   const d = new Date(ms);
@@ -520,18 +520,53 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
 
   const notas = notasDeDetalles(lead.detalles);
   const llamadaPendiente = lead.proximaLlamadaMs != null && LLAMADA_PENDIENTE.includes(lead.llamadaEstado.toUpperCase());
+  // La fecha de la presentación sale de su nota "Cita agendada: … (CIT-…)"
+  const textoCita = lead.idCita
+    ? (notas.flatMap(n => n.ids.includes(lead.idCita.toUpperCase()) ? n.textos : [])
+        .map(t => t.match(/Cita agendada:\s*(.+)$/i)?.[1]).filter(Boolean).pop() || lead.idCita)
+    : '';
+  const resumen = [lead.ubicacion, lead.habitaciones && lead.habitaciones + ' hab', lead.valor].filter(Boolean).join(' · ');
+
+  // Las notas van como un chat: la más nueva abajo, junto al campo de escribir
+  const notasRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = notasRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [lead.idLead, lead.detalles]);
 
   return (
     <div className={`flex-1 min-h-0 flex flex-col bg-stone-900 border border-stone-800 ${movil ? 'rounded-t-3xl' : 'rounded-3xl'} text-stone-200 relative overflow-hidden`}>
-      {/* Fijo arriba: nombre, contacto y estado. Lo demás se desplaza debajo. */}
+      {/* Fijo arriba: quién es, el inmueble, contacto, estado y lo programado */}
       <div className="shrink-0 px-4 pt-3 pb-3 border-b border-stone-800 bg-stone-900">
         {movil && <div className="w-10 h-1 rounded-full bg-stone-700 mx-auto mb-2.5" />}
-        <div className="flex items-start justify-between gap-3 mb-2.5">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[11px] text-stone-500 truncate">{operacion === 'A' ? 'Arriendo' : 'Venta'} · {lead.idLead}{lead.localidad && ' · ' + (LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad)}</div>
             <h3 className="text-lg font-semibold text-white leading-tight truncate">{lead.nombre || 'Sin nombre'}</h3>
           </div>
           <button onClick={onCerrar} aria-label="Cerrar ficha" className="w-11 h-11 -mt-1 -mr-1.5 flex items-center justify-center rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
+        </div>
+
+        {/* Información del inmueble: una línea, se despliega al tocarla */}
+        <button onClick={() => setVerInfo(v => !v)} aria-expanded={verInfo}
+          className="w-full min-h-[36px] -mt-0.5 mb-1.5 flex items-center gap-1.5 text-left text-[13px] text-stone-400 hover:text-stone-200 transition-colors">
+          <span className="truncate">{resumen || 'Ver información del inmueble'}</span>
+          <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-300 ${verInfo ? 'rotate-180' : ''}`} />
+        </button>
+        <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${verInfo ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+          <div className="overflow-hidden">
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm rounded-2xl bg-stone-950/50 border border-stone-800 p-3 mb-2.5">
+              <Dato t="Barrio" v={lead.ubicacion} />
+              <Dato t="Localidad" v={LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad} />
+              <Dato t="Habitaciones" v={lead.habitaciones} />
+              <Dato t="Valor publicado" v={lead.valor} />
+              <Dato t="Tipo" v={lead.tipo} />
+              <Dato t="Celular" v={lead.celular} />
+              <Dato t="Fecha de captación" v={lead.fechaCaptacion} />
+              <Dato t="Fecha de contacto" v={lead.fechaContacto} />
+              <div className="col-span-2 min-w-0"><Dato t="Correo" v={lead.correo} /></div>
+            </dl>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-1.5 mb-2">
@@ -562,99 +597,51 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
             ))}
           </div>
         )}
-        <div className="text-[11px] text-stone-500 mt-1.5">
-          {lead.fechaSeguimiento ? <>Última gestión: {lead.fechaSeguimiento}{lead.horaSeguimiento && ' · ' + lead.horaSeguimiento}</> : 'Sin gestión todavía'}
+
+        {/* Lo programado: cada tarjeta muestra el dato y es el botón para programarlo */}
+        <div className="grid grid-cols-2 gap-1.5 mt-2">
+          <Programado icono={CalendarClock} titulo="Llamada" onClick={() => setModal('llamada')}
+            valor={llamadaPendiente ? textoFechaCorta(lead.proximaLlamadaMs!) : ''} vacio="Programar" />
+          <Programado icono={Clock} titulo="Presentación" onClick={() => setModal('agenda')}
+            valor={textoCita} vacio="Agendar" />
         </div>
       </div>
 
-      {/* Lo que se desplaza: un solo scroll, el de la ficha */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pt-3 pb-5">
-        <div className="rounded-2xl bg-stone-950/50 border border-stone-800 divide-y divide-stone-800 mb-3">
-          <div className="flex items-center justify-between gap-3 p-3.5">
-            <div className="min-w-0">
-              <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Próxima llamada</div>
-              <div className="text-sm font-semibold text-white">{llamadaPendiente ? textoFechaCorta(lead.proximaLlamadaMs!) : 'Sin llamada programada'}</div>
-            </div>
-            {llamadaPendiente && <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">{lead.llamadaEstado}</span>}
-          </div>
-          <div className="flex items-center justify-between gap-3 p-3.5">
-            <div className="min-w-0">
-              <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Presentación</div>
-              <div className="text-sm font-semibold text-white">{lead.idCita ? 'Cita ' + lead.idCita : 'Sin cita agendada'}</div>
-            </div>
-            {lead.idCita && <span className="text-[11px] text-stone-400">en Agenda de Citas</span>}
-          </div>
+      {/* Lo único que se desplaza: las notas, como un chat */}
+      <div ref={notasRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] uppercase tracking-[0.12em] text-stone-500">Detalles de seguimiento</span>
+          <span className="text-[11px] text-stone-500">
+            {lead.fechaSeguimiento ? <>Última gestión {lead.fechaSeguimiento}{lead.horaSeguimiento && ' · ' + lead.horaSeguimiento}</> : 'Sin gestión todavía'}
+          </span>
         </div>
+        {notas.length === 0
+          ? <div className="h-full min-h-[80px] flex items-center justify-center text-sm text-stone-500 text-center px-4">Aún no hay notas. Escribe la primera abajo.</div>
+          : <ol className="flex flex-col gap-2">{notas.map((n, i) => (
+              <li key={i} className="rounded-xl bg-stone-950/60 border border-stone-800 px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-[11px] text-stone-400 tabular-nums">{n.fecha ? `${n.fecha} · ${n.hora}` : 'Sin fecha'}</span>
+                  {n.ids.length > 0 && <span className="flex gap-1">{n.ids.map(id => (
+                    <span key={id} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${id.startsWith('LL') ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>{id}</span>
+                  ))}</span>}
+                </div>
+                {n.textos.map((t, j) => <p key={j} className="text-sm text-stone-200 leading-snug">{t}</p>)}
+              </li>
+            ))}</ol>}
+      </div>
 
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <button onClick={() => setModal('llamada')}
-            className="min-h-[60px] rounded-2xl border border-brand-gold/60 bg-stone-950/40 text-left px-3.5 py-2.5 hover:bg-brand-gold/10">
-            <div className="flex items-center gap-1.5 font-semibold text-sm text-white"><CalendarClock className="w-4 h-4 text-brand-gold-light" />Programar llamada</div>
-            <div className="text-[11px] text-stone-400">Fecha y hora de recontacto</div>
+      {/* Fijo abajo: escribir la nota */}
+      <div className={`shrink-0 border-t border-stone-800 bg-stone-900 px-4 pt-2.5 ${movil ? 'pb-[max(0.75rem,env(safe-area-inset-bottom))]' : 'pb-3'}`}>
+        {error && <div className="mb-2 text-sm text-red-300 flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
+        <div className="flex gap-2">
+          <label htmlFor={`nota-${lead.idLead}`} className="sr-only">Nueva nota</label>
+          <input id={`nota-${lead.idLead}`} value={nota} onChange={e => setNota(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarNota(); }}
+            placeholder="Escribe una nota…" maxLength={1000}
+            className="flex-1 min-w-0 h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold" />
+          <button onClick={enviarNota} disabled={!nota.trim() || !!guardando} aria-label="Guardar nota"
+            className="h-11 w-11 rounded-xl bg-brand-gold text-stone-950 flex items-center justify-center disabled:opacity-40">
+            {guardando === 'nota' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
-          <button onClick={() => setModal('agenda')}
-            className="min-h-[60px] rounded-2xl border border-stone-700 bg-stone-950/40 text-left px-3.5 py-2.5 hover:border-stone-500">
-            <div className="flex items-center gap-1.5 font-semibold text-sm text-white"><Clock className="w-4 h-4 text-brand-gold-light" />Agendar presentación</div>
-            <div className="text-[11px] text-stone-400">Virtual o presencial</div>
-          </button>
-        </div>
-
-        {/* Información del inmueble, plegable */}
-        <div className="rounded-2xl bg-stone-950/50 border border-stone-800 mb-3">
-          <button onClick={() => setVerInfo(v => !v)} aria-expanded={verInfo}
-            className="w-full min-h-[48px] px-3.5 flex items-center justify-between gap-3 text-left">
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-white">Ver información del inmueble</span>
-              {!verInfo && <span className="block text-[12px] text-stone-400 truncate">
-                {[lead.ubicacion, lead.habitaciones && lead.habitaciones + ' hab', lead.valor].filter(Boolean).join(' · ') || 'Sin datos'}
-              </span>}
-            </span>
-            <ChevronDown className={`w-4 h-4 text-stone-400 shrink-0 transition-transform duration-300 ${verInfo ? 'rotate-180' : ''}`} />
-          </button>
-          <div className={`grid transition-[grid-template-rows] duration-300 ease-out ${verInfo ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-            <div className="overflow-hidden">
-              <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-sm px-3.5 pb-3.5 pt-1">
-                <Dato t="Barrio" v={lead.ubicacion} />
-                <Dato t="Localidad" v={LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad} />
-                <Dato t="Habitaciones" v={lead.habitaciones} />
-                <Dato t="Valor publicado" v={lead.valor} />
-                <Dato t="Tipo" v={lead.tipo} />
-                <Dato t="Fecha de captación" v={lead.fechaCaptacion} />
-                <Dato t="Fecha de contacto" v={lead.fechaContacto} />
-                <Dato t="Celular" v={lead.celular} />
-                <div className="col-span-2 min-w-0"><Dato t="Correo" v={lead.correo} /></div>
-              </dl>
-            </div>
-          </div>
-        </div>
-
-        {/* Notas: cada una con la fecha y hora en que se escribió */}
-        <div className="rounded-2xl bg-stone-950/50 border border-stone-800 p-3.5">
-          <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 mb-2.5">Detalles de seguimiento</div>
-          <div className="flex gap-2 mb-3">
-            <label htmlFor={`nota-${lead.idLead}`} className="sr-only">Nueva nota</label>
-            <input id={`nota-${lead.idLead}`} value={nota} onChange={e => setNota(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarNota(); }}
-              placeholder="Escribe una nota…" maxLength={1000}
-              className="flex-1 min-w-0 h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold" />
-            <button onClick={enviarNota} disabled={!nota.trim() || !!guardando} aria-label="Guardar nota"
-              className="h-11 w-11 rounded-xl bg-brand-gold text-stone-950 flex items-center justify-center disabled:opacity-40">
-              {guardando === 'nota' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </button>
-          </div>
-          {error && <div className="mb-3 text-sm text-red-300 flex items-start gap-2"><AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />{error}</div>}
-          {notas.length === 0
-            ? <div className="text-sm text-stone-500">Aún no hay notas.</div>
-            : <ol className="flex flex-col gap-2">{notas.map((n, i) => (
-                <li key={i} className="rounded-xl bg-stone-900 border border-stone-800 px-3 py-2.5">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-[11px] text-stone-400 tabular-nums">{n.fecha ? `${n.fecha} · ${n.hora}` : 'Sin fecha'}</span>
-                    {n.ids.length > 0 && <span className="flex gap-1">{n.ids.map(id => (
-                      <span key={id} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${id.startsWith('LL') ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'}`}>{id}</span>
-                    ))}</span>}
-                  </div>
-                  {n.textos.map((t, j) => <p key={j} className="text-sm text-stone-200 leading-snug">{t}</p>)}
-                </li>
-              ))}</ol>}
         </div>
       </div>
 
@@ -670,11 +657,24 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   );
 }
 
+/** Tarjeta de lo programado: con dato muestra la fecha; sin dato invita a programarlo. */
+function Programado({ icono: Icono, titulo, valor, vacio, onClick }: {
+  icono: React.ComponentType<{ className?: string }>; titulo: string; valor: string; vacio: string; onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick}
+      className={`min-h-[52px] rounded-xl border px-3 py-2 text-left transition-colors ${valor ? 'border-brand-gold/50 bg-brand-gold/10 hover:bg-brand-gold/15' : 'border-dashed border-stone-700 hover:border-brand-gold/60'}`}>
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.12em] text-stone-400"><Icono className="w-3.5 h-3.5 text-brand-gold-light" />{titulo}</div>
+      <div className={`text-[13px] font-semibold truncate ${valor ? 'text-white' : 'text-brand-gold-light'}`}>{valor || '+ ' + vacio}</div>
+    </button>
+  );
+}
+
 /**
  * Convierte DETALLES DE SEGUIMIENTO en notas. Desde 19-nov-2026 cada línea se
  * guarda como "19/11/2026 3:47 PM · texto"; las líneas seguidas con la misma
  * marca son una sola nota (p. ej. la nota y su "Llamada programada … (LL-…)").
- * Las líneas viejas sin marca se muestran como "Sin fecha". La más nueva va primero.
+ * Las líneas viejas sin marca se muestran como "Sin fecha". Van en orden: la más nueva al final.
  */
 type Nota = { fecha: string; hora: string; textos: string[]; ids: string[] };
 function notasDeDetalles(detalles: string): Nota[] {
@@ -693,7 +693,7 @@ function notasDeDetalles(detalles: string): Nota[] {
       notas.push({ fecha, hora, textos: texto ? [texto] : [], ids });
     }
   });
-  return notas.reverse();
+  return notas;
 }
 
 function Dato({ t, v }: { t: string; v: string }) {
