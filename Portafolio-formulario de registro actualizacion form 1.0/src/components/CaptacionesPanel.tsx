@@ -194,6 +194,18 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
   const seleccionado = leads.find(l => l.idLead === selId) || null;
   const totalHoy = hoy.llamadas.length;
 
+  // Celular: la franja de selectores e indicadores tapa la barra transparente de
+  // arriba SOLO cuando ya quedó fija; antes, taparía los botones Miguel y Actualizar.
+  const franjaRef = useRef<HTMLDivElement>(null);
+  const [franjaFija, setFranjaFija] = useState(false);
+  useEffect(() => {
+    const revisar = () => { const el = franjaRef.current; if (el) setFranjaFija(el.getBoundingClientRect().top <= 81 && window.scrollY > 0); };
+    revisar();
+    window.addEventListener('scroll', revisar, { passive: true });
+    window.addEventListener('resize', revisar);
+    return () => { window.removeEventListener('scroll', revisar); window.removeEventListener('resize', revisar); };
+  }, []);
+
   // Ficha de PC: su alto es siempre lo que queda visible de la pantalla, para que
   // no haya que bajar la página para ver el resto de la ficha (un solo scroll).
   const fichaPcRef = useRef<HTMLDivElement>(null);
@@ -237,25 +249,25 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
       {/* En el celular, los selectores y los indicadores quedan fijos arriba y
           solo se deslizan las tarjetas. El ::before tapa la franja de la barra
           superior (transparente) para que las tarjetas no se vean pasar por detrás. */}
-      <div className="max-md:sticky max-md:top-20 max-md:z-30 max-md:-mx-4 max-md:px-4 max-md:pt-1 max-md:pb-2.5 max-md:mb-4 max-md:bg-[#faf8f5]
-        max-md:shadow-[0_8px_16px_-12px_rgba(28,25,23,.25)]
-        max-md:before:content-[''] max-md:before:absolute max-md:before:inset-x-0 max-md:before:bottom-full max-md:before:h-20 max-md:before:bg-[#faf8f5]">
+      <div ref={franjaRef} className={`max-md:sticky max-md:top-20 max-md:z-30 max-md:-mx-4 max-md:px-4 max-md:pt-1 max-md:pb-2.5 max-md:mb-4 max-md:bg-[#faf8f5]
+        ${franjaFija ? `max-md:shadow-[0_8px_16px_-12px_rgba(28,25,23,.25)]
+        max-md:before:content-[''] max-md:before:absolute max-md:before:inset-x-0 max-md:before:bottom-full max-md:before:h-20 max-md:before:bg-[#faf8f5]` : ''}`}>
       {/* Arriendo / Venta y vista */}
       <div className="flex items-center gap-2 sm:gap-3 mb-2 md:mb-5">
-        <div className="grid grid-cols-2 p-1 rounded-full bg-stone-900 border border-stone-800 flex-1 sm:flex-none">
+        <div className="grid grid-cols-2 p-1 rounded-full bg-stone-900 border border-stone-800 flex-[1.4] min-w-0 sm:flex-none">
           {(['A', 'V'] as Operacion[]).map(op => (
             <button key={op} onClick={() => { setOperacion(op); setSelId(null); setFiltroEstado(null); }}
               aria-pressed={operacion === op}
-              className={`min-h-[44px] px-3 sm:px-6 rounded-full text-sm font-semibold transition-all ${operacion === op ? 'bg-brand-gold text-stone-950 shadow' : 'text-stone-400 hover:text-white'}`}>
+              className={`min-h-[44px] px-2 sm:px-6 rounded-full text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all ${operacion === op ? 'bg-brand-gold text-stone-950 shadow' : 'text-stone-400 hover:text-white'}`}>
               {op === 'A' ? 'Arriendo' : 'Venta'}
-              {datos[op] && <span className="ml-1.5 opacity-70 font-normal">{datos[op]!.leads.length}</span>}
+              {datos[op] && <span className="ml-1 sm:ml-1.5 text-[11px] sm:text-sm opacity-70 font-normal tabular-nums">{datos[op]!.leads.length}</span>}
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-2 p-1 rounded-full bg-white border border-stone-300 flex-1 sm:flex-none">
+        <div className="grid grid-cols-2 p-1 rounded-full bg-white border border-stone-300 flex-1 min-w-0 sm:flex-none">
           {(['hoy', 'todos'] as Vista[]).map(v => (
             <button key={v} onClick={() => setVista(v)} aria-pressed={vista === v}
-              className={`min-h-[44px] px-3 sm:px-5 rounded-full text-sm font-medium transition-all ${vista === v ? 'bg-stone-900 text-white' : 'text-stone-600 hover:text-stone-900'}`}>
+              className={`min-h-[44px] px-2 sm:px-5 rounded-full text-[13px] sm:text-sm font-medium whitespace-nowrap transition-all ${vista === v ? 'bg-stone-900 text-white' : 'text-stone-600 hover:text-stone-900'}`}>
               {v === 'hoy' ? 'Mi día' : 'Todos'}
             </button>
           ))}
