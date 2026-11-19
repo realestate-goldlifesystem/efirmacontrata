@@ -373,21 +373,22 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
           <h2 id="menu-operacion" className="text-xs md:text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
             Operación del día a día
           </h2>
-          {/* Registro de Inmuebles primero y a lo ancho; debajo Miguel, Captaciones,
-              Agenda y Portafolio (Leonardo, 19-nov-2026). */}
+          {/* Registro de Inmuebles primero y a lo ancho (Leonardo, 19-nov-2026).
+              Celular (2 columnas): Captaciones | Agenda, y debajo Miguel | Portafolio.
+              PC (4 columnas): Miguel, Captaciones, Agenda, Portafolio. */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
             <TarjetaMenu horizontal icono={ClipboardList} titulo="Registro de Inmuebles"
               descripcion="Captación de propiedades, contratos y checklist de exclusividad."
               onClick={onOpenForm} />
-            <TarjetaMenu icono={Bot} titulo="Miguel · Agente Captador"
-              descripcion="Barrido de propietarios directos en Fincaraiz y Metrocuadrado."
-              onClick={() => setShowMiguelModal(true)} />
             <TarjetaMenu destacada icono={Users} titulo="Captaciones"
               descripcion="Propietarios por llamar, seguimiento, llamadas y presentaciones."
               onClick={() => setActiveView('captaciones')} />
             <TarjetaMenu destacada icono={CalendarDays} titulo="Agenda de Citas"
               descripcion="Citas de propietarios: confirmadas, canceladas y por reagendar."
               onClick={() => setActiveView('citas')} />
+            <TarjetaMenu icono={Bot} titulo="Miguel · Agente Captador" orden="lg:-order-1"
+              descripcion="Barrido de propietarios directos en Fincaraiz y Metrocuadrado."
+              onClick={() => setShowMiguelModal(true)} />
             <TarjetaMenu destacada icono={Building2} titulo="Portafolio de Inmuebles"
               descripcion="Inmuebles publicados y PDFs interactivos para compartir."
               onClick={() => setActiveView('portafolio')} />
@@ -423,7 +424,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
 }
 
 /** Tarjeta del menú del agente: cuadro compacto en el celular, más amplio desde tablet. */
-function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = false, ancha = false, anchaHastaPc = false, horizontal = false }: {
+function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = false, ancha = false, anchaHastaPc = false, horizontal = false, orden = '' }: {
   icono: React.ComponentType<{ className?: string }>;
   titulo: string;
   descripcion: string;
@@ -434,12 +435,14 @@ function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = f
   anchaHastaPc?: boolean;
   /** Fila completa en todos los tamaños, con el ícono a la izquierda y el texto al lado. */
   horizontal?: boolean;
+  /** Clase de orden (p. ej. 'lg:-order-1') para cambiar la posición según el tamaño. */
+  orden?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1" : ""} ${anchaHastaPc ? "col-span-2 lg:col-span-1" : ""} ${horizontal ? "col-span-2 lg:col-span-4 flex-row justify-center text-left gap-3" : "flex-col justify-start text-center gap-2"} flex items-center sm:gap-4 p-3 sm:p-6 rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
+      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1" : ""} ${anchaHastaPc ? "col-span-2 lg:col-span-1" : ""} ${orden} ${horizontal ? "order-first col-span-2 lg:col-span-4 flex-row justify-center text-left gap-3" : "flex-col justify-start text-center gap-2"} flex items-center sm:gap-4 p-3 sm:p-6 rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       <div className={`relative w-10 h-10 sm:w-16 sm:h-16 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors duration-300 ${destacada ? "border border-brand-gold/30" : ""}`}>
