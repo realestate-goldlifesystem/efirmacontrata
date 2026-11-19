@@ -234,26 +234,43 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
         </div>
       </div>
 
+      {/* En el celular, los selectores y los indicadores quedan fijos arriba y
+          solo se deslizan las tarjetas. El ::before tapa la franja de la barra
+          superior (transparente) para que las tarjetas no se vean pasar por detrás. */}
+      <div className="max-md:sticky max-md:top-20 max-md:z-30 max-md:-mx-4 max-md:px-4 max-md:pt-1 max-md:pb-2.5 max-md:mb-4 max-md:bg-[#faf8f5]
+        max-md:shadow-[0_8px_16px_-12px_rgba(28,25,23,.25)]
+        max-md:before:content-[''] max-md:before:absolute max-md:before:inset-x-0 max-md:before:bottom-full max-md:before:h-20 max-md:before:bg-[#faf8f5]">
       {/* Arriendo / Venta y vista */}
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="grid grid-cols-2 p-1 rounded-full bg-stone-900 border border-stone-800 w-full sm:w-auto">
+      <div className="flex items-center gap-2 sm:gap-3 mb-2 md:mb-5">
+        <div className="grid grid-cols-2 p-1 rounded-full bg-stone-900 border border-stone-800 flex-1 sm:flex-none">
           {(['A', 'V'] as Operacion[]).map(op => (
             <button key={op} onClick={() => { setOperacion(op); setSelId(null); setFiltroEstado(null); }}
               aria-pressed={operacion === op}
-              className={`min-h-[44px] px-6 rounded-full text-sm font-semibold transition-all ${operacion === op ? 'bg-brand-gold text-stone-950 shadow' : 'text-stone-400 hover:text-white'}`}>
+              className={`min-h-[44px] px-3 sm:px-6 rounded-full text-sm font-semibold transition-all ${operacion === op ? 'bg-brand-gold text-stone-950 shadow' : 'text-stone-400 hover:text-white'}`}>
               {op === 'A' ? 'Arriendo' : 'Venta'}
               {datos[op] && <span className="ml-1.5 opacity-70 font-normal">{datos[op]!.leads.length}</span>}
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-2 p-1 rounded-full bg-white border border-stone-300 w-full sm:w-auto">
+        <div className="grid grid-cols-2 p-1 rounded-full bg-white border border-stone-300 flex-1 sm:flex-none">
           {(['hoy', 'todos'] as Vista[]).map(v => (
             <button key={v} onClick={() => setVista(v)} aria-pressed={vista === v}
-              className={`min-h-[44px] px-5 rounded-full text-sm font-medium transition-all ${vista === v ? 'bg-stone-900 text-white' : 'text-stone-600 hover:text-stone-900'}`}>
+              className={`min-h-[44px] px-3 sm:px-5 rounded-full text-sm font-medium transition-all ${vista === v ? 'bg-stone-900 text-white' : 'text-stone-600 hover:text-stone-900'}`}>
               {v === 'hoy' ? 'Mi día' : 'Todos'}
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Indicadores */}
+      <div className="flex md:grid md:grid-cols-5 gap-2 md:gap-3 md:mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-1 [scrollbar-width:none]">
+        <Indicador titulo="Nuevos por llamar" valor={conteoEstados['NUEVO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('NUEVO'); }} />
+        <Indicador titulo="Llamadas de hoy" valor={totalHoy} dorado onClick={() => setVista('hoy')} />
+        <Indicador titulo="En seguimiento" valor={conteoEstados['SEGUIMIENTO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('SEGUIMIENTO'); }} />
+        <Indicador titulo="Pre-registro" valor={conteoEstados['PRE-R CAPTACION'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('PRE-R CAPTACION'); }} />
+        <Indicador titulo="Captados" valor={conteoEstados['CAPTADO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('CAPTADO'); }} />
+      </div>
+
       </div>
 
       {error && (
@@ -261,15 +278,6 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
           <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" /><span>{error}</span>
         </div>
       )}
-
-      {/* Indicadores */}
-      <div className="flex md:grid md:grid-cols-5 gap-2 md:gap-3 mb-6 overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-1 [scrollbar-width:none]">
-        <Indicador titulo="Nuevos por llamar" valor={conteoEstados['NUEVO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('NUEVO'); }} />
-        <Indicador titulo="Llamadas de hoy" valor={totalHoy} dorado onClick={() => setVista('hoy')} />
-        <Indicador titulo="En seguimiento" valor={conteoEstados['SEGUIMIENTO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('SEGUIMIENTO'); }} />
-        <Indicador titulo="Pre-registro" valor={conteoEstados['PRE-R CAPTACION'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('PRE-R CAPTACION'); }} />
-        <Indicador titulo="Captados" valor={conteoEstados['CAPTADO'] || 0} onClick={() => { setVista('todos'); setFiltroEstado('CAPTADO'); }} />
-      </div>
 
       {cargando && !actual && (
         <div className="flex items-center justify-center gap-3 py-20 text-stone-500">

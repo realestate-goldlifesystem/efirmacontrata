@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <!--
+    Al poner ESTADO DE LLAMADA = SEGUIMIENTO (19-nov-2026): primero se elige cómo
+    se hace el seguimiento y de ahí se abre su ventana (abrirSeguimientoElegido,
+    LLAMADAS_SEGUIMIENTO.js). Lo mismo que el panel del agente.
+  -->
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1c1917; background: #faf9f7; }
+    .cabeza { background: linear-gradient(135deg, #0c0a09 0%, #1c1917 60%, #2a2316 100%); padding: 16px 22px 14px; border-bottom: 2px solid #d4af37; }
+    .marca { font-size: 11px; letter-spacing: 3.5px; font-weight: 700; color: #d4af37; }
+    .marca span { color: #d6d3d1; font-weight: 400; }
+    .sub { font-size: 12.5px; color: #a8a29e; margin: 3px 0 0; }
+    .cuerpo { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+    .op { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: #fff; border: 1px solid #e7e5e4; border-radius: 16px;
+      padding: 13px 16px; font: inherit; cursor: pointer; transition: border-color .2s, box-shadow .2s, transform .15s; animation: entrar .35s ease both; }
+    .op:nth-child(2) { animation-delay: .05s; } .op:nth-child(3) { animation-delay: .1s; }
+    .op:hover { border-color: #d4af37; box-shadow: 0 8px 22px rgba(28,25,23,.08); }
+    .op:active { transform: scale(.99); }
+    .op:disabled { opacity: .5; cursor: progress; }
+    .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 21px; flex: 0 0 44px; }
+    .t { font-weight: 600; font-size: 15px; display: block; }
+    .s { font-size: 12.5px; color: #78716c; display: block; margin-top: 1px; }
+    .flecha { margin-left: auto; color: #a8a29e; font-size: 20px; }
+    .nota { text-align: center; font-size: 12px; color: #a8a29e; padding: 2px 20px 14px; }
+    .error { color: #b91c1c; font-size: 13px; text-align: center; min-height: 16px; }
+    @keyframes entrar { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+  <div class="cabeza">
+    <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
+    <div class="sub" id="quien"></div>
+  </div>
+  <div class="cuerpo">
+    <button class="op" onclick="elegir('LLAMADA', this)"><span class="ic" style="background:#f7f1de">📞</span>
+      <span><span class="t">Llamada</span><span class="s">Programar cuándo lo vuelves a llamar</span></span><span class="flecha">›</span></button>
+    <button class="op" onclick="elegir('MENSAJE', this)"><span class="ic" style="background:#e6f2fb">💬</span>
+      <span><span class="t">Mensaje</span><span class="s">Programar cuándo le escribes por WhatsApp</span></span><span class="flecha">›</span></button>
+    <button class="op" onclick="elegir('AGENDA', this)"><span class="ic" style="background:#e6f4ec">🎥</span>
+      <span><span class="t">Presentación</span><span class="s">Agendar la presentación virtual o la captación presencial</span></span><span class="flecha">›</span></button>
+    <div class="error" id="error"></div>
+  </div>
+  <div class="nota">El estado ya quedó en SEGUIMIENTO. Si cierras, no se programa nada.</div>
+  <script>
+    const D = <?!= DATOS ?>;
+    document.getElementById('quien').textContent = (D.nombre || 'Propietario') + ' · ' + D.idLead;
+    function elegir(que, b) {
+      document.querySelectorAll('.op').forEach(x => x.disabled = true);
+      b.querySelector('.s').textContent = 'Abriendo…';
+      google.script.run
+        .withFailureHandler(e => { document.getElementById('error').textContent = e.message; document.querySelectorAll('.op').forEach(x => x.disabled = false); })
+        .abrirSeguimientoElegido({ hoja: D.hoja, fila: D.fila, que: que });
+    }
+  </script>
+</body>
+</html>

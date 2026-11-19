@@ -43,6 +43,7 @@
     .listo h2 { margin: 0 0 6px; font-size: 19px; }
     .listo p { color: var(--suave); font-size: 14px; margin: 0 0 20px; }
     .oculto { display: none; }
+    .aviso { background: #fdf6e3; border: 1px solid rgba(184,150,46,.45); color: #7a5c12; border-radius: 10px; padding: 9px 12px; font-size: 13px; margin-bottom: 12px; }
   
     /* Cargando: cubre la ventana mientras se lee la agenda (no se puede tocar nada) */
     #cargando { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
@@ -77,14 +78,15 @@
   </div>
   <div class="cabeza">
     <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
-    <div class="sub">Llamada de seguimiento · te recordamos por correo antes de la hora</div>
+    <div class="sub" id="subCabeza">Llamada de seguimiento · te recordamos por correo antes de la hora</div>
   </div>
   <div class="cuerpo" id="form">
     <div class="tarjeta">
       <div class="quien"><b id="nombre"></b><span id="lead"></span></div>
       <div class="grupo"><label>Detalle del seguimiento</label>
         <textarea id="nota" placeholder="Ej. Está terminando de pintar; llamarlo para agendar la captación"></textarea></div>
-      <div class="grupo"><label>¿Cuándo lo llamas?</label>
+      <div class="aviso oculto" id="reemplaza"></div>
+      <div class="grupo"><label id="lblCuando">¿Cuándo lo llamas?</label>
         <div class="rapidos">
           <button type="button" class="rapido" data-min="30">En media hora<small></small></button>
           <button type="button" class="rapido" data-min="60">En 1 hora<small></small></button>
@@ -111,7 +113,7 @@
   </div>
   <div id="listo" class="listo oculto">
     <div class="ok">✓</div>
-    <h2>Llamada programada</h2>
+    <h2 id="tituloListo">Llamada programada</h2>
     <p id="final"></p>
     <button class="btn pri" onclick="google.script.host.close()">Listo</button>
   </div>
@@ -124,6 +126,19 @@
     const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
     $('nombre').textContent = D.nombre || 'Propietario';
     $('lead').textContent = D.idLead + (D.servicio ? ' · ' + D.servicio : '');
+    // Mensaje de seguimiento (19-nov-2026): la misma ventana con otros textos
+    const ES_MENSAJE = D.tipo === 'MENSAJE';
+    const TXT_BOTON = ES_MENSAJE ? 'Programar mensaje' : 'Programar llamada';
+    if (ES_MENSAJE) {
+      $('subCabeza').textContent = 'Mensaje de seguimiento por WhatsApp · te recordamos por correo antes de la hora';
+      $('lblCuando').textContent = '¿Cuándo le escribes?';
+      $('nota').placeholder = 'Ej. Escribirle para saber si ya decidió y ofrecerle la presentación';
+      $('guardar').textContent = TXT_BOTON; $('tituloListo').textContent = 'Mensaje programado';
+    }
+    if (D.pendienteTipo && D.pendienteTipo !== (ES_MENSAJE ? 'MENSAJE' : 'LLAMADA')) {
+      $('reemplaza').textContent = ES_MENSAJE ? 'Tiene una llamada programada: este mensaje la reemplaza.' : 'Tiene un mensaje programado: esta llamada lo reemplaza.';
+      $('reemplaza').classList.remove('oculto');
+    }
     let dia = null, rapido = null;
     const SLOT = 30 * 60000, DUR = 30 * 60000;
     const H_INI = 7 * 60, H_FIN = 20 * 60;   // 7:00 a. m. a 8:00 p. m.
@@ -192,7 +207,7 @@
         const t = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), h, m).getTime();
         const c = choca(t), pr = !c && propia(t);
         const pasada = t <= Date.now();
-        o.disabled = !!c || pasada; o.textContent = o.dataset.txt + (pasada ? ' — ya pasó' : c ? ' — ocupado (' + c.que + ')' : pr ? ' — 📞 su llamada actual' : '');
+        o.disabled = !!c || pasada; o.textContent = o.dataset.txt + (pasada ? ' — ya pasó' : c ? ' — ocupado (' + c.que + ')' : pr ? ' — su seguimiento actual' : '');
       });
       const sel = $('hora').selectedOptions[0];
       if (sel && sel.disabled) { const libre = [...$('hora').options].find(o => !o.disabled && o.index > sel.index) || [...$('hora').options].find(o => !o.disabled); if (libre) libre.selected = true; }
@@ -254,17 +269,17 @@
     function guardar() {
       const t = momento();
       $('guardar').disabled = true; $('guardar').textContent = 'Programando…'; $('error').textContent = '';
-      cargando(true, 'Programando la llamada');
+      cargando(true, ES_MENSAJE ? 'Programando el mensaje' : 'Programando la llamada');
       google.script.run.withSuccessHandler(r => {
         cargando(false);
         if (r && r.success) {
           $('form').classList.add('oculto'); $('pie').classList.add('oculto'); $('listo').classList.remove('oculto');
           $('final').textContent = r.texto + '. Quedó en tu calendario y en el CRM; te recordaremos por correo.';
           setTimeout(() => google.script.host.close(), 5000);
-        } else { $('error').textContent = (r && r.error) || 'No se pudo programar.'; $('guardar').textContent = 'Programar llamada'; revisar(); }
-      }).withFailureHandler(e => { cargando(false); $('error').textContent = e.message; $('guardar').textContent = 'Programar llamada'; revisar(); })
+        } else { $('error').textContent = (r && r.error) || 'No se pudo programar.'; $('guardar').textContent = TXT_BOTON; revisar(); }
+      }).withFailureHandler(e => { cargando(false); $('error').textContent = e.message; $('guardar').textContent = TXT_BOTON; revisar(); })
         .programarLlamada({ hoja: D.hoja, fila: D.fila, idLead: D.idLead, nombre: D.nombre, celular: D.celular, servicio: D.servicio,
-          direccion: D.direccion, nota: $('nota').value, timestamp: t.getTime() });
+          direccion: D.direccion, nota: $('nota').value, timestamp: t.getTime(), tipo: ES_MENSAJE ? 'MENSAJE' : 'LLAMADA' });
     }
   </script>
 </body>

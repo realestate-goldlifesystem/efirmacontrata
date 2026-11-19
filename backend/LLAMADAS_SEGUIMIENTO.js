@@ -146,15 +146,44 @@ function abrirSeguimientoSiToca_(e, hoja, colEstado) {
   if (r.getNumRows() !== 1 || r.getNumColumns() !== 1 || r.getColumn() !== colEstado) return;
   if (r.getRow() < SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS) return;
   if (normalizarEstadoCaptacion_(e.value) !== LLAMADAS.ESTADO_ABRE) return;
-  abrirModalSeguimiento_(hoja, r.getRow());
+  abrirEleccionSeguimiento_(hoja, r.getRow());
 }
 
-function abrirModalSeguimiento_(hoja, fila) {
+/**
+ * Al pasar a SEGUIMIENTO (19-nov-2026): primero se elige cómo se hace el
+ * seguimiento (llamada, mensaje o presentación), igual que en el panel.
+ */
+function abrirEleccionSeguimiento_(hoja, fila) {
+  const d = datosFilaCaptacion_(hoja, fila);
+  const t = HtmlService.createTemplateFromFile('backend/MODAL_ELEGIR_SEGUIMIENTO');
+  t.DATOS = JSON.stringify({ hoja: hoja.getName(), fila: fila, nombre: d.nombre, idLead: idLeadDeFila_(hoja, fila) });
+  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(460).setHeight(420), '¿Cómo vas a hacer el seguimiento?');
+}
+
+/** Lo llama la ventana de elegir: abre la ventana de lo elegido (reemplaza la actual). */
+function abrirSeguimientoElegido(d) {
+  const hoja = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(String(d.hoja));
+  if (!hoja || SEGUIMIENTO_CAPTACIONES.HOJAS.indexOf(hoja.getName()) === -1) throw new Error('No encontramos la pestaña del propietario.');
+  const fila = Number(d.fila);
+  if (d.que === 'AGENDA') return abrirModalAgendaCaptacion_(hoja, fila);
+  abrirModalSeguimiento_(hoja, fila, d.que === 'MENSAJE' ? 'MENSAJE' : 'LLAMADA');
+}
+
+function abrirModalSeguimiento_(hoja, fila, tipo) {
   const d = datosFilaCaptacion_(hoja, fila);
   d.idLead = idLeadDeFila_(hoja, fila);
+  d.tipo = tipoSeguimiento_(tipo);
+  // Si ya tiene uno pendiente del otro tipo, la ventana avisa que lo reemplaza
+  try {
+    const col = columnasLlamada_(hoja), leer = (k) => hoja.getRange(fila, col[k]).getValue();
+    const prox = leer(LLAMADAS.COL_PROXIMA);
+    if (LLAMADAS.PENDIENTES.indexOf(String(leer('LLAMADA ESTADO'))) !== -1 && prox instanceof Date && prox.getTime() > Date.now())
+      d.pendienteTipo = tipoSeguimiento_(leer('LLAMADA TIPO'));
+  } catch (e) {}
   const t = HtmlService.createTemplateFromFile('backend/MODAL_SEGUIMIENTO');
   t.DATOS = JSON.stringify(d);
-  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(520).setHeight(740), 'Programar llamada de seguimiento');
+  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(520).setHeight(740),
+    d.tipo === 'MENSAJE' ? 'Programar mensaje de seguimiento' : 'Programar llamada de seguimiento');
 }
 
 /** Menú: programar la llamada para la fila seleccionada. */
@@ -164,7 +193,7 @@ function programarSeguimientoFilaActual() {
     SpreadsheetApp.getUi().alert('Ubícate en una fila de "1 - CAPTACIONES A" o "1 - CAPTACIONES V".');
     return;
   }
-  abrirModalSeguimiento_(hoja, hoja.getActiveRange().getRow());
+  abrirEleccionSeguimiento_(hoja, hoja.getActiveRange().getRow());
 }
 
 /**
