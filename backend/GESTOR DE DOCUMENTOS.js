@@ -869,6 +869,12 @@ function doPost(e) {
           ? crmCaptacionesDesdeWeb(datos)
           : { success: false, message: 'API_CRM_CAPTACIONES no cargada' };
         break;
+      case 'crmInmuebles':
+        // Herramienta "Inmuebles" del panel del agente (API_CRM_INMUEBLES.js), solo lectura.
+        result = (typeof crmInmueblesDesdeWeb === 'function')
+          ? crmInmueblesDesdeWeb(datos)
+          : { success: false, message: 'API_CRM_INMUEBLES no cargada' };
+        break;
       case 'validarCertificadoOCR':
         // Llama a la función del OCR-HANDLER.js
         result = validarCertificadoDesdeFormulario(datos.base64);
@@ -5229,19 +5235,27 @@ function obtenerDatosRegistroActual() {
  * Procesar envío de email al inquilino (Backend)
  */
 function procesarEmailInquilino(email, nombre) {
+  // Ventana del Sheet: el inmueble viene del contexto guardado al abrirla.
+  const props = PropertiesService.getScriptProperties();
+  const currentRow = parseInt(props.getProperty('currentRow'));
+  const currentCDR = props.getProperty('currentCDR');
+  if (!currentRow || !currentCDR) {
+    return { success: false, message: 'Error: Sesión del popup expirada. Por favor cierre y vuelva a intentar.' };
+  }
+  return procesarEmailInquilinoEnFila_(currentRow, currentCDR, email, nombre);
+}
+
+/**
+ * Núcleo del envío del formulario al inquilino (19-nov-2026): lo usan la ventana
+ * del Sheet y el CRM de Inmuebles del panel (API_CRM_INMUEBLES.js), con la fila
+ * y el CDR explícitos en vez del contexto guardado.
+ */
+function procesarEmailInquilinoEnFila_(currentRow, currentCDR, email, nombre) {
   try {
     // 1. Validaciones básicas
     if (!email || !email.includes('@')) throw new Error('Email inválido');
     if (!nombre || nombre.length < 2) throw new Error('Nombre inválido');
-
-    // 2. Recuperar contexto
-    const props = PropertiesService.getScriptProperties();
-    const currentRow = parseInt(props.getProperty('currentRow'));
-    const currentCDR = props.getProperty('currentCDR');
-
-    if (!currentRow || !currentCDR) {
-      throw new Error('Sesión del popup expirada. Por favor cierre y vuelva a intentar.');
-    }
+    if (!currentRow || !currentCDR) throw new Error('No se encontró el inmueble.');
 
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(DOCS_CONFIG.HOJA_PRINCIPAL);
     if (!sheet) throw new Error('No se encontró la hoja principal');

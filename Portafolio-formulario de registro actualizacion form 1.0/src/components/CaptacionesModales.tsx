@@ -22,7 +22,7 @@ const textoLargo = (t: Date) => {
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
-function Marco({ titulo, sub, onCerrar, children, pie }: { titulo: string; sub: string; onCerrar: () => void; children: React.ReactNode; pie?: React.ReactNode }) {
+export function Marco({ titulo, sub, onCerrar, children, pie }: { titulo: string; sub: string; onCerrar: () => void; children: React.ReactNode; pie?: React.ReactNode }) {
   // Portal al <body>: el panel del agente anima su contenedor, y eso dejaría la
   // ventana por debajo de la barra superior del sitio.
   return createPortal(
@@ -149,7 +149,7 @@ export function ElegirSeguimientoModal({ lead, onElegir, onCerrar }: {
 }
 
 /** Pantalla de "listo" con el conteo de 5 a 0, como en el Sheet. */
-function Listo({ texto, onCerrar }: { texto: string; onCerrar: () => void }) {
+export function Listo({ texto, onCerrar }: { texto: string; onCerrar: () => void }) {
   const [n, setN] = useState(5);
   const cerrar = useRef(onCerrar);
   cerrar.current = onCerrar;

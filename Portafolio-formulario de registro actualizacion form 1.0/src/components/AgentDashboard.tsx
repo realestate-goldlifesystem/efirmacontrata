@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot, Route, CheckCircle2, CalendarDays, Users } from 'lucide-react';
+import { Calculator, ClipboardList, LogOut, Landmark, X, Building2, ArrowLeft, Bot, Route, CheckCircle2, CalendarDays, Users, Building } from 'lucide-react';
 import VIPPropertiesPanel from './VIPPropertiesPanel';
 import MiguelCaptadorModal from './MiguelCaptadorModal';
 import CitasAgendaPanel from './CitasAgendaPanel';
 import CaptacionesPanel from './CaptacionesPanel';
+import InmueblesPanel from './InmueblesPanel';
 
 interface AgentDashboardProps {
   onOpenForm: () => void;
@@ -18,7 +19,22 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
   const [showSasModal, setShowSasModal] = useState(false);
   const [showMiguelModal, setShowMiguelModal] = useState(false);
   const [showGuiaCierreModal, setShowGuiaCierreModal] = useState(false);
-  const [activeView, setActiveView] = useState<'menu' | 'portafolio' | 'citas' | 'captaciones'>('menu');
+  const [activeView, setActiveView] = useState<'menu' | 'portafolio' | 'citas' | 'captaciones' | 'inmuebles'>('menu');
+
+  if (activeView === 'inmuebles') {
+    return (
+      <div className="min-h-screen bg-brand-dark animate-fade-in pb-20 relative">
+        <button
+          onClick={() => setActiveView('menu')}
+          className="fixed top-[22px] md:top-24 left-4 md:left-8 z-[60] flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-full text-stone-400 hover:text-brand-gold hover:border-brand-gold transition-all shadow-md"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium hidden md:inline">Volver al Panel</span>
+        </button>
+        <InmueblesPanel agentCredential={agentCredential} onRegistrar={onOpenForm} />
+      </div>
+    );
+  }
 
   if (activeView === 'captaciones') {
     return (
@@ -373,13 +389,18 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
           <h2 id="menu-operacion" className="text-xs md:text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">
             Operación del día a día
           </h2>
-          {/* Registro de Inmuebles primero y a lo ancho (Leonardo, 19-nov-2026).
+          {/* Registro de Inmuebles primero y, a su lado en PC (debajo en el celular),
+              el CRM de Inmuebles (19-nov-2026).
+              Antes: Registro de Inmuebles primero y a lo ancho (Leonardo, 19-nov-2026).
               Celular (2 columnas): Captaciones | Agenda, y debajo Miguel | Portafolio.
               PC (4 columnas): Miguel, Captaciones, Agenda, Portafolio. */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
             <TarjetaMenu horizontal icono={ClipboardList} titulo="Registro de Inmuebles"
               descripcion="Captación de propiedades, contratos y checklist de exclusividad."
               onClick={onOpenForm} />
+            <TarjetaMenu horizontal destacada icono={Building} titulo="Inmuebles"
+              descripcion="Los inmuebles registrados, su estado, su trámite y sus documentos."
+              onClick={() => setActiveView('inmuebles')} />
             <TarjetaMenu destacada icono={Users} titulo="Captaciones"
               descripcion="Propietarios por llamar, seguimiento, llamadas y presentaciones."
               onClick={() => setActiveView('captaciones')} />
@@ -442,7 +463,7 @@ function TarjetaMenu({ icono: Icono, titulo, descripcion, onClick, destacada = f
     <button
       type="button"
       onClick={onClick}
-      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1" : ""} ${anchaHastaPc ? "col-span-2 lg:col-span-1" : ""} ${orden} ${horizontal ? "order-first col-span-2 lg:col-span-4 flex-row justify-center text-left gap-3" : "flex-col justify-start text-center gap-2"} flex items-center sm:gap-4 p-3 sm:p-6 rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
+      className={`group relative h-full ${ancha ? "col-span-2 sm:col-span-1" : ""} ${anchaHastaPc ? "col-span-2 lg:col-span-1" : ""} ${orden} ${horizontal ? "order-first col-span-2 lg:col-span-2 flex-row justify-center text-left gap-3" : "flex-col justify-start text-center gap-2"} flex items-center sm:gap-4 p-3 sm:p-6 rounded-2xl bg-stone-900 border ${destacada ? "border-brand-gold/40" : "border-stone-800"} hover:border-brand-gold hover:bg-stone-900/80 transition-colors duration-300 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/70`}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-brand-gold/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       <div className={`relative w-10 h-10 sm:w-16 sm:h-16 shrink-0 rounded-full bg-stone-800 flex items-center justify-center group-hover:bg-brand-gold/20 transition-colors duration-300 ${destacada ? "border border-brand-gold/30" : ""}`}>
