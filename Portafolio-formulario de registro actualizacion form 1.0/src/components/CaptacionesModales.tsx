@@ -26,7 +26,7 @@ function Marco({ titulo, sub, onCerrar, children, pie }: { titulo: string; sub: 
   // Portal al <body>: el panel del agente anima su contenedor, y eso dejaría la
   // ventana por debajo de la barra superior del sitio.
   return createPortal(
-    <div className="fixed inset-0 z-[200] bg-stone-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" onClick={onCerrar}>
+    <div className="fixed inset-0 ajusta-teclado z-[200] bg-stone-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" onClick={onCerrar}>
       <div role="dialog" aria-modal="true" aria-label={titulo} onClick={e => e.stopPropagation()}
         className="w-full sm:max-w-lg max-h-[94vh] flex flex-col bg-stone-900 border border-stone-800 rounded-t-3xl sm:rounded-3xl text-stone-200 shadow-2xl animate-fade-in">
         <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">

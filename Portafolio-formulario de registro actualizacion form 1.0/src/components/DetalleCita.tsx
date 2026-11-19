@@ -121,7 +121,7 @@ export default function DetalleCita({ cita, agentCredential, onCerrar, onCambio 
   const boton = 'flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed';
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onClick={capa ? undefined : onCerrar}>
+    <div className="fixed inset-0 ajusta-teclado z-[80] bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4" onClick={capa ? undefined : onCerrar}>
       <div
         className="relative w-full md:max-w-lg bg-stone-900 border border-stone-800 rounded-t-3xl md:rounded-3xl p-6 pt-7 max-h-[90vh] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         onClick={e => e.stopPropagation()}

@@ -160,3 +160,15 @@
 /* Capa de "aplicando cambio" en la ficha de una cita (DetalleCita.tsx) */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes popIn { 0% { opacity: 0; transform: scale(.6); } 70% { transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+
+/* Ventanas con campos de texto en el celular (lib/tecladoMovil.ts): siguen el
+   alto que de verdad se ve con el teclado abierto, así el campo no queda
+   escondido detrás del teclado del iPhone. */
+.ajusta-teclado {
+  top: var(--vv-top, 0px) !important;
+  bottom: auto !important;
+  height: var(--vv-alto, 100dvh) !important;
+}
+.teclado-abierto .ajusta-teclado > * {
+  max-height: calc(var(--vv-alto, 100dvh) - 0.5rem) !important;
+}

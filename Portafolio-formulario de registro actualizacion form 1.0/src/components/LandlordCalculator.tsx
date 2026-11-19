@@ -1263,7 +1263,7 @@ export default function LandlordCalculator({ onScrollTo, onSelectServiceType }: 
 
       {/* Floating Upsell Promotion Modal */}
       {showUpsellModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 ajusta-teclado bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white rounded-2xl max-w-md w-full border border-brand-gold/40 shadow-2xl p-6 relative">
             <span className="absolute top-4 right-4 text-xs font-mono font-bold bg-brand-gold/15 text-brand-gold-dark px-2.5 py-0.5 rounded-full">
               PROMO EXCLUSIVA

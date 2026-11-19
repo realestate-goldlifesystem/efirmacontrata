@@ -467,7 +467,7 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
     <div className="w-full max-w-7xl mx-auto bg-stone-900 rounded-3xl shadow-2xl border border-stone-800 overflow-clip md:overflow-hidden animate-fade-in relative">
       
       {showMitigationModal && (
-        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 ajusta-teclado bg-black/70 z-[100] flex items-center justify-center p-4">
           <div className="bg-stone-900 border border-stone-700 w-full max-w-2xl rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto">
             <button onClick={() => setShowMitigationModal(false)} className="absolute top-4 right-4 text-stone-500 hover:text-white"><X /></button>
             <h2 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
@@ -1661,7 +1661,7 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
 
       {/* MODAL CONFIGURACIÓN CRÉDITO */}
       {isConfigModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 ajusta-teclado z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-stone-900 border border-stone-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden relative">
             <div className="p-6 border-b border-stone-800 flex justify-between items-center bg-stone-950">
               <h3 className="text-xl font-light text-white flex items-center gap-2">
@@ -1764,7 +1764,7 @@ export default function InversorCalculator({ onBack }: InversorCalculatorProps) 
         </div>
       )}
       {showAdvancedStats && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 ajusta-teclado z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-stone-900 border border-stone-800 w-full max-w-5xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
             <div className="p-5 border-b border-stone-800 flex justify-between items-center bg-stone-950">
               <div>

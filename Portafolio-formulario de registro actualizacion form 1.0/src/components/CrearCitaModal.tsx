@@ -43,7 +43,7 @@ export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
   // La agenda del propietario ocupa toda la pantalla, igual que en el portal
   if (vista === 'propietario') {
     return (
-      <div className="fixed inset-0 z-[80] overflow-y-auto bg-stone-950">
+      <div className="fixed inset-0 ajusta-teclado z-[80] overflow-y-auto bg-stone-950">
         <ScheduleVisitForm onBack={onCerrar} modalidadInicial={modalidad} />
       </div>
     );
@@ -57,7 +57,7 @@ export default function CrearCitaModal({ onCerrar }: { onCerrar: () => void }) {
   const cuenta = (n: string) => (inmuebles || []).filter(i => n === 'TODOS' || negocioDe(i) === n).length;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-[fadeIn_.25s_ease]" onClick={onCerrar}>
+    <div className="fixed inset-0 ajusta-teclado z-[80] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-[fadeIn_.25s_ease]" onClick={onCerrar}>
       <div className="w-full max-w-lg rounded-3xl border border-stone-800 bg-stone-900 shadow-2xl p-6 max-h-[88vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>

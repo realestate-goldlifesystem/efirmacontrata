@@ -69,7 +69,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
     <div className="min-h-[80vh] flex flex-col items-center justify-start md:justify-center px-6 pb-6 pt-1 md:p-6 bg-brand-dark animate-fade-in relative">
       
       {showSasModal && (
-        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 ajusta-teclado bg-black/80 z-[100] flex items-center justify-center p-4">
           <div className="bg-stone-900 border border-stone-700 w-full max-w-4xl rounded-2xl p-6 md:p-8 relative max-h-[90vh] overflow-y-auto animate-fade-in text-left">
             <button onClick={() => setShowSasModal(false)} className="absolute top-4 right-4 text-stone-500 hover:text-white bg-stone-800 p-2 rounded-full"><X className="w-5 h-5"/></button>
             <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
@@ -133,7 +133,7 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
       )}
 
       {showGuiaCierreModal && (
-        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 ajusta-teclado bg-black/80 z-[100] flex items-center justify-center p-4">
           <div className="bg-stone-900 border border-stone-700 w-full max-w-4xl rounded-2xl p-6 md:p-8 relative max-h-[90vh] overflow-y-auto animate-fade-in text-left">
             <button onClick={() => setShowGuiaCierreModal(false)} className="absolute top-4 right-4 text-stone-500 hover:text-white bg-stone-800 p-2 rounded-full"><X className="w-5 h-5"/></button>
             <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">

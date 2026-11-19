@@ -1449,7 +1449,7 @@ export default function VIPPropertiesPanel() {
       )}
 
       {paraCompartir && (
-        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-fade-in" onClick={() => setParaCompartir(null)}>
+        <div className="fixed inset-0 ajusta-teclado z-[70] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-fade-in" onClick={() => setParaCompartir(null)}>
           <div className="w-full max-w-sm bg-stone-900 border border-stone-800 rounded-2xl p-4 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-white font-bold">¿Por dónde lo envías?</h3>

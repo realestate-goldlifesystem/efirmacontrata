@@ -125,7 +125,7 @@ export default function MiguelCaptadorModal({ onClose, agentCredential }: Miguel
     }`;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 ajusta-teclado bg-black/80 z-[100] flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-stone-900 border border-stone-700 w-full max-w-lg rounded-2xl p-6 md:p-7 relative max-h-[90vh] overflow-y-auto text-left">
         <button
           onClick={onClose}

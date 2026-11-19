@@ -4,8 +4,10 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import App from './App.tsx';
 import { GOOGLE_CLIENT_ID, recibirRegresoDeGoogle } from './googleAuth';
 import './index.css';
+import { instalarAjusteTeclado } from './lib/tecladoMovil';
 
 recibirRegresoDeGoogle();
+instalarAjusteTeclado();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

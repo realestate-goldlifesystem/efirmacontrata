@@ -194,6 +194,20 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
   const seleccionado = leads.find(l => l.idLead === selId) || null;
   const totalHoy = hoy.llamadas.length;
 
+  // iPhone: al abrir el teclado la pantalla no se encoge, el teclado tapa lo de
+  // abajo. visualViewport dice el alto que de verdad queda visible: la hoja de la
+  // ficha se ajusta a ese alto para que el campo de la nota quede sobre el teclado.
+  const [vista_, setVista_] = useState<{ top: number; alto: number; teclado: boolean } | null>(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv || !selId) { setVista_(null); return; }
+    const ajustar = () => setVista_({ top: vv.offsetTop, alto: vv.height, teclado: vv.height < window.innerHeight * 0.8 });
+    ajustar();
+    vv.addEventListener('resize', ajustar);
+    vv.addEventListener('scroll', ajustar);
+    return () => { vv.removeEventListener('resize', ajustar); vv.removeEventListener('scroll', ajustar); };
+  }, [selId]);
+
   // Celular: la franja de selectores e indicadores tapa la barra transparente de
   // arriba SOLO cuando ya quedó fija; antes, taparía los botones Miguel y Actualizar.
   const franjaRef = useRef<HTMLDivElement>(null);
@@ -392,8 +406,10 @@ export default function CaptacionesPanel({ agentCredential }: Props) {
       )}
 
       {seleccionado && createPortal(
-        <div className="lg:hidden fixed inset-0 z-[150] bg-stone-950/60 backdrop-blur-sm flex items-end" onClick={() => setSelId(null)}>
-          <div className="w-full max-h-[92dvh] flex flex-col rounded-t-3xl animate-fade-in" onClick={e => e.stopPropagation()}>
+        <div className="lg:hidden fixed inset-x-0 top-0 h-[100dvh] z-[150] bg-stone-950/60 backdrop-blur-sm flex items-end" onClick={() => setSelId(null)}
+          style={vista_ ? { top: vista_.top, height: vista_.alto } : undefined}>
+          <div className="w-full max-h-[92dvh] flex flex-col rounded-t-3xl animate-fade-in" onClick={e => e.stopPropagation()}
+            style={vista_ ? { maxHeight: vista_.teclado ? vista_.alto - 8 : Math.round(vista_.alto * 0.92) } : undefined}>
             <FichaLead lead={seleccionado} estados={estados} operacion={operacion} credential={agentCredential} onCambio={actualizarLead} onCerrar={() => setSelId(null)} movil />
           </div>
         </div>,
@@ -508,6 +524,8 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   const [nota, setNota] = useState('');
   const [modal, setModal] = useState<'elegir' | 'editar' | 'llamada' | 'mensaje' | 'agenda' | null>(null);
   const [verInfo, setVerInfo] = useState(false);
+  const [escribiendo, setEscribiendo] = useState(false);
+  const recogido = movil && escribiendo;
 
   useEffect(() => { setEligiendo(false); setError(null); setNota(''); setModal(null); }, [lead.idLead]);
 
@@ -588,6 +606,9 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
           <button onClick={onCerrar} aria-label="Cerrar ficha" className="w-11 h-11 -mt-1 -mr-1.5 flex items-center justify-center rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
         </div>
 
+        {/* En el celular, mientras se escribe la nota (teclado abierto), esto se
+            recoge para que se vean las notas y el campo de escribir. */}
+        <div className={recogido ? 'hidden' : ''}>
         {/* Información del inmueble: una línea, se despliega al tocarla */}
         <button onClick={() => setVerInfo(v => !v)} aria-expanded={verInfo}
           className="w-full min-h-[36px] -mt-0.5 mb-1.5 flex items-center gap-1.5 text-left text-[13px] text-stone-400 hover:text-stone-200 transition-colors">
@@ -648,6 +669,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
           <Programado icono={Clock} titulo="Presentación" onClick={() => setModal('agenda')} compacto={verMensaje}
             valor={textoCita} vacio="Agendar" />
         </div>
+        </div>
       </div>
 
       {/* Fijo: título de las notas y última gestión */}
@@ -686,9 +708,11 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         <div className="flex gap-2">
           <label htmlFor={`nota-${lead.idLead}`} className="sr-only">Nueva nota</label>
           <input id={`nota-${lead.idLead}`} value={nota} onChange={e => setNota(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarNota(); }}
+            onFocus={() => setEscribiendo(true)} onBlur={() => setEscribiendo(false)} enterKeyHint="send"
             placeholder="Escribe una nota…" maxLength={1000}
             className="flex-1 min-w-0 h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold" />
-          <button onClick={enviarNota} disabled={!nota.trim() || !!guardando} aria-label="Guardar nota"
+          <button onClick={enviarNota} onMouseDown={e => e.preventDefault()} onTouchStart={e => { if (escribiendo) { e.preventDefault(); enviarNota(); } }}
+            disabled={!nota.trim() || !!guardando} aria-label="Guardar nota"
             className="h-11 w-11 rounded-xl bg-brand-gold text-stone-950 flex items-center justify-center disabled:opacity-40">
             {guardando === 'nota' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>

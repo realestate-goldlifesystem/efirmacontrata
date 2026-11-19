@@ -255,7 +255,7 @@ export default function PropertyListings() {
 
       {/* High-Fidelity Details Modal/Lightbox */}
       {selectedProperty && (
-        <div id="property-modal-lightbox" className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div id="property-modal-lightbox" className="fixed inset-0 ajusta-teclado z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white border border-stone-200 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative p-6 sm:p-8 text-left shadow-2xl custom-scrollbar text-stone-800 animate-fade-in">
             
             {/* Close button */}
