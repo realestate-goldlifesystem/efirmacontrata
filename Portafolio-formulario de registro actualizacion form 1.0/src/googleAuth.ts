@@ -2,6 +2,8 @@ import { jwtDecode } from 'jwt-decode';
 
 export const GOOGLE_CLIENT_ID = "825455387668-asnkq57s4voon63c38b41e4q8qvc0b2e.apps.googleusercontent.com";
 export const CORREO_AGENTE = 'realestate.goldlifesystem@gmail.com';
+/** Token de Google recién llegado por el regreso del celular, aún sin canjear. */
+export const GOOGLE_PENDIENTE = 'googlePendiente';
 
 // Debe estar en "URIs de redireccionamiento autorizados" del cliente en Google Cloud.
 const URL_REGRESO = 'https://realestate-goldlifesystem.github.io/efirmacontrata/frontend/portafolio/';
@@ -39,8 +41,8 @@ export function recibirRegresoDeGoogle() {
     } else if (datos.email?.toLowerCase().trim() !== CORREO_AGENTE) {
       alert('Acceso denegado. Este correo no cuenta con permisos de administrador.');
     } else {
-      localStorage.setItem('agentLoggedIn', 'true');
-      sessionStorage.setItem('agentCredential', token);
+      // App lo canjea por el pase de 12 horas apenas arranca (lib/sesionAgente.ts)
+      sessionStorage.setItem(GOOGLE_PENDIENTE, token);
     }
   } catch {
     alert('Error procesando las credenciales de Google.');

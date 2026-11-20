@@ -410,6 +410,11 @@ function _verificarAgenteGoogle(credential) {
   if (!credential) {
     return { ok: false, mensaje: 'Falta la credencial de Google. Vuelve a iniciar sesión.' };
   }
+  // Pase de 12 horas del portafolio (SESION_AGENTE.js): se valida con la firma,
+  // sin preguntarle a Google en cada consulta.
+  if (typeof sesionAgenteEsPase_ === 'function' && sesionAgenteEsPase_(credential)) {
+    return sesionAgenteValidar_(credential);
+  }
   try {
     var resp = UrlFetchApp.fetch(
       'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential),
@@ -427,7 +432,7 @@ function _verificarAgenteGoogle(credential) {
     }
     var email = String(info.email || '').toLowerCase().trim();
     if (email !== CORREO_AGENTE_MIGUEL) {
-      return { ok: false, mensaje: 'El correo ' + email + ' no tiene permiso para lanzar a Miguel.' };
+      return { ok: false, mensaje: 'El correo ' + email + ' no tiene permiso para el panel del agente.' };
     }
     return { ok: true, mensaje: '', email: email };
   } catch (e) {

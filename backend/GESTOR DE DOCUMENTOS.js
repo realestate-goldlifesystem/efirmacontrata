@@ -869,6 +869,12 @@ function doPost(e) {
           ? crmCaptacionesDesdeWeb(datos)
           : { success: false, message: 'API_CRM_CAPTACIONES no cargada' };
         break;
+      case 'sesionAgente':
+        // Pase de 12 horas del agente en el portafolio (SESION_AGENTE.js)
+        result = (typeof sesionAgenteDesdeWeb === 'function')
+          ? sesionAgenteDesdeWeb(datos)
+          : { success: false, message: 'SESION_AGENTE no cargada' };
+        break;
       case 'crmInmuebles':
         // Herramienta "Inmuebles" del panel del agente (API_CRM_INMUEBLES.js), solo lectura.
         result = (typeof crmInmueblesDesdeWeb === 'function')

@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { sesionGuardada, guardarSesion, entrarConGoogle, renovarSesion, cerrarSesionEnTodos, edadDelPase } from './lib/sesionAgente';
+import { GOOGLE_PENDIENTE } from './googleAuth';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import ColombiaStats from './components/ColombiaStats';
@@ -61,68 +64,110 @@ export default function App() {
     if (q.get('panel') === 'registrar') {
       limpiar();
       try { sessionStorage.setItem('despuesDeEntrar', 'registrar'); if (q.get('cita')) sessionStorage.setItem('citaCaptacion', q.get('cita') || ''); } catch {}
-      if (localStorage.getItem('agentLoggedIn') === 'true' && sessionStorage.getItem('agentCredential')) {
+      if (sesionGuardada()) {
         try { sessionStorage.removeItem('despuesDeEntrar'); } catch {}
         setShowRegisterPage(true);
       } else setShowRolesModal(true);
     }
   }, []);
   const [showCalculatorPage, setShowCalculatorPage] = useState(false);
-  const [isAgentLoggedIn, setIsAgentLoggedIn] = useState(() => {
-    try {
-      return localStorage.getItem('agentLoggedIn') === 'true';
-    } catch {
-      return false;
-    }
-  });
 
-  // Token de Google del agente. Va en sessionStorage (no localStorage): el
-  // token vence en ~1 hora y así no queda guardado más de lo que dura la
-  // pestaña. Lo usan las herramientas que llaman al backend, que revalida
-  // el correo del lado del servidor.
-  const [agentCredential, setAgentCredential] = useState<string | null>(() => {
-    try {
-      return sessionStorage.getItem('agentCredential');
-    } catch {
-      return null;
-    }
-  });
+  // Pase de 12 horas del agente (lib/sesionAgente.ts): Google solo sirve para
+  // entrar. Las herramientas lo mandan como "credential" y el servidor lo valida
+  // con su firma. Vive en localStorage: sobrevive a cerrar la ventana y sirve en
+  // otras pestañas; se renueva mientras se usa el panel.
+  const [agentCredential, setAgentCredential] = useState<string | null>(() => sesionGuardada());
+  const isAgentLoggedIn = !!agentCredential;
+  const [entrando, setEntrando] = useState(false);
+  const renovandoRef = useRef(false);
 
-  // Si el token de Google falta (pestaña nueva) o ya venció, no tiene sentido
-  // mostrar las herramientas: ninguna funciona sin él. Se cierra la sesión y se
-  // abre directo el inicio de sesión. Se revisa al entrar y cada minuto.
-  useEffect(() => {
-    const tokenVigente = (t: string | null) => {
-      if (!t) return false;
-      try {
-        const p = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-        return typeof p.exp !== 'number' || p.exp * 1000 > Date.now() + 30000;
-      } catch {
-        return true; // si no se puede leer, que decida el servidor
-      }
-    };
-    const revisar = () => {
-      if (!isAgentLoggedIn || tokenVigente(agentCredential)) return;
-      setIsAgentLoggedIn(false);
-      setAgentCredential(null);
-      try { localStorage.removeItem('agentLoggedIn'); } catch {}
-      try { sessionStorage.removeItem('agentCredential'); } catch {}
-      setShowRegisterPage(false);
-      setShowCalculatorPage(false);
-      setShowRolesModal(true);
-    };
-    revisar();
-    const id = setInterval(revisar, 60000);
-    return () => clearInterval(id);
-  }, [isAgentLoggedIn, agentCredential]);
-
-  const cerrarSesionAgente = () => {
-    setIsAgentLoggedIn(false);
+  const salirDelPanel = (abrirLogin: boolean) => {
+    guardarSesion(null);
     setAgentCredential(null);
-    try { localStorage.removeItem('agentLoggedIn'); } catch {}
-    try { sessionStorage.removeItem('agentCredential'); } catch {}
     setShowRegisterPage(false);
     setShowCalculatorPage(false);
+    if (abrirLogin) setShowRolesModal(true);
+  };
+
+  // Token de Google → pase de 12 horas
+  const entrarConTokenGoogle = async (tokenGoogle: string) => {
+    setShowRolesModal(false);
+    setEntrando(true);
+    try {
+      const pase = await entrarConGoogle(tokenGoogle);
+      guardarSesion(pase);
+      setAgentCredential(pase);
+      // Al formulario de registro si venía del botón "Registrar inmueble" del correo
+      let alRegistro = false;
+      try { alRegistro = sessionStorage.getItem('despuesDeEntrar') === 'registrar'; sessionStorage.removeItem('despuesDeEntrar'); } catch {}
+      setShowRegisterPage(alRegistro);
+      setShowCalculatorPage(false);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } catch (e) {
+      alert((e as Error).message);
+      setShowRolesModal(true);
+    } finally {
+      setEntrando(false);
+    }
+  };
+
+  // Regreso de Google en el celular: canjear el token que dejó googleAuth.ts
+  useEffect(() => {
+    let t: string | null = null;
+    try { t = sessionStorage.getItem(GOOGLE_PENDIENTE); sessionStorage.removeItem(GOOGLE_PENDIENTE); } catch {}
+    if (t) entrarConTokenGoogle(t);
+    else guardarSesion(sesionGuardada()); // borra un pase vencido y restos del inicio anterior
+  }, []);
+
+  // Con sesión: se revisa cada minuto si el pase sigue vivo (o si otra pestaña lo
+  // renovó o cerró), y cada vez que se usa el panel se renueva, como mucho cada
+  // 15 minutos. Sin internet no pasa nada: se intenta en el próximo uso.
+  useEffect(() => {
+    if (!agentCredential) return;
+    const revisar = () => {
+      const actual = sesionGuardada();
+      if (!actual) salirDelPanel(true);
+      else if (actual !== agentCredential) setAgentCredential(actual);
+    };
+    const alUsar = () => {
+      const pase = sesionGuardada();
+      if (!pase || renovandoRef.current || edadDelPase(pase) < 15 * 60000) return;
+      renovandoRef.current = true;
+      renovarSesion(pase)
+        .then(nuevo => {
+          if (nuevo) { guardarSesion(nuevo); setAgentCredential(nuevo); }
+          else salirDelPanel(true); // se cerró en todos los dispositivos
+        })
+        .catch(() => {})
+        .finally(() => { renovandoRef.current = false; });
+    };
+    const alVolver = () => { if (document.visibilityState === 'visible') { revisar(); alUsar(); } };
+    revisar();
+    const id = setInterval(revisar, 60000);
+    window.addEventListener('pointerdown', alUsar);
+    window.addEventListener('keydown', alUsar);
+    window.addEventListener('storage', revisar);
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('pointerdown', alUsar);
+      window.removeEventListener('keydown', alUsar);
+      window.removeEventListener('storage', revisar);
+      document.removeEventListener('visibilitychange', alVolver);
+    };
+  }, [agentCredential]);
+
+  const cerrarSesionAgente = () => salirDelPanel(false);
+
+  const cerrarSesionTodos = async () => {
+    if (!agentCredential) return;
+    if (!window.confirm('¿Cerrar la sesión en todos los dispositivos? Tendrás que volver a entrar con Google en cada uno.')) return;
+    try {
+      await cerrarSesionEnTodos(agentCredential);
+      salirDelPanel(false);
+    } catch (e) {
+      alert((e as Error).message);
+    }
   };
 
   const scrollToSection = (sectionId: string) => {
@@ -242,6 +287,7 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onLogout={cerrarSesionAgente}
+              onLogoutTodos={cerrarSesionTodos}
             />
           </div>
         ) : (
@@ -289,23 +335,18 @@ export default function App() {
       <Footer />
 
       {/* Modals & Portals */}
+      {entrando && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-stone-900/80 backdrop-blur-sm animate-fade-in">
+          <div className="flex flex-col items-center gap-3 text-stone-200">
+            <Loader2 className="w-8 h-8 animate-spin text-brand-gold" />
+            <p className="text-sm">Entrando al panel…</p>
+          </div>
+        </div>
+      )}
       {showRolesModal && (
         <LoginRolesModal 
           onClose={() => setShowRolesModal(false)}
-          onSelectAgent={(credential) => {
-            setIsAgentLoggedIn(true);
-            setAgentCredential(credential);
-            try { localStorage.setItem('agentLoggedIn', 'true'); } catch {}
-            try { sessionStorage.setItem('agentCredential', credential); } catch {}
-            setShowRolesModal(false);
-            // Ya no forzamos showRegisterPage(true), dejamos que caiga en el Dashboard,
-            // salvo que venga del botón "Registrar inmueble" del correo
-            let alRegistro = false;
-            try { alRegistro = sessionStorage.getItem('despuesDeEntrar') === 'registrar'; sessionStorage.removeItem('despuesDeEntrar'); } catch {}
-            setShowRegisterPage(alRegistro);
-            setShowCalculatorPage(false);
-            window.scrollTo({ top: 0, behavior: 'instant' });
-          }}
+          onSelectAgent={entrarConTokenGoogle}
           onSelectOwner={() => {
             setShowRolesModal(false);
             setShowScheduleVisit(true);

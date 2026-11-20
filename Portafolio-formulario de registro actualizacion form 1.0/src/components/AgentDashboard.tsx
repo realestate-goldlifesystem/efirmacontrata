@@ -10,12 +10,14 @@ interface AgentDashboardProps {
   onOpenForm: () => void;
   onOpenCalculator: () => void;
   onLogout: () => void;
-  /** Token de Google del agente; Miguel lo reenvía para que el backend
-   *  confirme el correo del lado del servidor. */
+  /** Invalida el pase en todos los dispositivos (cambia la llave del servidor). */
+  onLogoutTodos?: () => void;
+  /** Pase de 12 horas del agente (lib/sesionAgente.ts); las herramientas lo
+   *  reenvían para que el backend confirme la sesión por su cuenta. */
   agentCredential?: string | null;
 }
 
-export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout, agentCredential = null }: AgentDashboardProps) {
+export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout, onLogoutTodos, agentCredential = null }: AgentDashboardProps) {
   const [showSasModal, setShowSasModal] = useState(false);
   const [showMiguelModal, setShowMiguelModal] = useState(false);
   const [showGuiaCierreModal, setShowGuiaCierreModal] = useState(false);
@@ -432,6 +434,16 @@ export default function AgentDashboard({ onOpenForm, onOpenCalculator, onLogout,
               onClick={() => setShowSasModal(true)} />
           </div>
         </section>
+
+        {onLogoutTodos && (
+          <button
+            type="button"
+            onClick={onLogoutTodos}
+            className="self-center mt-2 min-h-[44px] px-4 text-xs text-stone-500 hover:text-brand-gold underline-offset-4 hover:underline transition-colors"
+          >
+            Cerrar sesión en todos los dispositivos
+          </button>
+        )}
       </div>
 
       {showMiguelModal && (
