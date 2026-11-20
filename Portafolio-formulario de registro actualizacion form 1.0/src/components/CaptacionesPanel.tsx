@@ -42,6 +42,15 @@ export interface Lead {
   llamadaTipo?: string;
   correo: string;
   idCita: string;
+  /** % de oferta negociado, en puntos (70, 2.5); '' si no hay. Solo lo ve el agente. */
+  ofertaA?: number | '';
+  ofertaV?: number | '';
+}
+
+/** "70 % arriendo · 2,5 % venta" con los % que tenga el propietario; '' si ninguno. */
+export function textoOferta(lead: Pick<Lead, 'ofertaA' | 'ofertaV'>): string {
+  const f = (v: number | '' | undefined, que: string) => v === '' || v == null ? '' : String(v).replace('.', ',') + ' % ' + que;
+  return [f(lead.ofertaA, 'arriendo'), f(lead.ofertaV, 'venta')].filter(Boolean).join(' · ');
 }
 
 export interface EstadoInfo { nombre: string; fondo: string; texto: string; }
@@ -500,7 +509,10 @@ function TarjetaLead({ lead, estados, onClick, activo, aviso, tonoAviso }: {
         </div>
       </button>
       <div className="flex items-center justify-between gap-2 px-4 pb-3">
-        <span className={`text-xs ${colorAviso} truncate`}>{aviso}</span>
+        <div className="min-w-0 flex flex-col items-start gap-1">
+          {textoOferta(lead) && <span className="max-w-full truncate text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-gold/15 text-brand-gold-light">Oferta {textoOferta(lead)}</span>}
+          <span className={`max-w-full text-xs ${colorAviso} truncate`}>{aviso}</span>
+        </div>
         <div className="flex gap-1.5 shrink-0">
           <a href={`https://wa.me/${celularInternacional(lead.celular)}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp a ${lead.nombre}`}
             className="w-11 h-11 rounded-xl bg-emerald-500/15 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/25"><MessageCircle className="w-5 h-5" /></a>
@@ -612,6 +624,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         {/* Información del inmueble: una línea, se despliega al tocarla */}
         <button onClick={() => setVerInfo(v => !v)} aria-expanded={verInfo}
           className="w-full min-h-[36px] -mt-0.5 mb-1.5 flex items-center gap-1.5 text-left text-[13px] text-stone-400 hover:text-stone-200 transition-colors">
+          {textoOferta(lead) && <span className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-brand-gold/15 text-brand-gold-light" title="% de oferta negociado (solo lo ves tú)">{textoOferta(lead)}</span>}
           <span className="truncate">{resumen || 'Ver información del inmueble'}</span>
           <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-300 ${verInfo ? 'rotate-180' : ''}`} />
         </button>
@@ -626,6 +639,8 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
               <Dato t="Celular" v={lead.celular} />
               <Dato t="Fecha de captación" v={lead.fechaCaptacion} />
               <Dato t="Fecha de contacto" v={lead.fechaContacto} />
+              <Dato t="% oferta arriendo" v={lead.ofertaA === '' || lead.ofertaA == null ? '' : String(lead.ofertaA).replace('.', ',') + ' %'} />
+              <Dato t="% oferta venta" v={lead.ofertaV === '' || lead.ofertaV == null ? '' : String(lead.ofertaV).replace('.', ',') + ' %'} />
               <div className="col-span-2 min-w-0"><Dato t="Correo" v={lead.correo} /></div>
             </dl>
           </div>

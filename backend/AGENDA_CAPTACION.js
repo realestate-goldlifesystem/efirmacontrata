@@ -12,8 +12,48 @@ const AGENDA_CAPTACION = {
   ESTADO: 'PRE-R CAPTACION',
   COL_CORREO: 'CORREO DEL PROPIETARIO',
   // La cita de presentación que se agendó desde esa fila: enlaza el CRM con la agenda y el registro
-  COL_ID_CITA: 'ID CITA'
+  COL_ID_CITA: 'ID CITA',
+  // % de oferta negociado con el propietario: solo para el agente (no va al
+  // calendario ni al correo). Cada pestaña exige el suyo (A arriendo, V venta);
+  // el otro es opcional, para servicios mixtos (Vendi-Renta, Admi-Venta).
+  COL_OFERTA: { A: '% DE OFERTA A', V: '% DE OFERTA V' },
+  FORMATO_OFERTA: { A: '0%', V: '0.0%' },
+  OFERTAS_VENTA: [1, 1.5, 2, 2.5, 3]
 };
+
+/**
+ * Valida un % de oferta escrito en puntos (70, "2,5", "70 %").
+ * Arriendo: entero de 50 a 100. Venta: 1, 1.5, 2, 2.5 o 3.
+ * Devuelve { ok, vacio, fraccion (lo que va en la celda: 0.7), puntos, error }.
+ */
+function ofertaCaptacionValida_(clase, valor) {
+  const s = String(valor == null ? '' : valor).replace('%', '').replace(',', '.').trim();
+  if (!s) return { ok: true, vacio: true };
+  const n = Number(s);
+  if (clase === 'A') {
+    if (!Number.isInteger(n) || n < 50 || n > 100) return { ok: false, error: 'El % de oferta en arriendo debe ser un número entero entre 50 y 100.' };
+  } else if (AGENDA_CAPTACION.OFERTAS_VENTA.indexOf(n) === -1) {
+    return { ok: false, error: 'El % de oferta en venta debe ser 1, 1.5, 2, 2.5 o 3.' };
+  }
+  return { ok: true, vacio: false, puntos: n, fraccion: Math.round(n * 10) / 1000 };
+}
+
+/** Valor de la celda de % (0.7, 1, "3%") → puntos (70, 100, 3); '' si está vacía. */
+function ofertaEnPuntos_(v) {
+  if (v === '' || v == null) return '';
+  if (typeof v === 'number') return Math.round(v * 1000) / 10;
+  const s = String(v).replace(',', '.');
+  const m = s.match(/\d+(\.\d+)?/);
+  if (!m) return '';
+  const n = Number(m[0]);
+  return s.indexOf('%') !== -1 || n > 1 ? n : Math.round(n * 1000) / 10;
+}
+
+/** "70 % arriendo · 2,5 % venta" con los puntos que haya. */
+function textoOfertaCaptacion_(a, v) {
+  return [a !== '' && a != null ? String(a).replace('.', ',') + ' % arriendo' : '',
+          v !== '' && v != null ? String(v).replace('.', ',') + ' % venta' : ''].filter(Boolean).join(' · ');
+}
 
 /** Lo llama procesarEdicionCaptacion_ (GESTOR DE ESTADOS.js) al cambiar ESTADO DE LLAMADA. */
 function abrirAgendaCaptacionSiToca_(e, hoja, colEstado) {
@@ -57,6 +97,7 @@ function datosFilaCaptacion_(hoja, fila) {
   const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
   const v = hoja.getRange(fila, 1, 1, enc.length).getValues()[0];
   const de = (n) => { const i = enc.indexOf(n); return i === -1 ? '' : String(v[i] == null ? '' : v[i]).trim(); };
+  const pct = (clase) => { const i = enc.indexOf(AGENDA_CAPTACION.COL_OFERTA[clase]); return i === -1 ? '' : ofertaEnPuntos_(v[i]); };
   const ubicacion = [de('UBICACIÓN'), de('LOCALIDAD')].filter(Boolean).join(', ');
   const tipo = [de('TIPO DE INMUEBLE'), de('HABITACIONES') ? de('HABITACIONES') + ' hab.' : ''].filter(Boolean).join(' · ');
   return {
@@ -65,6 +106,8 @@ function datosFilaCaptacion_(hoja, fila) {
     celular: de('CELULAR').replace(/\D/g, ''),
     correo: de(AGENDA_CAPTACION.COL_CORREO),
     servicio: hoja.getName().slice(-1) === 'V' ? 'Venta' : 'Arriendo',
+    clase: hoja.getName().slice(-1) === 'V' ? 'V' : 'A',
+    ofertaA: pct('A'), ofertaV: pct('V'),
     direccion: ubicacion,
     notas: [tipo, de('VALOR DE PROMOCIÓN') ? 'Valor publicado: ' + de('VALOR DE PROMOCIÓN') : '', de('LINK DEL INMUEBLE PUBLICADO')].filter(Boolean).join('\n')
   };
@@ -74,7 +117,7 @@ function abrirModalAgendaCaptacion_(hoja, fila) {
   columnaCorreoCaptacion_(hoja);
   const t = HtmlService.createTemplateFromFile('backend/MODAL_AGENDA_CAPTACION');
   t.DATOS = JSON.stringify(datosFilaCaptacion_(hoja, fila));
-  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(560).setHeight(640), 'Agendar presentación al propietario');
+  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(560).setHeight(700), 'Agendar presentación al propietario');
 }
 
 /** Horarios del día para la ventana (misma agenda del portal). */
@@ -89,6 +132,12 @@ function agendarDesdeCaptacion(d) {
   if (!hoja || SEGUIMIENTO_CAPTACIONES.HOJAS.indexOf(d.hoja) === -1) return { success: false, error: 'Pestaña no válida' };
   const correo = String(d.correo || '').trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return { success: false, error: 'Escribe un correo válido' };
+  // % de oferta: el de la pestaña es obligatorio; el otro, opcional (servicio mixto)
+  const clase = d.hoja.slice(-1) === 'V' ? 'V' : 'A';
+  const ofertas = { A: ofertaCaptacionValida_('A', d.ofertaA), V: ofertaCaptacionValida_('V', d.ofertaV) };
+  if (!ofertas.A.ok) return { success: false, error: ofertas.A.error };
+  if (!ofertas.V.ok) return { success: false, error: ofertas.V.error };
+  if (ofertas[clase].vacio) return { success: false, error: 'Escribe el % de oferta en ' + (clase === 'V' ? 'venta' : 'arriendo') + ' que negociaste con el propietario.' };
   hoja.getRange(d.fila, columnaCorreoCaptacion_(hoja)).setValue(correo);
 
   const r = agendarCita({
@@ -99,11 +148,20 @@ function agendarDesdeCaptacion(d) {
   });
   if (r.success) {
     try { hoja.getRange(d.fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_ID_CITA)).setValue(r.idCita); } catch (e) {}
+    // El % solo queda en el Sheet y en la nota del agente; nunca en la cita
+    ['A', 'V'].forEach(k => {
+      if (ofertas[k].vacio) return;
+      try {
+        hoja.getRange(d.fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_OFERTA[k]))
+          .setNumberFormat(AGENDA_CAPTACION.FORMATO_OFERTA[k]).setValue(ofertas[k].fraccion);
+      } catch (e) { Logger.log('No se pudo guardar el % de oferta ' + k + ': ' + e.message); }
+    });
     try {
       const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
       const cDet = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_DETALLES) + 1;
       if (cDet) {
-        anexarDetalleCaptacion_(hoja.getRange(d.fila, cDet), 'Cita agendada: ' + d.textoCita + ' (' + r.idCita + ')');
+        anexarDetalleCaptacion_(hoja.getRange(d.fila, cDet), 'Cita agendada: ' + d.textoCita + ' (' + r.idCita + ')\n' +
+          'Oferta negociada: ' + textoOfertaCaptacion_(ofertas.A.vacio ? '' : ofertas.A.puntos, ofertas.V.vacio ? '' : ofertas.V.puntos));
         const sello = selloSeguimiento_();
         const cF = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_FECHA) + 1, cH = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_HORA) + 1;
         if (cF) hoja.getRange(d.fila, cF).setValue(sello.fecha).setNumberFormat(FORMATO_FECHA_CRM);

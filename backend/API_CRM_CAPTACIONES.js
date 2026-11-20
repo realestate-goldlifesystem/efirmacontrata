@@ -104,7 +104,10 @@ function crmLeadDeValores_(enc, v, t, fila) {
     llamadaEstado: txt('LLAMADA ESTADO'),
     llamadaTipo: tipoSeguimiento_(txt('LLAMADA TIPO')),
     correo: txt(AGENDA_CAPTACION.COL_CORREO),
-    idCita: txt(AGENDA_CAPTACION.COL_ID_CITA)
+    idCita: txt(AGENDA_CAPTACION.COL_ID_CITA),
+    // % de oferta negociado, en puntos (70, 2.5); '' si no hay
+    ofertaA: i(AGENDA_CAPTACION.COL_OFERTA.A) === -1 ? '' : ofertaEnPuntos_(v[i(AGENDA_CAPTACION.COL_OFERTA.A)]),
+    ofertaV: i(AGENDA_CAPTACION.COL_OFERTA.V) === -1 ? '' : ofertaEnPuntos_(v[i(AGENDA_CAPTACION.COL_OFERTA.V)])
   };
 }
 
@@ -228,7 +231,8 @@ function crmCamposEditables_() {
   return {
     nombre: 'NOMBRE DEL PROPIETARIO', celular: 'CELULAR', correo: AGENDA_CAPTACION.COL_CORREO,
     ubicacion: 'UBICACIÓN', localidad: 'LOCALIDAD', habitaciones: 'HABITACIONES',
-    valor: 'VALOR DE PROMOCIÓN', tipo: 'TIPO DE INMUEBLE'
+    valor: 'VALOR DE PROMOCIÓN', tipo: 'TIPO DE INMUEBLE',
+    ofertaA: AGENDA_CAPTACION.COL_OFERTA.A, ofertaV: AGENDA_CAPTACION.COL_OFERTA.V
   };
 }
 function crmEditar_(datos) {
@@ -261,11 +265,17 @@ function crmEditar_(datos) {
         if (v && ['U', 'S', 'C'].indexOf(v) === -1) return { success: false, message: 'La localidad debe ser U, S o C.' };
       }
       if (campo === 'nombre' && !v) return { success: false, message: 'El nombre no puede quedar vacío.' };
+      if (campo === 'ofertaA' || campo === 'ofertaV') {
+        const o = ofertaCaptacionValida_(campo.slice(-1), v);
+        if (!o.ok) return { success: false, message: o.error };
+        v = o.vacio ? '' : o.fraccion;
+      }
       escribir.push([c, v, campo]);
     }
     escribir.forEach(([c, v, campo]) => {
       const celda = hoja.getRange(fila, c);
       if (campo === 'celular') celda.setNumberFormat('@');
+      if (campo === 'ofertaA' || campo === 'ofertaV') celda.setNumberFormat(AGENDA_CAPTACION.FORMATO_OFERTA[campo.slice(-1)]);
       celda.setValue(v);
     });
     SpreadsheetApp.flush();
@@ -310,7 +320,8 @@ function crmAgendar_(datos) {
   const r = agendarDesdeCaptacion({
     hoja: ub.hoja.getName(), fila: ub.fila, nombre: datos.nombre, celular: datos.celular, correo: datos.correo,
     servicio: datos.servicio, direccion: datos.direccion, notas: datos.notas, timestamp: Number(datos.timestamp),
-    textoCita: datos.textoCita, modalidad: datos.modalidad
+    textoCita: datos.textoCita, modalidad: datos.modalidad,
+    ofertaA: datos.ofertaA, ofertaV: datos.ofertaV
   });
   if (r && r.success) r.lead = crmReleer_(datos.idLead);
   else if (r && (r.error || r.message)) r.message = r.error || r.message;

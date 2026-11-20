@@ -93,6 +93,15 @@
     @keyframes latir { 0% { transform: scale(1.25); opacity: .6; } 100% { transform: scale(1); opacity: 1; } }
     .cierra { font-size: 12px; color: var(--suave); margin-bottom: 14px; }
     .pac-container { z-index: 99999; border-radius: 10px; font-family: inherit; }
+    .chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .chip { border: 1px solid var(--linea); border-radius: 10px; background: #fff; padding: 9px 0; font: inherit; font-size: 13.5px; cursor: pointer; transition: all .2s; }
+    .chip:hover { border-color: var(--oro); }
+    .chip.activo { background: var(--oro); border-color: var(--oro); color: #fff; font-weight: 600; }
+    .pct { position: relative; max-width: 160px; }
+    .pct input { padding-right: 34px; }
+    .pct::after { content: '%'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--suave); font-size: 14px; pointer-events: none; }
+    .enlace { background: none; border: 0; color: var(--oro); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0 0 10px; }
+    .ayuda.mal { color: #b91c1c; }
   </style>
 </head>
 <body>
@@ -139,6 +148,11 @@
           <option value="Admi-Venta">Admi-Venta</option>
         </select>
       </div>
+      <div class="grupo"><label id="etOferta"></label><div id="ofertaPrincipal"></div>
+        <div class="ayuda" id="ayudaOferta"></div></div>
+      <div class="grupo oculto" id="grupoOtra"><label id="etOtra"></label><div id="ofertaOtra"></div>
+        <div class="ayuda" id="ayudaOtra">Opcional · para servicios mixtos</div></div>
+      <button type="button" class="enlace" id="abrirOtra"></button>
       <div class="grupo"><label>Dirección del inmueble</label>
         <input id="direccion" autocomplete="off" placeholder="Escribe la dirección y elige una sugerencia">
         <div class="ayuda" id="ayudaDir">Del registro: <span id="dirRegistro"></span></div>
@@ -162,6 +176,7 @@
         <div class="cuando" id="rCuando"></div>
         <div class="linea" id="rQuien"></div>
         <div class="linea" id="rDonde"></div>
+        <div class="linea" id="rOferta"></div>
       </div>
       <div class="grupo"><label>Notas para la cita</label><textarea id="notas"></textarea></div>
       <div class="error" id="error"></div>
@@ -198,10 +213,53 @@
     $('servicio').value = D.servicio; $('direccion').value = D.direccion; $('notas').value = D.notas;
     $('dirRegistro').textContent = D.direccion || 'sin ubicación';
 
+    // ---------- % de oferta negociado (solo para el agente) ----------
+    // El de la pestaña es obligatorio (A: entero de 50 a 100; V: 1 a 3 en medios);
+    // el otro es opcional, para servicios mixtos.
+    const VENTA = [1, 1.5, 2, 2.5, 3];
+    const PRINCIPAL = D.clase === 'V' ? 'V' : 'A', OTRA = PRINCIPAL === 'A' ? 'V' : 'A';
+    const NOMBRE = { A: 'arriendo', V: 'venta' };
+    const oferta = { A: D.ofertaA === '' || D.ofertaA == null ? '' : String(D.ofertaA), V: D.ofertaV === '' || D.ofertaV == null ? '' : String(D.ofertaV) };
+    const ofertaOk = (k) => { if (oferta[k] === '') return false; const n = Number(oferta[k]); return k === 'A' ? Number.isInteger(n) && n >= 50 && n <= 100 : VENTA.indexOf(n) !== -1; };
+    const fmt = (k) => oferta[k] === '' ? '' : String(oferta[k]).replace('.', ',') + ' % ' + NOMBRE[k];
+    function campoOferta(k, cont) {
+      if (k === 'A') {
+        cont.innerHTML = '<div class="pct"><input inputmode="numeric" maxlength="3" placeholder="50 a 100"></div>';
+        const i = cont.querySelector('input'); i.value = oferta.A;
+        i.addEventListener('input', () => { i.value = i.value.replace(/\D/g, ''); oferta.A = i.value; revisar(); });
+      } else {
+        cont.innerHTML = '<div class="chips">' + VENTA.map(v => '<button type="button" class="chip" data-v="' + v + '">' + String(v).replace('.', ',') + ' %</button>').join('') + '</div>';
+        const pintar = () => cont.querySelectorAll('.chip').forEach(x => x.classList.toggle('activo', oferta.V !== '' && Number(x.dataset.v) === Number(oferta.V)));
+        cont.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+          // El opcional se puede quitar tocando el mismo botón
+          oferta.V = (k !== PRINCIPAL && Number(oferta.V) === Number(b.dataset.v)) ? '' : b.dataset.v;
+          pintar(); revisar();
+        });
+        pintar();
+      }
+    }
+    $('etOferta').textContent = '% de oferta en ' + NOMBRE[PRINCIPAL] + ' · negociado';
+    $('etOtra').textContent = '% de oferta en ' + NOMBRE[OTRA];
+    campoOferta(PRINCIPAL, $('ofertaPrincipal'));
+    campoOferta(OTRA, $('ofertaOtra'));
+    const abrirOtra = () => { $('grupoOtra').classList.remove('oculto'); $('abrirOtra').classList.add('oculto'); };
+    $('abrirOtra').textContent = '+ Servicio mixto: agregar % de ' + NOMBRE[OTRA];
+    $('abrirOtra').onclick = abrirOtra;
+    if (oferta[OTRA] !== '') abrirOtra();
+    $('servicio').addEventListener('change', () => { if (/Vendi-Renta|Admi-Venta/.test($('servicio').value)) abrirOtra(); });
+
     // ---------- Pasos ----------
     const correoOk = () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('correo').value.trim());
-    const paso1Ok = () => $('nombre').value.trim() && $('celular').value.trim() && correoOk();
-    function revisar() { $('sig1').disabled = !paso1Ok(); $('sig2').disabled = !slot; }
+    const paso1Ok = () => $('nombre').value.trim() && $('celular').value.trim() && correoOk() && ofertaOk(PRINCIPAL) && (oferta[OTRA] === '' || ofertaOk(OTRA));
+    function revisar() {
+      $('sig1').disabled = !paso1Ok(); $('sig2').disabled = !slot;
+      const mal = (k) => oferta[k] !== '' && !ofertaOk(k);
+      $('ayudaOferta').textContent = mal(PRINCIPAL) ? (PRINCIPAL === 'A' ? 'Debe ser un número entero entre 50 y 100.' : 'Elige 1, 1,5, 2, 2,5 o 3 %.')
+        : (PRINCIPAL === 'A' ? 'Obligatorio · de 50 a 100 %. Solo lo ves tú: no va en la cita ni en el correo.' : 'Obligatorio · de 1 a 3 %. Solo lo ves tú: no va en la cita ni en el correo.');
+      $('ayudaOferta').classList.toggle('mal', mal(PRINCIPAL));
+      $('ayudaOtra').textContent = mal(OTRA) ? 'Debe ser un número entero entre 50 y 100.' : 'Opcional · para servicios mixtos';
+      $('ayudaOtra').classList.toggle('mal', mal(OTRA));
+    }
     ['nombre', 'celular', 'correo'].forEach(id => $(id).addEventListener('input', revisar));
     revisar();
 
@@ -220,6 +278,7 @@
         $('rCuando').textContent = t.charAt(0).toUpperCase() + t.slice(1);
         $('rQuien').textContent = $('nombre').value.trim() + ' · ' + $('servicio').value + (modalidad === 'VIRTUAL' ? ' · Virtual (Google Meet)' : ' · Presencial');
         $('rDonde').textContent = $('direccion').value.trim();
+        $('rOferta').textContent = 'Oferta negociada: ' + [fmt('A'), fmt('V')].filter(Boolean).join(' · ');
       }
     }
     document.querySelectorAll('.paso').forEach(p => p.onclick = () => { if (p.classList.contains('hecho')) ir(Number(p.dataset.p)); });
@@ -274,7 +333,7 @@
       }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; })
         .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
           correo: $('correo').value.trim(), servicio: $('servicio').value, direccion: $('direccion').value.trim(), notas: $('notas').value.trim(),
-          timestamp: slot.timestamp, textoCita: txt, modalidad: modalidad });
+          timestamp: slot.timestamp, textoCita: txt, modalidad: modalidad, ofertaA: oferta.A, ofertaV: oferta.V });
     }
 
     // ---------- Buscador de direcciones (el mismo del formulario de registro) ----------

@@ -49,13 +49,54 @@ export function Marco({ titulo, sub, onCerrar, children, pie }: { titulo: string
  * inmueble. Solo se mandan los campos que cambiaron; el backend los escribe en
  * su columna por nombre (crmEditar_).
  */
-type CampoEditable = 'nombre' | 'celular' | 'correo' | 'ubicacion' | 'localidad' | 'habitaciones' | 'valor' | 'tipo';
+type CampoEditable = 'nombre' | 'celular' | 'correo' | 'ubicacion' | 'localidad' | 'habitaciones' | 'valor' | 'tipo' | 'ofertaA' | 'ofertaV';
+
+// % de oferta negociado (AGENDA_CAPTACION.js): arriendo entero de 50 a 100; venta 1 a 3 en medios.
+// Solo lo ve el agente: no va en la cita ni en el correo del propietario.
+export const OFERTAS_VENTA = ['1', '1.5', '2', '2.5', '3'];
+export const ofertaValida = (clase: 'A' | 'V', v: string) => {
+  if (v === '') return false;
+  const n = Number(v);
+  return clase === 'A' ? Number.isInteger(n) && n >= 50 && n <= 100 : OFERTAS_VENTA.includes(String(n));
+};
+const enPuntos = (v: number | '' | undefined) => (v === '' || v == null ? '' : String(v));
+
+/** Arriendo: número con %; venta: cinco botones. En el opcional, tocar el mismo botón lo quita. */
+function CampoOferta({ clase, valor, onChange, opcional = false, id }: {
+  clase: 'A' | 'V'; valor: string; onChange: (v: string) => void; opcional?: boolean; id: string;
+}) {
+  if (clase === 'A') {
+    return (
+      <div className="relative mt-1 w-36">
+        <input id={id} inputMode="numeric" maxLength={3} placeholder="50 a 100" value={valor}
+          onChange={e => onChange(e.target.value.replace(/\D/g, ''))}
+          className="w-full h-11 rounded-xl bg-stone-950 border border-stone-700 pl-3 pr-8 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold" />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-stone-500 pointer-events-none">%</span>
+      </div>
+    );
+  }
+  return (
+    <div id={id} role="radiogroup" className="mt-1 grid grid-cols-5 gap-1.5">
+      {OFERTAS_VENTA.map(o => {
+        const activo = valor !== '' && Number(valor) === Number(o);
+        return (
+          <button key={o} type="button" role="radio" aria-checked={activo}
+            onClick={() => onChange(opcional && activo ? '' : o)}
+            className={`min-h-[44px] rounded-xl border text-sm transition-colors ${activo ? 'border-brand-gold bg-brand-gold text-stone-950 font-bold' : 'border-stone-700 bg-stone-950/40 text-stone-300 hover:border-stone-500'}`}>
+            {o.replace('.', ',')} %
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 export function EditarDatosModal({ lead, credential, onCerrar, onListo }: {
   lead: Lead; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void;
 }) {
   const inicial: Record<CampoEditable, string> = {
     nombre: lead.nombre, celular: lead.celular, correo: lead.correo, ubicacion: lead.ubicacion,
     localidad: (lead.localidad || '').toUpperCase(), habitaciones: lead.habitaciones, valor: lead.valor, tipo: lead.tipo,
+    ofertaA: enPuntos(lead.ofertaA), ofertaV: enPuntos(lead.ofertaV),
   };
   const [f, setF] = useState(inicial);
   const [guardando, setGuardando] = useState(false);
@@ -112,6 +153,9 @@ export function EditarDatosModal({ lead, credential, onCerrar, onListo }: {
           <div className="col-span-2"><Etq id="ed-valor" t="Valor publicado" /><input id="ed-valor" className={campo} value={f.valor} onChange={poner('valor')} /></div>
         </div>
         <div><Etq id="ed-tipo" t="Tipo de inmueble" /><input id="ed-tipo" className={campo} value={f.tipo} onChange={poner('tipo')} placeholder="Apartamento, casa…" /></div>
+        <div className="text-[11px] uppercase tracking-[0.12em] text-stone-500 -mb-1 mt-1">Oferta negociada · solo la ves tú</div>
+        <div><Etq id="ed-ofa" t="% en arriendo (50 a 100)" /><CampoOferta id="ed-ofa" clase="A" valor={f.ofertaA} onChange={v => setF(x => ({ ...x, ofertaA: v }))} /></div>
+        <div><Etq id="ed-ofv" t="% en venta" /><CampoOferta id="ed-ofv" clase="V" opcional valor={f.ofertaV} onChange={v => setF(x => ({ ...x, ofertaV: v }))} /></div>
       </div>
     </Marco>
   );
@@ -366,6 +410,13 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
     ].filter(Boolean).join('\n'),
   }), [lead, operacion]);
   const [f, setF] = useState(inicial);
+  // % de oferta: el de la pestaña es obligatorio; el otro, opcional (servicio mixto)
+  const otra: 'A' | 'V' = operacion === 'A' ? 'V' : 'A';
+  const [oferta, setOferta] = useState<Record<'A' | 'V', string>>({ A: enPuntos(lead.ofertaA), V: enPuntos(lead.ofertaV) });
+  const [verOtra, setVerOtra] = useState(enPuntos(otra === 'A' ? lead.ofertaA : lead.ofertaV) !== '');
+  const nombreClase = { A: 'arriendo', V: 'venta' } as const;
+  const ofertaOk = ofertaValida(operacion, oferta[operacion]) && (oferta[otra] === '' || ofertaValida(otra, oferta[otra]));
+  const textoOfertaSel = (['A', 'V'] as const).filter(k => oferta[k] !== '').map(k => oferta[k].replace('.', ',') + ' % ' + nombreClase[k]).join(' · ');
   const [modalidad, setModalidad] = useState<'VIRTUAL' | 'PRESENCIAL' | null>(null);
   const [paso, setPaso] = useState(1);
   const [diaSel, setDiaSel] = useState<Date | null>(null);
@@ -379,8 +430,11 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
 
   const dias = useMemo(() => { const h = new Date(); return Array.from({ length: 21 }, (_, i) => new Date(h.getFullYear(), h.getMonth(), h.getDate() + i)); }, []);
   const correoOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.correo.trim());
-  const paso1Ok = !!f.nombre.trim() && !!f.celular.trim() && correoOk;
-  const cambiar = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
+  const paso1Ok = !!f.nombre.trim() && !!f.celular.trim() && correoOk && ofertaOk;
+  const cambiar = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setF({ ...f, [k]: e.target.value });
+    if (k === 'servicio' && /Vendi-Renta|Admi-Venta/.test(e.target.value)) setVerOtra(true);
+  };
 
   const elegirDia = async (d: Date) => {
     setDiaSel(d); setSlot(null); setSlots(null); setMotivo('');
@@ -406,7 +460,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
       const r = await llamarCRM(credential, 'agendar', {
         idLead: lead.idLead, nombre: f.nombre.trim(), celular: f.celular.trim(), correo: f.correo.trim(),
         servicio: f.servicio, direccion: f.direccion.trim(), notas: f.notas.trim(),
-        timestamp: slot.timestamp, textoCita, modalidad,
+        timestamp: slot.timestamp, textoCita, modalidad, ofertaA: oferta.A, ofertaV: oferta.V,
       });
       if (r.success) {
         if (r.lead) onListo(r.lead);
@@ -470,6 +524,24 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
               {SERVICIOS.map(s => <option key={s.v} value={s.v}>{s.t}</option>)}
             </select>
           </div>
+          <div>
+            <label htmlFor="ag-oferta" className="text-xs text-stone-400">% de oferta en {nombreClase[operacion]} · negociado</label>
+            <CampoOferta id="ag-oferta" clase={operacion} valor={oferta[operacion]} onChange={v => setOferta(o => ({ ...o, [operacion]: v }))} />
+            {oferta[operacion] !== '' && !ofertaValida(operacion, oferta[operacion])
+              ? <div className="text-xs text-red-300 mt-1">Debe ser un número entero entre 50 y 100.</div>
+              : <div className="text-[11px] text-stone-500 mt-1">Obligatorio · {operacion === 'A' ? 'de 50 a 100 %' : 'de 1 a 3 %'}. Solo lo ves tú: no va en la cita ni en el correo.</div>}
+          </div>
+          {verOtra ? (
+            <div>
+              <label htmlFor="ag-oferta2" className="text-xs text-stone-400">% de oferta en {nombreClase[otra]} · opcional, servicio mixto</label>
+              <CampoOferta id="ag-oferta2" clase={otra} opcional valor={oferta[otra]} onChange={v => setOferta(o => ({ ...o, [otra]: v }))} />
+              {oferta[otra] !== '' && !ofertaValida(otra, oferta[otra]) && <div className="text-xs text-red-300 mt-1">Debe ser un número entero entre 50 y 100.</div>}
+            </div>
+          ) : (
+            <button type="button" onClick={() => setVerOtra(true)} className="justify-self-start -mt-1 min-h-[36px] text-xs font-semibold text-brand-gold-light hover:text-brand-gold">
+              + Servicio mixto: agregar % de {nombreClase[otra]}
+            </button>
+          )}
           <div><label htmlFor="ag-dir" className="text-xs text-stone-400">Dirección del inmueble</label><input id="ag-dir" className={campo} value={f.direccion} onChange={cambiar('direccion')} /></div>
         </div>
       ) : paso === 2 ? (
@@ -503,6 +575,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
             <div className="text-white font-semibold">{textoCita}</div>
             <div className="text-stone-400">{f.nombre} · {SERVICIOS.find(s => s.v === f.servicio)?.t}</div>
             {f.direccion && <div className="text-stone-400">{f.direccion}</div>}
+            {textoOfertaSel && <div className="text-brand-gold-light mt-1">Oferta negociada: {textoOfertaSel}</div>}
           </div>
           <div>
             <label htmlFor="ag-notas" className="text-xs text-stone-400">Notas para la cita</label>
