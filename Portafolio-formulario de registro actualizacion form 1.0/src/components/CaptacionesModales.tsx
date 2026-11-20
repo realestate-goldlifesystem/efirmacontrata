@@ -60,6 +60,11 @@ export const ofertaValida = (clase: 'A' | 'V', v: string) => {
   return clase === 'A' ? Number.isInteger(n) && n >= 50 && n <= 100 : OFERTAS_VENTA.includes(String(n));
 };
 const enPuntos = (v: number | '' | undefined) => (v === '' || v == null ? '' : String(v));
+/** Qué % pide el servicio elegido (igual que ofertasDelServicio_ del Sheet). */
+export const ofertasDelServicio = (servicio: string): ('A' | 'V')[] => {
+  const s = servicio.toLowerCase();
+  return /vendi|admi-venta/.test(s) ? ['A', 'V'] : /venta/.test(s) ? ['V'] : ['A'];
+};
 
 /** Arriendo: número con %; venta: cinco botones. En el opcional, tocar el mismo botón lo quita. */
 function CampoOferta({ clase, valor, onChange, opcional = false, id }: {
@@ -410,13 +415,12 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
     ].filter(Boolean).join('\n'),
   }), [lead, operacion]);
   const [f, setF] = useState(inicial);
-  // % de oferta: el de la pestaña es obligatorio; el otro, opcional (servicio mixto)
-  const otra: 'A' | 'V' = operacion === 'A' ? 'V' : 'A';
+  // % de oferta: lo pide el SERVICIO elegido (Venta → venta; mixtos → los dos; resto → arriendo)
   const [oferta, setOferta] = useState<Record<'A' | 'V', string>>({ A: enPuntos(lead.ofertaA), V: enPuntos(lead.ofertaV) });
-  const [verOtra, setVerOtra] = useState(enPuntos(otra === 'A' ? lead.ofertaA : lead.ofertaV) !== '');
+  const piden = ofertasDelServicio(f.servicio);
   const nombreClase = { A: 'arriendo', V: 'venta' } as const;
-  const ofertaOk = ofertaValida(operacion, oferta[operacion]) && (oferta[otra] === '' || ofertaValida(otra, oferta[otra]));
-  const textoOfertaSel = (['A', 'V'] as const).filter(k => oferta[k] !== '').map(k => oferta[k].replace('.', ',') + ' % ' + nombreClase[k]).join(' · ');
+  const ofertaOk = piden.every(k => ofertaValida(k, oferta[k]));
+  const textoOfertaSel = piden.filter(k => oferta[k] !== '').map(k => oferta[k].replace('.', ',') + ' % ' + nombreClase[k]).join(' · ');
   const [modalidad, setModalidad] = useState<'VIRTUAL' | 'PRESENCIAL' | null>(null);
   const [paso, setPaso] = useState(1);
   const [diaSel, setDiaSel] = useState<Date | null>(null);
@@ -431,10 +435,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
   const dias = useMemo(() => { const h = new Date(); return Array.from({ length: 21 }, (_, i) => new Date(h.getFullYear(), h.getMonth(), h.getDate() + i)); }, []);
   const correoOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.correo.trim());
   const paso1Ok = !!f.nombre.trim() && !!f.celular.trim() && correoOk && ofertaOk;
-  const cambiar = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setF({ ...f, [k]: e.target.value });
-    if (k === 'servicio' && /Vendi-Renta|Admi-Venta/.test(e.target.value)) setVerOtra(true);
-  };
+  const cambiar = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
 
   const elegirDia = async (d: Date) => {
     setDiaSel(d); setSlot(null); setSlots(null); setMotivo('');
@@ -460,7 +461,8 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
       const r = await llamarCRM(credential, 'agendar', {
         idLead: lead.idLead, nombre: f.nombre.trim(), celular: f.celular.trim(), correo: f.correo.trim(),
         servicio: f.servicio, direccion: f.direccion.trim(), notas: f.notas.trim(),
-        timestamp: slot.timestamp, textoCita, modalidad, ofertaA: oferta.A, ofertaV: oferta.V,
+        timestamp: slot.timestamp, textoCita, modalidad,
+        ofertaA: piden.includes('A') ? oferta.A : '', ofertaV: piden.includes('V') ? oferta.V : '',
       });
       if (r.success) {
         if (r.lead) onListo(r.lead);
@@ -524,24 +526,15 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
               {SERVICIOS.map(s => <option key={s.v} value={s.v}>{s.t}</option>)}
             </select>
           </div>
-          <div>
-            <label htmlFor="ag-oferta" className="text-xs text-stone-400">% de oferta en {nombreClase[operacion]} · negociado</label>
-            <CampoOferta id="ag-oferta" clase={operacion} valor={oferta[operacion]} onChange={v => setOferta(o => ({ ...o, [operacion]: v }))} />
-            {oferta[operacion] !== '' && !ofertaValida(operacion, oferta[operacion])
-              ? <div className="text-xs text-red-300 mt-1">Debe ser un número entero entre 50 y 100.</div>
-              : <div className="text-[11px] text-stone-500 mt-1">Obligatorio · {operacion === 'A' ? 'de 50 a 100 %' : 'de 1 a 3 %'}. Solo lo ves tú: no va en la cita ni en el correo.</div>}
-          </div>
-          {verOtra ? (
-            <div>
-              <label htmlFor="ag-oferta2" className="text-xs text-stone-400">% de oferta en {nombreClase[otra]} · opcional, servicio mixto</label>
-              <CampoOferta id="ag-oferta2" clase={otra} opcional valor={oferta[otra]} onChange={v => setOferta(o => ({ ...o, [otra]: v }))} />
-              {oferta[otra] !== '' && !ofertaValida(otra, oferta[otra]) && <div className="text-xs text-red-300 mt-1">Debe ser un número entero entre 50 y 100.</div>}
+          {piden.map(k => (
+            <div key={k}>
+              <label htmlFor={'ag-oferta-' + k} className="text-xs text-stone-400">% de oferta en {nombreClase[k]} · negociado</label>
+              <CampoOferta id={'ag-oferta-' + k} clase={k} valor={oferta[k]} onChange={v => setOferta(o => ({ ...o, [k]: v }))} />
+              {oferta[k] !== '' && !ofertaValida(k, oferta[k])
+                ? <div className="text-xs text-red-300 mt-1">Debe ser un número entero entre 50 y 100.</div>
+                : <div className="text-[11px] text-stone-500 mt-1">Obligatorio · {k === 'A' ? 'de 50 a 100 %' : 'de 1 a 3 %'}. Solo lo ves tú: no va en la cita ni en el correo.</div>}
             </div>
-          ) : (
-            <button type="button" onClick={() => setVerOtra(true)} className="justify-self-start -mt-1 min-h-[36px] text-xs font-semibold text-brand-gold-light hover:text-brand-gold">
-              + Servicio mixto: agregar % de {nombreClase[otra]}
-            </button>
-          )}
+          ))}
           <div><label htmlFor="ag-dir" className="text-xs text-stone-400">Dirección del inmueble</label><input id="ag-dir" className={campo} value={f.direccion} onChange={cambiar('direccion')} /></div>
         </div>
       ) : paso === 2 ? (

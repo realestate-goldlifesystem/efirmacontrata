@@ -38,6 +38,17 @@ function ofertaCaptacionValida_(clase, valor) {
   return { ok: true, vacio: false, puntos: n, fraccion: Math.round(n * 10) / 1000 };
 }
 
+/**
+ * Qué % pide cada servicio de la ventana: Venta → venta; Vendi-Renta y Admi-Venta
+ * → los dos; Arriendo y Administración → arriendo. Manda el servicio elegido, no la pestaña.
+ */
+function ofertasDelServicio_(servicio) {
+  const s = String(servicio || '').toLowerCase();
+  if (/vendi|admi-venta/.test(s)) return ['A', 'V'];
+  if (/venta/.test(s)) return ['V'];
+  return ['A'];
+}
+
 /** Valor de la celda de % (0.7, 1, "3%") → puntos (70, 100, 3); '' si está vacía. */
 function ofertaEnPuntos_(v) {
   if (v === '' || v == null) return '';
@@ -132,12 +143,14 @@ function agendarDesdeCaptacion(d) {
   if (!hoja || SEGUIMIENTO_CAPTACIONES.HOJAS.indexOf(d.hoja) === -1) return { success: false, error: 'Pestaña no válida' };
   const correo = String(d.correo || '').trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return { success: false, error: 'Escribe un correo válido' };
-  // % de oferta: el de la pestaña es obligatorio; el otro, opcional (servicio mixto)
-  const clase = d.hoja.slice(-1) === 'V' ? 'V' : 'A';
-  const ofertas = { A: ofertaCaptacionValida_('A', d.ofertaA), V: ofertaCaptacionValida_('V', d.ofertaV) };
+  // % de oferta: obligatorio el que pide el servicio elegido; el otro no se toca
+  const piden = ofertasDelServicio_(d.servicio);
+  const ofertas = {};
+  ['A', 'V'].forEach(k => { ofertas[k] = piden.indexOf(k) === -1 ? { ok: true, vacio: true } : ofertaCaptacionValida_(k, k === 'A' ? d.ofertaA : d.ofertaV); });
   if (!ofertas.A.ok) return { success: false, error: ofertas.A.error };
   if (!ofertas.V.ok) return { success: false, error: ofertas.V.error };
-  if (ofertas[clase].vacio) return { success: false, error: 'Escribe el % de oferta en ' + (clase === 'V' ? 'venta' : 'arriendo') + ' que negociaste con el propietario.' };
+  const faltan = piden.filter(k => ofertas[k].vacio).map(k => (k === 'V' ? 'venta' : 'arriendo'));
+  if (faltan.length) return { success: false, error: 'Escribe el % de oferta en ' + faltan.join(' y ') + ' que negociaste con el propietario.' };
   hoja.getRange(d.fila, columnaCorreoCaptacion_(hoja)).setValue(correo);
 
   const r = agendarCita({

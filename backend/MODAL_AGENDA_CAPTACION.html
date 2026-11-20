@@ -148,11 +148,10 @@
           <option value="Admi-Venta">Admi-Venta</option>
         </select>
       </div>
-      <div class="grupo"><label id="etOferta"></label><div id="ofertaPrincipal"></div>
-        <div class="ayuda" id="ayudaOferta"></div></div>
-      <div class="grupo oculto" id="grupoOtra"><label id="etOtra"></label><div id="ofertaOtra"></div>
-        <div class="ayuda" id="ayudaOtra">Opcional · para servicios mixtos</div></div>
-      <button type="button" class="enlace" id="abrirOtra"></button>
+      <div class="grupo" id="grupoA"><label>% de oferta en arriendo · negociado</label><div id="ofertaA"></div>
+        <div class="ayuda" id="ayudaA"></div></div>
+      <div class="grupo" id="grupoV"><label>% de oferta en venta · negociado</label><div id="ofertaV"></div>
+        <div class="ayuda" id="ayudaV"></div></div>
       <div class="grupo"><label>Dirección del inmueble</label>
         <input id="direccion" autocomplete="off" placeholder="Escribe la dirección y elige una sugerencia">
         <div class="ayuda" id="ayudaDir">Del registro: <span id="dirRegistro"></span></div>
@@ -214,12 +213,12 @@
     $('dirRegistro').textContent = D.direccion || 'sin ubicación';
 
     // ---------- % de oferta negociado (solo para el agente) ----------
-    // El de la pestaña es obligatorio (A: entero de 50 a 100; V: 1 a 3 en medios);
-    // el otro es opcional, para servicios mixtos.
+    // Lo pide el SERVICIO elegido (no la pestaña): Venta → venta (1 a 3 en medios);
+    // Vendi-Renta y Admi-Venta → los dos; Arriendo y Administración → arriendo (50 a 100).
     const VENTA = [1, 1.5, 2, 2.5, 3];
-    const PRINCIPAL = D.clase === 'V' ? 'V' : 'A', OTRA = PRINCIPAL === 'A' ? 'V' : 'A';
     const NOMBRE = { A: 'arriendo', V: 'venta' };
     const oferta = { A: D.ofertaA === '' || D.ofertaA == null ? '' : String(D.ofertaA), V: D.ofertaV === '' || D.ofertaV == null ? '' : String(D.ofertaV) };
+    const piden = () => { const s = $('servicio').value.toLowerCase(); return /vendi|admi-venta/.test(s) ? ['A', 'V'] : /venta/.test(s) ? ['V'] : ['A']; };
     const ofertaOk = (k) => { if (oferta[k] === '') return false; const n = Number(oferta[k]); return k === 'A' ? Number.isInteger(n) && n >= 50 && n <= 100 : VENTA.indexOf(n) !== -1; };
     const fmt = (k) => oferta[k] === '' ? '' : String(oferta[k]).replace('.', ',') + ' % ' + NOMBRE[k];
     function campoOferta(k, cont) {
@@ -230,35 +229,27 @@
       } else {
         cont.innerHTML = '<div class="chips">' + VENTA.map(v => '<button type="button" class="chip" data-v="' + v + '">' + String(v).replace('.', ',') + ' %</button>').join('') + '</div>';
         const pintar = () => cont.querySelectorAll('.chip').forEach(x => x.classList.toggle('activo', oferta.V !== '' && Number(x.dataset.v) === Number(oferta.V)));
-        cont.querySelectorAll('.chip').forEach(b => b.onclick = () => {
-          // El opcional se puede quitar tocando el mismo botón
-          oferta.V = (k !== PRINCIPAL && Number(oferta.V) === Number(b.dataset.v)) ? '' : b.dataset.v;
-          pintar(); revisar();
-        });
+        cont.querySelectorAll('.chip').forEach(b => b.onclick = () => { oferta.V = b.dataset.v; pintar(); revisar(); });
         pintar();
       }
     }
-    $('etOferta').textContent = '% de oferta en ' + NOMBRE[PRINCIPAL] + ' · negociado';
-    $('etOtra').textContent = '% de oferta en ' + NOMBRE[OTRA];
-    campoOferta(PRINCIPAL, $('ofertaPrincipal'));
-    campoOferta(OTRA, $('ofertaOtra'));
-    const abrirOtra = () => { $('grupoOtra').classList.remove('oculto'); $('abrirOtra').classList.add('oculto'); };
-    $('abrirOtra').textContent = '+ Servicio mixto: agregar % de ' + NOMBRE[OTRA];
-    $('abrirOtra').onclick = abrirOtra;
-    if (oferta[OTRA] !== '') abrirOtra();
-    $('servicio').addEventListener('change', () => { if (/Vendi-Renta|Admi-Venta/.test($('servicio').value)) abrirOtra(); });
+    campoOferta('A', $('ofertaA'));
+    campoOferta('V', $('ofertaV'));
+    const mostrarOfertas = () => { const p = piden(); ['A', 'V'].forEach(k => $('grupo' + k).classList.toggle('oculto', p.indexOf(k) === -1)); };
+    mostrarOfertas();
+    $('servicio').addEventListener('change', () => { mostrarOfertas(); revisar(); });
 
     // ---------- Pasos ----------
     const correoOk = () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('correo').value.trim());
-    const paso1Ok = () => $('nombre').value.trim() && $('celular').value.trim() && correoOk() && ofertaOk(PRINCIPAL) && (oferta[OTRA] === '' || ofertaOk(OTRA));
+    const paso1Ok = () => $('nombre').value.trim() && $('celular').value.trim() && correoOk() && piden().every(ofertaOk);
     function revisar() {
       $('sig1').disabled = !paso1Ok(); $('sig2').disabled = !slot;
-      const mal = (k) => oferta[k] !== '' && !ofertaOk(k);
-      $('ayudaOferta').textContent = mal(PRINCIPAL) ? (PRINCIPAL === 'A' ? 'Debe ser un número entero entre 50 y 100.' : 'Elige 1, 1,5, 2, 2,5 o 3 %.')
-        : (PRINCIPAL === 'A' ? 'Obligatorio · de 50 a 100 %. Solo lo ves tú: no va en la cita ni en el correo.' : 'Obligatorio · de 1 a 3 %. Solo lo ves tú: no va en la cita ni en el correo.');
-      $('ayudaOferta').classList.toggle('mal', mal(PRINCIPAL));
-      $('ayudaOtra').textContent = mal(OTRA) ? 'Debe ser un número entero entre 50 y 100.' : 'Opcional · para servicios mixtos';
-      $('ayudaOtra').classList.toggle('mal', mal(OTRA));
+      ['A', 'V'].forEach(k => {
+        const mal = oferta[k] !== '' && !ofertaOk(k);
+        $('ayuda' + k).textContent = mal ? (k === 'A' ? 'Debe ser un número entero entre 50 y 100.' : 'Elige 1, 1,5, 2, 2,5 o 3 %.')
+          : 'Obligatorio · ' + (k === 'A' ? 'de 50 a 100 %' : 'de 1 a 3 %') + '. Solo lo ves tú: no va en la cita ni en el correo.';
+        $('ayuda' + k).classList.toggle('mal', mal);
+      });
     }
     ['nombre', 'celular', 'correo'].forEach(id => $(id).addEventListener('input', revisar));
     revisar();
@@ -278,7 +269,7 @@
         $('rCuando').textContent = t.charAt(0).toUpperCase() + t.slice(1);
         $('rQuien').textContent = $('nombre').value.trim() + ' · ' + $('servicio').value + (modalidad === 'VIRTUAL' ? ' · Virtual (Google Meet)' : ' · Presencial');
         $('rDonde').textContent = $('direccion').value.trim();
-        $('rOferta').textContent = 'Oferta negociada: ' + [fmt('A'), fmt('V')].filter(Boolean).join(' · ');
+        $('rOferta').textContent = 'Oferta negociada: ' + piden().map(fmt).filter(Boolean).join(' · ');
       }
     }
     document.querySelectorAll('.paso').forEach(p => p.onclick = () => { if (p.classList.contains('hecho')) ir(Number(p.dataset.p)); });
@@ -333,7 +324,8 @@
       }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; })
         .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
           correo: $('correo').value.trim(), servicio: $('servicio').value, direccion: $('direccion').value.trim(), notas: $('notas').value.trim(),
-          timestamp: slot.timestamp, textoCita: txt, modalidad: modalidad, ofertaA: oferta.A, ofertaV: oferta.V });
+          timestamp: slot.timestamp, textoCita: txt, modalidad: modalidad,
+          ofertaA: piden().indexOf('A') !== -1 ? oferta.A : '', ofertaV: piden().indexOf('V') !== -1 ? oferta.V : '' });
     }
 
     // ---------- Buscador de direcciones (el mismo del formulario de registro) ----------
