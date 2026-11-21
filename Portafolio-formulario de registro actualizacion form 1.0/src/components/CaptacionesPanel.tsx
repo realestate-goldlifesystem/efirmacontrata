@@ -572,12 +572,24 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
 
   const cambiarEstado = async (nombre: string) => {
     setEligiendo(false);
-    if (nombre.toUpperCase() === lead.estado) return;
-    const ok = await guardar({ estado: nombre }, 'estado');
+    const nuevo = nombre.toUpperCase();
+    if (nuevo === lead.estado) return;
+    // Al instante (21-nov-2026): se pinta ya y se guarda por detrás; si falla, vuelve al anterior
+    const antes = lead;
+    onCambio({ ...lead, estado: nuevo });
     // Igual que en el Sheet: SEGUIMIENTO abre la llamada y PRE-R CAPTACION la agenda
     // SEGUIMIENTO: primero se elige si es llamada, mensaje o presentación
-    if (ok && nombre.toUpperCase() === 'SEGUIMIENTO') setModal('elegir');
-    if (ok && nombre.toUpperCase() === 'PRE-R CAPTACION') setModal('agenda');
+    if (nuevo === 'SEGUIMIENTO') setModal('elegir');
+    if (nuevo === 'PRE-R CAPTACION') setModal('agenda');
+    setError(null);
+    try {
+      const r = await llamarCRM(credential, 'actualizar', { idLead: lead.idLead, estado: nombre });
+      if (!r.success) throw new Error(r.message || 'No se pudo guardar el estado.');
+      onCambio(r.lead);
+    } catch (e) {
+      onCambio(antes); setModal(null);
+      setError((e instanceof Error && e.message !== 'Failed to fetch' ? e.message : 'Error de red al guardar') + '. Se dejó el estado anterior.');
+    }
   };
 
   const enviarNota = async () => {
