@@ -33,6 +33,7 @@ function crmInmueblesDesdeWeb(datos) {
       case 'listar': return crmInmueblesListar_();
       case 'cambiarEstado': return crmInmCambiarEstado_(datos);
       case 'emailInquilino': return crmInmEmailInquilino_(datos);
+      case 'validarVideo': return crmInmValidarVideo_(datos);
       default: return { success: false, message: 'Operación desconocida: ' + datos.op };
     }
   } catch (e) {
@@ -296,5 +297,32 @@ function crmInmEmailInquilino_(datos) {
   if (!r.success) return r;
   const lista = crmInmueblesListar_();
   lista.message = r.message;
+  return lista;
+}
+
+/**
+ * Lo mismo que marcar (o desmarcar) CHECK YT en el Sheet: el video pasa a No
+ * listado (o vuelve a Privado) en YouTube. datos = { cdr, habilitar }.
+ * La casilla se escribe por código, así que el onEdit no corre dos veces.
+ */
+function crmInmValidarVideo_(datos) {
+  const habilitar = datos.habilitar !== false && String(datos.habilitar) !== 'false';
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return { success: false, message: 'El Sheet está ocupado, intenta de nuevo en unos segundos.' };
+  try {
+    const hoja = getSheet();
+    const fila = crmInmFila_(datos.cdr);
+    const r = cambiarPrivacidadVideoInmueble_(hoja, fila, habilitar);
+    if (!r.ok) return { success: false, message: r.mensaje };
+    const c = getColumnIndex(hoja, 'CHECK YT');
+    if (c > 0) hoja.getRange(fila, c).setValue(habilitar);
+    SpreadsheetApp.flush();
+  } catch (e) {
+    return { success: false, message: 'YouTube no aceptó el cambio: ' + e.message };
+  } finally {
+    lock.releaseLock();
+  }
+  const lista = crmInmueblesListar_();
+  lista.message = habilitar ? 'Video habilitado: quedó como No listado en YouTube.' : 'El video volvió a Privado.';
   return lista;
 }

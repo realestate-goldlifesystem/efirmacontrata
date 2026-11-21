@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Building2, RefreshCw, Search, X, Loader2, AlertTriangle, Phone, MessageCircle, ExternalLink,
-  ChevronDown, Plus, Mail, FolderOpen, FileText, Video, Check, Upload, Inbox, Images,
+  ChevronDown, Plus, Mail, FolderOpen, FileText, Video, Check, Upload, Inbox, Images, PlayCircle, ShieldCheck,
 } from 'lucide-react';
 import { API_URL } from './CitasAgendaPanel';
 import { celularInternacional } from './CaptacionesPanel';
@@ -41,6 +41,9 @@ const urlCarga = (id: string) => `${ORIGEN_CARGA}/efirmacontrata/frontend/carga_
 /** El buzón sale en los inmuebles vivos (no en INACTIVO ni VENDIDO). */
 const buzonDe = (i: Inmueble) => !!i.contenidoPendiente && i.etapa !== -1;
 const textoBuzon = (i: Inmueble) => (i.multimedia ? 'Falta el video' : 'Falta cargar el contenido');
+/** Video subido pero sin CHECK YT: sigue Privado en YouTube hasta que el agente lo valide. */
+const videoPorValidar = (i: Inmueble) => !!i.links.video && !i.video && i.etapa !== -1;
+type Aviso = 'contenido' | 'video';
 
 type Grupo = 'activos' | 'inactivos' | 'todos';
 type Pestana = 'inmueble' | 'personas' | 'contrato' | 'archivos';
@@ -92,7 +95,7 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
   const [selCdr, setSelCdr] = useState<string | null>(null);
   const [emailPara, setEmailPara] = useState<string | null>(null);
   const [cargaPara, setCargaPara] = useState<string | null>(null);
-  const [soloBuzon, setSoloBuzon] = useState(false);
+  const [filtroAviso, setFiltroAviso] = useState<Aviso | null>(null);
 
   const aplicar = (r: { inmuebles?: Inmueble[]; etapas?: string[]; estados?: string[] }) => {
     if (r.inmuebles) setInmuebles(r.inmuebles);
@@ -110,7 +113,7 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
     finally { setCargando(false); }
   };
   useEffect(() => { cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
-  useEffect(() => { setLimite(40); }, [grupo, filtroEtapa, filtroNegocio, busqueda, soloBuzon]);
+  useEffect(() => { setLimite(40); }, [grupo, filtroEtapa, filtroNegocio, busqueda, filtroAviso]);
 
   const todos = inmuebles || [];
   const delGrupo = useMemo(() => todos.filter(i => grupo === 'todos' ? true : grupo === 'activos' ? activo(i) : !activo(i)), [todos, grupo]);
@@ -122,7 +125,8 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
   const negocios = useMemo(() => Array.from(new Set(todos.map(i => i.negocio).filter(Boolean))), [todos]);
 
   const coincide = (i: Inmueble, sin: 'negocio' | null = null) => {
-    if (soloBuzon && !buzonDe(i)) return false;
+    if (filtroAviso === 'contenido' && !buzonDe(i)) return false;
+    if (filtroAviso === 'video' && !videoPorValidar(i)) return false;
     if (filtroEtapa !== null && (i.etapa ?? 0) !== filtroEtapa) return false;
     if (sin !== 'negocio' && filtroNegocio && i.negocio !== filtroNegocio) return false;
     const q = busqueda.trim().toLowerCase();
@@ -131,12 +135,19 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
   };
   const filtrados = useMemo(() => delGrupo.filter(i => coincide(i)).sort((a, b) => (b.registroMs ?? 0) - (a.registroMs ?? 0)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [delGrupo, filtroEtapa, filtroNegocio, busqueda, soloBuzon]);
+    [delGrupo, filtroEtapa, filtroNegocio, busqueda, filtroAviso]);
   const cuentaNegocio = (n: string | null) => delGrupo.filter(i => coincide(i, 'negocio') && (n === null || i.negocio === n)).length;
 
   const seleccionado = todos.find(i => i.cdr === selCdr) || null;
   const nActivos = todos.filter(activo).length;
   const nBuzon = todos.filter(buzonDe).length;
+  const nVideo = todos.filter(videoPorValidar).length;
+  const chipAviso = (a: Aviso, n: number, Icono: React.ComponentType<{ className?: string }>, texto: string) => n > 0 && (
+    <button key={a} onClick={() => setFiltroAviso(v => (v === a ? null : a))} aria-pressed={filtroAviso === a}
+      className={`shrink-0 min-h-[44px] px-4 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${filtroAviso === a ? 'bg-brand-gold text-stone-950 border-brand-gold font-semibold' : 'bg-amber-50 text-[#8a6d1c] border-brand-gold/50 hover:border-brand-gold'}`}>
+      <Icono className="w-4 h-4" /> {texto} <b className="font-semibold">{n}</b>
+    </button>
+  );
 
   // Celular: la franja tapa la barra transparente de arriba solo cuando ya quedó fija
   const franjaRef = useRef<HTMLDivElement>(null);
@@ -242,12 +253,8 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
               {busqueda && <button onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda" className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-stone-400"><X className="w-4 h-4" /></button>}
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 min-w-0 [scrollbar-width:none]">
-              {nBuzon > 0 && (
-                <button onClick={() => setSoloBuzon(v => !v)} aria-pressed={soloBuzon}
-                  className={`shrink-0 min-h-[44px] px-4 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${soloBuzon ? 'bg-brand-gold text-stone-950 border-brand-gold font-semibold' : 'bg-amber-50 text-[#8a6d1c] border-brand-gold/50 hover:border-brand-gold'}`}>
-                  <Inbox className="w-4 h-4" /> Por cargar contenido <b className="font-semibold">{nBuzon}</b>
-                </button>
-              )}
+              {chipAviso('contenido', nBuzon, Inbox, 'Por cargar contenido')}
+              {chipAviso('video', nVideo, PlayCircle, 'Video por validar')}
               {[null, ...negocios].map(n => (
                 <button key={n || 'todos'} onClick={() => setFiltroNegocio(n)} aria-pressed={filtroNegocio === n}
                   className={`shrink-0 min-h-[44px] px-4 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${filtroNegocio === n ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-300 hover:border-stone-400'}`}>
@@ -291,6 +298,11 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
                                 className="mt-1.5 inline-flex items-center gap-1.5 min-h-[32px] px-3 rounded-full bg-amber-100 text-[#7a5d12] text-xs font-semibold hover:bg-brand-gold hover:text-stone-950 transition-colors">
                                 <Inbox className="w-3.5 h-3.5" /> {textoBuzon(i)} · Cargar
                               </button>
+                            )}
+                            {videoPorValidar(i) && (
+                              <span className="mt-1.5 inline-flex items-center gap-1.5 min-h-[32px] px-3 rounded-full bg-sky-100 text-sky-800 text-xs font-semibold">
+                                <PlayCircle className="w-3.5 h-3.5" /> Video por validar
+                              </span>
                             )}
                           </td>
                           <td className="px-2 py-3 text-stone-700">{i.negocio}</td>
@@ -377,6 +389,17 @@ function TarjetaInmueble({ i, activo: sel, onClick, onCargar }: { key?: string; 
         <span className="shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-full bg-brand-gold text-stone-950">Cargar</span>
       </button>
     )}
+    {videoPorValidar(i) && (
+      <button onClick={onClick}
+        className="w-full min-h-[48px] px-4 flex items-center gap-2.5 border-t border-sky-400/25 bg-sky-500/10 text-left hover:bg-sky-500/20 transition-colors">
+        <PlayCircle className="w-5 h-5 text-sky-300 shrink-0" />
+        <span className="flex-1 min-w-0">
+          <span className="block text-[13px] font-semibold text-sky-200 truncate">Video por validar</span>
+          <span className="block text-[11px] text-stone-400 truncate">Sigue privado en YouTube</span>
+        </span>
+        <span className="shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-full bg-sky-300 text-stone-950">Validar</span>
+      </button>
+    )}
     </div>
   );
 }
@@ -394,7 +417,21 @@ function FichaInmueble({ i, etapas, estados, credential, movil, onCerrar, onCarg
   const [porConfirmar, setPorConfirmar] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { setEligiendo(false); setPorConfirmar(null); setError(null); }, [i.cdr]);
+  const [videoConfirmar, setVideoConfirmar] = useState<'habilitar' | 'privado' | null>(null);
+  const [videoGuardando, setVideoGuardando] = useState(false);
+  const [videoMsg, setVideoMsg] = useState<{ ok: boolean; texto: string } | null>(null);
+  useEffect(() => { setEligiendo(false); setPorConfirmar(null); setError(null); setVideoConfirmar(null); setVideoMsg(null); }, [i.cdr]);
+
+  // Igual que marcar o desmarcar CHECK YT en el Sheet
+  const cambiarVideo = async (habilitar: boolean) => {
+    setVideoGuardando(true); setVideoMsg(null);
+    try {
+      const r = await llamarInm(credential, 'validarVideo', { cdr: i.cdr, habilitar });
+      if (r.success) { onLista(r); setVideoConfirmar(null); setVideoMsg({ ok: true, texto: r.message || 'Listo.' }); }
+      else setVideoMsg({ ok: false, texto: r.message || 'No se pudo cambiar el video.' });
+    } catch { setVideoMsg({ ok: false, texto: 'Error de red al hablar con YouTube.' }); }
+    finally { setVideoGuardando(false); }
+  };
 
   const c = colorDe(i.etapa).oscuro;
   const cel = celularInternacional(i.celular);
@@ -505,6 +542,35 @@ function FichaInmueble({ i, etapas, estados, credential, movil, onCerrar, onCarg
           </div>
         ) : null}
 
+        {/* Video por validar: sigue Privado en YouTube hasta que se habilite (CHECK YT) */}
+        {videoPorValidar(i) && (
+          <div className="mt-2.5 rounded-xl border border-sky-400/40 bg-sky-500/10 p-3">
+            {videoConfirmar === 'habilitar' ? (
+              <div className="flex flex-col gap-2">
+                <div className="text-[13px] text-stone-200">¿Ya revisaste el video? Al validarlo pasa de <b className="text-white">Privado</b> a <b className="text-white">No listado</b> en YouTube, igual que marcar CHECK YT.</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => setVideoConfirmar(null)} disabled={videoGuardando} className="min-h-[44px] rounded-lg border border-stone-700 text-stone-200">Volver</button>
+                  <button onClick={() => cambiarVideo(true)} disabled={videoGuardando}
+                    className="min-h-[44px] rounded-lg bg-sky-300 text-stone-950 font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60">
+                    {videoGuardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}{videoGuardando ? 'Habilitando…' : 'Validar'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <PlayCircle className="w-5 h-5 text-sky-300 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13.5px] font-semibold text-sky-200">Video por validar</div>
+                  <div className="text-[11.5px] text-stone-400">Sigue privado en YouTube. Míralo y valídalo.</div>
+                </div>
+                <a href={i.links.video} target="_blank" rel="noopener noreferrer" className="shrink-0 min-h-[40px] px-3 rounded-full border border-stone-600 text-stone-200 text-[12.5px] font-semibold flex items-center hover:border-stone-400">Ver</a>
+                <button onClick={() => setVideoConfirmar('habilitar')} className="shrink-0 min-h-[40px] px-3.5 rounded-full bg-sky-300 text-stone-950 text-[12.5px] font-bold">Validar</button>
+              </div>
+            )}
+          </div>
+        )}
+        {videoMsg && <div className={`mt-2 text-sm flex items-start gap-2 ${videoMsg.ok ? 'text-emerald-300' : 'text-red-300'}`}>{videoMsg.ok ? <Check className="w-4 h-4 mt-0.5 shrink-0" /> : <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />}{videoMsg.texto}</div>}
+
         <div className="mt-2.5 grid grid-cols-4 p-[3px] rounded-xl bg-stone-950" role="tablist">
           {(['inmueble', 'personas', 'contrato', 'archivos'] as Pestana[]).map(p => (
             <button key={p} role="tab" aria-selected={pestana === p} onClick={() => setPestana(p)}
@@ -536,7 +602,18 @@ function FichaInmueble({ i, etapas, estados, credential, movil, onCerrar, onCarg
             </Caja>
           )}
           <Caja t="Publicación">
-            <Fila t="Video en YouTube" v={i.video ? 'Listo' : 'Pendiente'} ok={i.video} />
+            <Fila t="Video en YouTube" v={i.video ? 'Habilitado (no listado)' : i.links.video ? 'Privado · por validar' : 'Sin video'} ok={i.video} />
+            {i.video && i.links.video && (
+              videoConfirmar === 'privado' ? (
+                <div className="flex items-center gap-2 py-1.5">
+                  <span className="flex-1 text-xs text-stone-300">¿Devolverlo a Privado en YouTube?</span>
+                  <button onClick={() => setVideoConfirmar(null)} disabled={videoGuardando} className="min-h-[36px] px-3 rounded-lg border border-stone-700 text-xs text-stone-200">No</button>
+                  <button onClick={() => cambiarVideo(false)} disabled={videoGuardando} className="min-h-[36px] px-3 rounded-lg bg-stone-200 text-stone-950 text-xs font-semibold disabled:opacity-60">{videoGuardando ? '…' : 'Sí, privado'}</button>
+                </div>
+              ) : (
+                <button onClick={() => setVideoConfirmar('privado')} className="self-start min-h-[36px] text-xs text-stone-500 hover:text-stone-300 underline-offset-4 hover:underline">Volver el video a privado</button>
+              )
+            )}
             <Fila t="Fotos y multimedia" v={i.multimedia ? 'Listo' : 'Pendiente'} ok={i.multimedia} />
             <Fila t="Autorización de ingreso" v={i.autorizacion || '—'} />
             <Fila t="Registrado" v={i.fechaRegistro || '—'} />

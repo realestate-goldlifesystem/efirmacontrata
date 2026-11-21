@@ -160,44 +160,8 @@ function onEditEstados(e) {
         logAccion('SISTEMA', `Checkbox CHECK YT modificado a: ${e.value}`);
         if (e.value === "TRUE" || e.value === true || e.value === "FALSE" || e.value === false) {
             try {
-                // Obtener Link del Video
-                const linkYtColIndex = getColumnIndex(sheet, 'LINK DEL VIDEO DEL INMUEBLE');
-                if (linkYtColIndex !== -1) {
-                    const linkYt = sheet.getRange(row, linkYtColIndex).getValue();
-                    if (linkYt && linkYt.includes("youtu")) {
-                        // Extraer ID
-                        const match = linkYt.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/);
-                        if (match && match[1]) {
-                            const videoId = match[1];
-                            
-                            // 1. Obtener el video actual para no borrarle nada de su snippet original
-                            const vidList = YouTube.Videos.list('snippet,status', {id: videoId});
-                            if (vidList.items && vidList.items.length > 0) {
-                                const v = vidList.items[0];
-                                
-                                const esVerdadero = (e.value === "TRUE" || e.value === true);
-                                
-                                // Cambiar status
-                                v.status.privacyStatus = esVerdadero ? 'unlisted' : 'private';
-                                
-                                // Hacer Update enviando de nuevo snippet y status
-                                YouTube.Videos.update(v, 'id,snippet,status');
-                                
-                                // Cambiar color visual
-                                sheet.getRange(row, checkYtColIndex).setBackground(esVerdadero ? '#D9EAD3' : '#FFF2CC'); // Verde o Amarillo
-                                logAccion('SISTEMA', `Video ${videoId} actualizado a ${v.status.privacyStatus} con éxito.`);
-                            } else {
-                                logError('CHECK_YT', `No se encontró el video ${videoId} en YouTube`);
-                            }
-                        } else {
-                            logError('CHECK_YT', `No se pudo extraer ID de YT de: ${linkYt}`);
-                        }
-                    } else {
-                        logError('CHECK_YT', `El link no es válido de YouTube: ${linkYt}`);
-                    }
-                } else {
-                    logError('CHECK_YT', `No se encontró la columna de Link YT`);
-                }
+                const r = cambiarPrivacidadVideoInmueble_(sheet, row, e.value === "TRUE" || e.value === true);
+                if (!r.ok) logError('CHECK_YT', r.mensaje);
             } catch (err) {
                 logError('CHECK_YT', err.message);
             }
@@ -689,4 +653,34 @@ function propagarFechaContactoCaptacion_(e, hoja, cols) {
     }
   }
   if (celdas.length) hoja.getRangeList(celdas).setValue(fecha).setNumberFormat(FORMATO_FECHA_CRM);
+}
+
+
+/**
+ * Pasa el video del inmueble a NO LISTADO (habilitar = true) o a PRIVADO (false)
+ * y pinta la casilla CHECK YT (verde habilitado, amarillo por validar). No escribe
+ * la casilla: el onEdit ya la tiene puesta por el agente y el panel la escribe él.
+ * Lo usan el onEdit de CHECK YT y el CRM de Inmuebles (op validarVideo).
+ * Devuelve { ok, mensaje, estado }.
+ */
+function cambiarPrivacidadVideoInmueble_(sheet, row, habilitar) {
+  const linkYtColIndex = getColumnIndex(sheet, 'LINK DEL VIDEO DEL INMUEBLE');
+  if (linkYtColIndex < 1) return { ok: false, mensaje: 'No se encontró la columna LINK DEL VIDEO DEL INMUEBLE.' };
+  const linkYt = String(sheet.getRange(row, linkYtColIndex).getValue() || '');
+  if (linkYt.indexOf('youtu') === -1) return { ok: false, mensaje: 'Este inmueble no tiene un link de YouTube válido.' };
+  const match = linkYt.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/);
+  if (!match) return { ok: false, mensaje: 'No se pudo leer el ID del video en: ' + linkYt };
+  const videoId = match[1];
+
+  // Se lee el video completo para no borrarle nada del snippet al actualizar
+  const vidList = YouTube.Videos.list('snippet,status', { id: videoId });
+  if (!vidList.items || !vidList.items.length) return { ok: false, mensaje: 'No se encontró el video ' + videoId + ' en YouTube.' };
+  const v = vidList.items[0];
+  v.status.privacyStatus = habilitar ? 'unlisted' : 'private';
+  YouTube.Videos.update(v, 'id,snippet,status');
+
+  const checkYtColIndex = getColumnIndex(sheet, 'CHECK YT');
+  if (checkYtColIndex > 0) sheet.getRange(row, checkYtColIndex).setBackground(habilitar ? '#D9EAD3' : '#FFF2CC');
+  logAccion('SISTEMA', 'Video ' + videoId + ' actualizado a ' + v.status.privacyStatus + ' con éxito.');
+  return { ok: true, mensaje: '', estado: v.status.privacyStatus };
 }
