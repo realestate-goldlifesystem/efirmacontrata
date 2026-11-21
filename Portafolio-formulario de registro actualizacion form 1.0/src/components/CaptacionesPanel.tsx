@@ -526,12 +526,12 @@ function TarjetaLead({ lead, estados, onClick, activo, aviso, tonoAviso }: {
         <div className="flex gap-1.5 shrink-0">
           <a href={`https://wa.me/${celularInternacional(lead.celular)}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp a ${lead.nombre}`}
             className="w-11 h-11 rounded-xl bg-emerald-500/15 text-emerald-300 flex items-center justify-center hover:bg-emerald-500/25"><IconoWhatsApp className="w-5 h-5" /></a>
-          <a href={`tel:+${celularInternacional(lead.celular)}`} aria-label={`Llamar a ${lead.nombre}`}
-            className="w-11 h-11 rounded-xl bg-brand-gold/15 text-brand-gold-light flex items-center justify-center hover:bg-brand-gold/25"><Phone className="w-5 h-5" /></a>
           {/^https?:\/\//i.test(lead.link) && (
             <a href={lead.link} target="_blank" rel="noopener noreferrer" aria-label={`Ver la publicación de ${lead.nombre}`} title="Ver publicación"
               className="w-11 h-11 rounded-xl border border-stone-600 text-stone-200 flex items-center justify-center hover:border-brand-gold hover:text-brand-gold-light"><ExternalLink className="w-5 h-5" /></a>
           )}
+          <a href={`tel:+${celularInternacional(lead.celular)}`} aria-label={`Llamar a ${lead.nombre}`}
+            className="w-11 h-11 rounded-xl bg-brand-gold/15 text-brand-gold-light flex items-center justify-center hover:bg-brand-gold/25"><Phone className="w-5 h-5" /></a>
         </div>
       </div>
     </div>
@@ -663,12 +663,12 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         <div className="grid grid-cols-3 gap-1.5 mb-2">
           <a href={`https://wa.me/${celularInternacional(lead.celular)}`} target="_blank" rel="noopener noreferrer"
             className="h-11 rounded-xl bg-emerald-500/15 text-emerald-300 font-semibold text-[13px] flex items-center justify-center gap-1.5 hover:bg-emerald-500/25"><IconoWhatsApp className="w-4 h-4" />WhatsApp</a>
-          <a href={`tel:+${celularInternacional(lead.celular)}`}
-            className="h-11 rounded-xl bg-brand-gold/15 text-brand-gold-light font-semibold text-[13px] flex items-center justify-center gap-1.5 hover:bg-brand-gold/25"><Phone className="w-4 h-4" />Llamar</a>
           {/^https?:\/\//i.test(lead.link)
             ? <a href={lead.link} target="_blank" rel="noopener noreferrer"
                 className="h-11 rounded-xl border border-stone-700 text-stone-200 text-[13px] flex items-center justify-center gap-1.5 hover:border-stone-500"><ExternalLink className="w-4 h-4" />Anuncio</a>
             : <span className="h-11 rounded-xl border border-stone-800 text-stone-600 text-[13px] flex items-center justify-center">Sin anuncio</span>}
+          <a href={`tel:+${celularInternacional(lead.celular)}`}
+            className="h-11 rounded-xl bg-brand-gold/15 text-brand-gold-light font-semibold text-[13px] flex items-center justify-center gap-1.5 hover:bg-brand-gold/25"><Phone className="w-4 h-4" />Llamar</a>
         </div>
 
         <button onClick={() => setEligiendo(v => !v)} disabled={!!guardando} aria-expanded={eligiendo}
