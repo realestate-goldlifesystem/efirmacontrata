@@ -108,7 +108,8 @@ function datosCorreoDeCita(fila, col) {
     servicio: String(valorCita(fila, col, 'TIPO SERVICIO') || ''),
     direccion: String(valorCita(fila, col, 'DIRECCION') || ''),
     linkMeet: String(valorCita(fila, col, 'LINK MEET') || ''),
-    inicio: fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA'))
+    inicio: fechaHoraDeCita(valorCita(fila, col, 'FECHA CITA'), valorCita(fila, col, 'HORA CITA')),
+    tipo: tipo, duracionMin: TIPOS_AGENDA[tipo] ? TIPOS_AGENDA[tipo].duracionMin : undefined
   };
 }
 
@@ -158,6 +159,26 @@ function correoPasoCita(paso, c) {
   const d = c.inicio;
   const fechaLarga = dias[d.getDay()].charAt(0).toUpperCase() + dias[d.getDay()].slice(1) + ' ' + d.getDate() + ' de ' + meses[d.getMonth()];
   const hora = formatAmPm(d);
+  // Captación presencial (21-nov-2026): se dice de qué hora a qué hora y qué tener listo
+  const esCaptacion = c.tipo === 'PROPIETARIO' && !c.linkMeet && !c.esEntrega;
+  const horaFin = formatAmPm(new Date(d.getTime() + (c.duracionMin || 60) * 60000));
+  const rangoHora = esCaptacion ? hora + ' a ' + horaFin : hora;
+  const item = (t) => `<tr><td style="padding:3px 8px 3px 0;vertical-align:top;color:#b8860b;">•</td><td style="padding:3px 0;color:#44403c;font-size:14px;">${t}</td></tr>`;
+  const preparacion = !esCaptacion ? '' :
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0;border-radius:12px;background:#fbf7ec;border:1px solid #e7d9b0;">' +
+    '<tr><td style="padding:16px 18px;font-family:Arial,sans-serif;">' +
+    '<div style="color:#8a6d1d;font-size:12px;letter-spacing:2px;font-weight:bold;">PARA QUE TODO SALGA PERFECTO</div>' +
+    `<p style="margin:8px 0 10px 0;color:#292524;font-size:15px;line-height:1.5;">Por favor <strong>aparta de ${hora} a ${horaFin}</strong>: ` +
+    'registraremos la información del inmueble y tomaremos <strong>fotografías y videos</strong>; esto toma entre <strong>35 y 40 minutos</strong>.</p>' +
+    '<div style="color:#57534e;font-size:13px;font-weight:bold;margin-bottom:4px;">Ten a la mano, por favor:</div>' +
+    '<table role="presentation" cellspacing="0" cellpadding="0">' +
+    item('Tu <strong>documento de identidad</strong>.') +
+    item('El <strong>valor del arriendo o de venta</strong> que esperas.') +
+    item('El <strong>valor de la administración sin descuento</strong>, si tiene.') +
+    item('La información del <strong>garaje</strong> (número y si es cubierto, propio o comunal), si tiene.') +
+    item('La información del <strong>depósito</strong> (número y ubicación), si tiene.') +
+    item('El inmueble <strong>ordenado y con buena luz</strong> para las fotos y el video.') +
+    '</table></td></tr></table>';
 
   // Tarjeta con la fecha y la hora, igual en todos los pasos
   const tarjeta =
@@ -165,7 +186,7 @@ function correoPasoCita(paso, c) {
     '<tr><td style="padding:16px 18px;">' +
     `<div style="color:#d4af37;font-size:12px;letter-spacing:2px;font-weight:bold;">${c.esEntrega ? 'TU ENTREGA' : 'TU CITA'}</div>` +
     `<div style="color:#ffffff;font-size:20px;font-weight:bold;margin-top:4px;">${fechaLarga}</div>` +
-    `<div style="color:#e7e5e4;font-size:16px;margin-top:2px;">${hora} · ${c.linkMeet ? 'Presentación virtual' + (c.servicio ? ' · ' + c.servicio : '') : (c.servicio || 'Visita')}</div>` +
+    `<div style="color:#e7e5e4;font-size:16px;margin-top:2px;">${rangoHora} · ${c.linkMeet ? 'Presentación virtual' + (c.servicio ? ' · ' + c.servicio : '') : (c.servicio || 'Visita')}</div>` +
     (c.direccion ? `<div style="color:#a8a29e;font-size:14px;margin-top:6px;"><img src="${ICONOS_CORREO_CITA}ruta.png" width="14" height="14" alt="" style="vertical-align:-2px;margin-right:6px;border:0;">${c.direccion}</div>` : '') +
     (paso !== 'CANCELADA' ? botonesTarjetaCita_(c, fechaLarga, hora) : '') +
     '</td></tr></table>';
@@ -189,12 +210,12 @@ function correoPasoCita(paso, c) {
   let mensaje, secundario;
   switch (paso) {
     case 'AGENDADA':
-      mensaje = 'Tu cita quedó agendada.' + tarjeta + 'Te avisaremos antes de la cita. <strong>' + cuandoConfirma + '</strong>';
+      mensaje = 'Tu cita quedó agendada.' + tarjeta + preparacion + 'Te avisaremos antes de la cita. <strong>' + cuandoConfirma + '</strong>';
       secundario = lineaCalendario + lineaCambio;
       break;
     case 'REAGENDADA':
       // c.confirmada: la movió el agente tras hablar con él (queda confirmada)
-      mensaje = 'Tu cita quedó en la nueva fecha.' + tarjeta +
+      mensaje = 'Tu cita quedó en la nueva fecha.' + tarjeta + preparacion +
         (c.confirmada ? '¡Te esperamos!' : 'Te avisaremos antes de la cita. <strong>' + cuandoConfirma + '</strong>');
       secundario = lineaCalendario + lineaCambio;
       break;
@@ -207,7 +228,7 @@ function correoPasoCita(paso, c) {
       secundario = lineaCambio;
       break;
     case 'H24':
-      mensaje = 'Te recordamos que tienes una cita <strong>mañana</strong>.' + tarjeta;
+      mensaje = 'Te recordamos que tienes una cita <strong>mañana</strong>.' + tarjeta + preparacion;
       secundario = lineaCambio;
       break;
     case 'H3':
@@ -240,7 +261,7 @@ function correoPasoCita(paso, c) {
       break;
     }
     case 'CONFIRMADA':
-      mensaje = '¡Listo! Tu cita quedó <strong>confirmada</strong>.' + tarjeta + 'Te esperamos.';
+      mensaje = '¡Listo! Tu cita quedó <strong>confirmada</strong>.' + tarjeta + preparacion + 'Te esperamos.';
       secundario = lineaCambio;
       break;
     case 'CANCELADA':

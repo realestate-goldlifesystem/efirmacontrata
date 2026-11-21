@@ -240,7 +240,8 @@ function agendarCita(datos) {
     try {
       enviarPasoCita('AGENDADA', datos.correo, {
         idCita: idCita, token: tokenPropietario, nombre: datos.nombreCliente,
-        servicio: datos.tipoServicio, direccion: datos.direccion, inicio: fechaInicio, linkMeet: linkMeet
+        servicio: datos.tipoServicio, direccion: datos.direccion, inicio: fechaInicio, linkMeet: linkMeet,
+        tipo: 'PROPIETARIO', duracionMin: TIPOS_AGENDA.PROPIETARIO.duracionMin
       });
     } catch (errMail) {
       Logger.log("Error enviando correo de cita agendada: " + errMail.message);

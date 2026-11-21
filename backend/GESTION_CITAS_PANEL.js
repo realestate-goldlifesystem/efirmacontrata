@@ -255,7 +255,7 @@ function moverCita(cita, timestamp, op) {
     // Solo informa, sin botones: la confirmación se pide 1 hora antes
     enviarPasoCita('REAGENDADA', correo, {
       idCita: idCita, idInmueble: tipo === 'INTERESADO' ? String(valorCita(fila, col, 'ID INMUEBLE') || '') : '', token: String(valorCita(fila, col, 'TOKEN PROPIETARIO') || ''), nombre: nombre,
-      servicio: servicio, direccion: direccion, linkMeet: linkNuevo || String(valorCita(fila, col, 'LINK MEET') || ''), inicio: inicio, confirmada: false, duracionMin: TIPOS_AGENDA[tipo].duracionMin
+      servicio: servicio, direccion: direccion, linkMeet: linkNuevo || String(valorCita(fila, col, 'LINK MEET') || ''), inicio: inicio, confirmada: false, duracionMin: TIPOS_AGENDA[tipo].duracionMin, tipo: tipo
     });
   } catch (e) { Logger.log('No se pudo avisar el cambio de fecha: ' + e.message); }
   return { ok: true, textoNueva: textoFecha(inicio), textoAntes: antes };
