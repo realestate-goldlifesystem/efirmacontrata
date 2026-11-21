@@ -364,8 +364,17 @@ function handleFinalizeMultimedia(datos) {
         }
     }
 
+    // Con el contenido listo, el inmueble que quedó en ACTIVO al firmar se
+    // publica solo a los 30 segundos (PUBLICAR_TRAS_MULTIMEDIA.js)
+    let publicacion = false;
+    if (typeof programarPublicacionTrasMultimedia_ === 'function') {
+        SpreadsheetApp.flush();
+        publicacion = programarPublicacionTrasMultimedia_(sheet, rowIdx + 1, id);
+    }
+
     return {
         success: true,
+        publicacion: publicacion,
         urls: {
             arriendo: urlArriendo ? urlArriendo.url : null,
             venta: urlVenta ? urlVenta.url : null,
@@ -971,8 +980,16 @@ function handleReutilizarMultimedia(datos) {
         }
     }
 
+    // Igual que al terminar una carga nueva: si quedó en ACTIVO, se publica a los 30 s
+    let publicacion = false;
+    if (typeof programarPublicacionTrasMultimedia_ === 'function') {
+        SpreadsheetApp.flush();
+        publicacion = programarPublicacionTrasMultimedia_(sheet, rowIdx + 1, id);
+    }
+
     return {
         success: true,
+        publicacion: publicacion,
         message: "Material multimedia restaurado exitosamente."
     };
 }

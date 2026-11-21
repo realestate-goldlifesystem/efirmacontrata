@@ -92,6 +92,17 @@ function crmInmueblesListar_() {
   enc.forEach((h, i) => { const k = crmInmClave_(h); if (k && !(k in idx)) idx[k] = i; });
   const rango = hoja.getRange(2, 1, nFilas, nCols);
   const vals = rango.getValues(), txt = rango.getDisplayValues();
+  // Columnas de link que el sistema escribe como =HYPERLINK("url"; "📄✅ FIRMADO"):
+  // el texto visible no sirve, hay que sacar la url de la fórmula. Se leen solo esas.
+  const formulas = {};
+  const urlDe = (nombre, f) => {
+    const k = idx[crmInmClave_(nombre)];
+    if (k === undefined) return '';
+    if (!(k in formulas)) formulas[k] = hoja.getRange(2, k + 1, nFilas, 1).getFormulas();
+    const m = String(formulas[k][f][0] || '').match(/HYPERLINK\(\s*"([^"]+)"/i);
+    const v = m ? m[1] : crmInmLimpio_(txt[f][k]);
+    return /^https?:\/\//i.test(v) ? v : '';
+  };
 
   // Zonas: columnas "[Zona interna #1 Citófono]", "[Zona comunal #3 Zonas Verdes]"…
   const zonas = [];
@@ -157,17 +168,21 @@ function crmInmueblesListar_() {
       video: si('CHECK YT'),
       multimedia: si('CHECK MULTIMEDIA'),
       firmado: /FIRMADO/i.test(t('DOCUMENTO FIRMADO')),
+      // Buzón de contenido: firmado y sin el video (mismo candado de la página de
+      // carga: con video ya no deja entrar). "multimedia" sin video = solo falta el video.
+      contenidoPendiente: /FIRMADO/i.test(t('DOCUMENTO FIRMADO')) && !t('LINK DEL VIDEO DEL INMUEBLE'),
       links: {
-        anuncio: t('LINK DEL INMUEBLE PUBLICADO'),
-        video: t('LINK DEL VIDEO DEL INMUEBLE'),
-        carpeta: t('LINK DE CARPETA REG'),
-        contenido: t('LINK CARPETA DE CONTENIDO'),
-        propietario: t('LINK CARPETA DE PROPIETARIO'),
-        inquilino: t('LINK CARPETA DE INQUILINO'),
-        acuerdoCorretaje: t('Link to merged Doc - CORRETAJE'),
-        acuerdoAdministracion: t('Link to merged Doc - ADMINISTRACIÓN'),
-        acuerdoVenta: t('Link to merged Doc - VENTA'),
-        autorizacionIngreso: t('Link to merged Doc - AUTORIZACIÓN DE INGRESO AL INMUEBLE')
+        anuncio: urlDe('LINK DEL INMUEBLE PUBLICADO', f),
+        video: urlDe('LINK DEL VIDEO DEL INMUEBLE', f),
+        carpeta: urlDe('LINK DE CARPETA REG', f),
+        contenido: urlDe('LINK CARPETA DE CONTENIDO', f),
+        propietario: urlDe('LINK CARPETA DE PROPIETARIO', f),
+        inquilino: urlDe('LINK CARPETA DE INQUILINO', f),
+        documentoFirmado: urlDe('DOCUMENTO FIRMADO', f),
+        acuerdoCorretaje: urlDe('Link to merged Doc - CORRETAJE', f),
+        acuerdoAdministracion: urlDe('Link to merged Doc - ADMINISTRACIÓN', f),
+        acuerdoVenta: urlDe('Link to merged Doc - VENTA', f),
+        autorizacionIngreso: urlDe('Link to merged Doc - AUTORIZACIÓN DE INGRESO AL INMUEBLE', f)
       }
     });
   }

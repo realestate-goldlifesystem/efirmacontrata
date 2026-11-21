@@ -10,6 +10,18 @@ let propertyData = null; // Para guardar el Folder ID y Descripción
 let selectedVideo = null;
 let selectedPhotos = [];
 
+// Dentro del panel del agente (ventana flotante del CRM de Inmuebles, 21-nov-2026):
+// en vez de cerrar la pestaña, le avisa al panel. El panel está en el mismo sitio
+// (github.io), así que el mensaje solo se manda a ese mismo origen.
+const EMBEBIDA = window.parent !== window;
+function avisarPanel(tipo) {
+    if (!EMBEBIDA) return;
+    try { window.parent.postMessage({ fuente: 'cargaMultimedia', tipo: tipo, id: currentCdr }, window.location.origin); } catch (e) {}
+}
+window.cerrarCarga = function () {
+    if (EMBEBIDA) avisarPanel('cerrar'); else window.close();
+};
+
 // Elementos
 const loginSection = document.getElementById('login-section');
 const workspace = document.getElementById('upload-workspace');
@@ -383,6 +395,7 @@ async function handleReutilizar() {
         
         if (resData.success) {
             successScreen.style.display = 'block';
+            avisarPanel('listo');
             successScreen.querySelector('p').innerHTML = "Material anterior reutilizado con éxito.<br>El portal ha quedado cerrado nuevamente.";
         } else {
             alert('Error: ' + resData.message);
@@ -817,6 +830,7 @@ btnUpload.addEventListener('click', async () => {
     
     progressContainer.style.display = 'block';
     isUploading = true;
+    avisarPanel('subiendo');
     await promesaPantalla;
     
     try {
@@ -868,23 +882,26 @@ btnUpload.addEventListener('click', async () => {
         workspace.style.display = 'none';
         successScreen.style.display = 'block';
         
+        avisarPanel('listo');
         let seconds = 5;
+        const queCierra = EMBEBIDA ? 'Cerrando' : 'Cerrando pestaña';
         const closeBtn = document.getElementById('btn-close-success');
         if (closeBtn) {
-            closeBtn.textContent = `Cerrando pestaña en ${seconds}s...`;
+            closeBtn.textContent = `${queCierra} en ${seconds}s...`;
             const timer = setInterval(() => {
                 seconds--;
                 if (seconds <= 0) {
                     clearInterval(timer);
-                    window.close();
+                    window.cerrarCarga();
                 } else {
-                    closeBtn.textContent = `Cerrando pestaña en ${seconds}s...`;
+                    closeBtn.textContent = `${queCierra} en ${seconds}s...`;
                 }
             }, 1000);
         }
         
     } catch (e) {
         isUploading = false;
+        avisarPanel('libre');
         await soltarPantalla();
         alert('❌ Error durante la subida: ' + e.message);
         btnUpload.style.display = 'block';

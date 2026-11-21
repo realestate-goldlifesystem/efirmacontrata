@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Building2, RefreshCw, Search, X, Loader2, AlertTriangle, Phone, MessageCircle, ExternalLink,
-  ChevronDown, Plus, Mail, FolderOpen, FileText, Video, Check,
+  ChevronDown, Plus, Mail, FolderOpen, FileText, Video, Check, Upload, Inbox, Images,
 } from 'lucide-react';
 import { API_URL } from './CitasAgendaPanel';
 import { celularInternacional } from './CaptacionesPanel';
@@ -28,8 +28,19 @@ export interface Inmueble {
   inquilino: string; celularInquilino: string; correoInquilino: string;
   inicioContrato: string; finContrato: string; entrega: string; autorizacion: string;
   video: boolean; multimedia: boolean; firmado: boolean;
+  /** Firmado y sin video: el buzón para cargar fotos y video (mismo candado de la página de carga). */
+  contenidoPendiente?: boolean;
   links: Record<string, string>;
 }
+
+// Página de carga de multimedia (la misma del correo "LISTO PARA MULTIMEDIA"). Vive en
+// el mismo sitio que el portafolio, así que se abre flotante dentro del panel y avisa
+// por postMessage cuando termina (frontend/js/multimedia.js).
+const ORIGEN_CARGA = 'https://realestate-goldlifesystem.github.io';
+const urlCarga = (id: string) => `${ORIGEN_CARGA}/efirmacontrata/frontend/carga_multimedia.html?id=${encodeURIComponent(id)}`;
+/** El buzón sale en los inmuebles vivos (no en INACTIVO ni VENDIDO). */
+const buzonDe = (i: Inmueble) => !!i.contenidoPendiente && i.etapa !== -1;
+const textoBuzon = (i: Inmueble) => (i.multimedia ? 'Falta el video' : 'Falta cargar el contenido');
 
 type Grupo = 'activos' | 'inactivos' | 'todos';
 type Pestana = 'inmueble' | 'personas' | 'contrato' | 'archivos';
@@ -80,6 +91,8 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
   const [limite, setLimite] = useState(40);
   const [selCdr, setSelCdr] = useState<string | null>(null);
   const [emailPara, setEmailPara] = useState<string | null>(null);
+  const [cargaPara, setCargaPara] = useState<string | null>(null);
+  const [soloBuzon, setSoloBuzon] = useState(false);
 
   const aplicar = (r: { inmuebles?: Inmueble[]; etapas?: string[]; estados?: string[] }) => {
     if (r.inmuebles) setInmuebles(r.inmuebles);
@@ -97,7 +110,7 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
     finally { setCargando(false); }
   };
   useEffect(() => { cargar(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
-  useEffect(() => { setLimite(40); }, [grupo, filtroEtapa, filtroNegocio, busqueda]);
+  useEffect(() => { setLimite(40); }, [grupo, filtroEtapa, filtroNegocio, busqueda, soloBuzon]);
 
   const todos = inmuebles || [];
   const delGrupo = useMemo(() => todos.filter(i => grupo === 'todos' ? true : grupo === 'activos' ? activo(i) : !activo(i)), [todos, grupo]);
@@ -109,6 +122,7 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
   const negocios = useMemo(() => Array.from(new Set(todos.map(i => i.negocio).filter(Boolean))), [todos]);
 
   const coincide = (i: Inmueble, sin: 'negocio' | null = null) => {
+    if (soloBuzon && !buzonDe(i)) return false;
     if (filtroEtapa !== null && (i.etapa ?? 0) !== filtroEtapa) return false;
     if (sin !== 'negocio' && filtroNegocio && i.negocio !== filtroNegocio) return false;
     const q = busqueda.trim().toLowerCase();
@@ -117,11 +131,12 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
   };
   const filtrados = useMemo(() => delGrupo.filter(i => coincide(i)).sort((a, b) => (b.registroMs ?? 0) - (a.registroMs ?? 0)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [delGrupo, filtroEtapa, filtroNegocio, busqueda]);
+    [delGrupo, filtroEtapa, filtroNegocio, busqueda, soloBuzon]);
   const cuentaNegocio = (n: string | null) => delGrupo.filter(i => coincide(i, 'negocio') && (n === null || i.negocio === n)).length;
 
   const seleccionado = todos.find(i => i.cdr === selCdr) || null;
   const nActivos = todos.filter(activo).length;
+  const nBuzon = todos.filter(buzonDe).length;
 
   // Celular: la franja tapa la barra transparente de arriba solo cuando ya quedó fija
   const franjaRef = useRef<HTMLDivElement>(null);
@@ -149,6 +164,7 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
   const ficha = (movil: boolean) => seleccionado && (
     <FichaInmueble i={seleccionado} etapas={etapas} estados={estados} credential={agentCredential} movil={movil}
       onCerrar={() => setSelCdr(null)}
+      onCargar={() => setCargaPara(seleccionado.cdr)}
       onLista={(r) => { aplicar(r); if (r.abrir === 'emailInquilino') setEmailPara(seleccionado.cdr); }} />
   );
 
@@ -226,6 +242,12 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
               {busqueda && <button onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda" className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-stone-400"><X className="w-4 h-4" /></button>}
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 min-w-0 [scrollbar-width:none]">
+              {nBuzon > 0 && (
+                <button onClick={() => setSoloBuzon(v => !v)} aria-pressed={soloBuzon}
+                  className={`shrink-0 min-h-[44px] px-4 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${soloBuzon ? 'bg-brand-gold text-stone-950 border-brand-gold font-semibold' : 'bg-amber-50 text-[#8a6d1c] border-brand-gold/50 hover:border-brand-gold'}`}>
+                  <Inbox className="w-4 h-4" /> Por cargar contenido <b className="font-semibold">{nBuzon}</b>
+                </button>
+              )}
               {[null, ...negocios].map(n => (
                 <button key={n || 'todos'} onClick={() => setFiltroNegocio(n)} aria-pressed={filtroNegocio === n}
                   className={`shrink-0 min-h-[44px] px-4 rounded-full border text-sm flex items-center gap-1.5 whitespace-nowrap transition-all ${filtroNegocio === n ? 'bg-stone-900 text-white border-stone-900' : 'bg-white text-stone-700 border-stone-300 hover:border-stone-400'}`}>
@@ -239,7 +261,7 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
 
             {/* Celular y tablet: tarjetas */}
             <div className="grid grid-cols-1 gap-2.5 lg:hidden">
-              {filtrados.slice(0, limite).map(i => <TarjetaInmueble key={i.cdr} i={i} activo={selCdr === i.cdr} onClick={() => setSelCdr(i.cdr)} />)}
+              {filtrados.slice(0, limite).map(i => <TarjetaInmueble key={i.cdr} i={i} activo={selCdr === i.cdr} onClick={() => setSelCdr(i.cdr)} onCargar={() => setCargaPara(i.cdr)} />)}
             </div>
 
             {/* PC: tabla */}
@@ -264,6 +286,12 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
                           <td className="px-4 py-3 min-w-[230px]">
                             <div className="font-semibold text-stone-900 whitespace-nowrap">{tituloDe(i)}</div>
                             <div className="text-xs text-stone-500 whitespace-nowrap">{i.id} · {datosDe(i)}</div>
+                            {buzonDe(i) && (
+                              <button onClick={e => { e.stopPropagation(); setCargaPara(i.cdr); }}
+                                className="mt-1.5 inline-flex items-center gap-1.5 min-h-[32px] px-3 rounded-full bg-amber-100 text-[#7a5d12] text-xs font-semibold hover:bg-brand-gold hover:text-stone-950 transition-colors">
+                                <Inbox className="w-3.5 h-3.5" /> {textoBuzon(i)} · Cargar
+                              </button>
+                            )}
                           </td>
                           <td className="px-2 py-3 text-stone-700">{i.negocio}</td>
                           <td className="px-2 py-3 font-semibold text-[#8a6d1c] whitespace-nowrap">{precioDe(i) || '—'}</td>
@@ -301,6 +329,11 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
         document.body
       )}
 
+      {cargaPara && (() => {
+        const i = todos.find(x => x.cdr === cargaPara);
+        return i ? <CargaContenidoModal i={i} onCerrar={() => setCargaPara(null)} onTermino={cargar} /> : null;
+      })()}
+
       {emailPara && (() => {
         const i = todos.find(x => x.cdr === emailPara);
         return i ? <EmailInquilinoModal i={i} credential={agentCredential} onCerrar={() => setEmailPara(null)} onLista={aplicar} /> : null;
@@ -311,11 +344,11 @@ export default function InmueblesPanel({ agentCredential, onRegistrar }: { agent
 
 // ---------- Piezas ----------
 
-function TarjetaInmueble({ i, activo: sel, onClick }: { key?: string; i: Inmueble; activo: boolean; onClick: () => void }) {
+function TarjetaInmueble({ i, activo: sel, onClick, onCargar }: { key?: string; i: Inmueble; activo: boolean; onClick: () => void; onCargar: () => void }) {
   const c = colorDe(i.etapa).oscuro;
   return (
-    <button onClick={onClick}
-      className={`w-full min-w-0 text-left rounded-2xl bg-stone-900 border ${sel ? 'border-brand-gold' : 'border-stone-800 hover:border-stone-600'} px-4 pt-3.5 pb-3 transition-colors`}>
+    <div className={`w-full min-w-0 rounded-2xl bg-stone-900 border ${sel ? 'border-brand-gold' : 'border-stone-800 hover:border-stone-600'} transition-colors overflow-hidden`}>
+    <button onClick={onClick} className="w-full min-w-0 text-left px-4 pt-3.5 pb-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] text-stone-400 truncate">{i.id} · {i.negocio}</div>
@@ -333,6 +366,18 @@ function TarjetaInmueble({ i, activo: sel, onClick }: { key?: string; i: Inmuebl
       </div>
       {i.detalleEstado && <div className="mt-1.5 text-xs text-stone-300 truncate">{i.detalleEstado}</div>}
     </button>
+    {buzonDe(i) && (
+      <button onClick={onCargar}
+        className="w-full min-h-[48px] px-4 flex items-center gap-2.5 border-t border-brand-gold/30 bg-brand-gold/10 text-left hover:bg-brand-gold/20 transition-colors">
+        <Inbox className="w-5 h-5 text-brand-gold-light shrink-0" />
+        <span className="flex-1 min-w-0">
+          <span className="block text-[13px] font-semibold text-brand-gold-light truncate">{textoBuzon(i)}</span>
+          <span className="block text-[11px] text-stone-400 truncate">Fotos y video para publicarlo</span>
+        </span>
+        <span className="shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-full bg-brand-gold text-stone-950">Cargar</span>
+      </button>
+    )}
+    </div>
   );
 }
 
@@ -340,9 +385,9 @@ function Sello({ children }: { children: React.ReactNode }) {
   return <span className="text-[11px] text-stone-400 px-2 py-0.5 rounded-full border border-stone-700 inline-flex items-center gap-1"><Check className="w-3 h-3" />{children}</span>;
 }
 
-function FichaInmueble({ i, etapas, estados, credential, movil, onCerrar, onLista }: {
+function FichaInmueble({ i, etapas, estados, credential, movil, onCerrar, onCargar, onLista }: {
   i: Inmueble; etapas: string[]; estados: string[]; credential: string | null; movil: boolean;
-  onCerrar: () => void; onLista: (r: { inmuebles?: Inmueble[]; etapas?: string[]; estados?: string[]; abrir?: string }) => void;
+  onCerrar: () => void; onCargar: () => void; onLista: (r: { inmuebles?: Inmueble[]; etapas?: string[]; estados?: string[]; abrir?: string }) => void;
 }) {
   const [pestana, setPestana] = useState<Pestana>('inmueble');
   const [eligiendo, setEligiendo] = useState(false);
@@ -438,6 +483,28 @@ function FichaInmueble({ i, etapas, estados, credential, movil, onCerrar, onList
             : <span className="h-11 rounded-xl border border-stone-800 text-stone-600 text-[13px] flex items-center justify-center">Sin anuncio</span>}
         </div>
 
+        {/* Buzón del contenido; cuando ya está cargado, sus links (como en el Portafolio) */}
+        {buzonDe(i) ? (
+          <button onClick={onCargar}
+            className="mt-2.5 w-full min-h-[52px] rounded-xl border border-brand-gold/50 bg-brand-gold/10 px-3.5 flex items-center gap-3 text-left hover:bg-brand-gold/20 transition-colors">
+            <Inbox className="w-5 h-5 text-brand-gold-light shrink-0" />
+            <span className="flex-1 min-w-0">
+              <span className="block text-[13.5px] font-semibold text-brand-gold-light">{textoBuzon(i)}</span>
+              <span className="block text-[11.5px] text-stone-400">Al terminar se publica solo en 30 segundos.</span>
+            </span>
+            <span className="shrink-0 flex items-center gap-1.5 text-[13px] font-bold px-3.5 py-2 rounded-full bg-brand-gold text-stone-950"><Upload className="w-4 h-4" />Cargar</span>
+          </button>
+        ) : (i.links.video || i.links.contenido || i.links.documentoFirmado) ? (
+          <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+            {([['Video', i.links.video, Video, 'bg-red-900/20 text-red-300 hover:bg-red-600 hover:text-white'],
+               ['Fotos', i.links.contenido, Images, 'bg-stone-800 text-stone-200 hover:bg-stone-700'],
+               ['Firmado', i.links.documentoFirmado, FileText, 'bg-stone-950 border border-stone-800 text-stone-300 hover:text-white']] as const)
+              .map(([t, u, I, cls]) => u
+                ? <a key={t} href={u} target="_blank" rel="noopener noreferrer" className={`h-11 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors ${cls}`}><I className="w-4 h-4" />{t}</a>
+                : <span key={t} className="h-11 rounded-xl border border-stone-800 text-stone-600 text-[13px] flex items-center justify-center">Sin {t.toLowerCase()}</span>)}
+          </div>
+        ) : null}
+
         <div className="mt-2.5 grid grid-cols-4 p-[3px] rounded-xl bg-stone-950" role="tablist">
           {(['inmueble', 'personas', 'contrato', 'archivos'] as Pestana[]).map(p => (
             <button key={p} role="tab" aria-selected={pestana === p} onClick={() => setPestana(p)}
@@ -515,7 +582,7 @@ function FichaInmueble({ i, etapas, estados, credential, movil, onCerrar, onList
             {[
               ['Carpeta del registro', i.links.carpeta, FolderOpen], ['Contenido (fotos y video)', i.links.contenido, FolderOpen],
               ['Carpeta del propietario', i.links.propietario, FolderOpen], ['Carpeta del inquilino', i.links.inquilino, FolderOpen],
-              ['Video', i.links.video, Video], ['Acuerdo de corretaje', i.links.acuerdoCorretaje, FileText],
+              ['Video', i.links.video, Video], ['Documento firmado', i.links.documentoFirmado, FileText], ['Acuerdo de corretaje', i.links.acuerdoCorretaje, FileText],
               ['Acuerdo de administración', i.links.acuerdoAdministracion, FileText], ['Acuerdo de venta', i.links.acuerdoVenta, FileText],
               ['Autorización de ingreso', i.links.autorizacionIngreso, FileText],
             ].filter(([, u]) => /^https?:\/\//i.test(String(u || ''))).map(([t, u, Icono]) => {
@@ -650,5 +717,65 @@ function EmailInquilinoModal({ i, credential, onCerrar, onLista }: {
         </div>
       )}
     </Marco>
+  );
+}
+
+/**
+ * La página de carga de multimedia, flotante sobre el panel: lo mismo que abrir el
+ * link del correo. Ella avisa por postMessage: subiendo / libre / listo / cerrar.
+ * Al terminar, el Sheet marca el contenido y, si estaba en ACTIVO, a los 30 s pasa
+ * a ACTUALIZAR y se publica (PUBLICAR_TRAS_MULTIMEDIA.js): la lista se recarga dos
+ * veces para que el buzón cambie por los links y luego se vea el nuevo estado.
+ */
+function CargaContenidoModal({ i, onCerrar, onTermino }: { i: Inmueble; onCerrar: () => void; onTermino: () => void }) {
+  const [subiendo, setSubiendo] = useState(false);
+  const [listo, setListo] = useState(false);
+  const terminoRef = useRef(onTermino);
+  terminoRef.current = onTermino;
+  const listoRef = useRef(false);
+
+  const cerrar = (forzar = false) => {
+    if (subiendo && !forzar && !window.confirm('La subida sigue en curso. Si cierras ahora se cancela. ¿Cerrar de todas formas?')) return;
+    onCerrar();
+  };
+  const cerrarRef = useRef(cerrar);
+  cerrarRef.current = cerrar;
+
+  useEffect(() => {
+    const alMensaje = (e: MessageEvent) => {
+      if (e.origin !== ORIGEN_CARGA || !e.data || e.data.fuente !== 'cargaMultimedia') return;
+      if (e.data.tipo === 'subiendo') setSubiendo(true);
+      else if (e.data.tipo === 'libre') setSubiendo(false);
+      else if (e.data.tipo === 'listo') {
+        setSubiendo(false); setListo(true);
+        if (!listoRef.current) {
+          listoRef.current = true;
+          terminoRef.current();
+          window.setTimeout(() => terminoRef.current(), 40000);
+        }
+      } else if (e.data.tipo === 'cerrar') cerrarRef.current(true);
+    };
+    window.addEventListener('message', alMensaje);
+    return () => window.removeEventListener('message', alMensaje);
+  }, []);
+
+  return createPortal(
+    <div className="fixed inset-0 ajusta-teclado z-[200] bg-stone-950/75 backdrop-blur-sm flex items-stretch justify-center sm:p-4 animate-fade-in">
+      <div className="w-full sm:max-w-4xl flex flex-col bg-stone-900 sm:rounded-3xl border border-stone-800 overflow-hidden shadow-2xl">
+        <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-stone-800">
+          <Inbox className="w-5 h-5 text-brand-gold-light shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-white font-semibold truncate">Cargar contenido · {i.id}</div>
+            <div className="text-[12px] text-stone-400 truncate">
+              {listo ? 'Listo. Se publica solo en unos 30 segundos.' : subiendo ? 'Subiendo… no cierres esta ventana.' : tituloDe(i)}
+            </div>
+          </div>
+          <button onClick={() => cerrar()} aria-label="Cerrar la carga de contenido"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
+        </div>
+        <iframe src={urlCarga(i.id)} title={`Cargar contenido de ${i.id}`} className="flex-1 w-full bg-white" allow="fullscreen" />
+      </div>
+    </div>,
+    document.body
   );
 }

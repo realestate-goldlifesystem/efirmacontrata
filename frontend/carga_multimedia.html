@@ -494,7 +494,7 @@
             <p id="block-message" style="color: var(--text-muted); margin-bottom: 30px; font-size: 16px;">
                 Error en la validación.
             </p>
-            <button onclick="window.close()" class="btn-secondary" style="max-width: 200px; margin: 0 auto;">Cerrar Ventana</button>
+            <button onclick="cerrarCarga()" class="btn-secondary" style="max-width: 200px; margin: 0 auto;">Cerrar Ventana</button>
         </div>
 
         <!-- Pantalla de Éxito -->
@@ -505,7 +505,7 @@
                 Video en YouTube (Privado). Fotos en Drive. Plantilla PDF generada.<br><br>
                 <strong>Recibirás un correo de confirmación en un par de minutos.</strong>
             </p>
-            <button id="btn-close-success" onclick="window.close()" class="btn-secondary">Cerrar Pestaña</button>
+            <button id="btn-close-success" onclick="cerrarCarga()" class="btn-secondary">Cerrar</button>
         </div>
 
     </div>
@@ -518,6 +518,6 @@
          ⚠️ Al editar esta nota, que el comentario siga cerrándose con la flecha
          de la línea siguiente: si se pierde, el script de abajo queda DENTRO del
          comentario, no se carga, y el botón de Google deja de funcionar. -->
-    <script src="./js/multimedia.js?v=3.3"></script>
+    <script src="./js/multimedia.js?v=3.4"></script>
 </body>
 </html>
