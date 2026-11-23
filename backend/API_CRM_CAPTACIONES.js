@@ -303,7 +303,7 @@ function crmProgramar_(datos) {
   const r = programarLlamada({
     hoja: ub.hoja.getName(), fila: ub.fila, idLead: ub.lead.idLead, nombre: d.nombre, celular: d.celular,
     servicio: d.servicio, direccion: d.direccion, nota: datos.nota, timestamp: Number(datos.timestamp),
-    tipo: tipoSeguimiento_(datos.tipo)
+    tipo: tipoSeguimiento_(datos.tipo), ofertaA: datos.ofertaA, ofertaV: datos.ofertaV
   });
   if (r && r.success) r.lead = crmReleer_(datos.idLead);
   else if (r && r.error) r.message = r.error;

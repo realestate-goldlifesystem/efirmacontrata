@@ -68,6 +68,19 @@
     .rapido.activo small { color: #e3cc6c; }
     .rapido:disabled { opacity: .4; cursor: not-allowed; border-style: dashed; }
     .rapido:disabled:hover { border-color: var(--linea); }
+    .enlace { background: none; border: 0; color: var(--oro); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0 0 12px; }
+    .ofertas { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+    .pct { position: relative; width: 120px; }
+    .pct input { width: 100%; border: 1px solid var(--linea); border-radius: 10px; padding: 9px 30px 9px 12px; font: inherit; font-size: 14px; outline: none; }
+    .pct input:focus { border-color: var(--oro); box-shadow: 0 0 0 3px rgba(184,150,46,.15); }
+    .pct::after { content: '%'; position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--suave); font-size: 14px; pointer-events: none; }
+    .chips { display: flex; gap: 5px; }
+    .chip { border: 1px solid var(--linea); border-radius: 10px; background: #fff; padding: 8px 9px; font: inherit; font-size: 13px; cursor: pointer; transition: all .2s; }
+    .chip:hover { border-color: var(--oro); }
+    .chip.activo { background: var(--oro); border-color: var(--oro); color: #fff; font-weight: 600; }
+    .ayuda { font-size: 11.5px; color: var(--suave); margin-top: 5px; }
+    .ayuda.mal { color: #b91c1c; }
+    .sublbl { font-size: 11px; color: var(--suave); margin-bottom: 4px; }
   </style>
 </head>
 <body>
@@ -85,6 +98,13 @@
       <div class="quien"><b id="nombre"></b><span id="lead"></span></div>
       <div class="grupo"><label>Detalle del seguimiento</label>
         <textarea id="nota" placeholder="Ej. Está terminando de pintar; llamarlo para agendar la captación"></textarea></div>
+      <button type="button" class="enlace" id="abrirOferta">+ Anotar % de oferta negociado</button>
+      <div class="grupo oculto" id="grupoOferta"><label>% de oferta negociado · solo lo ves tú</label>
+        <div class="ofertas">
+          <div><div class="sublbl">Arriendo</div><div class="pct"><input id="ofA" inputmode="numeric" maxlength="3" placeholder="50 a 100"></div></div>
+          <div><div class="sublbl">Venta</div><div class="chips" id="ofV"></div></div>
+        </div>
+        <div class="ayuda" id="ayudaOferta">Opcional · no va en el calendario ni en correos; queda en el CRM y se precarga en el pre-registro.</div></div>
       <div class="aviso oculto" id="reemplaza"></div>
       <div class="grupo"><label id="lblCuando">¿Cuándo lo llamas?</label>
         <div class="rapidos">
@@ -139,6 +159,21 @@
       $('reemplaza').textContent = ES_MENSAJE ? 'Tiene una llamada programada: este mensaje la reemplaza.' : 'Tiene un mensaje programado: esta llamada lo reemplaza.';
       $('reemplaza').classList.remove('oculto');
     }
+    // ---------- % de oferta negociado (opcional; el mismo del pre-registro) ----------
+    const VENTA = [1, 1.5, 2, 2.5, 3];
+    const ini = { A: D.ofertaA === '' || D.ofertaA == null ? '' : String(D.ofertaA), V: D.ofertaV === '' || D.ofertaV == null ? '' : String(D.ofertaV) };
+    const oferta = { A: ini.A, V: ini.V };
+    const ofertaMal = () => oferta.A !== '' && !(Number.isInteger(Number(oferta.A)) && Number(oferta.A) >= 50 && Number(oferta.A) <= 100);
+    $('ofA').value = oferta.A;
+    $('ofA').addEventListener('input', () => { $('ofA').value = $('ofA').value.replace(/\D/g, ''); oferta.A = $('ofA').value; revisar(); });
+    $('ofV').innerHTML = VENTA.map(v => '<button type="button" class="chip" data-v="' + v + '">' + String(v).replace('.', ',') + ' %</button>').join('');
+    const pintarV = () => document.querySelectorAll('#ofV .chip').forEach(x => x.classList.toggle('activo', oferta.V !== '' && Number(x.dataset.v) === Number(oferta.V)));
+    document.querySelectorAll('#ofV .chip').forEach(b => b.onclick = () => { oferta.V = Number(oferta.V) === Number(b.dataset.v) ? '' : b.dataset.v; pintarV(); });
+    pintarV();
+    const abrirOferta = () => { $('grupoOferta').classList.remove('oculto'); $('abrirOferta').classList.add('oculto'); };
+    $('abrirOferta').onclick = abrirOferta;
+    if (ini.A !== '' || ini.V !== '') abrirOferta();
+
     let dia = null, rapido = null;
     const SLOT = 30 * 60000, DUR = 30 * 60000;
     const H_INI = 7 * 60, H_FIN = 20 * 60;   // 7:00 a. m. a 8:00 p. m.
@@ -259,7 +294,9 @@
     function revisar() {
       const t = momento();
       const c = t && choca(t.getTime());
-      const ok = t && t.getTime() > Date.now() && !c;
+      const ok = t && t.getTime() > Date.now() && !c && !ofertaMal();
+      $('ayudaOferta').textContent = ofertaMal() ? 'En arriendo debe ser un número entero entre 50 y 100.' : 'Opcional · no va en el calendario ni en correos; queda en el CRM y se precarga en el pre-registro.';
+      $('ayudaOferta').classList.toggle('mal', ofertaMal());
       $('guardar').disabled = !ok;
       $('resumen').textContent = !t ? 'Elige un acceso rápido o el día' : c ? 'Ocupado: ' + c.que : !ok ? 'Esa hora ya pasó' :
         DIAS_L[t.getDay()].replace(/^./, c => c.toUpperCase()) + ' ' + t.getDate() + ' de ' + MESES[t.getMonth()] + ' · ' + hhmm(t);
@@ -279,7 +316,9 @@
         } else { $('error').textContent = (r && r.error) || 'No se pudo programar.'; $('guardar').textContent = TXT_BOTON; revisar(); }
       }).withFailureHandler(e => { cargando(false); $('error').textContent = e.message; $('guardar').textContent = TXT_BOTON; revisar(); })
         .programarLlamada({ hoja: D.hoja, fila: D.fila, idLead: D.idLead, nombre: D.nombre, celular: D.celular, servicio: D.servicio,
-          direccion: D.direccion, nota: $('nota').value, timestamp: t.getTime(), tipo: ES_MENSAJE ? 'MENSAJE' : 'LLAMADA' });
+          direccion: D.direccion, nota: $('nota').value, timestamp: t.getTime(), tipo: ES_MENSAJE ? 'MENSAJE' : 'LLAMADA',
+          // Solo se envía si cambió (así no se repite en el historial)
+          ofertaA: oferta.A !== ini.A ? oferta.A : '', ofertaV: oferta.V !== ini.V ? oferta.V : '' });
     }
   </script>
 </body>

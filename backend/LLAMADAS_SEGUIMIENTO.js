@@ -204,6 +204,11 @@ function programarSeguimientoFilaActual() {
 function programarLlamada(d) {
   const inicio = new Date(Number(d.timestamp));
   if (isNaN(inicio.getTime())) return { success: false, error: 'Elige la fecha y la hora.' };
+  // % de oferta negociado (opcional aquí): se valida igual que en el pre-registro.
+  // Vacío = no se toca lo que ya hay. Nunca va al calendario ni a correos.
+  const ofertas = { A: ofertaCaptacionValida_('A', d.ofertaA), V: ofertaCaptacionValida_('V', d.ofertaV) };
+  if (!ofertas.A.ok) return { success: false, error: ofertas.A.error };
+  if (!ofertas.V.ok) return { success: false, error: ofertas.V.error };
   if (inicio.getTime() < Date.now() - 60000) return { success: false, error: 'Esa hora ya pasó.' };
   let ub = d.hoja && d.fila ? { hoja: SpreadsheetApp.getActive().getSheetByName(d.hoja), fila: Number(d.fila) } : null;
   if (!ub || !ub.hoja) ub = filaPorIdLead_(d.idLead);
@@ -271,7 +276,16 @@ function programarLlamada(d) {
   poner('LLAMADA TOKEN', Utilities.getUuid()); poner('LLAMADA EVENTO', idEvento); poner('LLAMADA NOTA', nota);
   poner('LLAMADA TIPO', tipo);
 
-  anotarEnCRM_(hoja, fila, (nota ? nota + '\n' : '') + w.programado + ': ' + textoFechaLlamada_(inicio) +
+  const ofA = ofertas.A.vacio ? '' : ofertas.A.puntos, ofV = ofertas.V.vacio ? '' : ofertas.V.puntos;
+  ['A', 'V'].forEach(k => {
+    if (ofertas[k].vacio) return;
+    try {
+      hoja.getRange(fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_OFERTA[k]))
+        .setNumberFormat(AGENDA_CAPTACION.FORMATO_OFERTA[k]).setValue(ofertas[k].fraccion);
+    } catch (e) { Logger.log('No se pudo guardar el % de oferta ' + k + ': ' + e.message); }
+  });
+  const txtOferta = (ofA !== '' || ofV !== '') ? 'Oferta negociada: ' + textoOfertaCaptacion_(ofA, ofV) + '\n' : '';
+  anotarEnCRM_(hoja, fila, (nota ? nota + '\n' : '') + txtOferta + w.programado + ': ' + textoFechaLlamada_(inicio) +
     (reemplazo ? ' · ' + reemplazo : '') + ' (' + id + ')', d.estadoNuevo);
   return { success: true, idLlamada: id, tipo: tipo, texto: textoFechaLlamada_(inicio) };
 }

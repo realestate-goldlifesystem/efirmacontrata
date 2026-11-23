@@ -247,6 +247,11 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo, tip
   const hoy = useMemo(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }, []);
   const dias = useMemo(() => Array.from({ length: 30 }, (_, i) => new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i)), [hoy]);
   const [nota, setNota] = useState('');
+  // % de oferta negociado (opcional): el mismo que pide el pre-registro, que lo precarga
+  const ofIni = { A: enPuntos(lead.ofertaA), V: enPuntos(lead.ofertaV) };
+  const [oferta, setOferta] = useState<Record<'A' | 'V', string>>(ofIni);
+  const [verOferta, setVerOferta] = useState(ofIni.A !== '' || ofIni.V !== '');
+  const ofertaMal = oferta.A !== '' && !ofertaValida('A', oferta.A);
   const [dia, setDia] = useState<number | null>(null);
   const [hora, setHora] = useState('10:0');
   const [rapido, setRapido] = useState<number | null>(null);
@@ -296,14 +301,18 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo, tip
 
   const momento = rapido != null ? new Date(rapido) : dia !== null ? horaDe(dias[dia], hora) : null;
   const choque = momento && choca(momento.getTime());
-  const valido = !!momento && momento.getTime() > Date.now() && !choque;
+  const valido = !!momento && momento.getTime() > Date.now() && !choque && !ofertaMal;
   const resumen = !momento ? 'Elige un acceso rápido o el día' : choque ? 'Ocupado: ' + choque.que : !valido ? 'Esa hora ya pasó' : textoLargo(momento);
 
   const programar = async () => {
     if (!momento || !valido) return;
     setEnviando(true); setError('');
     try {
-      const r = await llamarCRM(credential, 'programar', { idLead: lead.idLead, nota, timestamp: momento.getTime(), tipo });
+      const r = await llamarCRM(credential, 'programar', {
+        idLead: lead.idLead, nota, timestamp: momento.getTime(), tipo,
+        // Solo si cambió, para no repetirlo en el historial
+        ofertaA: oferta.A !== ofIni.A ? oferta.A : '', ofertaV: oferta.V !== ofIni.V ? oferta.V : '',
+      });
       if (r.success) {
         if (r.lead) onListo(r.lead);
         setListo((r.texto || textoLargo(momento)) + '. Quedó en tu calendario y en el CRM; te recordaremos por correo.');
@@ -340,6 +349,24 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo, tip
               placeholder={esMensaje ? '¿Qué le vas a escribir?' : '¿Qué quedó hablado?'}
               className="mt-1.5 w-full rounded-xl bg-stone-950 border border-stone-700 p-3 text-sm text-white placeholder:text-stone-500 resize-none focus:outline-none focus:border-brand-gold" />
           </div>
+          {!verOferta ? (
+            <button type="button" onClick={() => setVerOferta(true)} className="self-start -mt-1 text-[13px] font-semibold text-brand-gold-light hover:text-brand-gold">
+              + Anotar % de oferta negociado
+            </button>
+          ) : (
+            <div className="rounded-xl border border-brand-gold/25 bg-brand-gold/5 p-3">
+              <div className="text-xs text-stone-400">% de oferta negociado · solo lo ves tú</div>
+              <div className="mt-1.5 flex flex-col gap-2">
+                <div><label htmlFor="sg-ofa" className="text-[11px] text-stone-500">Arriendo (50 a 100)</label>
+                  <CampoOferta id="sg-ofa" clase="A" valor={oferta.A} onChange={v => setOferta(x => ({ ...x, A: v }))} /></div>
+                <div><label htmlFor="sg-ofv" className="text-[11px] text-stone-500">Venta</label>
+                  <CampoOferta id="sg-ofv" clase="V" opcional valor={oferta.V} onChange={v => setOferta(x => ({ ...x, V: v }))} /></div>
+              </div>
+              <div className={`mt-1.5 text-[11px] ${ofertaMal ? 'text-red-300' : 'text-stone-500'}`}>
+                {ofertaMal ? 'En arriendo debe ser un número entero entre 50 y 100.' : 'Opcional · no va en el calendario ni en correos; queda en el CRM y se precarga en el pre-registro.'}
+              </div>
+            </div>
+          )}
           <div>
             <div className="text-xs text-stone-400 mb-2">{esMensaje ? '¿Cuándo le escribes?' : '¿Cuándo lo llamas?'}</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
