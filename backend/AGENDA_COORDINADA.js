@@ -370,6 +370,7 @@ function semanaCoordinarPropietario(datos) {
   const inicioSemana = new Date(agMs(lunes, 0, 0));
   const finSemana = new Date(inicioSemana.getTime() + 6 * 86400000);
   const eventos = CalendarApp.getDefaultCalendar().getEvents(inicioSemana, finSemana)
+    .filter(e => !esEventoCancelado_(e))
     .map(e => ({ inicio: e.getStartTime().getTime(), fin: e.getEndTime().getTime() }));
   const festivos = {};
   try {

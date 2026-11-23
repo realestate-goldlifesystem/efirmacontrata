@@ -229,7 +229,7 @@ function programarLlamada(d) {
   try {
     // Solo choca si la hora elegida cae DENTRO de algo ya agendado (desde su inicio hacia adelante)
     const choque = CalendarApp.getDefaultCalendar().getEvents(inicio, new Date(inicio.getTime() + 60000))
-      .find(e => !e.isAllDayEvent() && e.getId() !== eventoPropio && e.getStartTime().getTime() <= inicio.getTime());
+      .find(e => !e.isAllDayEvent() && !esEventoCancelado_(e) && e.getId() !== eventoPropio && e.getStartTime().getTime() <= inicio.getTime());
     if (choque) {
       const tz = 'America/Bogota', f = (x) => Utilities.formatDate(x, tz, 'h:mm a').toLowerCase();
       return { success: false, error: 'Ese horario ya está ocupado: "' + choque.getTitle() + '" de ' + f(choque.getStartTime()) + ' a ' + f(choque.getEndTime()) + '. Elige otra hora.' };
@@ -579,7 +579,7 @@ function ocupadoParaLlamada(d) {
   } catch (e) {}
   try {
     CalendarApp.getDefaultCalendar().getEvents(new Date(desde), new Date(hasta))
-      .filter(e => !e.isAllDayEvent() && e.getId() !== propio)
+      .filter(e => !e.isAllDayEvent() && !esEventoCancelado_(e) && e.getId() !== propio)
       .forEach(e => ocup.push({ inicio: e.getStartTime().getTime(), fin: e.getEndTime().getTime(), que: e.getTitle() }));
   } catch (e) { Logger.log('No se pudo leer el calendario: ' + e.message); }
   return ocup;

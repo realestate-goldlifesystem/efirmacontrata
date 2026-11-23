@@ -107,7 +107,7 @@
 <body>
   <div class="cabeza">
     <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
-    <div class="sub">Presentación de servicios al propietario · los datos vienen del registro</div>
+    <div class="sub" id="subCab">Presentación de servicios al propietario · los datos vienen del registro</div>
   </div>
   <div id="form" class="cuerpo">
 
@@ -209,6 +209,7 @@
     $('etModo').onclick = () => { [1, 2, 3].forEach(k => $('v' + k).classList.remove('activa')); $('pasos').classList.add('oculto'); $('v0').classList.add('activa'); };
 
     $('nombre').value = D.nombre; $('celular').value = D.celular; $('correo').value = D.correo;
+    if (D.reagendar) $('subCab').textContent = '🔄 Reagendar: se crea una cita nueva y la anterior' + (D.idCitaAnterior ? ' (' + D.idCitaAnterior + ')' : '') + ' queda cancelada como historial';
     $('servicio').value = D.servicio; $('direccion').value = D.direccion; $('notas').value = D.notas;
     $('dirRegistro').textContent = D.direccion || 'sin ubicación';
 
@@ -325,7 +326,8 @@
         .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
           correo: $('correo').value.trim(), servicio: $('servicio').value, direccion: $('direccion').value.trim(), notas: $('notas').value.trim(),
           timestamp: slot.timestamp, textoCita: txt, modalidad: modalidad,
-          ofertaA: piden().indexOf('A') !== -1 ? oferta.A : '', ofertaV: piden().indexOf('V') !== -1 ? oferta.V : '' });
+          ofertaA: piden().indexOf('A') !== -1 ? oferta.A : '', ofertaV: piden().indexOf('V') !== -1 ? oferta.V : '',
+          reagendar: !!D.reagendar });
     }
 
     // ---------- Buscador de direcciones (el mismo del formulario de registro) ----------

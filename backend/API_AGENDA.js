@@ -172,7 +172,7 @@ function agendarCita(datos) {
     // 1. Doble check de disponibilidad, con el colchón antes y después
     const calendario = CalendarApp.getDefaultCalendar();
     const colchonMs = TIPOS_AGENDA.PROPIETARIO.colchonMin * 60000;
-    if (calendario.getEvents(new Date(fechaInicio.getTime() - colchonMs), new Date(fechaFin.getTime() + colchonMs)).length > 0) {
+    if (calendario.getEvents(new Date(fechaInicio.getTime() - colchonMs), new Date(fechaFin.getTime() + colchonMs)).filter(e => !esEventoCancelado_(e)).length > 0) {
       return { success: false, error: "El horario acaba de ser ocupado. Por favor elige otro." };
     }
 
@@ -294,6 +294,15 @@ function agregarMeetAEvento_(evento, idCita) {
     Logger.log('No se pudo crear el Meet de ' + idCita + ': ' + e.message);
     return '';
   }
+}
+
+/**
+ * Las citas canceladas NO se borran del calendario (Leonardo, 23-nov-2026): quedan
+ * como historial "❌ CANCELADA: …" para contar canceladas y reagendadas. Ese
+ * horario queda libre: todas las agendas ignoran estos eventos.
+ */
+function esEventoCancelado_(e) {
+  try { return /^❌/.test(String(e.getTitle() || '')); } catch (x) { return false; }
 }
 
 function tituloEventoCita(estado, servicio, nombre, virtual) {

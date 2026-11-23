@@ -425,8 +425,8 @@ const SERVICIOS = [
 ];
 const iso = (d: Date) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 
-export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar, onListo }: {
-  lead: Lead; operacion: 'A' | 'V'; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void;
+export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar, onListo, reagendar = false }: {
+  lead: Lead; operacion: 'A' | 'V'; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void; reagendar?: boolean;
 }) {
   // Mismos datos de arranque que la ventana del Sheet (datosFilaCaptacion_)
   const inicial = useMemo(() => ({
@@ -488,7 +488,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
       const r = await llamarCRM(credential, 'agendar', {
         idLead: lead.idLead, nombre: f.nombre.trim(), celular: f.celular.trim(), correo: f.correo.trim(),
         servicio: f.servicio, direccion: f.direccion.trim(), notas: f.notas.trim(),
-        timestamp: slot.timestamp, textoCita, modalidad,
+        timestamp: slot.timestamp, textoCita, modalidad, reagendar,
         ofertaA: piden.includes('A') ? oferta.A : '', ofertaV: piden.includes('V') ? oferta.V : '',
       });
       if (r.success) {
@@ -523,7 +523,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
   }
 
   return (
-    <Marco titulo="Agendar presentación" sub={modalidad ? `${etiquetaModo} · Paso ${paso} de 3` : `${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar} pie={pie}>
+    <Marco titulo={reagendar ? '🔄 Reagendar presentación' : 'Agendar presentación'} sub={modalidad ? `${etiquetaModo} · Paso ${paso} de 3` : `${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar} pie={pie}>
       {listo ? <Listo texto={listo} onCerrar={onCerrar} /> : !modalidad ? (
         <div className="flex flex-col gap-3">
           <div className="text-sm text-stone-400">¿Cómo será la presentación?</div>

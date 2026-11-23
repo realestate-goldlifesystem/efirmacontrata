@@ -548,7 +548,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   const [guardando, setGuardando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nota, setNota] = useState('');
-  const [modal, setModal] = useState<'elegir' | 'editar' | 'llamada' | 'mensaje' | 'agenda' | null>(null);
+  const [modal, setModal] = useState<'elegir' | 'editar' | 'llamada' | 'mensaje' | 'agenda' | 'reagendar' | null>(null);
   const [verInfo, setVerInfo] = useState(false);
   const [escribiendo, setEscribiendo] = useState(false);
   const recogido = movil && escribiendo;
@@ -581,6 +581,8 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
     // SEGUIMIENTO: primero se elige si es llamada, mensaje o presentación
     if (nuevo === 'SEGUIMIENTO') setModal('elegir');
     if (nuevo === 'PRE-R CAPTACION') setModal('agenda');
+    // REAGENDAR: cita nueva; la anterior queda cancelada como historial
+    if (nuevo === 'REAGENDAR') setModal('reagendar');
     setError(null);
     try {
       const r = await llamarCRM(credential, 'actualizar', { idLead: lead.idLead, estado: nombre });
@@ -770,8 +772,8 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         <ProgramarLlamadaModal lead={lead} credential={credential} tipo={modal === 'mensaje' ? 'MENSAJE' : 'LLAMADA'}
           onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
       )}
-      {modal === 'agenda' && (
-        <AgendarPresentacionModal lead={lead} operacion={operacion} credential={credential}
+      {(modal === 'agenda' || modal === 'reagendar') && (
+        <AgendarPresentacionModal lead={lead} operacion={operacion} credential={credential} reagendar={modal === 'reagendar'}
           onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
       )}
     </div>

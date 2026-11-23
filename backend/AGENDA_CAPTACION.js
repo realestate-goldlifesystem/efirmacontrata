@@ -10,6 +10,9 @@
 
 const AGENDA_CAPTACION = {
   ESTADO: 'PRE-R CAPTACION',
+  // REAGENDAR (23-nov-2026): abre la misma ventana para una cita NUEVA; la anterior queda
+  // cancelada (❌ en el calendario, como historial) y el CRM vuelve a PRE-R CAPTACION.
+  ESTADO_REAGENDAR: 'REAGENDAR',
   COL_CORREO: 'CORREO DEL PROPIETARIO',
   // La cita de presentación que se agendó desde esa fila: enlaza el CRM con la agenda y el registro
   COL_ID_CITA: 'ID CITA',
@@ -71,8 +74,9 @@ function abrirAgendaCaptacionSiToca_(e, hoja, colEstado) {
   const r = e.range;
   if (r.getNumRows() !== 1 || r.getNumColumns() !== 1 || r.getColumn() !== colEstado) return;
   if (r.getRow() < SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS) return;
-  if (normalizarEstadoCaptacion_(e.value) !== AGENDA_CAPTACION.ESTADO) return;
-  abrirModalAgendaCaptacion_(hoja, r.getRow());
+  const est = normalizarEstadoCaptacion_(e.value);
+  if (est !== AGENDA_CAPTACION.ESTADO && est !== AGENDA_CAPTACION.ESTADO_REAGENDAR) return;
+  abrirModalAgendaCaptacion_(hoja, r.getRow(), est === AGENDA_CAPTACION.ESTADO_REAGENDAR);
 }
 
 /** Menú o atajo: abre la ventana para la fila seleccionada. */
@@ -119,16 +123,20 @@ function datosFilaCaptacion_(hoja, fila) {
     servicio: hoja.getName().slice(-1) === 'V' ? 'Venta' : 'Arriendo',
     clase: hoja.getName().slice(-1) === 'V' ? 'V' : 'A',
     ofertaA: pct('A'), ofertaV: pct('V'),
+    idCitaAnterior: de(AGENDA_CAPTACION.COL_ID_CITA),
     direccion: ubicacion,
     notas: [tipo, de('VALOR DE PROMOCIÓN') ? 'Valor publicado: ' + de('VALOR DE PROMOCIÓN') : '', de('LINK DEL INMUEBLE PUBLICADO')].filter(Boolean).join('\n')
   };
 }
 
-function abrirModalAgendaCaptacion_(hoja, fila) {
+function abrirModalAgendaCaptacion_(hoja, fila, reagendar) {
   columnaCorreoCaptacion_(hoja);
   const t = HtmlService.createTemplateFromFile('backend/MODAL_AGENDA_CAPTACION');
-  t.DATOS = JSON.stringify(datosFilaCaptacion_(hoja, fila));
-  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(560).setHeight(700), 'Agendar presentación al propietario');
+  const d = datosFilaCaptacion_(hoja, fila);
+  d.reagendar = !!reagendar;
+  t.DATOS = JSON.stringify(d);
+  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(560).setHeight(700),
+    reagendar ? 'Reagendar presentación al propietario' : 'Agendar presentación al propietario');
 }
 
 /** Horarios del día para la ventana (misma agenda del portal). */
@@ -152,6 +160,7 @@ function agendarDesdeCaptacion(d) {
   const faltan = piden.filter(k => ofertas[k].vacio).map(k => (k === 'V' ? 'venta' : 'arriendo'));
   if (faltan.length) return { success: false, error: 'Escribe el % de oferta en ' + faltan.join(' y ') + ' que negociaste con el propietario.' };
   hoja.getRange(d.fila, columnaCorreoCaptacion_(hoja)).setValue(correo);
+  const idAnterior = String(hoja.getRange(d.fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_ID_CITA)).getValue() || '').trim();
 
   const r = agendarCita({
     nombreCliente: d.nombre, celular: '+57 ' + String(d.celular || '').replace(/\D/g, '').replace(/^57(?=\d{10}$)/, ''),
@@ -173,7 +182,8 @@ function agendarDesdeCaptacion(d) {
       const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
       const cDet = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_DETALLES) + 1;
       if (cDet) {
-        anexarDetalleCaptacion_(hoja.getRange(d.fila, cDet), 'Cita agendada: ' + d.textoCita + ' (' + r.idCita + ')\n' +
+        anexarDetalleCaptacion_(hoja.getRange(d.fila, cDet), (d.reagendar ? '🔄 Cita REAGENDADA: ' : 'Cita agendada: ') + d.textoCita + ' (' + r.idCita + ')' +
+          (d.reagendar && idAnterior ? ' · reemplaza la cita ' + idAnterior : '') + '\n' +
           'Oferta negociada: ' + textoOfertaCaptacion_(ofertas.A.vacio ? '' : ofertas.A.puntos, ofertas.V.vacio ? '' : ofertas.V.puntos));
         const sello = selloSeguimiento_();
         const cF = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_FECHA) + 1, cH = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_HORA) + 1;
@@ -181,6 +191,21 @@ function agendarDesdeCaptacion(d) {
         if (cH) hoja.getRange(d.fila, cH).setValue(sello.hora);
       }
     } catch (e) { Logger.log('No se pudo anotar la cita en la captación: ' + e.message); }
+    if (d.reagendar) {
+      // La cita anterior, si seguía viva, queda cancelada (❌ en el calendario, no se borra)
+      try {
+        const vieja = idAnterior && idAnterior !== r.idCita ? _citaPorId(idAnterior) : null;
+        const est = vieja ? String(valorCita(vieja.fila, vieja.col, 'ESTADO') || '').trim() : '';
+        if (vieja && [ESTADOS_CITA.CANCELADA, ESTADOS_CITA.ASISTIDA, ESTADOS_CITA.INASISTIDA].indexOf(est) === -1)
+          aplicarCambioEstadoCita(vieja.sheet, vieja.col, vieja.numFila, vieja.fila, ESTADOS_CITA.CANCELADA, 'reagendada por el agente: la reemplaza ' + r.idCita);
+      } catch (e) { Logger.log('No se pudo cancelar la cita anterior: ' + e.message); }
+      // El CRM sigue el flujo normal de la cita nueva
+      try {
+        const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+        const cE = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_ESTADO) + 1;
+        if (cE) hoja.getRange(d.fila, cE).setValue(AGENDA_CAPTACION.ESTADO);
+      } catch (e) {}
+    }
   }
   return r;
 }

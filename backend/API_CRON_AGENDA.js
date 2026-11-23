@@ -107,6 +107,9 @@ function ejecutarMotorAgenda() {
           return;
         }
         if (!esEntrega && debeLiberarCita(minFaltan, ultimoPaso, minDesdeUltimo, pendiente, valorCita(f, col, 'TIPO AGENDA'))) {
+          // (23-nov-2026) Si el agente ya la dio por hecha en el CRM (captado o seguimiento), no se cancela
+          const yaHecha = (() => { try { return ['CAPTADO', 'SEGUIMIENTO'].indexOf(estadoCRMDeCita_(idCita)) !== -1; } catch (e) { return false; } })();
+          if (yaHecha) { aplicarCambioEstadoCita(sheet, col, numFila, f, ESTADOS_CITA.ASISTIDA, 'no se canceló: el agente ya la marcó en el CRM'); return; }
           aplicarCambioEstadoCita(sheet, col, numFila, f, ESTADOS_CITA.CANCELADA, 'cancelada automáticamente: no se confirmó a tiempo');
           avisarPropietarioVisitaCoordinada(f, col, `La visita de <strong>${nombre}</strong> del <strong>${fechaStr} a las ${horaStr}</strong> se canceló porque el interesado no la confirmó. No tienes que abrir el inmueble.`);
           try {
@@ -245,8 +248,15 @@ function aplicarCambioEstadoCita(sheet, col, numFila, fila, nuevoEstado, motivo)
     if (!evento) return;
     // Cancelada o "quiere reagendar": ese horario ya no se va a usar, así que se
     // libera para que otro propietario pueda tomarlo.
+    // (23-nov-2026) Ya no se borra: queda como historial "❌ CANCELADA" y se desliga de la
+    // cita, así que si se reagenda se crea un evento NUEVO y este se conserva.
     if (nuevoEstado === ESTADOS_CITA.CANCELADA || nuevoEstado === ESTADOS_CITA.QUIERE_REAGENDAR) {
-      evento.deleteEvent();
+      const viejo = evento.getTitle().replace(/^(📍 VISITA|💻 PRESENTACIÓN VIRTUAL|👥 VISITA)\s*[^:]*:\s*/, '');
+      evento.setTitle('❌ ' + (nuevoEstado === ESTADOS_CITA.CANCELADA ? 'CANCELADA' : 'CANCELADA (pidió reagendar)') + ': ' + viejo);
+      evento.setDescription('❌ ' + Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy HH:mm') + ' · ' + motivo + '\n\n' + (evento.getDescription() || ''));
+      try { evento.setTransparency(CalendarApp.EventTransparency.TRANSPARENT); } catch (x) {}
+      try { evento.removeAllReminders(); } catch (x) {}
+      if (col['ID EVENTO CALENDAR']) sheet.getRange(numFila, col['ID EVENTO CALENDAR']).setValue('');
     } else {
       evento.setTitle(tituloEventoCita(nuevoEstado, valorCita(fila, col, 'TIPO SERVICIO'), valorCita(fila, col, 'NOMBRE'), String(valorCita(fila, col, 'MODALIDAD')) === 'VIRTUAL'));
     }

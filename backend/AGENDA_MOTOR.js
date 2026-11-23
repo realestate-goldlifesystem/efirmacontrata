@@ -141,7 +141,7 @@ function obtenerDisponibilidadAgenda(fechaIso, tipo, opciones) {
     } catch (e) { Logger.log('⚠️ No se pudo leer el calendario de festivos: ' + e.message); }
 
     const ocupados = CalendarApp.getDefaultCalendar().getEventsForDay(referencia)
-      .filter(e => !opciones.excluirEventoId || e.getId() !== opciones.excluirEventoId)
+      .filter(e => !esEventoCancelado_(e) && (!opciones.excluirEventoId || e.getId() !== opciones.excluirEventoId))
       .map(e => ({ inicio: e.getStartTime().getTime(), fin: e.getEndTime().getTime() }));
     // Llamadas de seguimiento pendientes del CRM (30 min), aunque su evento no esté en el calendario
     try {

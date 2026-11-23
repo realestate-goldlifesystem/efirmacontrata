@@ -175,3 +175,21 @@ function datosNuevaCita(datos) {
     direccion: String(valorCita(f, col, 'DIRECCION') || '')
   };
 }
+
+/** Estado del CRM de la fila que agendó esa cita (por ID CITA); '' si no está. */
+function estadoCRMDeCita_(idCita) {
+  if (!idCita) return '';
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  for (const nombreHoja of SEGUIMIENTO_CAPTACIONES.HOJAS) {
+    const hoja = ss.getSheetByName(nombreHoja);
+    if (!hoja) continue;
+    const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+    const cId = enc.indexOf(AGENDA_CAPTACION.COL_ID_CITA) + 1, cEst = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_ESTADO) + 1;
+    const n = hoja.getLastRow() - SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + 1;
+    if (!cId || !cEst || n <= 0) continue;
+    const ids = hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, cId, n, 1).getValues();
+    const i = ids.findIndex(x => String(x[0]).trim() === String(idCita).trim());
+    if (i !== -1) return normalizarEstadoCaptacion_(hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS + i, cEst).getValue());
+  }
+  return '';
+}

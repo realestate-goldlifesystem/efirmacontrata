@@ -123,6 +123,17 @@ function crmEstadosConColor_(hoja, enc) {
   try {
     const dv = hoja.getRange(SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS, cEstado).getDataValidation();
     if (dv) lista = (dv.getCriteriaValues()[0] || []).map(x => String(x).trim()).filter(Boolean);
+    // REAGENDAR (23-nov-2026): se agrega una sola vez al desplegable, justo después de PRE-R CAPTACION
+    if (dv && lista.length && lista.map(normalizarEstadoCaptacion_).indexOf(AGENDA_CAPTACION.ESTADO_REAGENDAR) === -1) {
+      const pos = lista.map(normalizarEstadoCaptacion_).indexOf(AGENDA_CAPTACION.ESTADO);
+      lista.splice(pos === -1 ? lista.length : pos + 1, 0, AGENDA_CAPTACION.ESTADO_REAGENDAR);
+      const regla = dv.copy().requireValueInList(lista, true).build();
+      const p0 = SEGUIMIENTO_CAPTACIONES.PRIMERA_FILA_DATOS;
+      hoja.getRange(p0, cEstado, Math.max(hoja.getMaxRows() - p0 + 1, 1), 1).setDataValidation(regla);
+      const fmt = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo(AGENDA_CAPTACION.ESTADO_REAGENDAR)
+        .setBackground('#fde68a').setFontColor('#92400e').setRanges([hoja.getRange(p0, cEstado, Math.max(hoja.getMaxRows() - p0 + 1, 1), 1)]).build();
+      const reglas = hoja.getConditionalFormatRules(); reglas.push(fmt); hoja.setConditionalFormatRules(reglas);
+    }
   } catch (e) { Logger.log('No se pudo leer el desplegable de estados: ' + e.message); }
 
   // Primero las reglas sobre la columna de estado; las de CELULAR solo llenan huecos
@@ -321,7 +332,7 @@ function crmAgendar_(datos) {
     hoja: ub.hoja.getName(), fila: ub.fila, nombre: datos.nombre, celular: datos.celular, correo: datos.correo,
     servicio: datos.servicio, direccion: datos.direccion, notas: datos.notas, timestamp: Number(datos.timestamp),
     textoCita: datos.textoCita, modalidad: datos.modalidad,
-    ofertaA: datos.ofertaA, ofertaV: datos.ofertaV
+    ofertaA: datos.ofertaA, ofertaV: datos.ofertaV, reagendar: !!datos.reagendar
   });
   if (r && r.success) r.lead = crmReleer_(datos.idLead);
   else if (r && (r.error || r.message)) r.message = r.error || r.message;
