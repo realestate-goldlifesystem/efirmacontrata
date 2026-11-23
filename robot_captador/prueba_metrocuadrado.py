@@ -663,7 +663,7 @@ def main():
                         if link_norm in vistos_en_esta_corrida:
                             continue
                         vistos_en_esta_corrida.add(link_norm)
-                        if link_norm in sheets.existing_links:
+                        if sheets.ya_registrado(link=link):
                             saltados_duplicado_esta_hab += 1
                             continue
 

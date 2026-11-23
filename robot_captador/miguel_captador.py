@@ -73,7 +73,7 @@ def buscar_metrocuadrado(sheets, localidad, habitacion, operacion, cuota_faltant
                 if link_norm in vistos_en_esta_busqueda:
                     continue
                 vistos_en_esta_busqueda.add(link_norm)
-                if link_norm in sheets.existing_links:
+                if sheets.ya_registrado(link=link):
                     continue
 
                 datos = procesar_anuncio(page, context, link, estado_telefono, localidad, lugar,

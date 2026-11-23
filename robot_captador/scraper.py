@@ -248,7 +248,7 @@ class FincaraizScraper:
                 print(f"   ⏭️  Cuota de {self.per_search_cap} alcanzada en este sector. Pasando al siguiente.")
                 return True
 
-            if link.lower().strip() in self.sheets.existing_links:
+            if self.sheets.ya_registrado(link=link):
                 print(f"[SKIP] Link ya registrado en Google Sheets: {link}")
                 self.skipped_dup += 1
                 continue
@@ -513,7 +513,7 @@ class FincaraizScraper:
             # seguir procesando. Un mismo propietario suele publicar varios
             # inmuebles con links distintos, así que el filtro por link no basta.
             is_dup, dup_reason = self.sheets.is_duplicate(phone_num, property_url)
-            if is_dup:
+            if is_dup and not self.sheets.fila_no_liberable(phone_num, property_url):
                 print(f"[SKIP] Propietario ya registrado -> {dup_reason}")
                 self.skipped_dup += 1
                 return None

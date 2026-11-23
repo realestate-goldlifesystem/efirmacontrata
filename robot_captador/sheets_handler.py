@@ -137,7 +137,7 @@ class SheetsHandler:
         # Los scripts de Metrocuadrado reasignan sheet_title y luego llaman aquí:
         # el formato cacheado es de la pestaña anterior, así que se descarta.
         self._formato_ref = None
-        range_name = f"'{self.sheet_title}'!A1:AZ3000"
+        range_name = f"'{self.sheet_title}'!A1:ZZ3000"
         result = con_reintentos(
             lambda: self.service.values().get(
                 spreadsheetId=self.spreadsheet_id, range=range_name
@@ -146,6 +146,10 @@ class SheetsHandler:
         )
 
         rows = result.get("values", [])
+        self.existing_phones = set()
+        self.existing_links = set()
+        self.fila_por_celular = {}
+        self.fila_por_link = {}
         print(f"[INFO] Cargas de Google Sheets ('{self.sheet_title}'): {len(rows)} filas leídas.")
 
         # 1. Mapear nombres de columnas a sus índices (base 0) desde la Fila 1
@@ -162,7 +166,7 @@ class SheetsHandler:
         def get_col(name):
             return self.col_map.get(self.normalize_header(name), None)
 
-        col_n = get_col("n") if get_col("n") is not None else 0
+        col_n = get_col("n")  # opcional: si se borra la columna N, no se numera
         col_celular = get_col("celular") if get_col("celular") is not None else 2
         col_link = get_col("link del inmueble publicado") if get_col("link del inmueble publicado") is not None else 5
 
@@ -173,17 +177,19 @@ class SheetsHandler:
             if idx <= 2: # Omitir Fila 1 (Nombres) y Fila 2 (Filtro)
                 continue
 
-            val_a = row[col_n].strip() if len(row) > col_n and row[col_n] else ""
+            val_a = row[col_n].strip() if col_n is not None and len(row) > col_n and row[col_n] else ""
             val_c = row[col_celular].strip() if len(row) > col_celular and row[col_celular] else ""
             cleaned_c = clean_phone(val_c)
             if cleaned_c:
                 self.existing_phones.add(cleaned_c)
+                self.fila_por_celular[cleaned_c] = idx
 
             val_f = row[col_link].strip() if len(row) > col_link and row[col_link] else ""
             if val_f:
                 m = re.search(r'HYPERLINK\("([^"]+)"', val_f, re.IGNORECASE)
                 clean_f = m.group(1) if m else val_f
                 self.existing_links.add(clean_f.lower().strip())
+                self.fila_por_link[clean_f.lower().strip()] = idx
 
             has_data = bool(cleaned_c or val_f)
 
@@ -201,6 +207,7 @@ class SheetsHandler:
         # Filas de datos crudas (sin encabezado ni fila de filtro), para poder
         # contar por LOCALIDAD+HABITACIONES sin releer el Sheet otra vez.
         self.rows = rows[2:]
+        self.rows_todas = rows
 
         print(f"[INFO] Registros existentes en '{self.sheet_title}': {len(self.existing_phones)} teléfonos, {len(self.existing_links)} links.")
         print(f"[INFO] Última fila ocupada con datos: {last_row_with_data} (Último n: {self.max_n}). Próxima fila a escribir: Fila {self.target_row_index}")
@@ -442,6 +449,8 @@ class SheetsHandler:
 
         is_dup, reason = self.is_duplicate(phone, link)
         if is_dup:
+            if self.liberar_no_si_toca(phone, link, captacion_data):
+                return True
             print(f"[WARN] OMITIDO por duplicado: {reason}")
             return False
 
@@ -456,7 +465,7 @@ class SheetsHandler:
         row_data = [""] * (max_idx + 1)
 
         field_values = {
-            "n": new_n,
+            "n": new_n if self.col_map.get("n") is not None else "",
             "fecha de contacto": date_str,
             # No se mueve nunca: es el día real en que entró el lead. La de
             # contacto sí la corre el agente al retomar los NUEVO pendientes.
@@ -549,6 +558,119 @@ class SheetsHandler:
             self.existing_links.add(clean_l.lower().strip())
         self.target_row_index += 1
 
+        return True
+
+    # ------------------------------------------------------------------
+    # Liberación de los NO (23-nov-2026): si Miguel vuelve a encontrar
+    # publicado a un propietario que quedó en NO hace más de 6 meses, la fila
+    # se MUEVE al final como NUEVO (la lista se corre sola). Conserva el
+    # ID LEAD y todo el historial; se actualizan link y datos del anuncio.
+    # Los de INMOBILIARIA y cualquier otro estado no se tocan.
+    # ------------------------------------------------------------------
+    MESES_LIBERAR_NO = 6
+
+    def _celda(self, fila_1, nombre):
+        c = self.col_map.get(self.normalize_header(nombre))
+        row = self.rows_todas[fila_1 - 1] if fila_1 - 1 < len(self.rows_todas) else []
+        return (row[c] if c is not None and len(row) > c else "") or ""
+
+    def _fecha_cierre_no(self, fila_1):
+        """Fecha del cierre en NO: la anotación "🔒 CERRADO EN NO"; si no hay
+        (cierres viejos), la última anotación con fecha. None si no se sabe."""
+        lineas = [l.strip() for l in str(self._celda(fila_1, "detalles de seguimiento")).split("\n") if l.strip()]
+        candidatas = [l for l in lineas if "CERRADO EN NO" in l] or lineas
+        for l in reversed(candidatas):
+            m = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})", l)
+            if m:
+                try:
+                    return datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+                except ValueError:
+                    continue
+        f = str(self._celda(fila_1, "fecha de seguimiento")).strip()
+        m = re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})", f)
+        if m:
+            try:
+                return datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            except ValueError:
+                return None
+        return None
+
+    def fila_no_liberable(self, phone="", link=""):
+        """Fila (1-based) del lead si está en NO hace más de 6 meses; si no, None."""
+        cel = clean_phone(phone)
+        m = re.search(r'HYPERLINK\("([^"]+)"', link or "", re.IGNORECASE)
+        clean_l = ((m.group(1) if m else link) or "").lower().strip()
+        fila = self.fila_por_celular.get(cel) if cel else None
+        if not fila and clean_l:
+            fila = self.fila_por_link.get(clean_l)
+        if not fila or str(self._celda(fila, "estado de llamada")).strip().upper() != "NO":
+            return None
+        cierre = self._fecha_cierre_no(fila)
+        hoy = ahora_colombia().replace(tzinfo=None)
+        if not cierre or (hoy - cierre).days < self.MESES_LIBERAR_NO * 30:
+            return None
+        return fila
+
+    def ya_registrado(self, phone="", link=""):
+        """Repetido que se debe saltar (los NO liberables no se saltan)."""
+        is_dup, _ = self.is_duplicate(phone, link)
+        return is_dup and not self.fila_no_liberable(phone, link)
+
+    def liberar_no_si_toca(self, phone, link, data):
+        cel = clean_phone(phone)
+        m = re.search(r'HYPERLINK\("([^"]+)"', link or "", re.IGNORECASE)
+        clean_l = ((m.group(1) if m else link) or "").lower().strip()
+        fila = self.fila_no_liberable(phone, link)
+        if not fila:
+            return False
+        hoy = ahora_colombia().replace(tzinfo=None)
+
+        sheet_id = self.get_sheet_id()
+        destino = self.target_row_index - 1  # 0-based: justo después de la última fila con datos
+        if fila >= self.target_row_index - 1:
+            nueva = fila  # ya es la última: no hace falta moverla
+        else:
+            con_reintentos(lambda: self.service.batchUpdate(spreadsheetId=self.spreadsheet_id, body={"requests": [{
+                "moveDimension": {
+                    "source": {"sheetId": sheet_id, "dimension": "ROWS", "startIndex": fila - 1, "endIndex": fila},
+                    "destinationIndex": destino
+                }}]}).execute(), f"mover la fila {fila} al final")
+            nueva = self.target_row_index - 1
+
+        motivo = next((l for l in reversed(str(self._celda(fila, "detalles de seguimiento")).split("\n")) if "CERRADO EN NO" in l), "")
+        razon = motivo.split("Razón:", 1)[1].strip() if "Razón:" in motivo else "sin razón anotada"
+        h = hoy.hour % 12 or 12
+        marca = f"{hoy.day:02d}/{hoy.month:02d}/{hoy.year} {h}:{hoy.minute:02d} {'AM' if hoy.hour < 12 else 'PM'}"
+        previo = str(self._celda(fila, "detalles de seguimiento")).strip()
+        nota = f"{marca} · ♻️ Liberado tras {self.MESES_LIBERAR_NO} meses en NO: Miguel lo volvió a encontrar publicado · razón anterior: {razon}"
+
+        cambios = {
+            "estado de llamada": "NUEVO",
+            "fecha de contacto": hoy.strftime("%Y-%m-%d"),
+            "detalles de seguimiento": (previo + "\n" if previo else "") + nota,
+        }
+        if link:
+            cambios["link del inmueble publicado"] = self.build_property_link_formula(link)
+        for k, campo in (("owner_name", "nombre del propietario"), ("price", "valor de promocion"),
+                         ("property_type", "tipo de inmueble"), ("bedrooms", "habitaciones"), ("location", "ubicacion")):
+            v = str(data.get(k, "") or "").strip()
+            if v:
+                cambios[campo] = v
+        loc = config.LOCALIDAD_LETRA.get(str(data.get("localidad", "")).lower(), "")
+        if loc:
+            cambios["localidad"] = loc
+
+        datos = []
+        for campo, val in cambios.items():
+            c = self.col_map.get(campo)
+            if c is not None:
+                datos.append({"range": f"'{self.sheet_title}'!{col_to_letter(c)}{nueva}", "values": [[val]]})
+        con_reintentos(lambda: self.service.values().batchUpdate(spreadsheetId=self.spreadsheet_id, body={
+            "valueInputOption": "USER_ENTERED", "data": datos}).execute(), f"actualizar la fila liberada {nueva}")
+
+        print(f"[OK] LIBERADO (NO de hace +{self.MESES_LIBERAR_NO} meses): fila {fila} -> {nueva} como NUEVO | {data.get('owner_name')} | {cel}")
+        # Las filas se corrieron: se vuelve a leer la pestaña
+        self.load_existing_data()
         return True
 
 if __name__ == "__main__":
