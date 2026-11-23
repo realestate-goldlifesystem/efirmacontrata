@@ -214,7 +214,12 @@ function crmActualizar_(datos) {
       if (anterior === cfg.ESTADO_INICIAL && normalizarEstadoCaptacion_(nuevo) !== cfg.ESTADO_INICIAL) sellar = true;
     }
 
-    const nota = String(datos.nota || '').trim().slice(0, CRM_PANEL.MAX_NOTA);
+    let nota = String(datos.nota || '').trim().slice(0, CRM_PANEL.MAX_NOTA);
+    // Cierre en NO desde el panel: razón + cancela el seguimiento pendiente (CIERRE_NO.js)
+    if (datos.cierreNo) {
+      const cancelada = cancelarSeguimientoPorCierre_(hoja, fila);
+      nota = textoCierreNo_(datos.razon, datos.detalle) + (cancelada ? '\n' + 'Seguimiento ' + cancelada + ' cancelado' : '');
+    }
     if (nota && col(cfg.COL_DETALLES)) {
       anexarDetalleCaptacion_(hoja.getRange(fila, col(cfg.COL_DETALLES)), nota);
       sellar = true;

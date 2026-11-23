@@ -548,6 +548,8 @@ function procesarEdicionCaptacion_(e, hoja) {
   if (toca(cols.estado)) abrirAgendaCaptacionSiToca_(e, hoja, cols.estado);
   // SEGUIMIENTO: ventana para programar la llamada (LLAMADAS_SEGUIMIENTO.js)
   if (toca(cols.estado)) abrirSeguimientoSiToca_(e, hoja, cols.estado);
+  // NO: ventana con la razón del cierre (CIERRE_NO.js)
+  if (toca(cols.estado)) abrirCierreNoSiToca_(e, hoja, cols.estado);
 }
 
 function normalizarEstadoCaptacion_(v) {

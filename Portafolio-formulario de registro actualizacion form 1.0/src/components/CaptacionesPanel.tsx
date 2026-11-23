@@ -17,7 +17,7 @@ function IconoWhatsApp({ className = 'w-5 h-5' }: { className?: string }) {
 
 import { API_URL } from './CitasAgendaPanel';
 import MiguelCaptadorModal from './MiguelCaptadorModal';
-import { ProgramarLlamadaModal, AgendarPresentacionModal, ElegirSeguimientoModal, EditarDatosModal } from './CaptacionesModales';
+import { ProgramarLlamadaModal, AgendarPresentacionModal, ElegirSeguimientoModal, EditarDatosModal, CierreNoModal } from './CaptacionesModales';
 
 // ==========================================
 // CRM DE CAPTACIONES (18-nov-2026)
@@ -548,7 +548,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   const [guardando, setGuardando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nota, setNota] = useState('');
-  const [modal, setModal] = useState<'elegir' | 'editar' | 'llamada' | 'mensaje' | 'agenda' | 'reagendar' | null>(null);
+  const [modal, setModal] = useState<'elegir' | 'editar' | 'llamada' | 'mensaje' | 'agenda' | 'reagendar' | 'no' | null>(null);
   const [verInfo, setVerInfo] = useState(false);
   const [escribiendo, setEscribiendo] = useState(false);
   const recogido = movil && escribiendo;
@@ -574,6 +574,8 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
     setEligiendo(false);
     const nuevo = nombre.toUpperCase();
     if (nuevo === lead.estado) return;
+    // NO: primero la razón del cierre; el estado se guarda al confirmar en el modal
+    if (nuevo === 'NO') { setError(null); setModal('no'); return; }
     // Al instante (21-nov-2026): se pinta ya y se guarda por detrás; si falla, vuelve al anterior
     const antes = lead;
     onCambio({ ...lead, estado: nuevo });
@@ -771,6 +773,9 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
       {(modal === 'llamada' || modal === 'mensaje') && (
         <ProgramarLlamadaModal lead={lead} credential={credential} tipo={modal === 'mensaje' ? 'MENSAJE' : 'LLAMADA'}
           onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
+      )}
+      {modal === 'no' && (
+        <CierreNoModal lead={lead} credential={credential} onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
       )}
       {(modal === 'agenda' || modal === 'reagendar') && (
         <AgendarPresentacionModal lead={lead} operacion={operacion} credential={credential} reagendar={modal === 'reagendar'}

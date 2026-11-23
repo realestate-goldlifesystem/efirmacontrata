@@ -608,3 +608,73 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
     </Marco>
   );
 }
+
+// ==========================================
+// Cierre en NO: la razón queda como última anotación (CIERRE_NO.js)
+// ==========================================
+export const RAZONES_NO = [
+  'No quiere inmobiliaria', 'Ya lo arrendó o vendió', 'No acepta el % de comisión',
+  'Lo tiene con otra inmobiliaria', 'Precio fuera de mercado', 'Nunca contestó', 'Ya no lo va a ofrecer', 'Otra razón',
+];
+export function CierreNoModal({ lead, credential, onCerrar, onListo }: {
+  lead: Lead; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void;
+}) {
+  const [razon, setRazon] = useState('');
+  const [detalle, setDetalle] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState('');
+  const [listo, setListo] = useState('');
+  const valido = !!razon && (razon !== 'Otra razón' || !!detalle.trim());
+
+  const cerrarEnNo = async () => {
+    if (!valido) return;
+    setEnviando(true); setError('');
+    try {
+      const r = await llamarCRM(credential, 'actualizar', { idLead: lead.idLead, estado: 'NO', cierreNo: true, razon, detalle: detalle.trim() });
+      if (!r.success) throw new Error(r.message || 'No se pudo cerrar.');
+      if (r.lead) onListo(r.lead);
+      setListo('Lead cerrado en NO. La razón quedó como última anotación.');
+    } catch (e) {
+      setError(e instanceof Error && e.message !== 'Failed to fetch' ? e.message : 'Error de red al guardar.');
+    } finally { setEnviando(false); }
+  };
+
+  return (
+    <Marco titulo="Cerrar en NO" sub={`${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar}
+      pie={listo ? undefined : (
+        <div className="flex flex-col gap-2">
+          {error && <div className="text-sm text-red-300">{error}</div>}
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={onCerrar} className="min-h-[48px] rounded-xl border border-stone-700 text-stone-200 hover:border-stone-500">Cancelar</button>
+            <button onClick={cerrarEnNo} disabled={!valido || enviando}
+              className="min-h-[48px] rounded-xl bg-brand-gold text-stone-950 font-bold disabled:opacity-40 flex items-center justify-center gap-2">
+              {enviando && <Loader2 className="w-4 h-4 animate-spin" />}{enviando ? 'Guardando…' : 'Cerrar en NO'}
+            </button>
+          </div>
+        </div>
+      )}>
+      {listo ? <Listo texto={listo} onCerrar={onCerrar} /> : (
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="text-xs text-stone-400 mb-2">¿Por qué queda en NO?</div>
+            <div className="flex flex-wrap gap-1.5">
+              {RAZONES_NO.map(r => (
+                <button key={r} type="button" onClick={() => setRazon(r)}
+                  className={`min-h-[40px] rounded-full border px-3 text-[13px] transition-colors ${razon === r ? 'border-brand-gold bg-brand-gold/15 text-white' : 'border-stone-700 bg-stone-950/40 text-stone-300 hover:border-stone-500'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="no-detalle" className="text-xs text-stone-400">Detalle {razon === 'Otra razón' ? '(obligatorio)' : '(opcional)'}</label>
+            <textarea id="no-detalle" value={detalle} onChange={e => setDetalle(e.target.value)} maxLength={400} rows={3}
+              placeholder="Ej. Lo arrendó directo con un conocido; volver a contactar en junio"
+              className="mt-1.5 w-full rounded-xl bg-stone-950 border border-stone-700 p-3 text-sm text-white placeholder:text-stone-500 resize-none focus:outline-none focus:border-brand-gold" />
+          </div>
+          <div className="text-[12px] text-stone-500">Si tenía una llamada o un mensaje de seguimiento programado, se cancela (queda ❌ en el calendario como historial).</div>
+        </div>
+      )}
+    </Marco>
+  );
+}
