@@ -44,7 +44,7 @@
       <span><span class="t">Presentación</span><span class="s">Agendar la presentación virtual o la captación presencial</span></span><span class="flecha">›</span></button>
     <div class="error" id="error"></div>
   </div>
-  <div class="nota">El estado ya quedó en SEGUIMIENTO. Si cierras, no se programa nada.</div>
+  <div class="nota">El estado pasa a SEGUIMIENTO cuando programes. Si cierras, queda como estaba.</div>
   <script>
     const D = <?!= DATOS ?>;
     document.getElementById('quien').textContent = (D.nombre || 'Propietario') + ' · ' + D.idLead;
@@ -53,7 +53,7 @@
       b.querySelector('.s').textContent = 'Abriendo…';
       google.script.run
         .withFailureHandler(e => { document.getElementById('error').textContent = e.message; document.querySelectorAll('.op').forEach(x => x.disabled = false); })
-        .abrirSeguimientoElegido({ hoja: D.hoja, fila: D.fila, que: que });
+        .abrirSeguimientoElegido({ hoja: D.hoja, fila: D.fila, que: que, porEstado: !!D.porEstado });
     }
   </script>
 </body>

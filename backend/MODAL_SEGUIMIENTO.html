@@ -318,7 +318,8 @@
         .programarLlamada({ hoja: D.hoja, fila: D.fila, idLead: D.idLead, nombre: D.nombre, celular: D.celular, servicio: D.servicio,
           direccion: D.direccion, nota: $('nota').value, timestamp: t.getTime(), tipo: ES_MENSAJE ? 'MENSAJE' : 'LLAMADA',
           // Solo se envía si cambió (así no se repite en el historial)
-          ofertaA: oferta.A !== ini.A ? oferta.A : '', ofertaV: oferta.V !== ini.V ? oferta.V : '' });
+          ofertaA: oferta.A !== ini.A ? oferta.A : '', ofertaV: oferta.V !== ini.V ? oferta.V : '',
+          estadoNuevo: D.estadoNuevo || '' });
     }
   </script>
 </body>

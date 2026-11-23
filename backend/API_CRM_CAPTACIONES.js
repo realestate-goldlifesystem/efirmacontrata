@@ -93,6 +93,8 @@ function crmLeadDeValores_(enc, v, t, fila) {
     valor: txt('VALOR DE PROMOCIÓN'),
     ubicacion: txt('UBICACIÓN'),
     localidad: txt('LOCALIDAD'),
+    torre: txt(AGENDA_CAPTACION.COL_TORRE),
+    numInmueble: txt(AGENDA_CAPTACION.COL_NUM_INMUEBLE),
     detalles: txt(SEGUIMIENTO_CAPTACIONES.COL_DETALLES),
     fechaSeguimiento: txt(SEGUIMIENTO_CAPTACIONES.COL_FECHA),
     horaSeguimiento: txt(SEGUIMIENTO_CAPTACIONES.COL_HORA),
@@ -319,7 +321,8 @@ function crmProgramar_(datos) {
   const r = programarLlamada({
     hoja: ub.hoja.getName(), fila: ub.fila, idLead: ub.lead.idLead, nombre: d.nombre, celular: d.celular,
     servicio: d.servicio, direccion: d.direccion, nota: datos.nota, timestamp: Number(datos.timestamp),
-    tipo: tipoSeguimiento_(datos.tipo), ofertaA: datos.ofertaA, ofertaV: datos.ofertaV
+    tipo: tipoSeguimiento_(datos.tipo), ofertaA: datos.ofertaA, ofertaV: datos.ofertaV,
+    estadoNuevo: datos.estadoNuevo === 'SEGUIMIENTO' ? 'SEGUIMIENTO' : ''
   });
   if (r && r.success) r.lead = crmReleer_(datos.idLead);
   else if (r && r.error) r.message = r.error;
@@ -336,7 +339,7 @@ function crmAgendar_(datos) {
   const r = agendarDesdeCaptacion({
     hoja: ub.hoja.getName(), fila: ub.fila, nombre: datos.nombre, celular: datos.celular, correo: datos.correo,
     servicio: datos.servicio, direccion: datos.direccion, notas: datos.notas, timestamp: Number(datos.timestamp),
-    textoCita: datos.textoCita, modalidad: datos.modalidad,
+    textoCita: datos.textoCita, modalidad: datos.modalidad, torre: datos.torre, numInmueble: datos.numInmueble,
     ofertaA: datos.ofertaA, ofertaV: datos.ofertaV, reagendar: !!datos.reagendar
   });
   if (r && r.success) r.lead = crmReleer_(datos.idLead);

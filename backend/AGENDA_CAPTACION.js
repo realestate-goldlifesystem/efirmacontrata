@@ -16,6 +16,9 @@ const AGENDA_CAPTACION = {
   COL_CORREO: 'CORREO DEL PROPIETARIO',
   // La cita de presentación que se agendó desde esa fila: enlaza el CRM con la agenda y el registro
   COL_ID_CITA: 'ID CITA',
+  // Torre (opcional) y número del inmueble (obligatorio al agendar), aparte de la dirección
+  COL_TORRE: 'TORRE',
+  COL_NUM_INMUEBLE: 'N° INMUEBLE',
   // % de oferta negociado con el propietario: solo para el agente (no va al
   // calendario ni al correo). Cada pestaña exige el suyo (A arriendo, V venta);
   // el otro es opcional, para servicios mixtos (Vendi-Renta, Admi-Venta).
@@ -108,6 +111,13 @@ function columnaCaptacion_(hoja, nombre) {
   return c;
 }
 
+/** "Cra 10 #20-30, Chicó · Torre 2 · Apto 501" (sin torre: solo el apto). */
+function direccionConUnidad_(direccion, torre, num) {
+  const n = String(num || '').trim(), t = String(torre || '').trim();
+  const unidad = /^[a-záéíóú]/i.test(n) ? n : 'Apto ' + n;
+  return [String(direccion || '').trim(), t ? (/^torre/i.test(t) ? t : 'Torre ' + t) : '', n ? unidad : ''].filter(Boolean).join(' · ');
+}
+
 function datosFilaCaptacion_(hoja, fila) {
   const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
   const v = hoja.getRange(fila, 1, 1, enc.length).getValues()[0];
@@ -124,6 +134,8 @@ function datosFilaCaptacion_(hoja, fila) {
     clase: hoja.getName().slice(-1) === 'V' ? 'V' : 'A',
     ofertaA: pct('A'), ofertaV: pct('V'),
     idCitaAnterior: de(AGENDA_CAPTACION.COL_ID_CITA),
+    torre: de(AGENDA_CAPTACION.COL_TORRE),
+    numInmueble: de(AGENDA_CAPTACION.COL_NUM_INMUEBLE),
     direccion: ubicacion,
     notas: [tipo, de('VALOR DE PROMOCIÓN') ? 'Valor publicado: ' + de('VALOR DE PROMOCIÓN') : '', de('LINK DEL INMUEBLE PUBLICADO')].filter(Boolean).join('\n')
   };
@@ -159,12 +171,16 @@ function agendarDesdeCaptacion(d) {
   if (!ofertas.V.ok) return { success: false, error: ofertas.V.error };
   const faltan = piden.filter(k => ofertas[k].vacio).map(k => (k === 'V' ? 'venta' : 'arriendo'));
   if (faltan.length) return { success: false, error: 'Escribe el % de oferta en ' + faltan.join(' y ') + ' que negociaste con el propietario.' };
+  const torre = String(d.torre || '').trim().slice(0, 20), numInm = String(d.numInmueble || '').trim().slice(0, 20);
+  if (!numInm) return { success: false, error: 'Escribe el número del inmueble (apartamento o casa).' };
   hoja.getRange(d.fila, columnaCorreoCaptacion_(hoja)).setValue(correo);
+  hoja.getRange(d.fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_TORRE)).setNumberFormat('@').setValue(torre);
+  hoja.getRange(d.fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_NUM_INMUEBLE)).setNumberFormat('@').setValue(numInm);
   const idAnterior = String(hoja.getRange(d.fila, columnaCaptacion_(hoja, AGENDA_CAPTACION.COL_ID_CITA)).getValue() || '').trim();
 
   const r = agendarCita({
     nombreCliente: d.nombre, celular: '+57 ' + String(d.celular || '').replace(/\D/g, '').replace(/^57(?=\d{10}$)/, ''),
-    correo: correo, tipoServicio: d.servicio, direccion: d.direccion, detalles: d.notas, modalidad: d.modalidad,
+    correo: correo, tipoServicio: d.servicio, direccion: direccionConUnidad_(d.direccion, torre, numInm), detalles: d.notas, modalidad: d.modalidad,
     fechaTimestamp: Number(d.timestamp),
     agendaAgente: true // la agenda el agente: no hace falta avisarle a él mismo
   });
@@ -191,6 +207,12 @@ function agendarDesdeCaptacion(d) {
         if (cH) hoja.getRange(d.fila, cH).setValue(sello.hora);
       }
     } catch (e) { Logger.log('No se pudo anotar la cita en la captación: ' + e.message); }
+    // El CRM queda en PRE-R CAPTACION solo cuando la cita se agenda de verdad
+    try {
+      const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
+      const cE = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_ESTADO) + 1;
+      if (cE) hoja.getRange(d.fila, cE).setValue(AGENDA_CAPTACION.ESTADO);
+    } catch (e) {}
     if (d.reagendar) {
       // La cita anterior, si seguía viva, queda cancelada (❌ en el calendario, no se borra)
       try {
@@ -199,12 +221,6 @@ function agendarDesdeCaptacion(d) {
         if (vieja && [ESTADOS_CITA.CANCELADA, ESTADOS_CITA.ASISTIDA, ESTADOS_CITA.INASISTIDA].indexOf(est) === -1)
           aplicarCambioEstadoCita(vieja.sheet, vieja.col, vieja.numFila, vieja.fila, ESTADOS_CITA.CANCELADA, 'reagendada por el agente: la reemplaza ' + r.idCita);
       } catch (e) { Logger.log('No se pudo cancelar la cita anterior: ' + e.message); }
-      // El CRM sigue el flujo normal de la cita nueva
-      try {
-        const enc = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getValues()[0].map(h => String(h).trim().toUpperCase());
-        const cE = enc.indexOf(SEGUIMIENTO_CAPTACIONES.COL_ESTADO) + 1;
-        if (cE) hoja.getRange(d.fila, cE).setValue(AGENDA_CAPTACION.ESTADO);
-      } catch (e) {}
     }
   }
   return r;

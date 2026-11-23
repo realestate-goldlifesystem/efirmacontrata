@@ -156,6 +156,13 @@
         <input id="direccion" autocomplete="off" placeholder="Escribe la dirección y elige una sugerencia">
         <div class="ayuda" id="ayudaDir">Del registro: <span id="dirRegistro"></span></div>
       </div>
+      <div class="grupo">
+        <label class="switch"><input type="checkbox" id="hayTorre"> <span>El conjunto tiene torres</span></label>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <div id="grupoTorre" style="flex:1;display:none;"><label>Torre</label><input id="torre" maxlength="20" placeholder="Ej. 2"></div>
+          <div style="flex:1;"><label>N° de inmueble · obligatorio</label><input id="numInm" maxlength="20" placeholder="Ej. 501 o Casa 3"></div>
+        </div>
+      </div>
       <div class="pie"><button class="btn sec" onclick="google.script.host.close()">Cerrar</button>
         <button class="btn pri" id="sig1" onclick="ir(2)">Siguiente</button></div>
     </div>
@@ -212,6 +219,10 @@
     if (D.reagendar) $('subCab').textContent = '🔄 Reagendar: se crea una cita nueva y la anterior' + (D.idCitaAnterior ? ' (' + D.idCitaAnterior + ')' : '') + ' queda cancelada como historial';
     $('servicio').value = D.servicio; $('direccion').value = D.direccion; $('notas').value = D.notas;
     $('dirRegistro').textContent = D.direccion || 'sin ubicación';
+    $('torre').value = D.torre || ''; $('numInm').value = D.numInmueble || '';
+    $('hayTorre').checked = !!D.torre; $('grupoTorre').style.display = D.torre ? '' : 'none';
+    $('hayTorre').onchange = () => { $('grupoTorre').style.display = $('hayTorre').checked ? '' : 'none'; if (!$('hayTorre').checked) $('torre').value = ''; revisar(); };
+    ['torre', 'numInm'].forEach(id => $(id).addEventListener('input', revisar));
 
     // ---------- % de oferta negociado (solo para el agente) ----------
     // Lo pide el SERVICIO elegido (no la pestaña): Venta → venta (1 a 3 en medios);
@@ -242,7 +253,10 @@
 
     // ---------- Pasos ----------
     const correoOk = () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('correo').value.trim());
-    const paso1Ok = () => $('nombre').value.trim() && $('celular').value.trim() && correoOk() && piden().every(ofertaOk);
+    const paso1Ok = () => $('nombre').value.trim() && $('celular').value.trim() && correoOk() && piden().every(ofertaOk) &&
+      $('numInm').value.trim() && (!$('hayTorre').checked || $('torre').value.trim());
+    const unidadTxt = () => { const n = $('numInm').value.trim(), t = $('hayTorre').checked ? $('torre').value.trim() : '';
+      return [t ? (/^torre/i.test(t) ? t : 'Torre ' + t) : '', n ? (/^[a-záéíóú]/i.test(n) ? n : 'Apto ' + n) : ''].filter(Boolean).join(' · '); };
     function revisar() {
       $('sig1').disabled = !paso1Ok(); $('sig2').disabled = !slot;
       ['A', 'V'].forEach(k => {
@@ -269,7 +283,7 @@
         const t = DIAS_L[diaSel.getDay()] + ' ' + diaSel.getDate() + ' de ' + MESES[diaSel.getMonth()] + ' · ' + slot.horaAmPm;
         $('rCuando').textContent = t.charAt(0).toUpperCase() + t.slice(1);
         $('rQuien').textContent = $('nombre').value.trim() + ' · ' + $('servicio').value + (modalidad === 'VIRTUAL' ? ' · Virtual (Google Meet)' : ' · Presencial');
-        $('rDonde').textContent = $('direccion').value.trim();
+        $('rDonde').textContent = [$('direccion').value.trim(), unidadTxt()].filter(Boolean).join(' · ');
         $('rOferta').textContent = 'Oferta negociada: ' + piden().map(fmt).filter(Boolean).join(' · ');
       }
     }
@@ -325,6 +339,7 @@
       }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; })
         .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
           correo: $('correo').value.trim(), servicio: $('servicio').value, direccion: $('direccion').value.trim(), notas: $('notas').value.trim(),
+          torre: $('hayTorre').checked ? $('torre').value.trim() : '', numInmueble: $('numInm').value.trim(),
           timestamp: slot.timestamp, textoCita: txt, modalidad: modalidad,
           ofertaA: piden().indexOf('A') !== -1 ? oferta.A : '', ofertaV: piden().indexOf('V') !== -1 ? oferta.V : '',
           reagendar: !!D.reagendar });

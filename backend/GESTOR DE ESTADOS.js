@@ -539,8 +539,13 @@ function procesarEdicionCaptacion_(e, hoja) {
   const rango = e.range;
   const toca = function (c) { return c > 0 && c >= rango.getColumn() && c <= rango.getLastColumn(); };
 
+  // Estados con ventana (23-nov-2026): la celda vuelve al estado anterior y solo
+  // cambia cuando la ventana se completa (agendar, programar, cerrar en NO).
+  const conVentana = toca(cols.estado) && rango.getNumRows() === 1 && rango.getNumColumns() === 1 &&
+    rango.getRow() >= cfg.PRIMERA_FILA_DATOS && ESTADOS_CON_VENTANA_.indexOf(normalizarEstadoCaptacion_(e.value)) !== -1;
+  if (conVentana) rango.setValue(e.oldValue == null ? '' : e.oldValue);
   if (cols.fecha && cols.hora) {
-    if (toca(cols.estado)) marcarSeguimientoCaptacion_(e, hoja, cols);
+    if (toca(cols.estado) && !conVentana) marcarSeguimientoCaptacion_(e, hoja, cols);
     if (toca(cols.detalles)) marcarSeguimientoPorDetalles_(e, hoja, cols);
   }
   if (toca(cols.contacto) && cols.estado) propagarFechaContactoCaptacion_(e, hoja, cols);
@@ -551,6 +556,9 @@ function procesarEdicionCaptacion_(e, hoja) {
   // NO: ventana con la razón del cierre (CIERRE_NO.js)
   if (toca(cols.estado)) abrirCierreNoSiToca_(e, hoja, cols.estado);
 }
+
+/** Estados que abren una ventana: solo quedan puestos si la ventana se completa. */
+const ESTADOS_CON_VENTANA_ = ['SEGUIMIENTO', 'PRE-R CAPTACION', 'REAGENDAR', 'NO'];
 
 function normalizarEstadoCaptacion_(v) {
   return String(v == null ? '' : v).trim().toUpperCase();

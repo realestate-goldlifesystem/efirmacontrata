@@ -238,8 +238,9 @@ for (let h = 7; h <= 20; h++) for (let m = 0; m < 60; m += 30) { if (h === 20 &&
 
 // tipo MENSAJE (19-nov-2026): el mismo modal para el mensaje de seguimiento.
 // Usa el mismo motor que la llamada: uno reemplaza al otro y bloquea el calendario.
-export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo, tipo = 'LLAMADA' }: {
+export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo, tipo = 'LLAMADA', estadoNuevo = '' }: {
   lead: Lead; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void; tipo?: 'LLAMADA' | 'MENSAJE';
+  estadoNuevo?: string;
 }) {
   const esMensaje = tipo === 'MENSAJE';
   const pendienteOtro = lead.proximaLlamadaMs != null && ['PROGRAMADA', 'CONFIRMADA'].includes((lead.llamadaEstado || '').toUpperCase())
@@ -309,7 +310,7 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo, tip
     setEnviando(true); setError('');
     try {
       const r = await llamarCRM(credential, 'programar', {
-        idLead: lead.idLead, nota, timestamp: momento.getTime(), tipo,
+        idLead: lead.idLead, nota, timestamp: momento.getTime(), tipo, estadoNuevo,
         // Solo si cambió, para no repetirlo en el historial
         ofertaA: oferta.A !== ofIni.A ? oferta.A : '', ofertaV: oferta.V !== ofIni.V ? oferta.V : '',
       });
@@ -442,6 +443,13 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
     ].filter(Boolean).join('\n'),
   }), [lead, operacion]);
   const [f, setF] = useState(inicial);
+  // Torre (con el switch) y número del inmueble, obligatorio
+  const [hayTorre, setHayTorre] = useState(!!lead.torre);
+  const [torre, setTorre] = useState(lead.torre || '');
+  const [numInm, setNumInm] = useState(lead.numInmueble || '');
+  const unidadOk = !!numInm.trim() && (!hayTorre || !!torre.trim());
+  const unidadTxt = [hayTorre && torre.trim() ? (/^torre/i.test(torre.trim()) ? torre.trim() : 'Torre ' + torre.trim()) : '',
+    numInm.trim() ? (/^[a-záéíóú]/i.test(numInm.trim()) ? numInm.trim() : 'Apto ' + numInm.trim()) : ''].filter(Boolean).join(' · ');
   // % de oferta: lo pide el SERVICIO elegido (Venta → venta; mixtos → los dos; resto → arriendo)
   const [oferta, setOferta] = useState<Record<'A' | 'V', string>>({ A: enPuntos(lead.ofertaA), V: enPuntos(lead.ofertaV) });
   const piden = ofertasDelServicio(f.servicio);
@@ -461,7 +469,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
 
   const dias = useMemo(() => { const h = new Date(); return Array.from({ length: 21 }, (_, i) => new Date(h.getFullYear(), h.getMonth(), h.getDate() + i)); }, []);
   const correoOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.correo.trim());
-  const paso1Ok = !!f.nombre.trim() && !!f.celular.trim() && correoOk && ofertaOk;
+  const paso1Ok = !!f.nombre.trim() && !!f.celular.trim() && correoOk && ofertaOk && unidadOk;
   const cambiar = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
 
   const elegirDia = async (d: Date) => {
@@ -488,6 +496,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
       const r = await llamarCRM(credential, 'agendar', {
         idLead: lead.idLead, nombre: f.nombre.trim(), celular: f.celular.trim(), correo: f.correo.trim(),
         servicio: f.servicio, direccion: f.direccion.trim(), notas: f.notas.trim(),
+        torre: hayTorre ? torre.trim() : '', numInmueble: numInm.trim(),
         timestamp: slot.timestamp, textoCita, modalidad, reagendar,
         ofertaA: piden.includes('A') ? oferta.A : '', ofertaV: piden.includes('V') ? oferta.V : '',
       });
@@ -563,6 +572,21 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
             </div>
           ))}
           <div><label htmlFor="ag-dir" className="text-xs text-stone-400">Dirección del inmueble</label><input id="ag-dir" className={campo} value={f.direccion} onChange={cambiar('direccion')} /></div>
+          <div>
+            <label className="flex items-center gap-2 text-xs text-stone-300 cursor-pointer select-none">
+              <button type="button" role="switch" aria-checked={hayTorre} onClick={() => { setHayTorre(!hayTorre); if (hayTorre) setTorre(''); }}
+                className={`relative h-5 w-9 rounded-full transition-colors ${hayTorre ? 'bg-brand-gold' : 'bg-stone-700'}`}>
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${hayTorre ? 'left-[18px]' : 'left-0.5'}`} />
+              </button>
+              El conjunto tiene torres
+            </label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {hayTorre && <div><label htmlFor="ag-torre" className="text-xs text-stone-400">Torre</label>
+                <input id="ag-torre" className={campo} maxLength={20} placeholder="Ej. 2" value={torre} onChange={e => setTorre(e.target.value)} /></div>}
+              <div className={hayTorre ? '' : 'col-span-2'}><label htmlFor="ag-num" className="text-xs text-stone-400">N° de inmueble · obligatorio</label>
+                <input id="ag-num" className={campo} maxLength={20} placeholder="Ej. 501 o Casa 3" value={numInm} onChange={e => setNumInm(e.target.value)} /></div>
+            </div>
+          </div>
         </div>
       ) : paso === 2 ? (
         <div className="flex flex-col gap-3">
@@ -594,7 +618,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
             <div className="text-[11px] uppercase tracking-[0.12em] text-brand-gold-light mb-1">{etiquetaModo}</div>
             <div className="text-white font-semibold">{textoCita}</div>
             <div className="text-stone-400">{f.nombre} · {SERVICIOS.find(s => s.v === f.servicio)?.t}</div>
-            {f.direccion && <div className="text-stone-400">{f.direccion}</div>}
+            {(f.direccion || unidadTxt) && <div className="text-stone-400">{[f.direccion, unidadTxt].filter(Boolean).join(' · ')}</div>}
             {textoOfertaSel && <div className="text-brand-gold-light mt-1">Oferta negociada: {textoOfertaSel}</div>}
           </div>
           <div>

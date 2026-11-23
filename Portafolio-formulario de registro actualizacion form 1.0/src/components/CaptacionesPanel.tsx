@@ -39,6 +39,8 @@ export interface Lead {
   valor: string;
   ubicacion: string;
   localidad: string;
+  torre?: string;
+  numInmueble?: string;
   detalles: string;
   fechaSeguimiento: string;
   horaSeguimiento: string;
@@ -549,11 +551,13 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
   const [error, setError] = useState<string | null>(null);
   const [nota, setNota] = useState('');
   const [modal, setModal] = useState<'elegir' | 'editar' | 'llamada' | 'mensaje' | 'agenda' | 'reagendar' | 'no' | null>(null);
+  // SEGUIMIENTO elegido desde el estado: al programar, el estado queda en SEGUIMIENTO
+  const [porEstado, setPorEstado] = useState(false);
   const [verInfo, setVerInfo] = useState(false);
   const [escribiendo, setEscribiendo] = useState(false);
   const recogido = movil && escribiendo;
 
-  useEffect(() => { setEligiendo(false); setError(null); setNota(''); setModal(null); }, [lead.idLead]);
+  useEffect(() => { setEligiendo(false); setError(null); setNota(''); setModal(null); setPorEstado(false); }, [lead.idLead]);
 
   const guardar = async (cambios: { estado?: string; nota?: string }, que: string) => {
     setGuardando(que); setError(null);
@@ -576,15 +580,14 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
     if (nuevo === lead.estado) return;
     // NO: primero la razón del cierre; el estado se guarda al confirmar en el modal
     if (nuevo === 'NO') { setError(null); setModal('no'); return; }
+    // Estados con ventana (23-nov-2026): el estado solo cambia si la ventana se completa;
+    // si se cierra sin agendar/programar, el lead queda como estaba
+    if (nuevo === 'SEGUIMIENTO') { setError(null); setPorEstado(true); setModal('elegir'); return; }
+    if (nuevo === 'PRE-R CAPTACION') { setError(null); setModal('agenda'); return; }
+    if (nuevo === 'REAGENDAR') { setError(null); setModal('reagendar'); return; }
     // Al instante (21-nov-2026): se pinta ya y se guarda por detrás; si falla, vuelve al anterior
     const antes = lead;
     onCambio({ ...lead, estado: nuevo });
-    // Igual que en el Sheet: SEGUIMIENTO abre la llamada y PRE-R CAPTACION la agenda
-    // SEGUIMIENTO: primero se elige si es llamada, mensaje o presentación
-    if (nuevo === 'SEGUIMIENTO') setModal('elegir');
-    if (nuevo === 'PRE-R CAPTACION') setModal('agenda');
-    // REAGENDAR: cita nueva; la anterior queda cancelada como historial
-    if (nuevo === 'REAGENDAR') setModal('reagendar');
     setError(null);
     try {
       const r = await llamarCRM(credential, 'actualizar', { idLead: lead.idLead, estado: nombre });
@@ -662,6 +665,7 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
           <div className="overflow-hidden">
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm rounded-2xl bg-stone-950/50 border border-stone-800 p-3 mb-2.5">
               <Dato t="Barrio" v={lead.ubicacion} />
+              {(lead.torre || lead.numInmueble) && <Dato t="Torre / inmueble" v={[lead.torre && 'Torre ' + lead.torre, lead.numInmueble].filter(Boolean).join(' · ')} />}
               <Dato t="Localidad" v={LOCALIDADES[lead.localidad.toUpperCase()] || lead.localidad} />
               <Dato t="Habitaciones" v={lead.habitaciones} />
               <Dato t="Valor publicado" v={lead.valor} />
@@ -768,11 +772,12 @@ function FichaLead({ lead, estados, operacion, credential, onCambio, onCerrar, m
         <EditarDatosModal lead={lead} credential={credential} onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
       )}
       {modal === 'elegir' && (
-        <ElegirSeguimientoModal lead={lead} onElegir={que => setModal(que)} onCerrar={() => setModal(null)} />
+        <ElegirSeguimientoModal lead={lead} onElegir={que => setModal(que)} onCerrar={() => { setModal(null); setPorEstado(false); }} />
       )}
       {(modal === 'llamada' || modal === 'mensaje') && (
         <ProgramarLlamadaModal lead={lead} credential={credential} tipo={modal === 'mensaje' ? 'MENSAJE' : 'LLAMADA'}
-          onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
+          estadoNuevo={porEstado ? 'SEGUIMIENTO' : ''}
+          onCerrar={() => { setModal(null); setPorEstado(false); }} onListo={l => onCambio(l)} />
       )}
       {modal === 'no' && (
         <CierreNoModal lead={lead} credential={credential} onCerrar={() => setModal(null)} onListo={l => onCambio(l)} />
