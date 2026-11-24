@@ -11,7 +11,7 @@
 const CIERRE_NO = {
   ESTADO: 'NO',
   RAZONES: [
-    'No quiere inmobiliaria', 'Ya lo arrendó o vendió', 'No acepta el % de comisión',
+    'Desea arrendarlo directamente', 'No quiere inmobiliaria', 'Ya lo arrendó o vendió', 'No acepta el % de comisión',
     'Lo tiene con otra inmobiliaria', 'Precio fuera de mercado', 'Nunca contestó', 'Ya no lo va a ofrecer', 'Otra razón'
   ]
 };
