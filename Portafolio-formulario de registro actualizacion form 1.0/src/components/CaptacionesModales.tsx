@@ -651,7 +651,7 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
 // ==========================================
 export const RAZONES_NO = [
   'Desea arrendarlo directamente', 'No quiere inmobiliaria', 'Ya lo arrendó o vendió', 'No acepta el % de comisión',
-  'Lo tiene con otra inmobiliaria', 'Precio fuera de mercado', 'Nunca contestó', 'Ya no lo va a ofrecer', 'Otra razón',
+  'Lo tiene con otra inmobiliaria', 'Precio fuera de mercado', 'Nunca contestó', 'Ya no lo va a ofrecer', 'No interesa', 'Otra razón',
 ];
 export function CierreNoModal({ lead, credential, onCerrar, onListo }: {
   lead: Lead; credential: string | null; onCerrar: () => void; onListo: (l: Lead) => void;
