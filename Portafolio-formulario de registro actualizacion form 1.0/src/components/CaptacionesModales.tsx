@@ -22,19 +22,30 @@ const textoLargo = (t: Date) => {
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
-export function Marco({ titulo, sub, onCerrar, children, pie }: { titulo: string; sub: string; onCerrar: () => void; children: React.ReactNode; pie?: React.ReactNode }) {
+export function Marco({ titulo, sub, onCerrar, children, pie, ocupado }: { titulo: string; sub: string; onCerrar: () => void; children: React.ReactNode; pie?: React.ReactNode; ocupado?: string }) {
+  // Mientras se guarda (ocupado = qué se está haciendo) la ventana se congela:
+  // una capa la cubre y no se puede cerrar ni tocar nada hasta que responda.
+  const cerrar = () => { if (!ocupado) onCerrar(); };
   // Portal al <body>: el panel del agente anima su contenedor, y eso dejaría la
   // ventana por debajo de la barra superior del sitio.
   return createPortal(
-    <div className="fixed inset-0 ajusta-teclado z-[200] bg-stone-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" onClick={onCerrar}>
-      <div role="dialog" aria-modal="true" aria-label={titulo} onClick={e => e.stopPropagation()}
-        className="w-full sm:max-w-lg max-h-[94vh] flex flex-col bg-stone-900 border border-stone-800 rounded-t-3xl sm:rounded-3xl text-stone-200 shadow-2xl animate-fade-in">
+    <div className="fixed inset-0 ajusta-teclado z-[200] bg-stone-950/70 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" onClick={cerrar}>
+      <div role="dialog" aria-modal="true" aria-label={titulo} aria-busy={!!ocupado} onClick={e => e.stopPropagation()}
+        className="relative w-full sm:max-w-lg max-h-[94vh] flex flex-col bg-stone-900 border border-stone-800 rounded-t-3xl sm:rounded-3xl text-stone-200 shadow-2xl animate-fade-in">
+        {ocupado && (
+          <div role="status" aria-live="polite"
+            className="absolute inset-0 z-10 rounded-[inherit] bg-stone-950/80 backdrop-blur-[3px] flex flex-col items-center justify-center gap-3 px-8 text-center cursor-progress animate-fade-in">
+            <Loader2 className="w-10 h-10 text-brand-gold animate-spin" />
+            <div className="text-base font-semibold text-white">{ocupado}</div>
+            <div className="text-xs text-stone-400">Un momento, no cierres esta ventana.</div>
+          </div>
+        )}
         <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
           <div className="min-w-0">
             <h3 className="text-lg font-semibold text-white">{titulo}</h3>
             <p className="text-xs text-stone-400 truncate">{sub}</p>
           </div>
-          <button onClick={onCerrar} aria-label="Cerrar" className="w-11 h-11 flex items-center justify-center -mr-1.5 rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
+          <button onClick={cerrar} aria-label="Cerrar" className="w-11 h-11 flex items-center justify-center -mr-1.5 rounded-full bg-stone-800 text-stone-400 hover:text-white shrink-0"><X className="w-5 h-5" /></button>
         </div>
         <div className="px-5 pb-4 overflow-y-auto flex-1">{children}</div>
         {pie && <div className="px-5 py-4 border-t border-stone-800">{pie}</div>}
@@ -124,7 +135,7 @@ export function EditarDatosModal({ lead, credential, onCerrar, onListo }: {
   const campo = 'mt-1 w-full h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold';
   const Etq = ({ id, t }: { id: string; t: string }) => <label htmlFor={id} className="text-xs text-stone-400">{t}</label>;
   return (
-    <Marco titulo="Editar datos" sub={`${lead.idLead} · se guarda en el Sheet`} onCerrar={onCerrar}
+    <Marco titulo="Editar datos" sub={`${lead.idLead} · se guarda en el Sheet`} onCerrar={onCerrar} ocupado={guardando ? 'Guardando los cambios…' : ''}
       pie={
         <div className="flex flex-col gap-2">
           {error && <div className="text-sm text-red-300">{error}</div>}
@@ -324,6 +335,7 @@ export function ProgramarLlamadaModal({ lead, credential, onCerrar, onListo, tip
 
   return (
     <Marco titulo={esMensaje ? 'Programar mensaje' : 'Programar llamada'} sub={`${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar}
+      ocupado={enviando ? (esMensaje ? 'Programando el mensaje…' : 'Programando la llamada…') : ''}
       pie={listo ? undefined : (
         <div className="flex flex-col gap-2">
           <div className={`text-sm ${valido ? 'text-brand-gold-light' : 'text-stone-400'}`}>{cargando ? 'Revisando tu agenda…' : resumen}</div>
@@ -532,7 +544,8 @@ export function AgendarPresentacionModal({ lead, operacion, credential, onCerrar
   }
 
   return (
-    <Marco titulo={reagendar ? '🔄 Reagendar presentación' : 'Agendar presentación'} sub={modalidad ? `${etiquetaModo} · Paso ${paso} de 3` : `${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar} pie={pie}>
+    <Marco titulo={reagendar ? '🔄 Reagendar presentación' : 'Agendar presentación'} sub={modalidad ? `${etiquetaModo} · Paso ${paso} de 3` : `${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar} pie={pie}
+      ocupado={enviando ? (reagendar ? 'Reagendando la cita…' : 'Agendando la cita…') : ''}>
       {listo ? <Listo texto={listo} onCerrar={onCerrar} /> : !modalidad ? (
         <div className="flex flex-col gap-3">
           <div className="text-sm text-stone-400">¿Cómo será la presentación?</div>
@@ -664,7 +677,7 @@ export function CierreNoModal({ lead, credential, onCerrar, onListo }: {
   };
 
   return (
-    <Marco titulo="Cerrar en NO" sub={`${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar}
+    <Marco titulo="Cerrar en NO" sub={`${lead.nombre || 'Propietario'} · ${lead.idLead}`} onCerrar={onCerrar} ocupado={enviando ? 'Cerrando en NO…' : ''}
       pie={listo ? undefined : (
         <div className="flex flex-col gap-2">
           {error && <div className="text-sm text-red-300">{error}</div>}

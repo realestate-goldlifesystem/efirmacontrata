@@ -753,7 +753,7 @@ function EmailInquilinoModal({ i, credential, onCerrar, onLista }: {
 
   const campo = 'mt-1 w-full h-11 rounded-xl bg-stone-950 border border-stone-700 px-3 text-sm text-white placeholder:text-stone-500 focus:outline-none focus:border-brand-gold';
   return (
-    <Marco titulo="Enviar formulario al inquilino" sub={`${i.id} · E-FirmaContrata`} onCerrar={onCerrar}
+    <Marco titulo="Enviar formulario al inquilino" sub={`${i.id} · E-FirmaContrata`} onCerrar={onCerrar} ocupado={enviando ? 'Enviando el formulario…' : ''}
       pie={listo ? undefined : (
         <div className="flex flex-col gap-2">
           {error && <div className="text-sm text-red-300">{error}</div>}

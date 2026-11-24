@@ -102,9 +102,23 @@
     .pct::after { content: '%'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--suave); font-size: 14px; pointer-events: none; }
     .enlace { background: none; border: 0; color: var(--oro); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0 0 10px; }
     .ayuda.mal { color: #b91c1c; }
+    /* Guardando: la ventana se congela mientras responde el servidor (no se puede tocar nada) */
+    #bloqueo { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      background: rgba(255,253,247,.78); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+    #bloqueo.on { opacity: 1; pointer-events: all; cursor: progress; }
+    #bloqueo .anillo { width: 50px; height: 50px; border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 0 25%, #dcb53c 60%, #b26001 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+      animation: bGirar .9s linear infinite; }
+    #bloqueo p { margin: 0; font-weight: 600; font-size: 14px; color: #3a2a12; }
+    #bloqueo small { color: #8a7650; font-size: 12px; }
+    @keyframes bGirar { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+  <div id="bloqueo" aria-live="polite"><div class="anillo"></div><p id="bloqueoTxt">Guardando…</p><small>Un momento, no cierres esta ventana.</small></div>
   <div class="cabeza">
     <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
     <div class="sub" id="subCab">Presentación de servicios al propietario · los datos vienen del registro</div>
@@ -326,17 +340,20 @@
       const t = setInterval(() => { n--; pintar(); if (n <= 0) { clearInterval(t); setTimeout(() => google.script.host.close(), 600); } }, 1000);
     }
 
+    function bloquear(on, txt) { if (txt) $('bloqueoTxt').textContent = txt; $('bloqueo').classList.toggle('on', !!on); }
     // ---------- Agendar ----------
     function agendar() {
       const txt = $('rCuando').textContent;
       $('agendar').disabled = true; $('agendar').textContent = 'Agendando…'; $('error').textContent = '';
+      bloquear(true, D.reagendar ? 'Reagendando la cita…' : 'Agendando la cita…');
       google.script.run.withSuccessHandler(r => {
+        bloquear(false);
         if (r && r.success) {
           $('form').classList.add('oculto'); $('listo').classList.remove('oculto');
           $('resumenFinal').textContent = txt + '. Le llegó el correo a ' + $('correo').value.trim() + ' y quedó en tu calendario.';
           cuentaRegresiva();
         } else { $('error').textContent = (r && (r.error || r.message)) || 'No se pudo agendar.'; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; }
-      }).withFailureHandler(e => { $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; })
+      }).withFailureHandler(e => { bloquear(false); $('error').textContent = e.message; $('agendar').textContent = 'Agendar cita'; $('agendar').disabled = false; })
         .agendarDesdeCaptacion({ hoja: D.hoja, fila: D.fila, nombre: $('nombre').value.trim(), celular: $('celular').value.trim(),
           correo: $('correo').value.trim(), servicio: $('servicio').value, direccion: $('direccion').value.trim(), notas: $('notas').value.trim(),
           torre: $('hayTorre').checked ? $('torre').value.trim() : '', numInmueble: $('numInm').value.trim(),

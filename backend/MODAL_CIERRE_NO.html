@@ -32,9 +32,23 @@
     .btn.pri:disabled { opacity: .35; cursor: default; }
     .listo { text-align: center; padding: 50px 22px; font-size: 15px; }
     .oculto { display: none; }
+    /* Guardando: la ventana se congela mientras responde el servidor (no se puede tocar nada) */
+    #bloqueo { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+      background: rgba(255,253,247,.78); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+    #bloqueo.on { opacity: 1; pointer-events: all; cursor: progress; }
+    #bloqueo .anillo { width: 50px; height: 50px; border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 0 25%, #dcb53c 60%, #b26001 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+      animation: bGirar .9s linear infinite; }
+    #bloqueo p { margin: 0; font-weight: 600; font-size: 14px; color: #3a2a12; }
+    #bloqueo small { color: #8a7650; font-size: 12px; }
+    @keyframes bGirar { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+  <div id="bloqueo" aria-live="polite"><div class="anillo"></div><p id="bloqueoTxt">Guardando…</p><small>Un momento, no cierres esta ventana.</small></div>
   <div class="cabeza">
     <div class="marca">GOLD LIFE <span>REAL ESTATE</span></div>
     <div class="sub">Cierre del lead · queda como última anotación</div>
@@ -68,14 +82,17 @@
     });
     $('detalle').addEventListener('input', revisar);
     function revisar() { $('guardar').disabled = !razon || (razon === 'Otra razón' && !$('detalle').value.trim()); }
+    function bloquear(on, txt) { if (txt) $('bloqueoTxt').textContent = txt; $('bloqueo').classList.toggle('on', !!on); }
     $('guardar').onclick = () => {
       $('guardar').disabled = true; $('guardar').textContent = 'Guardando…'; $('error').textContent = '';
+      bloquear(true, 'Cerrando en NO…');
       google.script.run.withSuccessHandler(r => {
+        bloquear(false);
         if (r && r.success) {
           $('form').classList.add('oculto'); $('pie').classList.add('oculto'); $('listo').classList.remove('oculto');
           setTimeout(() => google.script.host.close(), 2500);
         } else { $('error').textContent = (r && r.error) || 'No se pudo guardar.'; $('guardar').textContent = 'Cerrar en NO'; revisar(); }
-      }).withFailureHandler(e => { $('error').textContent = e.message; $('guardar').textContent = 'Cerrar en NO'; revisar(); })
+      }).withFailureHandler(e => { bloquear(false); $('error').textContent = e.message; $('guardar').textContent = 'Cerrar en NO'; revisar(); })
         .cerrarLeadEnNo({ hoja: D.hoja, fila: D.fila, razon: razon, detalle: $('detalle').value });
     };
   </script>
