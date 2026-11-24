@@ -27,7 +27,7 @@ function abrirCierreNoSiToca_(e, hoja, colEstado) {
   d.razones = CIERRE_NO.RAZONES;
   const t = HtmlService.createTemplateFromFile('backend/MODAL_CIERRE_NO');
   t.DATOS = JSON.stringify(d);
-  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(500).setHeight(560), 'Cerrar lead en NO');
+  SpreadsheetApp.getUi().showModalDialog(t.evaluate().setWidth(500).setHeight(610), 'Cerrar lead en NO');
 }
 
 /** Texto de la anotación de cierre. */
